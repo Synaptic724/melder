@@ -1,0 +1,11 @@
+Failed to find real location of C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.2+freethreaded-windows-x86_64-none\python.exe
+....                                                                     [100%]
+============================== warnings summary ===============================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 1 warning in 0.84s

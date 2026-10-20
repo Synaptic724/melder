@@ -1,0 +1,18 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner ruled on this story (chat 2026-10-17): "if you go into a [...] spell index and you move the version
+    [...] then its not my [...] problem you gotta use notch". Not a defect: moving a version with
+    `remove_from_spell_index` is the agent's call and making it active takes a notch, so the split-off index naming
+    its parked member as its selection stays as it is; the story is withdrawn with no fix and no notch. What his
+    rule does cover - a graft activating that parked member without a notch (G2) - is already the graft lane of
+    STORY-2026-10-17-restore_drops_separated_parked_version, which now decides from each member's recorded custody
+    instead of the selection. melder_0 tells the owner so in this turn's reply; his word can override.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md:107-112
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:7-12
+  IMPACT: The story closes as withdrawn; S5 carries the graft side; melder_1's files lose one story.
+  NEXT: None for this story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

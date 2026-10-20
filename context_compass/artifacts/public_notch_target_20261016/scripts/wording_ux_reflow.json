@@ -1,0 +1,14 @@
+[
+  {"path": "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py",
+   "old": "      two-step act - then takes the swap by the new version's spell_id, melds\n      it, and notches back. Everything runs on public calls.\n",
+   "new": "      two-step act - then takes the swap by the new version's spell_id,\n      melds it, and notches back. Everything runs on public calls.\n",
+   "count": 1},
+  {"path": "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py",
+   "old": "      NAME THE VERSION BY ITS SPELL_ID. Every public spell_id->object\n      lookup (`get_spell_by_id`, `find_spell_by_id`) resolves any lineage\n      spell_id to\n      the spell AS IT EXISTS NOW - the currently ACTIVE member - which\n      is documented and correct for what those verbs are for. So a\n      parked version is never fetched as an object: `notch_spell` takes\n      its spell_id and resolves the exact version inside the call. The\n      Spellbook is still not the surface you notch from - the conduit's\n      verb does the resolving (owner ruling 2026-10-16; until then the\n      verb took only the parked OBJECT, no public door handed one out,\n      and this lesson stopped at staging).\n",
+   "new": "      NAME THE VERSION BY ITS SPELL_ID. Every public spell_id->object\n      lookup (`get_spell_by_id`, `find_spell_by_id`) resolves any\n      lineage spell_id to the spell AS IT EXISTS NOW - the currently\n      ACTIVE member - which is documented and correct for what those\n      verbs are for. So a parked version is never fetched as an\n      object: `notch_spell` takes its spell_id and resolves the exact\n      version inside the call. The Spellbook is still not the surface\n      you notch from - the conduit's verb does the resolving (owner\n      ruling 2026-10-16; until then the verb took only the parked\n      OBJECT, no public door handed one out, and this lesson stopped\n      at staging).\n",
+   "count": 1},
+  {"path": "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py",
+   "old": "    # WHY THE NOTCH IS GIVEN A SPELL_ID. A parked spell_id resolves to the CURRENT\n    # member, because that is what the lookups are for: they answer \"what\n    # is live for this lineage\", not \"give me the object behind this\n    # exact version\".\n",
+   "new": "    # WHY THE NOTCH IS GIVEN A SPELL_ID. A parked spell_id resolves to\n    # the CURRENT member, because that is what the lookups are for: they\n    # answer \"what is live for this lineage\", not \"give me the object\n    # behind this exact version\".\n",
+   "count": 1}
+]

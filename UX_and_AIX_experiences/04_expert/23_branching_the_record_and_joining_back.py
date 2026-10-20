@@ -174,7 +174,7 @@ def main() -> None:
     # 'stale-branch' is anchored at a point the receiver has left.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
         existence="unique",
         permissions="create",
     )

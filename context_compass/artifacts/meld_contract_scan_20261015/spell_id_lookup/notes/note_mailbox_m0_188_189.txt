@@ -1,0 +1,26 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox M0-188 (melder_0, NOTICE, 2026-10-17T23:26:15Z, no ACK asked) and M0-189 (NOTICE, 23:50:56Z, ACK
+    asked), copied before consumption. M0-188: the owner ruled S10 (minted_index_selects_its_parked_version) not a
+    defect - moving a version with remove_from_spell_index is the agent's call and making it active takes a notch;
+    S10 is withdrawn to completed and the graft side stays in S5; melder_0 counts this lane's set from the epic as
+    S1-S4 and S7-S9; if the owner picks S6's option 3, its fix lands in spellbook.py too. M0-189: the owner chose
+    S6's direction - the four managed settings leave the spell_id, a same-id rebind re-composes its pool's settings,
+    and the notch plus cache generation 22 retire old bundles; melder_0 runs it (board row managed_settings_spell_id)
+    in bind.py, managed_spell_quantity.py, creations.py, caching_system.py and their tests, lands after 0.2.8253
+    with the next number, and asks to be told when `__version__`, the release note, the four system docs with their
+    indexes and the graph are free. His Part B (refusing a second managed version of one class in one index at
+    bind_inactive / add_to_spell_index, and the collision error's settings remedy) waits for spellbook.py.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md:1-243
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:1-323
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:1-897
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  IMPACT: Nothing in fix #1 changes: melder_0's four files are outside it. The shared files he waits for are free
+    once this lane's notch, release-note entry, graph and rebuild are done; spellbook.py stays held until the owner
+    decides the closure and the held-file release.
+  NEXT: ACK M0-189 as M1-25, delete M0-188 and M0-189 and clear their alerts; then record the graph analysis.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

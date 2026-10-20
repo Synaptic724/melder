@@ -1,0 +1,81 @@
+== tests_components: 62 lost line kinds, 75 lines; every one an edited count, a remeasured C1 field,
+   an Updated line or a rewritten line whose content is kept (see the S7 MEASURE note)
+  -1  `test_abstract_elastic_pool_multithreaded.py` runs threads against the pool; a
+  -1  end_line: 129
+  -1  end_line: 1390
+  -1  end_line: 1505
+  -1  end_line: 186
+  -1  end_line: 1879
+  -1  end_line: 1968
+  -1  end_line: 198
+  -1  end_line: 204
+  -1  end_line: 352
+  -1  end_line: 357
+  -1  end_line: 438
+  -1  end_line: 513
+  -1  end_line: 5249
+  -1  end_line: 608
+  -1  end_line: 6377
+  -1  end_line: 662
+  -1  end_line: 709
+  -1  end_line: 768
+  -1  end_line: 771
+  -1  loc: 129
+  -1  loc: 1390
+  -1  loc: 1505
+  -1  loc: 186
+  -1  loc: 1879
+  -1  loc: 1968
+  -1  loc: 198
+  -1  loc: 204
+  -1  loc: 352
+  -1  loc: 357
+  -1  loc: 438
+  -1  loc: 513
+  -1  loc: 5249
+  -1  loc: 608
+  -1  loc: 6377
+  -1  loc: 662
+  -1  loc: 709
+  -1  loc: 768
+  -1  loc: 771
+  -1  race in larger code is pinned by a stand-in, not by threads
+  -10  verified_at: 2026-09-26T22:11:36Z
+  -1  verified_at: 2026-09-26T22:15:16Z
+  -1  verified_at: 2026-09-27T11:46:59Z
+  -1  verified_at: 2026-09-30T00:31:41Z
+  -3  verified_at: 2026-09-30T18:35:14Z
+  -1  verified_at: 2026-10-10T09:48:53Z
+  -3  verified_at: 2026-10-14T16:20:47Z
+  -1 - 158 `test_*.py` modules among 165 `.py` files (recounted 2026-10-14); the others are benches and the
+  -1 - 164 `test_*.py` modules among 166 `.py` files (recounted 2026-10-14)
+  -1 - No harness or support module of its own; the 17 test_*.py modules in
+  -1 - No harness or support module of its own; the 37 test_*.py modules in
+  -1 - No harness or support module of its own; the 47 test_*.py modules in
+  -1 - No harness or support module of its own; the 49 test_*.py modules in
+  -1 - No harness or support module of its own; the 52 test_*.py modules in
+  -1 - No harness or support module of its own; the 75 test_*.py modules in
+  -1 - The aether tree carries 189 `test_*.py` modules beneath these; they are the
+  -1 - The spellbook tree carries 146 `test_*.py` modules beneath these; they are the
+  -1 - The spellbook tree carries 74 `test_*.py` modules beneath these; they are the
+  -1 - Updated: 2026-10-14
+  -1 - the densest tier: 480 `test_*.py` modules among 483 `.py` files (recounted 2026-10-14)
+  -1 above - 217 paths (recounted 2026-10-14) - and nothing else. Change a component's key files and this set
+  -1 builders - not every `test_*.py` module beneath it. The 802 test modules of the
+== tests_architecture: 15 lost line kinds, 16 lines; every one an edited count, a remeasured C1 field,
+   an Updated line or a rewritten line whose content is kept (see the S7 MEASURE note)
+  -1  end_line: 483
+  -1  end_line: 6377
+  -1  loc: 483
+  -1  loc: 6377
+  -2  verified_at: 2026-09-30T00:32:11Z
+  -1 - Updated: 2026-10-06
+  -1 - `component/`: 143 `.py` files (81)
+  -1 - `experimentation/`: 196 `.py` files, 33 of them `test_*.py` (not counted before)
+  -1 - `integration/`: 149 `.py` files (88)
+  -1 - `mocks/`: 44 `.py` files (42)
+  -1 - `unit/`: 465 `.py` files (334 on 2026-06-13)
+  -1 Core is the deduplicated union of every `Key Files (C1)` list in
+  -1 Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
+  -1 `tests_components.md`, plus the harness surfaces this document names as
+  -1 entrypoints. Every range below was MEASURED from disk on 2026-08-02, not carried

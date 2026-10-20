@@ -1,0 +1,28 @@
+h1.1_transfer = ok move_creations=True
+h1.2_b_meld_before_a_teardown = the moved tool
+h1.3_a_meld_after_transfer = KeyError: "[MELD] No spell found for frame='tool', binding='__default__'."
+h1.4_a_teardown = ok
+h1.4_closes tool/helper/conn = 0/1/0
+h1.5_b_meld_after_a_teardown = the moved tool (its helper closed 1x)
+h1.6_b_purges_the_moved_tool = ok -> 1
+h1.6_closes tool/helper/conn = 1/1/1
+h1.7_b_meld_without_own_dependencies = UnresolvedInputError: [MELD] Execution failed for spell 'Tool' (f56222513523b5b7ada17e17e380d3d2c2870e463f36925fb8c5c485536df8c8) at node f56222513523b5b7ada17e17e380d3d2c2
+h1.8_b_registers = Helper,Conn
+h1.8_bind = ok
+h1.9_b_meld_after_registering = new tool: True, fresh helper: True, fresh conn: True
+h1.10_b_teardown = ok
+h1.10_closes new tool/helper/conn = 1/1/1
+h2.1_transfer = ok move_creations=True
+h2.2_b_meld_before_a_teardown = the moved tool
+h2.3_a_meld_after_transfer = KeyError: "[MELD] No spell found for frame='tool', binding='__default__'."
+h2.4_a_teardown = ok
+h2.4_closes tool/helper/conn = 0/0/0
+h2.5_b_meld_after_a_teardown = the moved tool (its helper closed 0x)
+h2.6_b_purges_the_moved_tool = ok -> 1
+h2.6_closes tool/helper/conn = 1/0/1
+h2.7_b_meld_without_own_dependencies = new tool (helper is A's old: True)
+h2.8_b_registers = nothing (already owned)
+h2.8_bind = ok
+h2.9_b_meld_after_registering = new tool: True, fresh helper: False, fresh conn: True
+h2.10_b_teardown = ok
+h2.10_closes new tool/helper/conn = 1/1/1

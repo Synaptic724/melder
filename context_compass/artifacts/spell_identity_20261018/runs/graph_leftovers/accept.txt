@@ -1,0 +1,54 @@
+  ACCEPT melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest  (was AUTHORED)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.bind.spell_code_digest  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.bind.binding_manifest  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.bind.binding_manifest.BindingManifest  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.bind.bind.Bind  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.crystallizer.crystals.spell_crystal.SpellCrystal  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.crystallizer.persistence.record_version.RecordVersion  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.
+  ACCEPT melder.utilities.caching_system.caching_system.CachingSystem  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.

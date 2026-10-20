@@ -1,0 +1,42 @@
+E01 base class method body changed (subclass)          expect=different got=different today=same      ok       e122169fd6d9/7be864d543d1
+E02 class-level value changed (retries 3 -> 5)         expect=different got=different today=same      ok       dd876b02712c/8e79fac49820
+E03 class-level tuple order changed                    expect=different got=different today=same      ok       79e4564a1a30/35bac41647e4
+E04 nested class body changed                          expect=different got=different today=same      ok       64eebc9f5cd6/66ffe0b81a9f
+E05 decorator argument changed (@tag(3) -> @tag(5))    expect=different got=different today=same      ok       05bf987aa1b8/38de72bc8ef3
+E06 property getter body changed                       expect=different got=different today=same      ok       396758a43afb/ab8c411c13d5
+E07 staticmethod body changed                          expect=different got=different today=same      ok       b80de6e1e625/93db9bc77549
+E08 classmethod body changed                           expect=different got=different today=same      ok       924a2bedfbc4/73deadd99237
+E09 dataclass default changed                          expect=different got=different today=different ok       273712db3629/5382415fcc31
+E10 enum member value changed                          expect=different got=different today=same      ok       2fd85e1c6cb9/135b77520a92
+E11 class field annotation changed (int -> str)        expect=different got=different today=same      ok       44d2c0b2edf2/7f061cec9ddc
+E12 method parameter annotation changed                expect=different got=different today=same      ok       3307b50b9b71/0b70c0d0ea57
+E13 user metaclass method body changed                 expect=different got=different today=same      ok       71e3dbaf2e23/af8b84dff7bf
+E14 same source executed twice                         expect=same      got=same      today=same      ok       49fd0ee425a6/49fd0ee425a6
+E16 docstrings, comments and blank lines added         expect=same      got=same      today=same      ok       c388bc37980e/c388bc37980e
+E17 except clause type changed (ValueError -> KeyError) expect=different got=different today=same      ok       d6779425fdb3/766bf3482399
+E18 try/except method gains a docstring                expect=same      got=same      today=same      ok       d6779425fdb3/d6779425fdb3
+E27 local variable renamed (call 4: counted)           expect=different got=different today=same      ok       74deba15cdec/e6c51f3d769d
+E31 type parameter bound changed (T: int -> T: str)    expect=different got=different today=same      ok       e27b0ec2f725/acef56e8a4da
+E15 same code, another module                          expect=different got=different today=different ok       c388bc37980e/09c2104fe171
+E18b factory classes, captured 1 vs 2                  expect=different got=different today=-         ok       aecd41615c3d/9d1f0bb8588a
+E18c factory classes, captured 1 vs 1                  expect=same      got=same      today=-         ok       aecd41615c3d/aecd41615c3d
+E19 objects with equal data                            expect=same      got=same      today=same      ok       5b8774f2a4e9/5b8774f2a4e9
+E19b objects with different data                       expect=different got=different today=same      ok       5b8774f2a4e9/0bd2047c43cb
+E20 nested user object data differs                    expect=different got=different today=same      ok       6c7512d873c0/5e46ad20d0d9
+E21 lock and logger held: by type only                 expect=same      got=same      today=same      ok       57a4ab47e73e/57a4ab47e73e
+E22 self-referencing objects, equal                    expect=same      got=same      today=same      ok       366e59ee6249/366e59ee6249
+E23 cached_property read between two digests           expect=same      got=same      today=-         ok       f733d5573e9c/f733d5573e9c
+E28 slotted objects, mangled slot differs              expect=different got=different today=same      ok       82e80c63d7e5/975dd0f34fcc
+E29 bound methods of equal-data objects                expect=same      got=same      today=same      ok       f138a388ddd9/f138a388ddd9
+E29b bound methods of different-data objects           expect=different got=different today=same      ok       f138a388ddd9/ce70b41fa2d3
+E30 partials with different arguments                  expect=different got=different today=-         ok       f91e538dd61d/3a2bad7a4edf
+E26 lambdas, same body, different default              expect=different got=different today=different ok       d752693cabf1/c2f3a9ccffef
+E32 stdlib object targets: two loggers                 expect=different got=different today=different ok       aa0241853dc7/ed92188ef158
+E32b the same stdlib object twice                      expect=same      got=same      today=same      ok       aa0241853dc7/aa0241853dc7
+E24 method run 20000 times between digests             expect=same      got=same      today=-         ok       1d6b0ae61627/1d6b0ae61627
+E25 dataclass annotations read                         expect=same      got=same      today=-         ok       273712db3629/273712db3629
+E25b runtime-checkable isinstance run                  expect=same      got=same      today=-         ok       51a8f626b76f/51a8f626b76f
+E25c ABC.register run                                  expect=same      got=same      today=-         ok       0f6a07664c83/0f6a07664c83
+E33 class-level dict mutated at runtime                expect=different got=different today=-         ok       e0e4639a1f33/cadfbb08151d
+E34 sys.monitoring LINE+INSTRUCTION events on          expect=same      got=same      today=-         ok       f097a59c8027/f097a59c8027
+E34b sys.settrace active                               expect=same      got=same      today=-         ok       f097a59c8027/f097a59c8027

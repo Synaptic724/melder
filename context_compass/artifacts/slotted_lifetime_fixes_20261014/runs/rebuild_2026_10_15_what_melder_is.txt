@@ -1,0 +1,21 @@
+== 2026-10-15T02:10:15Z asset build
+WROTE  _agent_documentation agent_documentation_manifest.py (463 entries, v0.2.8240)
+WROTE  _bind_guard          bind_guard_manifest.py (623 entries, v0.2.8240)
+WROTE  _system_documents    system_documents_manifest.py (4 entries, v0.2.8240)
+exit 0
+== asset check
+OK     _agent_documentation current (v0.2.8240, schema 2.0.0, key match)
+OK     _bind_guard          current (v0.2.8240, schema 2.0.0, key match)
+OK     _system_documents    current (v0.2.8240, schema 2.0.0, key match)
+exit 0
+== llm_support build --include-untracked
+UNCHANGED src   fingerprint and output proofs match
+UNCHANGED tests fingerprint and output proofs match
+WROTE     other 404 files (source fingerprint moved)
+WROTE manifest.json
+exit 0
+== llm_support check --include-untracked
+OK     src   fingerprint and output proofs match
+OK     tests fingerprint and output proofs match
+OK     other fingerprint and output proofs match
+exit 0

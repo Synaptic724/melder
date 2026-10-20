@@ -258,7 +258,7 @@ def test_component_spellbook_check_all_spells_raises_on_aether_collision(
             Contract:
                 Returns True for the bound spell id within the spellbook frame.
             Args:
-                version_id: Spell version id being checked.
+                version_id: The spell_id being checked.
                 frame: Aether frame name provided by the caller.
             Returns:
                 bool: True for the bound spell id, False otherwise.
@@ -307,7 +307,7 @@ def test_component_spellbook_check_all_spells_passes_when_aether_reports_unique(
             Contract:
                 Always returns False for uniqueness.
             Args:
-                _version_id: Spell version id being checked.
+                _version_id: The spell_id being checked.
                 _frame: Aether frame name provided by the caller.
             Returns:
                 bool: False to indicate no duplicates.

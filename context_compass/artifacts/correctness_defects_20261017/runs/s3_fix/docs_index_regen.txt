@@ -1,0 +1,36 @@
+WROTE: src_architecture_index.md
+  62 sections over 5514 document lines
+  index 92 lines (1% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 1284 lines (Operational Invariants)
+  all 62 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/src_architecture.md
+WROTE: src_components_index.md
+  156 sections over 12416 document lines
+  index 186 lines (1% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 6089 lines (C3 Components Catalog)
+  all 156 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/src_components.md
+WROTE: tests_architecture_index.md
+  32 sections over 1062 document lines
+  index 62 lines (5% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 201 lines (C1 Code Map (Core Only))
+  all 32 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/tests_architecture.md
+WROTE: tests_components_index.md
+  69 sections over 4110 document lines
+  index 99 lines (2% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 1516 lines (C1 Code Map (Core))
+  all 69 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/tests_components.md
+OK: src_architecture_index.md is current (62 sections over 5514 lines)
+OK: src_components_index.md is current (156 sections over 12416 lines)
+OK: tests_architecture_index.md is current (32 sections over 1062 lines)
+OK: tests_components_index.md is current (69 sections over 4110 lines)

@@ -19,6 +19,7 @@ from melder.utilities.custom_exceptions.phase_timeout_error import (
 
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.utilities.synchronization.phase_scheduler import (
         PhaseScheduler,
@@ -49,6 +50,11 @@ class RestoreReport(Cleanable):
           entered here; nothing is silently under-built.
         - Recorded ULIDs appear ONLY inside the translation map; they never
           escape into the rebuilt world (never-rehydrate-ULIDs policy).
+        - Binding changes (record 4.3.0): a spell whose binding the receiving
+          Book rebuilt differently from the record - another disposal order,
+          say - is listed by custody key with its recorded and live binding
+          hashes. It is information, never a shortfall: the receiving Book's
+          policy is the restore's rule, and the spell_id (its code) is kept.
 
     Threading:
         One internal RLock serializes every mutator and reader (S4,
@@ -94,6 +100,7 @@ class RestoreReport(Cleanable):
         "_built_counts",
         "_shortfalls",
         "_identity_map",
+        "_binding_changes",
         "_status",
         "_failed_stage",
         "_preflight",
@@ -132,6 +139,8 @@ class RestoreReport(Cleanable):
         self._built_counts: Dict[str, int] = {}
         self._shortfalls: List[Dict[str, str]] = []
         self._identity_map: Dict[str, str] = {}
+        # custody key -> {"recorded": hash, "live": hash} for each binding rebuilt differently (record 4.3.0).
+        self._binding_changes: Dict[str, Dict[str, str]] = {}
         self._status: str = "pending"
         self._failed_stage: Optional[str] = None
         # Load-time strategy analysis (owner ruling: strategies run AS
@@ -171,6 +180,7 @@ class RestoreReport(Cleanable):
             del self._built_counts
             del self._shortfalls
             del self._identity_map
+            del self._binding_changes
             del self._status
             del self._failed_stage
             del self._preflight
@@ -271,9 +281,12 @@ class RestoreReport(Cleanable):
         """
         Record one recorded identity -> actual live identity translation.
 
-        Structural ULIDs are always translated. Spell SHA entries are added
-        when a new bind's resolved signature differs from its recorded one;
-        unchanged content IDs remain directly addressable without an entry.
+        Structural ULIDs are always translated. A spell_id entry is added
+        when a replayed bind returns another spell_id than the recorded one -
+        the target's code moved since the record (a class edited on disk,
+        another Python version); unchanged spell_ids need no entry. A binding
+        the receiving Book's policy rebuilt differently keeps its spell_id and
+        is reported by `record_binding_change` instead.
 
         Args:
             recorded_id:
@@ -291,6 +304,41 @@ class RestoreReport(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._identity_map[recorded_id] = live_id
+
+    def record_binding_change(
+            self,
+            custody_key: str,
+            recorded_binding_hash: str,
+            live_binding_hash: str,
+    ) -> None:
+        """
+        Record one binding a replayed bind rebuilt differently from its record (record 4.3.0).
+
+        Contract:
+            - Keyed by custody key; a later call for the same key replaces the entry.
+            - Information only: no shortfall is filed and nothing raises.
+
+        Args:
+            custody_key:
+                The folded custody key of the replayed spell.
+            recorded_binding_hash:
+                The binding hash the record carries.
+            live_binding_hash:
+                The binding hash of the spell the replayed bind registered.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the report has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._binding_changes[custody_key] = {
+                "recorded": recorded_binding_hash,
+                "live": live_binding_hash,
+            }
 
     def translate(self, recorded_id: str) -> Optional[str]:
         """
@@ -352,14 +400,16 @@ class RestoreReport(Cleanable):
         Return the report payload as value-shaped containers.
 
         Contract:
-            Recreates checkpoint ids, built counts, shortfall rows, and identity
-            mappings. The preflight dictionary is copied at its outer boundary;
+            Recreates checkpoint ids, built counts, shortfall rows, identity
+            mappings and binding changes (record 4.3.0; empty when every binding
+            replayed as recorded). The preflight dictionary is copied at its outer boundary;
             consumers should treat nested finding rows as immutable report data.
 
         Returns:
             Dict[str, object]:
                 Status, profile, chain ids, built counts, shortfall entries,
-                and the identity translation map - fully detached copies.
+                the identity translation map and the binding changes - fully
+                detached copies.
 
         Raises:
             RuntimeError:
@@ -375,6 +425,9 @@ class RestoreReport(Cleanable):
                 "built_counts": dict(self._built_counts),
                 "shortfalls": [dict(entry) for entry in self._shortfalls],
                 "identity_map": dict(self._identity_map),
+                "binding_changes": {
+                    key: dict(entry) for key, entry in self._binding_changes.items()
+                },
                 "preflight": dict(self._preflight),
                 "plan": dict(self._plan_summary),
             }
@@ -1902,9 +1955,13 @@ class RestoreEngine(Cleanable):
               self-admits its window), the recorded root conduit conjures,
               staged members bind_inactive onto their live anchors POST-
               conjure, then divergent selections notch.
-            - Spell SHAs stay stable when recorded signature and receiving policy
-              agree. A changed signature maps to the actual bind result in the
-              existing report, before member/selection/contract references replay.
+            - A spell_id is the target's code, so the receiving policy never moves
+              it; it moves only when the code moved since the record (a class
+              edited on disk, another Python version), and a moved id maps to the
+              actual bind result in the report before member, selection and
+              contract references replay. A binding the receiving policy rebuilds
+              differently (another disposal order) keeps its spell_id and is
+              reported as a binding change (record 4.3.0).
 
         Returns:
             None.
@@ -2151,8 +2208,12 @@ class RestoreEngine(Cleanable):
 
         Contract:
             Forward ordered disposal names through normal book composition.
-            Record a changed SHA before resolving dependent staged members.
+            Record a changed spell_id (the code moved since the record) before
+            resolving dependent staged members, and report a binding the receiving
+            Book rebuilt differently (record 4.3.0).
             Preserve recorded capability; only legacy absence defaults to True.
+            Replay a managed spell's recorded options (record 4.2.0), so it
+            rebinds with its own options and spell id.
             The spell id comes from the payload, the custody key names
             shortfalls, and identities map per Book (0.2.8214).
 
@@ -2163,7 +2224,8 @@ class RestoreEngine(Cleanable):
                 The live rebuilt Spellbook.
             custody_key:
                 The folded custody key (the spell id, or "<spell_id>@<frame>");
-                receiving policy determines the new bind ID.
+                the replayed spell_id follows the target's code, the receiving
+                policy its binding.
             crystal:
                 The folded custody payload.
 
@@ -2185,10 +2247,12 @@ class RestoreEngine(Cleanable):
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
+            **SpellCrystal.managed_bind_options(crystal),
         )
         self._report.record_built("spell_active")
         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
-        live_spell = spellbook.find_spell_by_id(new_spell_id)
+        live_spell = spellbook.find_spell_by_spell_id(new_spell_id)
+        self._record_binding_change(custody_key, crystal, live_spell)
         recorded_index_id = self._index_id_for_member(spellbook_id, spell_id)
         if recorded_index_id is not None and live_spell is not None:
             self._report.map_identity(
@@ -2207,9 +2271,11 @@ class RestoreEngine(Cleanable):
         Replay one STAGED member onto its live index anchor.
 
         Contract:
-            Retain the ordered recorded names and map any changed bind identity
-            before the selection stage resolves this exact parked member.
-            Preserve the parked version's own resolution capability.
+            Retain the ordered recorded names, map a changed spell_id before the
+            selection stage resolves this exact parked member, and report a
+            binding the receiving Book rebuilt differently (record 4.3.0).
+            Preserve the parked version's own resolution capability and, for a
+            managed version, its own recorded options (record 4.2.0).
             The anchor index is found within this Book, the custody key names
             shortfalls, and identities map per Book (0.2.8214).
 
@@ -2222,7 +2288,8 @@ class RestoreEngine(Cleanable):
                 The live conduit hosting `bind_inactive`.
             custody_key:
                 The folded custody key (the spell id, or "<spell_id>@<frame>");
-                receiving policy determines the new bind ID.
+                the replayed spell_id follows the target's code, the receiving
+                policy its binding.
             crystal:
                 The folded custody payload.
 
@@ -2259,8 +2326,11 @@ class RestoreEngine(Cleanable):
             disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
+            **SpellCrystal.managed_bind_options(crystal),
         )
         self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
+        # The exact lookup (0.2.8253) answers the parked version itself.
+        self._record_binding_change(custody_key, crystal, spellbook.find_spell_by_spell_id(new_spell_id))
         self._report.record_built("spell_staged")
 
     def _enforce_selections(
@@ -2328,7 +2398,9 @@ class RestoreEngine(Cleanable):
 
         Contract:
             - A changed id goes to the report's identity map (as before) and to
-              the per-Book translation; an unchanged id needs neither.
+              the per-Book translation; an unchanged id needs neither. A spell_id
+              changes only with the target's code, never with the receiving
+              policy (EPIC-2026-10-18-spell_identity_is_the_code).
             - Per Book (0.2.8214): one spell id rebuilt in two Books may bind
               to two new ids, and each Book's references must follow its own.
 
@@ -2347,6 +2419,42 @@ class RestoreEngine(Cleanable):
             return
         self._report.map_identity(spell_id, new_spell_id)
         self._spell_translation[(spellbook_id, spell_id)] = new_spell_id
+
+    def _record_binding_change(
+            self,
+            custody_key: str,
+            crystal: Dict[str, object],
+            live_spell: Optional[Spell],
+    ) -> None:
+        """
+        Internal
+
+        Report one binding a replayed bind rebuilt differently from its record (record 4.3.0).
+
+        Contract:
+            - Compares the recorded `binding_hash` with the rebuilt spell's; a
+              difference goes to `RestoreReport.record_binding_change`, never a
+              shortfall or a raise - the receiving Book's policy is the rule.
+            - A record older than 4.3.0 carries no binding hash and is not
+              compared; a spell the bind did not leave findable is not compared.
+
+        Args:
+            custody_key:
+                The folded custody key the bind replayed.
+            crystal:
+                The folded custody payload.
+            live_spell:
+                The Spell the replayed bind registered (active or parked), or None.
+
+        Returns:
+            None.
+        """
+        recorded = crystal.get("binding_hash")
+        if not isinstance(recorded, str) or live_spell is None:
+            return
+        live = live_spell.binding_hash
+        if live != recorded:
+            self._report.record_binding_change(custody_key, recorded, live)
 
     def _translate_spell(self, spellbook_id: str, spell_id: str) -> str:
         """
@@ -2428,7 +2536,7 @@ class RestoreEngine(Cleanable):
             candidates.insert(0, selected)
         for member_id in candidates:
             live_member_id = self._translate_spell(book_id, str(member_id))
-            live_spell = spellbook.find_spell_by_id(live_member_id)
+            live_spell = spellbook.find_spell_by_spell_id(live_member_id)
             if live_spell is not None:
                 if live_spell.spell_index.id == live_index_id:
                     return live_spell.spell_index
@@ -2570,7 +2678,7 @@ class RestoreEngine(Cleanable):
             - First cut restores cluster existence + membership through the
               frame ConduitCloud; recorded leaders and explicit share
               entries are REPORTED (auto-share on join covers the shareable
-              lineages; leader election is a runtime act).
+              spells; leader election is a runtime act).
 
         Returns:
             None.
@@ -2653,7 +2761,7 @@ class RestoreEngine(Cleanable):
             )
         shared_entries = list(payload.get("shared_spells", []))
         if shared_entries:
-            # Auto-share on member join re-grants shareable lineages;
+            # Auto-share on member join re-grants the shareable spells;
             # whether it reproduces EVERY recorded entry cannot be
             # verified at replay time - one honest signal per cluster.
             self._report.add_shortfall(
@@ -2667,12 +2775,13 @@ class RestoreEngine(Cleanable):
         Stage 9 (LAST): re-grant recorded contract details.
 
         Contract:
-            - Detail Spell IDs follow recorded-to-live translation when a bind
-              changed its signature, within the granting conduit's Book
-              (0.2.8214); unchanged SHAs remain direct. Conduit endpoints
+            - Detail spell_ids follow the recorded-to-live translation when a
+              replayed bind returned another spell_id (its code moved since the
+              record), within the granting conduit's Book (0.2.8214); unchanged
+              spell_ids remain direct. Conduit endpoints
               translate through the existing identity map.
             - Ward record truth: a plain detail lives in the map of the
-              side that OWNS the lineage ("initiated" via the link-time
+              side that OWNS the spell ("initiated" via the link-time
               bulk grant, "received" via the borrow verb, which files
               under the owner per the ward eligibility check). Either way
               the PEER is the borrower, and the live re-grant verb is
@@ -2742,7 +2851,7 @@ class RestoreEngine(Cleanable):
                 self._conduits.get(str(payload.get(granter_key)), {}).get("spellbook_id")
             )
             for detail in list(payload.get(details_key, [])):
-                # The map holder OWNS the lineage (both detail labels);
+                # The map holder OWNS the spell (both detail labels);
                 # the peer borrowed it. The live verb is borrower-
                 # called naming the owner (the ward eligibility check
                 # demands the `conduit` argument own the spell).

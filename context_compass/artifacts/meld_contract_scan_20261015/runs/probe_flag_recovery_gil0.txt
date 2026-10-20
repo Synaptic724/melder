@@ -1,0 +1,4 @@
+late bind: after bind flag=True; risky_structural=[] risky_resolution=['Other']
+late bind: after melding Other flag=False; risky_structural=[] risky_resolution=[]
+late bind: after next Task meld flag=False
+protocol def: after melding every resolvable spell flag=True; risky_structural=[] risky_resolution=['IThing']

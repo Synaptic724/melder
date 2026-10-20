@@ -61,7 +61,7 @@ def _make_spell(
         spell_type: SpellType for the target.
         spellframe: Optional frame for the spell.
         binding_name: Optional binding name for the spell.
-        version: Version id to store in the SpellIndex.
+        version: The spell_id to store in the SpellIndex.
     Returns:
         Spell: A Spell configured for requirements inspection.
     """

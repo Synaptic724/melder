@@ -1,0 +1,41 @@
+release_example_removal_2026_10_16.py over PYTHONHASHSEED 0-9 (melder_1, 2026-10-16T22:00:02Z); fixed = /tmp/cc_res/removal/tree (the landed src), before = /tmp/cc_res/rule2/fresh (0.2.8250's src, stamped 0.2.8249)
+removal/tree gil0 seed 0: OK melder 0.2.8250
+removal/tree gil0 seed 1: OK melder 0.2.8250
+removal/tree gil0 seed 2: OK melder 0.2.8250
+removal/tree gil0 seed 3: OK melder 0.2.8250
+removal/tree gil0 seed 4: OK melder 0.2.8250
+removal/tree gil0 seed 5: OK melder 0.2.8250
+removal/tree gil0 seed 6: OK melder 0.2.8250
+removal/tree gil0 seed 7: OK melder 0.2.8250
+removal/tree gil0 seed 8: OK melder 0.2.8250
+removal/tree gil0 seed 9: OK melder 0.2.8250
+removal/tree gil1 seed 0: OK melder 0.2.8250
+removal/tree gil1 seed 1: OK melder 0.2.8250
+removal/tree gil1 seed 2: OK melder 0.2.8250
+removal/tree gil1 seed 3: OK melder 0.2.8250
+removal/tree gil1 seed 4: OK melder 0.2.8250
+removal/tree gil1 seed 5: OK melder 0.2.8250
+removal/tree gil1 seed 6: OK melder 0.2.8250
+removal/tree gil1 seed 7: OK melder 0.2.8250
+removal/tree gil1 seed 8: OK melder 0.2.8250
+removal/tree gil1 seed 9: OK melder 0.2.8250
+rule2/fresh gil0 seed 0: OK melder 0.2.8249
+rule2/fresh gil0 seed 1: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil0 seed 2: OK melder 0.2.8249
+rule2/fresh gil0 seed 3: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil0 seed 4: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil0 seed 5: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil0 seed 6: OK melder 0.2.8249
+rule2/fresh gil0 seed 7: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil0 seed 8: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil0 seed 9: OK melder 0.2.8249
+rule2/fresh gil1 seed 0: OK melder 0.2.8249
+rule2/fresh gil1 seed 1: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil1 seed 2: OK melder 0.2.8249
+rule2/fresh gil1 seed 3: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil1 seed 4: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil1 seed 5: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil1 seed 6: OK melder 0.2.8249
+rule2/fresh gil1 seed 7: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil1 seed 8: FAILED melder 0.2.8249: RuntimeError: Spell version 0401081f129ff989953e83d0332deb607f380da6fbe782a24afb045007f2440c not found for conduit ID 01M53B (at _remove_contracted_spell)
+rule2/fresh gil1 seed 9: OK melder 0.2.8249

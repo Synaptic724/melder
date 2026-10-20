@@ -29,7 +29,7 @@ def make_spellbook() -> Spellbook:
 
 
 def get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
-    """Resolve a live local spell by its current version id."""
+    """Resolve a live local spell by its current spell_id."""
     return spellbook._spell_id_pool.get(spell_id)
 
 

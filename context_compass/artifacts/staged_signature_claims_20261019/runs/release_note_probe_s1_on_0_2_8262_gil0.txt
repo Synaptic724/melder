@@ -1,0 +1,2 @@
+    )
+KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."

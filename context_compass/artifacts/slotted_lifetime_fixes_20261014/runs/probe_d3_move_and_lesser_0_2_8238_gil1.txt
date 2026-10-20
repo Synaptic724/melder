@@ -1,0 +1,30 @@
+/tmp/cc_res/fixes/tree/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+m1.setup_grant = True
+m1.setup_distinct_instances = True
+m1.setup_target_store_holds_its_own = True
+m1.transfer = ok
+m1.after_target_store_holds = source's
+m1.after_target_own_closes = 0
+m1.after_source_own_closes = 0
+m1.after_target_meld = source's
+m1.final_target_own_closes = 0
+m1.final_source_own_closes = 1
+l1.setup_grant = True
+l1.setup_lesser_store_holds_it = True
+l1.setup_distinct = True
+l1.sever = ok
+l1.after_sever_root_store_holds_it = False
+l1.after_sever_lesser_store_holds_it = True
+l1.after_sever_closes_root_lesser = (0, 0)
+l1.regrant = ok
+l1.after_regrant_lesser_meld = same consumer
+l1.final_closes_root_lesser = (0, 1)
+l2.setup_grant = True
+l2.after_first_teardown_resource_closes = 1
+l2.after_first_teardown_lesser_store_holds_it = True
+l2.second_grant = ok
+l2.after_second_grant_lesser_meld = same consumer (dep closed)
+l2.final_lesser_consumer_closes = 1

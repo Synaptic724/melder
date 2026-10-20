@@ -1,0 +1,26 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The patch lane matches the source as built, read whole (architecture patch, six component and four
+    code-description patches) against the S1-S6 code: the pool, the registry, the lease, the dispense, the stamps,
+    the error texts and the as-built notes (U3-U11) agree. Two drifts, corrected in the lane before promotion: the
+    architecture patch said three package-root exports where S4 shipped four (`ManagedSpellLease` joined `ManagedSpellMode`,
+    `ReleaseManagedSpell` and `ManagedSpellExhaustedError`), and the S5 component patch named the lowering test file
+    test_site_plan_lowering.py (it is test_site_plan_lowering_managed.py). Promotion targets: src_architecture
+    (glossary, boundary list, guardrails, boot, meld, transfer and cleanup sequences, four invariants, five failure
+    modes, code map, sources, a diagram, handoff), src_components (a new C3 component for the pools, registry and
+    lease; dated entries in Public API, Spellbook Core, Binding Pipeline, Aether, Crystallizer, Conduit, Creations,
+    Meld and SpellCompiler; the ownership-transfer subcomponent; two flows; the code map and inventory; sources;
+    handoff), tests_components and tests_architecture (28 new test files, 9 changed).
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/managed_spell_quantity_2026_10_15/architecture_patch.md:1-112
+  - context_compass/system_docs/patches/active/managed_spell_quantity_2026_10_15/component_patch_managed_dispense_codegen.md:75-89
+  - src/melder/__init__.py:226-252
+  - src/melder/aether/conduit/creations/creations.py:326-399
+  - src/melder/aether/aether.py:186-266
+  IMPACT: The canonical docs can be written from the patches plus the cited source; nothing in the lane contradicts
+    the epic's Build Specification.
+  NEXT: Edit src_architecture and regenerate its index.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
- "source_sha256": "09f29e929db6324aad6611ce033af273e83b8c2929d583fb597ef655d875dc3d",
+ "source_sha256": "ef26ed45eee03c0a7e63daf239c86102d4d1e11d50a80717d78bebfae64b1bd6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.policies.policies": {
@@ -36,7 +36,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "96dad8d05ea517930a2367b7e4535a2f5a96f7da854e4d0df4dda1ae0a1db322",
+   "span_sha256": "cee7409ced10256fb1bffd589cbb3f18999b8615a6f2189f3658230eac919518",
    "role": "Runtime policy mode enum for conduit-to-conduit contracting.",
    "responsibilities": [
     "labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes"

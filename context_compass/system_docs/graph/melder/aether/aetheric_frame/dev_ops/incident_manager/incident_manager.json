@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
- "source_sha256": "8b3b71796dc37deecf2294a9f0db1bc1250763a3163888fdaecf72ded1d3bcea",
+ "source_sha256": "2fa10af8d8012565d404117f9348bb6ec7c5a8335b21b3543d24d8832f265f62",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager": {
@@ -36,7 +36,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dc24dff50f1d12cf54fe6704dcb142af3ccd61a32a2f8ebbdc63c6d85902f5f1",
+   "span_sha256": "472128206b199cb8492db58f05123e077f2c150b326c112e977349c9d2ba61e2",
    "role": "Frame-local incident registry.",
    "responsibilities": [
     "creates and owns incident records",

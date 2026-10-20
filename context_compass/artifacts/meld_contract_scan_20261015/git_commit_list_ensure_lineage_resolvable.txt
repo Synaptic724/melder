@@ -1,0 +1,168 @@
+1:COMMIT 9eb100389 2026-09-26 08:56:45 -0600 Mark | Remove task documentation for resolving annotation shape guard inconsistencies with Phase-1 caller inputs after transi
+68:COMMIT 63ef620e3 2026-09-19 15:47:13 -0600 Mark | Remove implementation maps and plans for "Named Conduit Lesser Discovery" and "Bind/Conjure Order Benchmark" tasks. T
+130:COMMIT 39266e772 2026-08-07 04:49:58 -0600 Mark | Improve performance metrics in `construction_lane_profile.txt`: reduce function call counts, optimize execution time
+189:COMMIT 22c07323e 2026-07-11 17:10:19 -0600 Mark | Remove remediation transaction strategy and all related elements; clean up superseded lineage mediation logic and re
+283:COMMIT d241361c0 2026-07-11 16:56:54 -0600 Mark | Finalize MR units-and-scales philosophy; close out decision points, redraft artifact with GroupNode model, and trans
+377:COMMIT ae790610b 2026-05-30 07:55:53 -0600 Mark | Refactor spellspace route: replace conduit-level access with direct spellspace-owned storage; deduplicate cleanup lo
+470:COMMIT af65df93e 2026-05-30 05:45:33 -0600 Mark | Remove deprecated root-arbitration model (`warn`, `allow_multiple_root_transactions`, `change_control_mode`) and ref
+563:COMMIT 1102bfab9 2026-05-30 05:28:05 -0600 Mark | Add architecture patch for `Meld` class refactor, introducing shared abstract base and concrete front-door implement
+693:COMMIT 03671b550 2026-05-24 16:33:09 -0600 Mark | Add integration tests for three-root change-control transaction behavior, covering disabled, strict, and queued runt
+820:COMMIT c167038f4 2026-05-24 15:45:08 -0600 Mark | Remove redundant `_spell_id_resolution_cache` in `Meld`, replacing it with direct resolution via `Spellbook._spell_i
+947:COMMIT 009ea9782 2026-05-23 15:25:47 -0600 Mark | Lazily initialize `SpellCompilerSystem` in `Meld` to reduce initialization overhead and update test cases to validat
+1074:COMMIT 0df72be56 2026-05-21 09:40:11 -0600 Mark | remove: `IRootResolutionBlueprint`, `ISpell`, and other spell-related interfaces
+1205:COMMIT 7fa39ae0f 2026-05-21 08:20:42 -0600 Mark | remove: `ISpellIndex` interface and update all references
+3132:COMMIT 91c4216ce 2026-05-21 08:18:24 -0600 Mark | remove: `ISpellIndex` interface and update all references
+4943:COMMIT 098c1d06e 2026-05-21 08:10:31 -0600 Mark | remove: `ICodegenSystem`, `ISpellBinder`, `ISpellSpace`, `ICreation`, `IRiftEvent` interfaces and update references
+6762:COMMIT 0208c4620 2026-05-21 07:38:38 -0600 Mark | remove: `ISpellRecord` interface and update all references
+8573:COMMIT 0ba95146e 2026-05-21 07:28:52 -0600 Mark | remove: unused interfaces `IChangeControlManager`, `IConduitResolutionState`, `IFrameACLBuilder`, `IFrameACLCodegen
+10387:COMMIT a82002974 2026-05-21 06:46:12 -0600 Mark | remove: `IContract`, `ICreations`, `IDetail`, and `IMeld` interfaces
+12199:COMMIT f3f93b391 2026-05-20 16:11:43 -0600 Mark | refactor: rename `spell_crafter` module to `spell_compiler` across codebase
+14008:COMMIT f0a98cf19 2026-05-20 16:06:02 -0600 Mark | refactor: replace `SpellCrafter` references with `SpellCompiler` and update imports
+15848:COMMIT 54daa064f 2026-05-20 15:38:10 -0600 Mark | refactor: remove `SpellCrafter` references, streamline artifact-based phase execution
+17668:COMMIT 9034f9229 2026-05-20 15:16:56 -0600 Mark | refactor: integrate `SpellCompilerSystem` into `SpellbookCreationSystem` pipeline
+19495:COMMIT 26143bd65 2026-05-20 04:44:11 -0600 Mark | chore: remove obsolete task file after completing `Spell` ownership investigation
+21316:COMMIT 4a223e4dd 2026-05-19 15:42:20 -0600 Mark | refactor: decouple `SpellSpace` from `Conduit` by injecting explicit collaborators
+23125:COMMIT 98ca80b37 2026-05-19 15:34:21 -0600 Mark | chore: add task and story files for investigating SpellSpace decoupling blast radius
+24927:COMMIT 0d0f1bc94 2026-05-19 14:39:56 -0600 Mark | chore: add task file for investigating interface cycles and creation context structure
+26749:COMMIT 37f8e68af 2026-05-19 10:45:58 -0600 Mark | fix: handle `None` check for spell ID and add typing to `_get_change_control_manager`
+28556:COMMIT ed0013178 2026-05-19 10:34:22 -0600 Mark | fix: refine `__exit__` typing in `meld` module
+30359:COMMIT eda6c2a2f 2026-05-19 07:22:01 -0600 Mark | Pushed Move
+32152:COMMIT 5c2120e5a 2026-05-19 06:23:20 -0600 Mark | Add `@mypyc_attr(native_class=True)` for performance optimization and fix typos in docstrings and comments
+33949:COMMIT 801277d1b 2026-05-19 05:02:52 -0600 Mark | refactor: remove `Aether` cluster/cloud helper surface and reroute to `ConduitCloud`
+35743:COMMIT addf3fb7a 2026-05-18 13:08:16 -0600 Mark | refactor: replace fake surface protocols with real shared interfaces, remove local shims, and align dependencies w
+37539:COMMIT 3bc663231 2026-05-18 09:25:04 -0600 Mark | refactor: restructure imports to use specific interface modules, remove runtime type mismatches, and align `IAethe
+39532:COMMIT 105147f7b 2026-05-18 04:39:24 -0600 Mark | refactor: remove cast-driven type narrowing in `frame_acl_builder` family surfaces, align builder state and bounda
+41481:COMMIT 04010d07e 2026-05-17 17:11:30 -0600 Mark | refactor: replace `None` assignments with `del` for cleanup operations across modules, standardize memory manageme
+43255:COMMIT af389addf 2026-05-16 13:06:26 -0600 Mark | feat: remove `overrides_enabled` policy surface, strip runtime guards, and update direct tests to simplify overrid
+45015:COMMIT 936c6de7c 2026-05-16 02:55:06 -0600 Mark | chore: remove Crystallizer V1-V3 artifact documentation
+46793:COMMIT 1af9729e2 2026-05-11 05:26:25 -0600 Mark | feat: add overrides-enabled configuration and spell gate for mutation control
+48562:COMMIT 45d67bd00 2026-05-11 05:06:13 -0600 Mark | feat: refactor MutationResearch configuration to remove restricted module mutations
+50317:COMMIT 363602079 2026-05-10 04:24:18 -0600 Mark | feat: add investigation tasks for SpellIndex terminology and ownership
+52098:COMMIT e48238f24 2026-05-10 04:18:19 -0600 Mark | feat: remove inline code formatting from docstrings in creation_gate_controller.py
+53847:COMMIT 1b897bb21 2026-05-04 18:35:44 -0600 Mark | feat: add task for deleting __init__.py files under core directories and update attention board
+55596:COMMIT d41dda41f 2026-04-12 08:33:25 -0600 Mark | feat: remove read locks from live probe and add existing-only option to meld
+58010:COMMIT 16a3d7420 2026-04-12 07:52:42 -0600 Mark | feat: revert live-only static retrieval implementation in StaticCommandSystem
+59803:COMMIT a61803c5b 2026-04-10 03:35:51 -0600 Mark | feat: add placeholder documentation for graph network and details systems
+61435:COMMIT 7ed58f18c 2026-04-06 15:57:58 -0600 Mark | feat: add exact lookup and ACL explanation methods to viewer profiles for targets, conduits, and spells
+62901:COMMIT 62236d63c 2026-02-18 03:34:28 -0700 Mark | refactor: add foundational documentation for new user-defined profile and related components
+64202:COMMIT 0094eac18 2026-02-17 13:43:53 -0700 Mark | refactor: normalize empty dict payloads to None in meld and update AGENTS documentation
+65499:COMMIT 53ba51bcf 2026-02-15 17:12:08 -0700 Mark | continue codegen optimization
+66795:COMMIT 4672560a8 2026-02-15 03:38:40 -0700 Mark | Add cross-platform onboarding readset scripts and update documentation: implement PowerShell and Bash scripts for 
+68249:COMMIT d8b643f37 2026-02-15 02:53:33 -0700 Mark | Add resolution flags to spell and configuration: implement `resolution_required` and `resolution_complete` attribu
+69546:COMMIT 567265e9c 2026-02-14 12:06:52 -0700 Mark | Refactor creation context test paths and enhance override target collection: rename test files for clarity and imp
+70786:COMMIT 004053efe 2026-02-13 18:15:47 -0700 Mark | Implement per-frame change-control manager caching in Meld validation gate: optimize lookup to reduce repeated ove
+72055:COMMIT 16f1965d9 2026-02-13 16:52:57 -0700 Mark | Optimize non-string input resolution in meld: remove redundant pre-hash lookup, enhance cache behavior for hashabl
+73260:COMMIT 4d640b6b3 2026-02-13 10:39:14 -0700 Mark | Refactor conduit meld handling: remove conduit-level hook dispatch, streamline context assignment, and enhance tes
+74500:COMMIT 3605297f7 2026-02-13 10:14:10 -0700 Mark | Refactor meld context handling: streamline creation context retrieval and enhance readability
+75728:COMMIT ba5c5f2a3 2026-02-13 09:35:33 -0700 Mark | Optimize non-dynamic meld path: remove internal check_cleaned() calls and streamline creation context retrieval
+76946:COMMIT 13460cc33 2026-02-13 03:59:21 -0700 Mark | Enhance spell ownership management: integrate dynamic environment and CreationGateController into conduit ownershi
+78191:COMMIT 9849151fa 2026-02-09 05:09:52 -0700 Mark | Refactor synchronization management: replace MeldGate with CreationGate and update related components; enhance tes
+79471:COMMIT 298ec328b 2026-02-08 18:16:56 -0700 Mark | Add dynamic environment support to CreationContext and related components; propagate dynamic mode flag through con
+80701:COMMIT a542d48e2 2026-02-08 15:49:57 -0700 Mark | Refactor CreationContext to define explicit hook and no-hook lane doors; enhance execution paths for overrides and
+81899:COMMIT 7d4c28141 2026-02-08 15:19:20 -0700 Mark | Wire Meld front-door execution to explicit CreationContext lane doors; update dispatch for hook and no-hook paths
+83102:COMMIT 3166a8463 2026-02-08 14:38:36 -0700 Mark | Enhance CreationContext and related modules; add no-hooks execution paths and streamline meld processing
+84284:COMMIT 7b56111a0 2026-02-08 14:12:53 -0700 Mark | Add CreationContext codegen module for existence route executors; enhance performance and streamline execution
+85656:COMMIT 464a0bd1a 2026-02-08 13:02:51 -0700 Mark | Enhance CreationContext and builder; add fast-transient routing support and streamline override handling
+86939:COMMIT db3ab4032 2026-02-08 12:40:06 -0700 Mark | Enhance CreationContext and related classes; add runtime flags, cleanup methods, and baseline executor support
+88202:COMMIT efa998bd2 2026-02-08 12:23:36 -0700 Mark | Add CreationContext and related builder/factory classes for spell-owned context management
+89627:COMMIT 5070c4115 2026-02-08 10:45:42 -0700 Mark | Refactor Meld execution paths; streamline no-overrides and overrides handling, and improve cleanup of runtime cach
+91029:COMMIT 2804b1854 2026-02-08 09:33:49 -0700 Mark | Refactor MeldContext and MeldRuntime; simplify override handling and remove unused attributes
+92492:COMMIT 793cd38e7 2026-02-08 06:34:16 -0700 Mark | Enhance conduit hook tests to verify detached hook map copies from configuration; ensure static hook lists are cor
+93891:COMMIT 20c51e570 2026-02-08 04:50:25 -0700 Mark | Refactor meld hook management by introducing local hook handling; implement merge and overwrite modes for local ho
+95285:COMMIT edf45e6fa 2026-02-08 04:01:05 -0700 Mark | Remove unused code for code generation benchmarking; clean up related tests for clarity and maintainability.
+96732:COMMIT f94baa354 2026-02-08 03:51:28 -0700 Mark | Enhance conduit hook management by introducing a cache for meld-phase hooks; enforce restrictions on shared hook r
+98155:COMMIT 0ec701288 2026-02-08 01:55:07 -0700 Mark | Document optimization-wave updates and enhance benchmark reporting; streamline creations target dispatch in Phase 
+99593:COMMIT a31bb4dfd 2026-02-07 19:00:05 -0700 Mark | Finalize Phase IR schema and complete audits for Phase2-5, Phase5-8, and Phase8-10 payloads; ensure deterministic 
+100940:COMMIT b8f386aca 2026-02-07 18:20:47 -0700 Mark | Remove legacy interpreter execution paths and clean up runtime documentation; ensure runtime dispatch is generate
+102285:COMMIT f42d60024 2026-02-07 15:04:07 -0700 Mark | Refactor occurrence planning and meld context; streamline documentation, clarify runtime execution behavior, and 
+103627:COMMIT 6ac6d6c95 2026-02-07 13:22:20 -0700 Mark | Refactor meld context management; replace cleanup with reset for context reuse, clarify reset behavior for pooled
+104974:COMMIT 8a64dec82 2026-02-07 13:11:49 -0700 Mark | Refactor conduit and meld components; introduce root conduit ID for lineage management, enhance resolution handli
+106359:COMMIT 5c29989f3 2026-02-07 12:30:21 -0700 Mark | Refactor meld context management; implement context pooling for improved performance and resource management, str
+107733:COMMIT cd2496656 2026-02-07 12:17:53 -0700 Mark | Refactor Creations manager; enhance lifecycle management by consolidating logging, improving error handling, and 
+109098:COMMIT 3f68fda06 2026-02-07 11:36:00 -0700 Mark | Refactor Creations manager; streamline creation registration methods and consolidate logic for improved clarity a
+110465:COMMIT ac497c523 2026-02-07 11:04:26 -0700 Mark | Refactor creation retrieval methods in meld; streamline logic for selecting creations based on existence and elim
+111828:COMMIT 0882ec2d3 2026-02-07 09:51:37 -0700 Mark | Complete Phase 5-7 stories for isolated revalidation; implement target-focused routing and validation for spells,
+113181:COMMIT 080d699d1 2026-02-07 05:57:28 -0700 Mark | Enhance local revalidation by scoping Phase 5-7 to target spell closure; implement local phase methods and ensure
+114566:COMMIT fac02273c 2026-02-07 03:23:23 -0700 Mark | Unregister local spell lineages during Spellbook cleanup; notify RiskManager for validation gating
+115954:COMMIT 9e40bf67c 2026-02-06 18:20:15 -0700 Mark | Update documentation to allow eval/exec/compile for agent work; clarify usage exceptions in AGENTS.md and banned_
+117378:COMMIT fd4a279f2 2026-02-05 17:51:51 -0700 Mark | Refactor conduit.py and meld.py to centralize input validation in Meld for cache misses; enhance documentation an
+118739:COMMIT 57c4095d0 2026-02-05 05:28:56 -0700 Mark | Refactor meld.py to streamline cache management by removing redundant checks and simplifying logic; enhance singl
+120017:COMMIT be6ba6da4 2026-02-03 18:43:22 -0700 Mark | Refactor meld.py to remove redundant runtime cleanup and ensure DAG index is built in multiple test cases
+121300:COMMIT 6ad800d09 2026-02-02 14:52:52 -0800 Synaptic | Merge branch 'codex_features2' into codex/onboard-developer-in-codex_todo-yln1bg
+121302:COMMIT afd37fa27 2026-02-02 04:39:03 -0800 Synaptic | Merge branch 'codex_features2' into codex/onboard-developer-in-codex_todo
+121304:COMMIT a329dfcd0 2026-02-02 04:38:39 -0800 Synaptic | Add transient pooling and resettable meld assets
+122645:COMMIT b256058b7 2026-02-02 14:50:01 -0800 Synaptic | Add pooled shared fast path for unique resolves
+123999:COMMIT 2486d0f55 2026-02-01 17:45:03 -0700 Mark | Implement conduit-scoped change-control and update revalidation methods in ChangeControlManager
+125231:COMMIT d5fdb3b41 2026-02-01 11:39:22 -0700 Mark | Update Phase root blueprints performance investigation task and implement Phase 1 micro-optimizations in SpellReq
+126457:COMMIT 98bc82e0a 2026-01-30 16:26:02 -0700 Mark | Refactor error handling in configuration and risk manager retrieval; remove unused validation lock in Spellbook
+127690:COMMIT 929a2ea45 2026-01-30 15:44:39 -0700 Mark | Implement lineage unregistration in SpellSystemStates and update ownership transfer logic to ensure proper gating
+128932:COMMIT 21d909663 2026-01-30 13:49:08 -0700 Mark | Refactor SpellCrafters to ensure proper attachment of blueprints and dependencies in Phase 5
+130173:COMMIT 4cc144880 2026-01-30 07:22:55 -0700 Mark | Remove legacy run path from MeldEngine and streamline execution to Phase 11 only
+131619:COMMIT 438efc387 2026-01-28 17:49:40 -0700 Mark | Update MeldEngine kwargs unit tests for instance-based wiring after phase migration
+132889:COMMIT 1bed7d14b 2026-01-26 16:54:27 -0700 Mark | Add spell_id_pool to Spellbook for optimized spell resolution
+133972:COMMIT d2dd0aae8 2026-01-25 17:22:46 -0700 Mark | Add disposal method properties to Creation and clean up meld logic
+135050:COMMIT c21be881c 2026-01-25 15:14:54 -0700 Mark | Add RiskManager integration for spell validity tracking in conduit resolution
+136138:COMMIT aaee7778b 2026-01-25 11:26:30 -0700 Mark | Refactor spell retrieval to utilize spell_id mappings for owned and contracted spells
+137223:COMMIT 4dd6efdd5 2026-01-25 10:15:12 -0700 Mark | Refactor spell melding process to ensure lineage resolvability and adjust hook execution order
+138305:COMMIT 539e71d43 2026-01-25 08:29:08 -0700 Mark | Refactor Meld cleanup to drop runtime reference without invoking cleanup
+139427:COMMIT 9f8282c27 2026-01-25 08:15:52 -0700 Mark | Refactor lifecycle hook management in Spell and Meld classes to use private attributes and improve encapsulation
+140527:COMMIT 606218dca 2026-01-25 06:37:34 -0700 Mark | Refactor hook management in Conduit and Meld classes to remove hooks_enabled flag and streamline hook handling
+141635:COMMIT 51035ca2d 2026-01-25 06:30:45 -0700 Mark | Implement conduit hook registration and management in Meld process
+142789:COMMIT 5e7e62bda 2026-01-25 05:47:04 -0700 Mark | Add hooks management to Spell class and enable hooks tracking
+143900:COMMIT 4593b2136 2026-01-25 05:19:52 -0700 Mark | Implement hook management in meld process and separate hook execution paths
+145016:COMMIT 2e977ad4d 2026-01-21 16:13:30 -0700 Mark | Update .gitignore to include additional venv_linux directory
+147562:COMMIT eaae625f8 2025-12-27 16:29:02 -0700 Mark | Refactor classes to implement respective interfaces for Conduit, ConduitWard, Contract, Creations, Detail, Meld, 
+149113:COMMIT 4490e9255 2025-12-27 12:41:17 -0700 Mark | Refactor phase execution to include conduit ID for contextual resolution
+150717:COMMIT e237dab92 2025-12-26 07:48:24 -0700 Mark | Implement override checks for existing instances in Meld and add related tests
+152165:COMMIT 5be7484fb 2025-12-22 17:17:00 -0700 Mark | Enhance conduit and meld context handling for improved creations management and compatibility with Aether hooks
+153568:COMMIT e93314c0d 2025-12-22 15:22:51 -0700 Mark | Enhance conduit and meld context handling for improved creations management and compatibility with Aether hooks
+154977:COMMIT dbb944f2b 2025-12-22 05:53:16 -0700 Mark | Enhance conduit and meld context handling for improved creations management and compatibility with Aether hooks
+156211:COMMIT 17289773a 2025-12-21 16:52:29 -0700 Mark | Normalize binding names for case-insensitive matching in MutationContract, SpellContract, and SpellMap; add tests
+157447:COMMIT b5a54003d 2025-12-21 09:01:19 -0700 Mark | Refactor meld logic to improve clarity and enforce unique existence behavior in tests
+158704:COMMIT 0b524ab34 2025-12-21 04:24:35 -0700 Mark | Add unit tests for SpellMap, MutationContract, SpellContract, and SpellOverrider, covering initialization, cleanu
+159925:COMMIT 7b80a6936 2025-12-15 19:17:29 -0700 Mark | Add __melder_internal__ sentinel to multiple classes for registration guard
+161147:COMMIT d0cd1349d 2025-12-09 16:18:32 -0700 Mark | Revert "Reapply "Refactor existence handling to use unique_per_aetheric_frame semantics across multiple modules""
+162392:COMMIT 656a11e12 2025-12-09 16:18:29 -0700 Mark | Revert "Reapply "Refactor Creations management to use unique_per_aetheric_frame semantics""
+163616:COMMIT 85086e7cb 2025-12-09 16:18:20 -0700 Mark | Revert "Reapply "Refactor existence handling to use unique_per_conduit semantics across multiple modules""
+164857:COMMIT 4def984cd 2025-12-09 16:10:45 -0700 Mark | Reapply "Refactor existence handling to use unique_per_conduit semantics across multiple modules"
+166098:COMMIT dbba940e9 2025-12-09 16:10:39 -0700 Mark | Reapply "Refactor Creations management to use unique_per_aetheric_frame semantics"
+167322:COMMIT 1ca4f3f04 2025-12-09 16:10:33 -0700 Mark | Reapply "Refactor existence handling to use unique_per_aetheric_frame semantics across multiple modules"
+168567:COMMIT c3c691ffc 2025-12-09 16:09:34 -0700 Mark | Revert "Refactor existence handling to use unique_per_aetheric_frame semantics across multiple modules"
+169812:COMMIT fe949f4e3 2025-12-09 16:09:29 -0700 Mark | Revert "Refactor Creations management to use unique_per_aetheric_frame semantics"
+171036:COMMIT cbafc7e53 2025-12-09 16:09:11 -0700 Mark | Revert "Refactor existence handling to use unique_per_conduit semantics across multiple modules"
+172277:COMMIT ed0b9a41e 2025-12-09 03:55:19 -0700 Mark | Refactor existence handling to use unique_per_conduit semantics across multiple modules
+173518:COMMIT 61a725239 2025-12-09 03:45:04 -0700 Mark | Refactor Creations management to use unique_per_aetheric_frame semantics
+174742:COMMIT 04e9aa030 2025-12-09 03:31:12 -0700 Mark | Refactor existence handling to use unique_per_aetheric_frame semantics across multiple modules
+175987:COMMIT c4d618049 2025-12-08 04:10:21 -0700 Mark | Enhance change control management by adding dirty root revalidation and diagnostic capabilities
+177207:COMMIT 87e1c3fa4 2025-12-07 19:25:04 -0700 Mark | Add spell ownership transfer functionality and related utilities
+178412:COMMIT c52993064 2025-12-06 05:56:46 -0700 Mark | Implement SpellSpace management in Conduit; add context management for spellspace lifecycle and support for uniqu
+179624:COMMIT edee0e7ee 2025-12-04 15:55:00 -0700 Mark | Enhance meld functionality with hook management; add set_meld_hooks and _fire_meld_hooks methods for improved hoo
+180802:COMMIT a31e2e6e5 2025-12-04 05:58:04 -0700 Mark | Implement GraphMutator and SpellOverrider for mutation and spell override handling; add SocketRefSanityStrategy f
+181935:COMMIT 5243223bd 2025-12-04 05:35:15 -0700 Mark | Add GraphMutator and SpellOverrider classes; implement mutation and spell override handling for root blueprints
+183066:COMMIT 8a9ecf0fc 2025-11-30 17:21:31 -0700 Mark | Add local topology registration and retrieval methods to SpellSystemStates; enhance Phase 3 DAG construction in S
+184163:COMMIT 8b9fdc781 2025-11-30 04:13:29 -0700 Mark | Add system state management and mutation override functionality to Spell class; implement lazy revalidation and s
+185267:COMMIT 0a1ac2b6b 2025-11-29 13:21:39 -0700 Mark | Refactor data structures; replace ConcurrentDict, ConcurrentList, and ConcurrentSet with standard dict, list, and
+186265:COMMIT 9264d70ce 2025-11-25 05:47:43 -0700 Mark | Refactor MeldContext initialization to derive creations and conduit properties from root_spell; improve documenta
+187261:COMMIT 680a5875d 2025-11-24 19:48:20 -0700 Mark | Add meld context and runtime for spell execution; implement duplicate spell name validation strategy
+188348:COMMIT 2041aa07e 2025-11-24 05:37:44 -0700 Mark | Refactor override application in spell processing and remove unused _apply_override method
+189145:COMMIT 6b3248eab 2025-11-22 09:50:51 -0700 Mark | Refactor Conduit and Meld classes; remove configuration parameter from constructors to streamline initialization
+189945:COMMIT 41d6b5a69 2025-11-22 09:44:28 -0700 Mark | Enhance Conduit and Configuration classes; implement lifecycle hooks, improve cleanup logic, and add hook managem
+190746:COMMIT 8c56ec10e 2025-11-20 05:41:44 -0700 Mark | Refactor Conduit and Meld classes; enhance spell activation logic, improve error handling, and standardize spell 
+191606:COMMIT 022e18ea0 2025-11-16 13:39:52 -0700 Mark | Add context manager support to Aether and related classes; implement entry and exit methods for resource manageme
+191776:COMMIT 36aac0a79 2025-11-16 11:59:08 -0700 Mark | Add WeakRefNode and WeakConcurrentList for weak reference management; implement dead reference handling and autom
+191931:COMMIT 75ce50556 2025-11-11 13:52:01 -0700 Mark | Refactor conduit and related classes; replace 'sealed' terminology with 'cleaned' for improved clarity and consis
+192091:COMMIT 0dc6acde0 2025-11-11 12:15:50 -0700 Mark | Refactor conduit and related classes; replace __creation_context__ usage with direct _id access for improved clar
+192246:COMMIT 9e3d6a966 2025-11-09 10:28:34 -0700 Mark | Refactor conduit management by renaming files for clarity; update import paths for spell-related modules
+192403:COMMIT 54a64e82c 2025-11-09 09:24:58 -0700 Mark | Refactor conduit management by renaming files for clarity; introduce Detail class for spell-level permission hand
+192593:COMMIT b03fc901d 2025-11-08 17:50:05 -0700 Mark | Remove unused name property from IConduit interface; add Package class for thread-safe callable management
+192761:COMMIT 3a158972a 2025-11-08 15:34:22 -0700 Mark | Refactor module structure; rename files for improved organization and clarity
+192933:COMMIT beb34a934 2025-11-08 04:44:12 -0700 Mark | Refactor protocols to interfaces; rename protocol files and update imports accordingly
+193102:COMMIT 31d0a8741 2025-11-08 04:17:32 -0700 Mark | Remove copyright notices and license information from multiple files
+193271:COMMIT 5bc5375d6 2025-10-05 16:07:28 -0600 Mark | Remove copyright notices and license information from multiple files
+193446:COMMIT 59ba7ede5 2025-06-21 16:44:35 -0600 Mark | Add SpellInputUtils class for spell input normalization and enhance meld method with improved spell resolution an
+193664:COMMIT 10d3bf60a 2025-06-21 16:03:13 -0600 Mark | Enhance bind method documentation and parameters: clarify lifecycle, permissions, and binding name; update relate
+193761:COMMIT bf0830630 2025-06-21 13:59:39 -0600 Mark | Refactor imports and rename files for improved organization; update bind method parameters for clarity and consis
+193855:COMMIT 9103b27bc 2025-06-17 15:55:09 -0600 Mark | Add copyright notice and license information to multiple files
+193948:COMMIT 2fcecee40 2025-05-11 10:32:34 -0600 Mark | Refactor threading locks to use RLock for concurrency management and reorganize conduit state handling
+194035:COMMIT b16b8c739 2025-05-10 15:03:26 -0600 Mark | Add spell registry and binding enhancements to Aether and Spellbook
+194124:COMMIT 65e53dc3f 2025-05-09 18:37:48 -0600 Mark | copied melder to private

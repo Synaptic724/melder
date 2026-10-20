@@ -34,7 +34,7 @@ def test_bind_kwargs_land_in_spell_metadata():
         owner_team="payments", tier="gold",
         post_hooks=[lambda *a, **k: None],
     )
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell.metadata == {"owner_team": "payments", "tier": "gold"}
 
 
@@ -45,7 +45,7 @@ def test_hook_keys_never_leak_into_metadata():
         spell=Service, existence="unique",
         pre_hooks=[lambda *a, **k: None],
     )
-    spell = book.find_spell_by_id(spell_id)
+    spell = book.find_spell_by_spell_id(spell_id)
     assert spell.metadata == {}
 
 

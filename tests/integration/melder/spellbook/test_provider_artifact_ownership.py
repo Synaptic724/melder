@@ -13,6 +13,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
+from tests._spell_identity_test_support import version_of
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -84,10 +85,15 @@ class ProviderRuntime:
         self.provider = book.conjure(dynamic=True, name="provider")
         self.original = self.provider.meld(spellframe="providers", binding_name="retained")
         self.original.entries.append("provider-owned")
-        self.provider_spell = self.provider.get_spell_by_id(self.provider_id, self.frame_name)
+        self.provider_spell = self.provider.get_spell_by_spell_id(self.provider_id, self.frame_name)
 
     def create_borrower(self, name: str) -> Conduit:
-        """Link and import read access, then bind the required consumer locally."""
+        """
+        Link and import read access, then bind the required consumer locally.
+
+        Each borrower binds its own version of ProviderConsumer, named for it: one class is one spell
+        (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so two borrowers in the frame cannot both bind the class.
+        """
         book = self.new_book()
         book.get_configuration().freeze()
         borrower = book.conjure(dynamic=True, name=name)
@@ -98,14 +104,14 @@ class ProviderRuntime:
         )
         assert borrower.find_contracted_spell(self.provider_id) is self.provider_spell
         borrower.bind(
-            spell=ProviderConsumer, existence="many",
+            spell=version_of(ProviderConsumer, borrower=name), existence="many",
             spellframe="consumers", binding_name=name,
         )
         return borrower
 
     def assert_provider_usable(self) -> None:
         """Perform the final provider meld and verify original definition and data."""
-        assert self.provider.get_spell_by_id(self.provider_id, self.frame_name) is self.provider_spell
+        assert self.provider.get_spell_by_spell_id(self.provider_id, self.frame_name) is self.provider_spell
         assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
         assert self.original.entries == ["provider-owned"]
 

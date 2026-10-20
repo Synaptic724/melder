@@ -1,0 +1,743 @@
+--- a/UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py
++++ b/UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py
+@@ -12,26 +12,35 @@
+         A FRAME IS A WORLD FOR INSTANCES AND RESOLUTION.
+         IT IS NOT A NAMESPACE FOR IDENTITY.
+ 
+-      A spell_id is a SHA256 over the BIND FINGERPRINT - structural
+-      profile, lookup signature, existence, resolved disposal metadata.
+-      READ THAT LIST AGAIN AND NOTICE WHAT IS ABSENT: the frame. So two
+-      books on two different frames binding the same class with the same
+-      parameters mint THE SAME ID, and the second conjure is refused
+-      process-wide. Moving to another frame is not a fix, because the id
+-      follows the fingerprint and the fingerprint has no frame in it.
++      A spell_id is the SHA256 of the registered object's CODE - its
++      methods and constructor, its class-level values, its bases - and
++      of nothing from the bind call. READ THAT AGAIN AND NOTICE WHAT IS
++      ABSENT: the frame, the spellframe, the binding_name. So two books
++      on two different frames binding the same class mint THE SAME ID,
++      whatever names they give it, and the second registration is
++      refused process-wide. Moving to another frame is not a fix, and
++      neither is another binding_name: one object is one spell.
+ 
+-      The fix is to make the BINDINGS different, not the worlds:
+-      `binding_name=` or `spellframe=`. Once you do, everything you
+-      expect from a world wall holds - `unique` is one instance PER
+-      FRAME, each world reuses its own singleton forever, and nothing
+-      leaks across.
++      The fix is to make the CLASSES different, not the worlds or the
++      names: one subclass per world. A subclass is a new class, so a new
++      spell_id, and every world can then keep it at the SAME address.
++      Once you do, everything you expect from a world wall holds -
++      `unique` is one instance PER FRAME, each world reuses its own
++      singleton forever, and nothing leaks across.
++
++      THE OTHER WAY is a regime, not a binding: with
++      `process_wide_unique_spell_ids` turned off before the first frame
++      exists, a spell_id is unique per FRAME, and one class may live in
++      several worlds. That is Aether configuration, and a lesson never
++      installs it - lessons share one interpreter (advanced 07). The
++      probe suite pins it in a reset world.
+ 
+       WHY IT IS BUILT THIS WAY: one spell_id names one spell, everywhere.
+       An id that silently meant different things in different frames
+       would make every checkpoint, every crystal and every research lane
+       ambiguous the moment two frames existed.
+-SURFACE EXERCISED: Spellbook(aetheric_frame=...), binding_name as the
+-                   identity differentiator, per-frame instance isolation
++SURFACE EXERCISED: Spellbook(aetheric_frame=...), one class per world at
++                   one address, per-frame instance isolation
+ VERIFY: rides the owner's 3.14t run; asserts are the contract.
+ 
+ HISTORY: this lesson used to teach that two frames could bind the same
+@@ -39,6 +48,11 @@
+ warning that S2 of EPIC-2026-08-02-process-wide-spell-id-uniqueness would
+ retire exactly that claim. S2 landed. The claim is retired, and the
+ lesson now teaches the line instead of the half of it that survived.
++
++0.2.8257: a spell_id became the SHA256 of the object's code, with nothing
++from the bind call in it, so a binding_name no longer makes one class two
++spells. The lesson used to bind TenantCache in both worlds under two
++binding_names; each world now binds its own subclass at one address.
+ """
+ import melder as md
+ 
+@@ -47,46 +61,59 @@
+     pass
+ 
+ 
++class TenantACache(TenantCache):
++    """Tenant A's cache - a new class, so its own spell_id."""
++
++
++class TenantBCache(TenantCache):
++    """Tenant B's cache - a new class, so its own spell_id."""
++
++
+ def main() -> None:
+     # Two books, two WORLDS. Naming the frame births it (lazy frames).
+     book_a = md.Spellbook(aetheric_frame="tenant-a")
+     book_b = md.Spellbook(aetheric_frame="tenant-b")
+ 
+-    # THE SAME CLASS IN BOTH WORLDS - but the BINDINGS must differ.
+-    # Bind these two identically and the second conjure is refused: the
+-    # fingerprint would be byte-identical and the frame is not in it.
+-    book_a.bind(spell=TenantCache, existence="unique", binding_name="tenant-a")
+-    book_b.bind(spell=TenantCache, existence="unique", binding_name="tenant-b")
++    # ONE ADDRESS IN BOTH WORLDS, ONE CLASS PER WORLD. Binding TenantCache
++    # itself in both would be refused: its spell_id is its code, the same
++    # in every frame, and neither the frame nor a binding_name is in it.
++    book_a.bind(spell=TenantACache, existence="unique",
++                spellframe="tenant", binding_name="cache")
++    book_b.bind(spell=TenantBCache, existence="unique",
++                spellframe="tenant", binding_name="cache")
+ 
+     conduit_a = book_a.conjure(name="cache-a")
+     conduit_b = book_b.conjure(name="cache-b")
+ 
+-    cache_a = conduit_a.meld("TenantCache", binding_name="tenant-a")
+-    cache_b = conduit_b.meld("TenantCache", binding_name="tenant-b")
++    # The same address melds each world's own class.
++    cache_a = conduit_a.meld(spellframe="tenant", binding_name="cache")
++    cache_b = conduit_b.meld(spellframe="tenant", binding_name="cache")
+ 
+     # "unique" = one instance per FRAME. Two frames, two singletons.
+-    assert type(cache_a) is type(cache_b) is TenantCache
++    assert type(cache_a) is TenantACache
++    assert type(cache_b) is TenantBCache
++    assert isinstance(cache_a, TenantCache) and isinstance(cache_b, TenantCache)
+     assert cache_a is not cache_b
+-    print("one class, two worlds, two singletons:", cache_a is not cache_b)
++    print("one shape, two worlds, two singletons:", cache_a is not cache_b)
+ 
+     # Each world reuses ITS OWN singleton, forever.
+-    assert conduit_a.meld("TenantCache", binding_name="tenant-a") is cache_a
+-    assert conduit_b.meld("TenantCache", binding_name="tenant-b") is cache_b
++    assert conduit_a.meld(spellframe="tenant", binding_name="cache") is cache_a
++    assert conduit_b.meld(spellframe="tenant", binding_name="cache") is cache_b
+     print("per-frame reuse holds; nothing leaked across the wall")
+ 
+-    # THE LINE, PROVEN. A third world binding the SAME class the SAME way
+-    # as tenant-a is refused - and the refusal names the id, not the
+-    # frame, because the frame was never what made them different.
++    # THE LINE, PROVEN. A third world binding tenant A's class - under a
++    # binding_name of its own - is refused, and the refusal names the
++    # spell_id: neither the frame nor the name was ever part of it.
+     book_c = md.Spellbook(aetheric_frame="tenant-c")
+     try:
+-        book_c.bind(spell=TenantCache, existence="unique",
+-                    binding_name="tenant-a")
++        book_c.bind(spell=TenantACache, existence="unique",
++                    binding_name="another-name")
+         book_c.conjure(name="cache-c")
+         raise AssertionError("expected a process-wide spell_id refusal")
+     except RuntimeError as error:
+         assert "spell_id" in str(error) or "Spell ID" in str(error)
+         print()
+-        print("a third frame with an IDENTICAL binding was refused:")
++        print("a third frame binding the SAME class was refused:")
+         print("  frames isolate instances; they do not namespace identity")
+ 
+ 
+--- a/UX_and_AIX_experiences/03_advanced/16_ward_policies.py
++++ b/UX_and_AIX_experiences/03_advanced/16_ward_policies.py
+@@ -71,6 +71,10 @@
+     """A spell to give the ward something to be a policy about."""
+ 
+ 
++class DynamicPayload(Payload):
++    """The dynamic world's own Payload - a new class, so its own spell_id."""
++
++
+ MODES = ("default", "whitelist_all", "block_all",
+          "inbound_only", "outbound_only")
+ 
+@@ -93,11 +97,11 @@
+     # ------------------------------------------------------------------
+     # REFUSAL 1 - DYNAMIC MODE ONLY
+     # ------------------------------------------------------------------
+-    # binding_name differs per frame ON PURPOSE. A spell_id is a hash of
+-    # the BIND FINGERPRINT and the frame is not in it, so the same class
+-    # bound identically in two frames mints the same id and the second
+-    # conjure is refused process-wide. Frames isolate instances, not
+-    # identity - see advanced 02.
++    # Each world binds its OWN class. A spell_id is the SHA256 of the
++    # class's code and neither the frame nor the binding_name is in it,
++    # so the same class bound in two frames is one spell_id and the
++    # second registration is refused process-wide. Frames isolate
++    # instances, not identity - see advanced 02.
+     automatic_book = md.Spellbook(aetheric_frame="ward-automatic")
+     automatic_book.bind(spell=Payload, existence="unique",
+                         binding_name="automatic")
+@@ -113,7 +117,7 @@
+     # A DYNAMIC WORLD - now the door opens
+     # ------------------------------------------------------------------
+     book = md.Spellbook(aetheric_frame="ward-dynamic")
+-    book.bind(spell=Payload, existence="unique", binding_name="dynamic")
++    book.bind(spell=DynamicPayload, existence="unique", binding_name="dynamic")
+     book.configure_aether_frame(system_state="dynamic", disposal=None,
+                                 disposal_method_names=None)
+     root = book.conjure(name="ward-root")
+--- a/UX_and_AIX_experiences/04_expert/11_pointing_a_rift_at_your_own_frame.py
++++ b/UX_and_AIX_experiences/04_expert/11_pointing_a_rift_at_your_own_frame.py
+@@ -82,12 +82,31 @@
+     pass
+ 
+ 
+-def _postured_frame(frame_name: str, *, dynamic: bool = False) -> None:
+-    """Build one frame with the posture AR needs, then settle it."""
++class ClosedLedger(Ledger):
++    """closed-world's own Ledger - a new class, so its own spell_id."""
++
++
++class ObservableLedger(Ledger):
++    """observable's own Ledger - a new class, so its own spell_id."""
++
++
++class UnlistedLedger(Ledger):
++    """unlisted's own Ledger - a new class, so its own spell_id."""
++
++
++class WorkshopLedger(Ledger):
++    """workshop's own Ledger - a new class, so its own spell_id."""
++
++
++def _postured_frame(frame_name: str, spell: type[Ledger], *,
++                    dynamic: bool = False) -> None:
++    """Build one frame with the posture AR needs, bind that frame's own
++    Ledger class in it, then settle it."""
+     book = md.Spellbook(aetheric_frame=frame_name)
+-    # binding_name keeps the spell_id distinct per frame - identity is
+-    # process-wide and the frame is not in the fingerprint (advanced 02).
+-    book.bind(spell=Ledger, existence="unique", binding_name=frame_name)
++    # Each frame binds its OWN Ledger class: a spell_id is the SHA256 of
++    # the class's code, with neither the frame nor the binding_name in
++    # it, so one class bound in two frames is refused (advanced 02).
++    book.bind(spell=spell, existence="unique", binding_name=frame_name)
+     if dynamic:
+         book.configure_aether_frame(
+             system_state="dynamic",
+@@ -111,15 +130,16 @@
+ def main() -> None:
+     # A frame that never opted in. This is the default, on purpose.
+     closed = md.Spellbook(aetheric_frame="closed-world")
+-    closed.bind(spell=Ledger, existence="unique", binding_name="closed-world")
++    closed.bind(spell=ClosedLedger, existence="unique",
++                binding_name="closed-world")
+     closed.conjure(name="closed-root")
+ 
+     # ...and three that did. 'unlisted' is postured EXACTLY like
+     # 'observable' - the only thing that will differ is the Nexus's own
+     # policy, which is how we isolate gate A from gate B.
+-    _postured_frame("observable")
+-    _postured_frame("unlisted")
+-    _postured_frame("workshop", dynamic=True)
++    _postured_frame("observable", ObservableLedger)
++    _postured_frame("unlisted", UnlistedLedger)
++    _postured_frame("workshop", WorkshopLedger, dynamic=True)
+     print("four frames: one default, two rift-enabled, one AI-native")
+ 
+     # The Rift domain has to be live before any of this matters - and the
+--- a/UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
++++ b/UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
+@@ -75,18 +75,17 @@
+         self.label = "consumer"
+ 
+ 
+-def _pair(frame_name: str, **posture):
+-    """An owner and a borrower in one world, each from its own book."""
++def _pair(frame_name: str, **posture: object) -> tuple[md.Conduit, md.Conduit]:
++    """An owner and a borrower in one world, each from its own book.
++
++    Both books are EMPTY on purpose. link() asks the frame posture before
++    it reads a single spell, so these worlds need nothing bound to be
++    refused - and Service and Consumer are already one spell each in
++    rewire-world: a spell_id is the SHA256 of the class's code, so
++    binding them again here, under any binding_name, would be refused
++    before the posture gate ever spoke (advanced 02)."""
+     owner_book = md.Spellbook(aetheric_frame=frame_name)
+     borrower_book = md.Spellbook(aetheric_frame=frame_name)
+-    service_id = owner_book.bind(
+-        spell=Service, existence="unique", permissions="create",
+-        binding_name=f"{frame_name}-service",
+-    )
+-    borrower_book.bind(
+-        spell=Consumer, existence="unique", permissions="create",
+-        binding_name=f"{frame_name}-consumer",
+-    )
+     if posture:
+         owner_book.configure_aether_frame(
+             disposal=None, disposal_method_names=None, **posture,
+@@ -96,7 +95,7 @@
+     borrower = borrower_book.conjure(
+         dynamic=dynamic, name=f"{frame_name}-borrower",
+     )
+-    return owner, borrower, service_id
++    return owner, borrower
+ 
+ 
+ def main() -> None:
+@@ -145,7 +144,7 @@
+ 
+     # A WORLD TOLD NOT TO LINK REFUSES, AND SAYS WHY. This one IS
+     # dynamic; it has simply been braked.
+-    braked_owner, braked_borrower, _ = _pair(
++    braked_owner, braked_borrower = _pair(
+         "rewire-braked", system_state="dynamic", disable_linking=True,
+     )
+     try:
+@@ -160,7 +159,7 @@
+     # AN ORDINARY STATIC WORLD REFUSES TOO - and with the SAME sentence,
+     # because the posture gate answers first and an unconfigured
+     # non-dynamic frame is already "not allowed to link" to it.
+-    static_owner, static_borrower, _ = _pair("rewire-static")
++    static_owner, static_borrower = _pair("rewire-static")
+     try:
+         static_owner.link(static_borrower)
+         raise AssertionError("expected a refusal: static cannot link")
+--- a/UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
++++ b/UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
+@@ -45,6 +45,10 @@
+     pass
+ 
+ 
++class BareService:
++    """LAW 4's book's own spell - Service already belongs to the first book."""
++
++
+ def main() -> None:
+     # NOTE the absent with_defaults() call. This configuration states every
+     # value it needs, so asking for the standard set first would only fight
+@@ -83,8 +87,10 @@
+ 
+     # LAW 4 - completion: a bare config you never finished refuses at
+     # the conjure gate, naming what is missing.
++    # It binds its own class: one class registers once (a spell_id is the
++    # SHA256 of its code), and Service is the first book's.
+     bare_book = md.Spellbook(configuration=md.SpellbookConfiguration())
+-    bare_book.bind(spell=Service, existence="unique", binding_name="bare")
++    bare_book.bind(spell=BareService, existence="unique")
+     try:
+         bare_book.conjure()
+         print("bare configuration unexpectedly conjured")
+--- a/UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py
++++ b/UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py
+@@ -74,6 +74,10 @@
+     """Something to bind so the frame has real work in it."""
+ 
+ 
++class OtherLedger(Ledger):
++    """The other frame's own Ledger - a new class, so its own spell_id."""
++
++
+ def main() -> None:
+     book = md.Spellbook(aetheric_frame="cloud-demo")
+     book.bind(spell=Ledger, existence="unique", binding_name="demo")
+@@ -101,11 +105,12 @@
+     assert root.get_conduit_cloud() is cloud
+ 
+     # A DIFFERENT FRAME IS A DIFFERENT WORLD, and so a different cloud.
+-    # A DIFFERENT binding_name, because a spell_id does not carry the
+-    # frame - the same class bound identically in two frames collides
+-    # process-wide. The CLOUD is still per-frame; identity is not.
++    # It binds its OWN class: a spell_id is the SHA256 of the class's
++    # code and carries neither the frame nor the binding_name, so Ledger
++    # bound here as well would be refused process-wide. The CLOUD is
++    # still per-frame; identity is not.
+     other_book = md.Spellbook(aetheric_frame="cloud-other")
+-    other_book.bind(spell=Ledger, existence="unique", binding_name="other")
++    other_book.bind(spell=OtherLedger, existence="unique", binding_name="other")
+     other_root = other_book.conjure(name="other-root")
+     other_cloud = other_root.get_conduit_cloud()
+     assert other_cloud is not cloud
+--- a/UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py
++++ b/UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py
+@@ -49,24 +49,74 @@
+     pass
+ 
+ 
++class TenantAPayload(Payload):
++    """probe-tenant-a's own Payload - a new class, so its own spell_id."""
++
++
++class TenantBPayload(Payload):
++    """probe-tenant-b's own Payload - a new class, so its own spell_id."""
++
++
+ def test_probe_frames_isolate_instances_but_not_identity():
+-    """Lesson 02 contract, REWRITTEN 2026-08-03. This row used to pin the
+-    README claim that "two frames bind the SAME class with zero
+-    collision". EPIC-2026-08-02 S2 retired that: a spell_id hashes the
+-    bind fingerprint and the FRAME IS NOT IN IT, so identical bindings on
+-    different frames mint one id and the second conjure is refused.
+-
+-    What survived is the half that was always the real point - once the
+-    BINDINGS differ, `unique` is one instance PER FRAME and the wall
+-    holds. Both halves are asserted here so neither can drift alone."""
++    """Lesson 02 contract, REWRITTEN 2026-08-03 and again at 0.2.8257.
++    This row used to pin the README claim that "two frames bind the SAME
++    class with zero collision". EPIC-2026-08-02 S2 retired that, and
++    0.2.8257 finished it: a spell_id is the SHA256 of the class's CODE,
++    with neither the frame nor anything from the bind call in it, so the
++    same class in two frames is one spell_id under any binding_name and
++    the second conjure is refused (the second bind, once the first book
++    is conjured). Until 0.2.8257 a binding_name per frame told them apart.
++
++    What survived is the half that was always the real point - one class
++    PER FRAME, even at one address, and `unique` is one instance per
++    frame and the wall holds. Both halves are asserted here so neither
++    can drift alone."""
++    same_a = Spellbook(aetheric_frame="probe-same-a")
++    same_b = Spellbook(aetheric_frame="probe-same-b")
++    same_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
++    same_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
++    same_a.conjure()
++    with pytest.raises(RuntimeError, match="Conjure refused"):
++        same_b.conjure()
++
+     book_a = Spellbook(aetheric_frame="probe-tenant-a")
+     book_b = Spellbook(aetheric_frame="probe-tenant-b")
+-    book_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
+-    book_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
+-    a = book_a.conjure().meld(spell=Payload, binding_name="tenant-a")
+-    b = book_b.conjure().meld(spell=Payload, binding_name="tenant-b")
++    book_a.bind(spell=TenantAPayload, existence="unique",
++                spellframe="tenant", binding_name="payload")
++    book_b.bind(spell=TenantBPayload, existence="unique",
++                spellframe="tenant", binding_name="payload")
++    a = book_a.conjure().meld(spellframe="tenant", binding_name="payload")
++    b = book_b.conjure().meld(spellframe="tenant", binding_name="payload")
++    assert type(a) is TenantAPayload and type(b) is TenantBPayload
+     assert a is not b
+-    print("frame isolation pinned: same class, two worlds, two singletons")
++    print("frame isolation pinned: one address, a class per world, two "
++          "singletons; one class in two worlds is refused")
++
++
++def test_probe_per_frame_spell_ids_let_one_class_live_in_two_worlds():
++    """Lesson 02's other way, pinned. With `process_wide_unique_spell_ids`
++    off, a spell_id is unique per FRAME rather than per process, so ONE
++    class registers in several worlds - here Payload in two frames, one
++    spell_id, one singleton each. It is Aether configuration, installed
++    before any frame exists (the first frame seals the regime), which is
++    why a lesson never does it and this row may: the fixture resets the
++    world around it."""
++    policy = md.AetherConfiguration().with_defaults()
++    policy.with_process_wide_unique_spell_ids(False)
++    policy.activate()
++    Aether().activate(policy)
++    assert Aether().process_wide_unique_spell_ids is False
++
++    book_a = Spellbook(aetheric_frame="per-frame-a")
++    book_b = Spellbook(aetheric_frame="per-frame-b")
++    id_a = book_a.bind(spell=Payload, existence="unique")
++    id_b = book_b.bind(spell=Payload, existence="unique")
++    assert id_a == id_b
++    a = book_a.conjure().meld(spell=Payload)
++    b = book_b.conjure().meld(spell=Payload)
++    assert type(a) is type(b) is Payload
++    assert a is not b
++    print("per-frame spell ids pinned: one class, two worlds, two singletons")
+ 
+ 
+ def test_probe_posture_public_door_then_freeze():
+--- a/UX_and_AIX_experiences/pytest_examples/test_contract_probes.py
++++ b/UX_and_AIX_experiences/pytest_examples/test_contract_probes.py
+@@ -49,11 +49,16 @@
+ 
+ def test_probe_with_book_is_lock_only_not_cleanup():
+     """__exit__ releases the lock; the book must remain USABLE after."""
++    class AfterWith:
++        """A second spell for the book. Probe again would be refused
++        whether or not the book was cleaned: one class registers once,
++        because its spell_id is the SHA256 of its code (0.2.8257)."""
++
+     book = md.Spellbook()
+     with book:
+         book.bind(spell=Probe, existence="unique")
+     # if the with-block had cleaned the book, this second bind would raise
+-    second = book.bind(spell=Probe, existence="many", binding_name="again")
++    second = book.bind(spell=AfterWith, existence="many", binding_name="again")
+     assert isinstance(second, str)
+ 
+ 
+@@ -133,52 +138,64 @@
+     return Potato
+ 
+ 
+-def test_probe_same_name_different_internals_currently_refused():
+-    """
+-    DIVERGENCE FLAG (runs 1-2): owner design intent says spells are
+-    SHA256 content-matched and same-name/different-internals passes WITH
+-    binding names. The runtime REFUSES it: DuplicateSpellNameStrategy
+-    keys on the bare name and ignores the binding_name/spellframe
+-    disambiguation its own error message recommends. This probe pins
+-    CURRENT behavior; flip it to the pass-assertion when the strategy is
+-    fixed (tracked on the UX/AIX beginner epic as a runtime bug).
++def test_probe_same_name_different_internals_are_two_spells():
++    """
++    FLIPPED (0.2.8206, 0.2.8257): two classes NAMED Potato with different
++    internals are two spells, each at its own address. A spell_id is the
++    SHA256 of each class's code - here a different class-level value and
++    a different closure value - so the ids differ, and since 0.2.8206
++    Phase 4 checks the full (spellframe, binding_name) address instead of
++    the bare name, so conjure accepts both.
++
++    This row used to pin the refusal under a DIVERGENCE FLAG: owner design
++    intent said spells are SHA256 content-matched and same-name/different-
++    internals passes WITH binding names, while DuplicateSpellNameStrategy
++    keyed on the bare name. The intent is the behavior now; the flag is
++    closed.
+     """
+     book = md.Spellbook()
+     book.bind(spell=_make_potato("russet"), existence="unique",
+               binding_name="russet")
+     book.bind(spell=_make_potato("yukon"), existence="many",
+               binding_name="yukon")
+-    with pytest.raises(md.SpellbookValidationError):
+-        book.conjure()
+-    print("same-name diff-SHA with binding names: REFUSED (intent: pass)")
+-
+-
+-def test_probe_same_class_rebind_without_frames_fails_conjure():
+-    """
+-    The observed run truth: the SAME class (same SHA) bound twice with
+-    only binding_names to tell them apart dies at conjure with
++    conduit = book.conjure()
++    russet = conduit.meld(spell="Potato", binding_name="russet")
++    yukon = conduit.meld(spell="Potato", binding_name="yukon")
++    assert russet.describe() == "potato:russet"
++    assert yukon.describe() == "potato:yukon"
++    print("same-name diff-SHA with binding names: two spells (the intent)")
++
++
++def test_probe_same_class_rebind_is_refused_at_bind():
++    """
++    The SAME class bound twice in one book, told apart only by
++    binding_name, is refused at the second BIND (0.2.8257): a spell_id is
++    the SHA256 of the class's code and of nothing from the bind call, so
++    both binds name one spell, and one object registers once. This row
++    used to pin the observed run truth before that - the binding_name made
++    a second spell_id and conjure refused the pair with
+     DUPLICATE_SPELL_NAME.
+     """
+     book = md.Spellbook()
+     book.bind(spell=Probe, existence="unique", binding_name="first")
+-    book.bind(spell=Probe, existence="many", binding_name="second")
+-    with pytest.raises(md.SpellbookValidationError):
+-        book.conjure()
+-    print("same-SHA rebind without frames: conjure refused (as observed)")
+-
+-
+-def test_probe_same_class_rebind_with_distinct_frames():
+-    """
+-    ANSWERED (run 2): frame separation does NOT legalize same-name
+-    rebinds - the name strategy ignores frames entirely. Part of the
+-    same divergence flag as the potato probe.
++    with pytest.raises(RuntimeError, match="Spell ID collision"):
++        book.bind(spell=Probe, existence="many", binding_name="second")
++    print("same class rebound by binding_name: refused at bind")
++
++
++def test_probe_same_class_rebind_across_spellframes_is_refused_at_bind():
++    """
++    ANSWERED (0.2.8257): another spellframe does not make the same class
++    a second spell either. The spell_id is the class's code, so the
++    second bind is refused whatever spellframe or binding_name it names.
++    This row used to pin a conjure refusal from the name strategy, which
++    ignored frames (run 2) - part of the potato row's divergence flag,
++    now closed.
+     """
+     book = md.Spellbook()
+     book.bind(spell=Probe, existence="unique",
+               spellframe="pool-a", binding_name="first")
+-    book.bind(spell=Probe, existence="many",
+-              spellframe="pool-b", binding_name="second")
+-    with pytest.raises(md.SpellbookValidationError):
+-        book.conjure()
+-    print("same-SHA rebind across frames: REFUSED (frames do not "
+-          "disambiguate the name strategy either - same divergence flag)")
++    with pytest.raises(RuntimeError, match="Spell ID collision"):
++        book.bind(spell=Probe, existence="many",
++                  spellframe="pool-b", binding_name="second")
++    print("same class rebound in another spellframe: refused at bind")
+--- a/UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py
++++ b/UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py
+@@ -488,8 +488,13 @@
+         config.set_property("phase_scheduler_workers_per_spellbook", 2)
+     print("post-freeze:", type(frozen.value).__name__)
+ 
++    # The bare book binds its own class: one class registers once (a
++    # spell_id is the SHA256 of its code), and Payload is the first book's.
++    class BarePayload:
++        """The bare book's own spell."""
++
+     bare = Spellbook(configuration=md.SpellbookConfiguration())
+-    bare.bind(spell=Payload, existence="unique", binding_name="bare")
++    bare.bind(spell=BarePayload, existence="unique")
+     with pytest.raises(Exception) as incomplete:
+         bare.conjure(name="bare-probe")
+     print("incomplete config at conjure:", type(incomplete.value).__name__)
+@@ -789,6 +794,10 @@
+     pass
+ 
+ 
++class _OtherLedger(_Ledger):
++    """The second frame's own ledger - a new class, so its own spell_id."""
++
++
+ def test_probe_conduit_cloud_is_frame_owned_and_shared():
+     """Lesson 37 HEADLINE: get_conduit_cloud() is a REACH, not a factory.
+     melder's contract: "Reaches THROUGH the aetheric frame to the
+@@ -852,13 +861,14 @@
+ def test_probe_a_different_frame_gets_a_different_cloud():
+     """Lesson 37 claim: frames are worlds (advanced 03) and the cloud is a
+     world-level object, so the frame wall holds here too."""
+-    # binding_name differs because a spell_id does not carry the frame -
+-    # identical bindings on two frames collide process-wide. The CLOUD is
+-    # what this row is about, and it IS per-frame.
++    # The second frame binds its OWN class: a spell_id is the SHA256 of
++    # the class's code and carries neither the frame nor the binding_name,
++    # so _Ledger bound in both frames would be refused process-wide. The
++    # CLOUD is what this row is about, and it IS per-frame.
+     first = Spellbook(aetheric_frame="probe-cloud-a")
+     first.bind(spell=_Ledger, existence="unique", binding_name="cloud-a")
+     second = Spellbook(aetheric_frame="probe-cloud-b")
+-    second.bind(spell=_Ledger, existence="unique", binding_name="cloud-b")
++    second.bind(spell=_OtherLedger, existence="unique", binding_name="cloud-b")
+ 
+     cloud_a = first.conjure(name="a-root").get_conduit_cloud()
+     cloud_b = second.conjure(name="b-root").get_conduit_cloud()
+--- a/UX_and_AIX_experiences/01_beginner/18_bootstrap_pattern.py
++++ b/UX_and_AIX_experiences/01_beginner/18_bootstrap_pattern.py
+@@ -4,8 +4,8 @@
+       and hands back the conduit. Configured things are BUILT there and
+       bound as instances; everything else in the app just melds. Note:
+       melder worlds do not "switch environments" - the same objects
+-      cannot register twice (spells are content-fingerprinted), so your
+-      MODULE decides what to build, once, at the root.
++      cannot register twice (a spell_id is the SHA256 of an object's code
++      and data), so your MODULE decides what to build, once, at the root.
+ SURFACE EXERCISED: the build_world() pattern, instance spells
+ """
+ import melder as md
+--- a/UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
++++ b/UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
+@@ -1,11 +1,12 @@
+ """
+ TIER: beginner (24)
+-GOAL: One spell name, one visible spell - CURRENT RUNTIME TRUTH (probe-
+-      proven): conjure refuses ANY two spells sharing a name, even
+-      across frames, even with different internals. The working pattern
+-      for one shape in many roles: tiny subclasses, one name each.
+-      (The probe suite flags the intended SHA-content semantics as an
+-      open runtime question - the lesson here is what works TODAY.)
++GOAL: One class, one spell - a spell_id is the SHA256 of the class's
++      code, so the SAME class registers once, whatever binding name or
++      lifecycle you give it (beginner 30). The working pattern for one
++      shape in many roles: tiny subclasses, one per role - each is a new
++      class, so its own spell, at its own address. (Same-NAMED classes
++      with different code may also coexist at different addresses since
++      0.2.8206; the contract probes pin both rules.)
+ SURFACE EXERCISED: subclass-per-role registration, mixed lifecycles
+ """
+ import melder as md
+--- a/UX_and_AIX_experiences/01_beginner/30_double_bind_outcome.py
++++ b/UX_and_AIX_experiences/01_beginner/30_double_bind_outcome.py
+@@ -1,9 +1,10 @@
+ """
+ TIER: beginner (30)
+-GOAL: Binding the SAME class twice is refused - spells are
+-      content-fingerprinted and one fingerprint registers once. When one
+-      shape must serve two roles, make two shapes: subclass it (see 24).
+-SURFACE EXERCISED: the one-fingerprint law at bind time
++GOAL: Binding the SAME class twice is refused - a spell_id is the
++      SHA256 of the class's code, and one object registers once, under
++      any binding name or lifecycle. When one shape must serve two
++      roles, make two shapes: subclass it (see 24).
++SURFACE EXERCISED: the one-object law at bind time
+ """
+ import melder as md
+ 
+@@ -23,9 +24,9 @@
+         book.bind(spell=Doubled, existence="many")
+         print("second bind unexpectedly accepted")
+     except Exception as err:
+-        print("same fingerprint refused:", type(err).__name__)
++        print("same object refused:", type(err).__name__)
+ 
+-    # the fix: a subclass IS a different fingerprint (and a different name)
++    # the fix: a subclass IS a new class - a new spell_id (and a new name)
+     book.bind(spell=DoubledAgain, existence="many")
+     print("subclass bound cleanly - two shapes, two spells")
+ 
+--- a/UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py
++++ b/UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py
+@@ -83,9 +83,10 @@
+ def _workshop_frame(frame_name: str, spell: type):
+     """One AI-native, rift-visible world holding its own object."""
+     book = md.Spellbook(aetheric_frame=frame_name)
+-    # A distinct binding_name per frame: spell_id is process-wide and the
+-    # frame is NOT in the fingerprint (advanced 02), so identical bindings
+-    # across worlds would collide.
++    # A distinct class per frame: a spell_id is the SHA256 of the class's
++    # code, process-wide by default, with neither the frame nor the
++    # binding_name in it (advanced 02), so one class bound in two worlds
++    # would be refused. The binding_name only names each world's address.
+     book.bind(spell=spell, existence="unique", binding_name=frame_name)
+     book.configure_aether_frame(
+         system_state="dynamic",
+--- a/UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
++++ b/UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
+@@ -34,13 +34,13 @@
+       that lane EMPTY, and this lesson asserts it.
+ 
+       AND SINGLE RESIDENCE IS WHY YOU CANNOT JUST FILE IT ELSEWHERE.
+-      One binding-signature SHA256 lives in exactly ONE lane, network
+-      wide, permanently - there is no release verb. `bind_inactive`
+-      already declared the staged version onto `default`, so
+-      `register_spell(..., lane=...)` for that id raises the REDISCOVERY
+-      signal naming the holding lane. That raise is a signal, not a
+-      failure: identical content rebinds to the same SHA, and this is the
+-      system saying "you built this before, here".
++      One spell_id - the SHA256 of a version's code - lives in exactly
++      ONE lane, network wide, permanently - there is no release verb.
++      `bind_inactive` already declared the staged version onto `default`,
++      so `register_spell(..., lane=...)` for that id raises the
++      REDISCOVERY signal naming the holding lane. That raise is a signal,
++      not a failure: identical code always mints the same SHA, and this
++      is the system saying "you built this before, here".
+       The way to file it under a name is a different SET - a set is its
+       own residence partition, so a version resident in one is simply
+       unknown to another.
+--- a/UX_and_AIX_experiences/AGENTS.md
++++ b/UX_and_AIX_experiences/AGENTS.md
+@@ -96,13 +96,21 @@
+   identity uses explicit `spell_id=`. Human-name/class forms derive the frame key
+   from the NAME (so they miss framed binds), and a bind with binding_name answers
+   only when the meld carries the same binding_name. binding_name alone is refused.
+-- Spell NAMES are unique per book at conjure - CURRENT behavior refuses any
+-  name collision regardless of binding names, frames, or content SHA.
+-  DIVERGENCE FLAG: owner design intent (twice stated) is SHA256 content
+-  matching with binding-name disambiguation; DuplicateSpellNameStrategy
+-  ignores the disambiguators its own error message recommends. Tracked as a
+-  runtime bug candidate on the beginner epic. Until fixed: subclass-per-role
+-  (24) and collection-as-spell registries (33) are the working patterns.
++- SPELL IDENTITY IS THE CODE (0.2.8257): a spell_id is the SHA256 of the
++  registered object's code - its methods and constructor (bodies included),
++  class-level values and bases, or an existing object's class and data -
++  and of nothing from the bind call. One object registers once: binding it
++  again under any binding_name, existence or spellframe is refused at bind
++  ("Spell ID collision"), or at conjure when another Book holds it
++  ("Conjure refused"). A changed class is a new spell_id: stage it with
++  bind_inactive and notch. Same-NAMED classes with different code coexist
++  at different addresses (0.2.8206). Working patterns: subclass-per-role
++  (24) and collection-as-spell registries (33).
++  History: this bullet carried a DIVERGENCE FLAG - spell NAMES unique per
++  book at conjure, refused regardless of binding names, frames or content
++  SHA, against the owner's stated intent of SHA256 content matching.
++  0.2.8206 made Phase 4 check the full address and 0.2.8257 made the
++  spell_id the code; the flag is closed.
+ - One book conjures ONE conduit ever (RuntimeError on the second); scopes are
+   lesser conduits, extra roots are extra books.
+ - Unregistered meld raises one stable KeyError. Same-spell double-bind is

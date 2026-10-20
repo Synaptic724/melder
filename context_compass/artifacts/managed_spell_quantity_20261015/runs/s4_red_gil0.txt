@@ -1,0 +1,182 @@
+..............................................................FF........ [ 75%]
+.....FFFFF.............F                                                 [100%]
+==================================== ERRORS ====================================
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py:18: in <module>
+    from melder.aether.conduit.creations.managed_spell_lease import ManagedSpellLease
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_lease'
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py:13: in <module>
+    from melder.aether.conduit.creations.managed_spell_lease import ManagedSpellLease
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_lease'
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py:18: in <module>
+    from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.release_managed_spell'
+_ ERROR collecting tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py:22: in <module>
+    from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.release_managed_spell'
+_ ERROR collecting tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py _
+ImportError while importing test module '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py:18: in <module>
+    from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
+E   ModuleNotFoundError: No module named 'melder.aether.conduit.creations.release_managed_spell'
+=================================== FAILURES ===================================
+__________ test_managed_class_is_the_bound_class_and_survives_cleanup __________
+
+    def test_managed_class_is_the_bound_class_and_survives_cleanup() -> None:
+        """The pool keeps the class the registry keys on, readable after teardown."""
+        pool = _pool()
+>       assert pool.managed_class is _Pooled
+               ^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ManagedSpellQuantity' object has no attribute 'managed_class'
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:897: AttributeError
+____________________ test_a_rebind_moves_the_managed_class _____________________
+
+    def test_a_rebind_moves_the_managed_class() -> None:
+        """A rebind under the same id that brings another class object re-points the key."""
+    
+        class _Redefined:
+            """A redefinition of the managed class."""
+    
+        pool = _pool()
+        rebound = _SpellStub()
+        rebound.spell = _Redefined
+        pool._rebind_spell(rebound)
+>       assert pool.managed_class is _Redefined
+               ^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ManagedSpellQuantity' object has no attribute 'managed_class'
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:912: AttributeError
+____________________ test_the_selected_version_answers_true ____________________
+
+    def test_the_selected_version_answers_true() -> None:
+        """The index's current selection."""
+        index = SpellIndex("v1")
+>       assert index._is_selected_unless_cleaned("v1") is True
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute '_is_selected_unless_cleaned'. Did you mean: '_has_spell_unless_cleaned'?
+
+tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py:16: AttributeError
+_______ test_a_member_that_is_not_selected_answers_false_until_selected ________
+
+    def test_a_member_that_is_not_selected_answers_false_until_selected() -> None:
+        """Membership is not selection; a notch moves the answer."""
+        index = SpellIndex("v1")
+        index.update("v2")
+>       assert index._is_selected_unless_cleaned("v1") is False
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute '_is_selected_unless_cleaned'. Did you mean: '_has_spell_unless_cleaned'?
+
+tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py:23: AttributeError
+_________________ test_an_id_outside_the_lineage_answers_false _________________
+
+    def test_an_id_outside_the_lineage_answers_false() -> None:
+        """A stranger is never selected."""
+>       assert SpellIndex("v1")._is_selected_unless_cleaned("v9") is False
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute '_is_selected_unless_cleaned'. Did you mean: '_has_spell_unless_cleaned'?
+
+tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py:32: AttributeError
+______________________ test_a_cleaned_index_answers_false ______________________
+
+    def test_a_cleaned_index_answers_false() -> None:
+        """A cleaned index selects nothing, and the probe does not raise."""
+        index = SpellIndex("v1")
+        index.cleanup()
+>       assert index._is_selected_unless_cleaned("v1") is False
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute '_is_selected_unless_cleaned'. Did you mean: '_has_spell_unless_cleaned'?
+
+tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py:39: AttributeError
+__________________ test_the_probe_racing_cleanup_never_raises __________________
+
+    def test_the_probe_racing_cleanup_never_raises() -> None:
+        """Probes from another thread across a cleanup answer True or False, never AttributeError."""
+        for _ in range(200):
+            index = SpellIndex("v1")
+            answers = []
+            errors = []
+            start = threading.Barrier(2)
+    
+            def _probe() -> None:
+                start.wait()
+                try:
+                    for _ in range(50):
+                        answers.append(index._is_selected_unless_cleaned("v1"))
+                except BaseException as error:
+                    errors.append(error)
+    
+            thread = threading.Thread(target=_probe)
+            thread.start()
+            start.wait()
+            index.cleanup()
+            thread.join(timeout=10)
+>           assert errors == []
+E           assert [AttributeErr...ss_cleaned'")] == []
+E             
+E             Left contains one more item: AttributeError("'SpellIndex' object has no attribute '_is_selected_unless_cleaned'")
+E             Use -v to get more diff
+
+tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py:63: AssertionError
+________________ test_managed_spell_quantity_surface_is_loaded _________________
+
+    def test_managed_spell_quantity_surface_is_loaded():
+        """
+        Purpose:
+            The managed lifetime's user-facing names reach the root (STORY-2026-10-15-release_managed_spell): the
+            mode enum a binding names, the registry users release through, the lease they hold, and the error a lease
+            raises when a pool refuses.
+        Contract:
+            Identity with the concrete-path objects; every name is in __all__.
+        """
+>       from melder.aether.conduit.creations.managed_spell_lease import ManagedSpellLease
+E       ModuleNotFoundError: No module named 'melder.aether.conduit.creations.managed_spell_lease'
+
+tests/unit/melder/test_package_public_surface.py:372: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_managed_class_is_the_bound_class_and_survives_cleanup
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_moves_the_managed_class
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py::test_the_selected_version_answers_true
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py::test_a_member_that_is_not_selected_answers_false_until_selected
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py::test_an_id_outside_the_lineage_answers_false
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py::test_a_cleaned_index_answers_false
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_selected_probe.py::test_the_probe_racing_cleanup_never_raises
+FAILED tests/unit/melder/test_package_public_surface.py::test_managed_spell_quantity_surface_is_loaded
+ERROR tests/unit/melder/aether/conduit/creations/test_release_managed_spell.py
+ERROR tests/unit/melder/aether/conduit/creations/test_managed_spell_lease.py
+ERROR tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py
+ERROR tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py
+ERROR tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py
+8 failed, 88 passed, 5 errors in 3.28s

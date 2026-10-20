@@ -263,7 +263,7 @@ def test_graft_uses_receiving_book_hooks_for_active_and_staged_members() -> None
     source.add_bind_hooks(pre=[source_calls.append])
     active_id = source.bind(spell=RestoreAlpha, existence="unique")
     source_root = source.conjure(dynamic=True)
-    index = source.find_spell_by_id(active_id).spell_index
+    index = source.find_spell_by_spell_id(active_id).spell_index
     staged_id = source_root.bind_inactive(spell=RestoreBeta, spell_index=index, existence="unique")
     record = crystallizer.capture_index_graft(index.id)
     source_root.permanent_cleanup()

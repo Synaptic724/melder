@@ -1,0 +1,9 @@
+PASS with-exit: inside count/idle/out=(1, 0, 1), after=(1, 1), reused=True, resets=[1]
+PASS with-exception: propagated='boom', count/idle after the block=(1, 1)
+PASS ReleaseManagedSpell().managed(obj): same object=True, released=True, idle=1
+PASS release-once: idle=1, resets=1, object raises after=True, with on a released lease raises=True
+PASS limited_quantity(1): second with-lease reuses the first object=True, built=1
+PASS release after root teardown: "The pool of managed spell 'Parser' was torn down with its root conduit; the object is your", released=True
+PASS managed_spell_meld of a unique spell: "managed_spell_meld leases a managed spell; 'Other' is unique. Meld it with meld("
+PASS a version staged before conjure, notched in, leased with `with`: count/idle=(1, 1)
+8 of 8 cases pass

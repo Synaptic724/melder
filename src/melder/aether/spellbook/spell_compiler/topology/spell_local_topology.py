@@ -20,7 +20,7 @@ class SpellSocketDescriptor:
 
     Attributes:
         spell_id:
-            The version ID of the spell that owns this socket
+            The selected spell_id of the spell that owns this socket
             (spell.spell_index.selected_spell_id``).
 
         param_name:
@@ -43,14 +43,14 @@ class SpellSocketDescriptor:
             True if the parameter is optional / has a default.
 
         target_spell_ids:
-            The direct dependency spells version IDs that this socket *actually*
+            The direct dependency spell_ids that this socket *actually*
             resolved to during Phase 3, if any.
 
             Unresolved contract sockets and OVERRIDE_REQUIRED inputs have no
             executable target IDs.
 
         referenced_spell_ids:
-            Selected non-resolvable version IDs retained for graph navigation.
+            Selected non-resolvable spell_ids retained for graph navigation.
             These IDs must never be traversed as construction dependencies.
 
         parameter_kind:
@@ -144,7 +144,7 @@ class SpellLocalTopology(Cleanable):
         Initialize one local topology snapshot for a spell.
 
         Args:
-            spell_id: Spell/version id this topology belongs to.
+            spell_id: The spell_id this topology belongs to.
             sockets: Socket descriptors discovered for the spell's constructor.
         Contract:
             - `spell_id` is required.
@@ -199,7 +199,7 @@ class SpellLocalTopology(Cleanable):
     @property
     def spell_id(self) -> str:
         """
-        Return the spell/version id this topology belongs to.
+        Return the spell_id this topology belongs to.
 
         Returns:
             str: Owning spell id.

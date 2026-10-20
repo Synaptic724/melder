@@ -96,7 +96,7 @@ def _make_spellbook(frame_name: str) -> Tuple[Spellbook, str]:
     Contract:
         - Binds all depth-9 classes with `Existence.unique`.
         - Sets `phase_scheduler_workers_per_spellbook` to 1 for deterministic setup.
-        - Returns the version id of `Depth9Root` as the default local target spell.
+        - Returns the spell_id of `Depth9Root` as the default local target spell.
     Args:
         frame_name: Aetheric frame name for this fixture.
     Returns:

@@ -1,0 +1,177 @@
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7 gil_enabled=True
+[C1 chain, Q warm, today]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: got d1 (gate=1 5-11=0 refreshed=0)
+  Q again: got d1 (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PChain. PChain: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: got d1 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C2 chain, cold, today]
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  Q again: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PChain. PChain: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C3 chain, P and Q warm, today]
+  P before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: got d1 (gate=1 5-11=0 refreshed=0)
+  Q again: got d1 (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PChain. PChain: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: got d1 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C4 chain by class, notch to a subclass, today]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: got d1 (gate=1 5-11=0 refreshed=0)
+  Q again: got d1 (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PClass. PClass: - Spell 'PClass' parameter 'dep' resolves to spell id 1d588c48df04, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: got d1 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[X1 across Books, today]
+  before any meld: flags L=False B=True; B risky structural=['Consumer'] resolution=['DepA', 'ImplWithIDep']
+  User before the notch: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  after the notch: P valid[] Consumer gated['contract_unvalidated'] User valid[] flags L=True B=True closure_marked=0
+  User after the notch: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  User again: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  Consumer: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=1 refreshed=0)
+  lender meld of P: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  User after both: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  end: P valid[] User valid[] flags L=True B=True
+  end: B risky structural=[] resolution=['Consumer', 'DepB', 'ImplWithIDep']; L risky structural=[] resolution=['DepB']
+[C1 chain, Q warm, rule2]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: got d1 (gate=1 5-11=0 refreshed=0)
+  Q again: got d1 (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PChain. PChain: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: got d1 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C2 chain, cold, rule2]
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  Q again: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PChain. PChain: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C3 chain, P and Q warm, rule2]
+  P before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: got d1 (gate=1 5-11=0 refreshed=0)
+  Q again: got d1 (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PChain. PChain: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: got d1 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C4 chain by class, notch to a subclass, rule2]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P valid[] Q valid[] bookflag=True closure_marked=0
+  Q after the notch: got d1 (gate=1 5-11=0 refreshed=0)
+  Q again: got d1 (gate=1 5-11=0 refreshed=0)
+  P: SpellbookValidationError: Spellbook validation failed. Broken spells: PClass. PClass: - Spell 'PClass' parameter 'dep' resolves to spell id 1d588c48df04, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q after P: got d1 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[X1 across Books, rule2]
+  before any meld: flags L=False B=True; B risky structural=['Consumer'] resolution=['DepA', 'ImplWithIDep']
+  User before the notch: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  after the notch: P valid[] Consumer gated['contract_unvalidated'] User valid[] flags L=True B=True closure_marked=0
+  User after the notch: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  User again: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  Consumer: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=1 refreshed=0)
+  lender meld of P: RuntimeError: many_only manifest references unknown spell_id '2bce5c49f9f1c4f48606d7985249aecc382921e624aedf4de68a7d877adea23c'. (gate=1 5-11=0 refreshed=0)
+  User after both: AttributeError: 'SpellContract' object has no attribute 'ping' (gate=1 5-11=0 refreshed=0)
+  end: P valid[] User valid[] flags L=True B=True
+  end: B risky structural=[] resolution=['Consumer', 'DepB', 'ImplWithIDep']; L risky structural=[] resolution=['DepB']
+[C1 chain, Q warm, closure]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. Whole-graph errors: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q again: SpellbookValidationError: Spellbook validation failed. Broken spells: QChain. QChain: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  P: got d2 (gate=1 5-11=1 refreshed=0)
+  Q after P: SpellbookValidationError: Spellbook validation failed. Broken spells: QChain. QChain: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C2 chain, cold, closure]
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. Whole-graph errors: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q again: SpellbookValidationError: Spellbook validation failed. Broken spells: QChain. QChain: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  P: got d2 (gate=1 5-11=1 refreshed=0)
+  Q after P: SpellbookValidationError: Spellbook validation failed. Broken spells: QChain. QChain: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C3 chain, P and Q warm, closure]
+  P before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. Whole-graph errors: - Spell 'PChain' parameter 'dep' resolves to spell id 2bce5c49f9f1, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q again: SpellbookValidationError: Spellbook validation failed. Broken spells: QChain. QChain: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  P: got d2 (gate=1 5-11=1 refreshed=0)
+  Q after P: SpellbookValidationError: Spellbook validation failed. Broken spells: QChain. QChain: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[C4 chain by class, notch to a subclass, closure]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. Whole-graph errors: - Spell 'PClass' parameter 'dep' resolves to spell id 1d588c48df04, which is not visible to this Spellbook. Bind it in this Spellbook, or give this conduit access to it. [visibility_gap_dependency_filtered] (gate=1 5-11=1 refreshed=0)
+  Q again: SpellbookValidationError: Spellbook validation failed. Broken spells: QClass. QClass: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  P: UnresolvedInputError: [MELD] Execution failed for spell 'PClass' (4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996) at node 4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996 (parameter 'dep'): PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply (gate=1 5-11=1 refreshed=0)
+  Q after P: SpellbookValidationError: Spellbook validation failed. Broken spells: QClass. QClass: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[X1 across Books, closure]
+  before any meld: flags L=False B=True; B risky structural=['Consumer', 'User'] resolution=['DepA', 'ImplWithIDep']
+  User before the notch: got P+d1 (gate=1 5-11=1 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Consumer gated['contract_unvalidated'] User gated['impacted_by_dependency'] flags L=True B=True closure_marked=4
+  User after the notch: SpellbookValidationError: Spellbook validation failed. Broken spells: User. User: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=1 refreshed=0)
+  User again: SpellbookValidationError: Spellbook validation failed. Broken spells: User. User: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  Consumer: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=1 refreshed=0)
+  lender meld of P: got P+d2 (gate=1 5-11=1 refreshed=0)
+  User after both: SpellbookValidationError: Spellbook validation failed. Broken spells: User. User: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. (gate=1 5-11=0 refreshed=0)
+  end: P valid[] User valid[] flags L=False B=True
+  end: B risky structural=[] resolution=['Consumer', 'DepB', 'ImplWithIDep', 'User']; L risky structural=[] resolution=[]
+[C1 chain, Q warm, catchup]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: got d2 (gate=1 5-11=1 refreshed=1)
+  Q again: got d2 (gate=0 5-11=0 refreshed=0)
+  P: got d2 (gate=0 5-11=1 refreshed=0)
+  Q after P: got d2 (gate=0 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=False
+[C2 chain, cold, catchup]
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: got d2 (gate=1 5-11=1 refreshed=1)
+  Q again: got d2 (gate=0 5-11=0 refreshed=0)
+  P: got d2 (gate=0 5-11=1 refreshed=0)
+  Q after P: got d2 (gate=0 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=False
+[C3 chain, P and Q warm, catchup]
+  P before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: got d2 (gate=1 5-11=1 refreshed=1)
+  Q again: got d2 (gate=0 5-11=0 refreshed=0)
+  P: got d2 (gate=0 5-11=1 refreshed=0)
+  Q after P: got d2 (gate=0 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=False
+[C4 chain by class, notch to a subclass, catchup]
+  Q before the notch: got d1 (gate=0 5-11=0 refreshed=0)
+  after the notch: P gated['impacted_by_dependency'] Q gated['impacted_by_dependency'] bookflag=True closure_marked=2
+  Q after the notch: UnresolvedInputError: [MELD] Execution failed for spell 'PClass' (4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996) at node 4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996 (parameter 'dep'): PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply (gate=1 5-11=1 refreshed=1)
+  Q again: UnresolvedInputError: [MELD] Execution failed for spell 'PClass' (4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996) at node 4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996 (parameter 'dep'): PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply (gate=1 5-11=0 refreshed=0)
+  P: UnresolvedInputError: [MELD] Execution failed for spell 'PClass' (4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996) at node 4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996 (parameter 'dep'): PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply (gate=1 5-11=1 refreshed=0)
+  Q after P: UnresolvedInputError: [MELD] Execution failed for spell 'PClass' (4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996) at node 4c21affbc9b75a9b79a4a3be4a10a7f4abe6781e37cf75b105f44ff3a3635996 (parameter 'dep'): PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply (gate=1 5-11=0 refreshed=0)
+  end: P valid[] Q valid[] bookflag=True
+[X1 across Books, catchup]
+  before any meld: flags L=False B=True; B risky structural=['Consumer', 'User'] resolution=['DepA', 'ImplWithIDep']
+  User before the notch: got P+d1 (gate=1 5-11=1 refreshed=1)
+  after the notch: P gated['impacted_by_dependency'] Consumer gated['contract_unvalidated'] User gated['impacted_by_dependency'] flags L=True B=True closure_marked=4
+  User after the notch: got P+d2 (gate=1 5-11=1 refreshed=2)
+  User again: got P+d2 (gate=1 5-11=0 refreshed=0)
+  Consumer: got P+d2 (gate=1 5-11=1 refreshed=0)
+  lender meld of P: got P+d2 (gate=1 5-11=1 refreshed=0)
+  User after both: got P+d2 (gate=1 5-11=0 refreshed=0)
+  end: P valid[] User valid[] flags L=False B=True
+  end: B risky structural=[] resolution=['DepB', 'ImplWithIDep']; L risky structural=[] resolution=[]

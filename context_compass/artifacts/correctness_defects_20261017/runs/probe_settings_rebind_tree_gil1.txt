@@ -1,0 +1,42 @@
+R1 limit 1, one object out; cleanup_spell, then bind with limit 2
+    meld A -> Worker #1
+    same spell_id: False; same pool object: False
+  [after the rebind]
+    pool 1048b6e686: mode limited_quantity, limit 1, count 1, idle 0
+    pool bfa0f939f8: mode limited_quantity, limit 2, count 0, idle 0
+    meld B -> Worker #2
+  [after a second lease]
+    pool 1048b6e686: mode limited_quantity, limit 1, count 1, idle 0
+    pool bfa0f939f8: mode limited_quantity, limit 2, count 1, idle 0
+  [after releasing the first object with no filter]
+    pool 1048b6e686: mode limited_quantity, limit 1, count 1, idle 0
+    pool bfa0f939f8: mode limited_quantity, limit 2, count 1, idle 1
+    meld B again -> Worker #1
+  [after another lease]
+    pool 1048b6e686: mode limited_quantity, limit 1, count 1, idle 0
+    pool bfa0f939f8: mode limited_quantity, limit 2, count 1, idle 0
+
+R2 Worker limit 1 active; Worker limit 2 staged on its index
+    staged: same spell_id: False
+  [after the staging]
+    pool 1048b6e686: mode limited_quantity, limit 1, count 0, idle 0
+    pool bfa0f939f8: mode limited_quantity, limit 2, count 0, idle 0
+
+R3 elastic, three objects leased and released; cleanup_spell, then bind limited_quantity limit 1
+    meld A1 -> Worker #3
+    meld A2 -> Worker #4
+    meld A3 -> Worker #5
+  [three idle]
+    pool 5b4c2537d1: mode elastic, limit 256, count 3, idle 3
+    same spell_id: False
+  [after the rebind]
+    pool 5b4c2537d1: mode elastic, limit 256, count 3, idle 3
+    pool 1048b6e686: mode limited_quantity, limit 1, count 0, idle 0
+    meld B -> Worker #6
+  [after a lease]
+    pool 5b4c2537d1: mode elastic, limit 256, count 3, idle 3
+    pool 1048b6e686: mode limited_quantity, limit 1, count 1, idle 0
+  [after its release]
+    pool 5b4c2537d1: mode elastic, limit 256, count 3, idle 3
+    pool 1048b6e686: mode limited_quantity, limit 1, count 1, idle 1
+

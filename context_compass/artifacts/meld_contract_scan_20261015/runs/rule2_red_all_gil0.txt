@@ -1,0 +1,60 @@
+............................FF..FF...................................... [ 21%]
+........................................................................ [ 42%]
+...............FFFFFFFFFFFFFFFFF...................................F.F.. [ 63%]
+F.FF.FFFFFFFF.F......................................................... [ 84%]
+...FF.FF.............F.............FF..FF..FFFFFFFFF.                    [100%]
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_every_change_of_an_active_contracted_copy_marks_the_consumers_of_its_key
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_clearing_a_peers_copies_marks_the_keys_of_the_active_copies
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_contract_marks_run_with_the_book_lock_free
+FAILED tests/unit/melder/spellbook/test_spellbook.py::test_contract_mark_failure_is_logged_and_propagates_after_the_map_change
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_marks_a_chain_downstream_of_the_seed_and_leaves_the_seed
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_marks_contract_consumers_in_every_book_by_the_binding_key
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_marks_consumers_of_a_lineage_reached_by_edge
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_gives_a_lineage_reached_both_ways_both_marks
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_follows_edges_only_for_a_lineage_without_a_recorded_key
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_terminates_on_a_contract_cycle_across_books_and_never_marks_a_seed
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_skips_a_dependent_with_no_registered_state
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_with_no_seed_marks_nothing
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_publishes_once_per_changed_validity_under_the_registry_lock
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_adds_every_marked_lineage_to_the_dirty_set
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_register_index_with_no_key_keeps_the_recorded_key
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_register_index_with_a_key_replaces_the_recorded_key
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_unregister_index_forgets_the_binding_key
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_mark_contract_dependents_dirty_walks_on_and_returns_its_consumers_only
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_mark_contract_dependents_dirty_with_no_consumer_walks_nowhere
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_walk_on_a_cleaned_registry_raises
+FAILED tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py::test_cleanup_drops_the_binding_key_map
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_ensure_lineage_resolvable_valid_contract_consumer_makes_no_contract_lookup
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_ensure_lineage_resolvable_gated_contract_consumer_rebuilds_once_with_structure_changed
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_refreshes_a_stale_dependency_with_its_owner_book_and_resets_its_plan
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_raises_naming_a_broken_dependency_and_pins_it_invalid
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_raises_naming_a_dependency_left_gated
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_follows_a_contract_socket_through_the_books_active_copy
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_walks_the_refreshed_topology_of_a_dependency
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_takes_a_recorded_target_to_its_lineages_current_version
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_refreshes_a_shared_dependency_once
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_holds_no_lock_while_walking_and_only_the_dependencys_while_refreshing
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_enters_the_dependencys_rebuild_window_before_its_lock
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_does_not_reset_a_stale_existing_creation
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_deferred_lane_runs_the_catch_up_before_its_pass
+FAILED tests/unit/melder/aether/conduit/meld/test_meld.py::test_catch_up_rechecks_staleness_under_the_dependencys_lock
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_gating_warning_is_listed_as_the_spells_reason
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_other_warnings_stay_counted_beside_a_gating_reason
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_gating_only_block_is_listed_when_diagnostics_are_given
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py::test_gating_warning_codes_are_the_codes_phase_4_gates_on
+FAILED tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_contract_provider_presence_strategy.py::test_contract_provider_presence_missing_provider_names_the_contract_and_the_remedy
+FAILED tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py::test_run_gates_the_lineage_on_every_code_the_report_lists_as_a_reason
+FAILED tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py::test_run_marks_the_lineage_valid_on_a_warning_outside_the_reported_reasons
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_contract_consumer_follows_notch_notch_back_and_repeat_notch_with_one_rebuild_each
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_a_notch_marks_the_contract_consumer_and_builds_nothing
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_destroying_the_providers_index_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_releasing_the_index_link_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_releasing_a_version_grant_fails_the_consumer_naming_the_lost_contract
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c1_a_dependent_two_hops_away_follows_a_dependency_notch
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c2_a_chain_never_melded_before_a_dependency_notch_builds_the_new_version
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_a_contract_consumers_dependent_resolves_the_provider_linked_after_conjure
+FAILED tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_dependents
+53 failed, 288 passed in 1.36s

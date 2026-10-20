@@ -1,0 +1,2 @@
+story: +3 artifact paths; board: lane row refreshed, patch row added; patch: non-goals re-wrapped
+applied (2026-10-18T18:18:04Z)

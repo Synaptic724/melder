@@ -1,0 +1,37 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A7, read whole and proven (identical with the GIL off and on, ids masked). One new defect and one
+    wider impact. New: Book teardown never cleans its parked versions or an index only they hold, and nothing can
+    clean them afterwards. `Spellbook._cleanup_spells` walks `_spells` (the active version per index) and cleans
+    each Spell and its index; `_cleanup_components` then clears `_inactive_spells` without cleaning one, while the
+    parked branch of `_dispose_spell` shows the local teardown a parked version needs (`_spellbook_cleanup` set,
+    `Spell.cleanup()`). A later direct `Spell.cleanup()` on such a version routes to its Book
+    (`_direct_removal_route` -> `cleanup_and_remove_spell`) and raises "Spellbook has already been cleaned.". Probe
+    T2: after the root's teardown English is cleaned and French (parked on its index) is not, and
+    `French.cleanup()` raises; T3: a parked version separated into its own minted index - neither it nor that index
+    is cleaned. Wider: STORY-2026-10-17-notch_moves_signature_by_incoming_key_only outlives the Book. After a notch
+    across keys the parked English still holds ('greeter', 'greeter') frame-wide; the notch's park popped that key
+    from the Book's `_lookup_spells`, and teardown releases only the keys in that map, so the claim survives the
+    Book (T4): every later bind of the signature in that frame is refused, naming a spell of a dead Book. The rest
+    holds: the record evicts the Book's custody in both locations and its index crystals by Book id; the root store's
+    cleanup unregisters every pool, parked versions' included (T5); the frame drops the conduit's registry entry.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:370-398
+  - src/melder/aether/spellbook/spellbook.py:405-556
+  - src/melder/aether/spellbook/spellbook.py:557-600
+  - src/melder/aether/spellbook/spellbook.py:602-748
+  - src/melder/aether/spellbook/spellbook.py:1500-1561
+  - src/melder/aether/spellbook/spellbook.py:4422-4563
+  - src/melder/aether/spellbook/spell.py:581-723
+  - src/melder/aether/spellbook/spell.py:725-763
+  - src/melder/crystallizer/persistence/persistence_profile.py:684-754
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py:1-231
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil0.txt:1-30
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_book_teardown_parked_gil1.txt:1-30
+  IMPACT: Structure stuck twice over: parked versions of a dead Book stay uncleaned and cannot be cleaned, and a
+    signature a notch left claimed stays claimed for the frame's life. Both fixes sit in spellbook.py (melder_1's).
+  NEXT: File the teardown story; add T4 to the notch-signature story's Notes; then sweep A8.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

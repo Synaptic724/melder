@@ -1,0 +1,227 @@
+--- src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
++++ src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
+@@ -67,3 +67,3 @@
+         * `mark_dependents_for_revalidation(...)` after a notch, so every
+-          lineage downstream of the notched one revalidates at its next meld
++          SpellIndex downstream of the notched one revalidates at its next meld
+         * `update_dependencies(...)` after Phase 3/4 attaches dependency ids
+@@ -78,5 +78,5 @@
+         dependency indices, per-Spellbook SpellContract consumer indices,
+-        the binding key each lineage was registered under, per-conduit
++        the binding key each SpellIndex was registered under, per-conduit
+         `ConduitResolutionState` keyed by conduit_id, and the published set of
+-        lineages flagged `SpellState.non_resolvable`.
++        spell indexes flagged `SpellState.non_resolvable`.
+ 
+@@ -91,3 +91,3 @@
+         One instance per `AethericFrame`, initialized alongside DevOpsManager.
+-        Unregistering a lineage notifies `RiskManager` to force validation
++        Unregistering a SpellIndex notifies `RiskManager` to force validation
+         gating and retires the removed spell id's per-conduit resolution
+@@ -103,3 +103,3 @@
+         capability as `SpellState.non_resolvable` and publishes the flagged
+-        lineages as one immutable set (`non_resolvable_index_ids`), which
++        spell indexes as one immutable set (`non_resolvable_index_ids`), which
+         RiskManager reads without a lock to leave a declared non-resolvable
+@@ -129,3 +129,3 @@
+         structural change fans out through `compute_impact_closure` to only the
+-        genuinely impacted lineages. The separate collection-dependency and
++        genuinely impacted spell indexes. The separate collection-dependency and
+         contract-consumer indices narrow it further: rebinding a frame type
+@@ -204,7 +204,7 @@
+         ] = {}
+-        # The binding key of each lineage's selected version (`register_index(binding_key=...)`): the contract key a
+-        # SpellContract consumer of that lineage declares, read by the downstream walk (`_mark_dependents_locked`).
++        # The binding key of each index's selected version (`register_index(binding_key=...)`): the contract key a
++        # SpellContract consumer of that index declares, read by the downstream walk (`_mark_dependents_locked`).
+         self._binding_key_by_index: Optional[Dict[str, Tuple[str, str]]] = {}
+         self._risk_manager: Optional[RiskManager] = None
+-        # The lineages whose state carries SpellState.non_resolvable, replaced
++        # The spell indexes whose state carries SpellState.non_resolvable, replaced
+         # whole under `_lock` (`_publish_non_resolvable_membership_locked`) and
+@@ -376,12 +376,12 @@
+           (`SpellSystemState._republish_validity`): every conduit holding the
+-          lineage refreshes its Book flag with the new flag - a borrower whose
++          SpellIndex refreshes its Book flag with the new flag - a borrower whose
+           copy came back by reactivation is never re-registered with RiskManager.
+-        - Keep the published set of flagged lineages in step with the flag
++        - Keep the published set of flagged spell indexes in step with the flag
+           (`_publish_non_resolvable_membership_locked`), also before the gate
+           publishes, so the refresh that event runs reads the new set.
+-        - Record `binding_key` as the lineage's binding key when one is given;
++        - Record `binding_key` as the SpellIndex's binding key when one is given;
+           None keeps the key recorded before. The downstream walk
+           (`mark_dependents_for_revalidation`) reaches the SpellContract
+-          consumers of a lineage through this key, because a consumer declares
+-          the key, not an edge to the lineage.
++          consumers of a SpellIndex through this key, because a consumer declares
++          the key, not an edge to the SpellIndex.
+ 
+@@ -404,3 +404,3 @@
+                 None to keep the recorded key (bind and notch pass it; the
+-                ownership transfer's registrations keep the lineage's key).
++                ownership transfer's registrations keep the SpellIndex's key).
+ 
+@@ -408,3 +408,3 @@
+             SpellSystemState:
+-                The lineage's live state.
++                The SpellIndex's live state.
+ 
+@@ -496,3 +496,3 @@
+                 # Already gated, so the gate published nothing: tell the conduits
+-                # holding this lineage about the changed flag here.
++                # holding this SpellIndex about the changed flag here.
+                 state._republish_validity()
+@@ -519,3 +519,3 @@
+             state:
+-                The lineage's live state.
++                The SpellIndex's live state.
+             resolvable:
+@@ -537,6 +537,6 @@
+         """
+-        Put `index_id` in or out of the published set of flagged lineages; caller holds `_lock`.
+-
+-        Contract:
+-            - `member` is whether the lineage's state carries
++        Put `index_id` in or out of the published set of flagged spell indexes; caller holds `_lock`.
++
++        Contract:
++            - `member` is whether the SpellIndex's state carries
+               `SpellState.non_resolvable` now; the set follows it.
+@@ -547,5 +547,5 @@
+             index_id:
+-                Spell-index id (the lineage id).
++                Spell-index id (`SpellIndex.id`).
+             member:
+-                Whether the lineage belongs in the set.
++                Whether the SpellIndex belongs in the set.
+ 
+@@ -598,7 +598,7 @@
+         """
+-        Return whether the lineage registered under `index_id` carries `flag`.
++        Return whether the SpellIndex registered under `index_id` carries `flag`.
+ 
+         Purpose:
+-            The per-lineage flag read. It reads the registry rather than a held
+-            state reference, so a lineage removed meanwhile answers False.
++            The per-index flag read. It reads the registry rather than a held
++            state reference, so a SpellIndex removed meanwhile answers False.
+             RiskManager does not probe per key: for `SpellState.non_resolvable` it
+@@ -615,3 +615,3 @@
+             index_id:
+-                Spell-index id (the lineage id).
++                Spell-index id (`SpellIndex.id`).
+             flag:
+@@ -645,3 +645,3 @@
+         """
+-        Return the lineages whose state carries `SpellState.non_resolvable`.
++        Return the spell indexes whose state carries `SpellState.non_resolvable`.
+ 
+@@ -653,6 +653,6 @@
+         Contract:
+-            - Exactly the registered lineages whose state carries the flag:
+-              `register_index` puts a lineage in or out right after it writes the
++            - Exactly the registered spell indexes whose state carries the flag:
++              `register_index` puts a SpellIndex in or out right after it writes the
+               flag and before its gate publishes, and `unregister_index` takes it
+-              out, so a removed lineage is never in it.
++              out, so a removed SpellIndex is never in it.
+             - The set is replaced whole, never mutated; the caller may keep the
+@@ -922,8 +922,8 @@
+         """
+-        Mark for revalidation every lineage downstream of `index_ids`, by registry edge or by contract key.
++        Mark for revalidation every index downstream of `index_ids`, by registry edge or by contract key.
+ 
+         Purpose:
+-            A notch changes what every dependent of the notched lineage resolves: a dependent's plan names the
++            A notch changes what every dependent of the notched index resolves: a dependent's plan names the
+             old version, and the topology it expands may too. `Spellbook._apply_notch` calls this with the
+-            notched lineage, so each dependent's next meld rechecks its structure and rebuilds against the
++            notched index, so each dependent's next meld rechecks its structure and rebuilds against the
+             versions now active (contract_recheck_on_notch_2026_10_16, D2). Mark only: no plan, context or
+@@ -932,8 +932,8 @@
+         Contract:
+-            - The walk starts from the given lineages (the seeds) and follows, from every lineage it reaches,
++            - The walk starts from the given indexes (the seeds) and follows, from every index it reaches,
+               the reverse dependency edges (`direct_dependents`, recorded by Phase 3's `update_dependencies`) and
+-              the SpellContract consumers, in every Spellbook of the frame, of the binding key that lineage was
++              the SpellContract consumers, in every Spellbook of the frame, of the binding key that index was
+               registered under (`register_index(binding_key=...)`) - a contract consumer declares a key, not an
+-              edge. A lineage with no recorded key is followed by its edges only.
+-            - A lineage reached by an edge gets `mark_transitively_dirty()` (gated, `impacted_by_dependency`,
++              edge. A SpellIndex with no recorded key is followed by its edges only.
++            - An index reached by an edge gets `mark_transitively_dirty()` (gated, `impacted_by_dependency`,
+               transitively dirty); one reached as a contract consumer gets rule 2's contract mark (gated,
+@@ -942,6 +942,6 @@
+             - Seeds are never marked (each caller gates its seeds for their own change), and a dependent with
+-              no registered state is passed over. Each lineage is visited once, so a cycle of edges or contracts
++              no registered state is passed over. Each index is visited once, so a cycle of edges or contracts
+               terminates.
+-            - Every marked lineage joins the dirty set. `set_validity` publishes a validity only when it
+-              changes, so a walk over lineages already gated publishes nothing.
++            - Every marked index joins the dirty set. `set_validity` publishes a validity only when it
++              changes, so a walk over indexes already gated publishes nothing.
+ 
+@@ -949,3 +949,3 @@
+             index_ids:
+-                Spell-index ids (lineage ids) whose change starts the walk; empty and None ids are ignored.
++                Spell-index ids whose change starts the walk; empty and None ids are ignored.
+ 
+@@ -953,3 +953,3 @@
+             Set[str]:
+-                The lineage ids this call marked, seeds excluded; empty when nothing is downstream.
++                The spell-index ids this call marked, seeds excluded; empty when nothing is downstream.
+ 
+@@ -974,3 +974,3 @@
+         """
+-        Walk downstream of `seeds` and mark every lineage reached; the caller holds `_lock`.
++        Walk downstream of `seeds` and mark every index reached; the caller holds `_lock`.
+ 
+@@ -981,7 +981,7 @@
+         Contract:
+-            - Follows reverse edges and the contract consumers of each reached lineage's binding key, across
+-              every Spellbook, visiting each lineage once (see `mark_dependents_for_revalidation`).
+-            - Marks after the walk, so a lineage's mark knows every way it was reached: the contract mark
+-              first, then the edge mark. Seeds are never marked; lineages with no registered state are
+-              skipped; every marked lineage joins `_dirty_indexes`.
++            - Follows reverse edges and the contract consumers of each reached index's binding key, across
++              every Spellbook, visiting each index once (see `mark_dependents_for_revalidation`).
++            - Marks after the walk, so an index's mark knows every way it was reached: the contract mark
++              first, then the edge mark. Seeds are never marked; indexes with no registered state are
++              skipped; every marked index joins `_dirty_indexes`.
+ 
+@@ -989,3 +989,3 @@
+             seeds:
+-                Non-empty lineage ids the walk starts from.
++                Non-empty spell-index ids the walk starts from.
+ 
+@@ -993,3 +993,3 @@
+             Set[str]:
+-                The lineage ids marked.
++                The spell-index ids marked.
+         """
+@@ -1156,6 +1156,6 @@
+         - Remove the spell index from `_dirty_indexes`.
+-        - Take the lineage out of the published set of flagged lineages.
++        - Take the SpellIndex out of the published set of flagged spell indexes.
+         - Remove the local topology entry for the current spell id.
+         - Remove collection/contract indices for the owning spellbook, and
+-          forget the lineage's binding key.
++          forget the SpellIndex's binding key.
+         - Detach this spell index from reverse-dependency edges.
+@@ -1207,3 +1207,3 @@
+             current_spell_id = removed_state.current_spell_id
+-            # A removed lineage is never in the published flagged set.
++            # A removed SpellIndex is never in the published flagged set.
+             self._publish_non_resolvable_membership_locked(index_id, False)
+@@ -1326,3 +1326,3 @@
+         Purpose:
+-            The per-conduit axis of lineage retirement. `unregister_index` and
++            The per-conduit axis of SpellIndex retirement. `unregister_index` and
+             `register_index` call the locked form of this verb themselves; this
+@@ -1733,3 +1733,3 @@
+         Returns:
+-            Set[str]: The consumers this call gated (the lineages the walk-on
++            Set[str]: The consumers this call gated (the spell indexes the walk-on
+             marked are not included).
+1 files, 55 edits applied and read back

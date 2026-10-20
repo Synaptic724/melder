@@ -68,7 +68,7 @@ def test_component_validation_flag_is_required_after_the_rebind_and_cleared_by_t
         identifier = _bind(root)
         root.meld(spellframe="flags", binding_name="probe")
         assert book._spellbook_validation_required is False
-        definition = root.get_spell_by_id(identifier, "rebind-flag-component")
+        definition = root.get_spell_by_spell_id(identifier, "rebind-flag-component")
         root.cleanup_spell(spell=definition)
         assert _bind(root) == identifier
         assert book._spellbook_validation_required is True
@@ -85,7 +85,7 @@ def test_component_validation_flag_behaves_like_a_first_late_bind_for_the_replac
         identifier = _bind(root)
         first_bind_flag = book._spellbook_validation_required
         root.meld(spellframe="flags", binding_name="probe")
-        definition = root.get_spell_by_id(identifier, "rebind-flag-component-first")
+        definition = root.get_spell_by_spell_id(identifier, "rebind-flag-component-first")
         root.cleanup_spell(spell=definition)
         _bind(root)
         assert first_bind_flag is True
@@ -100,7 +100,7 @@ def test_component_removed_definition_leaves_the_flag_clear_until_something_is_r
     try:
         identifier = _bind(root)
         root.meld(spellframe="flags", binding_name="probe")
-        definition = root.get_spell_by_id(identifier, "rebind-flag-component-removal")
+        definition = root.get_spell_by_spell_id(identifier, "rebind-flag-component-removal")
         root.cleanup_spell(spell=definition)
         assert book._spellbook_validation_required is False
     finally:

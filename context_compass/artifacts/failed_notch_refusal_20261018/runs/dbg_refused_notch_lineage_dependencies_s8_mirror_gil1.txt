@@ -1,0 +1,11 @@
+<mirror>/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+before notch: lineage deps [] validity SpellValidity.valid
+speaker topology [('greeter', 'UNRESOLVED_INPUT', ())]
+notch raised: SpellbookValidationError | notch_spell refused: 'SelfMade' (spell_id 3f1c78b544692c235345a35d29eb46
+after refusal: english c9dcbea4 selfmade 3f1c78b5
+after refusal: lineage current c9dcbea4 deps [] validity SpellValidity.gated
+speaker may compile: True planned deps: []
+borrower meld of Speaker: ok

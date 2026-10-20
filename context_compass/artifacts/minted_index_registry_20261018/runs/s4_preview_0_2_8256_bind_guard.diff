@@ -1,0 +1,162 @@
+--- src/melder/aether/spellbook/spellbook.py	2026-10-18 16:02:48.914938600 +0000
++++ src/melder/aether/spellbook/spellbook.py	2026-10-18 18:01:51.084772222 +0000
+@@ -2698,6 +2698,12 @@
+ 
+         Remove this Spellbook's local spell indices from Aether for one conduit.
+ 
++        Contract:
++            - Removes every index this Book has registered: the indexes of its
++              active spells and, since minted_index_registry, an index that holds
++              only parked versions (the one `remove_from_spell_index` mints), so
++              the frame keeps no entry for the torn-down root.
++
+         Args:
+             conduit_id:
+                 Conduit id whose local spell indices should be removed from the
+@@ -2705,9 +2711,22 @@
+ 
+         Returns:
+             None.
++
++        Threading:
++            Collects the indexes under the Book lock, reading each parked
++            version's index through its cleanup-safe read (Book -> spell, the
++            order Book teardown takes), and removes them with the frame lock
++            alone after the Book lock is released.
+         """
+         with self._lock:
+             spell_set = set(self._spells.keys())
++            # A parked version's index joins the set: an index that holds only parked versions - the one
++            # remove_from_spell_index mints - is registered too (minted_index_registry). An index shared with an
++            # active version is already in it; a version cleaned meanwhile is skipped.
++            for parked_spell in self._inactive_spells.values():
++                parked_index = parked_spell._spell_index_unless_cleaned()
++                if parked_index is not None:
++                    spell_set.add(parked_index)
+         if spell_set:
+             self._aether._remove_spells_from_aether(
+                 conduit_id,
+@@ -4281,8 +4300,10 @@
+             - If the spell is the sole member of `source_index` this raises;
+               use `cleanup_spell` to dispose it instead.
+             - Otherwise the spell leaves `source_index` (which keeps its remaining
+-              members) and becomes the sole member of a fresh inactive index. No
+-              index is destroyed.
++              members) and becomes the sole member of a fresh inactive index, which
++              is registered with the frame as `bind` registers the index it creates,
++              so the frame's lookups by spell_id find the spell there. No index is
++              destroyed.
+ 
+         Args:
+             spell: The owned, inactive spell to separate.
+@@ -4308,7 +4329,8 @@
+         only: the spell stays owned and inactive, so its id-keyed state
+         (`_inactive_spells`, `_spell_ids`, id pools, Nexus, fast-door, Creations)
+         is untouched. No index is destroyed -- the source keeps its remaining
+-        members; the separated spell gets a fresh inactive index.
++        members; the separated spell gets a fresh inactive index, registered with
++        the frame as `bind` registers the index it creates.
+ 
+         Steps:
+             1. Enforce ownership (`spell._spellbook is self`) + inactive + that the
+@@ -4317,6 +4339,14 @@
+                `cleanup_spell` to dispose it instead).
+             3. Otherwise mint a fresh `SpellIndex` seeded with this spell id, remove
+                the spell from `source_index`, and repoint `spell.spell_index`.
++            4. Register the fresh index in the frame's spell registry the way a
++               post-conjure `bind` registers the index it creates: the same guard
++               (the Book is conjured) and the same call, under the Book's root
++               conduit. The frame's lookups by spell_id (the Aether conduit lookup,
++               a grant or transfer by spell_id, bind's collision guard,
++               MutationResearch residency) walk that registry. Until
++               minted_index_registry the index was never registered, so they all
++               missed the version, parked or later notched active there.
+ 
+         Args:
+             spell: The owned, inactive spell to separate.
+@@ -4328,6 +4358,11 @@
+         Raises:
+             RuntimeError: If `spell` is not owned here, is active, or is not a
+                 member of `source_index`.
++
++        Threading:
++            The move runs under the Book lock; the registration takes the frame
++            lock alone, after the Book lock is released, as bind's registration
++            and `_destroy_spell_index`'s unregistration do. No lock-order edge.
+         """
+         self.check_cleaned()
+         if spell._spellbook is not self:
+@@ -4373,6 +4408,17 @@
+             new_index = SpellIndex(initial_id=spell_id)
+             source_index.remove_member(spell_id)
+             spell.spell_index = new_index
++        # Register the fresh index with the frame the way a post-conjure bind registers the index it creates: the
++        # same guard and the same call, under the Book's root conduit, so every lookup that walks the frame's
++        # spell registry finds the spell. Frame lock alone, after the Book lock. `_destroy_spell_index`
++        # unregisters the index when it empties, and the root's teardown with the rest
++        # (`_unregister_conduit_spells_from_aether`) (minted_index_registry).
++        if self._conjured and self._conduit is not None:
++            Spellbook._aether._register_single_spell_index(
++                self._get_required_conduit_surface()._id,
++                new_index,
++                self._aetheric_frame_name,
++            )
+         if self._crystallizer.activated:
+             # The member split onto a FRESH index: snapshot both sides.
+             self._crystallizer.emit(
+--- src/melder/mutation_research/mutation_research.py (CRLF in the working tree; shown LF)	2026-10-18 18:02:10.621773891 +0000
++++ src/melder/mutation_research/mutation_research.py (CRLF in the working tree; shown LF)	2026-10-18 18:02:10.621773891 +0000
+@@ -1391,8 +1391,10 @@
+         Contract:
+             - Total read: never raises for unknown identities (empty sha is
+               the only refusal); every uncertainty reports honestly.
+-            - `runtime` verdicts: `active` (some index's selected member),
+-              `parked` (a live index member, not selected), `stored`
++            - `runtime` verdicts: `active` (some index's selected member that
++              its lineage tracks as current), `parked` (any other live index
++              member - a version moved into an index of its own stays parked
++              until a notch, though that index selects it), `stored`
+               (custody only), `declared_only` (record only), `unknown`
+               (nowhere, incl. custody unavailable).
+             - `in_custody` is None when the crystallizer is not recording
+@@ -1494,10 +1496,18 @@
+                 Identity to locate.
+ 
+         Contract:
+-            - Scans EVERY live frame: a selected (active) membership
+-              anywhere wins over any unselected membership, honoring the
+-              residency contract's active-if-any verdict rule.
+-            - When no frame selects the identity, the first live unselected
++            - Scans EVERY live frame: an active membership anywhere wins
++              over any parked one, honoring the residency contract's
++              active-if-any verdict rule.
++            - Active means the index selects the identity AND the frame's
++              lineage registry tracks it as that index's current version
++              (`SpellSystemStates.get_by_index_id(...).current_spell_id`). The
++              index `remove_from_spell_index` mints selects its parked member
++              (activation takes a notch) and no lineage tracks that member
++              until a notch registers it, so it reads parked
++              (minted_index_registry). The state is read by index id:
++              `get_by_spell_id` also answers a version a notch moved away from.
++            - When no frame holds the identity active, the first live
+               membership (frame iteration order) is reported as parked.
+ 
+         Returns:
+@@ -1513,11 +1523,16 @@
+                 if frame.cleaned:
+                     continue
+                 index = frame.find_index_for_spell(spell_id)
++                state = (
++                    None if index is None
++                    else frame.spell_system_states.get_by_index_id(index.id)
++                )
++                tracked = state is not None and state.current_spell_id == spell_id
+             except Exception:
+                 continue
+             if index is None or index.cleaned:
+                 continue
+-            if index.selected_spell_id == spell_id:
++            if tracked and index.selected_spell_id == spell_id:
+                 return frame_name, index.id, True
+             if parked_frame is None:
+                 parked_frame = frame_name

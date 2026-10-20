@@ -1,0 +1,13 @@
+before the switch:
+  world: greeter by name -> hello
+  borrower: speaker's greeter -> hello
+staged TimedGreeter (needs a Clock; UtcClock and LocalClock are both registered): accepted
+switch the index to TimedGreeter:
+  world.notch_spell(...) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: TimedGreeter.
+  the reason Melder gives: AMBIGUOUS_PROVIDER
+after the failed switch:
+  the index now selects: TimedGreeter (the broken one)
+  world: English by its spell_id -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  world: greeter by name -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  world: the broken version by name -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: TimedGreeter.
+  borrower: speaker's greeter -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker.

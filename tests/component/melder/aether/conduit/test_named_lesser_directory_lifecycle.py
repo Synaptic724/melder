@@ -208,7 +208,10 @@ def test_permanent_cleanup_and_overflow_leave_no_named_entries(root: Conduit) ->
     child = root.create_lesser_conduit(name="direct")
     child.permanent_cleanup()
     assert not root.get_conduit_cloud().has_conduit_name("direct")
+    # A pool that keeps nothing (baseline = target = max = 0) destroys every return.
+    root._conduit_pool._baseline_idle = 0
     root._conduit_pool._target_idle = 0
+    root._conduit_pool._max_idle = 0
     overflow = root.create_lesser_conduit(name="overflow")
     overflow.cleanup()
     assert not root.get_conduit_cloud().has_conduit_name("overflow")

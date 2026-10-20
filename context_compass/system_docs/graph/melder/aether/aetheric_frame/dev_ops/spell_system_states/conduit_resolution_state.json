@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
- "source_sha256": "f564eacd1ef9a31da9fdf5c1f7cad2fc03c01983797f710dfc24ee78ad873459",
+ "source_sha256": "e7d6820e3844a93b918c7d65e1f3c3b97147097ebedb395d7ed329ff5f3fc830",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state": {
@@ -50,7 +50,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b7dc18aaf96527ec8f2bd56607537fb00e0cd527ad96236dda3d37b919f6f933",
+   "span_sha256": "312ea3415bf6bde2854236f0cfdd1c93e15609a90e2f3b72dc2f9d2779e8662b",
    "role": "Per-conduit resolution-validity container.",
    "responsibilities": [
     "tracks per-spell and per-root resolution validity for one conduit",

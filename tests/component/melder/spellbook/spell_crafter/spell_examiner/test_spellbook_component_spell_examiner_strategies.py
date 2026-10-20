@@ -63,12 +63,12 @@ def _make_spellbook() -> Spellbook:
 def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     """
     Purpose:
-        Retrieve a local Spell by its version id.
+        Retrieve a local Spell by its spell_id.
     Contract:
         - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
-        spell_id: Version id to match.
+        spell_id: The spell_id to match.
     Returns:
         Spell or None: Matching spell instance or None if not found.
     """

@@ -1,0 +1,41 @@
+run 7:
+Traceback (most recent call last):
+  File "/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_traceback.py", line 18, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/cc_res/rule2/tree/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 201, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/rule2/tree/src/melder/aether/conduit/conduit.py", line 5044, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/cc_res/rule2/tree/src/melder/aether/conduit/meld/conduit_meld.py", line 611, in meld
+    instance = self._execute_admitted(
+        target_spell,
+    ...<2 lines>...
+        False,
+    )
+  File "/tmp/cc_res/rule2/tree/src/melder/aether/conduit/meld/meld.py", line 933, in _execute_admitted
+    creation_context = spell._get_or_build_creation_context()
+  File "/tmp/cc_res/rule2/tree/src/melder/aether/spellbook/spell.py", line 1087, in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/rule2/tree/src/melder/aether/conduit/meld/creation_context/creation_context_factory.py", line 361, in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+        spell,
+    ...<2 lines>...
+        creation_gate_index_id=index_id,
+    )
+  File "/tmp/cc_res/rule2/tree/src/melder/aether/conduit/meld/creation_context/creation_context_builder.py", line 121, in build
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+

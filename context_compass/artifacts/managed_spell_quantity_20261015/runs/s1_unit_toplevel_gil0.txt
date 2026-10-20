@@ -1,0 +1,10 @@
+........................................................................ [ 49%]
+........................................................................ [ 99%]
+.                                                                        [100%]
+============================= slowest 5 durations ==============================
+29.46s call     tests/unit/melder/test_annotation_integrity.py::test_library_annotations_evaluate_with_type_checking_imports_bound
+22.79s call     tests/unit/melder/test_annotation_integrity.py::test_library_annotations_have_no_static_defects
+0.07s call     tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+0.06s call     tests/unit/melder/test_annotation_integrity.py::test_dynamic_audit_reports_evaluation_failures_only_for_seeded_defects
+0.05s call     tests/unit/melder/test_system_document_view.py::test_every_node_resolves_to_a_section_of_the_document
+145 passed in 60.75s (0:01:00)

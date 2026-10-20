@@ -167,6 +167,13 @@ class StaticCommandSystem(CommandSystem):
         Resolve one static-room spell runtime object by stable spell-index id while
         the command lock is already held.
 
+        Contract:
+            - The index path: answers the live object of a published record of
+              the index, whichever version that record names. The lookups by
+              spell_id and by source id name one version and do not come through
+              here; all three share `_meld_live_spell_from_records_locked`.
+            - Requires the caller to hold `self._lock`.
+
         Args:
             spell_index_id:
                 Stable SpellIndex id to resolve.
@@ -203,10 +210,65 @@ class StaticCommandSystem(CommandSystem):
                     frame_name,
                 )
             )
-        for spell_record in matching_spell_records:
+        return self._meld_live_spell_from_records_locked(
+            matching_spell_records,
+            subject="Spell index '{0}'".format(spell_index_id),
+            frame_name=frame_name,
+        )
+
+    def _meld_live_spell_from_records_locked(
+            self,
+            spell_records: list[SpellRecord],
+            *,
+            subject: str,
+            frame_name: str,
+    ) -> object:
+        """
+        Return the already-live object of the first of `spell_records` that has
+        one, while the command lock is already held.
+
+        Purpose:
+            One reuse-only loop for the static room's three lookups: by spell index
+            id (every record of the index), by spell_id (the records published for
+            that spell_id) and by source id (the one record it names). Each record
+            is melded by its own spell_id, so the answer is always a version the
+            caller named - or, on the index path, one the index's records name.
+
+        Contract:
+            - Skips records whose existence keeps no single stored object (`many`,
+              `unique_per_spell_space`, `managed_spell_quantity`) and records with
+              no owner conduit; melds every other record through its owner root
+              with `meld_existing_spell(spell=<the record's spell_id>)`, which
+              builds nothing, and skips a record its owner refuses (ValueError: no
+              live object).
+            - Requires the caller to hold `self._lock`; the frame and spell ACL
+              checks are the caller's.
+
+        Args:
+            spell_records:
+                Published records to try, in order.
+            subject:
+                What the caller asked for, as the refusals name it (for example
+                "Spell index '<id>'" or "Spell id '<id>'").
+            frame_name:
+                Resolved hosted frame name.
+
+        Returns:
+            object: Already-live runtime object of the first record that has one.
+
+        Raises:
+            ValueError:
+                "<subject> uses unsupported static existence '<name>'." when no
+                record had a live object and one of them uses an unsupported
+                existence; otherwise "<subject> is not live in frame '<frame>'.".
+        """
+        for spell_record in spell_records:
+            # No single stored object to hand out: `many` builds anew, a spellspace object is request-local, and a
+            # managed spell's objects are leased from a pool (2026-10-15).
             if spell_record.existence in {
                     Existence.many,
                     Existence.unique_per_spell_space,
+                    Existence.managed_spell_quantity,
             }:
                 continue
             owner_conduit_id = spell_record.owner_conduit_id
@@ -226,24 +288,25 @@ class StaticCommandSystem(CommandSystem):
         unsupported_spell_record = next(
             (
                 spell_record
-                for spell_record in matching_spell_records
+                for spell_record in spell_records
                 if spell_record.existence in {
                     Existence.many,
                     Existence.unique_per_spell_space,
+                    Existence.managed_spell_quantity,
                 }
             ),
             None,
         )
         if unsupported_spell_record is not None:
             raise ValueError(
-                "Spell index '{0}' uses unsupported static existence '{1}'.".format(
-                    spell_index_id,
+                "{0} uses unsupported static existence '{1}'.".format(
+                    subject,
                     unsupported_spell_record.existence.name,
                 )
             )
         raise ValueError(
-            "Spell index '{0}' is not live in frame '{1}'.".format(
-                spell_index_id,
+            "{0} is not live in frame '{1}'.".format(
+                subject,
                 frame_name,
             )
         )
@@ -255,7 +318,16 @@ class StaticCommandSystem(CommandSystem):
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one already-live spell runtime object using a published spell source id.
+        Return the already-live object of the spell a published source id names.
+
+        Contract:
+            - Melds only the spell the source id names, by its spell_id, through
+              its owner root (`meld_existing_spell`, reuse-only); never the live
+              object of another version of its index. Until 0.2.8253 this
+              resolved the record's index and returned the live object of any
+              published record of it.
+            - Enforces the frame command gate and the record's spell-index ACL
+              before touching runtime state.
 
         Args:
             spell_source_id:
@@ -269,8 +341,10 @@ class StaticCommandSystem(CommandSystem):
 
         Raises:
             ValueError:
-                If the spell is not published in the selected frame or is not
-                currently live.
+                If the spell source id is empty, malformed, not published or
+                ambiguous in the selected frame, if command ACL denies frame or
+                spell access, if its existence keeps no single stored object, or
+                if it is not currently live.
         """
         with self._entered_command_action(
                 action_name="get_spell_by_source_id",
@@ -281,8 +355,14 @@ class StaticCommandSystem(CommandSystem):
                 spell_source_id,
                 frame_name=resolved_frame_name,
             )
-            return self._get_spell_by_index_id_locked(
+            self._assert_frame_command_enabled(resolved_frame_name)
+            self._assert_spell_command_enabled(
                 spell_record.spell_index_id,
+                frame_name=resolved_frame_name,
+            )
+            return self._meld_live_spell_from_records_locked(
+                [spell_record],
+                subject="Spell '{0}'".format(spell_source_id),
                 frame_name=resolved_frame_name,
             )
 
@@ -504,18 +584,28 @@ class StaticCommandSystem(CommandSystem):
                 frame_name=resolved_frame_name,
             )
 
-    def get_spell_by_id(
+    def get_spell_by_spell_id(
             self,
             spell_id: str,
             *,
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one already-live spell runtime object by current spell id.
+        Return the already-live object of the spell that owns a spell_id.
+
+        Contract:
+            - Melds only the records published for that spell_id (one per
+              Spellbook that publishes it), each by the spell_id, through its
+              owner root (`meld_existing_spell`, reuse-only); never the live object
+              of another version of its index. Renamed from `get_spell_by_id` in
+              0.2.8253, which resolved the spell_id's index and returned the live
+              object of any published record of it.
+            - Enforces the frame command gate and the spell-index ACL before
+              touching runtime state.
 
         Args:
             spell_id:
-                Current spell id to resolve.
+                The spell_id to resolve.
             frame_name:
                 Optional frame name. When omitted, the room default frame is
                 used.
@@ -525,11 +615,13 @@ class StaticCommandSystem(CommandSystem):
 
         Raises:
             ValueError:
-                If the spell is not published in the selected frame or does
-                not currently have a live creation.
+                If the spell_id is empty, not published or published under more
+                than one index in the selected frame, if command ACL denies frame
+                or spell access, if its existence keeps no single stored object, or
+                if it is not currently live.
         """
         with self._entered_command_action(
-                action_name="get_spell_by_id",
+                action_name="get_spell_by_spell_id",
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
@@ -537,8 +629,22 @@ class StaticCommandSystem(CommandSystem):
                 spell_id,
                 frame_name=resolved_frame_name,
             )
-            return self._get_spell_by_index_id_locked(
+            self._assert_frame_command_enabled(resolved_frame_name)
+            self._assert_spell_command_enabled(
                 spell_index_id,
+                frame_name=resolved_frame_name,
+            )
+            descriptor = self._rift._get_required_command_projection(
+                resolved_frame_name
+            ).frame_descriptor
+            matching_spell_records = [
+                spell_record
+                for spell_record in descriptor.spell_records_by_key.values()
+                if spell_record.spell_id == spell_id
+            ]
+            return self._meld_live_spell_from_records_locked(
+                matching_spell_records,
+                subject="Spell id '{0}'".format(spell_id),
                 frame_name=resolved_frame_name,
             )
 
@@ -625,6 +731,7 @@ class StaticCommandSystem(CommandSystem):
         is_static_supported = spell_record.existence not in {
             Existence.many,
             Existence.unique_per_spell_space,
+            Existence.managed_spell_quantity,
         }
         is_live = False
         owner_conduit_id = spell_record.owner_conduit_id

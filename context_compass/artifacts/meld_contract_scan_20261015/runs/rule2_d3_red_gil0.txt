@@ -1,0 +1,22 @@
+4:tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:445: in test_a_notch_back_reactivates_a_version_grant_and_its_consumer_rebuilds_with_one_pass
+5:    assert world.meld_ping() == "A"
+6:           ^^^^^^^^^^^^^^^^^
+7:tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:201: in meld_ping
+8:    return self.borrower.meld(spell=Consumer).service.ping()
+9:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11:    return meld_component.meld(
+13:    self._ensure_lineage_resolvable(target_spell)
+15:    raise SpellbookValidationError([spell])
+16:E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer.
+17:E   Consumer:
+18:E     - Spell 'Consumer' parameter 'service' has no provider for its SpellContract (frame_key='iservice', binding_key='svc'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]
+20:tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:483: in test_a_grant_of_a_parked_version_becomes_active_when_the_lender_notches_to_it
+21:    assert borrower.meld(spell=Consumer).service.ping() == "B"
+22:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24:    return meld_component.meld(
+26:    self._ensure_lineage_resolvable(target_spell)
+28:    raise SpellbookValidationError([spell])
+29:E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer.
+30:E   Consumer:
+31:E     - Spell 'Consumer' parameter 'service' has no provider for its SpellContract (frame_key='iservice', binding_key='svc'): no active spell with that frame and binding name is contracted to this Spellbook. Contract one from a linked conduit (add_index_to_contract, or add_spell_to_contract for one version) and meld again. [SPELL_CONTRACT_MISSING_PROVIDER]
+35:2 failed, 14 deselected in 1.05s

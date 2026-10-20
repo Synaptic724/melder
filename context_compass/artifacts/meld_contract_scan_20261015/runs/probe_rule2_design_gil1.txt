@@ -1,0 +1,110 @@
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7 gil_enabled=True
+[S1 index link, today]
+  first meld: got A (gate=1 scan=1 5-11=1)
+  warm: 1476.9 us per meld (gate=1.00 scan=1.00 5-11=1.00)
+  after notch to B: consumer valid [] bookflag=True
+  meld after notch: got B (gate=1 scan=1 5-11=1)
+  next meld: got B (gate=1 scan=1 5-11=1)
+  after notch back to A: consumer valid [] bookflag=True
+  meld after notch back: got A (gate=1 scan=1 5-11=1)
+  meld after repeat notch to B: got B (gate=1 scan=1 5-11=1)
+  warm: 1641.4 us per meld (gate=1.00 scan=1.00 5-11=1.00)
+[S2 grant, today]
+  first meld: got A (gate=1 scan=1 5-11=1)
+  after notch to B: consumer valid [] bookflag=True
+  meld after notch: MeldExecutionError: [MELD] Execution failed for spell 'Consumer' (b72c64e628b719bd4a853c2bd611ddf114b51a3b06bb1d795489026775e392d0) at node b72c64e628b719bd4a853c2bd611ddf114b51a3b06bb1d795489026775e392d0 (parameter 'service'): SpellContract could not be resolved. Missing contracted provider for key (frame_key='iservice', binding_key='svc') on param 'service' for spell 'Consumer'. Contract=<SpellContract spell=None spellframe=<class '__
+  meld after notch back: MeldExecutionError: [MELD] Execution failed for spell 'Consumer' (b72c64e628b719bd4a853c2bd611ddf114b51a3b06bb1d795489026775e392d0) at node b72c64e628b719bd4a853c2bd611ddf114b51a3b06bb1d795489026775e392d0 (parameter 'service'): SpellContract could not be resolved. Missing contracted provider for key (frame_key='iservice', binding_key='svc') on param 'service' for spell 'Consumer'. Contract=<SpellContract spell=None spellframe=<class '__
+[S3 unresolvable version, today]
+  first meld: got A (gate=1 scan=1 5-11=1)
+  meld after notch to ImplBroken: UnresolvedInputError: [MELD] Execution failed for spell 'ImplBroken' (18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f) at node 18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f (parameter 'missing'): ImplBroken.missing expects Missing, but nothing registered provides it and this meld did not supply it. Supply it with override={'missing': ...} when melding ImplBroken, a path key ending in '>missing' (or '**m
+  meld after notch back to A: got A (gate=1 scan=1 5-11=1)
+  first meld with ImplBroken lent from the start: UnresolvedInputError: [MELD] Execution failed for spell 'ImplBroken' (18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f) at node 18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f (parameter 'missing'): ImplBroken.missing expects Missing, but nothing registered provides it and this meld did not supply it. Supply it with override={'missing': ...} when melding ImplBroken, a path key ending in '>missing' (or '**m
+[S4 index destroy, today]
+  first meld: got A (gate=1 scan=1 5-11=1)
+  after destroy: consumer valid [] bookflag=True
+  meld after destroy: MeldExecutionError: [MELD] Execution failed for spell 'Consumer' (b72c64e628b719bd4a853c2bd611ddf114b51a3b06bb1d795489026775e392d0) at node b72c64e628b719bd4a853c2bd611ddf114b51a3b06bb1d795489026775e392d0 (parameter 'service'): SpellContract could not be resolved. Missing contracted provider for key (frame_key='iservice', binding_key='svc') on param 'service' for spell 'Consumer'. Contract=<SpellContract spell=None spellframe=<class '__
+[S5 provider dependency notch, today]
+  first meld: got P+d1 (gate=1 scan=1 5-11=1)
+  after the dependency notch: consumer valid [] bookflag=True
+  meld after the dependency notch: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  lender meld of the provider: RuntimeError: many_only manifest references unknown spell_id '24842ef713d4550ea15b3af687d8a696b5c0c4780ecbc5fe6a71c6b2c0770eb5'.
+  borrower meld after the lender's meld: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+[S6 unique consumer, today]
+  first meld: got A
+  meld after notch: got A same_object=True (gate=1 scan=1 5-11=1)
+  meld after purge: got B (gate=1 scan=1 5-11=1)
+[today] marks issued: 0
+[S1 index link, noscan]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  warm: 1.7 us per meld (gate=1.00 scan=0.00 5-11=0.00)
+  after notch to B: consumer valid [] bookflag=True
+  meld after notch: got A (gate=1 scan=0 5-11=0)
+  next meld: got A (gate=1 scan=0 5-11=0)
+  after notch back to A: consumer valid [] bookflag=True
+  meld after notch back: got A (gate=1 scan=0 5-11=0)
+  meld after repeat notch to B: got A (gate=1 scan=0 5-11=0)
+  warm: 2.1 us per meld (gate=1.00 scan=0.00 5-11=0.00)
+[S2 grant, noscan]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  after notch to B: consumer valid [] bookflag=True
+  meld after notch: got A (gate=1 scan=0 5-11=0)
+  meld after notch back: got A (gate=1 scan=0 5-11=0)
+[S3 unresolvable version, noscan]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  meld after notch to ImplBroken: got A (gate=1 scan=0 5-11=0)
+  meld after notch back to A: got A (gate=1 scan=0 5-11=0)
+  first meld with ImplBroken lent from the start: UnresolvedInputError: [MELD] Execution failed for spell 'ImplBroken' (18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f) at node 18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f (parameter 'missing'): ImplBroken.missing expects Missing, but nothing registered provides it and this meld did not supply it. Supply it with override={'missing': ...} when melding ImplBroken, a path key ending in '>missing' (or '**m
+[S4 index destroy, noscan]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  after destroy: consumer valid [] bookflag=True
+  meld after destroy: got A (gate=1 scan=0 5-11=0)
+[S5 provider dependency notch, noscan]
+  first meld: got P+d1 (gate=1 scan=0 5-11=1)
+  after the dependency notch: consumer valid [] bookflag=True
+  meld after the dependency notch: got P+d1 (gate=1 scan=0 5-11=0)
+  lender meld of the provider: RuntimeError: many_only manifest references unknown spell_id '24842ef713d4550ea15b3af687d8a696b5c0c4780ecbc5fe6a71c6b2c0770eb5'.
+  borrower meld after the lender's meld: got P+d1 (gate=1 scan=0 5-11=0)
+[S6 unique consumer, noscan]
+  first meld: got A
+  meld after notch: got A same_object=True (gate=1 scan=0 5-11=0)
+  meld after purge: got A (gate=1 scan=0 5-11=0)
+[noscan] marks issued: 0
+[S1 index link, rule2]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  warm: 1.9 us per meld (gate=1.00 scan=0.00 5-11=0.00)
+  after notch to B: consumer gated ['contract_unvalidated'] bookflag=True
+  meld after notch: got B (gate=1 scan=0 5-11=1)
+  next meld: got B (gate=1 scan=0 5-11=0)
+  after notch back to A: consumer gated ['contract_unvalidated'] bookflag=True
+  meld after notch back: got A (gate=1 scan=0 5-11=1)
+  meld after repeat notch to B: got B (gate=1 scan=0 5-11=1)
+  warm: 1.8 us per meld (gate=1.00 scan=0.00 5-11=0.00)
+[S2 grant, rule2]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  after notch to B: consumer gated ['contract_unvalidated'] bookflag=True
+  meld after notch: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+  meld after notch back: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[S3 unresolvable version, rule2]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  meld after notch to ImplBroken: UnresolvedInputError: [MELD] Execution failed for spell 'ImplBroken' (18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f) at node 18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f (parameter 'missing'): ImplBroken.missing expects Missing, but nothing registered provides it and this meld did not supply it. Supply it with override={'missing': ...} when melding ImplBroken, a path key ending in '>missing' (or '**m
+  meld after notch back to A: got A (gate=1 scan=0 5-11=1)
+  first meld with ImplBroken lent from the start: UnresolvedInputError: [MELD] Execution failed for spell 'ImplBroken' (18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f) at node 18ff14e163d6a919e65ba772a9201a5aa71fe8ad56bd7cb188e254fcf7141b9f (parameter 'missing'): ImplBroken.missing expects Missing, but nothing registered provides it and this meld did not supply it. Supply it with override={'missing': ...} when melding ImplBroken, a path key ending in '>missing' (or '**m
+[S4 index destroy, rule2]
+  first meld: got A (gate=1 scan=0 5-11=1)
+  after destroy: consumer gated ['contract_unvalidated'] bookflag=True
+  meld after destroy: SpellbookValidationError: Spellbook validation failed. Broken spells: Consumer. Consumer: - No validation error was recorded for this spell; its validity is invalid, gated or disabled. 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[S5 provider dependency notch, rule2]
+  first meld: got P+d1 (gate=1 scan=0 5-11=1)
+  after the dependency notch: consumer valid [] bookflag=True
+  meld after the dependency notch: got P+d1 (gate=1 scan=0 5-11=0)
+  lender meld of the provider: RuntimeError: many_only manifest references unknown spell_id '24842ef713d4550ea15b3af687d8a696b5c0c4780ecbc5fe6a71c6b2c0770eb5'.
+  borrower meld after the lender's meld: got P+d1 (gate=1 scan=0 5-11=0)
+[S6 unique consumer, rule2]
+  first meld: got A
+  meld after notch: got A same_object=True (gate=1 scan=0 5-11=1)
+  meld after purge: got B (gate=1 scan=0 5-11=0)
+[rule2] marks issued: 24

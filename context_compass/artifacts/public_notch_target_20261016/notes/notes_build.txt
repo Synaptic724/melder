@@ -1,0 +1,29 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Built as patched: `Conduit.notch_spell` takes `spell_id=` (keyword-only, `spell` now defaulting to None),
+    `_resolve_notch_target` does the argument checks and `_owned_notch_target` the resolution, ownership and
+    membership checks (the patch called the second helper `_refuse_foreign_notch_target`; one helper now resolves and
+    checks, so the refusal text lives in one place), called before admission and again inside the window's `try`;
+    the docstring now says the conduit admits the transaction (the old one said the Spellbook did). Red then green:
+    the 16 unit tests (15 failed before - the 16th, `spell=` with an owned member, passed before as it should) and 10
+    integration tests (all failed before) pass with the GIL off and on. Regression, both GIL modes:
+    tests/unit/melder/aether/conduit 1439 passed; tests/integration/melder/aether/conduit 120 passed (the new file,
+    notch lifecycle, op guards, index-link follow and meld, the notch race); the notch callers - crystallizer restore
+    43 passed + 3 xfailed (as before), ordered-disposal replay 23, membership, lifecycle, per-frame worlds, spellframe
+    kind, managed options, bind-hook recording, the S8 parked tests, the managed conduit tests, non-resolvable replay
+    and eight component files that notch - all passed (GIL off: the first ordered-disposal run hit the 175 s call limit
+    after 22 passes; its last 12 then passed alone).
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:5622-5859
+  - tests/unit/melder/aether/conduit/test_conduit_notch_target.py:1-252
+  - tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py:1-271
+  - context_compass/artifacts/public_notch_target_20261016/runs/red_unit_gil0.txt:1-297
+  - context_compass/artifacts/public_notch_target_20261016/runs/green_new_tests_gil1.txt:1-2
+  - context_compass/artifacts/public_notch_target_20261016/runs/shard_restore_b_gil1.txt:1-2
+  IMPACT: The code side of the exit gate holds; the docs, the README-loop probe, the system docs, the release note,
+    the notch and the rebuild remain.
+  NEXT: The docs - README, docs/expert/governed-change.md, UX expert 17 and 26, the expert concept map.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

@@ -36,6 +36,8 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `discover`: a manifest is refused | The message names the file and the rule; fix the manifest ([python_versions.md](python_versions.md)). |
 | A test cell fails to install | A pin has no wheel for that release or runner; change the pin in that manifest. |
 | A speed test fails in its install step | A benchmark library has no free-threaded wheel on that runner: pin another version or list it under `build_from_source`. Read `install.log` in the results artifact. |
+| A speed test is red on a `dev` -> `preprod` pull request | It blocks nothing: merge when `CI / merge-ready` is green. Its results artifact says why; a speed test fails only when the benchmark fails or is incomplete, or its settings or GIL state are wrong. |
+| `Speed / route` refused | The pull request into `preprod` does not come from this repository's `dev`, and `branch-policy` refuses it too. Retarget it. |
 | A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
 | `RC / publish-to-TestPyPI`: HTTP 503 or another 5xx from TestPyPI after six tries | TestPyPI is down. When it answers again, use **Re-run failed jobs**; the run's build is reused. |

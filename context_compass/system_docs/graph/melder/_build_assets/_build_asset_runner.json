@@ -46,7 +46,7 @@
  "published_aliases": [],
  "imports": {
   "argparse": "argparse",
-  "importlib.util": "importlib.util",
+  "importlib": "importlib",
   "re": "re",
   "pathlib": "pathlib",
   "sys": "sys",

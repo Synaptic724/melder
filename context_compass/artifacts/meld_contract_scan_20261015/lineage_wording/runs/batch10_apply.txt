@@ -1,0 +1,334 @@
+--- src/melder/aether/conduit/conduit_cluster.py
++++ src/melder/aether/conduit/conduit_cluster.py
+@@ -39,3 +39,3 @@
+     The cluster's primary job. Members automatically contract ("share") their
+-    shareable root `SpellIndex` lineages to one another, so every member can
++    shareable root spell indexes to one another, so every member can
+     resolve every other member's shared roots. This layer is fully functional
+@@ -1501,3 +1501,3 @@
+                 Snapshot containing cluster name, dependency-link policy,
+-                member ids, and shared-root lineage ids grouped by owner.
++                member ids, and shared root SpellIndex ids grouped by owner.
+         """
+--- src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py
+@@ -31,13 +31,13 @@
+     """
+-    Guard that root-blueprint lineage metadata agrees with the system index.
++    Guard that root-blueprint SpellIndex metadata agrees with the system index.
+ 
+-    Root blueprints are spell_id-rooted, but they can still carry lineage
++    Root blueprints are spell_id-rooted, but they can still carry SpellIndex
+     metadata for DevOps and change-control consumers. This strategy checks that
+-    the optional root-lineage ids embedded in the blueprints stay aligned with
+-    the lineage ids tracked on the corresponding `SpellSystemIndex` nodes.
++    the optional root SpellIndex ids embedded in the blueprints stay aligned with
++    the SpellIndex ids (`lineage_id`) tracked on the corresponding `SpellSystemIndex` nodes.
+ 
+     Contract:
+-        - Emits `root_lineage_mismatch` when a root lineage id disagrees with
++        - Emits `root_lineage_mismatch` when a root SpellIndex id disagrees with
+           the index.
+-        - Skips checks when a blueprint intentionally lacks lineage metadata.
++        - Skips checks when a blueprint intentionally lacks SpellIndex metadata.
+     """
+@@ -58,10 +58,10 @@
+         """
+-        Validate that blueprint root lineage ids match index lineage ids.
++        Validate that blueprint root SpellIndex ids match the index nodes' SpellIndex ids.
+ 
+         Purpose:
+-            Ensure the Phase-5 blueprint lineage metadata stays aligned with
+-            the SpellSystemIndex lineage ids used for system tracking.
++            Ensure the Phase-5 blueprint SpellIndex metadata stays aligned with
++            the SpellSystemIndex nodes' SpellIndex ids used for system tracking.
+         Contract:
+-            - Emits root_lineage_mismatch when the lineage ids differ.
+-            - Omits diagnostics when root lineage metadata is absent.
++            - Emits root_lineage_mismatch when the SpellIndex ids differ.
++            - Omits diagnostics when root SpellIndex metadata is absent.
+             - Cancellation is honored between roots.
+@@ -72,3 +72,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py
+@@ -31,3 +31,3 @@
+     """
+-    Guard that a lineage does not claim conflicting conduit ownership.
++    Guard that a SpellIndex does not claim conflicting conduit ownership.
+ 
+@@ -35,6 +35,6 @@
+     contracted spells, transfer-of-ownership flows, and conduit-scoped
+-    validation. A lineage that points at multiple concrete conduit owners at
++    validation. A SpellIndex that points at multiple concrete conduit owners at
+     once is a system-level inconsistency, so this strategy groups nodes by
+-    lineage id and checks whether the non-None owner set stays singular before
+-    later validation or change-control logic treats that lineage as belonging to
++    SpellIndex id and checks whether the non-None owner set stays singular before
++    later validation or change-control logic treats that SpellIndex as belonging to
+     one authoritative conduit.
+@@ -59,3 +59,3 @@
+         Purpose:
+-            Catch lineages whose visible versions disagree about which conduit
++            Catch spell indexes whose visible versions disagree about which conduit
+             currently owns them.
+@@ -68,3 +68,3 @@
+               create false conflicts on their own.
+-            - Emits one ERROR diagnostic per conflicting lineage and includes
++            - Emits one ERROR diagnostic per conflicting SpellIndex and includes
+               both the participating conduit ids and the spell versions that
+@@ -77,3 +77,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py
+@@ -31,9 +31,9 @@
+     """
+-    Guard that one root DAG does not mix multiple versions of the same lineage.
++    Guard that one root DAG does not mix multiple versions of the same SpellIndex.
+ 
+     Root blueprints are spell_id graphs, but they still represent one
+-    coherent runtime slice. If the same lineage appears multiple times under a
++    coherent runtime slice. If the same SpellIndex appears multiple times under a
+     single root as different spell_ids, the root is effectively depending on
+     mutually conflicting revisions of the same logical spell family. This
+-    strategy checks the blueprint DAG against the index lineage map and turns
++    strategy checks the blueprint DAG against the index's SpellIndex ids and turns
+     that mismatch into a root-scoped error before later planning or execution
+@@ -56,3 +56,3 @@
+         """
+-        Validate that each root DAG contains at most one version per lineage.
++        Validate that each root DAG contains at most one version per SpellIndex.
+ 
+@@ -60,9 +60,9 @@
+             Prevent one root blueprint from resolving multiple concrete versions
+-            of the same logical spell lineage.
++            of the same SpellIndex.
+         Contract:
+             - Uses blueprint DAG node ids as the candidate version set and the
+-              system index as the source of lineage identity.
+-            - Missing index nodes and lineage-less nodes are ignored here
++              system index as the source of SpellIndex identity.
++            - Missing index nodes and nodes without a SpellIndex id are ignored here
+               because other strategies already report broken index coverage.
+-            - Emits one ERROR diagnostic per conflicting lineage within a root,
++            - Emits one ERROR diagnostic per conflicting SpellIndex within a root,
+               with the concrete spell ids that collided.
+@@ -76,3 +76,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py
+@@ -31,8 +31,8 @@
+     """
+-    Guard that one lineage does not fan out into multiple structural roots.
++    Guard that one SpellIndex does not fan out into multiple structural roots.
+ 
+     A root blueprint is supposed to represent a distinct root spell version in
+-    the frame. If multiple root spell ids map back to the same lineage, the
++    the frame. If multiple root spell ids map back to the same SpellIndex, the
+     system is effectively declaring multiple root revisions of one logical spell
+-    family at once. This strategy detects that root-lineage split before the
++    family at once. This strategy detects that root SpellIndex split before the
+     planner treats those roots as separate entrypoints with independent
+@@ -55,3 +55,3 @@
+         """
+-        Validate that each lineage maps to at most one root spell id.
++        Validate that each SpellIndex maps to at most one root spell id.
+ 
+@@ -59,7 +59,7 @@
+             Prevent the blueprint set from advertising multiple structural roots
+-            for one logical spell lineage.
++            for one SpellIndex.
+         Contract:
+-            - Uses blueprint keys as the root set and resolves lineage identity
++            - Uses blueprint keys as the root set and resolves SpellIndex identity
+               from the system index.
+-            - Missing index nodes and lineage-less roots are ignored here so
++            - Missing index nodes and roots without a SpellIndex id are ignored here so
+               dedicated index/root coverage strategies can report those failures
+@@ -74,3 +74,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py
+@@ -30,6 +30,6 @@
+     """
+-    Guard that the visible system index does not drift onto stale lineage versions.
++    Guard that the visible system index does not drift onto stale versions of a SpellIndex.
+ 
+     This strategy compares the spell_ids stored on `SpellSystemIndex` nodes
+-    against the currently visible spell versions for each lineage. It is aimed
++    against the currently visible spell versions for each SpellIndex. It is aimed
+     at contracted/borrowed visibility scenarios where the system graph can lag
+@@ -53,3 +53,3 @@
+         """
+-        Validate that index nodes align with visible lineage versions.
++        Validate that index nodes align with the visible versions of each SpellIndex.
+ 
+@@ -57,3 +57,3 @@
+             Surface cases where SpellSystemIndex references outdated
+-            spell_ids for a lineage visible in the spellbook.
++            spell_ids for a SpellIndex visible in the spellbook.
+         Contract:
+@@ -67,3 +67,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py
+@@ -30,7 +30,7 @@
+     """
+-    Guard that dependency edges stay on spell_ids rather than lineage ids.
++    Guard that dependency edges stay on spell_ids rather than SpellIndex ids.
+ 
+     The system graph is supposed to route concrete spell versions, while
+-    lineage ids are DevOps/control-plane identity. If a dependency edge starts
+-    pointing at lineage ids directly, later planning and resolution become
++    SpellIndex ids are DevOps/control-plane identity. If a dependency edge starts
++    pointing at SpellIndex ids directly, later planning and resolution become
+     ambiguous because the graph is no longer naming executable versions. This
+@@ -53,9 +53,9 @@
+         """
+-        Validate that dependency ids are spell_ids, not lineage ids.
++        Validate that dependency ids are spell_ids, not SpellIndex ids.
+ 
+         Purpose:
+-            Catch dependency edges that reference lineage ids directly, which
++            Catch dependency edges that reference SpellIndex ids directly, which
+             can cause resolution to drift or fail.
+         Contract:
+-            - Emits an error for each dependency id that matches a lineage id.
++            - Emits an error for each dependency id that matches a SpellIndex id.
+             - Cancellation is honored between nodes.
+@@ -66,3 +66,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
+@@ -69,3 +69,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py
+@@ -66,3 +66,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py
+@@ -66,3 +66,3 @@
+             spell_system_states:
+-                SpellSystemStates registry for topology and lineage data.
++                SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup:
+--- src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py
+@@ -70,3 +70,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py
+@@ -102,3 +102,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py
+@@ -67,3 +67,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py
+@@ -71,3 +71,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py
+@@ -70,3 +70,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py
+@@ -68,3 +68,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py
+@@ -72,3 +72,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py
+@@ -74,3 +74,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py
+@@ -68,3 +68,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py
+@@ -35,3 +35,3 @@
+     This is the index-local counterpart to the broader graph consistency check.
+-    Before later strategies reason about reachability, lineage, or root
++    Before later strategies reason about reachability, SpellIndex identity, or root
+     viability, the index itself must at least be internally self-consistent.
+@@ -70,3 +70,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
+@@ -61,3 +61,3 @@
+             - A single broken spell may contribute diagnostics to multiple
+-              roots when its lineage is shared across those rooted DAGs.
++              roots when that spell is shared across those rooted DAGs.
+             - Cancellation is honored between roots.
+@@ -68,3 +68,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+--- src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
++++ src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
+@@ -69,3 +69,3 @@
+             broken_spell_ids: Set of broken spell ids.
+-            spell_system_states: SpellSystemStates registry for topology and lineage data.
++            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+             spell_lookup: Mapping of visible spell_ids to spell objects.
+22 files, 67 edits applied and read back

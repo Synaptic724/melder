@@ -1,0 +1,5 @@
+tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md: 275 -> 302 lines
+attention_board.md: 365 -> 372 lines
+artifact_board.md: 305 -> 306 lines
+mailbox_board.md: 921 -> 932 lines
+NOW 2026-10-18T12:30:17Z applied

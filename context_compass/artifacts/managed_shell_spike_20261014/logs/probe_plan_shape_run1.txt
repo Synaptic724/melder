@@ -1,0 +1,11 @@
+plain plan (unique site): 166 ns per Worker creation; py calls 3, C calls 5
+managed plan + ReleaseManagedSpell.release: 715 ns per Worker creation; py calls 6, C calls 19
+managed plan + release through the shell: 584 ns per Worker creation; py calls 5, C calls 17
+managed plan + singleton release, 4 threads x 30k: 1044 ns per Worker creation amortized; shell {'mode': 'elastic', 'count': 4, 'idle': 4, 'out': 0, 'dead_pending': 0}
+plain plan, 4 threads x 30k: 307 ns per Worker creation amortized
+door: owner-store read c0._creations.get(sid0): 30 ns
+door: sh0.acquire() + put_back through the shell: 428 ns
+door: sh0.acquire() + ReleaseManagedSpell.release: 521 ns
+reference: Manager() construction alone: 70 ns
+reference: conduit.meld("Worker") whole, plain world: 337 ns
+destroy_all: 0 errors; shell {'mode': 'elastic', 'count': 0, 'idle': 0, 'out': 0, 'dead_pending': 0}

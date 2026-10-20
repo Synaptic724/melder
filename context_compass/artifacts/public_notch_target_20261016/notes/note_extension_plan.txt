@@ -1,0 +1,31 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Mapping for the owner's extension, patch section -> implementation -> validation (lane reopened; written
+    before the src/ edit). (1) Invariant 6 and the index-move component patch -> in conduit.py a shared
+    `_check_spell_argument(verb, spell, spell_id)` (both / neither -> ValueError, non-str id / str spell ->
+    TypeError, worded for the verb), `_owned_spell_by_id(verb, spell_id)` (`_get_owned_spell`, None -> ValueError)
+    and `_resolve_spell_to_move`, called by `add_to_spell_index` and `remove_from_spell_index` after their Book check;
+    `_resolve_notch_target` uses the shared argument check -> unit (new test_conduit_index_move_target.py): per verb,
+    the refusals with nothing started, a resolved spell_id reaching the metadata and the Book's entry, `spell=`
+    passed through without asking the Book; integration (new test_index_moves_by_spell_id_integration.py): add and
+    remove by spell_id in a dynamic world, then a notch to the moved spell and a meld; an unknown id, both and
+    neither refused with the indexes intact; an active spell_id refused by the seam, indexes intact. (2) Invariant
+    7 -> the notch refusals reworded to spell_id -> one notch unit test asserts the new text; the lane's files
+    searched for "version id". (3) The add and remove docstrings say the conduit admits the transaction and list the
+    seams' refusals (remove: the active member and the only member are refused). (4) Regression, GIL off and on: the
+    conduit unit tree, the notch-target tests, the index-move suites (index lifecycle and depth, index-link follow,
+    notch lifecycle, op guards, crystallizer membership, the find-by-id component test). (5) Then the wording in the
+    lane's docs, system docs and graph, the release note, the tests docs, the archive, closure and rebuild; the notch
+    stays 0.2.8249.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/public_notch_target_2026_10_16/architecture_patch.md:1-150
+  - context_compass/system_docs/patches/active/public_notch_target_2026_10_16/component_patch_conduit_index_move_target.md:1-76
+  - src/melder/aether/conduit/conduit.py:5753-6001
+  - src/melder/aether/spellbook/spellbook.py:3969-4096
+  - src/melder/aether/spellbook/spellbook.py:4145-4262
+  IMPACT: The entry gate is met again for the extension: the lane is reopened and linked, the mapping recorded.
+  NEXT: Write the red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

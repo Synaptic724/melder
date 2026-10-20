@@ -57,9 +57,9 @@ class ConduitResolutionState(Cleanable):
     Validity
     --------
     - spell validity:
-        Per-spell resolution verdicts keyed by spell_id (version id).
+        Per-spell resolution verdicts keyed by spell_id.
     - root validity:
-        Per-root resolution verdicts keyed by root_id (version id).
+        Per-root resolution verdicts keyed by root_id (the root spell's spell_id).
 
     Diagnostics
     -----------
@@ -79,7 +79,7 @@ class ConduitResolutionState(Cleanable):
 
     Contract:
         - Scope is exactly ONE conduit; it never speaks for the frame.
-        - Verdicts are keyed by VERSION id (spell_id / root_id), not by index
+        - Verdicts are keyed by spell_id (and root_id), not by spell index
           id - resolution is decided against the concrete version a conduit
           actually resolved.
         - Structural validity is NOT duplicated here; that stays global on
@@ -102,12 +102,12 @@ class ConduitResolutionState(Cleanable):
     System Context:
         This class exists because resolution validity is genuinely NOT a
         property of a spell - it is a property of a (spell, conduit) pair. The
-        same lineage can be perfectly resolvable in one conduit and gated in
+        same spell can be perfectly resolvable in one conduit and gated in
         another, because the conduits differ in linked contracts, cluster
         membership, and change-control dirty roots. A single global verdict
         would have to be the pessimistic intersection, which would gate healthy
         conduits because some unrelated conduit is mid-transfer.
-        The keying follows from that: verdicts are per version id because a
+        The keying follows from that: verdicts are per spell_id because a
         conduit resolves a concrete version, so a notch that repoints an index
         legitimately invalidates the old verdict rather than silently carrying
         it forward to different code.
@@ -575,12 +575,12 @@ class ConduitResolutionState(Cleanable):
             - Marks the state dirty with `change_reason` only when a verdict was
               actually removed; a miss changes nothing.
             - Does NOT notify the `RiskManager`. Forgetting is a change of
-              scope, not of verdict: lineage membership in the risk model is
+              scope, not of verdict: SpellIndex membership in the risk model is
               owned by `RiskManager.register_spell` / `unregister_spell`, which
               the Spellbook calls on bind and on removal and which recompute
               risk from the live verdict. A callback from here would leave a
               risky key behind in every conduit that never registers the
-              lineage again (a peer that resolved the id through a contract).
+              SpellIndex again (a peer that resolved the id through a contract).
 
         Args:
             spell_id:

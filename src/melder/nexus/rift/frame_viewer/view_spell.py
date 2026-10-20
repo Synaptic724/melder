@@ -851,7 +851,7 @@ class ViewSpell(Cleanable):
             index context inside the current frame.
 
         Contract:
-            - Describes the spell's INDEX, i.e. its version lineage, so it answers
+            - Describes the spell's INDEX, the SpellIndex organizing its versions, so it answers
               "what other versions exist" rather than "what is this version".
             - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
               OR "not present", indistinguishable from outside.
@@ -1728,8 +1728,8 @@ class ViewSpell(Cleanable):
 
         Contract:
             - EXACT, CASE-SENSITIVE match on spell index id. Because an index tracks
-              a whole version lineage, this returns EVERY visible spell sharing that
-              lineage, not one spell.
+              every version it organizes, this returns EVERY visible spell in that
+              index, not one spell.
             - Empty `spell_index_id` is rejected up front.
             - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
               rift" OR "not present" - indistinguishable from outside. Never use an

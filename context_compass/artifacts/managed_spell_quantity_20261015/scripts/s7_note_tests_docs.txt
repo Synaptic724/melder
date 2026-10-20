@@ -1,0 +1,33 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: tests_components and tests_architecture carry the managed lane (scripts/s7_docs_tests.py, then
+    s7_docs_tests_fix.py: the meld door's method is `meld_existing_spell`). tests_components: a new Managed Spell
+    Pools Unit Cluster (the pool and its stress file, the Creations map and discard, the registry and its stress
+    file, the lease, the meld doors, the transfer stamps), dated Protects lines in ten existing clusters with key
+    files in nine, a line in each suite, the flow "Managed Pool Stress Under Eight Threads", 28 measured C1
+    records and the 20 stale ones remeasured, the counts (833 modules) and the core set: 247 paths, equal to the
+    247 records, with no MISSING, OUT OF BOUNDS or STALE RANGE left. tests_architecture: the inventory recounted,
+    its two stale records remeasured, its C1 header corrected (a 36-path subset of that core set, not the union),
+    a WORKER HANG failure mode, sources and handoff. Gates: both indexes regenerated (68 and 32 sections) and
+    `--check` OK; the portability search finds nothing; one H1 each; no unclosed bracket in a heading; the
+    absolute-path search matches only the recipe's `end_line:\s` code line in each document (pre-existing, not a
+    path); preservation: 75 and 15 baseline lines changed, each an edited count, a remeasured C1 field, an Updated
+    line or a rewritten line whose content is kept. Correction of the 22:23:27Z note: 21 of the 22 stale records
+    were already stale at the 0.2.8240 commit (only test_scan_bind_option_parity.py is this lane's), and the
+    subtree lags there were unit aether +3, unit spellbook +2, component spellbook +3, integration conduit +2.
+  EVIDENCE:
+  - context_compass/system_docs/tests_components.md:928-984
+  - context_compass/system_docs/tests_components.md:1731-1748
+  - context_compass/system_docs/tests_components_index.md:1-97
+  - context_compass/system_docs/tests_architecture.md:587-600
+  - context_compass/system_docs/tests_architecture_index.md:1-61
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_tests.py:1-618
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_docs_tests_run.txt:1-25
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_tests_join_after.txt:1-1
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_tests_preservation.txt:1-81
+  IMPACT: The four system documents describe 0.2.8246; the graph is next.
+  NEXT: Extract the graph with --strict and author the five new modules' semantics.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

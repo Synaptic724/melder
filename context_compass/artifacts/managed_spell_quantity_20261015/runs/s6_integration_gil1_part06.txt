@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python
+rootdir: /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private
+configfile: pyproject.toml
+collecting ... collected 889 items
+
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-True-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_restore_changed_ids_preserves_anchor_and_exact_selected_member[False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_restore_changed_ids_preserves_anchor_and_exact_selected_member[True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_merge_does_not_adopt_a_skipped_resident_selection[False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_merge_does_not_adopt_a_skipped_resident_selection[True] PASSED [  1%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_changed_id_restore_regrants_contract_details PASSED [  1%]
+tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py::test_descent_off_leaf_is_recorded_unwalked_and_read_from_the_live_disk PASSED [  1%]
+tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py::test_an_installed_leaf_edited_after_recording_reads_back_without_a_drift_verdict PASSED [  1%]
+tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py::test_restore_replaces_an_active_live_nexus_policy_with_the_recorded_one PASSED [  1%]
+tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py::test_restore_of_a_disabled_nexus_over_an_active_live_nexus_ends_disabled PASSED [  1%]
+tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py::test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids 

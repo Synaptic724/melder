@@ -34,13 +34,13 @@ GOAL: THE LOOP TURNED MORE THAN ONCE - AND THE TWO BOOKS IT WRITES.
       that lane EMPTY, and this lesson asserts it.
 
       AND SINGLE RESIDENCE IS WHY YOU CANNOT JUST FILE IT ELSEWHERE.
-      One binding-signature SHA256 lives in exactly ONE lane, network
-      wide, permanently - there is no release verb. `bind_inactive`
-      already declared the staged version onto `default`, so
-      `register_spell(..., lane=...)` for that id raises the REDISCOVERY
-      signal naming the holding lane. That raise is a signal, not a
-      failure: identical content rebinds to the same SHA, and this is the
-      system saying "you built this before, here".
+      One spell_id - the SHA256 of a version's code - lives in exactly
+      ONE lane, network wide, permanently - there is no release verb.
+      `bind_inactive` already declared the staged version onto `default`,
+      so `register_spell(..., lane=...)` for that id raises the
+      REDISCOVERY signal naming the holding lane. That raise is a signal,
+      not a failure: identical code always mints the same SHA, and this
+      is the system saying "you built this before, here".
       The way to file it under a name is a different SET - a set is its
       own residence partition, so a version resident in one is simply
       unknown to another.
@@ -176,7 +176,7 @@ def main() -> None:
           "nodes, and correctly so")
 
     # Now mint versions the only way that works: bind / bind_inactive.
-    index = conduit.get_spell_by_id(v1).spell_index
+    index = conduit.get_spell_by_spell_id(v1).spell_index
     assert index.spells_in_index() == {v1}
     assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
 
@@ -227,10 +227,12 @@ def main() -> None:
     assert len(audit.walk("turns")) == 1
     print("the SAME id accepted in a second set - residence is per-set")
 
-    # The loop stops where the public surface stops (expert 17): the
-    # promoting verb takes the parked OBJECT, and no public door hands
-    # one out - both id->object doors resolve to the ACTIVE member.
-    assert conduit.get_spell_by_id(staged).spell_id == v1
+    # Promotion is expert 17's lesson: notch_spell(spell_index=...,
+    # spell_id=staged) makes the staged version active. This lesson keeps
+    # it parked: a lookup by its spell_id answers the staged version itself
+    # (until 0.2.8253 it answered the ACTIVE member), and v1 stays selected.
+    assert conduit.get_spell_by_spell_id(staged).spell_id == staged
+    assert index.selected_spell_id == v1
     assert hasattr(conduit, "notch_spell")
 
     print()

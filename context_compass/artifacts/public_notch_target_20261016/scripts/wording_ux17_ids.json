@@ -1,0 +1,6 @@
+[
+  {"path": "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py",
+   "old": "           signature, old id -> new id.\n",
+   "new": "           signature, old spell_id -> new spell_id.\n",
+   "count": 1}
+]

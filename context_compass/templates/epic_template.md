@@ -5,8 +5,9 @@
 ## Metadata
 - Epic ID: EPIC-YYYY-MM-DD-<slug>
 - Status: draft | ready | in_progress | blocked | done
-- Owner:
-- Agent Name: <one or more assigned names, comma-separated>
+- Owner: <accountable person/coordinator/team; not inferred technical author>
+- Agent Name: <actual assigned executor names, comma-separated; not publishing account>
+- Agent Role: <actual executor role/function; UNKNOWN if not established>
 - Priority: p0 | p1 | p2 | p3
 - Created: YYYY-MM-DDTHH:MM:SSZ
 - Updated: YYYY-MM-DDTHH:MM:SSZ
@@ -91,6 +92,9 @@
 - 
 
 ## Artifact Links (Optional)
+Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
+this does not make independent review mandatory for every ticket.
+
 - ARTIFACTS_REQUIRED: true | false
 - ARTIFACT_PATHS:
   - <artifacts/YYYY-MM-DD_<slug>.<ext>>
@@ -105,8 +109,15 @@
   - <topic or question> | UNKNOWN
 - IF_UNKNOWN: UNKNOWN | ask user before implementation | none
 
+## Contribution Attribution
+- Ticket/Work Author(s): <actor; contribution kind; scope; artifact revision; evidence>
+- Published By: <observed hosting service/account and receipt; UNKNOWN before publication>
+- Independent Review: <reviewer; exact target revision/scope; verdict/evidence; independence>
+
 ## Notes
 - DATETIME: YYYY-MM-DDTHH:MM:SSZ
+  AUTHOR: <full assigned agent name or verified human author>
+  AUTHOR_ROLE: <actual role/function>
   TYPE:
     FACT | UNKNOWN | HYPOTHESIS | DECISION | DECISION_REQUEST | PLAN |
     STRATEGY_DISCUSSION | ASSUMPTION_CHALLENGE | CONFLICT | TRADEOFF |
@@ -122,7 +133,7 @@
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
+- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
@@ -130,9 +141,13 @@
 - Add notes when priorities, sequencing, or scope boundaries change.
 - Reference story/task evidence instead of duplicating tactical execution logs.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
+- Multiple meaningful comments may hold evidence directly; no forced body copy before ordinary
+  continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
 ## Context / Handoff Summary
-<Succinct summary of current state, key decisions, and next steps for future context.>
+<One current resume view: scope/outcome; controlling decisions/holds; source/evidence revision;
+completed/remaining criteria; failed/unrun limits; owners; next 1-3 actions and necessary links.>
+Update this view in place. Preserve historical Notes/comments and link unchanged context/full evidence.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

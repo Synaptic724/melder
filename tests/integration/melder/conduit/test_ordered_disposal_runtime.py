@@ -93,7 +93,7 @@ def test_real_compiled_disposal_uses_established_order(
                 spell=DisposalRoot, existence="many", disposal_method_names=["close", "stop"],
             )
         conduit = book.conjure()
-        target_spell = book.find_spell_by_id(target_id)
+        target_spell = book.find_spell_by_spell_id(target_id)
         assert target_spell is not None
         assert target_spell._compiler_artifact._spell_codegen_plan.no_overrides_plan.metadata["plan_family"] == family
         instance = conduit.meld(
@@ -111,7 +111,7 @@ def test_real_compiled_disposal_uses_established_order(
             if repeated.leaf is not instance.leaf:
                 live.append((leaf_id, repeated.leaf))
         for spell_id, value in live:
-            spell = book.find_spell_by_id(spell_id)
+            spell = book.find_spell_by_spell_id(spell_id)
             assert spell is not None
             raw_entry = conduit._creations._disposable_creations[spell_id]
             if spell.existence is Existence.many:

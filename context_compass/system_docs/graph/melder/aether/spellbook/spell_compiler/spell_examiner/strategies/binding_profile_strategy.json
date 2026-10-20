@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
- "source_sha256": "be9c267e94e07f8c12ead1057ca9f9df92abaf82c45ecf3fc373209f47bd5222",
+ "source_sha256": "f92a03e80990e4bf46f962a26ece05536bea968d9857aa1a9e09e4f85e89516b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy": {
@@ -30,20 +30,21 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "f7feec883f899fd276002680684c5c2648b1cd33867e16a35fb8adb85c8c487e",
+   "span_sha256": "78aed7c51f1dc3502913b5710c0e2455c49c4846722a39c0164644dcde7c09fc",
    "role": "Strategy building binding profiles from raw candidates.",
    "responsibilities": [
-    "builds the correct binding-profile variant from a raw candidate surface",
+    "builds the correct binding-profile variant from a raw candidate surface: class, callable, instance or other",
     "captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs",
-    "renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes",
-    "fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs",
-    "reads class-level annotations evaluated where every name resolves, otherwise without evaluating the unavailable names (kept as source text, the ClassInspector read), so the fingerprint's sorted annotation keys cover every annotated field; any other read failure yields an empty mapping"
+    "renders init_signature and callable signature text with unresolved names as source text (SignatureReflection.stabilize_signature), so descriptor and diagnostic text carries no ForwardRef owner or memory address",
+    "keeps only truncated display reprs (InspectorUtility.safe_repr); no profile text feeds the spell_id, which SpellCodeDigest takes from the target's code (0.2.8257)",
+    "reads class-level annotations evaluated where every name resolves, otherwise without evaluating the unavailable names (kept as source text, the ClassInspector read), so every annotated field reaches the published descriptor; any other read failure yields an empty mapping",
+    "reads no source file at bind: the origin line comes from __firstlineno__ and the class profile reads its source preview lazily"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "f7feec883f899fd276002680684c5c2648b1cd33867e16a35fb8adb85c8c487e"
+   "semantics_authored_against": "78aed7c51f1dc3502913b5710c0e2455c49c4846722a39c0164644dcde7c09fc"
   }
  },
  "edges_out": [],
@@ -121,7 +122,18 @@
    "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
    "to": "melder.utilities.helpers.signature_reflection.SignatureReflection",
    "relation": "uses",
-   "why": "BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so the bind fingerprint carries no ForwardRef owner or memory address.",
+   "why": "BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so descriptor and diagnostic text carries no ForwardRef owner or memory address.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+   "relation": "uses",
+   "why": "BindingProfileStrategy takes truncated display reprs, callable unwrapping and extension-module detection from InspectorUtility's static helpers.",
    "cardinality": "many_to_one",
    "phase": [
     "validation"

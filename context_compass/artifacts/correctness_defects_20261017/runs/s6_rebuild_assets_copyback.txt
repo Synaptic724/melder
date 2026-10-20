@@ -1,0 +1,8 @@
+copied _agent_documentation/manifest/agent_documentation_manifest.py
+copied _bind_guard/manifest/bind_guard_manifest.py
+copied _system_documents/manifest/graph_adjacency_manifest.py
+copied _system_documents/manifest/system_documents_index.py
+copied _system_documents/manifest/system_documents_manifest.py
+copied _system_documents/payloads/src_architecture_payload.py
+copied _system_documents/payloads/src_components_payload.py
+copied _system_documents/payloads/src_graph_payload.py

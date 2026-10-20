@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
- "source_sha256": "c8e9c239a7555bbd006fbf9f2363e8eb7d98861a776122b586dcc16758c34e08",
+ "source_sha256": "78efbec0ce13d93b9fcf0c0581d00012e6518565c53fb6895e54a1eb79bb927c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy": {
@@ -19,7 +19,7 @@
    "label": "SoloCodegenPlanDiscoveryStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
-   "lineno": 14,
+   "lineno": 15,
    "bases": [
     "CodegenPlanDiscoveryStrategy"
    ],
@@ -33,17 +33,17 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b142590fc120e1f9e642bee96286557ef816bb042719ff54e0ddfc4673e18c21",
+   "span_sha256": "375f66601144fc28c3fcac2c89b5797d625a703a2c0db4401c8aa17854e1d11e",
    "role": "Phase-10 discovery strategy for the solo spell category.",
    "responsibilities": [
-    "claims models whose visible spell count is exactly one",
+    "claims models whose visible spell count is exactly one and that hold no managed_spell_quantity spell - a managed object is leased through the generalized family's site plan (0.2.8245)",
     "emits the solo planner strategy id and solo planning family",
     "bounds phase-11 candidate codegen styles for the solo family"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "b142590fc120e1f9e642bee96286557ef816bb042719ff54e0ddfc4673e18c21"
+   "semantics_authored_against": "375f66601144fc28c3fcac2c89b5797d625a703a2c0db4401c8aa17854e1d11e"
   }
  },
  "edges_out": [
@@ -65,6 +65,7 @@
  "published_aliases": [],
  "imports": {
   "Optional": "typing.Optional",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
   "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
   "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"

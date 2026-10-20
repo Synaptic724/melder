@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
- "source_sha256": "4ba34aecd53378bb5cf926d261da11264ce9109ee865d30b14bbc6fa47bbc37c",
+ "source_sha256": "7b58a3933b6dccc1cb6a2e5f620647efaaa15fbc89655c50f284916a5270a66c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership": {
@@ -37,16 +37,21 @@
     "preflight"
    ],
    "shape": {
-    "method_count": 45,
+    "method_count": 48,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "68d697168f22c0e5f1a2211014b5269ce8797438011367946e281f9620f93093",
+   "span_sha256": "4e03d4bfa83c22e6d0d240f546cc87131570ac4c8fd883a4c0a7b8aaf33ad89f",
    "role": "Control-plane helper that migrates a spell lineage between conduit owners.",
    "responsibilities": [
     "preflights and executes dynamic spell ownership transfer between conduits",
     "owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations",
-    "sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create"
+    "sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create",
+    "reads other Books' owned and contracted spell maps in its impact sweep through one-call snapshots, holding no foreign Book lock",
+    "moves the source root store's entries of every index member to the target's store when move_creations is True (the public verbs' default since 0.2.8239; a holder's row carries its adopted children) or takes the active member's out when False; disposes nothing, and hands over stewardship, not a working setup",
+    "makes the owner stamp follow the lineage both ways (0.2.8246): the flip and _migrate_inactive_members stamp every member that carries a stamp onto the target through _restamp, which registers the stamp-back to the source first and, for a managed version whose pool the target store did not hold, the discard of the pool its stamp composed (_discard_composed_pool); a managed version's pool moves as a store row with its idle objects and count",
+    "moves a parked member that carries no owner stamp unstamped; since 0.2.8248 conjure stamps the versions staged before it, so that is only a member whose stamp raised at conjure (logged)",
+    "resolves a spell_id in two explicit steps - the spell that owns it, then the spell its index has active in the source Book (in the member's own Book for the target-side dependency check) - for its own spell handle (_resolve_spell, RuntimeError when that index has no active spell), the target-side dependency check (_deps_resolvable_on_target) and the owned-dependency sub-transfers (_transfer_owned_dependencies), so a parked Spell object never reaches a transfer (0.2.8253)"
    ],
    "owns_state": [
     "source_conduit",
@@ -60,7 +65,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "68d697168f22c0e5f1a2211014b5269ce8797438011367946e281f9620f93093"
+   "semantics_authored_against": "500ee2fac0a96eade03c6f99e9d18009859ca8d8429141338def9ce0c5861b6b"
   }
  },
  "edges_out": [
@@ -185,6 +190,17 @@
    "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
    "relation": "uses",
    "why": "TransferOfOwnership resolves and migrates one spell lineage identified by SpellIndex.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to": "melder.aether.conduit.creations.creations.Creations",
+   "relation": "uses",
+   "why": "A failed transfer's rollback takes back the empty pool its stamp composed in the target store (discard_managed_quantity) and cleans it.",
    "cardinality": "many_to_one",
    "phase": [
     "runtime"

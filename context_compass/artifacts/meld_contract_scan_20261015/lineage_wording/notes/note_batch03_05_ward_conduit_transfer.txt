@@ -1,0 +1,33 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batches 03-05 applied, each occurrence read in its method and classified. conduit_ward.py (55
+    lines): 38 edits on the contract side (Details, index links and their emissions, the dependency walk's root
+    spell, the contract reads, the transfer Args); kept 15 scope-tree lines (the lesser tree, its root pointer, the
+    "Root conduit is not set for this lineage." errors) and the identifier `lineage_id`. conduit.py (97 lines): 28
+    edits (get_spell_by_index_id, find_spell_id, the transfer Args, the notch and index-move docstrings, two
+    comments, the root spell and the one granted version at 7397 and 7460); kept 69 scope-tree lines (lesser
+    lineage, lineage root and its `unique_per_conduit_lineage` store, shared lineage hooks, the gate controller's
+    lineage rebinding, recorded lineage ancestors, enable/disable meld, the root errors). transfer_of_ownership.py
+    (92 lines): 73 edits (the transfer moves a spell's whole SpellIndex and gates its per-index state); kept the
+    `unique_per_conduit_lineage` comment, "the lesser lineage" at 852, 13 identifier lines and one RuntimeError
+    text. All three files parse with unchanged line counts (3999, 7867, 2223); a search for "lineage" in each
+    returns only the kept lines. Runtime strings (error and log text) are not changed in this pass.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch03_conduit_ward.py:1-141
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch04_conduit.py:1-110
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch05_transfer_of_ownership.py:1-248
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch03_apply.txt:1-179
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch04_apply.txt:1-134
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch05_apply.txt:1-346
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:114-3821
+  - src/melder/aether/conduit/conduit.py:3112-7460
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:42-2183
+  IMPACT: The ward, conduit and transfer docstrings now separate the two things: lineage is the scope tree, the
+    SpellIndex is what contracts, notches and transfers move. Identifiers and runtime strings that still say
+    lineage for a SpellIndex go on the owner's list.
+  NEXT: The remaining held files (command_system.py, static_command_system.py, restore_engine.py, graft_runner.py),
+    then contract.py, contract_types.py, detail_reason.py, permissions.py and policies.py.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

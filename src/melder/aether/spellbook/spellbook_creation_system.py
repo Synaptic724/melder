@@ -645,6 +645,11 @@ class SpellbookCreationSystem(Cleanable):
               compiled in another world. Every payload matched under a
               different stamp is the mixed path; nothing matched is the full
               miss; an empty live set stays a full miss.
+            - The stamp carries each pool and borrowed spell's binding hash
+              beside its spell_id (generation 23,
+              EPIC-2026-10-18-spell_identity_is_the_code), so a binding
+              changed under one spell_id - its existence, disposal order,
+              address, resolvable or managed settings - is another world too.
             - Creates the Spellbook-owned CachingSystem only when caching is
               enabled; the stamp is computed only then.
 
@@ -677,8 +682,9 @@ class SpellbookCreationSystem(Cleanable):
             )
             cached_spell_ids = set(caching_system.cached_spell_ids)
             # The executor payloads are a function of the world the structural
-            # tier already stamps (pool ids, posture, borrowed ids); a bundle
-            # staged in another world is never replayed as a full hit.
+            # tier already stamps (pool and borrowed ids, each with its binding
+            # hash, and the posture); a bundle staged in another world - another
+            # binding under one spell_id included - is never replayed as a full hit.
             world_stamp = StructuralSnapshot.world_stamp(spellbook)
             world_matches = caching_system.world_stamp == world_stamp
         matched_spell_ids = live_spell_ids.intersection(cached_spell_ids)
@@ -1337,8 +1343,20 @@ class SpellbookCreationSystem(Cleanable):
             - Sets owner conduit metadata and SpellIndex owner conduit id.
             - Stamps spell runtime resolution gate defaults from configuration.
             - Eagerly registers existing-object spells into conduit creations.
+            - Stamps every version parked in `_inactive_spells` (staged with
+              `bind_inactive` before conjure) with the same owner stamp and
+              nothing else, exactly as a post-conjure `bind_inactive` does: no
+              existing-object registration (a parked version is not live until a
+              notch promotes it) and no resolution flag (the notch sets it); a
+              managed parked version gets its pool in the root's store (0.2.8248;
+              until then such a version stayed unwired, and its first meld after
+              a notch raised "Spell has no configured CreationContextFactory.").
             - Logs and suppresses per-spell failures so one spell does not block
               ownership wiring for the rest.
+        Threading:
+            Runs under the Spellbook lock; each stamp takes the spell's lock and,
+            for a managed version, the store's leaf lock (Book -> spell -> store,
+            the order every stamp uses).
         Args:
             spellbook: Owning Spellbook instance.
             conduit: Conduit to stamp into local spells.
@@ -1377,6 +1395,31 @@ class SpellbookCreationSystem(Cleanable):
                 except Exception as exc:
                     spellbook._logger.error(
                         f"Failed to define conduit into spell: {exc}",
+                        "_define_conduit_into_spells",
+                        exc_info=True,
+                    )
+            # Versions parked with bind_inactive before conjure (0.2.8248). A post-conjure
+            # bind_inactive gives a parked version exactly this stamp and nothing else, so
+            # conjure does the same: the owner stamp (and a managed version's pool with it),
+            # no existing-object registration - a parked object is not live until a notch
+            # promotes it - and no resolution flag, which the notch sets. Every parked
+            # version is unstamped here: a Book conjures once, and nothing stamps a parked
+            # version before its conduit exists. Until 0.2.8248 only `_spells` was walked,
+            # so such a version had no CreationContextFactory and its first meld after a
+            # notch failed.
+            for parked_spell in spellbook._inactive_spells.values():
+                try:
+                    parked_spell._add_owned_conduit(
+                        conduit._id,
+                        conduit._name,
+                        conduit._creations,
+                        dynamic_environment=conduit.__dynamic_environment__,
+                        creation_gate_controller=conduit._creation_gate_controller,
+                        caching_enabled=caching_enabled,
+                    )
+                except Exception as exc:
+                    spellbook._logger.error(
+                        f"Failed to define conduit into parked spell_id={parked_spell.spell_id}: {exc}",
                         "_define_conduit_into_spells",
                         exc_info=True,
                     )
@@ -1530,8 +1573,10 @@ class SpellbookCreationSystem(Cleanable):
                 ),
             )
 
+            # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+            # keeps a concurrent bind or removal from resizing the live map mid-walk.
             broken_spells = SpellbookCreationSystem._collect_broken_spells(
-                spells=spellbook._spells.values(),
+                spells=list(spellbook._spells.values()),
             )
             if broken_spells:
                 SpellbookCreationSystem._raise_structural_validation_error(
@@ -2640,7 +2685,9 @@ class SpellbookCreationSystem(Cleanable):
         compiler_system = SpellCompilerSystem()
         try:
             if spell_ids is None:
-                for spell in spellbook._spells.values():
+                # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+                # keeps a concurrent bind or removal from resizing the live map mid-walk.
+                for spell in list(spellbook._spells.values()):
                     try:
                         compiler_system.cleanup_phase_artifacts(spell)
                     except Exception:
@@ -3102,10 +3149,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_root_blueprints,
@@ -3142,9 +3193,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3198,9 +3251,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3248,9 +3303,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3298,9 +3355,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3363,9 +3422,11 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
+        # One-call snapshot (list(...)): this pass also runs from Conduit.validate_resolution, where no Book lock
+        # keeps a concurrent bind or removal from resizing the live map mid-walk.
         eligible_spells = [
             spell
-            for spell in spellbook._spells.values()
+            for spell in list(spellbook._spells.values())
             if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
         ]
         if not eligible_spells:
@@ -3423,10 +3484,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_system_validation,
@@ -3464,10 +3529,14 @@ class SpellbookCreationSystem(Cleanable):
             RuntimeError: If the spellbook has already been cleaned.
         """
         spellbook.check_cleaned()
-        if not spellbook._spells:
+        # One-call snapshot: next(iter(...)) over the live map raises when a concurrent bind
+        # resizes it between the two calls, and these factories also run from
+        # Conduit.validate_resolution, where no Book lock keeps binds out.
+        spells = list(spellbook._spells.values())
+        if not spells:
             return []
 
-        lead_spell = next(iter(spellbook._spells.values()))
+        lead_spell = spells[0]
         return [
             scheduler.create_unit_of_work(
                 func=compiler_system.run_phase_change_control,

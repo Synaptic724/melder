@@ -1,8 +1,10 @@
 import threading
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
 # Melder Imports
@@ -325,7 +327,9 @@ class SpellBinder(Cleanable):
             binding_name (str, optional):
                 Secondary key used to disambiguate this binding.
             **kwargs:
-                Passthrough bind-time keyword arguments, including lifecycle hooks.
+                Passthrough bind-time keyword arguments, including lifecycle hooks and
+                the managed options (`managed_spell_mode`, `managed_spell_limit`,
+                `managed_spell_timeout_seconds`, `managed_spell_reset_methods`).
 
         Returns:
             SpellBinder:
@@ -543,6 +547,60 @@ class SpellBinder(Cleanable):
             self._existence = Existence.unique_per_spell_space
         return self
 
+    def as_managed_spell_quantity(
+            self,
+            mode: Optional[Union[ManagedSpellMode, str]] = None,
+            *,
+            limit: Optional[int] = None,
+            timeout_seconds: Optional[float] = None,
+            reset_methods: Optional[Sequence[str]] = None,
+    ) -> SpellBinder:
+        """
+        Configures the spell as **Managed** (objects leased from a pool the root owns).
+
+        **Behaviour:**
+        - A meld, or an injection into a constructor, takes an idle object from the spell's pool or builds
+          one when the mode allows; the holder gives it back with `ReleaseManagedSpell.release(obj)`.
+        - `mode`: elastic (default; always builds, keeps up to `limit` idle objects, default 256),
+          limited_quantity (at most `limit` alive, refuses at the limit) or queue (at most `limit` alive,
+          waits up to `timeout_seconds` for a release, then refuses).
+
+        **Use Case:**
+        - Objects that are expensive to build and cheap to reset (loggers, buffers, connections).
+
+        Contract:
+            - Sets the existence to `Existence.managed_spell_quantity` and stages the four options under
+              their bind names (`managed_spell_mode`, `managed_spell_limit`,
+              `managed_spell_timeout_seconds`, `managed_spell_reset_methods`) in the passthrough payload,
+              replacing any staged earlier; `finalize()` sends them to `Spellbook.bind`, where Bind
+              validates them. Values are staged as given.
+            - A later `as_unique()` (or any other existence) keeps the staged options, so `finalize()`
+              refuses them through Bind unless every option is None.
+
+        Args:
+            mode: A `ManagedSpellMode` member or its name; None means elastic.
+            limit: elastic: the most idle objects kept; limited_quantity and queue: the most objects
+                alive at once (required there).
+            timeout_seconds: queue only, required there: how long a lease waits for a release.
+            reset_methods: Names of zero-argument methods of the class run, in order, on every release.
+
+        Raises:
+            RuntimeError: If the binder has been cleaned or its Spellbook weak reference is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._require_spellbook()
+            self._existence = Existence.managed_spell_quantity
+            self._kwargs["managed_spell_mode"] = mode
+            self._kwargs["managed_spell_limit"] = limit
+            self._kwargs["managed_spell_timeout_seconds"] = timeout_seconds
+            self._kwargs["managed_spell_reset_methods"] = reset_methods
+        return self
+
     # ------------------------------------------------------------------
     # Fluent Modifiers - Identity & Permissions
     # ------------------------------------------------------------------
@@ -574,7 +632,7 @@ class SpellBinder(Cleanable):
         Args:
             permissions:
                 `Permissions` member or its string name setting the capability
-                ceiling for this lineage.
+                ceiling for this spell.
         """
         self.check_cleaned()
         with self._lock:

@@ -1,0 +1,16 @@
+
+==================================== ERRORS ====================================
+_________ ERROR collecting test_spellbook_component_spell_identity.py __________
+ImportError while importing test module '/tmp/m0_mq/red/test_spellbook_component_spell_identity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+test_spellbook_component_spell_identity.py:22: in <module>
+    from melder.aether.spellbook.bind.spell_code_digest import SpellCodeDigest
+E   ModuleNotFoundError: No module named 'melder.aether.spellbook.bind.spell_code_digest'
+=========================== short test summary info ============================
+ERROR test_spellbook_component_spell_identity.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 11.69s

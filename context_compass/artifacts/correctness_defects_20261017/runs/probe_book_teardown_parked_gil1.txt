@@ -1,0 +1,30 @@
+T1 control: English active alone
+    root conduit torn down
+    English (active) cleaned: True
+    English's index cleaned: True
+
+T2 English active, French parked on English's index
+    root conduit torn down
+    English (active) cleaned: True
+    French (parked) cleaned: False
+    the shared index cleaned: True
+    French.cleanup() raised RuntimeError: Spellbook has already been cleaned. 
+
+T3 French separated into the index remove_from_spell_index mints
+    French's index is a new one: True
+    root conduit torn down
+    French (parked) cleaned: False
+    the minted index cleaned: False
+    English's index cleaned: True
+
+T4 notch English ('greeter') -> Spanish ('spanish'), then teardown
+    before teardown, ('greeter') held by English: True
+    root conduit torn down
+    after teardown, ('greeter') held by English (its Book gone): True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='5b6684046149040cd2f65d73b340ebdaef8b6
+
+T5 a managed class with one version active and one parked, then teardown
+    pools of Pooled before teardown: 2
+    root conduit torn down
+    pools of Pooled after teardown: 0
+

@@ -49,24 +49,74 @@ class Payload:
     pass
 
 
-def test_probe_frames_isolate_instances_but_not_identity():
-    """Lesson 02 contract, REWRITTEN 2026-08-03. This row used to pin the
-    README claim that "two frames bind the SAME class with zero
-    collision". EPIC-2026-08-02 S2 retired that: a spell_id hashes the
-    bind fingerprint and the FRAME IS NOT IN IT, so identical bindings on
-    different frames mint one id and the second conjure is refused.
+class TenantAPayload(Payload):
+    """probe-tenant-a's own Payload - a new class, so its own spell_id."""
 
-    What survived is the half that was always the real point - once the
-    BINDINGS differ, `unique` is one instance PER FRAME and the wall
-    holds. Both halves are asserted here so neither can drift alone."""
+
+class TenantBPayload(Payload):
+    """probe-tenant-b's own Payload - a new class, so its own spell_id."""
+
+
+def test_probe_frames_isolate_instances_but_not_identity():
+    """Lesson 02 contract, REWRITTEN 2026-08-03 and again at 0.2.8257.
+    This row used to pin the README claim that "two frames bind the SAME
+    class with zero collision". EPIC-2026-08-02 S2 retired that, and
+    0.2.8257 finished it: a spell_id is the SHA256 of the class's CODE,
+    with neither the frame nor anything from the bind call in it, so the
+    same class in two frames is one spell_id under any binding_name and
+    the second conjure is refused (the second bind, once the first book
+    is conjured). Until 0.2.8257 a binding_name per frame told them apart.
+
+    What survived is the half that was always the real point - one class
+    PER FRAME, even at one address, and `unique` is one instance per
+    frame and the wall holds. Both halves are asserted here so neither
+    can drift alone."""
+    same_a = Spellbook(aetheric_frame="probe-same-a")
+    same_b = Spellbook(aetheric_frame="probe-same-b")
+    same_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
+    same_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
+    same_a.conjure()
+    with pytest.raises(RuntimeError, match="Conjure refused"):
+        same_b.conjure()
+
     book_a = Spellbook(aetheric_frame="probe-tenant-a")
     book_b = Spellbook(aetheric_frame="probe-tenant-b")
-    book_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
-    book_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
-    a = book_a.conjure().meld(spell=Payload, binding_name="tenant-a")
-    b = book_b.conjure().meld(spell=Payload, binding_name="tenant-b")
+    book_a.bind(spell=TenantAPayload, existence="unique",
+                spellframe="tenant", binding_name="payload")
+    book_b.bind(spell=TenantBPayload, existence="unique",
+                spellframe="tenant", binding_name="payload")
+    a = book_a.conjure().meld(spellframe="tenant", binding_name="payload")
+    b = book_b.conjure().meld(spellframe="tenant", binding_name="payload")
+    assert type(a) is TenantAPayload and type(b) is TenantBPayload
     assert a is not b
-    print("frame isolation pinned: same class, two worlds, two singletons")
+    print("frame isolation pinned: one address, a class per world, two "
+          "singletons; one class in two worlds is refused")
+
+
+def test_probe_per_frame_spell_ids_let_one_class_live_in_two_worlds():
+    """Lesson 02's other way, pinned. With `process_wide_unique_spell_ids`
+    off, a spell_id is unique per FRAME rather than per process, so ONE
+    class registers in several worlds - here Payload in two frames, one
+    spell_id, one singleton each. It is Aether configuration, installed
+    before any frame exists (the first frame seals the regime), which is
+    why a lesson never does it and this row may: the fixture resets the
+    world around it."""
+    policy = md.AetherConfiguration().with_defaults()
+    policy.with_process_wide_unique_spell_ids(False)
+    policy.activate()
+    Aether().activate(policy)
+    assert Aether().process_wide_unique_spell_ids is False
+
+    book_a = Spellbook(aetheric_frame="per-frame-a")
+    book_b = Spellbook(aetheric_frame="per-frame-b")
+    id_a = book_a.bind(spell=Payload, existence="unique")
+    id_b = book_b.bind(spell=Payload, existence="unique")
+    assert id_a == id_b
+    a = book_a.conjure().meld(spell=Payload)
+    b = book_b.conjure().meld(spell=Payload)
+    assert type(a) is type(b) is Payload
+    assert a is not b
+    print("per-frame spell ids pinned: one class, two worlds, two singletons")
 
 
 def test_probe_posture_public_door_then_freeze():

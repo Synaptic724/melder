@@ -1,0 +1,8 @@
+python 3.14.7 gil_enabled=False
+[warm] before notch: P.dep -> d1
+[warm] after notch: P lineage valid [] bookflag=True
+[warm] meld 1 after notch: P.dep -> d1
+[warm] meld 2 after notch: P.dep -> d1
+[cold] after notch: P lineage valid [] bookflag=True
+[cold] meld 1 after notch: RuntimeError: many_only manifest references unknown spell_id '24842ef713d4550ea15b3af687d8a696b5c0c4780ecbc5fe6a71c6b2c0770eb5'.
+[cold] meld 2 after notch: RuntimeError: many_only manifest references unknown spell_id '24842ef713d4550ea15b3af687d8a696b5c0c4780ecbc5fe6a71c6b2c0770eb5'.

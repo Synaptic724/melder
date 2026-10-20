@@ -1,0 +1,14 @@
+OK     _agent_documentation current (v0.2.8247, schema 2.0.0, key match)
+OK     _bind_guard          current (v0.2.8247, schema 2.0.0, key match)
+OK     _system_documents    current (v0.2.8247, schema 2.0.0, key match)
+assets EXIT=0
+OK     src   fingerprint and output proofs match
+OK     tests fingerprint and output proofs match
+OK     other fingerprint and output proofs match
+llm EXIT=0
+  all 591 ranges verified against their own headers
+graph EXIT=0
+OK: src_architecture_index.md is current (62 sections over 4537 lines)
+OK: src_components_index.md is current (152 sections over 11532 lines)
+OK: tests_architecture_index.md is current (32 sections over 962 lines)
+OK: tests_components_index.md is current (69 sections over 3460 lines)

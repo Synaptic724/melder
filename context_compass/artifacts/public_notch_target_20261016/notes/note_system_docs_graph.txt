@@ -1,0 +1,40 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The patch lane is promoted into the four system documents and the graph, checked from disk.
+    src_architecture (9 edits, plus 2 citation repoints in the rubric pass; 4665 lines, 62 sections), src_components
+    (13 edits; 11641 lines, 153 sections), tests_components (14; 3549 lines, 69 sections) and tests_architecture
+    (4; 972 lines, 32 sections): each index regenerated and `--check` OK; the content-preservation diff loses only
+    deliberate replacements (18, 18, 4 and 3 lines - remeasured citations and extents, the corrected sequence step
+    and seal mode, the recounted counts; 3 more in the rubric pass); no package or absolute path; every code-map and
+    Key Files path resolves (src in the graph index, tests on disk) and every code-map extent equals its file today;
+    the inventory recounted again in this pass (unit 509/506, component 168/166, integration 175/168, aether trees
+    205 and 45; the two new files hold 16 and 10 tests). Graph: re-extracted with `--strict`, the Conduit node's
+    responsibilities appended but not accepted (it was SEMANTICS_STALE before this lane), reassembled - 28067 lines,
+    591 sections, 1227 nodes, 1415 edges, `--check` rc=0; walker census unchanged (AUTHORED 1074, SEMANTICS_STALE
+    144, UNSEMANTIC 9, RETIRED 5). Stale text corrected on the way: the SpellIndex Mutation Entry's step 2 (it said
+    the Spellbook starts the transaction; the Conduit does), src_components' verb citations (5419/5492/5563 ->
+    5731/5916/5987) and `link`'s TypeError (5296-5298 -> 5571-5573), the notch seal described as spellbook INTENT
+    (the strategy claims the Book EXCLUSIVE), and `check_system_state` cited at
+    spellbook_creation_system.py:1253-1292 (it is at 1282-1329). Still wrong, in a file this lane does not edit:
+    spellbook.py's `_notch_spell` and `_apply_notch` docstrings say the notch claims the Book INTENT.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:920-968
+  - context_compass/system_docs/src_architecture.md:1061-1082
+  - context_compass/system_docs/src_components.md:2742-2756
+  - context_compass/system_docs/src_components.md:6058-6139
+  - context_compass/system_docs/src_components.md:7930-7946
+  - context_compass/system_docs/tests_components.md:1121-1128
+  - context_compass/system_docs/tests_architecture.md:459-467
+  - context_compass/artifacts/public_notch_target_20261016/runs/docs_checks_after_rubric.txt:1-9
+  - context_compass/artifacts/public_notch_target_20261016/runs/graph_walker_after.txt:1-10
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
+  - src/melder/aether/spellbook/spellbook.py:3792-3796
+  - src/melder/aether/spellbook/spellbook.py:3834-3838
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1281-1329
+  IMPACT: The packaged system docs and graph describe the notch target and the corrected sequence; the closure
+    NOTICE tells melder_1 about the INTENT docstrings in spellbook.py.
+  NEXT: Record the rubric scores.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

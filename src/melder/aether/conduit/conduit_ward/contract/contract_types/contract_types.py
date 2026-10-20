@@ -6,19 +6,19 @@ class ContractTypes(Enum):
 
     The ward contract model is symmetric at the pair level, but it is not a
     single shared detail table. Each participating ward stores its own detail
-    map describing which spell lineages it exposed or borrowed in that
+    map describing which spells it exposed or borrowed in that
     relationship. `ContractTypes` marks the meaning of one detail entry from
     the perspective of the ward that owns that map.
 
-    This matters during reconciliation and rollback because the same lineage
+    This matters during reconciliation and rollback because the same spell
     can appear with opposite labels across the two peers:
 
     - `initiated`:
-      the owning ward is the source of the lineage. This detail records a
+      the owning ward is the source of the spell. This detail records a
       spell the ward granted outward into the contract.
 
     - `received`:
-      the owning ward is the borrower. This detail records a lineage that came
+      the owning ward is the borrower. This detail records a spell that came
       from the peer and is now visible locally through the contract.
 
     Registration:
@@ -36,7 +36,7 @@ class ContractTypes(Enum):
     System Context:
         The asymmetry documented above is the point: the contract is symmetric
         at the PAIR level but each ward keeps its OWN detail map, so a single
-        lineage appears as `initiated` on the granting side and `received` on
+        spell appears as `initiated` on the granting side and `received` on
         the borrowing side. Two rows, one relationship. Reconciliation and
         rollback depend on that - unwinding a contract means each ward retiring
         its own view, and a ward must never assume its label matches its peer's.

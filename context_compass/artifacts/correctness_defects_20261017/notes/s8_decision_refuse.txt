@@ -1,0 +1,22 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The open question is answered (owner, chat 2026-10-17): "notch fails its commit validation, not sure what
+    this means commit to the new spell? Yeah sure you can refuse it and throw and move on if you mean it couldn't
+    notch that makes sense". It is that case: when a notch's transaction ends, Melder checks the incoming version's
+    structure (phases 1-4, run only for a version never compiled), and a version that fails is broken, so the notch
+    could not happen. The story takes answer (a): the notch is refused with nothing moved - the lender and every
+    borrower stay on the outgoing version, the incoming one stays parked - and the error says so. Option (b) is out;
+    the patch picks the mechanism (a check before the switch, or an undo of the seam). melder_0 confirms that meaning
+    to the owner with probe N2 in the same reply; his word can still override.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md:114-121
+  - src/melder/aether/conduit/conduit.py:5622-5759
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:783-835
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil0.txt:10-19
+  IMPACT: The ENTRY_GATE's question is met; the requirements, acceptance and exit gate narrow to the refusal.
+  NEXT: The owner's scheduling, after melder_1 releases conduit.py and spellbook.py; then patch docs for the notch's
+    commit path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

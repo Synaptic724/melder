@@ -733,8 +733,14 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     def _is_shared_existence(existence: Existence) -> bool:
         """
         Determine whether an existence policy yields a shared instance.
+
+        Contract:
+            - `many` and `managed_spell_quantity` are per path: each occurrence
+              keeps its own instance key, so every injection of a managed spell
+              is its own lease (managed_spell_quantity S5, 2026-10-15).
+            - Every slotted existence shares one instance per spell.
         """
-        return existence is not Existence.many
+        return existence is not Existence.many and existence is not Existence.managed_spell_quantity
 
     @staticmethod
     def _occurrence_sort_key(

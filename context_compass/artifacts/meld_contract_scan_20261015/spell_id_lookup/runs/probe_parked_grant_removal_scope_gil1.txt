@@ -1,0 +1,11 @@
+== e0: Banner 'HELLO', Ticker time 7
+  _find_contracted_spell_by_id(english_id) -> English
+  Ticker lineage before the removal: valid
+  Ticker lineage after the removal:  valid
+  Ticker meld after the removal returns the stored object: True
+== e: Banner 'HELLO', Ticker time 7
+  lender notched to French; borrower holds English parked: True
+  _find_contracted_spell_by_id(english_id) -> None
+  Ticker lineage before the removal: valid
+  Ticker lineage after the removal:  gated
+  Ticker meld after the removal returns the stored object: False

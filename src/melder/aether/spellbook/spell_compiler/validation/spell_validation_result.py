@@ -70,7 +70,7 @@ class SpellValidationResult(Cleanable):
         Initialize one aggregate spell validation result.
 
         Args:
-            spell_id: Validated spell/version id.
+            spell_id: The validated spell's spell_id.
             spell_name: Human-readable validated spell name.
             issues: Optional prebuilt list of validation issues.
         Contract:

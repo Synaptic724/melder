@@ -1,0 +1,14 @@
+[
+  {"path": "UX_and_AIX_experiences/04_expert/_concept_map.txt",
+   "old": "     selection unchanged; it returns the candidate's id) -> notch_spell\n     (repoint the selection) -> meld -> notch back. ALL THREE VERBS ARE\n     USER SURFACE: notch_spell takes the id bind_inactive returned\n     (`spell_id=`) and resolves the exact version inside the call - a\n     lookup by a parked id still resolves to the ACTIVE member, which\n     is why the version is named by id (owner ruling 2026-10-16; until\n",
+   "new": "     selection unchanged; it returns the candidate's spell_id) ->\n     notch_spell (repoint the selection) -> meld -> notch back. ALL\n     THREE VERBS ARE USER SURFACE: notch_spell takes the spell_id\n     bind_inactive returned (`spell_id=`) and resolves the exact version\n     inside the call - a lookup by a parked spell_id still resolves to\n     the ACTIVE member, which is why the version is named by its\n     spell_id (owner ruling 2026-10-16; until\n",
+   "count": 1},
+  {"path": "UX_and_AIX_experiences/04_expert/_concept_map.txt",
+   "old": "     NOTHING - the outgoing version stays in the lineage and stays\n     resolvable by id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER\n",
+   "new": "     NOTHING - the outgoing version stays in the lineage and stays\n     resolvable by its spell_id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER\n",
+   "count": 1},
+  {"path": "UX_and_AIX_experiences/04_expert/_concept_map.txt",
+   "old": "  Logged as TASK-2026-08-02-stale-source-docstrings.\n  WHY IT MATTERS BEYOND TIDINESS:",
+   "new": "  Logged as TASK-2026-08-02-stale-source-docstrings.\n  RESOLVED 2026-10-16 (0.2.8249): all three now say the conduit admits\n  the transaction and the Spellbook applies it - `notch_spell` with its\n  `spell_id=` target, `add_to_spell_index` and `remove_from_spell_index`\n  when they took `spell_id=` too. The line numbers above are from\n  2026-08-03 and no longer point at the verbs; the history stays.\n  WHY IT MATTERS BEYOND TIDINESS:",
+   "count": 1}
+]

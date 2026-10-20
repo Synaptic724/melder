@@ -1,0 +1,35 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Talked through with the owner (chat 2026-10-17: he asked to see the class diff and to talk S6 "properly").
+    The two versions in probe Q2 are one class object: only the bind's `managed_spell_limit` differs (1 vs 2), and
+    managed settings are hashed into the spell_id, so B is a second version with its own pool; a changed class is a
+    new class object and routes by class (Q6). A pool's count is the objects it built that are alive and `put_back`
+    pools any object uncounted, so an object leased before a notch and released after it leaves the old pool counting
+    it out for good and the new pool holding one it never counted (it can exceed its limit by it, a trim there can
+    drop its count, and the object's children stay recorded in the old pool). The earlier recommendation (a) is
+    withdrawn: notch and cleanup_spell keep the old pool registered for the root's life, so a ValueError on an
+    ambiguous release would fire on every release of the class once a second version is staged, and a holder of an
+    injected object has no spell_id to pass. Options put to the owner: (1) pools remember what they lent - exact,
+    a record per lease, reversing the 2026-10-14 identity ruling, whose design measured 3-4x cheaper per cycle than
+    the earlier shell that kept an out-record; (2) managed settings leave the spell_id - alone it does not close the
+    hole (the same class under another binding name) and every managed spell_id moves once; (3) one managed version
+    per class per index, refused at `bind_inactive` and `add_to_spell_index` - recommended: no lease or release cost,
+    no spell_id moves, the rulings stand, settings-only versions are lost; (4) one shared pool per class per index,
+    its settings following the active version - keeps settings-only versions, reworks the pool ownership of
+    0.2.8241-0.2.8248.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  - src/melder/aether/conduit/creations/release_managed_spell.py:515-580
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:474-606
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:704-759
+  - context_compass/tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md:401-414
+  - context_compass/tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md:673-687
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_managed_release_routing.py:31-121
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil0.txt:9-22
+  IMPACT: The fix and its file follow the choice: option 3 sits in spellbook.py (melder_1's), option 1 in
+    release_managed_spell.py, managed_spell_quantity.py and the plan emission, option 4 across the managed stack.
+  NEXT: The owner's choice among options 1-4; then rewrite this story's boundary, requirements and acceptance to it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

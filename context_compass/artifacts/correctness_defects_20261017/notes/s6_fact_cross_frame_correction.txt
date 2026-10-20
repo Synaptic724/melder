@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Correction to the previous note's cross-frame finding: the second frame's binding is refused at its `bind`
+    when the first frame's Book is already conjured ("Spell ID collision detected", bind's cross-frame check; probe
+    C4), and at its `conjure()` otherwise (C1-C3). So "a duplicate, as for any other spell" holds as the patch docs
+    say; the release note and the story's UX line now name both points.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_cross_frame_same_id.py:1-90
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil0.txt:1-14
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_cross_frame_same_id_gil1.txt:1-14
+  - release_docs/next_version_release.md:456-461
+  IMPACT: The release note and the docs pass state where the refusal comes from.
+  NEXT: Promote the patch docs into src_architecture, src_components and the tests pair, then the graph.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

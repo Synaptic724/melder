@@ -1,0 +1,13 @@
+install melder/__version__.json
+install melder/aether/spellbook/spellbook.json
+install melder/aether/conduit/conduit.json
+install melder/aether/conduit/conduit_ward/conduit_ward.json
+install melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.json
+install melder/aether/spellbook/bind/spell_index.json
+install melder/aether/spellbook/spell.json
+install melder/crystallizer/crystal_loader_system/graft_runner.json
+install melder/crystallizer/crystal_loader_system/restore_engine.json
+install melder/nexus/rift/command_system/command_system.json
+install melder/nexus/rift/command_system/static_command_system.json
+install melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.json
+installed 12

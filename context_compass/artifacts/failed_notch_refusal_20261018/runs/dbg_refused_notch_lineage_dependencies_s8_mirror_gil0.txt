@@ -1,0 +1,7 @@
+before notch: lineage deps [] validity SpellValidity.valid
+speaker topology [('greeter', 'UNRESOLVED_INPUT', ())]
+notch raised: SpellbookValidationError | notch_spell refused: 'SelfMade' (spell_id 3f1c78b544692c235345a35d29eb46
+after refusal: english c9dcbea4 selfmade 3f1c78b5
+after refusal: lineage current c9dcbea4 deps [] validity SpellValidity.gated
+speaker may compile: True planned deps: []
+borrower meld of Speaker: ok

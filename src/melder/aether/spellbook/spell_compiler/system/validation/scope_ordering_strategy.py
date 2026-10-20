@@ -67,8 +67,8 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -77,8 +77,12 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If cancel_event is set while iterating.
         """
+        # A managed spell ranks with unique: its pool lives in the owning root's
+        # store for the root's life, so it may depend on unique, managed and many
+        # spells, and every holder may depend on it.
         scope_rank = {
             Existence.unique: 0,
+            Existence.managed_spell_quantity: 0,
             Existence.unique_per_conduit_cluster: 1,
             Existence.unique_per_conduit_lineage: 2,
             Existence.unique_per_conduit: 3,

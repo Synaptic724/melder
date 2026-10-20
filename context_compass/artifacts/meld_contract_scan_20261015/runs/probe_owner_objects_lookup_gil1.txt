@@ -1,0 +1,24 @@
+== mode lookup; melder 0.2.8251; gil_enabled=True
+  -- lender_book owned maps: English active, French parked on Greeter-index
+     _spells (index -> active)=[('Mark-index', 'Bang'), ('Greeter-index', 'English')]
+     _spells_by_id=['Bang', 'English'] _inactive_spells=['French'] _spell_ids=['Bang', 'English', 'French']
+  lender_book.find_spell_by_id(French): 'English'
+  lender.get_spell_by_id(French): 'English'
+  lender_book._get_owned_spell(French): 'French'
+  borrower.add_spell_to_contract(spell_id=French): RuntimeError: Provided spell_id 'French' does not match inspected ID 'English'.
+  borrower.add_spell_to_contract(spell=<French Spell object>): True
+  -- borrower_book copies borrowed from lender: after granting the parked French
+     _contracted_spells (index -> active copy)=[('Mark-index', 'Bang')]
+     _contracted_spells_by_id=['Bang']
+     _lookup_contracted_spells (key -> index)=[(('mark', 'mark'), 'Mark-index')]
+     _inactive_contracted_spells (parked)=['French']
+     _contracted_spell_ids=['Bang', 'English', 'French']
+  Banner (French is parked): SpellbookValidationError: Spellbook validation failed. Broken spells: Banner. | Banner: |   - Spell 'Banner' parameter 'greeter' has no provider for its SpellContract (frame_key='greeter', binding_key='greeter'): no active spell with that frame and binding name is contracted to this Sp
+  -- borrower_book copies borrowed from lender: after the lender notches to French
+     _contracted_spells (index -> active copy)=[('Mark-index', 'Bang'), ('Greeter-index', 'French')]
+     _contracted_spells_by_id=['Bang', 'French']
+     _lookup_contracted_spells (key -> index)=[(('mark', 'mark'), 'Mark-index'), (('greeter', 'greeter'), 'Greeter-index')]
+     _inactive_contracted_spells (parked)=[]
+     _contracted_spell_ids=['Bang', 'English', 'French']
+  Banner: 'BONJOUR!'
+rc=0

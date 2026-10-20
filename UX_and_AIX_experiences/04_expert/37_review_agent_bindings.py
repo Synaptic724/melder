@@ -4,7 +4,7 @@ GOAL: Gate agent-supplied existing objects with ordered pre-bind checks,
       verify agent metadata and annotate the new Spell during activation,
       then update and audit the published Spell in post-bind. Demonstrate
       rejection phases and why a post-bind failure does not undo registration.
-SURFACE EXERCISED: md.Spellbook / find_spell_by_id / describe_spells_in_spellbook,
+SURFACE EXERCISED: md.Spellbook / find_spell_by_spell_id / describe_spells_in_spellbook,
                   md.Conduit.add_bind_hooks / clear_bind_hooks / bind / meld,
                   md.Spell.metadata / tags, md.HookExecutionError
 """
@@ -66,7 +66,7 @@ class BindingReview:
         """
         if spell.metadata.get("submitted_by") != "report-agent":
             raise PermissionError("This Book accepts submissions from report-agent only.")
-        assert self.book.find_spell_by_id(spell.spell_id) is None
+        assert self.book.find_spell_by_spell_id(spell.spell_id) is None
         spell.metadata["review_policy"] = "report-schema-v1"
         spell.tags.append("agent-reviewed")
 
@@ -77,7 +77,7 @@ class BindingReview:
             The post_checked annotation is live metadata. Post is not a
             transaction-commit or durable-record refresh callback.
         """
-        assert self.book.find_spell_by_id(spell.spell_id) is spell
+        assert self.book.find_spell_by_spell_id(spell.spell_id) is spell
         assert spell.metadata["review_policy"] == "report-schema-v1"
         spell.metadata["post_checked"] = True
         self.published_ids.append(spell.spell_id)
@@ -135,7 +135,7 @@ def main() -> None:
         spell_id = conduit.bind(
             spell=supplied, existence="unique", submitted_by="report-agent",
         )
-        registered = book.find_spell_by_id(spell_id)
+        registered = book.find_spell_by_spell_id(spell_id)
         assert registered is not None
         assert registered.metadata == {
             "submitted_by": "report-agent",
@@ -160,7 +160,7 @@ def main() -> None:
         else:
             raise AssertionError("The audit failure was not propagated.")
         assert len(review.published_ids) == 2
-        published_backup = book.find_spell_by_id(review.published_ids[-1])
+        published_backup = book.find_spell_by_spell_id(review.published_ids[-1])
         assert published_backup is not None
         assert published_backup.spell_name == "BackupReport"
         assert published_backup.metadata["post_checked"] is True

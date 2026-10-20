@@ -1,0 +1,23 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Sweep A1 is done. Apart from the signature defects (the same before and after conjure, now two stories), a
+    version staged before conjure ends in the structure one staged after gets: the owner stamp (conjure walks
+    `_inactive_spells` with the stamp a post-conjure `bind_inactive` gives, 0.2.8248), no lineage registration or
+    verdict (neither path calls `register_index` for a parked version), the same record and research entries (one
+    code path in `bind_inactive`, gated only on the roots being active), no Nexus record (parked versions are never
+    published). One surface difference is not filed here: after conjure, `Conduit.bind_inactive` sends the new member
+    to index-link borrowers (`_emit_index_member_added`) and a direct `Spellbook.bind_inactive` does not, as a direct
+    `Spellbook.cleanup_spell` skips the index-destroy emission `Conduit.cleanup_spell` sends. Whether a borrower
+    needs those copies is the index-link design melder_1 is reworking on the owner's sharing rule (an index link
+    follows the index's active spell), so it goes to melder_1 by mailbox with the next message.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1332-1421
+  - src/melder/aether/spellbook/spellbook.py:5243-5498
+  - src/melder/aether/conduit/conduit.py:4010-4126
+  - src/melder/aether/spellbook/spellbook.py:4358-4421
+  IMPACT: A1 adds no third story; the borrower question stays with its owner's lane.
+  NEXT: Sweep A2: read the parked branch of `_dispose_spell` against every structure that holds a parked version.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

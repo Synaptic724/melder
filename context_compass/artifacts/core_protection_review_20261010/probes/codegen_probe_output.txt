@@ -1,0 +1,28 @@
+command: python -X gil=0 codegen_probe.py <scratch out dir> <copy>/src/melder/aether/spellbook/bind/bind.py (cwd: scratch copy; PYTHONPATH=<copy>/src:<copy>)
+ran_at: 2026-10-10T13:33:37Z
+safe                   open-write         accepted=True  wrote=True  result=1 issues=
+safe                   open-read-core     accepted=True  wrote=None  result=64109 issues=
+safe                   pathlib-write      accepted=False wrote=False result=None issues=('Import statements are not allowed in this codegen mode.',)
+safe                   import-melder      accepted=False wrote=None  result=None issues=('Import statements are not allowed in this codegen mode.',)
+safe                   import-subprocess  accepted=False wrote=None  result=None issues=('Import statements are not allowed in this codegen mode.',)
+hybrid                 open-write         accepted=True  wrote=True  result=1 issues=
+hybrid                 open-read-core     accepted=True  wrote=None  result=64109 issues=
+hybrid                 pathlib-write      accepted=True  wrote=True  result=1 issues=
+hybrid                 import-melder      accepted=False wrote=None  result=None issues=("Import root 'melder' is not allowed in this codegen mode.",)
+hybrid                 import-subprocess  accepted=False wrote=None  result=None issues=("Import root 'subprocess' is not allowed in this codegen mode.",)
+hybrid+precision       open-write         accepted=True  wrote=True  result=1 issues=
+hybrid+precision       open-read-core     accepted=True  wrote=None  result=64109 issues=
+hybrid+precision       pathlib-write      accepted=False wrote=False result=None issues=("Import root 'pathlib' is not allowed in this codegen mode.",)
+hybrid+precision       import-melder      accepted=False wrote=None  result=None issues=("Import root 'melder' is not allowed in this codegen mode.",)
+hybrid+precision       import-subprocess  accepted=False wrote=None  result=None issues=("Import root 'subprocess' is not allowed in this codegen mode.",)
+permissive             open-write         accepted=True  wrote=True  result=1 issues=
+permissive             open-read-core     accepted=True  wrote=None  result=64109 issues=
+permissive             pathlib-write      accepted=True  wrote=True  result=1 issues=
+permissive             import-melder      accepted=False wrote=None  result=None issues=("Import root 'melder' is not allowed in this codegen mode.",)
+permissive             import-subprocess  accepted=True  wrote=None  result='subprocess' issues=
+full_access            open-write         accepted=True  wrote=True  result=1 issues=
+full_access            open-read-core     accepted=True  wrote=None  result=64109 issues=
+full_access            pathlib-write      accepted=True  wrote=True  result=1 issues=
+full_access            import-melder      accepted=True  wrote=None  result='melder' issues=
+full_access            import-subprocess  accepted=True  wrote=None  result='subprocess' issues=
+exit: 0

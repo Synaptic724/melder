@@ -163,7 +163,9 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
         described: List[Dict[str, Any]] = []
         spellbook = context.spellbook
         for candidate_id in socket.referenced_spell_ids:
-            candidate: "Spell | None" = spellbook.find_spell_by_id(candidate_id) if spellbook is not None else None
+            candidate: "Spell | None" = (
+                spellbook.find_spell_by_spell_id(candidate_id) if spellbook is not None else None
+            )
             if candidate is None:
                 described.append({"spell_id": candidate_id, "spell_name": None, "spellframe": None, "binding_name": None})
                 continue

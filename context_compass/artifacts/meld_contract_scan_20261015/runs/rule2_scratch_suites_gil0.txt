@@ -1,0 +1,25 @@
+tree | unit_aether | rc=0 | secs=18 | 4512 passed in 16.68s
+tree | unit_sb | rc=0 | secs=5 | 2578 passed in 4.49s
+tree | unit_util | rc=0 | secs=8 | 831 passed, 2 skipped, 7 xfailed in 7.78s
+tree | comp_aether | rc=0 | secs=17 | 1386 passed, 1 xfailed in 15.95s
+tree | comp_sb | rc=1 | secs=18 | 1 failed, 818 passed in 17.63s
+tree | int_conduit | rc=1 | secs=7 | 1 failed, 348 passed in 6.52s
+tree | comp_sb | rc=0 | secs=18 | 819 passed in 18.06s
+tree | int_sb | rc=0 | secs=7 | 647 passed, 2 skipped, 2 xpassed in 5.52s
+tree | int_mt | rc=1 | secs=14 | 4 failed, 50 passed in 13.85s
+tree | int_mt | rc=0 | secs=15 | 54 passed in 13.99s
+tree | int_aether | rc=0 | secs=19 | 795 passed, 5 xfailed in 17.75s
+tree | unit_cryst | rc=0 | secs=6 | 607 passed in 4.99s
+tree | comp_cryst | rc=0 | secs=1 | 110 passed in 0.91s
+tree | unit_mr | rc=0 | secs=3 | 277 passed in 1.76s
+tree | comp_mr | rc=0 | secs=1 | 40 passed in 0.82s
+tree | int_cryst | rc=0 | secs=63 | 276 passed, 3 xfailed in 62.26s (0:01:02)
+tree | int_mr | rc=0 | secs=2 | 67 passed in 1.14s
+tree | comp_util | rc=0 | secs=2 | 41 passed, 23 skipped in 1.71s
+tree | unit_top | rc=0 | secs=5 | 146 passed in 4.37s
+tree | unit_build | rc=0 | secs=3 | 116 passed in 2.28s
+tree | int_live | rc=0 | secs=2 | 1 passed, 1 xfailed in 0.23s
+tree | exper | rc=2 | secs=2 | 1 error in 1.13s
+tree | unit_arch | rc=0 | secs=1 | 18 passed in 0.10s
+tree | tests/experimentation --ignore=tests/experimentation/test_melder_creation_overrides_performance.py | rc=1 | secs=0 | 
+tree | exper (without test_melder_creation_overrides_performance.py: the scratch tree has no benchmarks/ package; the line above is a runner quoting error, not a run) | rc=0 | 244 passed, 3 skipped in 9.37s

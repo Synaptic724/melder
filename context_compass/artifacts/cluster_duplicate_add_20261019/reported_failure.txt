@@ -1,0 +1,16 @@
+Source: owner-provided CI excerpt in this chat, 2026-10-19.
+URL: https://github.com/Synaptic724/melder/actions/runs/39337226384/job/118349937313#step:6:217
+Platform: darwin; Python: 3.14.1-final-0.
+Test: tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py::test_concurrent_adds_of_same_conduit_admit_exactly_one
+Reported setup: frame-cc-same; one root-0 conduit; cluster-a created.
+Race: eight lambda calls to cloud.add_conduit_to_cluster(conduit, 'cluster-a').
+Final membership assertion passes: set(cluster.get_members()) == {conduit.id}.
+Failure at line 314: assert len(errors) >= 1; len([]) == 0.
+Expected rejection: ValueError mentioning 'exclusive (one per conduit)'.
+Result: 1 failed, 14392 passed, 28 skipped, 18 xfailed, 2 xpassed in 379.22s.
+Process exit code: 1.
+Shutdown warning: RuntimeWarning: coroutine 'coro' was never awaited.
+This is reported evidence, not an agent-run result.
+The web tool could not fetch the run page (cache miss).
+Diagnosis and current local behavior remain to be verified.
+No hosted rerun has been initiated by expert_1.

@@ -1,0 +1,49 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rubric scores of the four system documents, from disk after their index rebuilds (self-scored; no
+    independent reviewer): src_architecture 83 (B) - fidelity 4, contract 5, depth 4, addressability 4, join 4,
+    mirror 4; src_components 83 (B) - 4, 5, 4, 4, 4, 4; tests_architecture 83 (B) - 4, 5, 4, 4, 4, 4;
+    tests_components 77 (B) - 4, 4, 3, 4, 4, 4. Measured by scripts/s7_rubric_checks.py: one H1 each, no duplicate
+    indexed name, no unclosed heading, every contract section present and in order, no portability or absolute-path
+    hit, every C1 record complete with its file present and its extent equal to the file's line count today (160,
+    36, 232 and 247 records), every Key Files path resolving (218 source paths in the graph index, 244 test paths on
+    disk), all 26 source and 7 test C3 entries carrying the twelve fields. Scoring found two stale claims and fixed
+    them: the guardrails called the bind-guard manifest "619-entry" (628 at 0.2.8246), and the cleanup sequence and
+    the Aether entry put the LoadGate and the mediator plane after the frames, while `Aether.cleanup` cleans them
+    first, then the frames, ReleaseManagedSpell, the other hosted roots, a `finally` reset and the logger
+    (scripts/s7_docs_architecture_guard_count.py, s7_docs_aether_cleanup_order.py; both indexes regenerated and
+    checked). Why not 5: fidelity - older claims carry no citation (the Rift and Nexus failure bullets) and fifteen
+    "Architecture narrative (folded in ... 2026-08-01)" blocks in src_components were not re-verified on this pass;
+    depth - one-clause fields remain (examples below), and the test suite-level C3 entries describe tiers without
+    naming what they protect (the clusters under them do); addressability - contract H2s that hold only
+    sub-headings (Data Flows and Sequences, Diagrams, C3 Components Catalog), flagged by the slicer but selectable;
+    join - every extent holds today, but 134 of 160, 34 of 36, 201 of 232 and 199 of 247 verified_at stamps were
+    carried forward, and in-prose numeric citations were bounds-checked and sampled, not all opened; mirror - each
+    pair shares its contract but adds different non-contract sections.
+  EVIDENCE:
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_rubric_checks.txt:1-53
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_rubric_checks.py:1-171
+  - context_compass/system_docs/src_architecture.md:628-632
+  - context_compass/system_docs/src_architecture.md:969-972
+  - context_compass/system_docs/src_components.md:1270-1274
+  - src/melder/aether/aether.py:268-361
+  - tests/unit/melder/spellbook/bind/test_bind.py:114-127
+  - src/melder/aether/spellbook/bind/bind.py:713-713
+  - context_compass/system_docs/src_architecture.md:2205-2221
+  - context_compass/system_docs/src_architecture.md:1890-1890
+  - context_compass/system_docs/src_components.md:699-699
+  - context_compass/system_docs/src_components.md:3329-3329
+  - context_compass/system_docs/src_components.md:5686-5686
+  - context_compass/system_docs/tests_components.md:379-379
+  - context_compass/system_docs/tests_components.md:552-552
+  - context_compass/system_docs/src_architecture_index.md:45-45
+  - context_compass/system_docs/src_architecture_index.md:70-70
+  - context_compass/agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md:43-54
+  IMPACT: All four documents are band B and usable as inputs; the weakest is tests_components (depth 3). The next
+    refresh should restamp verified_at where extents were checked, cite the Rift and Nexus failure modes, and re-verify
+    the folded August narratives in src_components.
+  NEXT: S7 to review - this story's handoff, the epic's Milestone 4 and synthesis note, the board row; rebuild last.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

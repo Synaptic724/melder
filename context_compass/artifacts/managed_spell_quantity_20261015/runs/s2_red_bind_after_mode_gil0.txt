@@ -1,0 +1,1166 @@
+.FFFFFFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF..............FFF..F.FF [100%]
+=================================== FAILURES ===================================
+____ test_managed_binding_without_options_is_elastic_with_256_idle_objects _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f62a2a90>
+
+    def test_managed_binding_without_options_is_elastic_with_256_idle_objects(monkeypatch: pytest.MonkeyPatch) -> None:
+        """A managed binding with no options gets the elastic mode, the 256 idle cap, no timeout and no resets."""
+        spell = bind_with(monkeypatch, Existence.managed_spell_quantity)
+>       assert managed_values(spell) == (ManagedSpellMode.elastic, 256, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f368ae10>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+____ test_mode_is_accepted_as_member_or_name_in_any_case[limited_quantity0] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f62a3ad0>
+mode = <ManagedSpellMode.limited_quantity: 2>
+
+    @pytest.mark.parametrize("mode", [ManagedSpellMode.limited_quantity, "limited_quantity", "LIMITED_QUANTITY"])
+    def test_mode_is_accepted_as_member_or_name_in_any_case(monkeypatch: pytest.MonkeyPatch, mode: Any) -> None:
+        """The member and its name (any case) select the same mode."""
+        spell = bind_with(
+            monkeypatch, Existence.managed_spell_quantity, managed_spell_mode=mode, managed_spell_limit=4,
+        )
+>       assert managed_values(spell) == (ManagedSpellMode.limited_quantity, 4, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f62a2450>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+            spell.kwargs["managed_spell_mode"],
+            spell.kwargs["managed_spell_limit"],
+>           spell.kwargs["managed_spell_timeout_seconds"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_timeout_seconds'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:203: KeyError
+____ test_mode_is_accepted_as_member_or_name_in_any_case[limited_quantity1] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f62a3fd0>
+mode = 'limited_quantity'
+
+    @pytest.mark.parametrize("mode", [ManagedSpellMode.limited_quantity, "limited_quantity", "LIMITED_QUANTITY"])
+    def test_mode_is_accepted_as_member_or_name_in_any_case(monkeypatch: pytest.MonkeyPatch, mode: Any) -> None:
+        """The member and its name (any case) select the same mode."""
+        spell = bind_with(
+            monkeypatch, Existence.managed_spell_quantity, managed_spell_mode=mode, managed_spell_limit=4,
+        )
+>       assert managed_values(spell) == (ManagedSpellMode.limited_quantity, 4, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f62a35d0>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+            spell.kwargs["managed_spell_mode"],
+            spell.kwargs["managed_spell_limit"],
+>           spell.kwargs["managed_spell_timeout_seconds"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_timeout_seconds'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:203: KeyError
+____ test_mode_is_accepted_as_member_or_name_in_any_case[LIMITED_QUANTITY] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f62a4ed0>
+mode = 'LIMITED_QUANTITY'
+
+    @pytest.mark.parametrize("mode", [ManagedSpellMode.limited_quantity, "limited_quantity", "LIMITED_QUANTITY"])
+    def test_mode_is_accepted_as_member_or_name_in_any_case(monkeypatch: pytest.MonkeyPatch, mode: Any) -> None:
+        """The member and its name (any case) select the same mode."""
+        spell = bind_with(
+            monkeypatch, Existence.managed_spell_quantity, managed_spell_mode=mode, managed_spell_limit=4,
+        )
+>       assert managed_values(spell) == (ManagedSpellMode.limited_quantity, 4, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f62a0510>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+            spell.kwargs["managed_spell_mode"],
+            spell.kwargs["managed_spell_limit"],
+>           spell.kwargs["managed_spell_timeout_seconds"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_timeout_seconds'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:203: KeyError
+________________ test_elastic_limit_is_the_idle_cap_when_given _________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f272c910>
+
+    def test_elastic_limit_is_the_idle_cap_when_given(monkeypatch: pytest.MonkeyPatch) -> None:
+        """An explicit elastic limit replaces the 256 default."""
+        spell = bind_with(
+            monkeypatch, Existence.managed_spell_quantity, managed_spell_mode="elastic", managed_spell_limit=12,
+        )
+>       assert managed_values(spell) == (ManagedSpellMode.elastic, 12, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:246: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f62a6550>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+            spell.kwargs["managed_spell_mode"],
+            spell.kwargs["managed_spell_limit"],
+>           spell.kwargs["managed_spell_timeout_seconds"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_timeout_seconds'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:203: KeyError
+_________ test_queue_mode_keeps_limit_and_stores_the_timeout_as_float __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f272d310>
+
+    def test_queue_mode_keeps_limit_and_stores_the_timeout_as_float(monkeypatch: pytest.MonkeyPatch) -> None:
+        """A queue binding keeps its limit and its timeout in seconds as a float."""
+        spell = bind_with(
+            monkeypatch,
+            Existence.managed_spell_quantity,
+            managed_spell_mode=ManagedSpellMode.queue,
+            managed_spell_limit=2,
+            managed_spell_timeout_seconds=3,
+        )
+>       mode, limit, timeout, resets = managed_values(spell)
+                                       ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f62a5c90>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+            spell.kwargs["managed_spell_mode"],
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+>           spell.kwargs["managed_spell_reset_methods"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+E       KeyError: 'managed_spell_reset_methods'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:204: KeyError
+____________ test_reset_methods_keep_their_order_as_a_tuple[names0] ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f272d810>
+names = ['clear', 'reset']
+
+    @pytest.mark.parametrize("names", [["clear", "reset"], ("clear", "reset")])
+    def test_reset_methods_keep_their_order_as_a_tuple(monkeypatch: pytest.MonkeyPatch, names: Any) -> None:
+        """Reset names are kept in the order given, as a tuple, whether a list or a tuple was passed."""
+        spell = bind_with(monkeypatch, Existence.managed_spell_quantity, managed_spell_reset_methods=names)
+>       assert spell.kwargs["managed_spell_reset_methods"] == ("clear", "reset")
+E       AssertionError: assert ['clear', 'reset'] == ('clear', 'reset')
+E         
+E         Use -v to get more diff
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:267: AssertionError
+____________ test_other_existences_carry_no_managed_options[unique] ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f27a4df0>
+existence = <Existence.unique: 1>
+
+    @pytest.mark.parametrize("existence", [member for member in Existence if member is not Existence.managed_spell_quantity])
+    def test_other_existences_carry_no_managed_options(monkeypatch: pytest.MonkeyPatch, existence: Existence) -> None:
+        """A binding of any other existence hands the Spell None, None, None and an empty reset tuple."""
+        spell = bind_with(monkeypatch, existence)
+>       assert managed_values(spell) == (None, None, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f272e010>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+______ test_other_existences_carry_no_managed_options[unique_per_conduit] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f27a3e30>
+existence = <Existence.unique_per_conduit: 2>
+
+    @pytest.mark.parametrize("existence", [member for member in Existence if member is not Existence.managed_spell_quantity])
+    def test_other_existences_carry_no_managed_options(monkeypatch: pytest.MonkeyPatch, existence: Existence) -> None:
+        """A binding of any other existence hands the Spell None, None, None and an empty reset tuple."""
+        spell = bind_with(monkeypatch, existence)
+>       assert managed_values(spell) == (None, None, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f272dd10>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+_____________ test_other_existences_carry_no_managed_options[many] _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f27a5330>
+existence = <Existence.many: 3>
+
+    @pytest.mark.parametrize("existence", [member for member in Existence if member is not Existence.managed_spell_quantity])
+    def test_other_existences_carry_no_managed_options(monkeypatch: pytest.MonkeyPatch, existence: Existence) -> None:
+        """A binding of any other existence hands the Spell None, None, None and an empty reset tuple."""
+        spell = bind_with(monkeypatch, existence)
+>       assert managed_values(spell) == (None, None, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f272dc10>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+__ test_other_existences_carry_no_managed_options[unique_per_conduit_cluster] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f2854f90>
+existence = <Existence.unique_per_conduit_cluster: 4>
+
+    @pytest.mark.parametrize("existence", [member for member in Existence if member is not Existence.managed_spell_quantity])
+    def test_other_existences_carry_no_managed_options(monkeypatch: pytest.MonkeyPatch, existence: Existence) -> None:
+        """A binding of any other existence hands the Spell None, None, None and an empty reset tuple."""
+        spell = bind_with(monkeypatch, existence)
+>       assert managed_values(spell) == (None, None, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f272e610>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+__ test_other_existences_carry_no_managed_options[unique_per_conduit_lineage] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f2857210>
+existence = <Existence.unique_per_conduit_lineage: 5>
+
+    @pytest.mark.parametrize("existence", [member for member in Existence if member is not Existence.managed_spell_quantity])
+    def test_other_existences_carry_no_managed_options(monkeypatch: pytest.MonkeyPatch, existence: Existence) -> None:
+        """A binding of any other existence hands the Spell None, None, None and an empty reset tuple."""
+        spell = bind_with(monkeypatch, existence)
+>       assert managed_values(spell) == (None, None, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f27a5bf0>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+____ test_other_existences_carry_no_managed_options[unique_per_spell_space] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f2857690>
+existence = <Existence.unique_per_spell_space: 6>
+
+    @pytest.mark.parametrize("existence", [member for member in Existence if member is not Existence.managed_spell_quantity])
+    def test_other_existences_carry_no_managed_options(monkeypatch: pytest.MonkeyPatch, existence: Existence) -> None:
+        """A binding of any other existence hands the Spell None, None, None and an empty reset tuple."""
+        spell = bind_with(monkeypatch, existence)
+>       assert managed_values(spell) == (None, None, None, ())
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f27a5cd0>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+>           spell.kwargs["managed_spell_mode"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_limit"],
+            spell.kwargs["managed_spell_timeout_seconds"],
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:201: KeyError
+__ test_an_option_on_another_existence_is_refused[managed_spell_mode-elastic] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f2857b10>
+option = 'managed_spell_mode', value = 'elastic'
+
+    @pytest.mark.parametrize(
+        "option, value",
+        [
+            ("managed_spell_mode", "elastic"),
+            ("managed_spell_limit", 4),
+            ("managed_spell_timeout_seconds", 1.0),
+            ("managed_spell_reset_methods", ["reset"]),
+            ("managed_spell_reset_methods", []),
+        ],
+    )
+    def test_an_option_on_another_existence_is_refused(monkeypatch: pytest.MonkeyPatch, option: str, value: Any) -> None:
+        """Any managed option on a non-managed binding raises ValueError naming the option and the remedy."""
+>       with pytest.raises(ValueError, match=option) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:289: Failed
+____ test_an_option_on_another_existence_is_refused[managed_spell_limit-4] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f6551b90>
+option = 'managed_spell_limit', value = 4
+
+    @pytest.mark.parametrize(
+        "option, value",
+        [
+            ("managed_spell_mode", "elastic"),
+            ("managed_spell_limit", 4),
+            ("managed_spell_timeout_seconds", 1.0),
+            ("managed_spell_reset_methods", ["reset"]),
+            ("managed_spell_reset_methods", []),
+        ],
+    )
+    def test_an_option_on_another_existence_is_refused(monkeypatch: pytest.MonkeyPatch, option: str, value: Any) -> None:
+        """Any managed option on a non-managed binding raises ValueError naming the option and the remedy."""
+>       with pytest.raises(ValueError, match=option) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:289: Failed
+_ test_an_option_on_another_existence_is_refused[managed_spell_timeout_seconds-1.0] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f6551730>
+option = 'managed_spell_timeout_seconds', value = 1.0
+
+    @pytest.mark.parametrize(
+        "option, value",
+        [
+            ("managed_spell_mode", "elastic"),
+            ("managed_spell_limit", 4),
+            ("managed_spell_timeout_seconds", 1.0),
+            ("managed_spell_reset_methods", ["reset"]),
+            ("managed_spell_reset_methods", []),
+        ],
+    )
+    def test_an_option_on_another_existence_is_refused(monkeypatch: pytest.MonkeyPatch, option: str, value: Any) -> None:
+        """Any managed option on a non-managed binding raises ValueError naming the option and the remedy."""
+>       with pytest.raises(ValueError, match=option) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:289: Failed
+_ test_an_option_on_another_existence_is_refused[managed_spell_reset_methods-value3] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f65515f0>
+option = 'managed_spell_reset_methods', value = ['reset']
+
+    @pytest.mark.parametrize(
+        "option, value",
+        [
+            ("managed_spell_mode", "elastic"),
+            ("managed_spell_limit", 4),
+            ("managed_spell_timeout_seconds", 1.0),
+            ("managed_spell_reset_methods", ["reset"]),
+            ("managed_spell_reset_methods", []),
+        ],
+    )
+    def test_an_option_on_another_existence_is_refused(monkeypatch: pytest.MonkeyPatch, option: str, value: Any) -> None:
+        """Any managed option on a non-managed binding raises ValueError naming the option and the remedy."""
+>       with pytest.raises(ValueError, match=option) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:289: Failed
+_ test_an_option_on_another_existence_is_refused[managed_spell_reset_methods-value4] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28e3b10>
+option = 'managed_spell_reset_methods', value = []
+
+    @pytest.mark.parametrize(
+        "option, value",
+        [
+            ("managed_spell_mode", "elastic"),
+            ("managed_spell_limit", 4),
+            ("managed_spell_timeout_seconds", 1.0),
+            ("managed_spell_reset_methods", ["reset"]),
+            ("managed_spell_reset_methods", []),
+        ],
+    )
+    def test_an_option_on_another_existence_is_refused(monkeypatch: pytest.MonkeyPatch, option: str, value: Any) -> None:
+        """Any managed option on a non-managed binding raises ValueError naming the option and the remedy."""
+>       with pytest.raises(ValueError, match=option) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:289: Failed
+__________________ test_managed_refuses_a_function_or_method ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28e2090>
+
+    def test_managed_refuses_a_function_or_method(monkeypatch: pytest.MonkeyPatch) -> None:
+        """A callable target cannot be managed: TypeError says classes only, before the callable rules run."""
+        with pytest.raises(TypeError, match="classes only") as caught:
+>           bind_with(monkeypatch, Existence.managed_spell_quantity, profile=golden_callable_profile(), spell=print)
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:298: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:193: in bind_with
+    return binder.bind(Permissions.create, existence, aetheric_frame="f", spell=spell, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/bind/bind.py:555: in bind
+    return self._bind_logic(
+src/melder/aether/spellbook/bind/bind.py:745: in _bind_logic
+    Bind._validate_binding(binding_profile, binding_name, existence)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+profile = <melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile object at 0x309f62bdc80>
+binding_name = None, existence = <Existence.managed_spell_quantity: 7>
+
+    @staticmethod
+    def _validate_binding(
+            profile: SpellBindingProfile,
+            binding_name: Optional[str],
+            existence: Existence,
+    ) -> None:
+        """
+        Enforce binding-policy rules before a `Spell` is created.
+    
+        This is the policy gate that keeps obviously-invalid bindings out of
+        the spellbook before profile fingerprinting and spell construction are
+        allowed to proceed.
+    
+        Args:
+            profile (SpellBindingProfile): The binding profile of the spell.
+            binding_name (Optional[str]): The optional binding name provided.
+            existence (Existence): The lifecycle scope provided.
+        Contract:
+            - Rejects invalid `Existence` values up front.
+            - Forces pre-created object bindings into `Existence.unique`
+              because they are already materialized and cannot participate in
+              the other factory-driven lifecycle modes.
+            - Enforces lambda naming and callable lifecycle restrictions before
+              registration.
+    
+        Raises:
+            ValueError: If the binding violates any rule:
+                - Lambda/method bound without a required binding name.
+                - Method/lambda spells bound with an existence type other than `Existence.unique`.
+                - Existing-object spells bound with an existence type other than `Existence.unique`.
+                - Invalid `existence` type provided.
+        """
+        # Validate that existence is a valid Existence member.
+        Bind._existence_check(existence)
+    
+        # ------------------------------------------------------------------
+        # Existing-object spells: must be Existence.unique (global singleton)
+        # ------------------------------------------------------------------
+        #
+        # Existing creations are pre-instantiated and cannot participate in any
+        # other lifecycle – they are always treated as singletons for the entire
+        # Aetheric Frame. If the caller tries to bind an existing object with
+        # any other existence type, we fail fast.
+        #
+        if isinstance(profile, (InstanceBindingProfile, OtherBindingProfile)) and existence is not Existence.unique:
+            raise ValueError(
+                "Existing-object spells must use Existence.unique. "
+                "Pre-created instances are always treated as singletons and "
+                "cannot be bound with other lifecycle modes."
+            )
+    
+        # NOTE:
+        # -----
+        # We now ALLOW binding names for existing instances.
+        # Existing-object spells are treated as opaque, non-recreatable creations.
+        # They can be named and participate in spellframes, but do not act as factories.
+    
+        # ------------------------------------------------------------------
+        # Lambda / method rules
+        # ------------------------------------------------------------------
+        if isinstance(profile, CallableBindingProfile):
+            # Enforce lambda naming rule
+            if profile.lambda_function and not binding_name:
+                raise ValueError(
+                    "Cannot bind a lambda method without providing a `name=`. "
+                    "Lambdas must be registered as LAMBDA_METHOD_WITH_BINDING_NAME spells."
+                )
+    
+            # Methods / lambdas are forced to unique existence
+            if existence is not Existence.unique:
+>               raise ValueError("Method and lambda spells must use Existence.unique.")
+E               ValueError: Method and lambda spells must use Existence.unique.
+
+src/melder/aether/spellbook/bind/bind.py:1158: ValueError
+___________________ test_managed_refuses_an_existing_object ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d78d0>
+
+    def test_managed_refuses_an_existing_object(monkeypatch: pytest.MonkeyPatch) -> None:
+        """An existing object cannot be managed: TypeError says classes only."""
+        with pytest.raises(TypeError, match="classes only") as caught:
+>           bind_with(
+                monkeypatch, Existence.managed_spell_quantity, profile=golden_instance_profile(), spell=PooledTarget(),
+            )
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:305: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:193: in bind_with
+    return binder.bind(Permissions.create, existence, aetheric_frame="f", spell=spell, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/bind/bind.py:555: in bind
+    return self._bind_logic(
+src/melder/aether/spellbook/bind/bind.py:745: in _bind_logic
+    Bind._validate_binding(binding_profile, binding_name, existence)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+profile = <melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile object at 0x309f4ff0900>
+binding_name = None, existence = <Existence.managed_spell_quantity: 7>
+
+    @staticmethod
+    def _validate_binding(
+            profile: SpellBindingProfile,
+            binding_name: Optional[str],
+            existence: Existence,
+    ) -> None:
+        """
+        Enforce binding-policy rules before a `Spell` is created.
+    
+        This is the policy gate that keeps obviously-invalid bindings out of
+        the spellbook before profile fingerprinting and spell construction are
+        allowed to proceed.
+    
+        Args:
+            profile (SpellBindingProfile): The binding profile of the spell.
+            binding_name (Optional[str]): The optional binding name provided.
+            existence (Existence): The lifecycle scope provided.
+        Contract:
+            - Rejects invalid `Existence` values up front.
+            - Forces pre-created object bindings into `Existence.unique`
+              because they are already materialized and cannot participate in
+              the other factory-driven lifecycle modes.
+            - Enforces lambda naming and callable lifecycle restrictions before
+              registration.
+    
+        Raises:
+            ValueError: If the binding violates any rule:
+                - Lambda/method bound without a required binding name.
+                - Method/lambda spells bound with an existence type other than `Existence.unique`.
+                - Existing-object spells bound with an existence type other than `Existence.unique`.
+                - Invalid `existence` type provided.
+        """
+        # Validate that existence is a valid Existence member.
+        Bind._existence_check(existence)
+    
+        # ------------------------------------------------------------------
+        # Existing-object spells: must be Existence.unique (global singleton)
+        # ------------------------------------------------------------------
+        #
+        # Existing creations are pre-instantiated and cannot participate in any
+        # other lifecycle – they are always treated as singletons for the entire
+        # Aetheric Frame. If the caller tries to bind an existing object with
+        # any other existence type, we fail fast.
+        #
+        if isinstance(profile, (InstanceBindingProfile, OtherBindingProfile)) and existence is not Existence.unique:
+>           raise ValueError(
+                "Existing-object spells must use Existence.unique. "
+                "Pre-created instances are always treated as singletons and "
+                "cannot be bound with other lifecycle modes."
+            )
+E           ValueError: Existing-object spells must use Existence.unique. Pre-created instances are always treated as singletons and cannot be bound with other lifecycle modes.
+
+src/melder/aether/spellbook/bind/bind.py:1133: ValueError
+____________ test_unknown_mode_name_is_refused_with_the_three_names ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28db450>
+
+    def test_unknown_mode_name_is_refused_with_the_three_names(monkeypatch: pytest.MonkeyPatch) -> None:
+        """An unknown mode name raises ValueError listing the valid names."""
+>       with pytest.raises(ValueError, match="Unknown managed_spell_mode 'pooled'") as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:313: Failed
+___________________ test_mode_of_another_type_is_refused[1] ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dbb50>
+mode = 1
+
+    @pytest.mark.parametrize("mode", [1, Existence.unique, object()])
+    def test_mode_of_another_type_is_refused(monkeypatch: pytest.MonkeyPatch, mode: Any) -> None:
+        """A mode that is neither a ManagedSpellMode member nor a string raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_mode must be a ManagedSpellMode member or its name"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:322: Failed
+_________________ test_mode_of_another_type_is_refused[unique] _________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d7ef0>
+mode = <Existence.unique: 1>
+
+    @pytest.mark.parametrize("mode", [1, Existence.unique, object()])
+    def test_mode_of_another_type_is_refused(monkeypatch: pytest.MonkeyPatch, mode: Any) -> None:
+        """A mode that is neither a ManagedSpellMode member nor a string raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_mode must be a ManagedSpellMode member or its name"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:322: Failed
+_________________ test_mode_of_another_type_is_refused[mode2] __________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28daf80>
+mode = <object object at 0x309f2560300>
+
+    @pytest.mark.parametrize("mode", [1, Existence.unique, object()])
+    def test_mode_of_another_type_is_refused(monkeypatch: pytest.MonkeyPatch, mode: Any) -> None:
+        """A mode that is neither a ManagedSpellMode member nor a string raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_mode must be a ManagedSpellMode member or its name"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:322: Failed
+________ test_limited_and_queue_modes_require_a_limit[limited_quantity] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d7fd0>
+mode = 'limited_quantity'
+
+    @pytest.mark.parametrize("mode", ["limited_quantity", "queue"])
+    def test_limited_and_queue_modes_require_a_limit(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+        """limited_quantity and queue have no default limit."""
+>       with pytest.raises(ValueError, match=f"managed_spell_mode '{mode}' needs managed_spell_limit"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:329: Failed
+_____________ test_limited_and_queue_modes_require_a_limit[queue] ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dbfb0>
+mode = 'queue'
+
+    @pytest.mark.parametrize("mode", ["limited_quantity", "queue"])
+    def test_limited_and_queue_modes_require_a_limit(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+        """limited_quantity and queue have no default limit."""
+>       with pytest.raises(ValueError, match=f"managed_spell_mode '{mode}' needs managed_spell_limit"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:329: Failed
+_______________________ test_limit_must_be_an_int[True] ________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dc5d0>
+limit = True
+
+    @pytest.mark.parametrize("limit", [True, "4", 2.0])
+    def test_limit_must_be_an_int(monkeypatch: pytest.MonkeyPatch, limit: Any) -> None:
+        """A bool, a string or a float limit raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_limit must be an int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:339: Failed
+_________________________ test_limit_must_be_an_int[4] _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dcb80>
+limit = '4'
+
+    @pytest.mark.parametrize("limit", [True, "4", 2.0])
+    def test_limit_must_be_an_int(monkeypatch: pytest.MonkeyPatch, limit: Any) -> None:
+        """A bool, a string or a float limit raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_limit must be an int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:339: Failed
+________________________ test_limit_must_be_an_int[2.0] ________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dc950>
+limit = 2.0
+
+    @pytest.mark.parametrize("limit", [True, "4", 2.0])
+    def test_limit_must_be_an_int(monkeypatch: pytest.MonkeyPatch, limit: Any) -> None:
+        """A bool, a string or a float limit raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_limit must be an int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:339: Failed
+______________________ test_limit_must_be_at_least_one[0] ______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dc410>
+limit = 0
+
+    @pytest.mark.parametrize("limit", [0, -3])
+    def test_limit_must_be_at_least_one(monkeypatch: pytest.MonkeyPatch, limit: int) -> None:
+        """A limit below 1 raises ValueError naming it."""
+>       with pytest.raises(ValueError, match=f"managed_spell_limit must be at least 1, got {limit}"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:346: Failed
+_____________________ test_limit_must_be_at_least_one[-3] ______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d8820>
+limit = -3
+
+    @pytest.mark.parametrize("limit", [0, -3])
+    def test_limit_must_be_at_least_one(monkeypatch: pytest.MonkeyPatch, limit: int) -> None:
+        """A limit below 1 raises ValueError naming it."""
+>       with pytest.raises(ValueError, match=f"managed_spell_limit must be at least 1, got {limit}"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:346: Failed
+__________ test_a_timeout_outside_the_queue_mode_is_refused[elastic] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dc9c0>
+mode = 'elastic'
+
+    @pytest.mark.parametrize("mode", ["elastic", "limited_quantity"])
+    def test_a_timeout_outside_the_queue_mode_is_refused(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+        """Only a queue waits, so only a queue takes a timeout."""
+>       with pytest.raises(ValueError, match="applies only to managed_spell_mode 'queue'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:356: Failed
+______ test_a_timeout_outside_the_queue_mode_is_refused[limited_quantity] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dc170>
+mode = 'limited_quantity'
+
+    @pytest.mark.parametrize("mode", ["elastic", "limited_quantity"])
+    def test_a_timeout_outside_the_queue_mode_is_refused(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+        """Only a queue waits, so only a queue takes a timeout."""
+>       with pytest.raises(ValueError, match="applies only to managed_spell_mode 'queue'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:356: Failed
+________________________ test_queue_requires_a_timeout _________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d8b30>
+
+    def test_queue_requires_a_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+        """A queue binding without a timeout raises ValueError."""
+>       with pytest.raises(ValueError, match="managed_spell_mode 'queue' needs managed_spell_timeout_seconds"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:365: Failed
+__________________ test_queue_timeout_must_be_a_number[True] ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d8c10>
+timeout = True
+
+    @pytest.mark.parametrize("timeout", [True, "1"])
+    def test_queue_timeout_must_be_a_number(monkeypatch: pytest.MonkeyPatch, timeout: Any) -> None:
+        """A bool or string timeout raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_timeout_seconds must be a number of seconds"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:372: Failed
+____________________ test_queue_timeout_must_be_a_number[1] ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dbdf0>
+timeout = '1'
+
+    @pytest.mark.parametrize("timeout", [True, "1"])
+    def test_queue_timeout_must_be_a_number(monkeypatch: pytest.MonkeyPatch, timeout: Any) -> None:
+        """A bool or string timeout raises TypeError."""
+>       with pytest.raises(TypeError, match="managed_spell_timeout_seconds must be a number of seconds"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:372: Failed
+______________ test_queue_timeout_must_be_finite_and_positive[0] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d85f0>
+timeout = 0
+
+    @pytest.mark.parametrize("timeout", [0, -1.0, math.inf, math.nan])
+    def test_queue_timeout_must_be_finite_and_positive(monkeypatch: pytest.MonkeyPatch, timeout: float) -> None:
+        """Zero, negative, infinite and NaN timeouts raise ValueError."""
+>       with pytest.raises(ValueError, match="managed_spell_timeout_seconds must be a finite number of seconds > 0"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:382: Failed
+_____________ test_queue_timeout_must_be_finite_and_positive[-1.0] _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dcf70>
+timeout = -1.0
+
+    @pytest.mark.parametrize("timeout", [0, -1.0, math.inf, math.nan])
+    def test_queue_timeout_must_be_finite_and_positive(monkeypatch: pytest.MonkeyPatch, timeout: float) -> None:
+        """Zero, negative, infinite and NaN timeouts raise ValueError."""
+>       with pytest.raises(ValueError, match="managed_spell_timeout_seconds must be a finite number of seconds > 0"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:382: Failed
+_____________ test_queue_timeout_must_be_finite_and_positive[inf] ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dd440>
+timeout = inf
+
+    @pytest.mark.parametrize("timeout", [0, -1.0, math.inf, math.nan])
+    def test_queue_timeout_must_be_finite_and_positive(monkeypatch: pytest.MonkeyPatch, timeout: float) -> None:
+        """Zero, negative, infinite and NaN timeouts raise ValueError."""
+>       with pytest.raises(ValueError, match="managed_spell_timeout_seconds must be a finite number of seconds > 0"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:382: Failed
+_____________ test_queue_timeout_must_be_finite_and_positive[nan] ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dd910>
+timeout = nan
+
+    @pytest.mark.parametrize("timeout", [0, -1.0, math.inf, math.nan])
+    def test_queue_timeout_must_be_finite_and_positive(monkeypatch: pytest.MonkeyPatch, timeout: float) -> None:
+        """Zero, negative, infinite and NaN timeouts raise ValueError."""
+>       with pytest.raises(ValueError, match="managed_spell_timeout_seconds must be a finite number of seconds > 0"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:382: Failed
+______________ test_reset_methods_must_be_a_list_or_tuple[reset] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28ddbb0>
+names = 'reset'
+
+    @pytest.mark.parametrize("names", ["reset", {"reset"}])
+    def test_reset_methods_must_be_a_list_or_tuple(monkeypatch: pytest.MonkeyPatch, names: Any) -> None:
+        """A bare string (it would be read per character) or a set raises TypeError with the list remedy."""
+>       with pytest.raises(TypeError, match=r"Wrap a single name in a list: \['reset'\]"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:392: Failed
+______________ test_reset_methods_must_be_a_list_or_tuple[names1] ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dd360>
+names = {'reset'}
+
+    @pytest.mark.parametrize("names", ["reset", {"reset"}])
+    def test_reset_methods_must_be_a_list_or_tuple(monkeypatch: pytest.MonkeyPatch, names: Any) -> None:
+        """A bare string (it would be read per character) or a set raises TypeError with the list remedy."""
+>       with pytest.raises(TypeError, match=r"Wrap a single name in a list: \['reset'\]"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:392: Failed
+___________________ test_reset_method_names_must_be_strings ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d8f90>
+
+    def test_reset_method_names_must_be_strings(monkeypatch: pytest.MonkeyPatch) -> None:
+        """A non-string element raises TypeError naming its type."""
+>       with pytest.raises(TypeError, match="found an element of type int"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:398: Failed
+___________________ test_reset_method_name_must_not_be_empty ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dd520>
+
+    def test_reset_method_name_must_not_be_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+        """An empty name raises ValueError."""
+>       with pytest.raises(ValueError, match="empty name"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:404: Failed
+__________ test_reset_method_must_name_a_method_of_the_class[missing] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dd9f0>
+name = 'missing'
+
+    @pytest.mark.parametrize("name", ["missing", "label", "size"])
+    def test_reset_method_must_name_a_method_of_the_class(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+        """A missing name, a plain attribute and a property are not reset methods."""
+>       with pytest.raises(ValueError, match=f"names '{name}', which is not a method of 'PooledTarget'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:411: Failed
+___________ test_reset_method_must_name_a_method_of_the_class[label] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28dcdb0>
+name = 'label'
+
+    @pytest.mark.parametrize("name", ["missing", "label", "size"])
+    def test_reset_method_must_name_a_method_of_the_class(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+        """A missing name, a plain attribute and a property are not reset methods."""
+>       with pytest.raises(ValueError, match=f"names '{name}', which is not a method of 'PooledTarget'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:411: Failed
+___________ test_reset_method_must_name_a_method_of_the_class[size] ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28d9540>
+name = 'size'
+
+    @pytest.mark.parametrize("name", ["missing", "label", "size"])
+    def test_reset_method_must_name_a_method_of_the_class(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+        """A missing name, a plain attribute and a property are not reset methods."""
+>       with pytest.raises(ValueError, match=f"names '{name}', which is not a method of 'PooledTarget'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:411: Failed
+_ test_the_managed_part_is_appended_after_the_existence_in_its_documented_form _
+
+    def test_the_managed_part_is_appended_after_the_existence_in_its_documented_form() -> None:
+        """`managed:<mode>:<limit>:<timeout>:<names>` closes the hash input of a managed binding."""
+        assert _managed_key("") == GOLDEN_MANAGED_WITHOUT_PART
+>       assert Bind.sha256_profile(
+            golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
+            managed_spell_mode=ManagedSpellMode.elastic, managed_spell_limit=256,
+        ) == _managed_key("managed:elastic:256::")
+E       TypeError: Bind.sha256_profile() got an unexpected keyword argument 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:484: TypeError
+________________ test_without_a_mode_no_managed_part_is_hashed _________________
+
+    def test_without_a_mode_no_managed_part_is_hashed() -> None:
+        """The part needs a mode: limit, timeout and names alone leave the id as it was."""
+>       assert Bind.sha256_profile(
+            golden_class_profile(), spell_name="Pooled", existence=Existence.managed_spell_quantity,
+            managed_spell_limit=9, managed_spell_timeout_seconds=1.0, managed_spell_reset_methods=("reset",),
+        ) == GOLDEN_MANAGED_WITHOUT_PART
+E       TypeError: Bind.sha256_profile() got an unexpected keyword argument 'managed_spell_limit'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:497: TypeError
+________________ test_each_managed_option_changes_the_spell_id _________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28da500>
+
+    def test_each_managed_option_changes_the_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
+        """Mode, limit, timeout and reset names (and their order) each move the id; the default differs from 0.2.8241."""
+        variants = [
+            {},
+            {"managed_spell_limit": 8},
+            {"managed_spell_mode": "limited_quantity", "managed_spell_limit": 8},
+            {"managed_spell_mode": "queue", "managed_spell_limit": 8, "managed_spell_timeout_seconds": 1.0},
+            {"managed_spell_mode": "queue", "managed_spell_limit": 8, "managed_spell_timeout_seconds": 2.0},
+            {"managed_spell_reset_methods": ["reset"]},
+            {"managed_spell_reset_methods": ["reset", "clear"]},
+            {"managed_spell_reset_methods": ["clear", "reset"]},
+        ]
+        ids = [bind_with(monkeypatch, Existence.managed_spell_quantity, **variant).kwargs["spell_id"] for variant in variants]
+>       assert len(set(ids)) == len(ids)
+E       AssertionError: assert 1 == 8
+E        +  where 1 = len({'1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041'})
+E        +    where {'1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041'} = set(['1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041', '1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c9...1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041', '1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041', ...])
+E        +  and   8 = len(['1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041', '1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c9...1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041', '1e7f54ba6efc67e6b82c1776c90f9c90c3571cdd03fdf4c96dfd87c0ae5fa041', ...])
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:516: AssertionError
+___________________ test_decorator_form_forwards_the_options ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x309f28da5e0>
+
+    def test_decorator_form_forwards_the_options(monkeypatch: pytest.MonkeyPatch) -> None:
+        """Bind.bind used as a decorator hands the same normalized options to the Spell."""
+        profile = golden_class_profile()
+        monkeypatch.setattr(
+            "melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile), raising=True,
+        )
+        binder = Bind(StubSpellbook())
+        try:
+            decorator = binder.bind(
+                Permissions.create, Existence.managed_spell_quantity, aetheric_frame="f",
+                managed_spell_mode="limited_quantity", managed_spell_limit=5, managed_spell_reset_methods=("reset",),
+            )
+            decorator(PooledTarget)
+        finally:
+            binder.cleanup()
+>       assert managed_values(StubSpell.constructed[-1]) == (ManagedSpellMode.limited_quantity, 5, None, ("reset",))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:559: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spell = <test_bind_managed_spell_options.StubSpell object at 0x309f5edc790>
+
+    def managed_values(spell: StubSpell) -> tuple:
+        """The four normalized values Bind handed the Spell."""
+        return (
+            spell.kwargs["managed_spell_mode"],
+            spell.kwargs["managed_spell_limit"],
+>           spell.kwargs["managed_spell_timeout_seconds"],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            spell.kwargs["managed_spell_reset_methods"],
+        )
+E       KeyError: 'managed_spell_timeout_seconds'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:203: KeyError
+___ test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class ___
+
+    def test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class() -> None:
+        """The read-only inspector normalizes the options exactly as bind does."""
+        profile = SpellGeneralProfile.create_from_target(PooledTarget)
+        try:
+>           expected = Bind.sha256_profile(
+                profile.binding_profile, spell_name="PooledTarget", existence=Existence.managed_spell_quantity,
+                managed_spell_mode=ManagedSpellMode.queue, managed_spell_limit=2, managed_spell_timeout_seconds=1.5,
+                managed_spell_reset_methods=("reset",),
+            )
+E           TypeError: Bind.sha256_profile() got an unexpected keyword argument 'managed_spell_mode'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:573: TypeError
+______________ test_spell_id_inspector_refuses_what_bind_refuses _______________
+
+    def test_spell_id_inspector_refuses_what_bind_refuses() -> None:
+        """The inspector applies the same refusals: an option on another existence."""
+        with pytest.raises(ValueError, match="managed_spell_limit"):
+>           Bind.spell_id_inspector(PooledTarget, existence=Existence.unique, managed_spell_limit=2)
+E           TypeError: Bind.spell_id_inspector() got an unexpected keyword argument 'managed_spell_limit'
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:590: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_managed_binding_without_options_is_elastic_with_256_idle_objects
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_mode_is_accepted_as_member_or_name_in_any_case[limited_quantity0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_mode_is_accepted_as_member_or_name_in_any_case[limited_quantity1]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_mode_is_accepted_as_member_or_name_in_any_case[LIMITED_QUANTITY]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_elastic_limit_is_the_idle_cap_when_given
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_mode_keeps_limit_and_stores_the_timeout_as_float
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_methods_keep_their_order_as_a_tuple[names0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_other_existences_carry_no_managed_options[unique]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_other_existences_carry_no_managed_options[unique_per_conduit]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_other_existences_carry_no_managed_options[many]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_other_existences_carry_no_managed_options[unique_per_conduit_cluster]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_other_existences_carry_no_managed_options[unique_per_conduit_lineage]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_other_existences_carry_no_managed_options[unique_per_spell_space]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_an_option_on_another_existence_is_refused[managed_spell_mode-elastic]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_an_option_on_another_existence_is_refused[managed_spell_limit-4]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_an_option_on_another_existence_is_refused[managed_spell_timeout_seconds-1.0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_an_option_on_another_existence_is_refused[managed_spell_reset_methods-value3]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_an_option_on_another_existence_is_refused[managed_spell_reset_methods-value4]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_managed_refuses_a_function_or_method
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_managed_refuses_an_existing_object
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_unknown_mode_name_is_refused_with_the_three_names
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_mode_of_another_type_is_refused[1]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_mode_of_another_type_is_refused[unique]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_mode_of_another_type_is_refused[mode2]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limited_and_queue_modes_require_a_limit[limited_quantity]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limited_and_queue_modes_require_a_limit[queue]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limit_must_be_an_int[True]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limit_must_be_an_int[4]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limit_must_be_an_int[2.0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limit_must_be_at_least_one[0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_limit_must_be_at_least_one[-3]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_a_timeout_outside_the_queue_mode_is_refused[elastic]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_a_timeout_outside_the_queue_mode_is_refused[limited_quantity]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_requires_a_timeout
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_timeout_must_be_a_number[True]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_timeout_must_be_a_number[1]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_timeout_must_be_finite_and_positive[0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_timeout_must_be_finite_and_positive[-1.0]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_timeout_must_be_finite_and_positive[inf]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_queue_timeout_must_be_finite_and_positive[nan]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_methods_must_be_a_list_or_tuple[reset]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_methods_must_be_a_list_or_tuple[names1]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_method_names_must_be_strings
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_method_name_must_not_be_empty
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_method_must_name_a_method_of_the_class[missing]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_method_must_name_a_method_of_the_class[label]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_reset_method_must_name_a_method_of_the_class[size]
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_the_managed_part_is_appended_after_the_existence_in_its_documented_form
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_without_a_mode_no_managed_part_is_hashed
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_each_managed_option_changes_the_spell_id
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_decorator_form_forwards_the_options
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_spell_id_inspector_refuses_what_bind_refuses
+53 failed, 19 passed in 9.84s
+EXIT=1

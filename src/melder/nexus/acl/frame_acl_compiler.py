@@ -405,7 +405,7 @@ class FrameACLCompiler(Cleanable):
             - Returns both the visible spell-key set and the per-record payload
               section tuple visible under the effective ACL.
             - Also returns the visible stable `spell_index_id` set so later
-              runtime consumers can target lineages directly.
+              runtime consumers can target spell indexes directly.
             - Visibility is all-or-nothing per spell record in this first cut;
               the section tuple controls which payload slices are exposed.
             - Deny operations override allow operations.

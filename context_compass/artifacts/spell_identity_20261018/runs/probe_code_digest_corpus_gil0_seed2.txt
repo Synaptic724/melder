@@ -1,0 +1,6 @@
+modules not imported: 0
+targets: 782 (626 classes, 156 functions); digest errors: 0
+cold   n=782 total=360.4 ms median=297.5 us p95=1525.4 us max=7393.2 us (melder.aether.aether_configuration_builder.AetherConfigurationBuilder)
+warm   n=782 total=120.8 ms median=107.1 us p95=430.5 us max=2603.6 us (melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer)
+today  n=782 total=58.1 ms median=63.5 us p95=160.8 us max=889.3 us (melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager)
+digests written: 782 -> ../runs/corpus_digests_gil0_seed2.tsv

@@ -183,7 +183,7 @@
  "imports": {
   "ast": "ast",
   "hashlib": "hashlib",
-  "importlib.util": "importlib.util",
+  "importlib": "importlib",
   "site": "site",
   "sys": "sys",
   "threading": "threading",

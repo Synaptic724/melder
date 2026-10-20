@@ -1,0 +1,18 @@
+# probe_many_child_routes.py on 0.2.8235 (live src copied to a scratch tree), python 3.14.7t, PYTHON_GIL=1, 2026-10-14T18:27:54Z
+unique_via_lesser: same=True at_exit=0 at_end=1 built=1
+unique_via_root_spellspace: same=True at_exit=0 at_end=1 built=1
+unique_via_lesser_spellspace: same=True at_exit=0 at_end=1 built=1
+per_conduit_via_root_spellspace: same=True at_exit=0 at_end=1 built=1
+per_conduit_via_lesser_spellspace: same=True at_exit=0 at_end=1 built=1
+lineage_via_lesser: same=True at_exit=0 at_end=1 built=1
+lineage_via_root_spellspace: same=True at_exit=0 at_end=1 built=1
+nested_unique_under_per_conduit_via_lesser: same=True at_exit=0 at_end=1 built=1
+unique_override_first_build_via_lesser: same=True at_exit=0 at_end=1 built=1
+unique_via_lesser_specialized: same=True at_exit=0 at_end=1 built=1
+unique_via_borrower: same=True at_exit=0 at_end=1 built=1
+cluster_via_member: same=True at_exit=0 at_end=1 built=1
+control_unique_at_root: same=True at_exit=0 at_end=1 built=1
+control_per_conduit_at_root: same=True at_exit=0 at_end=1 built=1
+control_per_conduit_at_lesser: same=True at_exit=1 at_end=1 built=1
+control_lineage_at_root: same=True at_exit=0 at_end=1 built=1
+control_spellspace_holder: same=True at_exit=1 at_end=1 built=1

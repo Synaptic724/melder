@@ -1,0 +1,28 @@
+WROTE  _agent_documentation agent_documentation_manifest.py (470 entries, v0.2.8258)
+WROTE  _bind_guard          bind_guard_manifest.py (630 entries, v0.2.8258)
+Traceback (most recent call last):
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_build_asset_runner.py", line 399, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_build_asset_runner.py", line 395, in main
+    return check_all(version) if args.check else build_all(version)
+                                                 ~~~~~~~~~^^^^^^^^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_build_asset_runner.py", line 263, in build_all
+    written, count = module.write(version)
+                     ~~~~~~~~~~~~^^^^^^^^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_system_documents/_builder.py", line 1043, in write
+    return write_manifest(version)
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_system_documents/_builder.py", line 994, in write_manifest
+    write_payloads(entries)
+    ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_system_documents/_builder.py", line 578, in write_payloads
+    existing.unlink()
+    ~~~~~~~~~~~~~~~^^
+  File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/pathlib/__init__.py", line 1042, in unlink
+    os.unlink(self)
+    ~~~~~~~~~^^^^^^
+PermissionError: [Errno 1] Operation not permitted: '/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py'
+
+real	2m3.060s
+user	0m2.874s
+sys	0m1.966s

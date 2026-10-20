@@ -29,17 +29,17 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class LineageAlignmentStrategy(SpellSystemValidationStrategy):
     """
-    Guard that root-blueprint lineage metadata agrees with the system index.
+    Guard that root-blueprint SpellIndex metadata agrees with the system index.
 
-    Root blueprints are version-id rooted, but they can still carry lineage
+    Root blueprints are spell_id-rooted, but they can still carry SpellIndex
     metadata for DevOps and change-control consumers. This strategy checks that
-    the optional root-lineage ids embedded in the blueprints stay aligned with
-    the lineage ids tracked on the corresponding `SpellSystemIndex` nodes.
+    the optional root SpellIndex ids embedded in the blueprints stay aligned with
+    the SpellIndex ids (`lineage_id`) tracked on the corresponding `SpellSystemIndex` nodes.
 
     Contract:
-        - Emits `root_lineage_mismatch` when a root lineage id disagrees with
+        - Emits `root_lineage_mismatch` when a root SpellIndex id disagrees with
           the index.
-        - Skips checks when a blueprint intentionally lacks lineage metadata.
+        - Skips checks when a blueprint intentionally lacks SpellIndex metadata.
     """
     __slots__: list[str] = []
 
@@ -56,22 +56,22 @@ class LineageAlignmentStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that blueprint root lineage ids match index lineage ids.
+        Validate that blueprint root SpellIndex ids match the index nodes' SpellIndex ids.
 
         Purpose:
-            Ensure the Phase-5 blueprint lineage metadata stays aligned with
-            the SpellSystemIndex lineage ids used for system tracking.
+            Ensure the Phase-5 blueprint SpellIndex metadata stays aligned with
+            the SpellSystemIndex nodes' SpellIndex ids used for system tracking.
         Contract:
-            - Emits root_lineage_mismatch when the lineage ids differ.
-            - Omits diagnostics when root lineage metadata is absent.
+            - Emits root_lineage_mismatch when the SpellIndex ids differ.
+            - Omits diagnostics when root SpellIndex metadata is absent.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

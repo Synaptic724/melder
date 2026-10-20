@@ -1,0 +1,24 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The rest of fix #1's landing, re-planned after the 23:46Z compaction's re-onboarding to follow the
+    contribution guide's turn-in order (notes, the notch, the release-note entry, closure, rebuild): (1) the notch -
+    `__version__` re-read at 0.2.8252, set to 0.2.8253; (2) the release note - a script with exact-once anchors adds
+    the Breaking section, renames the older references to the two lookups and their examples, sets the header and the
+    closing rebuild line to 0.2.8253, then a Content Preservation Gate against docs_baselines; (3) the graph - a
+    3.14 extraction with --strict into scratch after the notch, the descriptors of fix #1's eleven files and
+    `__version__.py` taken only where the diff is mechanical, the authored prose re-read against the landed source,
+    then accept and reassemble; (4) the Notes, the handoff summary, the board and artifact rows, the attention-board
+    notch notice and the rubric scores; (5) the rebuild last, both checks OK; then M1-26 to melder_0. The 22:21Z
+    PLAN put the graph before the release note and the notch; the graph now follows the notch because
+    `__version__.json` is extracted from the notched file.
+  EVIDENCE:
+  - context_compass/special_instructions/agent_contribution_guide.md:93-95
+  - context_compass/special_instructions/agent_contribution_guide.md:27-31
+  - src/melder/__version__.py:12-12
+  IMPACT: One pass from 0.2.8252 to 0.2.8253 with the assets rebuilt last; closure and the held-file release stay
+    with the owner.
+  NEXT: Set `__version__` to 0.2.8253 (LF kept) and read it back.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

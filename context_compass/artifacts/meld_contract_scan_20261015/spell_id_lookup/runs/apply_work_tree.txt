@@ -1,0 +1,20 @@
+ok src/melder/aether/conduit/conduit.py blocks=3 anchors=5 crlf=False
+ok src/melder/aether/conduit/conduit_ward/conduit_ward.py blocks=0 anchors=6 crlf=False
+ok src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py blocks=3 anchors=1 crlf=False
+ok src/melder/aether/spellbook/bind/spell_index.py blocks=0 anchors=2 crlf=False
+ok src/melder/aether/spellbook/spell.py blocks=0 anchors=1 crlf=False
+ok src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py blocks=0 anchors=1 crlf=True
+ok src/melder/aether/spellbook/spellbook.py blocks=2 anchors=0 crlf=False
+ok src/melder/crystallizer/crystal_loader_system/graft_runner.py blocks=0 anchors=2 crlf=False
+ok src/melder/crystallizer/crystal_loader_system/restore_engine.py blocks=0 anchors=2 crlf=False
+ok src/melder/nexus/rift/command_system/command_system.py blocks=0 anchors=1 crlf=True
+written 10 files
+PROSE src/melder/aether/conduit/conduit.py:3212: `get_spell_by_id`, and a parked spell_id answered with the spell its index
+PROSE src/melder/aether/conduit/conduit.py:5675: `get_spell_by_id` answered a parked spell_id with the index's ACTIVE spell).
+PROSE src/melder/aether/conduit/conduit.py:5807: answer without the lock (until 0.2.8253 its predecessor `find_spell_by_id`
+PROSE src/melder/aether/conduit/conduit.py:5943: without the lock (until 0.2.8253 its predecessor `find_spell_by_id` answered a
+PROSE src/melder/aether/conduit/conduit.py:6034: `get_spell_by_id` answered a parked spell_id with the index's active spell).
+PROSE src/melder/aether/spellbook/spell.py:920: parked branch of `Spellbook.find_spell_by_id`.
+PROSE src/melder/aether/spellbook/spellbook.py:2086: - Until 0.2.8253 this was `find_spell_by_id`, which answered a
+PROSE src/melder/crystallizer/crystal_loader_system/graft_runner.py:555: # find_spell_by_id, which then returned the index's ACTIVE
+tree ok: no code use of the old names; 8 prose mentions listed

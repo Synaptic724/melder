@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py",
- "source_sha256": "a3add707c9fc95e313056e42752efcef41ccac3173ed272f5fe96b7497d692b6",
+ "source_sha256": "873a7b87c9e0d1aca9d0b2a2c4e2f8f7025f982b80baac463843e76612b4d950",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager": {
@@ -28,7 +28,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "dd501cf63847471780f0b4bdfd7591f71775af371e9b7245ac6a0ad36e10d360",
+   "span_sha256": "1ed642c723d7d953c8b93392b0a33c27caf3e6a0335340fada5b0e87457665d7",
    "include": true,
    "role": "Per-conduit storage bucket behind RiskManager's distillation into one validation-required flag per spellbook.",
    "responsibilities": [
@@ -68,16 +68,17 @@
     "unregister_spell"
    ],
    "shape": {
-    "method_count": 17,
+    "method_count": 19,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f4ede692ddb25a55ff23365ec8d6d547ac8f65417d4c9b195e3a0ee67c6c55e7",
+   "span_sha256": "71ff6c8b6d86862720d147bf96a00d932ade1fbc29cbd5de334d26a8dd2d6ae4",
    "role": "Conduit-local risk aggregator for validation gating.",
    "responsibilities": [
     "tracks structural and resolution risk per conduit",
     "reacts to validity changes from spell-system state",
-    "pushes validation-required flags back onto spellbooks"
+    "pushes validation-required flags back onto spellbooks",
+    "leaves a lineage flagged SpellState.non_resolvable out of the Book flag with one subset test against SpellSystemStates.non_resolvable_index_ids, while its risk stays tracked, and register_conduit seeds every visible spell before refreshing the flag once (0.2.8247)"
    ],
    "owns_state": [
     "_conduit_states",
@@ -89,7 +90,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f4ede692ddb25a55ff23365ec8d6d547ac8f65417d4c9b195e3a0ee67c6c55e7"
+   "semantics_authored_against": "4889eea22f972958b926b107311245f5aa30caa48d7bdc50d1f806e2a2308e18"
   }
  },
  "edges_out": [

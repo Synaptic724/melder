@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-05
+- Updated: 2026-10-19
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -181,7 +181,7 @@ CI entrypoint (verified 2026-09-26 against the files named):
 - Matrix (re-verified 2026-10-05): `.github/scripts/python_runtime_matrix.py` builds
   it from the test manifests in `.github/python/tests/` - one TOML file per exact
   Python release holding the release, `freethreaded = true` and that release's exact
-  test-dependency pins - for ubuntu-latest (x64), windows-latest (x64) and macos-latest
+  test-dependency pins - for ubuntu-24.04 (x64), windows-latest (x64) and macos-latest
   (arm64), with no network lookup. The floor release from `requires-python` must have
   a manifest and none may sit below it. Each cell installs exactly its manifest's pins
   plus Melder from the checkout (`uv pip install --no-deps`, no resolver, no lockfile)
@@ -233,11 +233,12 @@ Representative runtime-heavy entry fixtures:
 The CI/CD that runs these tiers lives under `.github/`. Its agent guide, the folder `.github/ci_cd/`
 (start at `.github/ci_cd/README.md`), describes every workflow, script, ruleset and Python manifest, how they
 connect and how to extend them; read it before changing CI. Branch and release policy stays in
-`.github/BRANCH_WORKFLOW.md`. In brief, verified 2026-10-05 against the files named:
-- Three workflows start runs. `.github/workflows/ci.yml` qualifies pull requests and manual runs and reports
-  the one required status, `CI / merge-ready`; `.github/workflows/release-candidate.yml` uploads a candidate to
-  TestPyPI and probes the installed wheel on every manifest release; `.github/workflows/python-publish.yml`
-  requalifies a published release from scratch and uploads it to PyPI.
+`.github/BRANCH_WORKFLOW.md`. In brief, verified 2026-10-06 against the files named:
+- Four workflows start runs. `.github/workflows/ci.yml` qualifies pull requests and manual runs and reports
+  the one required status, `CI / merge-ready`; `.github/workflows/speed-tests.yml` runs the three speed tests
+  beside it on dev-to-preprod pull requests and blocks nothing; `.github/workflows/release-candidate.yml`
+  uploads a candidate to TestPyPI and probes the installed wheel on every manifest release;
+  `.github/workflows/python-publish.yml` requalifies a published release from scratch and uploads it to PyPI.
 - Every other workflow is reusable and proves one thing: `test-runtime.yml` (the three tiers on every manifest
   release and runner, then coverage), the two asset checks, `docs.yml`, `build-distributions.yml`,
   `verify-source-qualification.yml` and the three speed tests.
@@ -415,6 +416,12 @@ The most important recent integration addition is the dedicated
    harness.
 
 ## Operational Invariants
+- Cluster admission regressions coordinate real threads at the admission/write boundaries (0.2.8265),
+  forcing competing empty reads on the old code while retaining real membership and share operations.
+  They require one success and seven exclusivity refusals across same-cluster and two-cluster races;
+  callback observers separately prove Cloud reads remain available during recording and sharing.
+  EVIDENCE: `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
+  and `tests/unit/melder/aether/test_conduit_cloud.py`.
 - The suite is source-tree first: tests run against `src/` from the local
   workspace.
 - The repo uses explicit tier directories instead of a single flat test bucket.
@@ -431,6 +438,13 @@ The most important recent integration addition is the dedicated
   after it tears down; a bare reset leaves the next test without a world.
 - Races are proven by deterministic stand-ins for the concurrent writer; the
   multithreading lane is stress coverage, not the proof.
+- One object is one spell in the suite too (0.2.8257): no test registers one class twice - under a second
+  binding name, existence or spellframe, in a second Book of a process-wide world, or staged again with
+  `bind_inactive` - because bind refuses it; a test that needs the shape binds a version (`version_of`) or
+  a class of its own, and the tests that pin the refusal expect RuntimeError naming the spell_id.
+  EVIDENCE:
+  - tests/_spell_identity_test_support.py:1-46
+  - tests/component/melder/spellbook/test_spellbook_component_spell_identity.py:98-135
 
 ## Source Coverage and Evidence
 Direct evidence used in this pass:
@@ -438,6 +452,7 @@ Direct evidence used in this pass:
 - `tests/conftest.py`
 - `tests/_frame_posture_test_support.py`
 - `tests/_codegen_system_support.py`
+- `tests/_spell_identity_test_support.py`
 - `tests/component/INFO.MD`
 - `tests/_nexus_viewer_matrix_support.py`
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
@@ -457,12 +472,13 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 465 `.py` files (334 on 2026-06-13)
-- `component/`: 143 `.py` files (81)
-- `integration/`: 149 `.py` files (88)
-- `mocks/`: 44 `.py` files (42)
-- `experimentation/`: 196 `.py` files, 33 of them `test_*.py` (not counted before)
-Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
+- `unit/`: 518 `.py` files, 515 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `component/`: 171 `.py` files, 169 of them `test_*.py` (143, 81)
+- `integration/`: 185 `.py` files, 178 of them `test_*.py` (149, 88)
+- `mocks/`: 44 `.py` files (44, 42)
+- `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
+Recounted 2026-10-19 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 862 `test_*.py`
+modules are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -475,6 +491,9 @@ Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
 - Frame-posture support centralizes automatic/dynamic runtime configuration
   helpers reused across spellbook, conduit, crystallizer, and
   mutation-research tests.
+- Spell-identity support (`version_of`, 0.2.8257) gives a test that needs a second registration of one
+  class a version of it - a subclass with the same name, qualname and module and class-level values of
+  its own - because one object is one spell and a second registration of it is refused.
 - Codegen/compiler support centralizes namespace doubles, event/memory doubles,
   and compiler-phase runner helpers reused across codegen-system and spell
   compiler test lanes.
@@ -514,6 +533,9 @@ Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
 - `tests/_codegen_system_support.py`
   Purpose: shared codegen-system doubles and helper builders for compiler and
   codegen test lanes.
+- `tests/_spell_identity_test_support.py`
+  Purpose: `version_of`, a version of a class for a test that needs a second registration of one
+  class; a test that restores or grafts the version defines a module-level class instead.
 - `tests/_nexus_viewer_matrix_support.py`
   Purpose: shared descriptor + compiled ACL + viewer fixture builder.
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
@@ -582,11 +604,25 @@ Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
   join against. A renamed or deleted test file leaves a citation that still
   parses and points nowhere. Existence must be checked explicitly; see the
   recipe under `## Indexing`.
+- WORKER HANG (unit-tier stress files): the managed pool's and the release registry's stress files start eight
+  threads behind one barrier and join each with a timeout, so a deadlock or a lost wake-up fails the test (the
+  pool's file names it "a worker hung") instead of stalling the CI cell; the queue pools there also give every
+  waiting lease a deadline of its own.
+  EVIDENCE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:94-124
+- KNOWN RACE HELD AS XFAIL (integration conduit, 0.2.8250): the meld-vs-notch race test in
+  `test_conduit_integration_notch_revalidation.py` carries `xfail(strict=False, raises=AssertionError)` naming
+  TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout. On a free-threaded run a meld in flight can
+  meet the borrower's contracted copy parked by a notch, and the test xfails (2 of 5 GIL-off runs on
+  2026-10-16); otherwise, and with the GIL on (5 of 5), it xpasses. Neither result fails the cell, any other
+  exception still fails the test, and whoever closes that task deletes the marker.
+  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:626-675
 
 ## C1 Code Map (Core Only)
-Core is the deduplicated union of every `Key Files (C1)` list in
-`tests_components.md`, plus the harness surfaces this document names as
-entrypoints. Every range below was MEASURED from disk on 2026-08-02, not carried
+Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
+conftests, the shared support modules, the benches, the mock corpus and the CI driver: 37 paths, every one of
+them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 282 paths on
+2026-10-19; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
+from disk on 2026-08-02, not carried
 forward - there is no graph on this side to join against, so nothing else would
 have caught a stale range.
 
@@ -620,6 +656,12 @@ constituent files.
   end_line: 638
   loc: 638
   verified_at: 2026-09-26T21:51:55Z
+- path: `tests/_spell_identity_test_support.py`
+  start_line: 1
+  end_line: 46
+  loc: 46
+  verified_at: 2026-10-18T23:15:23Z
+  note: `version_of`: a version of a class for a second registration of one class (0.2.8257).
 - path: `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
   start_line: 1
   end_line: 868
@@ -662,9 +704,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6377
-  loc: 6377
-  verified_at: 2026-09-30T00:32:11Z
+  end_line: 6374
+  loc: 6374
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
   end_line: 458
@@ -677,9 +719,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_command_system_direct.py`
   start_line: 1
-  end_line: 483
-  loc: 483
-  verified_at: 2026-09-30T00:32:11Z
+  end_line: 477
+  loc: 477
+  verified_at: 2026-10-15T22:33:31Z
 - path: `tests/mocks/spellbook/contract_classes.py`
   start_line: 1
   end_line: 425
@@ -833,6 +875,8 @@ graph TD
 ```
 
 ## Information Sources
+- `tests/unit/melder/aether/test_conduit_cloud.py`
+- `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
 - `pyproject.toml`
 - `tests/conftest.py`
 - `tests/_frame_posture_test_support.py`
@@ -852,6 +896,7 @@ graph TD
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
 - `.github/workflows/ci.yml`
+- `.github/workflows/speed-tests.yml`
 - `.github/workflows/test-runtime.yml`
 - `.github/scripts/run_runtime_tests.py`
 - `.github/scripts/python_runtime_matrix.py`
@@ -864,10 +909,117 @@ graph TD
 - `tests/unit/melder/test_melder_registration_guard.py`
 - `tests/unit/melder/utilities/test_caching_system.py`
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+- `tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py`
+- `tests/unit/melder/aether/conduit/creations/test_release_managed_spell_multithreaded.py`
+- `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py`
+- `tests/_spell_identity_test_support.py`
+- `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py`
 - `.gitignore`
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-19 cluster admission (0.2.8265): the operational invariants identify the deterministic thread
+coordination used by the cluster race checks and the separate callback observers. The test component
+map carries their measured files and contracts; the CI module counts and runner are unchanged.
+
+2026-10-19 staging keeps the active signature (0.2.8263): the inventory is recounted from disk (component 171
+`.py`, 169 of them `test_*.py`; 861 test modules in the three tiers) - the lane adds one component module (staging,
+an index move back and a lone parked disposal keep the active spell's signature), catalogued in `tests_components`.
+No tier, conftest, declared marker or shared support module changes, and no extent in this map moves.
+
+2026-10-19 a refused notch moves nothing (0.2.8262): the inventory is unchanged (unit 517 `.py`, 514 of them
+`test_*.py`; integration 185, 178; 860 test modules in the three tiers) - the lane's two modules, the refused
+notch's integration module and the validation error's preface unit module, were on disk and counted before this
+landing and are catalogued in `tests_components` now. No tier, conftest, declared marker or shared support
+module changes, and no extent in this map moves.
+
+2026-10-19 cleanup releases the contracts (0.2.8261): the inventory is recounted from disk (component 170
+`.py`, 168 of them `test_*.py`; integration 185, 178; 860 test modules in the three tiers) - the lane
+adds one component module (the contracts-first order of a disposal) and one integration module (a disposed
+version leaving every contract), catalogued in `tests_components`. No tier, conftest, declared marker or
+shared support module changes, and no extent in this map moves.
+
+2026-10-19 a Book's teardown retires its parked versions (0.2.8260): the inventory is recounted from disk
+(integration 184 `.py`, 177 of them `test_*.py`; 858 test modules in the three tiers) - the lane adds one
+integration module (a Book's teardown retiring its parked versions), catalogued in `tests_components`. No tier,
+conftest, declared marker or shared support module changes, and no extent in this map moves.
+
+2026-10-19 the minted index is registered (0.2.8259): the inventory is recounted from disk (unit 517 `.py`,
+component 169, integration 183; 857 test modules in the three tiers) - the lane adds one integration module (a
+version moved into an index of its own, known to its frame), catalogued in `tests_components`, and changes one unit
+module (the residency join's frame doubles). No tier, conftest, declared marker or shared support module changes,
+and no extent in this map moves.
+
+2026-10-18 spell identity is the code (0.2.8257-0.2.8258): the inventory is recounted from disk (unit 517 `.py`,
+component 169, integration 183, mocks 44, experimentation 204; 857 test modules in the three tiers) - the lane adds
+four unit modules (the digest's, the libraries', the manifest's and the crystal's binding hash) and one component
+module (spell identity over real wiring), catalogued in `tests_components`, and the integration count takes in the
+red-test module of STORY-2026-10-17-minted_index_missing_from_frame_registry
+(`test_separated_version_is_known_to_its_frame_integration.py`), which fails on purpose until that story lands. One
+shared support module joins the suite, `tests/_spell_identity_test_support.py` (`version_of`), and with it the
+evidence, the responsibilities, the C2 overview, a new operational invariant (one object is one spell in the suite
+too) and this map (37 paths). The xfail evidence into the notch-revalidation file is remapped to the marker's
+decorator and body (626-675); every range in this map was checked against disk (re-stamped: none). No tier, conftest
+or declared marker changes.
+
+2026-10-18 direct cleanup refusal (0.2.8256): the inventory is recounted from disk (unit 513 `.py`, component
+168, integration 182, mocks 44, experimentation 204; 851 test modules in the three tiers) - the lane adds one
+integration module (the three cleanup doors refusing an index's active version while parked versions remain),
+catalogued in `tests_components`. The count also takes in the two red-test modules written for the held
+STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers (one unit, one integration), whose 18 tests
+fail on purpose until that story lands and catalogues them. No tier, conftest, declared marker or shared
+support module changes, and no extent in this map moves.
+
+2026-10-18 managed settings leave the spell_id (0.2.8254): the inventory is recounted from disk (unit 512 `.py`,
+component 168, integration 180, mocks 44, experimentation 204; 848 test modules in the three tiers) - the lane adds
+one integration module (a managed spell's settings outside its spell_id), catalogued in `tests_components`, and a
+ninth-thread rebind case to the managed pool's stress file after its other cases, so the worker-hang guard's evidence
+under `## Failure Modes and Error Paths` (`_run_threads`, 94-124) does not move. No tier, conftest, declared marker or
+shared support module changes, and no extent in this map moves.
+
+2026-10-17 lookup by spell_id is exact (0.2.8253): the inventory is recounted from disk (unit 512 `.py`,
+component 168, integration 179, mocks 44, experimentation 204; 847 test modules in the three tiers) - the lane
+adds one unit module (the Rift rooms' lookups by spell_id over doubles) and two integration modules (a lender
+and borrower world; a capability room) and renames one component module, catalogued in `tests_components`.
+Its codemod renamed the lookups in 82 test files and rewrote a comment in the notch-revalidation module as two
+lines, so the race test's evidence under `## Failure Modes and Error Paths` moves one line (624-673). No tier,
+conftest, declared marker or shared support module changes, and no extent in this map moves.
+
+2026-10-16 contract recheck on notch (0.2.8250): the inventory is recounted from disk (unit 511 `.py`,
+component 168, integration 177, mocks 44, experimentation 204; 844 test modules in the three tiers) - the lane
+adds one unit module (the registry's downstream walk) and one integration module (contract consumers and
+dependents following a provider change), catalogued in `tests_components`. `## Failure Modes and Error Paths`
+gains the known meld-vs-notch race, held as a non-strict xfail in that integration module. No tier, conftest,
+declared marker or shared support module changes, and no extent in this map moves.
+
+2026-10-16 public notch target (0.2.8249): the inventory is recounted from disk (unit 510 `.py`, component 168,
+integration 176, mocks 44, experimentation 204; 842 test modules in the three tiers) - the lane adds two unit and
+two integration modules (the notch target, then on the owner's extension the index moves by spell_id),
+catalogued in `tests_components`. No tier, conftest, marker or shared support module changes, and no extent in
+this map moves.
+
+2026-10-16 parked versions wired at conjure (0.2.8248): the inventory is recounted from disk (unit 508 `.py`,
+component 168, integration 174, mocks 44, experimentation 204; 838 test modules in the three tiers) - the lane
+adds one unit and one integration module, catalogued in `tests_components`. No tier, conftest, marker or shared
+support module changes, and no extent in this map moves.
+
+2026-10-16 non-resolvable definitions (0.2.8247): the inventory is recounted from disk (unit 507 `.py`,
+component 168, integration 173, mocks 44, experimentation 204; 836 test modules in the three tiers) - the lane
+adds two unit modules and one component module, catalogued in `tests_components`. No tier, conftest, marker or
+shared support module changes, and no extent in this map moves.
+
+2026-10-15 managed spells (no notch here; the lane landed 0.2.8241-0.2.8246): the inventory is recounted from
+disk (unit 505 `.py`, component 167, integration 173, mocks 44, experimentation 204; 833 test modules in the
+three tiers); the two stale code-map extents, both stale since earlier lanes (`test_nexus.py` 6374,
+`test_command_system_direct.py` 477), are remeasured and every other extent matched disk; and the code-map header
+no longer calls this map the union of `tests_components`' key files - it is the 36 surfaces this document names.
+Failure Modes gains the worker-hang guard of the unit tier's two managed stress files. The lane adds no tier,
+conftest, marker or shared support module; its 28 test files are catalogued in `tests_components`.
+
+2026-10-06 speed tests beside CI (no notch; CI and documentation only): `### CI/CD Pipeline` names a fourth entry
+workflow, `speed-tests.yml`, which runs the three speed tests on dev-to-preprod pull requests beside `ci.yml`. They
+are no longer CI jobs, so neither `CI / merge-ready` nor the CI run that later promotions reuse waits for them.
 
 2026-10-05 CI/CD guide (no notch): `### CI/CD Pipeline` under the system boundary points at `.github/ci_cd/`,
 the agent guide to every workflow, script, ruleset and Python manifest, and sketches the three entry workflows.

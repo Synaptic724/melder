@@ -57,13 +57,13 @@ class _CandidateStub:
 
 
 class _BookStub:
-    """A spellbook that answers `find_spell_by_id` from a dict."""
+    """A spellbook that answers `find_spell_by_spell_id` from a dict."""
 
     def __init__(self, spells: dict) -> None:
         """Hold the lookup."""
         self._spells = spells
 
-    def find_spell_by_id(self, spell_id: str):
+    def find_spell_by_spell_id(self, spell_id: str):
         """Return the candidate or None."""
         return self._spells.get(spell_id)
 

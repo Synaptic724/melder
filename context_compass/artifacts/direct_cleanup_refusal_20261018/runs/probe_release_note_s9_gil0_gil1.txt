@@ -1,0 +1,15 @@
+== GIL 0
+Spellbook cannot remove spell 0665fa0fbd3a61722bb24583e6106f9a13f315be19a88576411f8846c82d4b5b: it is the active member of a multi-member index, and disposing it would leave the index's parked versions without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out with remove_from_spell_index first.
+E1 ok: refused, then notch and dispose
+E2 ok: dispose the parked version, then the active one
+E3 ok: move the parked version out, then the active one
+cleanup_spell: spell 5f8fa0bea8c62a40a9a815e4375fc9a9556b5a2168861801da0558d1f30d5c87 is the active member of a multi-member index, and disposing it would leave the index's parked versions without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out with remove_from_spell_index first.
+E4 ok: cleanup_spell names the same remedies
+== GIL 1
+melder is optimized for Python built with --disable-gil (PEP 703).
+Spellbook cannot remove spell 0665fa0fbd3a61722bb24583e6106f9a13f315be19a88576411f8846c82d4b5b: it is the active member of a multi-member index, and disposing it would leave the index's parked versions without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out with remove_from_spell_index first.
+E1 ok: refused, then notch and dispose
+E2 ok: dispose the parked version, then the active one
+E3 ok: move the parked version out, then the active one
+cleanup_spell: spell 5f8fa0bea8c62a40a9a815e4375fc9a9556b5a2168861801da0558d1f30d5c87 is the active member of a multi-member index, and disposing it would leave the index's parked versions without an active one. Notch the index to one of them, dispose them with cleanup_spell, or move them out with remove_from_spell_index first.
+E4 ok: cleanup_spell names the same remedies

@@ -1,0 +1,56 @@
+Spellbook._spells access inventory on 3d184cac (0.2.8228), git-archive export; melder_1, 2026-10-10.
+Method: every `._spells` site under src/ located by search (excluding `_spells_*` names and the unrelated
+`CreationContextRebuild._spells` tuple), then the enclosing method of every MUTATION read in full for the lock
+it holds. The WALKS section carries the lock context from the enclosing-statement scan; only the rows marked
+(read) were opened. Line numbers are 3d184cac's.
+
+MUTATIONS - nine live statements plus book teardown
+ #  site                                     method                          lock held at the statement
+ 1  spellbook.py:662   pop                   cleanup_and_remove_spell        self._lock (630-666)
+ 2  spellbook.py:1510  pop                   _deactivate_owned_spell         self._lock (1494-1515)
+ 3  spellbook.py:1572  insert                _reactivate_owned_spell         self._lock (1555-1576)
+ 4  spellbook.py:4003  pop                   _destroy_spell_index            self._lock (4002-4004)
+ 5  spellbook.py:5358  insert                bind                            NONE - bind transaction window only
+                                                                             (5291-5471); _register_owned_spell_id
+                                                                             takes the lock at the next line (1124)
+ 6  transfer_of_ownership.py:1448  pop src   _flip_registry_and_spellbooks   SafeGuard(src, tgt Book locks) 1444
+ 7  transfer_of_ownership.py:1456  ins tgt   _flip_registry_and_spellbooks   SafeGuard(src, tgt Book locks) 1444
+ 8  transfer_of_ownership.py:954   pop tgt   _rollback_spellbook_move        SafeGuard(tgt, src Book locks) 953
+ 9  transfer_of_ownership.py:960   ins src   _rollback_spellbook_move        SafeGuard(tgt, src Book locks) 953
+ T  spellbook.py:444 clear, 448 del          _cleanup_components             self._lock, from cleanup 387-391 after
+                                                                             _cleaned = True (whole-book teardown)
+ Aliases: Meld._owned_spells (meld.py:284, repointed at spellbook.py:6966) is read with .get only (meld.py:1997)
+ and its del drops the alias; the creation-system locals (spellbook_creation_system.py:2697, 2982) only read.
+ Notch reaches the map only through #2/#3 (_apply_notch, under self._lock 3746-3771); add/remove-to-index and
+ cleanup_spell reach it only through #4 (_destroy_spell_index); restore and graft only through bind and notch.
+
+INDEX CLEANUP ORDER (read)
+ cleanup_and_remove_spell: pop (#1) under the lock, index.cleanup() after release (702).
+ _destroy_spell_index: pop (#4) under the lock, index.cleanup() after release (4017).
+ Book teardown: _cleanup_spells cleans spells and indexes under the lock (583, called at 441).
+ Bind._cleanup_unpublished_spell (bind.py:453) cleans only an index bind never published.
+ So no path cleans an index while it is still in _spells, except teardown, which holds the lock.
+
+WALKS AND READS (lock context)
+ owning Book lock held:
+   _find_spell 2106, _find_spell_index_by_index_id 2149, _find_spell_count 2227, snapshot_state 1954 (dict copy),
+   inspect_spell over its own Book 2494, _register/_unregister_conduit_spells_in_aether 2553/2576,
+   _check_all_spells 2898, _apply_notch 3747, define_conduit_into_spells (creation system 1356),
+   ChangeControlManager._resolve_spells_for_binding_keys 766, ConduitCluster 1253/1273,
+   ConduitWard._has_local_spell_id 2691, transfer _resolve_spell 545 and _spell_in_spellbook 1168,
+   transfer flip/rollback membership tests 1445/1446 (read).
+ another lock only:
+   Conduit.get_spell_permissions conduit.py:4047 (conduit._lock 4043)            - "permissions lookup"
+   inspect_spell over another conduit's Book 2518 (its own Book lock only)       - "foreign-Book inspection"
+   CommandSystem.get_spell_by_id command_system.py:884 (command action guard 860) - "command-system lookup"
+ no lock:
+   find_spell_by_id 2036 (the R4 target, read)
+   RiskManager._iter_spellbook_spells risk_manager.py:487 (list.extend over values())
+   StructuralSnapshot.classify 602, hydrate_full_hit 666, capture_at_conjure_end 740
+   creation-system phase factories and checks 466, 1534, 2643, 2697, 2982, 3105-3470
+   _publish_nexus_state_for_conjure 6105, _remove_spells_from_nexus 6173 (conjure tail, teardown)
+   transfer _conduit_has_impacted_lineage 837
+   public `spells` property: a live MappingProxyType over the map (1898)
+   Meld._owned_spells.get (meld.py:1997): one dict read per call, no walk
+ Contracted maps (_find_contracted_spell_by_id, contract.py:480, "contract-proxy iteration") are other maps and
+ are not in this inventory.

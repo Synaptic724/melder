@@ -1,0 +1,10 @@
+run 1:
+Traceback (most recent call last):
+  File "/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_traceback.py", line 18, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/cc_res/rule2/tree/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 201, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SpellContract' object has no attribute 'ping'
+

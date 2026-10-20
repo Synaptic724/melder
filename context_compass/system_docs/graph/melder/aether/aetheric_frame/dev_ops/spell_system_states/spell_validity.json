@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py",
- "source_sha256": "c7b0c7882dd7d307af0744789241282021494a4c491d13bfed741cbb157dbc41",
+ "source_sha256": "49bf6a23f0078ab04bdd097b3683815438629b84a24c3ca3b704cbdf984489c2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity": {
@@ -30,7 +30,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cac4dff7e23b13000be29d413026690330460b8959ea5982757385c4676725fc",
+   "span_sha256": "b7ce219ebe74755c126e35ec234590eb1ff1e448dffd289f1b23d812568d391e",
    "role": "Coarse validity gate enum for structural and resolution state.",
    "responsibilities": [
     "labels unknown, valid, gated, invalid, disabled, and cleaned validity states"

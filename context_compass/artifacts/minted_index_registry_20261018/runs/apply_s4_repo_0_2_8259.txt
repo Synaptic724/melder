@@ -1,0 +1,4 @@
+all anchors found: A,B,C,D
+applied src/melder/aether/spellbook/spellbook.py (LF)
+applied src/melder/mutation_research/mutation_research.py (CRLF kept)
+applied src/melder/aether/spellbook/spell.py (LF)

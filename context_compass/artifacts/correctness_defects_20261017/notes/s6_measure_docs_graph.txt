@@ -1,0 +1,36 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Part A's documentation and graph are in. The four system documents carry the new rule - src_architecture: a
+    new operational invariant first, two failure modes, the glossary, the boundary list, the managed lease diagram
+    and six code-map entries remeasured; src_components: the Binding Pipeline and Managed Spell Pools components
+    with their flows and code map; the tests pair: the new integration module and the moved fingerprint tests - and
+    their four indexes check current (5103, 12053, 1003 and 3864 lines). The graph: seven descriptors re-extracted
+    on 3.14 with --strict and installed behind an authored-tier check (scripts/s6_graph.py): Bind r15,
+    ManagedSpellQuantity r3, Creations r9, ManagedSpellMode r3 and SpellCrystal r7 rewritten from the old rule,
+    ManagedSpellQuantity r9 (the rebind) and CachingSystem r11 (generation 22) added, the two edge reasons that said
+    the mode is hashed or the rebind only re-points rewritten; the six class nodes re-read against their source
+    (each one's diff since its stamp) and accepted; the assembled graph checks current (591 sections, 28084 lines).
+    Two old-rule lines remain in descriptors of melder_1's held files (Spellbook r19, RestoreEngine r13); they go to
+    melder_1 with the release. Module nodes stay unverified, as across the graph.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1126-1151
+  - context_compass/system_docs/src_architecture.md:2223-2245
+  - context_compass/system_docs/src_components.md:3714-3827
+  - context_compass/system_docs/tests_components.md:1150-1157
+  - context_compass/system_docs/tests_components.md:1793-1798
+  - context_compass/system_docs/src_graph.md:6123-6200
+  - context_compass/system_docs/src_graph.md:5323-5384
+  - context_compass/system_docs/src_graph.md:5180-5272
+  - context_compass/system_docs/src_graph.md:25990-26054
+  - context_compass/system_docs/src_graph.md:6429-6461
+  - context_compass/system_docs/src_graph.md:18303-18363
+  - context_compass/system_docs/src_graph.md:15781-15781
+  - context_compass/system_docs/src_graph.md:17799-17799
+  - context_compass/artifacts/correctness_defects_20261017/scripts/s6_graph.py:1-256
+  IMPACT: Part A's docs and graph match the code; left are the boards, the patch docs' status, the rebuild last, the
+    release of the held files and the report to the owner.
+  NEXT: Sync the board rows and the patch docs' status, then rebuild through a /tmp mirror.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

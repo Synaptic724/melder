@@ -68,10 +68,8 @@ def _child_source() -> str:
     return textwrap.dedent('''
     import json
     from melder.aether.spellbook.bind.bind import Bind
-    from melder.aether.spellbook.existence.existence import Existence
     import stability_shapes
-    print(json.dumps({k: Bind.spell_id_inspector(v, existence=Existence.unique)
-                      for k, v in stability_shapes.CANDIDATES.items()}))
+    print(json.dumps({k: Bind.spell_id_inspector(v) for k, v in stability_shapes.CANDIDATES.items()}))
 ''')
 
 

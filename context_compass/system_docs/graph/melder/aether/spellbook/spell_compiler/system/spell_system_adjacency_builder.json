@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py",
- "source_sha256": "f55706a1b58f86f462289ed2e6b2f55f7ddfdbee7b378a38c616a094f57b6e06",
+ "source_sha256": "a458195ca9ea5840a45e5ec78bbb9f21a8dd0672c9e8e935f005fef9e3edfa7b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder": {
@@ -30,7 +30,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "5274b453b0d650c2a39cc2271a7c69c4a3c2c3c9bfb68c8f9fe0fa3f6b75d60e",
+   "span_sha256": "b18518dc9c50c3541bc8141c8a9d12f6e3dc02c5f8d0ddfe4b035bf0ccd01cb1",
    "role": "Builder from SpellSystemStates into an adjacency snapshot.",
    "responsibilities": [
     "reads direct dependency and topology state from SpellSystemStates",

@@ -1,0 +1,26 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Turned in and rebuilt last at 0.2.8252, from the repository root on Python 3.14.7t. The first asset run
+    on the connected folder wrote the agent-documentation and bind-guard manifests and the system-documents index,
+    then stopped with PermissionError: the system-documents builder deletes its three payload modules before
+    writing them again, and the folder refuses deletes. The runner was then run whole in a mirror under /tmp (src/,
+    the system docs, pyproject, README, docs): all three assets at v0.2.8252 (468 agent-documentation entries, 628
+    bind-guard entries, 4 system documents). The five files it changed beyond the real tree - the three payloads,
+    the system-documents manifest and the graph adjacency manifest - were copied back over their originals
+    (nothing deleted; byte-equal after copy), and the asset --check on the real tree printed only OK lines. The LLM
+    bundles (--include-untracked) rewrote src (583 files), tests (1125) and other (404) and the manifest; their
+    --check printed only OK lines.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_assets.txt:1-28
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_assets_mirror.txt:1-7
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_assets_check.txt:1-7
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_llm.txt:1-8
+  - context_compass/artifacts/spell_id_wording_20261016/runs/rebuild_0_2_8252_llm_check.txt:1-7
+  - src/melder/_build_assets/_system_documents/_builder.py:575-578
+  IMPACT: Code, docstrings, release note, notch and generated assets agree at 0.2.8252; __version__.py and the
+    release note go back to melder_1 (NOTICE M0-183).
+  NEXT: NOTICE M0-183 to melder_1; then EPIC-2026-10-17-correctness_defects sweep A6.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

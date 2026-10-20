@@ -1,0 +1,9 @@
+  ACCEPT melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.conduit.conduit.Conduit  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.conduit.meld.meld.Meld  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.spellbook.spellbook.Spellbook  (was SEMANTICS_STALE)
+  ACCEPT melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError  (was SEMANTICS_STALE)
+
+  ACCEPTED into 7 descriptor(s). Reassemble to refresh the document.

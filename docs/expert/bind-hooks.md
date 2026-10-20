@@ -46,7 +46,7 @@ The label is application-provided metadata; trusted caller identity must come fr
 the application's own authenticated context if that distinction is required.
 
 Post-bind receives the same Spell after registration. The example verifies that
-`book.find_spell_by_id(spell.spell_id)` returns it, sets
+`book.find_spell_by_spell_id(spell.spell_id)` returns it, sets
 `spell.metadata["post_checked"] = True`, and records its ID in the application's audit.
 The caller then inspects those changes through the public lookup.
 

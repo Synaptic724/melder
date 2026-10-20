@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_index_crystal.py",
- "source_sha256": "db598bc9ae0d67cf96c02a390e33ee39ac861ee3b5a3e77c3568588418cf4a78",
+ "source_sha256": "9c8d7ad48eadf32e917a709dafab210288d96282576d06e286e918868450af19",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_index_crystal": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0adca421023b96bba6604bc16e0530765cc3fee698f498ed17bd8b3fa345a8ad",
+   "span_sha256": "c2889757952b94eb35679ba89c1b0ca5c1f8b3950117292a1c4bd3bde1dd53eb",
    "include": true,
    "role": "Digital twin of one live SpellIndex: owner edge, selection and member set.",
    "responsibilities": [

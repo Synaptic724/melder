@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The defect hits grafts too (sweep A12, probe G4). A graft parks every non-selected member through
+    `Conduit.bind_inactive` onto the index its anchor bind created, so grafting an index whose parked member shares
+    the active member's signature leaves the host frame with no claim for it: after the graft the host holds English
+    active, French parked, and the claim for ('greeter', 'english') is gone. Identical with the GIL off and on.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:432-489
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_graft_parked_members.py:1-152
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil0.txt:20-25
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_graft_parked_members_gil1.txt:20-25
+  IMPACT: The fix's tests should include one graft beside the restore.
+  NEXT: The owner schedules the story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

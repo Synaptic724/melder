@@ -1,0 +1,67 @@
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7 gil_enabled=True
+[L1 lent consumer, lender notch, T first, today]
+  O first meld: got A (gate=1 scan=1 5-11=1)
+  T first meld: got A (gate=1 scan=1 5-11=1)
+  after notch to B: consumer valid [] bookflag=True; T bookflag=True
+  T meld after notch: got B (gate=1 scan=1 5-11=1)
+  O meld after notch: got B (gate=1 scan=1 5-11=1)
+  T next meld: got B (gate=1 scan=1 5-11=1)
+  O next meld: got B (gate=1 scan=1 5-11=1)
+[L1 lent consumer, lender notch, O first, today]
+  O first meld: got A (gate=1 scan=1 5-11=1)
+  T first meld: got A (gate=1 scan=1 5-11=1)
+  after notch to B: consumer valid [] bookflag=True; T bookflag=True
+  O meld after notch: got B (gate=1 scan=1 5-11=1)
+  T meld after notch: got B (gate=1 scan=1 5-11=1)
+  O next meld: got B (gate=1 scan=1 5-11=1)
+  T next meld: got B (gate=1 scan=1 5-11=1)
+[L3 lent consumer, T drops its provider index link, today]
+  O first meld: got A (gate=1 scan=1 5-11=1)
+  T first meld: got A (gate=1 scan=1 5-11=1)
+  after T's removal: consumer valid [] bookflag=True; T bookflag=False
+  T meld: got A (gate=0 scan=0 5-11=0)
+  O meld: got A (gate=1 scan=1 5-11=1)
+  T meld after O's: got A (gate=0 scan=0 5-11=0)
+[L4 lent consumer, T severs its link to L, today]
+  O first meld: got A (gate=1 scan=1 5-11=1)
+  T first meld: got A (gate=1 scan=1 5-11=1)
+  after T's sever: consumer valid [] bookflag=True; T bookflag=False
+  T meld: got A (gate=0 scan=0 5-11=0)
+  O meld: got A (gate=1 scan=1 5-11=1)
+  T meld after O's: got A (gate=0 scan=0 5-11=0)
+[today] marks issued: 0
+[L1 lent consumer, lender notch, T first, rule2]
+  O first meld: got A (gate=1 scan=0 5-11=1)
+  T first meld: got A (gate=1 scan=0 5-11=1)
+  after notch to B: consumer gated ['contract_unvalidated'] bookflag=True; T bookflag=True
+  T meld after notch: got B (gate=1 scan=0 5-11=1)
+  O meld after notch: got B (gate=1 scan=0 5-11=0)
+  T next meld: got B (gate=1 scan=0 5-11=0)
+  O next meld: got B (gate=1 scan=0 5-11=0)
+[L1 lent consumer, lender notch, O first, rule2]
+  O first meld: got A (gate=1 scan=0 5-11=1)
+  T first meld: got A (gate=1 scan=0 5-11=1)
+  after notch to B: consumer gated ['contract_unvalidated'] bookflag=True; T bookflag=True
+  O meld after notch: got B (gate=1 scan=0 5-11=1)
+  T meld after notch: got B (gate=1 scan=0 5-11=0)
+  O next meld: got B (gate=1 scan=0 5-11=0)
+  T next meld: got B (gate=1 scan=0 5-11=0)
+[L3 lent consumer, T drops its provider index link, rule2]
+  O first meld: got A (gate=1 scan=0 5-11=1)
+  T first meld: got A (gate=1 scan=0 5-11=1)
+  after T's removal: consumer valid [] bookflag=True; T bookflag=False
+  T meld: got A (gate=0 scan=0 5-11=0)
+  O meld: got A (gate=1 scan=0 5-11=0)
+  T meld after O's: got A (gate=0 scan=0 5-11=0)
+[L4 lent consumer, T severs its link to L, rule2]
+  O first meld: got A (gate=1 scan=0 5-11=1)
+  T first meld: got A (gate=1 scan=0 5-11=1)
+  after T's sever: consumer valid [] bookflag=True; T bookflag=False
+  T meld: got A (gate=0 scan=0 5-11=0)
+  O meld: got A (gate=1 scan=0 5-11=0)
+  T meld after O's: got A (gate=0 scan=0 5-11=0)
+[rule2] marks issued: 21

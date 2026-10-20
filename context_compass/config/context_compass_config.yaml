@@ -107,3 +107,29 @@ reading:
   viewer_tool_read_limit: 500 # Maximum lines per view/read operation
   read_loc_max: 500 # Maximum LOC per manual chunked read operation
 
+# This chooses where Epic/Story/Task tickets live. It does not change the
+# system-of-record mandate or move system docs, mailbox, or agent coordination.
+work_tracking:
+  backend: local # local | github_codex_plugin; absent means local
+  github_codex_plugin:
+    connection_nickname: "" # Codex connection nickname; required only for plugin operations
+    issues_repository: "" # owner/repo; required only for github_codex_plugin
+    project_url: "" # optional context link; Issue body Status remains authoritative
+
+# This selects agent-to-agent message transport, not ticket storage or state.
+# Roster, request counters and setup outcomes remain on the existing local board.
+
+agent_communication:
+  backend: mailbox # mailbox | codex_mcp; absent means mailbox
+
+# Guidance and templates for NEW tickets. This does not select an agent role
+# or rewrite existing tickets. Optional metadata belongs to the chosen design.
+ticket_design:
+  instructions: >
+    Use the complete template for the chosen ticket type. Record actual agent
+    names and roles, contribution authors, publisher and review separately.
+    Include Agile metadata only when the selected ticket design calls for it.
+  templates:
+    epic: templates/epic_template.md
+    story: templates/story_template.md
+    task: templates/task_template.md

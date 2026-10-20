@@ -1,0 +1,8 @@
+WROTE     src   583 files (source fingerprint moved)
+UNCHANGED tests fingerprint and output proofs match
+WROTE     other 404 files (source fingerprint moved)
+WROTE manifest.json
+
+real	0m26.583s
+user	0m0.842s
+sys	0m0.488s

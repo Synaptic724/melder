@@ -1,0 +1,54 @@
+melder 0.2.8235 on 3.14.7 free-threaded build; run 2026-10-14T19:41:03Z
+== PYTHON_GIL=1: python -m pytest tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py -p no:cacheprovider -q -rA --tb=line
+FFFFFFFF..                                                               [100%]
+=================================== FAILURES ===================================
+E   AssertionError: a torn-down root must not stay a cluster member
+    assert '01M4XYXEZ0Y2Z76R7TZ0NFG3WA' not in {'01M4XYXEYSHF66K5Q6Z016YK34', '01M4XYXEYZR3KKRAEEHW3EEXHY', '01M4XYXEZ0Y2Z76R7TZ0NFG3WA'}
+     +  where {'01M4XYXEYSHF66K5Q6Z016YK34', '01M4XYXEYZR3KKRAEEHW3EEXHY', '01M4XYXEZ0Y2Z76R7TZ0NFG3WA'} = get_members()
+     +    where get_members = <melder.aether.conduit.conduit_cluster.ConduitCluster object at 0x56e2b0b0be0>.get_members
+     +      where <melder.aether.conduit.conduit_cluster.ConduitCluster object at 0x56e2b0b0be0> = <test_conduit_integration_cluster_member_lifetime.ClusterWorld object at 0x56e2a1cb110>.cluster
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:179: AssertionError: a torn-down root must not stay a cluster member
+E   AttributeError: 'NoneType' object has no attribute '_cluster_creations'
+/tmp/cc_res/fixes/tree/src/melder/aether/conduit/conduit_cluster.py:726: AttributeError: 'NoneType' object has no attribute '_cluster_creations'
+E   AssertionError: a torn-down leader must not stay elected
+    assert '01M4XYXEZSV2FHB3SN1J0RA1D4' is None
+     +  where '01M4XYXEZSV2FHB3SN1J0RA1D4' = <melder.aether.conduit.conduit_cluster.ConduitCluster object at 0x56e2a08c260>.master_conduit_id
+     +    where <melder.aether.conduit.conduit_cluster.ConduitCluster object at 0x56e2a08c260> = <test_conduit_integration_cluster_member_lifetime.ClusterWorld object at 0x56e2a9421d0>.cluster
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:213: AssertionError: a torn-down leader must not stay elected
+E   AssertionError: the leaver's root must be unshared
+    assert ('01M4XYXF04299BQWHE69RY21C9', Spell(name=Leaf, binding=__default__, frame=type, SHA256=0bfad6a9af0c13fc0bf19cae13d5671cdbeebb36ccffa4df7801374943d44ca3)) is None
+     +  where ('01M4XYXF04299BQWHE69RY21C9', Spell(name=Leaf, binding=__default__, frame=type, SHA256=0bfad6a9af0c13fc0bf19cae13d5671cdbeebb36ccffa4df7801374943d44ca3)) = get_spell_in_contracts('0bfad6a9af0c13fc0bf19cae13d5671cdbeebb36ccffa4df7801374943d44ca3')
+     +    where get_spell_in_contracts = <Conduit name=d1-leave-member id=01M4XYXF06QSC934MBYBSA9D86>.get_spell_in_contracts
+     +      where <Conduit name=d1-leave-member id=01M4XYXF06QSC934MBYBSA9D86> = <test_conduit_integration_cluster_member_lifetime.ClusterWorld object at 0x56e2a942bd0>.member
+     +    and   '0bfad6a9af0c13fc0bf19cae13d5671cdbeebb36ccffa4df7801374943d44ca3' = <test_conduit_integration_cluster_member_lifetime.ClusterWorld object at 0x56e2a942bd0>.leaf_id
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:231: AssertionError: the leaver's root must be unshared
+E   AssertionError: a leader change must not build a second instance
+    assert <test_conduit_integration_cluster_member_lifetime.Leaf object at 0x56e2a944110> is <test_conduit_integration_cluster_member_lifetime.Leaf object at 0x56e2a1c8590>
+     +  where <test_conduit_integration_cluster_member_lifetime.Leaf object at 0x56e2a944110> = meld(spell_id='0bfad6a9af0c13fc0bf19cae13d5671cdbeebb36ccffa4df7801374943d44ca3')
+     +    where meld = <Conduit name=d2-change-member id=01M4XYXF0FWETR2JRGG79CGT79>.meld
+     +      where <Conduit name=d2-change-member id=01M4XYXF0FWETR2JRGG79CGT79> = <test_conduit_integration_cluster_member_lifetime.ClusterWorld object at 0x56e2a945510>.member
+     +    and   '0bfad6a9af0c13fc0bf19cae13d5671cdbeebb36ccffa4df7801374943d44ca3' = <test_conduit_integration_cluster_member_lifetime.ClusterWorld object at 0x56e2a945510>.leaf_id
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:251: AssertionError: a leader change must not build a second instance
+E   AssertionError: the leader's teardown disposed the cluster's instance
+    assert 1 == 0
+     +  where 1 = <test_conduit_integration_cluster_member_lifetime.Leaf object at 0x56e2a9408d0>.closes
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:269: AssertionError: the leader's teardown disposed the cluster's instance
+E   AssertionError: deleting the cluster must dispose its instance
+    assert 0 == 1
+     +  where 0 = <test_conduit_integration_cluster_member_lifetime.Leaf object at 0x56e2a941a50>.closes
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:285: AssertionError: deleting the cluster must dispose its instance
+E   Failed: DID NOT RAISE ExceptionGroup
+/tmp/cc_res/fixes/tree/tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py:298: Failed: DID NOT RAISE ExceptionGroup
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_frame_teardown_disposes_the_cluster_instance_once
+PASSED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_only_the_elected_leader_purges_the_cluster_instance
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_member_teardown_leaves_the_cluster_and_the_cluster_can_unelect_and_elect
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_member_teardown_leaves_the_cluster_deletable
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_leader_teardown_leaves_the_cluster_inert_and_electable
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_explicit_leave_unshares_the_leavers_roots_from_every_member
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_cluster_instance_survives_a_leader_change_and_is_served_by_the_next_leader
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_leader_teardown_keeps_the_cluster_instance_for_the_next_leader
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_delete_cluster_disposes_its_instance_once
+FAILED tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py::test_delete_cluster_raises_a_failing_disposal_after_the_deletion_finished
+8 failed, 2 passed in 0.25s

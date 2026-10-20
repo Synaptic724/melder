@@ -1,0 +1,106 @@
+ok tests/component/melder/aether/conduit/test_conduit_component_lock_gaps.py find=7 get=0 manual=0
+ok tests/component/melder/aether/conduit/test_conduit_component_lock_residuals.py find=8 get=0 manual=0
+ok tests/component/melder/aether/conduit/test_conduit_component_many_registration_trim.py find=1 get=0 manual=0
+ok tests/component/melder/aether/conduit/test_conduit_graduation_configuration.py find=1 get=0 manual=0
+ok tests/component/melder/aether/conduit/test_conduit_graduation_lifecycle.py find=1 get=0 manual=0
+ok tests/component/melder/aether/conduit/test_conduit_graduation_ownership_regression.py find=5 get=0 manual=0
+ok tests/component/melder/aether/conduit/test_named_lesser_upgrade_to_normal.py find=1 get=0 manual=0
+ok tests/component/melder/aether/dev_ops/change_control_manager/test_transaction_surface_component.py find=0 get=1 manual=0
+ok tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py find=7 get=0 manual=0
+ok tests/component/melder/aether/dev_ops/spell_system_states/test_rebind_validation_flag_component.py find=0 get=3 manual=0
+ok tests/component/melder/aether/test_aether_component_frame_sweep_races.py find=2 get=0 manual=0
+ok tests/component/melder/spellbook/test_bind_lifecycle_hooks.py find=19 get=0 manual=0
+ok tests/component/melder/spellbook/test_inherited_disposal_binding.py find=5 get=0 manual=0
+ok tests/component/melder/spellbook/test_ordered_disposal_binding.py find=13 get=0 manual=0
+ok tests/component/melder/spellbook/test_scan_bind_parity_component.py find=2 get=0 manual=0
+ok tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py find=9 get=0 manual=0
+ok tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py find=1 get=0 manual=0
+ok tests/component/melder/spellbook/test_spellbook_component_override_required.py find=1 get=0 manual=0
+ok tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py find=2 get=0 manual=1
+ok tests/component/melder/spellbook/test_spellbook_component_spell_map_races.py find=2 get=6 manual=2
+ok tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py find=6 get=0 manual=0
+ok tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py find=1 get=0 manual=0
+ok tests/component/melder/spellbook/test_spellbook_conjure_existing_conduit.py find=5 get=0 manual=0
+ok tests/component/melder/spellbook/test_type_checking_annotation_introspection.py find=2 get=0 manual=0
+ok tests/experimentation/test_existing_instance_gap_experiment.py find=1 get=0 manual=0
+ok tests/experimentation/test_runtime_hook_discovery_experiment.py find=4 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py find=6 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_index_link_contract_integration.py find=1 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py find=8 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py find=4 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py find=2 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py find=1 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_lineage_remediation_notch_race.py find=1 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py find=3 get=0 manual=0
+ok tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py find=0 get=8 manual=0
+ok tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py find=1 get=1 manual=0
+ok tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py find=2 get=0 manual=1
+ok tests/integration/melder/aether/conduit/test_spell_index_op_guards.py find=7 get=0 manual=0
+ok tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py find=0 get=1 manual=0
+ok tests/integration/melder/aether/rift/static_rift_json_testbench_support.py find=0 get=1 manual=0
+ok tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py find=0 get=1 manual=0
+ok tests/integration/melder/aether/test_capability_space_frame_and_workstation_integration.py find=0 get=4 manual=0
+ok tests/integration/melder/aether/test_codegen_system_integration_matrix.py find=0 get=1 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_existence.py find=0 get=3 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_lookup_helpers.py find=0 get=1 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py find=3 get=0 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py find=1 get=0 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py find=1 get=0 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py find=7 get=1 manual=1
+ok tests/integration/melder/conduit/test_conduit_integration_public_api.py find=0 get=4 manual=0
+ok tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py find=2 get=0 manual=1
+ok tests/integration/melder/conduit/test_ordered_disposal_runtime.py find=2 get=0 manual=0
+ok tests/integration/melder/crystallizer/test_bind_hook_recording.py find=1 get=0 manual=0
+ok tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py find=5 get=0 manual=0
+ok tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py find=4 get=0 manual=0
+ok tests/integration/melder/crystallizer/test_ordered_disposal_replay.py find=3 get=0 manual=0
+ok tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py find=4 get=0 manual=0
+ok tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py find=4 get=0 manual=0
+ok tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py find=1 get=0 manual=0
+ok tests/integration/melder/spellbook/test_managed_bind_options_integration.py find=4 get=0 manual=0
+ok tests/integration/melder/spellbook/test_provider_artifact_ownership.py find=0 get=2 manual=0
+ok tests/integration/melder/spellbook/test_spellbook_integration.py find=0 get=1 manual=0
+ok tests/integration/melder/spellbook/test_spellbook_integration_core.py find=0 get=1 manual=0
+ok tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py find=1 get=0 manual=0
+ok tests/integration/melder/spellbook/test_spellbook_integration_post_conjure_bind_snapshot.py find=0 get=5 manual=0
+ok tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py find=0 get=1 manual=0
+ok tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py find=0 get=8 manual=0
+ok tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py find=0 get=8 manual=0
+ok tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py find=2 get=5 manual=0
+ok tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py find=0 get=6 manual=0
+ok tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py find=0 get=2 manual=0
+ok tests/unit/melder/aether/conduit/test_conduit_facade.py find=3 get=4 manual=2
+ok tests/unit/melder/aether/spellbook/test_bind_kwargs_metadata.py find=2 get=0 manual=0
+ok tests/unit/melder/aether/test_command_system_direct.py find=1 get=2 manual=0
+ok tests/unit/melder/aether/test_nexus.py find=1 get=2 manual=2
+ok tests/unit/melder/spellbook/bind/test_internal_registration_identity.py find=2 get=0 manual=0
+ok tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_ambiguous_provider_strategy.py find=2 get=0 manual=0
+ok tests/unit/melder/spellbook/test_scan_bind.py find=0 get=1 manual=0
+ok tests/unit/melder/spellbook/test_scan_bind_managed_options.py find=1 get=0 manual=0
+ok tests/unit/melder/spellbook/test_scan_bind_option_parity.py find=1 get=0 manual=0
+ok tests/unit/melder/spellbook/test_spell_cleanup_safe_index_read.py find=1 get=0 manual=1
+ok tests/unit/melder/test_package_public_surface.py find=1 get=0 manual=0
+files=82 find=202 get=84
+written
+plan rename tests/component/melder/spellbook/test_spellbook_component_find_spell_by_id.py -> tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py
+plan create tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py
+plan create tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py
+plan create tests/unit/melder/aether/test_command_system_spell_id_lookups.py
+plan create tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py
+installed 4 files
+ok tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_contracts.py edits=4 crlf=True
+ok tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py edits=2 crlf=True
+ok tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py edits=1 crlf=True
+ok tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py edits=1 crlf=True
+written 4 files
+ok UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py find=2 get=0 manual=0 crlf=True
+ok UX_and_AIX_experiences/02_intermediate/13_spell_ids_and_lookup.py find=3 get=0 manual=0 crlf=True
+ok UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py find=5 get=0 manual=0 crlf=False
+ok UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py find=1 get=4 manual=3 crlf=True
+ok UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py find=0 get=1 manual=0 crlf=True
+ok UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py find=0 get=2 manual=1 crlf=True
+ok UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py find=0 get=1 manual=0 crlf=True
+ok UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py find=0 get=1 manual=0 crlf=True
+ok UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py find=0 get=1 manual=0 crlf=True
+ok UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py find=5 get=0 manual=0 crlf=False
+written 10 files

@@ -345,14 +345,18 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      dynamic-mode refusal: what a world IS is not the same fact as what
      it has been ALLOWED TO DO)
 
-  17 notch_swapping_a_live_object (LINEAGES AND THE STAGING HALF. bind
-     -> bind_inactive (park a candidate on the SAME index, selection
-     unchanged) -> notch_spell (repoint the selection). THE FIRST TWO
-     ARE USER SURFACE AND THE THIRD IS NOT DRIVEN BY HAND - notch_spell
-     takes the parked OBJECT, which lives in the Spellbook's private
-     parking lot, and the Spellbook is not what you notch from. The
-     lesson stops at that boundary and demonstrates it (a parked id
-     resolves to the ACTIVE member) instead of poking through it.
+  17 notch_swapping_a_live_object (LINEAGES AND A HOT SWAP END TO END.
+     bind -> bind_inactive (park a candidate on the SAME index,
+     selection unchanged; it returns the candidate's spell_id) ->
+     notch_spell (repoint the selection) -> meld -> notch back. ALL
+     THREE VERBS ARE USER SURFACE: notch_spell takes the spell_id
+     bind_inactive returned (`spell_id=`) and resolves the exact version
+     inside the call - a lookup by a parked spell_id still resolves to
+     the ACTIVE member, which is why the version is named by its
+     spell_id (owner ruling 2026-10-16; until then the verb took only
+     the parked OBJECT and the lesson stopped at staging). A version of
+     another index, or of another Spellbook, is refused before anything
+     moves.
      WHAT STAGING BUYS: the expensive, failure-prone half of a swap -
      compiling, registering and owning the new version - happens while
      the old version is still serving, because a parked candidate is
@@ -360,7 +364,7 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      AN INDEX IS A VERSION LINEAGE
      WITH ONE SELECTED MEMBER, so a notch creates, binds and removes
      NOTHING - the outgoing version stays in the lineage and stays
-     resolvable by id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER
+     resolvable by its spell_id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER
      WAY: no undo log, no snapshot restore, because nothing was thrown
      away. THE OWNERSHIP SPLIT: the CONDUIT admits the transaction (it
      owns the change-control envelope and the links), the SPELLBOOK
@@ -383,7 +387,7 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      MISATTRIBUTES a mutation in the state history)
 
 ARC D COMPLETE (lessons 16-17) - changing a running world: rewiring it
-  through link/pull/meld, and staging a version swap onto a lineage.
+  through link/pull/meld, and staging and taking a version swap on a lineage.
   BOTH LESSONS NAME NO MACHINERY. That is the arc's rule, not an
   accident of drafting: everything underneath - admission, claims,
   seals, gates - is base-code business, and a lesson that names it
@@ -801,6 +805,12 @@ FINDINGS (for the owner's public-surface program)
     with `bind_inactive`, proves staging does not move the selection, and
     demonstrates rather than laments that a parked id resolves to the
     active member. It touches no private map.
+    SUPERSEDED 2026-10-16 (owner ruling: "just use the private version
+    if its inside the public call thats reasonable"): `notch_spell` takes
+    `spell_id=` and resolves the parked version inside the call, so the
+    loop runs on public calls and lesson 17 takes the swap and the
+    rollback. The facade rule stands - the Spellbook is still not what
+    you notch from; the conduit's verb does the resolving.
   - RETRACTED 2026-08-03, SAME DAY IT WAS WRITTEN: "the canonical doc is
     stale on notch fan-out". IT IS NOT. The note is SEAM-SCOPED and the
     scope word is in the sentence: `_apply_notch`'s own docstring says
@@ -862,6 +872,11 @@ DOCSTRINGS THAT LIE (verified individually, not taken on trust)
       Conduit.add_to_spell_index       conduit.py:4550
       Conduit.remove_from_spell_index  conduit.py (same shape)
   Logged as TASK-2026-08-02-stale-source-docstrings.
+  RESOLVED 2026-10-16 (0.2.8249): all three now say the conduit admits
+  the transaction and the Spellbook applies it - `notch_spell` with its
+  `spell_id=` target, `add_to_spell_index` and `remove_from_spell_index`
+  when they took `spell_id=` too. The line numbers above are from
+  2026-08-03 and no longer point at the verbs; the history stays.
   WHY IT MATTERS BEYOND TIDINESS: a reader who believes the docstring
   goes looking for the transaction window on the wrong object, and the
   ownership split is the single most important fact about this surface.

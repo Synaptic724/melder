@@ -1,0 +1,6 @@
+docs checks on the landed tree (mirror /tmp/m0_mq/wt; docs env: uv venv, CPython 3.14.7, docs/requirements.txt), 2026-10-18 ~23:30Z
+python -m unittest discover -s docs/tests -q -> OK
+python docs/tools/build_docs.py check -> Navigation valid: 313 pages, 54 assets.
+python docs/tools/build_docs.py build -> Built 313 pages (build.txt; build_canonical.txt with READTHEDOCS_CANONICAL_URL)
+python docs/tools/check_site.py -> Site valid: 313 pages, 39255 local links; sources match.
+python docs/tools/check_seo.py ... -> 0 errors, 303 warnings (check_seo.txt, seo-report.json); without the canonical URL the build has no canonical link and every page errors (the first run)

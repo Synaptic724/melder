@@ -1,0 +1,312 @@
+................................................................F....F.. [ 39%]
+................................................................FFFFFFFF [ 79%]
+.................................FFFFF                                   [100%]
+=================================== FAILURES ===================================
+_______________ test_managed_settings_do_not_change_the_spell_id _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x3ac609e1c10>
+
+    def test_managed_settings_do_not_change_the_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
+        """Mode, limit, timeout and reset names (in any order) give one spell_id: the managed id with no settings."""
+        variants = [
+            {},
+            {"managed_spell_limit": 8},
+            {"managed_spell_mode": "limited_quantity", "managed_spell_limit": 8},
+            {"managed_spell_mode": "queue", "managed_spell_limit": 8, "managed_spell_timeout_seconds": 1.0},
+            {"managed_spell_mode": "queue", "managed_spell_limit": 8, "managed_spell_timeout_seconds": 2.0},
+            {"managed_spell_reset_methods": ["reset"]},
+            {"managed_spell_reset_methods": ["reset", "clear"]},
+            {"managed_spell_reset_methods": ["clear", "reset"]},
+        ]
+        ids = {bind_with(monkeypatch, Existence.managed_spell_quantity, **variant).kwargs["spell_id"] for variant in variants}
+>       assert ids == {
+            Bind.sha256_profile(golden_class_profile(), spell_name="PooledTarget", existence=Existence.managed_spell_quantity)
+        }
+E       AssertionError: assert {'1f8f1391a00...33bc9fa', ...} == {'1e7f54ba6ef...87c0ae5fa041'}
+E         
+E         Extra items in the left set:
+E         'eb02dc0c1ff7697937bd29ed2fbd2e5c509484c90ad6888837dd70c9545cfe79'
+E         'c3750f0be644f1c1de514444040c7629eaad8b49d9e0c6de89025c1f533bc9fa'
+E         '9afb5b4897b7bf3701d57db68d1c78de0d15bed2c84544a0501f378567ffc4fc'
+E         '1f8f1391a0045ece47ddc4f34396e5871379dffc6c5a64140ac740ef07b3204b'
+E         'e92dde19ca6ed11bf357828db10c4abdd97bfa06fcb9a794264a401ad97a82df'...
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:503: AssertionError
+___ test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class ___
+
+    def test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class() -> None:
+        """The read-only inspector checks the settings as bind does and, like bind, does not hash them."""
+        profile = SpellGeneralProfile.create_from_target(PooledTarget)
+        try:
+            expected = Bind.sha256_profile(
+                profile.binding_profile, spell_name="PooledTarget", existence=Existence.managed_spell_quantity,
+            )
+        finally:
+            profile.cleanup()
+        for settings in (
+                {},
+                {
+                    "managed_spell_mode": "queue", "managed_spell_limit": 2, "managed_spell_timeout_seconds": 1.5,
+                    "managed_spell_reset_methods": ["reset"],
+                },
+        ):
+>           assert Bind.spell_id_inspector(
+                PooledTarget, spell_name="PooledTarget", existence=Existence.managed_spell_quantity, **settings,
+            ) == expected
+E           AssertionError: assert '9f7e77e6a47b...ea9258a38424d' == '161bc6c2fe8a...67a6191f41f4a'
+E             
+E             - 161bc6c2fe8aa79a0670fba8ab8876a32740cac80b4838cf13a67a6191f41f4a
+E             + 9f7e77e6a47b7c9c0959f312b1b62df9b6a1d0e7131a9025250ea9258a38424d
+
+tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:573: AssertionError
+_________ test_a_rebind_with_a_higher_limit_lets_the_pool_build_again __________
+
+    def test_a_rebind_with_a_higher_limit_lets_the_pool_build_again() -> None:
+        """limited_quantity 1 -> 2: the object out stays counted and one more can be built."""
+        pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+        log: List[str] = []
+        first = _lease(pool, lambda: _Pooled("a", log))
+        with pytest.raises(ManagedSpellExhaustedError):
+            pool.reserve()
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=2))
+>       assert (pool.limit, pool.count, pool.baseline_idle, pool.max_idle) == (2, 1, 2, 2)
+E       assert (1, 1, 1, 1) == (2, 1, 2, 2)
+E         
+E         At index 0 diff: 1 != 2
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:941: AssertionError
+____ test_a_rebind_to_a_smaller_limit_keeps_every_object_alive_and_counted _____
+
+    def test_a_rebind_to_a_smaller_limit_keeps_every_object_alive_and_counted() -> None:
+        """limited_quantity 3 -> 1: nothing is destroyed at the rebind; releases above the new capacity evict."""
+        pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=3)
+        log: List[str] = []
+        objects = [_lease(pool, lambda label=f"o{n}": _Pooled(label, log)) for n in range(3)]
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=1))
+>       assert (pool.limit, pool.count, log) == (1, 3, [])
+E       assert (3, 3, []) == (1, 3, [])
+E         
+E         At index 0 diff: 3 != 1
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:956: AssertionError
+__ test_a_rebind_from_elastic_to_limited_quantity_fixes_the_band_at_the_limit __
+
+    def test_a_rebind_from_elastic_to_limited_quantity_fixes_the_band_at_the_limit() -> None:
+        """elastic (limit 256) -> limited_quantity 4: baseline, ceiling and target all become 4."""
+        pool = _pool()
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=4))
+>       assert (pool.mode, pool.limit, pool.baseline_idle, pool.max_idle, pool.target_idle) == (
+            ManagedSpellMode.limited_quantity, 4, 4, 4, 4,
+        )
+E       assert (<ManagedSpel..., 20, 256, 20) == (<ManagedSpel...>, 4, 4, 4, 4)
+E         
+E         At index 0 diff: <ManagedSpellMode.elastic: 1> != <ManagedSpellMode.limited_quantity: 2>
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:969: AssertionError
+_______ test_a_rebind_to_elastic_sizes_the_band_like_a_new_elastic_pool ________
+
+    def test_a_rebind_to_elastic_sizes_the_band_like_a_new_elastic_pool() -> None:
+        """limited_quantity 2 -> elastic limit 100: the band a fresh elastic pool of limit 100 gets."""
+        pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=2)
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.elastic, limit=100))
+        fresh = _pool(limit=100)
+>       assert (pool.baseline_idle, pool.max_idle, pool.target_idle) == (
+            fresh.baseline_idle, fresh.max_idle, fresh.target_idle,
+        ) == (20, 100, 20)
+E       assert (2, 2, 2) == (20, 100, 20)
+E         
+E         At index 0 diff: 2 != 20
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:979: AssertionError
+__ test_a_rebind_that_raises_a_queue_limit_wakes_a_waiter_into_the_new_place ___
+
+    def test_a_rebind_that_raises_a_queue_limit_wakes_a_waiter_into_the_new_place() -> None:
+        """A queue lease waiting at limit 1 gets a place when a rebind raises the limit to 2."""
+        pool = _pool(mode=ManagedSpellMode.queue, limit=1, timeout=5.0)
+        log: List[str] = []
+        _lease(pool, lambda: _Pooled("a", log))
+        thread, outcome = _run_in_thread(pool.reserve)
+        _wait_for_waiter(pool)
+        assert thread.is_alive()
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=2, timeout=5.0))
+        thread.join(timeout=2.0)
+>       assert not thread.is_alive()
+E       assert not True
+E        +  where True = is_alive()
+E        +    where is_alive = <Thread(Thread-7 (_runner), started daemon 134212369774144)>.is_alive
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:994: AssertionError
+_____ test_a_rebind_to_queue_makes_a_lease_at_the_limit_wait_for_a_release _____
+
+    def test_a_rebind_to_queue_makes_a_lease_at_the_limit_wait_for_a_release() -> None:
+        """limited_quantity -> queue: at the limit a lease waits for the next release instead of refusing."""
+        pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+        log: List[str] = []
+        first = _lease(pool, lambda: _Pooled("a", log))
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=1, timeout=5.0))
+        thread, outcome = _run_in_thread(pool.reserve)
+        _wait_for_waiter(pool)
+>       assert thread.is_alive()
+E       assert False
+E        +  where False = is_alive()
+E        +    where is_alive = <Thread(Thread-8 (_runner), stopped daemon 134212361381440)>.is_alive
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:1007: AssertionError
+_____________ test_a_rebind_changes_the_reset_names_a_release_runs _____________
+
+    def test_a_rebind_changes_the_reset_names_a_release_runs() -> None:
+        """A release after the rebind runs the new reset names."""
+        pool = _pool(resets=("reset",))
+        log: List[str] = []
+        obj = _lease(pool, lambda: _Pooled("a", log))
+        pool._rebind_spell(_SpellStub(resets=("flush",)))
+        pool.put_back(obj)
+>       assert (pool.reset_method_names, log) == (("flush",), ["flush:a"])
+E       AssertionError: assert (('reset',), ['reset:a']) == (('flush',), ['flush:a'])
+E         
+E         At index 0 diff: ('reset',) != ('flush',)
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:1021: AssertionError
+_______________ test_describe_reports_the_settings_a_rebind_gave _______________
+
+    def test_describe_reports_the_settings_a_rebind_gave() -> None:
+        """The snapshot shows the current Spell's settings."""
+        pool = _pool(mode=ManagedSpellMode.limited_quantity, limit=1)
+        pool._rebind_spell(_SpellStub(mode=ManagedSpellMode.queue, limit=3, timeout=2.0, resets=("reset",)))
+        snapshot = pool.describe()
+>       assert (snapshot["mode"], snapshot["limit"], snapshot["timeout_seconds"], snapshot["reset_method_names"]) == (
+            "queue", 3, 2.0, ["reset"],
+        )
+E       AssertionError: assert ('limited_qua..., 1, None, []) == ('queue', 3, 2.0, ['reset'])
+E         
+E         At index 0 diff: 'limited_quantity' != 'queue'
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py:1029: AssertionError
+_____ test_ensure_with_new_settings_keeps_the_pool_and_takes_the_settings ______
+
+store = <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x3ac5fd62530>
+
+    def test_ensure_with_new_settings_keeps_the_pool_and_takes_the_settings(store: ConduitCreations) -> None:
+        """A rebind under the same spell_id with other settings meets the pool, which takes them (0.2.8254)."""
+        first = store.ensure_managed_quantity(_SpellStub(mode=ManagedSpellMode.limited_quantity, limit=1))
+        rebound = _SpellStub(mode=ManagedSpellMode.limited_quantity, limit=2)
+        second = store.ensure_managed_quantity(rebound)
+        assert second is first
+>       assert (second.limit, second.spell) == (2, rebound)
+E       assert (1, <test_cre...x3ac6088f0d0>) == (2, <test_cre...x3ac6088f0d0>)
+E         
+E         At index 0 diff: 1 != 2
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py:403: AssertionError
+_____ test_ensure_rebinds_an_existing_pool_after_releasing_the_store_lock ______
+
+store = <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x3ac5fd6ee70>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x3ac609e1200>
+
+    def test_ensure_rebinds_an_existing_pool_after_releasing_the_store_lock(
+            store: ConduitCreations,
+            monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The rebind takes the pool's lock, so it runs with the store lock free: the store lock stays a leaf."""
+        store.ensure_managed_quantity(_SpellStub())
+        store_lock_free: List[bool] = []
+        original = ManagedSpellQuantity._rebind_spell
+    
+        def _spy(pool: ManagedSpellQuantity, spell: Any) -> None:
+            probe: List[bool] = []
+    
+            def _try_store_lock() -> None:
+                acquired = store._lock.acquire(timeout=1.0)
+                probe.append(acquired)
+                if acquired:
+                    store._lock.release()
+    
+            prober = threading.Thread(target=_try_store_lock)
+            prober.start()
+            prober.join()
+            store_lock_free.append(probe[0])
+            original(pool, spell)
+    
+        monkeypatch.setattr(ManagedSpellQuantity, "_rebind_spell", _spy, raising=True)
+        store.ensure_managed_quantity(_SpellStub())
+>       assert store_lock_free == [True]
+E       assert [False] == [True]
+E         
+E         At index 0 diff: False != True
+E         Use -v to get more diff
+
+tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py:433: AssertionError
+_____ test_restaging_a_settings_only_version_is_refused_as_the_same_spell ______
+
+    def test_restaging_a_settings_only_version_is_refused_as_the_same_spell() -> None:
+        """Worker limit 1 is active; Worker limit 2 on its index is the same spell: refused, and nothing changes."""
+        book, root, spell_id = _dynamic_root(managed_spell_mode="limited_quantity", managed_spell_limit=1)
+        try:
+            spell = book.find_spell_by_spell_id(spell_id)
+            index = spell.spell_index
+>           with pytest.raises(RuntimeError, match="Spell ID collision detected"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE RuntimeError
+
+tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py:125: Failed
+_________ test_rebinding_with_new_managed_settings_recomposes_its_pool _________
+
+    def test_rebinding_with_new_managed_settings_recomposes_its_pool() -> None:
+        """cleanup_spell, then bind with limit 2: one spell_id and pool; it leases up to 2; the first object goes back."""
+        book, root, spell_id = _dynamic_root(managed_spell_mode="limited_quantity", managed_spell_limit=1)
+        try:
+            first = root.meld(spell_id=spell_id)
+            pool = _pool_of(root, spell_id)
+            root.cleanup_spell(spell=book.find_spell_by_spell_id(spell_id))
+>           assert root.bind(**_options(managed_spell_mode="limited_quantity", managed_spell_limit=2)) == spell_id
+E           AssertionError: assert '5195ff58f82a...45bc69e559945' == '66d282885e62...21cd0029b1f1b'
+E             
+E             - 66d282885e62a12311f94f1ffcab3ce901b584d8f410b99203221cd0029b1f1b
+E             + 5195ff58f82a910ddc939239935231fc27e546c560ae293d00a45bc69e559945
+
+tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py:146: AssertionError
+___________ test_a_mode_change_keeps_every_object_alive_and_counted ____________
+
+    def test_a_mode_change_keeps_every_object_alive_and_counted() -> None:
+        """elastic with three idle objects -> limited_quantity limit 1: nothing is destroyed at the rebind."""
+        book, root, spell_id = _dynamic_root()
+        try:
+            objects = [root.meld(spell_id=spell_id) for _ in range(3)]
+            for obj in objects:
+                ReleaseManagedSpell().release(obj)
+            pool = _pool_of(root, spell_id)
+            assert (pool.count, pool.idle_count) == (3, 3)
+            root.cleanup_spell(spell=book.find_spell_by_spell_id(spell_id))
+>           assert root.bind(**_options(managed_spell_mode="limited_quantity", managed_spell_limit=1)) == spell_id
+E           AssertionError: assert '66d282885e62...21cd0029b1f1b' == '30db5526cc56...ac202d43cad70'
+E             
+E             - 30db5526cc568094159e8791659b6e2294542749190e90e1693ac202d43cad70
+E             + 66d282885e62a12311f94f1ffcab3ce901b584d8f410b99203221cd0029b1f1b
+
+tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py:173: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_managed_settings_do_not_change_the_spell_id
+FAILED tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py::test_spell_id_inspector_matches_the_bind_fingerprint_for_a_managed_class
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_with_a_higher_limit_lets_the_pool_build_again
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_to_a_smaller_limit_keeps_every_object_alive_and_counted
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_from_elastic_to_limited_quantity_fixes_the_band_at_the_limit
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_to_elastic_sizes_the_band_like_a_new_elastic_pool
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_that_raises_a_queue_limit_wakes_a_waiter_into_the_new_place
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_to_queue_makes_a_lease_at_the_limit_wait_for_a_release
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_a_rebind_changes_the_reset_names_a_release_runs
+FAILED tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_describe_reports_the_settings_a_rebind_gave
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py::test_ensure_with_new_settings_keeps_the_pool_and_takes_the_settings
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py::test_ensure_rebinds_an_existing_pool_after_releasing_the_store_lock
+FAILED tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py::test_restaging_a_settings_only_version_is_refused_as_the_same_spell
+FAILED tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py::test_rebinding_with_new_managed_settings_recomposes_its_pool
+FAILED tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py::test_a_mode_change_keeps_every_object_alive_and_counted
+15 failed, 167 passed in 10.23s

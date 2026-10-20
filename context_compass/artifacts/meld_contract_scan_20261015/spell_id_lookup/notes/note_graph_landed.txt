@@ -1,0 +1,26 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The graph carries fix #1. In the scratch descriptors `graph_fix1.py author` added one responsibility each -
+    Spellbook r24 (the exact lookup; r16 now says spell_id), Conduit r29 (the renamed lookup, per-version
+    permissions, the transfer's explicit step), ConduitWard r11 (the exact grant check, the outbound listing, the
+    dependency walks' and transfer handle's explicit step), TransferOfOwnership r7, CommandSystem r6 and
+    StaticCommandSystem r4 (the room lookups); the walker accepted the nine verified nodes; the twelve files were
+    re-serialized as the extractor writes them and installed only after `install` proved each authored tier equal
+    to the repo's but for these additions (stamps aside). Reassembled: 591 sections, 1227 nodes, 1415 edges, 28082
+    lines (6 more), all ranges verified, --check clean; the document diff touches only the twelve files' sections.
+    Walker on the repo descriptors: TransferOfOwnership and SpellIndex are the only stale nodes in fix #1's files.
+    No portability marker or absolute path in src_graph.md.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/scripts/graph_fix1.py:1-167
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_install.txt:1-13
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_assemble.txt:1-4
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_assemble_check.txt:1-4
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_src_graph.diff:1-76
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/graph_fix1_walker_repo.txt:1-180
+  IMPACT: The five system documents and the graph describe fix #1; the ticket's handoff, the boards and the rubric
+    scores remain, then the rebuild last.
+  NEXT: Score the four system documents on the rubric, then rewrite the handoff summary and sync the boards.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

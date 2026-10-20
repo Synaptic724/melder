@@ -5,7 +5,7 @@ GOAL: Observe pre-bind, configure the actual Spell during bind activation,
       through configuration, add stages on the Book, then clear and re-add
       through its normal Conduit. These hooks run at bind time, not meld time.
 SURFACE EXERCISED: md.SpellbookConfiguration.with_bind_hooks,
-                  md.Spellbook.add_bind_hooks / find_spell_by_id,
+                  md.Spellbook.add_bind_hooks / find_spell_by_spell_id,
                   md.Conduit.clear_bind_hooks / add_bind_hooks / bind / meld,
                   md.Spell.metadata / tags
 """
@@ -48,14 +48,14 @@ def main() -> None:
     def configure_spell(spell: md.Spell) -> None:
         """Annotate the actual new Spell before it becomes publicly discoverable."""
         assert isinstance(spell, md.Spell)
-        assert book.find_spell_by_id(spell.spell_id) is None
+        assert book.find_spell_by_spell_id(spell.spell_id) is None
         spell.metadata["reviewed_by"] = "application-bind-policy"
         spell.tags.append("reviewed")
         events.append(f"activation:{spell.spell_name}")
 
     def observe_registration(spell: md.Spell) -> None:
         """Verify the registered Spell is the same object activation annotated."""
-        assert book.find_spell_by_id(spell.spell_id) is spell
+        assert book.find_spell_by_spell_id(spell.spell_id) is spell
         assert spell.metadata["reviewed_by"] == "application-bind-policy"
         events.append(f"post:{spell.spell_name}")
 
@@ -69,7 +69,7 @@ def main() -> None:
         book.add_bind_hooks(activation=[configure_spell], post=[observe_registration])
         report_id = book.bind(spell=Report, existence="unique")
         assert events == ["pre:Report", "activation:Report", "post:Report"]
-        registered = book.find_spell_by_id(report_id)
+        registered = book.find_spell_by_spell_id(report_id)
         assert registered is not None
         assert "reviewed" in registered.tags
         print("bind order:", " -> ".join(events))
@@ -82,7 +82,7 @@ def main() -> None:
         # The normal Conduit facades the same Book-owned bind-hook registry.
         conduit.clear_bind_hooks()
         metrics_id = conduit.bind(spell=Metrics, existence="unique")
-        metrics_spell = book.find_spell_by_id(metrics_id)
+        metrics_spell = book.find_spell_by_spell_id(metrics_id)
         assert metrics_spell is not None
         assert metrics_spell.metadata == {}
         assert len(events) == 3

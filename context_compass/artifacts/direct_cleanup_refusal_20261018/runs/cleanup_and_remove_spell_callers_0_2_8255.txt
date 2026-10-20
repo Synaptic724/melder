@@ -1,0 +1,41 @@
+# Callers of cleanup_and_remove_spell( on 0.2.8255 (rg over src, tests, benchmarks), 2026-10-18T13:57:32Z
+# Unit-test lines 32/64/49/40/21/263 are fake Books defining their own method (not callers of Melder's).
+tests/unit/melder/spellbook/test_spell_managed_spell_options.py:32:    def cleanup_and_remove_spell(self, spell: Spell) -> None:
+tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py:64:    def cleanup_and_remove_spell(self, spell: Spell) -> None:
+tests/unit/melder/spellbook/test_spell_compiler_foundation.py:49:    def cleanup_and_remove_spell(self, spell):
+tests/unit/melder/spellbook/test_spell_cleanup_safe_index_read.py:40:    def cleanup_and_remove_spell(self, spell: Spell) -> None:
+tests/unit/melder/spellbook/test_spell.py:21:    def cleanup_and_remove_spell(self, spell):
+tests/unit/melder/spellbook/test_spell.py:263:    def cleanup_and_remove_spell(self, spell):
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:212:    Regression (probe D3): `cleanup_and_remove_spell(English)` cleaned the index under the parked French.
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:220:            world.book.cleanup_and_remove_spell(target)
+tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py:265:            world.book.cleanup_and_remove_spell(english_id)
+tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py:290:    book_a.cleanup_and_remove_spell(tenant_id)
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py:396:    book.cleanup_and_remove_spell(doomed_id)
+tests/integration/melder/crystallizer/test_crystallizer_record_integration.py:212:    book.cleanup_and_remove_spell(spell_id)
+tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py:168:    book.cleanup_and_remove_spell(spell_id)
+tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py:205:    book.cleanup_and_remove_spell(ids["Car"])
+tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1250:        spellbook.cleanup_and_remove_spell(spell)
+tests/component/melder/spellbook/test_spellbook_component_spellbook.py:1287:        spellbook.cleanup_and_remove_spell(spell_id)
+tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py:108:    book.cleanup_and_remove_spell(spell_a_id)
+tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py:144:    book.cleanup_and_remove_spell(spell_a_id)
+tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py:315:    `cleanup_and_remove_spell(spell)` passes the Book's cleaned check, then the root is torn down before it takes the
+tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py:324:    parked = _ParkedRemoval(monkeypatch, book, spell, lambda: book.cleanup_and_remove_spell(spell))
+tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py:336:    `cleanup_and_remove_spell(spell_id)` passes the Book's cleaned check, then the root is torn down before it takes
+tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py:345:    parked = _ParkedRemoval(monkeypatch, book, spell, lambda: book.cleanup_and_remove_spell(spell_id))
+tests/component/melder/aether/conduit/test_conduit_component_input_fast_door.py:624:        spellbook.cleanup_and_remove_spell(spell_id)
+tests/component/melder/aether/conduit/test_conduit_component_input_fast_door.py:651:        spellbook.cleanup_and_remove_spell(old_id)
+tests/component/melder/aether/conduit/test_conduit_component_fast_meld_door.py:1467:        spellbook.cleanup_and_remove_spell(spell_id)
+src/melder/aether/spellbook/spellbook.py:4527:                self.cleanup_and_remove_spell(spell)
+src/melder/aether/spellbook/spell.py:653:                    spellbook.cleanup_and_remove_spell(self)
+# Staging calls (bind_inactive / add_to_spell_index / spell_index=) per calling test file:
+tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py: 2
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py: 14
+tests/integration/melder/crystallizer/test_crystallizer_record_integration.py: 0
+tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py: 12
+tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py: 3
+tests/component/melder/spellbook/test_spellbook_component_spellbook.py: 0
+tests/component/melder/spellbook/test_spellbook_component_signature_release_on_removal.py: 0
+tests/component/melder/spellbook/test_spellbook_component_direct_spell_cleanup_lock_order.py: 0
+tests/component/melder/aether/conduit/test_conduit_component_input_fast_door.py: 0
+tests/component/melder/aether/conduit/test_conduit_component_fast_meld_door.py: 0
+# The four files with staging remove a sole member at the call: per-frame custody binds TenantService alone in the removing test (lines 280-296); the tombstone test removes RestoreBeta bound alone under 'doomed' (370-400); membership's _recorded_world binds BasicService alone (64-87); structural snapshot's _event_remove removes the consumer Car, staging touches Engine's index in another event (174-206).

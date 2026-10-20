@@ -116,7 +116,7 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
             spell_system_states:
                 Registry providing each spell's durable local topology.
             spell_lookup:
-                Visible spell version ids to spell objects for this scope.
+                Visible spell_ids to spell objects for this scope.
             diagnostics:
                 Shared list to append new diagnostics into.
             cancel_event:

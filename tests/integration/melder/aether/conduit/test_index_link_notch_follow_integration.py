@@ -88,7 +88,7 @@ def _two_member_linked() -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(  # index = {A, B}, A active
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",
@@ -111,7 +111,7 @@ def _single_member_linked() -> Iterator[tuple]:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     _link_index(borrower, owner, index)
     try:
         yield (owner_book, borrower_book, owner, borrower, id_a, index)
@@ -188,7 +188,7 @@ def test_remove_member_from_linked_index_drops_borrower_copy():
 def test_cleanup_sole_member_destroys_borrower_index_link():
     with _single_member_linked() as (ob, bb, owner, borrower, id_a, index):
         index_id = index.id
-        owner.cleanup_spell(spell=ob.find_spell_by_id(id_a))
+        owner.cleanup_spell(spell=ob.find_spell_by_spell_id(id_a))
         # The lineage is dead -> the borrower drops the whole index-link + member.
         assert index_id not in bb._contracted_indexes
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
@@ -208,7 +208,7 @@ def test_two_borrowers_both_follow_a_notch():
     b2 = b2_book.conjure(dynamic=True, name="b2")
     owner.link(b1)
     owner.link(b2)
-    index = owner_book.find_spell_by_id(id_a).spell_index
+    index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
         permissions="create", binding_name="b",

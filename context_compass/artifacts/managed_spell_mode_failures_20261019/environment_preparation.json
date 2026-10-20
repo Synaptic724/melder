@@ -1,0 +1,52 @@
+{
+  "python": "3.14.2",
+  "source": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Lib\\site-packages",
+  "target": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\managed_spell_mode_failures_20261019\\env3142",
+  "distributions": [
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "files_copied": 93
+    },
+    {
+      "name": "pytest-cov",
+      "version": "7.1.0",
+      "files_copied": 11
+    },
+    {
+      "name": "coverage",
+      "version": "7.16.1",
+      "files_copied": 67
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "files_copied": 25
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.0",
+      "files_copied": 12
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "files_copied": 31
+    },
+    {
+      "name": "pluggy",
+      "version": "1.6.0",
+      "files_copied": 16
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0",
+      "files_copied": 352
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "files_copied": 19
+    }
+  ]
+}

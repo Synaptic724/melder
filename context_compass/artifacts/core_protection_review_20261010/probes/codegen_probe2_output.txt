@@ -1,0 +1,19 @@
+command: python -X gil=0 codegen_probe2.py (cwd: scratch copy; PYTHONPATH=<copy>/src:<copy>)
+ran_at: 2026-10-10T13:33:42Z
+safe               __import__('subprocess') accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+safe               __import__('socket'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+safe               __import__('importlib' ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+safe               __import__('melder'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid             __import__('subprocess') accepted=True  result="<module 'subprocess' from '~" issues=
+hybrid             __import__('socket'    ) accepted=True  result="<module 'socket' from '~" issues=
+hybrid             __import__('importlib' ) accepted=True  result="<module 'importlib' from '~" issues=
+hybrid             __import__('melder'    ) accepted=True  result="<module 'melder' from '/tmp/cc_repo_copy/src/mel" issues=
+hybrid+precision   __import__('subprocess') accepted=True  result="<module 'subprocess' from '~" issues=
+hybrid+precision   __import__('socket'    ) accepted=True  result="<module 'socket' from '~" issues=
+hybrid+precision   __import__('importlib' ) accepted=True  result="<module 'importlib' from '~" issues=
+hybrid+precision   __import__('melder'    ) accepted=True  result="<module 'melder' from '/tmp/cc_repo_copy/src/mel" issues=
+permissive         __import__('subprocess') accepted=True  result="<module 'subprocess' from '~" issues=
+permissive         __import__('socket'    ) accepted=True  result="<module 'socket' from '~" issues=
+permissive         __import__('importlib' ) accepted=True  result="<module 'importlib' from '~" issues=
+permissive         __import__('melder'    ) accepted=True  result="<module 'melder' from '/tmp/cc_repo_copy/src/mel" issues=
+exit: 0

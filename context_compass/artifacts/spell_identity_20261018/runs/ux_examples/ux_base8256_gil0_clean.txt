@@ -1,0 +1,17 @@
+........................................................................ [ 12%]
+.......................................................F..........FFF... [ 25%]
+........................................................................ [ 37%]
+........................................................................ [ 50%]
+........................................................................ [ 63%]
+.......................................................F................ [ 75%]
+...................................................................F.... [ 88%]
+................................................F..................      [100%]
+=========================== short test summary info ============================
+FAILED UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py::test_beginner_example_runs_green[39_agent_inventory_pattern]
+FAILED UX_and_AIX_experiences/pytest_examples/test_contract_probes.py::test_probe_same_name_different_internals_currently_refused
+FAILED UX_and_AIX_experiences/pytest_examples/test_contract_probes.py::test_probe_same_class_rebind_without_frames_fails_conjure
+FAILED UX_and_AIX_experiences/pytest_examples/test_contract_probes.py::test_probe_same_class_rebind_with_distinct_frames
+FAILED UX_and_AIX_experiences/pytest_examples/test_example_contract.py::test_example_declares_its_surface[37_review_agent_bindings]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py::test_probe_upgrade_to_normal_keeps_creations_and_registers
+7 failed, 564 passed in 11.68s

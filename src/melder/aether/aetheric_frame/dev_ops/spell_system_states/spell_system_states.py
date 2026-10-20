@@ -1,6 +1,6 @@
 import threading
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, \
-    ClassVar
+    ClassVar, FrozenSet
 
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
@@ -60,7 +60,12 @@ class SpellSystemStates(Cleanable):
     - One instance per AethericFrame (owned by the frame and initialized
       alongside Spellbook / DevOpsManager).
     - Spellbook / SpellCrafter call:
-        * `register_index(...)` when a new SpellIndex+Spell appears
+        * `register_index(..., resolvable=..., binding_key=...)` when a new
+          SpellIndex+Spell appears or an index selects another version (bind,
+          notch, an ownership transfer), passing the selected version's
+          `Spell.resolvable` and, at bind and notch, its binding key
+        * `mark_dependents_for_revalidation(...)` after a notch, so every
+          SpellIndex downstream of the notched one revalidates at its next meld
         * `update_dependencies(...)` after Phase 3/4 attaches dependency ids
         * `mark_structural_change(...)` when a spell index is rebound/mutated
     - DevOps / validation flows call:
@@ -70,27 +75,35 @@ class SpellSystemStates(Cleanable):
     Owned State:
         The primary index (spell-index id -> `SpellSystemState`), the auxiliary
         current-spell-id index, the dirty set, per-Spellbook collection
-        dependency indices, per-Spellbook SpellContract consumer indices, and
-        per-conduit `ConduitResolutionState` keyed by conduit_id.
+        dependency indices, per-Spellbook SpellContract consumer indices,
+        the binding key each SpellIndex was registered under, per-conduit
+        `ConduitResolutionState` keyed by conduit_id, and the published set of
+        spell indexes flagged `SpellState.non_resolvable`.
 
     Threading:
         Read on the meld hot path and written from binding, validation, and
         change-control flows, so mutation is serialized internally. Dirty
         consumption is drain-shaped rather than read-only: taking a worklist
-        clears it.
+        clears it. `non_resolvable_index_ids` is replaced whole under the lock
+        and read without it.
 
     Lifecycle / Cleanup:
         One instance per `AethericFrame`, initialized alongside DevOpsManager.
-        Unregistering a lineage notifies `RiskManager` to force validation
+        Unregistering a SpellIndex notifies `RiskManager` to force validation
         gating and retires the removed spell id's per-conduit resolution
         verdicts in every registered `ConduitResolutionState`, so a removed
         spell cannot leave a stale "valid" verdict behind on either axis.
         Registering an index retires any verdict already held for the version
         id it publishes, because spell ids are content-stable: a rebind of the
-        same class at the same address mints the same id for a new Spell with
+        same class mints the same id (the class's code) for a new Spell with
         no compiler artifact, and a verdict carried across that boundary would
         send the first meld of the replacement straight to the context builder
         with no plan to build from (the rebind-after-first-meld defect).
+        Registering an index also records the selected version's resolution
+        capability as `SpellState.non_resolvable` and publishes the flagged
+        spell indexes as one immutable set (`non_resolvable_index_ids`), which
+        RiskManager reads without a lock to leave a declared non-resolvable
+        definition out of its Book's validation flag.
 
     Registration:
         MELDER KERNEL - guarded. Frame-owned control-plane state; users never
@@ -114,7 +127,7 @@ class SpellSystemStates(Cleanable):
         The reverse edges are the reason the dirty set can stay small.
         `direct_dependents` answers "what breaks if this changes", so a
         structural change fans out through `compute_impact_closure` to only the
-        genuinely impacted lineages. The separate collection-dependency and
+        genuinely impacted spell indexes. The separate collection-dependency and
         contract-consumer indices narrow it further: rebinding a frame type
         dirties only local `list[Frame]` consumers, and satisfying a
         `SpellContract` dirties only that contract's consumers - not every
@@ -140,7 +153,9 @@ class SpellSystemStates(Cleanable):
         "_collection_dependents_by_spellbook",
         "_contract_keys_by_index",
         "_contract_dependents_by_spellbook",
+        "_binding_key_by_index",
         "_risk_manager",
+        "_non_resolvable_index_ids",
     ]
 
     def __init__(
@@ -187,7 +202,14 @@ class SpellSystemStates(Cleanable):
         self._contract_dependents_by_spellbook: Optional[
             Dict[str, Dict[Tuple[str, str], Set[str]]]
         ] = {}
+        # The binding key of each index's selected version (`register_index(binding_key=...)`): the contract key a
+        # SpellContract consumer of that index declares, read by the downstream walk (`_mark_dependents_locked`).
+        self._binding_key_by_index: Optional[Dict[str, Tuple[str, str]]] = {}
         self._risk_manager: Optional[RiskManager] = None
+        # The spell indexes whose state carries SpellState.non_resolvable, replaced
+        # whole under `_lock` (`_publish_non_resolvable_membership_locked`) and
+        # read without it (`non_resolvable_index_ids`), so it is never mutated.
+        self._non_resolvable_index_ids: FrozenSet[str] = frozenset()
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -281,6 +303,9 @@ class SpellSystemStates(Cleanable):
                         pass
                 self._contract_keys_by_index.clear()
 
+            if self._binding_key_by_index is not None:
+                self._binding_key_by_index.clear()
+
             if self._index_owner_spellbook_id is not None:
                 self._index_owner_spellbook_id.clear()
 
@@ -293,7 +318,11 @@ class SpellSystemStates(Cleanable):
             del self._collection_frames_by_index
             del self._contract_dependents_by_spellbook
             del self._contract_keys_by_index
+            del self._binding_key_by_index
             del self._index_owner_spellbook_id
+            # A tombstone, not a delete: `non_resolvable_index_ids` is read without
+            # the lock, so a read racing this cleanup must still find a set.
+            self._non_resolvable_index_ids = frozenset()
             del self._frame
             del self._devops_information_registry
             del self._risk_manager
@@ -304,7 +333,14 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> SpellSystemState:
+    def register_index(
+            self,
+            spell_index: SpellIndex,
+            owner_spellbook_id: Optional[str] = None,
+            *,
+            resolvable: Optional[bool] = None,
+            binding_key: Optional[Tuple[str, str]] = None,
+    ) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 
@@ -326,9 +362,79 @@ class SpellSystemStates(Cleanable):
           member that was active before, a transfer - is resolved again by each
           conduit before it is built there. A first-time id has no verdict and
           nothing happens.
+        - Record the selected version's resolution capability as the
+          `SpellState.non_resolvable` flag (`_record_selected_capability`)
+          before the index is gated, so the RiskManager callback that the gate
+          publishes already sees it: `resolvable=False` sets the flag,
+          `resolvable=True` clears it, and None keeps it only while the index
+          still selects the version the state tracked - a new state, or another
+          selection with no stated capability, clears it, so an exclusion
+          recorded for one version never covers another.
+        - When that write changed the flag and the index was already `gated`,
+          the gate publishes nothing (`set_validity` publishes only a changed
+          validity), so publish the current validity again
+          (`SpellSystemState._republish_validity`): every conduit holding the
+          SpellIndex refreshes its Book flag with the new flag - a borrower whose
+          copy came back by reactivation is never re-registered with RiskManager.
+        - Keep the published set of flagged spell indexes in step with the flag
+          (`_publish_non_resolvable_membership_locked`), also before the gate
+          publishes, so the refresh that event runs reads the new set.
+        - Record `binding_key` as the SpellIndex's binding key when one is given;
+          None keeps the key recorded before. The downstream walk
+          (`mark_dependents_for_revalidation`) reaches the SpellContract
+          consumers of a SpellIndex through this key, because a consumer declares
+          the key, not an edge to the SpellIndex.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
+
+        Args:
+            spell_index:
+                The index whose selected version is (re)registered.
+            owner_spellbook_id:
+                The owning Spellbook's id, recorded for the spellbook-scoped
+                collection and contract indices; None leaves the recorded owner
+                as it is.
+            resolvable:
+                The selected version's `Spell.resolvable`, or None when the
+                caller does not state it (a registration that keeps the
+                selection, such as the ownership transfer's disable step).
+            binding_key:
+                The selected version's normalized `(frame_key, binding_key)` -
+                `Spell._key`, the form `SpellContract.canonical_key` takes - or
+                None to keep the recorded key (bind and notch pass it; the
+                ownership transfer's registrations keep the SpellIndex's key).
+
+        Returns:
+            SpellSystemState:
+                The SpellIndex's live state.
+
+        Raises:
+            TypeError:
+                If `resolvable` is neither None nor a bool, or `binding_key` is
+                neither None nor a pair of strings; nothing is registered.
+            RuntimeError:
+                If the index selects no version.
+
+        Threading:
+            Runs under the registry lock. The capability write and the gate take
+            the state's lock inside it (registry -> state), and the RiskManager
+            callbacks run inside the registry lock, outside the state lock.
         """
+        if resolvable is not None and type(resolvable) is not bool:
+            raise TypeError(
+                "register_index(resolvable=...) takes the selected version's Spell.resolvable (a bool) or None; "
+                f"got {type(resolvable).__name__}. Pass spell.resolvable for the version the index selects."
+            )
+        if binding_key is not None and not (
+                type(binding_key) is tuple
+                and len(binding_key) == 2
+                and type(binding_key[0]) is str
+                and type(binding_key[1]) is str
+        ):
+            raise TypeError(
+                "register_index(binding_key=...) takes the selected version's normalized (frame_key, binding_key) "
+                f"pair of strings or None; got {binding_key!r}. Pass spell._key for the version the index selects."
+            )
         index_id = spell_index.id
         current_id = spell_index.selected_spell_id
         if current_id is None:
@@ -344,7 +450,11 @@ class SpellSystemStates(Cleanable):
                 if self._risk_manager is not None:
                     state._set_risk_manager(self._risk_manager)
                 self._states_by_index_id[index_id] = state
+                selection_kept = False
             else:
+                # Whether the state already tracked this version decides what a
+                # registration with no stated capability does to the flag.
+                selection_kept = state.current_spell_id == current_id
                 # Keep current version id in sync
                 state.update_current_spell_id(current_id)
 
@@ -367,11 +477,85 @@ class SpellSystemStates(Cleanable):
                         self._collection_frames_by_index.pop(index_id, None)
                 self._index_owner_spellbook_id[index_id] = owner_spellbook_id
 
+            if binding_key is not None:
+                self._binding_key_by_index[index_id] = binding_key
+
+            # The selected version's capability, written before the gate below
+            # publishes, so the RiskManager callback it runs already sees it.
+            flag_changed = self._record_selected_capability(state, resolvable, selection_kept)
+            self._publish_non_resolvable_membership_locked(
+                index_id, state.has_flag(SpellState.non_resolvable)
+            )
+            gate_was_closed = state.validity is SpellValidity.gated
+
             # Any (re)binding is treated as structural change.
             state.mark_structural_change(change_reason=SpellStateChangeReason.register_or_rebind)
             self._dirty_indexes.add(index_id)
 
+            if flag_changed and gate_was_closed:
+                # Already gated, so the gate published nothing: tell the conduits
+                # holding this SpellIndex about the changed flag here.
+                state._republish_validity()
+
             return state
+
+    @staticmethod
+    def _record_selected_capability(
+            state: SpellSystemState,
+            resolvable: Optional[bool],
+            selection_kept: bool,
+    ) -> bool:
+        """
+        Write the selected version's capability as `SpellState.non_resolvable`; caller holds `_lock`.
+
+        Contract:
+            - False adds the flag; True removes it.
+            - None keeps the flag only when `selection_kept` (the state already
+              tracked this version): a new state or another selection removes it,
+              so an exclusion recorded for one version never covers another.
+            - Flag-only (`SpellSystemState.update_flags`); publishes nothing.
+
+        Args:
+            state:
+                The SpellIndex's live state.
+            resolvable:
+                The selected version's `Spell.resolvable`, or None.
+            selection_kept:
+                Whether the state already tracked the selected version.
+
+        Returns:
+            bool:
+                True when the flag changed.
+        """
+        if resolvable is False:
+            return state.update_flags(flags_to_add=(SpellState.non_resolvable,))
+        if resolvable is True or not selection_kept:
+            return state.update_flags(flags_to_remove=(SpellState.non_resolvable,))
+        return False
+
+    def _publish_non_resolvable_membership_locked(self, index_id: str, member: bool) -> None:
+        """
+        Put `index_id` in or out of the published set of flagged spell indexes; caller holds `_lock`.
+
+        Contract:
+            - `member` is whether the SpellIndex's state carries
+              `SpellState.non_resolvable` now; the set follows it.
+            - The set is replaced, never mutated, so a reader keeps a consistent
+              snapshot; nothing is replaced when the membership already matches.
+
+        Args:
+            index_id:
+                Spell-index id (`SpellIndex.id`).
+            member:
+                Whether the SpellIndex belongs in the set.
+
+        Returns:
+            None.
+        """
+        published = self._non_resolvable_index_ids
+        if (index_id in published) == member:
+            return
+        self._non_resolvable_index_ids = (published | {index_id}) if member else (published - {index_id})
 
     def get_by_index_id(self, index_id: str) -> Optional[SpellSystemState]:
         """
@@ -409,6 +593,87 @@ class SpellSystemStates(Cleanable):
             if self._states_by_spell_id is None:
                 return None
             return self._states_by_spell_id.get(spell_id)
+
+    def index_has_flag(self, index_id: str, flag: SpellState) -> bool:
+        """
+        Return whether the SpellIndex registered under `index_id` carries `flag`.
+
+        Purpose:
+            The per-index flag read. It reads the registry rather than a held
+            state reference, so a SpellIndex removed meanwhile answers False.
+            RiskManager does not probe per key: for `SpellState.non_resolvable` it
+            reads the set this registry publishes (`non_resolvable_index_ids`).
+
+        Contract:
+            - False for an empty id or an id with no registered state.
+            - Otherwise the state's `has_flag(flag)`, read under the registry
+              lock. A state leaves the registry before it is cleaned
+              (`unregister_index` pops it first; `cleanup` cleans under this
+              lock), so the state read here is live.
+
+        Args:
+            index_id:
+                Spell-index id (`SpellIndex.id`).
+            flag:
+                The SpellState member to look for.
+
+        Returns:
+            bool:
+                True when the registered state carries the flag.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`).
+
+        Threading:
+            Registry lock, then the state's lock - the registry's only order. The
+            registry lock is reentrant, so a caller already holding it may call
+            this.
+        """
+        self.check_cleaned()
+        if not index_id:
+            return False
+        with self._lock:
+            self.check_cleaned()
+            state = self._states_by_index_id.get(index_id)
+            if state is None:
+                return False
+            return state.has_flag(flag)
+
+    @property
+    def non_resolvable_index_ids(self) -> FrozenSet[str]:
+        """
+        Return the spell indexes whose state carries `SpellState.non_resolvable`.
+
+        Purpose:
+            RiskManager's exclusion set: a risky key in it is left out of its
+            Book's validation flag, with one subset test per refresh instead of a
+            registry probe per key.
+
+        Contract:
+            - Exactly the registered spell indexes whose state carries the flag:
+              `register_index` puts a SpellIndex in or out right after it writes the
+              flag and before its gate publishes, and `unregister_index` takes it
+              out, so a removed SpellIndex is never in it.
+            - The set is replaced whole, never mutated; the caller may keep the
+              returned set as a snapshot.
+
+        Returns:
+            FrozenSet[str]:
+                The published set; empty when nothing is flagged.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`).
+
+        Threading:
+            Lock-free, one reference read. A read racing a registration sees the
+            set from before or after it, and the RiskManager refresh that the
+            registration publishes reads the new one. A read racing cleanup finds
+            the empty tombstone set, never a missing attribute.
+        """
+        self.check_cleaned()
+        return self._non_resolvable_index_ids
 
     # ------------------------------------------------------------------
     # Internal indexing helpers
@@ -653,6 +918,123 @@ class SpellSystemStates(Cleanable):
 
         return impacted
 
+    def mark_dependents_for_revalidation(self, index_ids: Iterable[Optional[str]]) -> Set[str]:
+        """
+        Mark for revalidation every index downstream of `index_ids`, by registry edge or by contract key.
+
+        Purpose:
+            A notch changes what every dependent of the notched index resolves: a dependent's plan names the
+            old version, and the topology it expands may too. `Spellbook._apply_notch` calls this with the
+            notched index, so each dependent's next meld rechecks its structure and rebuilds against the
+            versions now active (contract_recheck_on_notch_2026_10_16, D2). Mark only: no plan, context or
+            object is touched here.
+
+        Contract:
+            - The walk starts from the given indexes (the seeds) and follows, from every index it reaches,
+              the reverse dependency edges (`direct_dependents`, recorded by Phase 3's `update_dependencies`) and
+              the SpellContract consumers, in every Spellbook of the frame, of the binding key that index was
+              registered under (`register_index(binding_key=...)`) - a contract consumer declares a key, not an
+              edge. A SpellIndex with no recorded key is followed by its edges only.
+            - An index reached by an edge gets `mark_transitively_dirty()` (gated, `impacted_by_dependency`,
+              transitively dirty); one reached as a contract consumer gets rule 2's contract mark (gated,
+              `contract_unvalidated`, not transitively dirty); one reached both ways gets the contract mark,
+              then the edge mark.
+            - Seeds are never marked (each caller gates its seeds for their own change), and a dependent with
+              no registered state is passed over. Each index is visited once, so a cycle of edges or contracts
+              terminates.
+            - Every marked index joins the dirty set. `set_validity` publishes a validity only when it
+              changes, so a walk over indexes already gated publishes nothing.
+
+        Args:
+            index_ids:
+                Spell-index ids whose change starts the walk; empty and None ids are ignored.
+
+        Returns:
+            Set[str]:
+                The spell-index ids this call marked, seeds excluded; empty when nothing is downstream.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`), before or while waiting for its lock.
+
+        Threading:
+            Runs under the registry lock; each mark takes the state's lock inside it (registry -> state) and
+            publishes to RiskManager inside the registry lock and outside the state lock, the order every
+            registry mark takes. It takes no Book, conduit, ward or contract lock, so a caller may hold those.
+        """
+        self.check_cleaned()
+        seeds = {index_id for index_id in index_ids if index_id}
+        if not seeds:
+            return set()
+        with self._lock:
+            self.check_cleaned()
+            return self._mark_dependents_locked(seeds)
+
+    def _mark_dependents_locked(self, seeds: Set[str]) -> Set[str]:
+        """
+        Walk downstream of `seeds` and mark every index reached; the caller holds `_lock`.
+
+        Purpose:
+            The one body behind `mark_dependents_for_revalidation` (a notch) and the walk-on of
+            `mark_contract_dependents_dirty` (a contract change), so both fan out the same way.
+
+        Contract:
+            - Follows reverse edges and the contract consumers of each reached index's binding key, across
+              every Spellbook, visiting each index once (see `mark_dependents_for_revalidation`).
+            - Marks after the walk, so an index's mark knows every way it was reached: the contract mark
+              first, then the edge mark. Seeds are never marked; indexes with no registered state are
+              skipped; every marked index joins `_dirty_indexes`.
+
+        Args:
+            seeds:
+                Non-empty spell-index ids the walk starts from.
+
+        Returns:
+            Set[str]:
+                The spell-index ids marked.
+        """
+        edge_reached: Set[str] = set()
+        contract_reached: Set[str] = set()
+        visited: Set[str] = set(seeds)
+        worklist: List[str] = list(seeds)
+        while worklist:
+            current = worklist.pop()
+            followers: List[str] = []
+            state = self._states_by_index_id.get(current)
+            if state is not None:
+                dependents = state.direct_dependents
+                edge_reached.update(dependents)
+                followers.extend(dependents)
+            binding_key = self._binding_key_by_index.get(current)
+            if binding_key is not None:
+                for book_index in self._contract_dependents_by_spellbook.values():
+                    consumers = book_index.get(binding_key)
+                    if consumers:
+                        contract_reached.update(consumers)
+                        followers.extend(consumers)
+            for follower in followers:
+                if follower not in visited:
+                    visited.add(follower)
+                    worklist.append(follower)
+
+        marked: Set[str] = set()
+        for index_id in (edge_reached | contract_reached) - seeds:
+            state = self._states_by_index_id.get(index_id)
+            if state is None:
+                continue
+            if index_id in contract_reached:
+                state.set_validity(
+                    SpellValidity.gated,
+                    change_reason=SpellStateChangeReason.contract_unvalidated,
+                    flags_to_add=[SpellState.contract_unvalidated],
+                    transitively_dirty=False,
+                )
+            if index_id in edge_reached:
+                state.mark_transitively_dirty()
+            self._dirty_indexes.add(index_id)
+            marked.add(index_id)
+        return marked
+
     def consume_dirty_indexes(self) -> List[str]:
         """
         Pop and return the current set of dirty spell-index ids.
@@ -772,8 +1154,10 @@ class SpellSystemStates(Cleanable):
         - Remove the spell-index entry from `_states_by_index_id`.
         - Remove the current spell id entry from `_states_by_spell_id`.
         - Remove the spell index from `_dirty_indexes`.
+        - Take the SpellIndex out of the published set of flagged spell indexes.
         - Remove the local topology entry for the current spell id.
-        - Remove collection/contract indices for the owning spellbook.
+        - Remove collection/contract indices for the owning spellbook, and
+          forget the SpellIndex's binding key.
         - Detach this spell index from reverse-dependency edges.
         - Retire the current spell id's resolution verdicts in every registered
           `ConduitResolutionState` (`_forget_resolution_verdicts_locked`), so no
@@ -817,9 +1201,12 @@ class SpellSystemStates(Cleanable):
                         change_reason=SpellStateChangeReason.cleaned_up_spell,
                     )
                 dirty_indexes.discard(index_id)
+                self._binding_key_by_index.pop(index_id, None)
                 return None
 
             current_spell_id = removed_state.current_spell_id
+            # A removed SpellIndex is never in the published flagged set.
+            self._publish_non_resolvable_membership_locked(index_id, False)
 
             if current_spell_id and states_by_spell_id.get(current_spell_id) is removed_state:
                 states_by_spell_id.pop(current_spell_id, None)
@@ -831,6 +1218,7 @@ class SpellSystemStates(Cleanable):
 
             if self._index_owner_spellbook_id is not None:
                 owner_spellbook_id = self._index_owner_spellbook_id.pop(index_id, None)
+            self._binding_key_by_index.pop(index_id, None)
 
             if owner_spellbook_id is not None:
                 self._remove_index_from_collection_index(owner_spellbook_id, index_id)
@@ -936,7 +1324,7 @@ class SpellSystemStates(Cleanable):
         Retire one spell id's resolution verdicts in every registered conduit.
 
         Purpose:
-            The per-conduit axis of lineage retirement. `unregister_index` and
+            The per-conduit axis of SpellIndex retirement. `unregister_index` and
             `register_index` call the locked form of this verb themselves; this
             public form serves callers that retire or re-gate a version id
             without touching the structural registry.
@@ -1336,8 +1724,15 @@ class SpellSystemStates(Cleanable):
             - Impacted spell indexes are gated with the `contract_unvalidated` flag
               rather than marked transitively dirty, because the topology did
               not change; only contract truth must be recomputed.
+            - The mark walks on (`_mark_dependents_locked`, D2 of
+              contract_recheck_on_notch_2026_10_16): whatever depends on a
+              consumer it marks - by registry edge, or as a contract consumer of
+              that consumer's binding key in any Spellbook - is marked for
+              revalidation too, so a dependent built against the old provider
+              rebuilds at its next meld.
         Returns:
-            Set[str]: Spell-index ids marked dirty by this call.
+            Set[str]: The consumers this call gated (the spell indexes the walk-on
+            marked are not included).
         """
         if not spellbook_id:
             return set()
@@ -1385,6 +1780,9 @@ class SpellSystemStates(Cleanable):
                     )
                     self._dirty_indexes.add(index_id)
                     impacted.add(index_id)
+
+            if impacted:
+                self._mark_dependents_locked(impacted)
 
         return impacted
 

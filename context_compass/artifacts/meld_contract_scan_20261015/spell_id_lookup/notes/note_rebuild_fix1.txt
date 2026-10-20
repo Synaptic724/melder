@@ -1,0 +1,26 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuilt last at 0.2.8253, from the repository root on Python 3.14.7t, after the code, tests, docs, system
+    documents, graph, release note, Notes, handoff summary and board rows. The asset run on the connected folder
+    wrote the agent-documentation and bind-guard manifests and the system-documents index, then stopped with
+    PermissionError: the system-documents builder unlinks its payload modules before rewriting them and the folder
+    refuses deletes (as at 0.2.8247 and 0.2.8252). The runner then ran whole in a mirror under /tmp (src/ and the
+    system docs, byte-equal to the repo's): all three assets at v0.2.8253 (468, 628, 4 entries). The five files it
+    changed beyond the repo - three payloads, the system-documents manifest, the graph adjacency manifest - were
+    copied over their originals (nothing deleted or added; byte-equal after copy), and the asset --check on the
+    repo printed only OK lines. The LLM bundles (--include-untracked) rewrote src (583 files), tests (1128) and
+    other (404) and the manifest; their --check printed only OK lines. No .git/index.lock.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253.txt:1-24
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253_mirror.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_assets_0_2_8253_check.txt:1-7
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_llm_0_2_8253.txt:1-8
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/rebuild_llm_0_2_8253_check.txt:1-7
+  IMPACT: Fix #1 is landed whole at 0.2.8253 and nothing is committed (the owner commits); the shared documents
+    are free for melder_0's S6 lane. Closure, the patch-folder archive and the held-file release wait for the owner.
+  NEXT: Send M1-26 to melder_0 (0.2.8253 taken, the shared documents free), set the board row to review, then
+    report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

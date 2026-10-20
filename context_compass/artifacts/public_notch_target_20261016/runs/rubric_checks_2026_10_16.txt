@@ -1,0 +1,52 @@
+=== src_architecture.md: 4665 lines, 67 headings
+H1: 1
+duplicate indexed (H2/H3) names: none | repeated H4+ texts (not indexed): none
+unclosed-bracket headings: none
+contract missing: none | in order: True | extra H2: ['What Melder Is (Read This First)', 'Glossary and Core Terms', 'Runtime Type Names (Concrete, No Interface Layer)', 'Extension Points', 'Promoted Patch Decisions (re-absorbed 2026-08-02)']
+portability hits: none
+absolute-path hits: none
+C1 records: 160; incomplete: none; missing files: none; extent drift: none
+C1 verified_at by day: {'2026-08-01': 1, '2026-08-02': 76, '2026-09-19': 2, '2026-09-23': 5, '2026-09-25': 1, '2026-09-26': 16, '2026-09-27': 2, '2026-09-28': 2, '2026-09-30': 7, '2026-10-01': 2, '2026-10-04': 5, '2026-10-11': 1, '2026-10-12': 3, '2026-10-14': 6, '2026-10-15': 21, '2026-10-16': 10}
+C1 source paths: 160; not in the graph index: none
+Key Files citations: 0 paths; not in the graph index: none
+=== tests_architecture.md: 972 lines, 33 headings
+H1: 1
+duplicate indexed (H2/H3) names: none | repeated H4+ texts (not indexed): none
+unclosed-bracket headings: none
+contract missing: none | in order: True | extra H2: ['Source Coverage and Evidence', 'Core Responsibilities', 'C3 Components Overview', 'C2 Subcomponents Overview', 'Open Questions']
+portability hits: none
+absolute-path hits: none
+C1 records: 36; incomplete: none; missing files: none; extent drift: none
+C1 verified_at by day: {'2026-09-26': 32, '2026-09-30': 1, '2026-10-05': 1, '2026-10-15': 2}
+Key Files citations: 0 paths; missing on disk: none
+=== src_components.md: 11641 lines, 187 headings
+H1: 1
+duplicate indexed (H2/H3) names: none | repeated H4+ texts (not indexed): {'Architecture narrative (folded in from `src_architecture.md`': 15}
+unclosed-bracket headings: none
+contract missing: none | in order: True | extra H2: ['Promoted Patch Detail (re-absorbed 2026-08-02)']
+portability hits: none
+absolute-path hits: none
+C1 records: 234; incomplete: none; missing files: none; extent drift: none
+C1 verified_at by day: {'2026-08-02': 127, '2026-09-19': 2, '2026-09-23': 10, '2026-09-25': 1, '2026-09-26': 23, '2026-09-27': 1, '2026-09-28': 2, '2026-09-30': 10, '2026-10-01': 14, '2026-10-03': 1, '2026-10-04': 2, '2026-10-11': 1, '2026-10-12': 1, '2026-10-14': 5, '2026-10-15': 25, '2026-10-16': 9}
+Key Files citations: 221 paths; not in the graph index: none
+C3 entries: 26; with a missing field: 0; thin fields by name: {'Extension Points': 2, 'Outputs': 1, 'Lifecycle/Cleanup': 1, 'Observability': 1, 'Failure Modes': 1, 'Key Files (C1)': 1}
+   thin 984 Component: DI Descriptors and Contract Sockets ['Extension Points']
+   thin 3225 Component: Creations and SpellSpace ['Outputs']
+   thin 4118 Component: SpellCompiler and Validation Pipeline ['Lifecycle/Cleanup', 'Observability']
+   thin 5691 Component: PhaseScheduler and UnitOfWork Orchestration ['Failure Modes', 'Extension Points', 'Key Files (C1)']
+=== tests_components.md: 3549 lines, 70 headings
+H1: 1
+duplicate indexed (H2/H3) names: none | repeated H4+ texts (not indexed): none
+unclosed-bracket headings: none
+contract missing: none | in order: True | extra H2: ['Documentation Quality Standard', 'Table of Contents', 'Component Template', 'Open Questions']
+portability hits: none
+absolute-path hits: none
+C1 records: 254; incomplete: none; missing files: none; extent drift: none
+C1 verified_at by day: {'2026-09-26': 154, '2026-09-27': 5, '2026-09-28': 3, '2026-09-30': 16, '2026-10-01': 2, '2026-10-06': 6, '2026-10-10': 7, '2026-10-12': 1, '2026-10-14': 4, '2026-10-15': 44, '2026-10-16': 12}
+Key Files citations: 251 paths; missing on disk: none
+C3 entries: 7; with a missing field: 0; thin fields by name: {'Owned State': 3, 'Outputs': 3, 'Observability': 2, 'Extension Points': 2, 'Inputs': 2, 'Lifecycle/Cleanup': 1, 'Concurrency/Threading': 1, 'Invariants/Guarantees': 1}
+   thin 263 Component: Shared Test Support And Matrix Fixtures ['Owned State']
+   thin 338 Component: Unit Test Suite ['Outputs', 'Observability']
+   thin 453 Component: Component Test Suite ['Outputs', 'Observability', 'Extension Points']
+   thin 533 Component: Integration Runtime Suite ['Inputs', 'Outputs', 'Owned State', 'Extension Points']
+   thin 639 Component: Mock Fixture Corpus ['Inputs', 'Owned State', 'Lifecycle/Cleanup', 'Concurrency/Threading', 'Invariants/Guarantees']

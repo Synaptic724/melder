@@ -1,0 +1,25 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_post_conjure_bind/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_post_conjure_bind/__conjure_cache__/structural-parity'
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_notch/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_notch/__conjure_cache__/structural-parity'
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_remove/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_remove/__conjure_cache__/structural-parity'
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_transfer/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity__event_transfer/__conjure_cache__/structural-parity'
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity_contract/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity_contract/__conjure_cache__/structural-parity'
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity_two_process/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity_two_process/__conjure_cache__/structural-parity'
+E   PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity_restore/__conjure_cache__/structural-parity'
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/.uvpy/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/shutil.py:791: PermissionError: [Errno 1] Operation not permitted: 'src/melder/tests/component/melder/spellbook/_cache_structural_parity_restore/__conjure_cache__/structural-parity'
+=========================== short test summary info ============================
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_invalidation_event_after_a_hydrated_conjure_matches_the_cold_world[bind-after-conjure]
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_invalidation_event_after_a_hydrated_conjure_matches_the_cold_world[notch]
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_invalidation_event_after_a_hydrated_conjure_matches_the_cold_world[remove-spell]
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_invalidation_event_after_a_hydrated_conjure_matches_the_cold_world[transfer-ownership]
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_gated_contract_verdict_replays_verbatim_and_the_grant_still_melds
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_rows_captured_by_another_process_hydrate_this_one
+FAILED tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_crystallizer_restore_hydrates_with_fresh_index_ulids
+7 failed in 3.37s

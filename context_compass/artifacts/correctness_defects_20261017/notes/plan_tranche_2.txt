@@ -1,0 +1,20 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The planned sweep A1-A5 is done (five stories; the owner told, chat 2026-10-17). Tranche 2, same rules
+    (read whole, then probe; melder_1's lane excluded), in this order:
+    A6 managed pools across a version's life - notch away and back, disposal of an active or parked managed
+       version, `ReleaseManagedSpell.release` of an object whose version was notched away or disposed, index moves
+       of a parked managed version: do the pool, its registration and the owner stamp stay right?
+    A7 Book teardown with parked versions - does `Spellbook.cleanup` let every structure holding a parked version
+       go (the version, its index, its pool registration, its record), as it does for active ones?
+    A8 the views of moved and separated versions - MutationResearch residency and Nexus publication after index
+       moves, a separation and a notch inside a minted index.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1300-1316
+  - context_compass/system_docs/src_architecture.md:1055-1063
+  IMPACT: Keeps the hunt on version lifecycle, where the first pass found every defect so far.
+  NEXT: Read `ReleaseManagedSpell` and the managed pool's registration paths whole for A6.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

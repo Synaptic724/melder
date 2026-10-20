@@ -1,0 +1,26 @@
+===== GIL=0
+address ('greeter', 'greeter')
+  before staging                           frame claim: English      Book lookup: the greeter index
+one index, one address, four spells:
+  English      spell_id 677a47a3c52107a4...  binding_hash c95bbf5d8093ced7...  same index: True
+  French       spell_id 20d8d67e61430e62...  binding_hash c95bbf5d8093ced7...  same index: True
+  SelfMade     spell_id 83717df2406a5957...  binding_hash c95bbf5d8093ced7...  same index: True
+  TimedGreeter spell_id df1a0bfcf4fc451e...  binding_hash c95bbf5d8093ced7...  same index: True
+  distinct spell_ids: 4 of 4
+  after staging three at English's address frame claim: None         Book lookup: None
+  notch to TimedGreeter raised SpellbookValidationError ['AMBIGUOUS_PROVIDER']
+  the index now selects: TimedGreeter
+  after the failed notch                   frame claim: TimedGreeter Book lookup: the greeter index
+===== GIL=1
+address ('greeter', 'greeter')
+  before staging                           frame claim: English      Book lookup: the greeter index
+one index, one address, four spells:
+  English      spell_id 677a47a3c52107a4...  binding_hash c95bbf5d8093ced7...  same index: True
+  French       spell_id 20d8d67e61430e62...  binding_hash c95bbf5d8093ced7...  same index: True
+  SelfMade     spell_id 83717df2406a5957...  binding_hash c95bbf5d8093ced7...  same index: True
+  TimedGreeter spell_id df1a0bfcf4fc451e...  binding_hash c95bbf5d8093ced7...  same index: True
+  distinct spell_ids: 4 of 4
+  after staging three at English's address frame claim: None         Book lookup: None
+  notch to TimedGreeter raised SpellbookValidationError ['AMBIGUOUS_PROVIDER']
+  the index now selects: TimedGreeter
+  after the failed notch                   frame claim: TimedGreeter Book lookup: the greeter index

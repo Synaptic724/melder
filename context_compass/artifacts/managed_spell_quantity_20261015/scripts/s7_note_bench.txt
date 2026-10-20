@@ -1,0 +1,24 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: No regression on the existing meld shapes or scope cycles from 0.2.8240 (HEAD, before S1) to 0.2.8246. A/B
+    on the VM (CPython 3.14.7t), three process pairs alternating the trees, 100,000 cycles x 7 rounds per process (a
+    twentieth of that for the scope arms), median of the per-process medians, after/before: gil=1 - unique 0.960,
+    many 0.996, unique_per_conduit 1.033, many of many 1.007, many of unique 1.024, override 0.990, by name 1.021,
+    dynamic many 0.992, dynamic unique 1.009, lesser cycle 1.013, spellspace cycle 1.021; gil=0 - 0.984, 0.990,
+    0.999, 0.980, 0.991, 1.005, 1.013, 1.000, 1.017, 0.969, 1.027. Every ratio sits inside the per-process spread
+    (about 5%). The managed warm cycle at 0.2.8246 (200,000 x 7): a direct meld plus its release 306 ns (gil=0) /
+    319 ns (gil=1) on an automatic root and 739 / 734 ns on a dynamic one; a `many` holder leasing one object plus
+    the release 365 / 385 ns - S5's numbers. Every run left one object in each pool (count 1, idle 1).
+  EVIDENCE:
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_bench_ab_gil1.txt:85-98
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_bench_ab_gil0.txt:85-98
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_warm_lease_cycle_gil0.txt:1-9
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_warm_lease_cycle_gil1.txt:1-9
+  - context_compass/artifacts/managed_spell_quantity_20261015/probes/probe_s7_existing_shapes.py:1-212
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_bench_ab.py:1-41
+  IMPACT: The epic's benchmark gate is met: existing meld paths within noise; the managed cycle well under 1 us.
+  NEXT: Align the patch lane with the source as built, architecture patch first.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

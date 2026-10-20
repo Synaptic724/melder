@@ -57,10 +57,13 @@ The method-name property is set-once; choose it before `with_defaults()` fills i
 The priority flag can be adjusted during configuration assembly and freezes with
 the configuration. This is creation-time policy, not a post-bind mutation API.
 
-Existing scope/key/bucket teardown order is unchanged. Within one object, a
-method failure stops its remaining methods; other objects still receive cleanup.
+Existing scope/key/bucket teardown order is unchanged. Within one object, every
+declared method runs even when an earlier one fails, and other objects still
+receive cleanup; the failures are raised together, as one `ExceptionGroup`, once
+cleanup ends.
 Crystals preserve the resolved order, and replay applies the receiving book's
-normal binding policy. A different policy can yield a different content ID.
+normal binding policy. A different policy keeps the spell ID and changes the
+binding hash; the restore report lists that binding under `binding_changes`.
 
 ## Tune the compile phase deliberately
 

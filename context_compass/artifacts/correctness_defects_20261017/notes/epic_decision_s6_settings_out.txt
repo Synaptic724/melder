@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner chose S6's direction (chat 2026-10-17): "the bind call itself shouldn't impact the actual SHA256
+    thats absurd" - a bug - and "you gotta notch the version for the cache". The managed settings leave the spell_id
+    (option 2); a same-spell_id rebind re-composes its pool's settings; the notch and a cache generation bump retire
+    every bundle. melder_0 takes S6's fix lane (free files) and starts with patch docs; the scope (address, existence,
+    disposal names and resolvable stay in the id; a staging refusal for the residual same-class case) is with the
+    owner for confirmation (S6's DECISION note).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:99-106
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  IMPACT: No open question remains on the stories except the scope confirmation; S6 moves from ready to in_progress.
+  NEXT: S6's patch docs and the owner's confirmation; then the fix after melder_1's notch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

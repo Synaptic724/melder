@@ -1,0 +1,500 @@
+== src/melder/aether/aether.py: 4
+src/melder/aether/aether.py:2315: lesser lineage, depth-first through each `ConduitWard`. Anonymous lessers resolve here; the
+src/melder/aether/aether.py:2360: Search one frame's live conduits for an id: the root registry, then each root's lesser lineage.
+src/melder/aether/aether.py:2366: attached lineage through `ConduitWard._get_lesser_conduit`, which snapshots every level.
+src/melder/aether/aether.py:2388: # Hard teardown deleted this root's ward after the snapshot; its lineage went with it.
+== src/melder/aether/aetheric_frame/conduit_cloud.py: 2
+src/melder/aether/aetheric_frame/conduit_cloud.py:70: `Conduit` itself - a conduit knows its own lineage and peers, but "which
+src/melder/aether/aetheric_frame/conduit_cloud.py:832: elected (draining every member lineage), then cleans it: the
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py: 4
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:237: - Quiesces every plan-derived lineage through the
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:250: "conduit_lineage_gate_ops"
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:260: Reopen every frozen conduit lineage on every exit path (fail-closed).
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:270: "conduit_lineage_gate_ops"
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py: 3
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py:30: is sufficient (no lineage drain). The actual leadership effect (binding
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py:45: Stateless class-level strategy. Notably it needs NO lineage drain -
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py:63: an atomic envelope with no lineage drain is provably sufficient.
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py: 10
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:42: `on_start` therefore quiesces every sealed conduit's lineage gates
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:43: through the metadata-carried DevOps `ConduitLineageGateOps` facade:
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:46: BEFORE the swap. `on_end` reopens every lineage on every exit path
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:60: - "conduit_lineage_gate_ops": ConduitLineageGateOps - the DevOps
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:69: concurrency behaviour in the family: it drains conduit lineage gates in
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:285: `metadata["conduit_lineage_gate_ops"]`; absent facade = no-op
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:287: - Quiesces every plan-derived `quiesce_root_conduit_ids` lineage
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:299: "conduit_lineage_gate_ops"
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:309: Reopen every frozen conduit lineage on every exit path (fail-closed).
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:320: "conduit_lineage_gate_ops"
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py: 4
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:222: - Quiesces every plan-derived lineage through the
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:235: "conduit_lineage_gate_ops"
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:245: Reopen every frozen conduit lineage on every exit path (fail-closed).
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:255: "conduit_lineage_gate_ops"
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py: 4
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py:286: - Quiesces every plan-derived lineage through the
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py:299: "conduit_lineage_gate_ops"
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py:314: Reopen every frozen conduit lineage on every exit path (fail-closed).
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py:325: "conduit_lineage_gate_ops"
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py: 12
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:32: member root lineage to zero before the domain effect runs and reopens them
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:40: - "conduit_lineage_gate_ops": ConduitLineageGateOps (drain/reopen facade).
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:45: root lineage via the gate facade - PARK mode (patch
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:55: every member root lineage. A failed drain leaves the leader still
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:56: bound and the lineages reopened (fail-closed), never permanently
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:61: drains every member root lineage to zero before the domain effect and
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:80: Draining every member root lineage to zero before the unbind is the
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:169: Quiesce every member root lineage (scopes held) so no meld is
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:173: - PARK mode (`quiesce_conduit_lineage`): concurrent melds wait at
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:181: "conduit_lineage_gate_ops"
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:196: Reopen every member root lineage on every exit path (fail-closed).
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:202: "conduit_lineage_gate_ops"
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py: 1
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1052: gates in `on_start` (e.g. the notch conduit-lineage freeze, the
+== src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py: 25
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:14: Narrow conduit-lineage creation-gate facade for coordinated strategies.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:17: Expose only the conduit-lineage creation-gate operations a coordinated
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:28: - Every operation is conduit-lineage scoped, keyed by `root_conduit_id`,
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:30: - Missing/unknown lineage roots are no-ops (controller contract).
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:52: `quiesce_conduit_lineage` / `enable_conduit_lineage` on it, keyed by
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:69: access: internal. Narrow conduit-lineage creation-gate facade for coordinated
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:155: Quiesce one root lineage: close every conduit gate under
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:165: Lineage root whose conduit gates are drained.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:192: Temporarily freeze one root lineage: park new melds and drain
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:198: are held: every in-flight guarded call on the lineage finishes
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:202: (`enable_conduit_lineage`) resumes them after the domain
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:207: `enable_conduit_lineage` fully restores admission - unlike
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:208: `close_and_wait_conduit_lineage`, whose terminal closure is
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:210: - A drain timeout raises with the lineage left frozen-parked;
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:216: Lineage root whose conduit gates are frozen and drained.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:238: Reopen every conduit gate under one root lineage.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:242: (commit, abort, or error), so a lineage is never left permanently
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:247: Lineage root whose conduit gates are reopened.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:262: Close every conduit gate under one root lineage without draining.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:265: Seal admission on a lineage when the caller does not need to wait for
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:270: Lineage root whose conduit gates are closed.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:285: Return the summed in-flight creation tickets across one root lineage.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:289: lineage truly has zero in-flight creates before an `elect`).
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:293: Lineage root to inspect.
+src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:297: Sum of active creation tickets across the lineage's gates, or 0
+== src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py: 24
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:37: - `CreationGateController`: conduit and lineage admission governance
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:104: "_conduit_lineage_gate_ops"
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:273: This is the admission-governance surface for conduit and lineage gates.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:286: Read-only exposure of the conduit-lineage gate facade.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:288: This is the narrow lineage-scoped surface (drain / reopen / close /
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:290: member lineages without depending on the full CreationGateController.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:293: ConduitLineageGateOps: The lineage gate facade owned by this DevOps
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:456: Open all conduit gates registered under one root lineage.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:459: Provide top-down lineage admission enablement from the DevOps
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:463: - Uses detached lineage snapshot from controller.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:464: - Missing lineage root is a no-op.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:469: Root conduit id that identifies the lineage bucket.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:486: Close all conduit gates registered under one root lineage.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:489: Provide top-down lineage admission disablement from the DevOps
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:493: - Uses detached lineage snapshot from controller.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:494: - Missing lineage root is a no-op.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:499: Root conduit id that identifies the lineage bucket.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:521: Terminally close and drain all conduit gates under one lineage root.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:524: Provide a single DevOps entrypoint to seal a lineage and wait for
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:525: in-flight lineage work to complete.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:528: - Delegates to controller lineage close-and-drain API.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:529: - Missing lineage root is a no-op by controller contract.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:533: Root conduit id that identifies the lineage bucket.
+src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:544: If manager has been cleaned or any lineage gate drain times out.
+== src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py: 5
+src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:67: "lineages"
+src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:179: "_lineage_conduits"
+src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:412: lineage_id: SpellIndex id whose structural validity changed.
+src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:624: lineage_id: SpellIndex id to mark risky or safe.
+src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:651: lineage_key: SpellIndex id or spell id key for tracking.
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py: 1
+src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:121: eager rebuild-the-world. `Meld._ensure_lineage_resolvable` reads
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py: 1
+src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py:66: SpellIndex starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
+== src/melder/aether/conduit/conduit.py: 59
+src/melder/aether/conduit/conduit.py:89: scope, contract/link behavior, lesser-conduit lineage, and access to the
+src/melder/aether/conduit/conduit.py:96: - Can create lesser conduits beneath its current root lineage.
+src/melder/aether/conduit/conduit.py:113: and lineage-aware gate control.
+src/melder/aether/conduit/conduit.py:135: `ConduitWard` (contracts, policies, lineage), one `CreationGate`
+src/melder/aether/conduit/conduit.py:255: Root conduit id for this lineage. Required for lesser conduits.
+src/melder/aether/conduit/conduit.py:368: # Lineage-root store: a normal conduit is its own lineage root, so
+src/melder/aether/conduit/conduit.py:371: # `unique_per_conduit_lineage` melds.
+src/melder/aether/conduit/conduit.py:385: # Lineage-root store: a lesser resolves `unique_per_conduit_lineage`
+src/melder/aether/conduit/conduit.py:386: # into the lineage root's creations (the single store shared across
+src/melder/aether/conduit/conduit.py:387: # the whole lineage), so point its meld at the root conduit's
+src/melder/aether/conduit/conduit.py:388: # lineage-root store.
+src/melder/aether/conduit/conduit.py:391: # `_creations`); a lesser borrows its lineage root's facade so an
+src/melder/aether/conduit/conduit.py:392: # election on this lineage is visible here too.
+src/melder/aether/conduit/conduit.py:453: "lineage_ancestors"
+src/melder/aether/conduit/conduit.py:474: concurrent lineage mutation during promotion and live restore.
+src/melder/aether/conduit/conduit.py:814: lesser lineage, the SpellSpaces, the stores and (normal) the cluster
+src/melder/aether/conduit/conduit.py:886: by the lineage root; local children and stores follow existing teardown.
+src/melder/aether/conduit/conduit.py:887: The ward (lesser lineage), the SpellSpaces and the own store raise their
+src/melder/aether/conduit/conduit.py:911: # in Aether. We tear down local runtime and lineage links, but do not
+src/melder/aether/conduit/conduit.py:991: member lineages through it) and its cluster facade is not cleaned.
+src/melder/aether/conduit/conduit.py:1044: - The cluster facade, the ward (lesser lineage), the SpellSpaces and the
+src/melder/aether/conduit/conduit.py:1083: # 2) Ward (contracts + lesser lineage)
+src/melder/aether/conduit/conduit.py:1539: is invalid for this conduit's lineage.
+src/melder/aether/conduit/conduit.py:2140: normal-root-only and publishes into its stable lineage maps.
+src/melder/aether/conduit/conduit.py:2303: - Local hooks are stored separately from shared lineage hooks.
+src/melder/aether/conduit/conduit.py:2366: Centralize conduit gate creation so root-lineage indexing is
+src/melder/aether/conduit/conduit.py:2399: Attach caller-provided gate instances into controller lineage
+src/melder/aether/conduit/conduit.py:2427: Rebind this conduit lineage into the frame-owned CreationGateController.
+src/melder/aether/conduit/conduit.py:2430: Ensure every conduit in the lineage is registered in the same
+src/melder/aether/conduit/conduit.py:2435: - Requires a live ConduitWard lineage on this conduit.
+src/melder/aether/conduit/conduit.py:2439: - Uses the ConduitWard lineage map to find descendants.
+src/melder/aether/conduit/conduit.py:2467: # Propagate the lineage-root store down with the root id: self is in
+src/melder/aether/conduit/conduit.py:2468: # this lineage, so its meld already points at the lineage root's
+src/melder/aether/conduit/conduit.py:2471: # Propagate the one lineage cluster facade down (the conduit owns it,
+src/melder/aether/conduit/conduit.py:2502: lineage owns (a `unique` instance of a former root's spell, a
+src/melder/aether/conduit/conduit.py:2503: lineage instance): those are disposed by their own owner, on that
+src/melder/aether/conduit/conduit.py:2544: SpellSpaces on other threads, and lineage mutation/teardown during
+src/melder/aether/conduit/conduit.py:2641: tuple[Conduit, Conduit]: Former direct parent and lineage root.
+src/melder/aether/conduit/conduit.py:2644: RuntimeError: Non-dynamic, non-lesser, closed or invalid lineage.
+src/melder/aether/conduit/conduit.py:2679: root: Original lineage owner of the borrowed pool/cluster facade.
+src/melder/aether/conduit/conduit.py:2685: both lineage directions and gate membership, and keeps Creations and
+src/melder/aether/conduit/conduit.py:2815: conduit-local CreationGate created by the lineage CreationGateController.
+src/melder/aether/conduit/conduit.py:2858: - Lesser conduits are a LINEAGE attachment, not a peer link; this is why
+src/melder/aether/conduit/conduit.py:2892: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:2895: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:4335: Either way, `unique_per_conduit_lineage` instances stay where
+src/melder/aether/conduit/conduit.py:4824: Enable meld execution for this conduit lineage.
+src/melder/aether/conduit/conduit.py:4846: Disable meld execution for this conduit lineage.
+src/melder/aether/conduit/conduit.py:5228: binding owner, lineage the lineage root, and cluster its leader.
+src/melder/aether/conduit/conduit.py:5582: transaction admission; lineage attachment is not a peer link).
+src/melder/aether/conduit/conduit.py:5752: "conduit_lineage_gate_ops"
+src/melder/aether/conduit/conduit.py:6565: Uses the conduit lock to resolve lineage/root identity. The returned
+src/melder/aether/conduit/conduit.py:6575: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:6578: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:6581: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:6635: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:6638: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:6641: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit.py:7828: - Shared lineage hooks run before local conduit hooks.
+== src/melder/aether/conduit/conduit_cluster.py: 20
+src/melder/aether/conduit/conduit_cluster.py:91: in its lineage share that one facade. The meld front door resolves a
+src/melder/aether/conduit/conduit_cluster.py:99: lineage drain is required.
+src/melder/aether/conduit/conduit_cluster.py:102: every member root lineage to zero (so no meld is mid-create against the
+src/melder/aether/conduit/conduit_cluster.py:104: clears `master_conduit_id`, then the lineages reopen on every exit path
+src/melder/aether/conduit/conduit_cluster.py:114: unelect drains their lineages), NOT from a lock on the facade.
+src/melder/aether/conduit/conduit_cluster.py:313: first: `delete_cluster` unelects (which drains every member lineage)
+src/melder/aether/conduit/conduit_cluster.py:639: # walk and every member lineage is drained before the facades are unbound.
+src/melder/aether/conduit/conduit_cluster.py:780: Opens no transaction and drains no lineage. It is for teardown, when
+src/melder/aether/conduit/conduit_cluster.py:819: lineage resolves into the team store instead of hard-erroring.
+src/melder/aether/conduit/conduit_cluster.py:888: member root lineage has been drained to zero, so no meld is mid-create
+src/melder/aether/conduit/conduit_cluster.py:967: holds the leaver. No lineage drain is required: `unbind` only drops
+src/melder/aether/conduit/conduit_cluster.py:995: - Election is an inert -> active transition, so no member lineage drain
+src/melder/aether/conduit/conduit_cluster.py:1054: safe. The DevOps strategy owns the isolation and the lineage freeze;
+src/melder/aether/conduit/conduit_cluster.py:1062: `on_start`, drains every member root lineage to zero through the
+src/melder/aether/conduit/conduit_cluster.py:1063: DevOps-owned `ConduitLineageGateOps`, so no meld is mid-create
+src/melder/aether/conduit/conduit_cluster.py:1065: lineage on every exit path (fail-closed).
+src/melder/aether/conduit/conduit_cluster.py:1079: Exception: Any error raised by the lineage drain or
+src/melder/aether/conduit/conduit_cluster.py:1081: aborted and the lineages are reopened.
+src/melder/aether/conduit/conduit_cluster.py:1084: Every member root lineage is drained to zero before the in-window
+src/melder/aether/conduit/conduit_cluster.py:1108: "conduit_lineage_gate_ops"
+== src/melder/aether/conduit/conduit_pool.py: 1
+src/melder/aether/conduit/conduit_pool.py:116: creation, hook order, and lineage-link timing.
+== src/melder/aether/conduit/conduit_state/conduit_state.py: 4
+src/melder/aether/conduit/conduit_state/conduit_state.py:9: conduit is a normal/root-visible conduit, a lesser lineage child, or an
+src/melder/aether/conduit/conduit_state/conduit_state.py:15: - `lesser` means a lineage child conduit that inherits state from a
+src/melder/aether/conduit/conduit_state/conduit_state.py:18: not currently attached to an active parent lineage.
+src/melder/aether/conduit/conduit_state/conduit_state.py:42: detached from any active parent lineage so a reused shell cannot inherit
+== src/melder/aether/conduit/conduit_ward/conduit_ward.py: 15
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:67: - Lineage tree: parent pointer and the set of **lesser conduits** spawned
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:69: - Root pointer: the **normal conduit** at the top of this lineage tree.
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:78: - `_lesser_conduits`: child conduit_id -> Conduit (lineage only).
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:178: - Seeds contract indices, lineage pointers, and policy state for
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:185: - Does not create any peer contracts or lineage links by itself;
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:190: Owning conduit whose links, lineage, and policy this ward
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:227: # Lineage Links
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:255: Idempotently tear down this ward, its contracts, and lesser lineage.
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:259: - Permanently clean all lesser conduits and clear lineage references. Every child is
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:284: # Clear lineage/contract state
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:407: Detach this lesser lineage from its current parent without destroying the ward shell.
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:556: Return the root (normal) conduit for this lineage.
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:564: "Root conduit is not set for this lineage."
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:1241: This establishes the parent-child lineage relationship.
+src/melder/aether/conduit/conduit_ward/conduit_ward.py:1255: "Root conduit is not set for this lineage."
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py: 5
+src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:416: # Creations. unique_per_conduit_lineage instances are resolver-relative:
+src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:417: # one per lineage root, stored in the RESOLVING conduit's creations
+src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:423: # so they are skipped for lineage regardless of `move_creations`.
+src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:852: # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:921: "Failed to register lineage for transfer disable."
+== src/melder/aether/conduit/creations/cluster_creations.py: 1
+src/melder/aether/conduit/creations/cluster_creations.py:199: run the same get-or-create-once block the lineage route uses,
+== src/melder/aether/conduit/creations/creations.py: 6
+src/melder/aether/conduit/creations/creations.py:244: lineage, and spellspace scopes, so a lifetime is expressed by WHICH
+src/melder/aether/conduit/creations/creations.py:276: conduit-lineage lookup rules.
+src/melder/aether/conduit/creations/creations.py:318: # (`unique_per_conduit_lineage` lineage root, `unique_per_conduit_cluster`
+src/melder/aether/conduit/creations/creations.py:652: `unique_per_conduit_lineage` and `unique_per_conduit_cluster`.
+src/melder/aether/conduit/creations/creations.py:1383: `unique_per_conduit`, `unique_per_spell_space`, lineage and cluster
+src/melder/aether/conduit/creations/creations.py:1384: take `slot_guard(spell_id)` of this store (the lineage/cluster store
+== src/melder/aether/conduit/meld/conduit_meld.py: 18
+src/melder/aether/conduit/meld/conduit_meld.py:26: owner's `owner_creations` for `unique`, the lineage-root store
+src/melder/aether/conduit/meld/conduit_meld.py:27: (`_root_creations`) for `unique_per_conduit_lineage`, and the
+src/melder/aether/conduit/meld/conduit_meld.py:73: owner's store for `unique`, the lineage root's for
+src/melder/aether/conduit/meld/conduit_meld.py:74: `unique_per_conduit_lineage`, the cluster's team store for
+src/melder/aether/conduit/meld/conduit_meld.py:75: `unique_per_conduit_cluster` - so peers in a cluster or lineage
+src/melder/aether/conduit/meld/conduit_meld.py:217: - Unique uses the Spell owner, lineage uses this lineage's root,
+src/melder/aether/conduit/meld/conduit_meld.py:220: authority: to own the store for unique and lineage, and to be the
+src/melder/aether/conduit/meld/conduit_meld.py:263: "lineage root conduit"
+src/melder/aether/conduit/meld/conduit_meld.py:343: the Spell owner's `owner_creations` for `unique`, the lineage
+src/melder/aether/conduit/meld/conduit_meld.py:344: root for `unique_per_conduit_lineage`, the cluster's team store
+src/melder/aether/conduit/meld/conduit_meld.py:757: Spell owner's `owner_creations` for `unique`, the lineage root for
+src/melder/aether/conduit/meld/conduit_meld.py:758: `unique_per_conduit_lineage` and the cluster's team store for
+src/melder/aether/conduit/meld/conduit_meld.py:860: # cluster/lineage live in the meld-supplied store (cluster team store
+src/melder/aether/conduit/meld/conduit_meld.py:861: # / lineage root), mirroring the front-door store selection above.
+src/melder/aether/conduit/meld/conduit_meld.py:1002: `unique_per_conduit_lineage` the lineage-root store;
+src/melder/aether/conduit/meld/conduit_meld.py:1070: # cluster/lineage live in the meld-supplied store (cluster team store
+src/melder/aether/conduit/meld/conduit_meld.py:1071: # / lineage root); a cluster with no elected leader is simply not live.
+src/melder/aether/conduit/meld/conduit_meld.py:1078: "lineage_root"
+== src/melder/aether/conduit/meld/creation_context/creation_context.py: 2
+src/melder/aether/conduit/meld/creation_context/creation_context.py:246: `unique_per_conduit_lineage` routing reads the lineage-root store off
+src/melder/aether/conduit/meld/creation_context/creation_context.py:283: `unique_per_conduit_lineage` routing reads the lineage-root store off
+== src/melder/aether/conduit/meld/meld.py: 4
+src/melder/aether/conduit/meld/meld.py:166: and `unique_per_conduit_lineage` resolve against broader spell-owned or
+src/melder/aether/conduit/meld/meld.py:353: # the lineage-root store (defaults to the conduit store for a root
+src/melder/aether/conduit/meld/meld.py:1297: for its root conduit in lesser-lineage cases.
+src/melder/aether/conduit/meld/meld.py:1852: are refused; use their normal root for lineage-wide changes.
+== src/melder/aether/conduit/meld/spellspace_meld.py: 11
+src/melder/aether/conduit/meld/spellspace_meld.py:119: - Captures the owner conduit's lineage-root store so
+src/melder/aether/conduit/meld/spellspace_meld.py:120: `unique_per_conduit_lineage` melds resolved from inside the
+src/melder/aether/conduit/meld/spellspace_meld.py:121: spellspace land in the owner conduit's lineage root (a spellspace
+src/melder/aether/conduit/meld/spellspace_meld.py:122: is not a lineage root itself); the door is handed this store at
+src/melder/aether/conduit/meld/spellspace_meld.py:194: conduit, Spell owner, lineage root, or cluster team store.
+src/melder/aether/conduit/meld/spellspace_meld.py:804: # cluster/lineage live in the meld-supplied store (cluster team store
+src/melder/aether/conduit/meld/spellspace_meld.py:805: # / lineage root), mirroring the front-door store selection.
+src/melder/aether/conduit/meld/spellspace_meld.py:913: `unique_per_conduit_lineage` the owner conduit's lineage-root
+src/melder/aether/conduit/meld/spellspace_meld.py:1008: # cluster/lineage live in the meld-supplied store (cluster team store
+src/melder/aether/conduit/meld/spellspace_meld.py:1009: # / lineage root); a cluster with no elected leader is simply not live.
+src/melder/aether/conduit/meld/spellspace_meld.py:1016: "lineage_root"
+== src/melder/aether/conduit/spell_space/spell_space.py: 4
+src/melder/aether/conduit/spell_space/spell_space.py:190: # A spellspace is not a lineage root: a `unique_per_conduit_lineage`
+src/melder/aether/conduit/spell_space/spell_space.py:191: # spell resolved from within it stores in the owner conduit's lineage
+src/melder/aether/conduit/spell_space/spell_space.py:192: # root, so the spellspace meld is handed the owner conduit's lineage-root
+src/melder/aether/conduit/spell_space/spell_space.py:728: Spell owner, lineage-root or cluster team store can be selected.
+== src/melder/aether/spellbook/existence/existence.py: 5
+src/melder/aether/spellbook/existence/existence.py:39: `unique_per_conduit_lineage` spans the lineage tree;
+src/melder/aether/spellbook/existence/existence.py:59: unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage,
+src/melder/aether/spellbook/existence/existence.py:105: One instance per **conduit lineage tree**.
+src/melder/aether/spellbook/existence/existence.py:107: - A lineage is a parent-child hierarchy of conduits.
+src/melder/aether/spellbook/existence/existence.py:108: - All descendants of the same lineage share the spell instance.
+== src/melder/aether/spellbook/resolution_style_matrix.py: 2
+src/melder/aether/spellbook/resolution_style_matrix.py:118: "unique_per_conduit_lineage"
+src/melder/aether/spellbook/resolution_style_matrix.py:126: "unique_per_conduit_lineage"
+== src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py: 1
+src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:141: "lineage"
+== src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py: 3
+src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:27: - `root_lineage_id` is the root spell's optional SpellIndex id, for DevOps/change-
+src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:35: "_root_lineage_id"
+src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:57: root_lineage_id:
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py: 20
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:513: Slotted routes (`unique_per_conduit`, `spellspace`, `lineage`,
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:630: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:631: # unique_per_conduit_lineage: one instance per lineage, stored in the
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:632: # lineage-root creations read straight off the resolving meld.
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:822: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:823: # Lineage override lane: get-or-create on the lineage-root store read
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1101: # unique_per_conduit_lineage: one instance per lineage, stored in the lineage-root
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1102: # creations read off the resolving meld. Lineage is never fast-transient (only
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1106: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1112: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1118: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1125: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1132: # (`meld._cluster_creations.resolved_store()`). A distinct existence from lineage
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1171: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1173: # same shape as lineage because both read their store off the meld.
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1189: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1208: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1209: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1233: "lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1234: "lineage"
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py: 3
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:908: `unique_per_spell_space`, the lineage root's, the cluster's team
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1007: # attribute assigned once in `Meld.__init__`; lineage (repointed at link and
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:2012: Per-conduit, spellspace, cluster and lineage slots use the store's
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py: 4
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:157: # cluster/lineage are CALLER-routed (meld supplies the leader /
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:158: # lineage-root store as caller_creations), so they take the same
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:320: spellspace store; `unique_per_conduit_lineage` -> lineage-root store;
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:1137: (`unique_per_conduit`, spellspace, lineage, cluster) and transient
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py: 0
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py: 1
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py:88: "lineage"
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py: 1
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:208: "lineage"
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py: 2
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:93: `unique_per_conduit_lineage` -> `meld._root_creations`,
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:216: "unique_per_conduit_lineage"
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py: 4
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:91: `meld._spellspace_creations`, `unique_per_conduit_lineage` ->
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:245: "unique_per_conduit_lineage"
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:246: # Lineage stores the (overridden) instance in the resolving meld's
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:247: # lineage-root creations (`meld._root_creations`), never the binding
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py: 1
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py:31: "lineage"
+== src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py: 3
+src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:2676: # cluster/lineage no longer resolve into the binding owner's
+src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:2678: # leader / lineage-root store and hands it in as caller_creations
+src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:2691: # cluster/lineage lock on the meld-supplied store
+== src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py: 1
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:280: - Resolves lineage ids from SpellSystemStates.
+== src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py: 0
+== src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py: 1
+src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:289: "phase5_root_lineage_id"
+== src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py: 0
+== src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py: 1
+src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py:138: "lineage_id must not be None."
+== src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py: 4
+src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:21: * lineage_id – the ULID of its SpellIndex (SpellIndex.id).
+src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:31: "_lineage_id"
+src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:56: - `spell_id` and `lineage_id` are required.
+src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:65: "lineage_id must not be None."
+== src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py: 0
+== src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py: 1
+src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py:108: "lineage_id"
+== src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py: 1
+src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py:105: "known_lineage_ids"
+== src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py: 6
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:37: the SpellIndex ids (`lineage_id`) tracked on the corresponding `SpellSystemIndex` nodes.
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:40: - Emits `root_lineage_mismatch` when a root SpellIndex id disagrees with
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:65: - Emits root_lineage_mismatch when the SpellIndex ids differ.
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:100: "root_lineage_mismatch"
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:109: "root_lineage_id"
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:110: "index_lineage_id"
+== src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py: 2
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py:103: "lineage_version_conflict"
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py:112: "lineage_id"
+== src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py: 3
+src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:66: - Uses `lineage_id` as the grouping key and compares only concrete
+src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:110: "lineage_conduit_conflict"
+src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:118: "lineage_id"
+== src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py: 2
+src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py:100: "root_lineage_conflict"
+src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py:108: "lineage_id"
+== src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py: 1
+src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:115: # on a narrower scope (unique/lineage/conduit/cluster on
+== src/melder/aether/spellbook/spellbinder.py: 1
+src/melder/aether/spellbook/spellbinder.py:501: Configures the spell as **Scoped to Lineage** (Hierarchical).
+== src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py: 1
+src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py:131: "lineage_ancestors"
+== src/melder/crystallizer/crystallizer.py: 2
+src/melder/crystallizer/crystallizer.py:2378: - Callers must quiesce lesser/SpellSpace acquisition, return and lineage
+src/melder/crystallizer/crystallizer.py:3034: Callers must quiesce lesser/SpellSpace acquisition, return and lineage
+== src/melder/crystallizer/crystals/conduit_crystal.py: 2
+src/melder/crystallizer/crystals/conduit_crystal.py:21: records. configuration_payload carries the role and lineage; it contains
+src/melder/crystallizer/crystals/conduit_crystal.py:122: carry lineage_ancestors from root to immediate parent, with each
+== src/melder/crystallizer/persistence/persistence_crystal.py: 1
+src/melder/crystallizer/persistence/persistence_crystal.py:150: # Payloads contain nested configuration and lineage values. Owning these
+== src/melder/crystallizer/persistence/persistence_profile.py: 1
+src/melder/crystallizer/persistence/persistence_profile.py:1458: "lineage_ancestors"
+== src/melder/nexus/acl/frame_acl_configuration_chain.py: 2
+src/melder/nexus/acl/frame_acl_configuration_chain.py:30: - The chain owns one family/name lineage, not the whole frame ACL
+src/melder/nexus/acl/frame_acl_configuration_chain.py:49: The revision-lineage owner of the ACL subsystem. The `FrameACLContainer`
+== src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py: 8
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:20: - Carries enough lineage metadata to distinguish root/normal conduits
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:66: "lineage_depth"
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:95: lineage_depth:
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:96: Zero-based lineage depth where root/normal conduits publish as
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:107: - Preserves parent/depth lineage hints so consumers can navigate
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:108: lesser topology without rebuilding lineage state from runtime
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:112: If `payload_version` is empty or `lineage_depth` is negative.
+src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:121: "lineage_depth cannot be negative."
+== src/melder/nexus/frame_descriptor/conduit_record.py: 5
+src/melder/nexus/frame_descriptor/conduit_record.py:22: lineage metadata. Named soft return retains an unnamed pooled record;
+src/melder/nexus/frame_descriptor/conduit_record.py:41: it does not make an idle shell available through live lineage lookup.
+src/melder/nexus/frame_descriptor/conduit_record.py:87: Root lineage id for the conduit.
+src/melder/nexus/frame_descriptor/conduit_record.py:99: - Preserves both the conduit id and its root lineage id so Nexus
+src/melder/nexus/frame_descriptor/conduit_record.py:100: can reason about directly published conduits and their lineage
+== src/melder/nexus/frame_descriptor_manager.py: 3
+src/melder/nexus/frame_descriptor_manager.py:457: Compute zero-based lineage depth for one conduit.
+src/melder/nexus/frame_descriptor_manager.py:465: int: Zero-based lineage depth from the published conduit to the
+src/melder/nexus/frame_descriptor_manager.py:466: lineage root.
+== src/melder/nexus/rift/command_system/capability_command_system.py: 1
+src/melder/nexus/rift/command_system/capability_command_system.py:699: Parent conduit id that owns the lesser lineage.
+== src/melder/nexus/rift/command_system/command_system.py: 1
+src/melder/nexus/rift/command_system/command_system.py:209: frame's live roots and their attached lesser lineage, named or
+== src/melder/nexus/rift/frame_viewer/frame_viewer.py: 4
+src/melder/nexus/rift/frame_viewer/frame_viewer.py:1821: Surface the conduit record identities and lineage grouping owned by
+src/melder/nexus/rift/frame_viewer/frame_viewer.py:3637: binding name, spell name, lineage, or spellframe.
+src/melder/nexus/rift/frame_viewer/frame_viewer.py:4585: List[FrameLink]: Visible conduits whose root lineage matches.
+src/melder/nexus/rift/frame_viewer/frame_viewer.py:6486: conduit, root conduit, peer conduits, spellbook, lineage, and
+== src/melder/nexus/rift/frame_viewer/static_frame_viewer.py: 1
+src/melder/nexus/rift/frame_viewer/static_frame_viewer.py:319: frame's live roots and their attached lesser lineage, named or
+== src/melder/nexus/rift/frame_viewer/view_conduit.py: 1
+src/melder/nexus/rift/frame_viewer/view_conduit.py:1021: List[FrameLink]: Visible conduits whose root lineage matches.
+== src/melder/nexus/rift/frame_viewer/view_multiframe.py: 1
+src/melder/nexus/rift/frame_viewer/view_multiframe.py:2699: Surface the conduit record identities and lineage grouping owned by
+== src/melder/nexus/rift/frame_viewer/view_spell.py: 3
+src/melder/nexus/rift/frame_viewer/view_spell.py:854: - Describes the spell's INDEX, i.e. its version lineage, so it answers
+src/melder/nexus/rift/frame_viewer/view_spell.py:1731: a whole version lineage, this returns EVERY visible spell sharing that
+src/melder/nexus/rift/frame_viewer/view_spell.py:1732: lineage, not one spell.
+== src/melder/utilities/custom_exceptions/spell_space_scope_error.py: 1
+src/melder/utilities/custom_exceptions/spell_space_scope_error.py:47: `unique_per_conduit_cluster`, `unique_per_conduit_lineage`) resolve
+== src/melder/utilities/custom_exceptions/spellbook_validation_error.py: 3
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py:120: "lineage_conduit_conflict"
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py:125: "root_lineage_conflict"
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py:126: "root_lineage_mismatch"
+== src/melder/utilities/helpers/id_builder.py: 13
+src/melder/utilities/helpers/id_builder.py:9: Build stable lineage-style identifiers for runtime-owned objects, so
+src/melder/utilities/helpers/id_builder.py:15: - Compose dotted lineage ids from an object chain.
+src/melder/utilities/helpers/id_builder.py:58: conduits, wards, and the lineage strings the control plane keys its
+src/melder/utilities/helpers/id_builder.py:66: access: public. Static namespace for building dotted lineage ids. create_id() mints a
+src/melder/utilities/helpers/id_builder.py:75: Return a new ULID string suitable for one runtime lineage segment.
+src/melder/utilities/helpers/id_builder.py:93: Compose a lineage ID from one or two objects.
+src/melder/utilities/helpers/id_builder.py:102: str: A dot-joined lineage string without trailing dots.
+src/melder/utilities/helpers/id_builder.py:133: Build the lineage ID for a conduit owned by a spellbook.
+src/melder/utilities/helpers/id_builder.py:144: str: A dotted conduit lineage id built from the supplied parts.
+src/melder/utilities/helpers/id_builder.py:148: Lineage segments joined into a dotted conduit id.
+src/melder/utilities/helpers/id_builder.py:155: Build the lineage ID for a ward owned by a conduit.
+src/melder/utilities/helpers/id_builder.py:166: str: A dotted ward lineage id built from the supplied parts.
+src/melder/utilities/helpers/id_builder.py:170: Lineage segments joined into a dotted ward id.
+== src/melder/utilities/helpers/ulid_factory.py: 1
+src/melder/utilities/helpers/ulid_factory.py:117: id VALUE, `IDBuilder` owns how values are joined into lineage strings.
+== src/melder/utilities/synchronization/creation_gate.py: 1
+src/melder/utilities/synchronization/creation_gate.py:112: the collection of these for a lineage and drives bulk enable/disable and
+== src/melder/utilities/synchronization/creation_gate_controller.py: 42
+src/melder/utilities/synchronization/creation_gate_controller.py:33: - Resolve a conduit to its root so lineage-wide operations can fan out.
+src/melder/utilities/synchronization/creation_gate_controller.py:34: - Aggregate active-ticket counts across a conduit, a lineage, or all.
+src/melder/utilities/synchronization/creation_gate_controller.py:35: - Drive bulk enable/disable and close-and-drain over whole lineages.
+src/melder/utilities/synchronization/creation_gate_controller.py:43: shape is what makes "drain this whole lineage" a single fan-out rather
+src/melder/utilities/synchronization/creation_gate_controller.py:45: a conduit id find its lineage without walking every root.
+src/melder/utilities/synchronization/creation_gate_controller.py:60: so a drain issued against a lineage that has already torn itself down
+src/melder/utilities/synchronization/creation_gate_controller.py:79: - Drains delegate to the gates, so a lineage drain inherits
+src/melder/utilities/synchronization/creation_gate_controller.py:94: this answers the same question for a whole lineage at once. Compare
+src/melder/utilities/synchronization/creation_gate_controller.py:100: the frame can freeze an entire conduit lineage - drain in-flight melds,
+src/melder/utilities/synchronization/creation_gate_controller.py:110: (indexed root->conduit, with a reverse lookup so a whole lineage can be drained in one
+src/melder/utilities/synchronization/creation_gate_controller.py:111: fan-out) and spell-index gates. Use it to freeze a lineage, drain in-flight melds, land
+src/melder/utilities/synchronization/creation_gate_controller.py:130: conduit lineage entry control and spell-index creation control.
+src/melder/utilities/synchronization/creation_gate_controller.py:142: Hierarchical index for lineage operations:
+src/melder/utilities/synchronization/creation_gate_controller.py:340: Optional explicit lineage root id.
+src/melder/utilities/synchronization/creation_gate_controller.py:344: Normalized lineage root id.
+src/melder/utilities/synchronization/creation_gate_controller.py:363: conduit flat map and root-lineage map.
+src/melder/utilities/synchronization/creation_gate_controller.py:375: Optional lineage root key. When omitted, defaults to
+src/melder/utilities/synchronization/creation_gate_controller.py:376: conduit_id (single-node lineage).
+src/melder/utilities/synchronization/creation_gate_controller.py:431: Optional lineage root key. When omitted, defaults to
+src/melder/utilities/synchronization/creation_gate_controller.py:432: conduit_id (single-node lineage).
+src/melder/utilities/synchronization/creation_gate_controller.py:520: Return lineage root id for a conduit id, or None when missing.
+src/melder/utilities/synchronization/creation_gate_controller.py:528: Root lineage id when present; otherwise None.
+src/melder/utilities/synchronization/creation_gate_controller.py:541: Return a detached conduit->gate map for one root lineage.
+src/melder/utilities/synchronization/creation_gate_controller.py:544: Provide a snapshot view for lineage-scoped orchestration without
+src/melder/utilities/synchronization/creation_gate_controller.py:549: Root lineage key.
+src/melder/utilities/synchronization/creation_gate_controller.py:553: Detached snapshot map for the lineage. Empty if root missing.
+src/melder/utilities/synchronization/creation_gate_controller.py:611: Return active ticket count summed across one root lineage.
+src/melder/utilities/synchronization/creation_gate_controller.py:615: Root lineage key.
+src/melder/utilities/synchronization/creation_gate_controller.py:681: Terminally close and drain all conduit gates under one lineage root.
+src/melder/utilities/synchronization/creation_gate_controller.py:684: Seal entry across an entire conduit lineage and wait for all
+src/melder/utilities/synchronization/creation_gate_controller.py:685: in-flight lineage tickets to exit before returning.
+src/melder/utilities/synchronization/creation_gate_controller.py:688: - Uses a detached lineage snapshot from the root index.
+src/melder/utilities/synchronization/creation_gate_controller.py:690: - Calls close_and_wait_until_free(...) on each lineage gate.
+src/melder/utilities/synchronization/creation_gate_controller.py:695: Root lineage key used to select conduit gates.
+src/melder/utilities/synchronization/creation_gate_controller.py:706: If called after cleanup() or if any lineage gate drain
+src/melder/utilities/synchronization/creation_gate_controller.py:725: Temporarily freeze and drain all conduit gates under one lineage root.
+src/melder/utilities/synchronization/creation_gate_controller.py:729: exclusive runtime rights over one conduit lineage: new melds park
+src/melder/utilities/synchronization/creation_gate_controller.py:737: - Uses a detached lineage snapshot from the root index.
+src/melder/utilities/synchronization/creation_gate_controller.py:743: Root lineage key used to select conduit gates.
+src/melder/utilities/synchronization/creation_gate_controller.py:754: If called after cleanup() or if any lineage gate drain
+src/melder/utilities/synchronization/creation_gate_controller.py:1077: - Delegates to conduit and lineage enable-all operations.
+src/melder/utilities/synchronization/creation_gate_controller.py:1098: - Delegates to conduit and lineage disable-all operations.

@@ -1,0 +1,2351 @@
+FFFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.FFFFFFFFFFFFF                      [100%]
+=================================== FAILURES ===================================
+____________ test_root_lease_pops_the_pool_bound_as_a_plan_constant ____________
+
+    def test_root_lease_pops_the_pool_bound_as_a_plan_constant() -> None:
+        """An automatic owner's pool is bound at emission: the warm lease is `pp0()` and no store is read."""
+        world = _root_world()
+>       _, source, namespace = world.plan(("m", None))
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:294: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____________ test_dynamic_owner_reads_its_pool_on_every_creation ______________
+
+    def test_dynamic_owner_reads_its_pool_on_every_creation() -> None:
+        """In a dynamic environment a transfer can move the pool, so the plan reads it per creation."""
+        world = _root_world(dynamic=True)
+>       plan, source, namespace = world.plan(("m", None))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:304: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+______________ test_unowned_version_raises_the_missing_pool_error ______________
+
+    def test_unowned_version_raises_the_missing_pool_error() -> None:
+        """A version with no owner store has no pool: the named error, nothing built."""
+        world = _root_world(owned=False)
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_______ test_owner_store_without_the_pool_raises_the_missing_pool_error ________
+
+    def test_owner_store_without_the_pool_raises_the_missing_pool_error() -> None:
+        """An owner store holding no pool under the id reads per creation and raises the named error."""
+        world = _root_world(pooled=False)
+>       plan, source, _ = world.plan(("m", None))
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:324: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+______________ test_managed_plan_binds_the_three_runtime_helpers _______________
+
+    def test_managed_plan_binds_the_three_runtime_helpers() -> None:
+        """A plan with a leasing site binds the return helpers and the missing-pool error."""
+        world = _root_world()
+>       _, _, namespace = world.plan(("m", None))
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:345: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____________ test_lease_is_taken_right_before_its_consumer_is_built ____________
+
+    def test_lease_is_taken_right_before_its_consumer_is_built() -> None:
+        """R(m: M, b: B): B is built first, then M is leased, then R - nothing runs between lease and use."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("b")
+        world.spell("r")
+        world.step(("m", 1))
+        world.step(("b", 2))
+        world.step(("r", None), ("m", (("m", 1),)), ("b", (("b", 2),)))
+>       _, source, _ = world.plan(("r", None))
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:360: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_leasing_site_with_two_consumers_is_refused_at_emission __________
+
+    def test_leasing_site_with_two_consumers_is_refused_at_emission() -> None:
+        """A managed site is per path; one key feeding two consumers is an emission error."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("a")
+        world.spell("r")
+        world.step(("m", 1))
+        world.step(("a", 2), ("m", (("m", 1),)))
+        world.step(("r", None), ("m", (("m", 1),)), ("a", (("a", 2),)))
+>       with pytest.raises(RuntimeError, match="consumers"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'consumers'
+E         Actual message: 'Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>'
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:373: AssertionError
+____________ test_override_plan_passes_ov_through_the_managed_miss _____________
+
+    def test_override_plan_passes_ov_through_the_managed_miss() -> None:
+        """An override plan's managed miss takes `ov` like every miss."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("m", 1))
+        world.step(("r", None), ("m", (("m", 1),)), plain=("limit",))
+>       plan, source, _ = world.plan(("r", None), ("limit",))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:384: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+________ test_root_lease_builds_into_a_reserved_place_on_an_empty_pool _________
+
+    def test_root_lease_builds_into_a_reserved_place_on_an_empty_pool() -> None:
+        """An empty pool misses: one place reserved, the object built and handed out."""
+        world = _root_world()
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:396: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____________ test_released_object_is_leased_again_without_a_build _____________
+
+    def test_released_object_is_leased_again_without_a_build() -> None:
+        """A put-back object is the next lease."""
+        world = _root_world()
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:404: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____________ test_limited_pool_at_its_limit_refuses_before_building ____________
+
+    def test_limited_pool_at_its_limit_refuses_before_building() -> None:
+        """limited_quantity at its limit raises the exhaustion error and builds nothing."""
+        world = _root_world(mode=ManagedSpellMode.limited_quantity, limit=1)
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_constant_pool_torn_down_with_its_root_fails_at_reserve __________
+
+    def test_constant_pool_torn_down_with_its_root_fails_at_reserve() -> None:
+        """A retired pool's drained deque misses and `reserve` raises the pool's own error."""
+        world = _root_world()
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:424: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_miss_returns_an_object_reserve_serves_without_building __________
+
+    def test_miss_returns_an_object_reserve_serves_without_building() -> None:
+        """When `reserve` serves an idle object the miss returns it unbuilt."""
+        world = _root_world(mode=ManagedSpellMode.limited_quantity, limit=1)
+>       plan, _, namespace = world.plan(("m", None))
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:434: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+______________ test_queue_lease_waits_and_is_served_by_a_release _______________
+
+    def test_queue_lease_waits_and_is_served_by_a_release() -> None:
+        """A queue lease at its limit waits; the release serves it the same object, no build."""
+        world = _root_world(mode=ManagedSpellMode.queue, limit=1, timeout=10.0)
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:445: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________________ test_many_consumer_receives_a_leased_object __________________
+
+    def test_many_consumer_receives_a_leased_object() -> None:
+        """R(m: M): R is built with the pool's object; a released object is injected again."""
+        world = _consumer_world()
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:461: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________________ test_each_injection_path_takes_its_own_lease _________________
+
+    def test_each_injection_path_takes_its_own_lease() -> None:
+        """Two parameters fed by one managed spell get two objects (one site per path)."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("m", 1))
+        world.step(("m", 2))
+        world.step(("r", None), ("first", (("m", 1),)), ("second", (("m", 2),)))
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:476: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____________ test_raising_consumer_returns_its_lease_to_the_pool ______________
+
+    def test_raising_consumer_returns_its_lease_to_the_pool() -> None:
+        """A holder whose constructor raises gives its lease back; the object stays alive and idle."""
+        world = _consumer_world()
+        world.raising["r"] = ValueError("holder failed")
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:486: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_failed_sibling_build_returns_the_lease_taken_before_it __________
+
+    def test_failed_sibling_build_returns_the_lease_taken_before_it() -> None:
+        """R(a: M1, b: M2): M2's build raises, M1's lease goes back, M2's place is freed."""
+        world = _two_lease_world()
+        world.raising["m2"] = ValueError("second failed")
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:496: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+___________ test_exhausted_sibling_returns_the_lease_taken_before_it ___________
+
+    def test_exhausted_sibling_returns_the_lease_taken_before_it() -> None:
+        """R(a: M1, b: M2): M2 refuses at its limit, M1's lease goes back."""
+        world = _two_lease_world(mode=ManagedSpellMode.limited_quantity, limit=1)
+        world.pool("m2").reserve()
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:507: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____________ test_failed_return_is_a_note_on_the_propagating_error _____________
+
+    def test_failed_return_is_a_note_on_the_propagating_error() -> None:
+        """A put-back that fails while the holder's error propagates becomes a note on that error."""
+        world = _consumer_world()
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:516: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____________ test_shared_consumer_is_built_with_a_lease_and_stored _____________
+
+    def test_shared_consumer_is_built_with_a_lease_and_stored() -> None:
+        """U(m: M) per conduit: U is built with M's object and published."""
+        world = _consumer_world(Existence.unique_per_conduit)
+>       plan, source, _ = world.plan(("r", None))
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:528: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+________________ test_stored_shared_consumer_takes_no_new_lease ________________
+
+    def test_stored_shared_consumer_takes_no_new_lease() -> None:
+        """A stored holder is reused without touching the pool."""
+        world = _consumer_world(Existence.unique_per_conduit)
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:538: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_shared_consumer_losing_its_cold_race_returns_its_lease __________
+
+    def test_shared_consumer_losing_its_cold_race_returns_its_lease() -> None:
+        """Another meld publishes U first: the plan returns that U and puts its unused lease back."""
+        world = _consumer_world(Existence.unique_per_conduit)
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:547: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+________________ test_lost_race_return_failures_raise_one_group ________________
+
+    def test_lost_race_return_failures_raise_one_group() -> None:
+        """After a lost race every unused lease is tried, then the failures are raised as one group."""
+        world = _consumer_world(Existence.unique_per_conduit)
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:557: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____________ test_pinned_shared_consumer_refusal_returns_its_lease _____________
+
+    def test_pinned_shared_consumer_refusal_returns_its_lease() -> None:
+        """A pinned holder found stored at its recheck refuses (P2) and its lease goes back."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r", Existence.unique_per_conduit)
+        world.step(("m", 1))
+        world.step(("r", None), ("m", (("m", 1),)), plain=("limit",))
+>       plan, _, _ = world.plan(("r", None), ("limit",))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____________ test_door_held_root_leases_inside_its_unguarded_miss _____________
+
+    def test_door_held_root_leases_inside_its_unguarded_miss() -> None:
+        """A door-held per-conduit root takes no guard of its own; its lease group is unchanged."""
+        world = _consumer_world(Existence.unique_per_conduit)
+>       plan, source, _ = world.plan(("r", None), door_route_key="unique_per_conduit")
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:588: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____________ test_unique_holder_leases_inside_its_spell_lock_guard _____________
+
+    def test_unique_holder_leases_inside_its_spell_lock_guard() -> None:
+        """R(u: U(m: M)), U `unique` with the lock hint: U leases once and is reused."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("u", Existence.unique)
+        world.spell("r")
+        world.step(("m", 1))
+        world.step(("u", None), ("m", (("m", 1),)), lock_hint=True)
+        world.step(("r", None), ("u", (("u", None),)))
+>       plan, source, _ = world.plan(("r", None))
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:603: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1443: in _emit_shared_hit
+    self._emit_miss(index, step, sid_name)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1476: in _emit_miss
+    self._emit_context(index, "    ", children)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_managed_holder_leases_its_managed_dependency_on_a_miss __________
+
+    def test_managed_holder_leases_its_managed_dependency_on_a_miss() -> None:
+        """M1(m2: M2): a missed M1 leases M2 inside its own miss."""
+        world = _chain_world()
+>       plan, _, _ = world.plan(("m1", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:613: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_raising_managed_holder_returns_its_lease_and_its_place __________
+
+    def test_raising_managed_holder_returns_its_lease_and_its_place() -> None:
+        """M1's constructor raises: M2's object goes back, M1's place is freed."""
+        world = _chain_world()
+        world.raising["m1"] = ValueError("holder failed")
+>       plan, _, _ = world.plan(("m1", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:622: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+__ test_pooled_managed_holder_is_leased_without_leasing_its_dependency_again ___
+
+    def test_pooled_managed_holder_is_leased_without_leasing_its_dependency_again() -> None:
+        """A released M1 keeps its M2: the next lease touches only M1's pool."""
+        world = _chain_world()
+>       plan, _, _ = world.plan(("m1", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:631: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____ test_managed_miss_records_disposal_bearing_children_with_the_object ______
+
+    def test_managed_miss_records_disposal_bearing_children_with_the_object() -> None:
+        """M(x: X): X is recorded with M's object (never registered in a store) and disposed with it."""
+        world = _children_world()
+>       plan, source, _ = world.plan(("m", None))
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:644: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____ test_raising_managed_constructor_disposes_the_children_built_for_it ______
+
+    def test_raising_managed_constructor_disposes_the_children_built_for_it() -> None:
+        """M's constructor raises: the place is freed and X is disposed."""
+        world = _children_world()
+        world.raising["m"] = ValueError("object failed")
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:659: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_______________ test_raising_child_gives_the_reserved_place_back _______________
+
+    def test_raising_child_gives_the_reserved_place_back() -> None:
+        """X raises: M is never built and its place is freed."""
+        world = _children_world()
+        world.raising["x"] = ValueError("child failed")
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:669: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+________ test_child_disposal_failure_becomes_a_note_on_the_build_error _________
+
+    def test_child_disposal_failure_becomes_a_note_on_the_build_error() -> None:
+        """A child that fails to dispose during the abandon adds a note to the build's error."""
+        world = _children_world()
+        world.failing_close.add("x")
+        world.raising["m"] = ValueError("object failed")
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:680: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+___________ test_children_without_disposal_methods_are_not_recorded ____________
+
+    def test_children_without_disposal_methods_are_not_recorded() -> None:
+        """A child without disposal methods needs no record: no kids list, an empty abandon."""
+        world = _children_world(disposal=())
+>       plan, source, _ = world.plan(("m", None))
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:690: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_______ test_shared_child_of_a_managed_object_publishes_to_its_own_store _______
+
+    def test_shared_child_of_a_managed_object_publishes_to_its_own_store() -> None:
+        """M(u: U) per conduit: U is published to its store, not recorded with M."""
+        world = World()
+        world.spell("u", Existence.unique_per_conduit)
+        world.spell("m", Existence.managed_spell_quantity)
+        world.step(("u", None))
+        world.step(("m", None), ("u", (("u", None),)))
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:703: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_ test_keys_on_the_managed_sites_own_parameters_build_a_fresh_unpooled_object __
+
+    def test_keys_on_the_managed_sites_own_parameters_build_a_fresh_unpooled_object() -> None:
+        """A winning key on M's own parameter builds M fresh each meld; it is never pooled or counted."""
+        world = World()
+        world.spell("x")
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("x", 2))
+        world.step(("m", 1), ("x", (("x", 2),)))
+        world.step(("r", None), ("m", (("m", 1),)))
+>       plan, _, namespace = world.plan(("r", None), ("m>x",))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:730: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+____ test_fresh_managed_root_built_from_a_positional_payload_is_not_pooled _____
+
+    def test_fresh_managed_root_built_from_a_positional_payload_is_not_pooled() -> None:
+        """`__args__` supplies the managed root's parameter: built fresh, never pooled."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.step(("m", None), plain=("size",))
+>       plan, _, _ = world.plan(("m", None), ("__args__",), arity=1)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:742: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_______ test_deeper_key_under_a_leasing_site_applies_only_when_it_misses _______
+
+    def test_deeper_key_under_a_leasing_site_applies_only_when_it_misses() -> None:
+        """R(m: M(y: Y(x))) with `m>y>x`: a pooled M is reused whatever x is supplied."""
+        world = World()
+        world.spell("y")
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("y", 2), plain=("x",))
+        world.step(("m", 1), ("y", (("y", 2),)))
+        world.step(("r", None), ("m", (("m", 1),)))
+>       plan, _, _ = world.plan(("r", None), ("m>y>x",))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:756: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____ test_unresolved_input_of_a_leasing_site_raises_before_taking_a_place _____
+
+    def test_unresolved_input_of_a_leasing_site_raises_before_taking_a_place() -> None:
+        """M(work) unsupplied: the miss raises before `reserve`."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.step(("m", None), unresolved=("work",))
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:768: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_______ test_supplying_a_leasing_sites_unresolved_input_builds_it_fresh ________
+
+    def test_supplying_a_leasing_sites_unresolved_input_builds_it_fresh() -> None:
+        """A key on M's unresolved input is a key on its own parameter: M is built fresh with it."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("m", 1), unresolved=("work",))
+        world.step(("r", None), ("m", (("m", 1),)))
+>       plan, _, _ = world.plan(("r", None), ("m>work",))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:781: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+__ test_unresolved_input_of_a_child_raises_in_the_managed_miss_before_reserve __
+
+    def test_unresolved_input_of_a_child_raises_in_the_managed_miss_before_reserve() -> None:
+        """M(x: X(work)): the miss raises for X before reserving or building anything."""
+        world = World()
+        world.spell("x")
+        world.spell("m", Existence.managed_spell_quantity)
+        world.step(("x", 1), unresolved=("work",))
+        world.step(("m", None), ("x", (("x", 1),)))
+>       plan, _, _ = world.plan(("m", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:793: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[1]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_____________ test_collection_parameter_leases_each_managed_member _____________
+
+    def test_collection_parameter_leases_each_managed_member() -> None:
+        """R(items: [M, M]): two leases, one list."""
+        world = World()
+        world.spell("m", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("m", 1))
+        world.step(("m", 2))
+        world.step(("r", None), ("items", (("m", 1), ("m", 2))), collections=("items",))
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:807: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+______ test_failed_collection_member_returns_the_members_leased_before_it ______
+
+    def test_failed_collection_member_returns_the_members_leased_before_it() -> None:
+        """R(items: [M1, M2]): M2's build raises and M1's lease goes back."""
+        world = World()
+        world.spell("m1", Existence.managed_spell_quantity)
+        world.spell("m2", Existence.managed_spell_quantity)
+        world.spell("r")
+        world.step(("m1", 1))
+        world.step(("m2", 2))
+        world.step(("r", None), ("items", (("m1", 1), ("m2", 2))), collections=("items",))
+        world.raising["m2"] = ValueError("member failed")
+>       plan, _, _ = world.plan(("r", None))
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:823: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:199: in plan
+    source, namespace, _ = SitePlanLowering.emit(
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:726: in emit
+    return emission.render()
+           ^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1143: in render
+    uses_many_store = self._emit_context(None, "    ", body)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1358: in _emit_context
+    self._emit_shared_hit(index, step, indent, lines)
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1435: in _emit_shared_hit
+    lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+existence = <Existence.managed_spell_quantity: 7>, spell_name = 'spells[0]'
+
+    @staticmethod
+    def _route(existence: Existence, spell_name: str) -> str:
+        """
+        Return the store expression for one shared existence (the manifest lowering's routing).
+    
+        Raises:
+            RuntimeError: For an existence without a store route.
+        """
+        if existence is Existence.unique_per_conduit:
+            return "meld._conduit_creations"
+        if existence is Existence.unique_per_spell_space:
+            return "meld._spellspace_creations"
+        if existence is Existence.unique_per_conduit_lineage:
+            return "meld._root_creations"
+        if existence is Existence.unique_per_conduit_cluster:
+            return "meld._cluster_creations.resolved_store()"
+        if existence is Existence.unique:
+            return f"{spell_name}._owner_creations"
+>       raise RuntimeError(f"Unsupported existence for a key-set plan step: {existence!r}")
+E       RuntimeError: Unsupported existence for a key-set plan step: <Existence.managed_spell_quantity: 7>
+
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1549: RuntimeError
+_________ test_return_leases_puts_back_taken_leases_and_skips_the_rest _________
+
+    def test_return_leases_puts_back_taken_leases_and_skips_the_rest() -> None:
+        """Taken leases go back; a lease never taken (None) is skipped; no note on success."""
+        first, second = FakePool("a"), FakePool("b")
+        error = ValueError("consumer failed")
+        obj = object()
+>       SitePlanRuntimeHelpers.return_leases(error, ((first, obj), (second, None)))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SitePlanRuntimeHelpers' has no attribute 'return_leases'
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:837: AttributeError
+___________ test_return_leases_records_each_failed_return_as_a_note ____________
+
+    def test_return_leases_records_each_failed_return_as_a_note() -> None:
+        """A failing put-back becomes one note naming the spell and the failure; the others still run."""
+        failing, healthy = FakePool("a", RuntimeError("torn down")), FakePool("b")
+        error = ValueError("consumer failed")
+        obj = object()
+>       SitePlanRuntimeHelpers.return_leases(error, ((failing, object()), (healthy, obj)))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SitePlanRuntimeHelpers' has no attribute 'return_leases'
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:847: AttributeError
+______ test_return_unused_leases_tries_every_return_then_raises_one_group ______
+
+    def test_return_unused_leases_tries_every_return_then_raises_one_group() -> None:
+        """After a lost race every lease is tried; the failures are raised together."""
+        failing, healthy = FakePool("a", RuntimeError("torn down")), FakePool("b")
+        obj = object()
+        with pytest.raises(ExceptionGroup) as caught:
+>           SitePlanRuntimeHelpers.return_unused_leases(((failing, object()), (healthy, obj)))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: type object 'SitePlanRuntimeHelpers' has no attribute 'return_unused_leases'
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:857: AttributeError
+__________ test_return_unused_leases_without_failures_returns_quietly __________
+
+    def test_return_unused_leases_without_failures_returns_quietly() -> None:
+        """Every lease goes back and nothing is raised."""
+        pool = FakePool("a")
+        objects = (object(), object())
+>       SitePlanRuntimeHelpers.return_unused_leases(((pool, objects[0]), (pool, objects[1])))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SitePlanRuntimeHelpers' has no attribute 'return_unused_leases'
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:870: AttributeError
+________ test_raise_missing_managed_pool_names_the_spell_and_the_remedy ________
+
+    def test_raise_missing_managed_pool_names_the_spell_and_the_remedy() -> None:
+        """The named error says what has no pool, why, and what to do."""
+        spell = SimpleNamespace(spell_id="sid", spell_name="Logger", spell_index=SimpleNamespace(selected_spell_id="sid"))
+        with pytest.raises(MeldExecutionError) as caught:
+>           SitePlanRuntimeHelpers.raise_missing_managed_pool(spell)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: type object 'SitePlanRuntimeHelpers' has no attribute 'raise_missing_managed_pool'
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py:878: AttributeError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_root_lease_pops_the_pool_bound_as_a_plan_constant
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_dynamic_owner_reads_its_pool_on_every_creation
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_unowned_version_raises_the_missing_pool_error
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_owner_store_without_the_pool_raises_the_missing_pool_error
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_managed_plan_binds_the_three_runtime_helpers
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_lease_is_taken_right_before_its_consumer_is_built
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_leasing_site_with_two_consumers_is_refused_at_emission
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_override_plan_passes_ov_through_the_managed_miss
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_root_lease_builds_into_a_reserved_place_on_an_empty_pool
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_released_object_is_leased_again_without_a_build
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_limited_pool_at_its_limit_refuses_before_building
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_constant_pool_torn_down_with_its_root_fails_at_reserve
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_miss_returns_an_object_reserve_serves_without_building
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_queue_lease_waits_and_is_served_by_a_release
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_many_consumer_receives_a_leased_object
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_each_injection_path_takes_its_own_lease
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_raising_consumer_returns_its_lease_to_the_pool
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_failed_sibling_build_returns_the_lease_taken_before_it
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_exhausted_sibling_returns_the_lease_taken_before_it
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_failed_return_is_a_note_on_the_propagating_error
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_shared_consumer_is_built_with_a_lease_and_stored
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_stored_shared_consumer_takes_no_new_lease
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_shared_consumer_losing_its_cold_race_returns_its_lease
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_lost_race_return_failures_raise_one_group
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_pinned_shared_consumer_refusal_returns_its_lease
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_door_held_root_leases_inside_its_unguarded_miss
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_unique_holder_leases_inside_its_spell_lock_guard
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_managed_holder_leases_its_managed_dependency_on_a_miss
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_raising_managed_holder_returns_its_lease_and_its_place
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_pooled_managed_holder_is_leased_without_leasing_its_dependency_again
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_managed_miss_records_disposal_bearing_children_with_the_object
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_raising_managed_constructor_disposes_the_children_built_for_it
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_raising_child_gives_the_reserved_place_back
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_child_disposal_failure_becomes_a_note_on_the_build_error
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_children_without_disposal_methods_are_not_recorded
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_shared_child_of_a_managed_object_publishes_to_its_own_store
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_keys_on_the_managed_sites_own_parameters_build_a_fresh_unpooled_object
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_fresh_managed_root_built_from_a_positional_payload_is_not_pooled
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_deeper_key_under_a_leasing_site_applies_only_when_it_misses
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_unresolved_input_of_a_leasing_site_raises_before_taking_a_place
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_supplying_a_leasing_sites_unresolved_input_builds_it_fresh
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_unresolved_input_of_a_child_raises_in_the_managed_miss_before_reserve
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_collection_parameter_leases_each_managed_member
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_failed_collection_member_returns_the_members_leased_before_it
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_return_leases_puts_back_taken_leases_and_skips_the_rest
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_return_leases_records_each_failed_return_as_a_note
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_return_unused_leases_tries_every_return_then_raises_one_group
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_return_unused_leases_without_failures_returns_quietly
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py::test_raise_missing_managed_pool_names_the_spell_and_the_remedy
+49 failed, 2 passed in 8.55s

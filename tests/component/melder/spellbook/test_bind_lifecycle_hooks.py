@@ -14,7 +14,6 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.scan import scan_bind
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
@@ -69,20 +68,20 @@ def test_registration_stages_receive_reference_and_same_completed_spell() -> Non
 
     def activation(spell: Spell) -> None:
         """Record the actual unpublished Spell and add application metadata."""
-        assert book.find_spell_by_id(spell.spell_id) is None
+        assert book.find_spell_by_spell_id(spell.spell_id) is None
         spell.metadata["activated"] = True
         events.append(("activation", spell))
 
     def post(spell: Spell) -> None:
         """Verify registration and activation effects before recording completion."""
-        assert book.find_spell_by_id(spell.spell_id) is spell
+        assert book.find_spell_by_spell_id(spell.spell_id) is spell
         assert spell.metadata["activated"] is True
         events.append(("post", spell))
 
     try:
         book.add_bind_hooks(pre=[pre], activation=[activation], post=[post])
         spell_id = book.bind(spell=HookService, existence="unique")
-        registered = book.find_spell_by_id(spell_id)
+        registered = book.find_spell_by_spell_id(spell_id)
         assert events == [("pre", HookService), ("activation", registered), ("post", registered)]
         assert registered.user_created_object is None
     finally:
@@ -108,17 +107,28 @@ def test_append_clear_and_register_again_preserves_order(stage: str) -> None:
         """Append the second callback's marker without changing the subject."""
         calls.append("second")
 
+    # One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so each registration binds a
+    # class of its own; the binding names stay as they were.
+    class FirstTarget:
+        """The first registration's target."""
+
+    class SecondTarget:
+        """The second registration's target, bound after the hooks were cleared."""
+
+    class ThirdTarget:
+        """The third registration's target, bound after a hook was registered again."""
+
     try:
         book.add_bind_hooks(**{stage: [first]})
         book.add_bind_hooks(**{stage: [second, first]})
-        book.bind(spell=HookService, existence="unique", binding_name="one")
+        book.bind(spell=FirstTarget, existence="unique", binding_name="one")
         assert calls == ["first", "second", "first"]
         book.clear_bind_hooks()
         book.clear_bind_hooks()
-        book.bind(spell=HookService, existence="unique", binding_name="two")
+        book.bind(spell=SecondTarget, existence="unique", binding_name="two")
         assert calls == ["first", "second", "first"]
         book.add_bind_hooks(**{stage: [second]})
-        book.bind(spell=HookService, existence="unique", binding_name="three")
+        book.bind(spell=ThirdTarget, existence="unique", binding_name="three")
         assert calls == ["first", "second", "first", "second"]
     finally:
         book.cleanup()
@@ -140,7 +150,7 @@ def test_bad_callback_rejects_the_whole_registration_update(stage: str) -> None:
         with pytest.raises(TypeError, match="callable"):
             book.add_bind_hooks(**additions)
         spell_id = book.bind(spell=HookService, existence="unique")
-        assert calls == [book.find_spell_by_id(spell_id)]
+        assert calls == [book.find_spell_by_spell_id(spell_id)]
     finally:
         book.cleanup()
 
@@ -180,11 +190,11 @@ def test_hook_failure_keeps_phase_cause_and_stops_later_callbacks(stage: str, ph
             if stage == "activation":
                 assert subjects[0].cleaned is True
             else:
-                assert book.find_spell_by_id(subjects[0].spell_id) is subjects[0]
+                assert book.find_spell_by_spell_id(subjects[0].spell_id) is subjects[0]
         book.clear_bind_hooks()
         if stage != "post":
             retry_id = book.bind(spell=HookService, existence="unique")
-            assert book.find_spell_by_id(retry_id).spell is HookService
+            assert book.find_spell_by_spell_id(retry_id).spell is HookService
     finally:
         book.cleanup()
 
@@ -209,7 +219,7 @@ def test_activation_failure_cleans_its_index_and_preserves_existing_binding() ->
         with pytest.raises(HookExecutionError):
             book.bind(spell=HookAlternative, existence="unique")
         assert all(item.cleaned for item in allocated)
-        assert book.find_spell_by_id(original_id).cleaned is False
+        assert book.find_spell_by_spell_id(original_id).cleaned is False
         book.clear_bind_hooks()
         root = book.conjure()
         try:
@@ -238,10 +248,10 @@ def test_callback_updates_do_not_change_the_remaining_stages_of_current_bind() -
     try:
         book.add_bind_hooks(pre=[update], activation=[old_calls.append], post=[old_calls.append])
         first_id = book.bind(spell=HookService, existence="unique")
-        first = book.find_spell_by_id(first_id)
+        first = book.find_spell_by_spell_id(first_id)
         assert old_calls == [first, first] and new_calls == []
         second_id = book.bind(spell=HookAlternative, existence="unique")
-        second = book.find_spell_by_id(second_id)
+        second = book.find_spell_by_spell_id(second_id)
         assert old_calls == [first, first] and new_calls == [second, second]
     finally:
         book.cleanup()
@@ -277,9 +287,9 @@ def test_registry_can_change_from_another_thread_during_activation() -> None:
             future = pool.submit(update)
             first_id = book.bind(spell=HookService, existence="unique")
             future.result(timeout=5)
-        assert old_post == [book.find_spell_by_id(first_id)] and new_post == []
+        assert old_post == [book.find_spell_by_spell_id(first_id)] and new_post == []
         second_id = book.bind(spell=HookAlternative, existence="unique")
-        assert new_post == [book.find_spell_by_id(second_id)]
+        assert new_post == [book.find_spell_by_spell_id(second_id)]
     finally:
         book.cleanup()
 
@@ -357,7 +367,7 @@ def test_registration_entry_points_dispatch_once(entry: str) -> None:
             spell_id = root.bind(spell=HookService, existence="unique")
         else:
             spell_id = book.bind(spell=HookService, existence="unique")
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert pre == [spell.spell]
         assert activation == [spell] and post == [spell]
     finally:
@@ -374,7 +384,7 @@ def test_inactive_post_observes_parked_member_on_final_index() -> None:
     """
     book = _make_spellbook(dynamic=True)
     anchor_id = book.bind(spell=HookService, existence="unique")
-    target_index = book.find_spell_by_id(anchor_id).spell_index
+    target_index = book.find_spell_by_spell_id(anchor_id).spell_index
     events: list[tuple[str, Spell]] = []
     fresh_indexes: list[SpellIndex] = []
 
@@ -433,7 +443,7 @@ def test_supported_reference_families_keep_their_native_contract(kind: str) -> N
     try:
         book.add_bind_hooks(pre=[pre.append], activation=[activated.append], post=[post.append])
         spell_id = book.bind(spell=target, existence="unique", resolvable=kind != "definition")
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert pre == [target] and pre[0] is target
         assert activated == [spell] and post == [spell]
         assert spell.spell is target
@@ -465,9 +475,7 @@ def test_bind_activation_preserves_native_hash_and_existing_creation_hook_preced
         registered.append(spell)
 
     try:
-        expected_id = Bind.spell_id_inspector(
-            HookService, spell_name="HookService", existence=Existence.unique,
-        )
+        expected_id = Bind.spell_id_inspector(HookService)
         book.add_bind_hooks(activation=[activation])
         spell_id = book.bind(
             spell=HookService, existence="unique", activation_hooks=[created.append],
@@ -565,7 +573,7 @@ def test_collision_skips_post_and_retires_the_unpublished_activated_spell(inacti
                 book.bind(spell=HookService, existence="unique")
         assert len(activated) == 2 and posts == [activated[0]]
         assert activated[1].cleaned
-        assert book.find_spell_by_id(spell_id) is activated[0]
+        assert book.find_spell_by_spell_id(spell_id) is activated[0]
     finally:
         book.cleanup()
 
@@ -580,7 +588,7 @@ def test_pre_return_value_does_not_replace_or_reject_the_target() -> None:
     try:
         book.add_bind_hooks(pre=[lambda _reference: False])
         spell_id = book.bind(spell=HookService, existence="unique")
-        assert book.find_spell_by_id(spell_id).spell is HookService
+        assert book.find_spell_by_spell_id(spell_id).spell is HookService
     finally:
         book.cleanup()
 
@@ -615,7 +623,7 @@ def test_failed_existing_object_activation_does_not_dispose_the_supplied_instanc
         assert supplied.disposed is False
         book.clear_bind_hooks()
         spell_id = book.bind(spell=supplied, existence="unique")
-        assert book.find_spell_by_id(spell_id).user_created_object is supplied
+        assert book.find_spell_by_spell_id(spell_id).user_created_object is supplied
     finally:
         book.cleanup()
 
@@ -647,7 +655,7 @@ def test_conduit_bind_hook_facade_uses_the_owning_book_registry(entry: str) -> N
     """
     book = _make_spellbook(dynamic=True)
     anchor_id = book.bind(spell=HookService, existence="unique")
-    target_index = book.find_spell_by_id(anchor_id).spell_index
+    target_index = book.find_spell_by_spell_id(anchor_id).spell_index
     root = book.conjure(dynamic=True)
     references: list[object] = []
     activation: list[Spell] = []
@@ -669,7 +677,7 @@ def test_conduit_bind_hook_facade_uses_the_owning_book_registry(entry: str) -> N
         if entry == "inactive":
             assert post[0]._active is False and post[0].spell_index is target_index
         else:
-            assert book.find_spell_by_id(spell_id) is post[0]
+            assert book.find_spell_by_spell_id(spell_id) is post[0]
     finally:
         root.permanent_cleanup()
 

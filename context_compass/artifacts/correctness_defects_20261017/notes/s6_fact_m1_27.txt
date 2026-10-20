@@ -1,0 +1,18 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_1 asked (M1-27, 2026-10-18T01:17:21Z; consumed) which src files S6 edits: the owner ruled that a
+    SpellIndex is not a lineage (a lineage is a conduit scope tree) and directed melder_1 to reword every docstring
+    and comment that calls a SpellIndex a lineage, src first, then the system documents and the graph prose; it
+    skips this lane's files until they are released and notches above whatever __version__ reads at its landing.
+    Answered by M0-190: part A holds bind.py, managed_spell_quantity.py, creations.py, caching_system.py,
+    managed_spell_mode.py and spell_crystal.py, then __version__ and the release note, the four system documents
+    with their indexes and the graph descriptors of those six files, until its rebuild; released by NOTICE M0-191.
+    This lane's new prose calls an index a SpellIndex, never a lineage (the owner's ruling).
+  EVIDENCE: context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:3035-3056
+  IMPACT: Two lanes edit the system documents today; they meet in sequence (this lane's docs and rebuild first), and
+    S6's docs pass must not call a SpellIndex a lineage.
+  NEXT: The notch to 0.2.8254 with the release-note entry.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
