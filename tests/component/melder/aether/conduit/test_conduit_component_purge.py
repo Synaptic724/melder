@@ -578,7 +578,12 @@ class ObservedLock:
 
 
 @pytest.mark.parametrize("purge_all", [False, True])
-@pytest.mark.parametrize("existence", list(Existence))
+@pytest.mark.parametrize(
+    "existence",
+    # The six lifetimes that store objects. A managed spell keeps none in `_creations` and its purge takes no lock
+    # (2026-10-15); the next test covers it.
+    [existence for existence in Existence if existence is not Existence.managed_spell_quantity],
+)
 def test_native_purge_mirrors_creation_lock_family_and_order(
     existence: Existence,
     purge_all: bool,
@@ -620,6 +625,36 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
     finally:
         spell._lock, store._lock = original_spell_lock, original_store_lock
         store._slot_guards.pop(spell_id, None)
+        root.permanent_cleanup()
+
+
+@pytest.mark.parametrize("purge_all", [False, True])
+def test_native_purge_of_a_managed_spell_takes_no_lock_and_returns_zero(purge_all: bool) -> None:
+    """
+    Purpose: Pin the managed lifetime's purge (STORY-2026-10-15-managed_quantity_pool).
+    Contract: A managed spell's objects live in its pool, never in `_creations`, and purge is not part of the
+        managed design: the store answers 0 before taking the Spell lock, a slot guard or the store lock, and
+        its pool stays in place.
+    Args: purge_all: Select whole-target or single-object retirement.
+    Returns: None.
+    """
+    book = _make_spellbook(dynamic=True)
+    spell_id = book.bind(spell=PurgeResource, existence=Existence.managed_spell_quantity, permissions="create")
+    root = book.conjure(dynamic=True, name="lock-root")
+    spell = book._spells_by_id[spell_id]
+    store = root._creations
+    pool = store.get_managed_quantity(spell_id)
+    original_spell_lock, original_store_lock = spell._lock, store._lock
+    trace: list[str] = []
+    try:
+        spell._lock = ObservedLock("spell", trace)
+        store._lock = ObservedLock("store", trace)
+        assert store.purge(spell, purge_all=purge_all, creation=object()) == 0
+        assert trace == []
+        assert spell_id not in store._slot_guards
+        assert store.get_managed_quantity(spell_id) is pool
+    finally:
+        spell._lock, store._lock = original_spell_lock, original_store_lock
         root.permanent_cleanup()
 
 

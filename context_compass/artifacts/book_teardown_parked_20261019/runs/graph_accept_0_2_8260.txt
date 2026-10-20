@@ -1,0 +1,3 @@
+  ACCEPT melder.aether.spellbook.spellbook.Spellbook  (was SEMANTICS_STALE)
+
+  ACCEPTED into 1 descriptor(s). Reassemble to refresh the document.

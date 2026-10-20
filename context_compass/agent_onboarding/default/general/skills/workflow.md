@@ -43,7 +43,12 @@ Provide a consistent planning and tracking workflow that uses structured tickets
 4. Keep links consistent (epic <-> story <-> task IDs) when using multiple levels.
 5. Use the Ticket Microcycle continuously:
     - `Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`.
-6. For every meaningful finding, immediately append a ticket `## Notes` entry before any further investigation.
+6. Record each meaningful changed finding once at appropriate ticket depth before dependent work.
+   Keep concise claim, impact, material limits and next action inline with exact retrievable
+   supporting comment/doc links. Do not copy full linked reports or create substantive Notes for
+   unchanged checks/ACKs; preserve required in-body state/evidence and all existing history.
+   Multiple meaningful comments or authorized linked documents may hold attributed findings;
+   no forced body copy is required before ordinary continuation.
    - Use evidence ranges (`path:start_line-end_line`) rather than single-line anchors.
    - If the ticket sets `CONTEXT_MANAGEMENT_REQUIRED: true`, also update the
      linked context artifact when that finding changes required rereads or
@@ -57,9 +62,17 @@ Provide a consistent planning and tracking workflow that uses structured tickets
     - add/update `context_management/context_board.md` row(s) for each active
       context artifact.
 10. Before closing a ticket:
-    - Walk through what was delivered.
-    - Ask the user to confirm the acceptance criteria are met.
-11. After confirmation:
+    - The assigned agent owns current status, evidence, requested scoped review and final closure.
+    - Review is proportionate to actual consequence, uncertainty and the contract, not an automatic
+      full-code review. Self-checks are not independent review; high-consequence or uncertain changes
+      request scoped review of the actual revision and consequential question.
+    - Authorized agents close routine completed work after criteria, required tests and required
+      reviews are satisfied, without another owner ping. Reserved owner decisions still wait.
+      Missing authority or a required gate is a specific blocker.
+    - A qualified independent reviewer may accept and close under shared `ticketing.md`.
+      Apply its full-current-evidence and reserved-decision boundaries, not an extra author
+      handback solely for closure.
+11. After acceptance under delegated authority or explicit reserved-owner disposition:
     - Add a short completion summary with a UTC datetime.
     - Move the file to its matching completed folder (`tickets/epics/completed/`,
       `tickets/stories/completed/`, or `tickets/tasks/completed/`).
@@ -124,8 +137,8 @@ When unsure:
 ## Ticket Microcycle (Required)
 - Route from `attention_board.md` to one active ticket at a time.
 - Investigate until one meaningful finding is identified.
-- Immediately document that finding in the ticket `## Notes` section before
-  reading more.
+- Record the finding once in Notes, supported comments or authorized linked evidence before
+  work that depends on it. No forced body copy or approval from another body's writer is needed.
 - When `CONTEXT_MANAGEMENT_REQUIRED: true`, also update the linked context
   artifact before continuing if the finding changes the reusable reread pack or
   topic focus.
@@ -155,6 +168,8 @@ When unsure:
   - Default for both is `500`.
 
 ## Per-Ticket Noting Behavior
+- Parent owners reconcile child outcomes and remaining work with synthesis, not duplicate tactical
+  logs. Child completion does not accept the parent; assess its own criteria and authority.
 - Task notes: tactical findings, immediate impact, and one-step continuation.
 - Story notes: cross-task synthesis, dependency movement, and gate transitions.
 - Epic notes: program-level direction, cross-story tradeoffs, and tranche order.
@@ -236,6 +251,7 @@ Before moving a ticket to a completed folder:
 - [ ] `context_management/context_board.md` is synchronized when context
       management is active for the ticket.
 - [ ] Acceptance criteria are explicitly met (not "mostly done").
+- [ ] Required tests/reviews and delegated acceptance or reserved-owner disposition are recorded.
 - [ ] Any new/changed behavior has been documented in the relevant C4/C3 docs.
 - [ ] Unknowns introduced during work are either resolved (with evidence) or
       recorded as **UNKNOWN** with investigation pointers.
@@ -266,6 +282,8 @@ Even inside tickets:
 - Every active ticket must include a `## Notes` section.
 - Every active ticket must include a `Noting Behavior` section aligned to
   ticket type (task/story/epic).
+- Preserve historical Notes/comments and keep one current resume view under shared `ticketing.md`.
+  Ordinary comments do not trigger another full-policy reread; actual recovery/source changes do.
 - New notes entries should be append-only and include:
   - `DATETIME`
   - `TYPE`:

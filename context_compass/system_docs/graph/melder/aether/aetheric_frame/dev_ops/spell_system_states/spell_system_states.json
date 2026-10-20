@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "84e2c93040388a5937e6961abecb0d2a8f51045e1a8113b9664a8e8e284f5425",
+ "source_sha256": "f8d8a0cc53bffbbfe3368b6df4395494cef108ce4bec75c75a047b36e6f209fb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -41,12 +41,15 @@
     "get_local_topology",
     "get_local_topology_by_id",
     "get_or_create_conduit_resolution_state",
+    "index_has_flag",
     "iter_conduit_resolution_states",
     "iter_states",
     "mark_collection_dependents_dirty",
     "mark_conduit_dirty",
     "mark_contract_dependents_dirty",
+    "mark_dependents_for_revalidation",
     "mark_structural_change",
+    "non_resolvable_index_ids",
     "record_conduit_diagnostics",
     "register_index",
     "register_local_topology",
@@ -57,11 +60,11 @@
     "update_dependencies"
    ],
    "shape": {
-    "method_count": 37,
+    "method_count": 43,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "78ac33e556649e10a3dc090552177cb39e61e3084b75072bdbe2b82e2a830aff",
+   "span_sha256": "5b67d0a9a42d555cfd721a7b80cc5ff8a0b6f853b7388d52880d1333c743ac3b",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
@@ -71,7 +74,9 @@
     "indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges",
     "watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them",
     "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)",
-    "watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)"
+    "watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)",
+    "records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)",
+    "records the binding key of each lineage's selected version in register_index (binding_key=..., kept when None, dropped by unregister_index and cleanup) and marks everything downstream of given lineages for revalidation - a lineage reached by a registry edge, frame-wide, as gated, impacted_by_dependency and transitively dirty; a SpellContract consumer, in any Book, of a reached lineage's binding key as gated + contract_unvalidated - visiting each lineage once and never a seed (mark_dependents_for_revalidation); mark_contract_dependents_dirty walks on the same way from the consumers it marks (0.2.8250)"
    ],
    "owns_state": [
     "_states_by_index_id",
@@ -83,7 +88,9 @@
     "_collection_frames_by_index",
     "_collection_dependents_by_spellbook",
     "_contract_keys_by_index",
-    "_contract_dependents_by_spellbook"
+    "_contract_dependents_by_spellbook",
+    "_non_resolvable_index_ids",
+    "_binding_key_by_index"
    ],
    "phases": [
     "init",
@@ -91,7 +98,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "78ac33e556649e10a3dc090552177cb39e61e3084b75072bdbe2b82e2a830aff"
+   "semantics_authored_against": "9bd2f16fff1795f72b2725c1a65101bea262760a0ff098134b3fe43cc9b4e52b"
   }
  },
  "edges_out": [
@@ -112,6 +119,12 @@
   {
    "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
    "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "to_label": "TypeError",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -149,6 +162,7 @@
   "Set": "typing.Set",
   "Tuple": "typing.Tuple",
   "ClassVar": "typing.ClassVar",
+  "FrozenSet": "typing.FrozenSet",
   "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
   "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
   "SpellState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",

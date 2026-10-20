@@ -1,0 +1,4 @@
+before P4 dynamic D=0: late bind + first meld median 2361 us; warm meld of C0 after it median 0.66 us; flag=False; 4.0 refreshes per late class, mean 1.26 us, max 3.12 us
+before P4 dynamic D=1000: late bind + first meld median 6903 us; warm meld of C0 after it median 12.46 us; flag=True; 4.0 refreshes per late class, mean 1.81 us, max 11.94 us
+after P4 dynamic D=0: late bind + first meld median 1998 us; warm meld of C0 after it median 0.65 us; flag=False; 4.0 refreshes per late class, mean 2.48 us, max 23.71 us
+after P4 dynamic D=1000: late bind + first meld median 9154 us; warm meld of C0 after it median 0.70 us; flag=False; 4.0 refreshes per late class, mean 521.01 us, max 1594.01 us

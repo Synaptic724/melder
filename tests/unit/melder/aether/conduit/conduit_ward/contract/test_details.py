@@ -15,12 +15,16 @@ def mock_spell_index():
     Purpose:
         Provide a mock SpellIndex for Detail tests.
     Contract:
-        Returns a MagicMock with a prepopulated version map.
+        Returns a MagicMock with a prepopulated version map; its membership probe answers from
+        that map.
     Returns:
         MagicMock: SpellIndex mock instance.
     """
     mock = MagicMock(spec=SpellIndex)
     mock._spells_in_index = {"sha123": "version_data"}
+    # Detail.has_spell asks the index through its cleanup-safe probe (0.2.8230): answer the probe
+    # from whatever member map the test sets, read at call time.
+    mock._has_spell_unless_cleaned.side_effect = lambda spell_id: spell_id in mock._spells_in_index
     return mock
 
 @pytest.fixture
@@ -373,7 +377,7 @@ def test_has_spell_does_not_exist(sample_detail):
     Purpose:
         Verify has_spell returns False for missing versions.
     Contract:
-        has_spell returns False when the version id is absent.
+        has_spell returns False when the spell_id is absent.
     Args:
         sample_detail: Detail fixture under test.
     Returns:

@@ -1,0 +1,31 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: src_components carries the managed member (scripts/s7_docs_components.py; s7_docs_components_fix.py applied
+    before its first run, s7_docs_components_counts.py after it): a new C3 component "Managed Spell Pools
+    (ManagedSpellQuantity, ReleaseManagedSpell, ManagedSpellLease)" with the full entry contract, written after
+    re-reading on 0.2.8246 the five new modules whole, the bind normalizers, `Spell._add_owned_conduit`, the lease
+    emission and the Creations pool verbs; dated entries in Public API, Spellbook Core, Binding Pipeline, Aether,
+    Crystallizer, Conduit Runtime, Creations (with Owned State and the Existence list), Meld Resolution Runtime and
+    SpellCompiler; the owner stamps in the Ownership Transfer subcomponent and the transfer flow; a new Managed Lease
+    -> Release flow and a Managed Pools diagram; the code map adds the five modules and remeasures 26 extents (four
+    stale since earlier lanes); the inventory adds five entries by its own rule and its group counts follow (aether
+    285, utilities 46); the source list re-resolves (177 files); a handoff entry. The re-read corrected three draft
+    claims before the run: limited_quantity also serves an object released since the plan's pop; `describe(cls)`
+    rows are the pool snapshot plus `holding_conduit_id` and `active_version`; `count` never exceeds the limit,
+    while a released fresh override object is pooled uncounted. The index is regenerated (152 sections, 11472
+    lines). The citation recipe finds nothing in src_components or src_architecture and one stale graph section
+    (`spellframe_kind/__init__.py`, absent from disk), left for the graph pass.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:1-11472
+  - context_compass/system_docs/src_components_index.md:1-181
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_components.py:1-462
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_components_fix.py:1-94
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_components_counts.py:1-54
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:14-938
+  - src/melder/aether/conduit/creations/release_managed_spell.py:13-686
+  IMPACT: The component map describes 0.2.8246; the tests docs are next, then the graph.
+  NEXT: Promote the lane's 28 new and 9 changed test files into tests_components and tests_architecture.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

@@ -1,0 +1,4 @@
+mailbox_board.md: ready
+mailbox_board.md: applied (2026-10-18T18:04:38Z)
+attention_board.md: ready
+attention_board.md: applied (2026-10-18T18:04:38Z)

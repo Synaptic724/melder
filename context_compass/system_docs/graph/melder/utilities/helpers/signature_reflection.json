@@ -37,7 +37,7 @@
    "role": "Stateless reader/renderer for signatures and annotations that name types unbound at runtime.",
    "responsibilities": [
     "returns the default VALUE-format signature when it evaluates, otherwise a FORWARDREF signature whose owner-bearing ForwardRefs are replaced by source text",
-    "stabilizes an existing FORWARDREF signature for fingerprint text: no ForwardRef owner or memory address, unchanged when nothing is unresolved",
+    "stabilizes an existing FORWARDREF signature for display and descriptor text (the binding profiles' signature text): no ForwardRef owner or memory address, unchanged when nothing is unresolved",
     "reads class annotations in FORWARDREF, rendering unresolved names as their source text",
     "recognizes owner-bearing ForwardRefs inside nested typing constructs"
    ],

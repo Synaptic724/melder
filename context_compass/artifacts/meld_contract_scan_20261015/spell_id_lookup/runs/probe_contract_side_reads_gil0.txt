@@ -1,0 +1,45 @@
+A  index link (English active, French staged parked on the same index)
+  borrower holds active: {english_id: Spell(English)}   parked: {french_id: Spell(French)}
+  find_contracted_spell(english_id)                          -> Spell(English)
+  get_spell_in_contracts(english_id)                         -> [<peer conduit id>, Spell(English)]
+  find_contracted_spell(french_id)                           -> Spell(English)
+  get_spell_in_contracts(french_id)                          -> [<peer conduit id>, Spell(English)]
+  get_spells_in_contract_by_conduit(lender)['inbound']       -> [[french_id, Spell(English)], [english_id, Spell(English)]]
+  get_all_spells_in_contracts()                              -> [[[english_id, Spell(English)], [english_id, Spell(English)]]]
+  get_all_spells_in_contracts(validate=False)                -> [[[english_id, Spell(English)], [english_id, Spell(English)]]]
+  validate_contracts_and_define()                            -> [True]
+  validate_received_contracts()                              -> True
+B  version grant of English, then the lender notches to French
+  borrower holds active: {}   parked: {english_id: Spell(English)}
+  find_contracted_spell(english_id)                          -> None
+  get_spell_in_contracts(english_id)                         -> None
+  get_spells_in_contract_by_conduit(lender)['inbound']       -> []
+  get_all_spells_in_contracts()                              -> raises RuntimeError: One or more contracts are invalid. Please validate contracts before retrieving spells.
+  get_all_spells_in_contracts(validate=False)                -> []
+  validate_contracts_and_define()                            -> [False]
+  validate_received_contracts()                              -> False
+B' control: the lender notches back to English
+  borrower holds active: {english_id: Spell(English)}   parked: {}
+  validate_contracts_and_define()                            -> [True]
+C  version grant of English only; French stays parked on the lender, never granted
+  borrower holds active: {english_id: Spell(English)}   parked: {}
+  find_contracted_spell(english_id)                          -> Spell(English)
+  get_spell_in_contracts(english_id)                         -> [<peer conduit id>, Spell(English)]
+  find_contracted_spell(french_id)                           -> Spell(English)
+  get_spell_in_contracts(french_id)                          -> [<peer conduit id>, Spell(English)]
+  get_spells_in_contract_by_conduit(lender)['inbound']       -> [[english_id, Spell(English)]]
+  get_all_spells_in_contracts()                              -> [[[english_id, Spell(English)]]]
+  get_all_spells_in_contracts(validate=False)                -> [[[english_id, Spell(English)]]]
+  validate_contracts_and_define()                            -> [True]
+  validate_received_contracts()                              -> True
+D  English granted, notch to French, French granted
+  borrower holds active: {french_id: Spell(French)}   parked: {english_id: Spell(English)}
+  find_contracted_spell(english_id)                          -> Spell(French)
+  get_spell_in_contracts(english_id)                         -> [<peer conduit id>, Spell(French)]
+  find_contracted_spell(french_id)                           -> Spell(French)
+  get_spell_in_contracts(french_id)                          -> [<peer conduit id>, Spell(French)]
+  get_spells_in_contract_by_conduit(lender)['inbound']       -> [[english_id, Spell(French)], [french_id, Spell(French)]]
+  get_all_spells_in_contracts()                              -> [[[french_id, Spell(French)], [french_id, Spell(French)]]]
+  get_all_spells_in_contracts(validate=False)                -> [[[french_id, Spell(French)], [french_id, Spell(French)]]]
+  validate_contracts_and_define()                            -> [True]
+  validate_received_contracts()                              -> True

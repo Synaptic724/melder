@@ -9,8 +9,13 @@ processor looked it up. These tests force that interleaving instead of racing fo
 mutation runs to completion on its own thread just before one of the two Phase 9 processors
 that read the live pool, and the meld must end in the SpellbookValidationError a meld starting a
 moment later gets. After the contract is restored the consumer melds again.
+
+Since rule 2 (2026-10-16) a warm meld of a consumer whose contract is satisfied runs no resolution pass; only a
+consumer a provider change has marked does. Each test therefore marks the consumer the way a provider change marks it
+before the meld it forces into the race.
 """
 
+import inspect
 from threading import Thread
 from typing import Any, Callable, Iterator, Optional
 
@@ -108,6 +113,26 @@ class _ContractWorld:
                 permissions="create",
             )
         self.borrower.validate_contracts_and_define()
+
+    def mark_consumer_for_recheck(self) -> None:
+        """
+        Purpose:
+            Mark the consumer the way a change of its provider marks it, so its next meld runs a resolution pass.
+        Contract:
+            - Makes the registry call the borrower Book's contracted-map mutators make
+              (`SpellSystemStates.mark_contract_dependents_dirty`) for the consumer's contract key: the consumer
+              goes `gated` + `contract_unvalidated` and its Book's validation flag goes up.
+            - Changes no contract: the provider stays contracted, so the marked meld's own recheck passes and its
+              5-11 pass runs - the pass the race needs.
+        Returns:
+            None.
+        """
+        spellbook = self.borrower.spellbook
+        contract = inspect.signature(_RaceConsumer).parameters["service"].default
+        spellbook._spell_system_states.mark_contract_dependents_dirty(
+            spellbook_id=spellbook._id,
+            contract_keys={contract.canonical_key},
+        )
 
     def meld_consumer(self) -> Any:
         """
@@ -306,6 +331,8 @@ def test_meld_that_loses_its_contract_provider_mid_resolution_raises_validation_
     Contract:
         - Before 0.2.8227 both processors reported the miss as RuntimeError, which the target
           pass could not classify, so the meld raised PhaseExecutionError.
+        - The forced meld is marked first, as a provider change marks it: since rule 2 a warm meld
+          of a satisfied consumer runs no pass.
         - After the contract is restored, the next meld resolves the provider again.
     """
     world = _ContractWorld()
@@ -314,6 +341,7 @@ def test_meld_that_loses_its_contract_provider_mid_resolution_raises_validation_
 
         probe = _MutationProbe(world, mutation)
         monkeypatch.setattr(processor_cls, "process", probe.wrap(processor_cls.process))
+        world.mark_consumer_for_recheck()
         with pytest.raises(SpellbookValidationError):
             world.meld_consumer()
         monkeypatch.undo()

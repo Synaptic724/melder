@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python
+rootdir: /tmp/m0_mq/s6_tree
+configfile: pyproject.toml
+collecting ... collected 4 items
+
+tests/unit/github_workflows/test_workflow_contracts.py::test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging PASSED [ 25%]
+tests/unit/github_workflows/test_workflow_contracts.py::test_codecov_does_not_create_extra_required_coverage_statuses PASSED [ 50%]
+tests/unit/melder/build_assets/test_system_documents_builder.py::test_shipped_entries_carry_sections_and_a_digest PASSED [ 75%]
+tests/unit/melder/build_assets/test_system_documents_builder.py::test_unavailable_entry_matches_a_live_entry_key_for_key PASSED [100%]
+
+============================== 4 passed in 0.22s ===============================

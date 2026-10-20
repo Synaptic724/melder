@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/static_frame_viewer.py",
- "source_sha256": "2134b59cdb40064850204b874e9bc059b528d2382e1d83afed89c1546c64bc92",
+ "source_sha256": "dec73f9ca965776b6a71716f3bf9c7f61b484d5f8be84b3c43eff2312d8c0d3a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.static_frame_viewer": {
@@ -34,12 +34,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5cd11af5ffd18fb8fe4fb9d3479c0c1b2f37d8274bbcc05435d64c45f00aa43f",
+   "span_sha256": "81ea639cded15e6fb1972823df7f38742feb783b3ea6cf061a0d3dafa1af8b59",
    "role": "Static-room viewer specialization.",
    "responsibilities": [
     "filters spell-facing visibility down to already-live spells",
     "rebuilds filtered compiled access surfaces from the base view surface",
-    "resolves spell owners through Aether's live-conduit lookup, None on a miss"
+    "resolves spell owners through Aether's live-conduit lookup, None on a miss",
+    "reports a many, unique_per_spell_space or managed_spell_quantity spell as never live statically - a managed spell's objects are leased from a pool (0.2.8243)"
    ],
    "owns_state": [
     "_base_compiled_access_surfaces_by_frame_name",
@@ -50,7 +51,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5cd11af5ffd18fb8fe4fb9d3479c0c1b2f37d8274bbcc05435d64c45f00aa43f"
+   "semantics_authored_against": "81ea639cded15e6fb1972823df7f38742feb783b3ea6cf061a0d3dafa1af8b59"
   }
  },
  "edges_out": [

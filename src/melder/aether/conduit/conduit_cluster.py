@@ -14,6 +14,7 @@ from melder.crystallizer.crystals.cluster_crystal import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
@@ -36,7 +37,7 @@ class ConduitCluster(Cleanable):
     LAYER 1 - Spell sharing (the core; always on; needs NO leader)
     ==================================================================
     The cluster's primary job. Members automatically contract ("share") their
-    shareable root `SpellIndex` lineages to one another, so every member can
+    shareable root spell indexes to one another, so every member can
     resolve every other member's shared roots. This layer is fully functional
     with no elected leader; a cluster can exist and share spells forever without
     one.
@@ -48,6 +49,13 @@ class ConduitCluster(Cleanable):
         - `handle_leave(conduit)`: remove the conduit from `members`, tear down
           the shared roots in both directions, and drop its `shared_spells`
           entry.
+        - `release_member(conduit)`: the ordered exit every leave takes -
+          `handle_leave` first (it unelects first when the leaver leads), then
+          `remove_member` (the DevOps membership edge and the record). The
+          cloud's explicit leave and a root's teardown both run it (0.2.8236).
+        - `drop_member(conduit)`: the same exit without transactions, for a
+          root torn down while its frame is torn down (no transaction can
+          start then) or whose transactional exit failed in its teardown.
         - Each individual share/unshare is its own per-pair `cluster_link`
           change-control transaction (opened via `peer.transaction(...)` inside
           `share_to_borrower` / `remove_shared_from_borrower`).
@@ -64,12 +72,19 @@ class ConduitCluster(Cleanable):
     whole conduit entry/exit is planned.
 
     ==================================================================
-    LAYER 2 - Elected-leader team store (OPTIONAL; only for
-              `unique_per_conduit_cluster` spells)
+    LAYER 2 - The cluster's team store, served through an elected leader
+              (OPTIONAL; only for `unique_per_conduit_cluster` spells)
     ==================================================================
     A separate overlay. A `unique_per_conduit_cluster` spell must resolve into
-    ONE shared creation store across the whole cluster: the elected leader
-    conduit's `Creations`.
+    ONE shared creation store across the whole cluster: the cluster's own team
+    store (`_team_store`, a `Creations` the cluster owns; owner and scope id =
+    the cluster id). Since 0.2.8237 the store belongs to the cluster, not to the
+    elected leader conduit: a leader change, a leader's leave and a leader's
+    teardown keep its instances, the next election serves the same instances,
+    and the cluster's cleanup (deletion, frame teardown) disposes them, once.
+    Until 0.2.8236 the store was the elected leader conduit's own `Creations`,
+    so a leader change stranded the instance (disposed later with that conduit,
+    under the holders still using it) and the next election built a second one.
 
         - The LIVE team-store facade is PER MEMBER ROOT CONDUIT. Each root
           conduit owns a `_cluster_creations: ClusterCreations`, and the conduits
@@ -78,15 +93,16 @@ class ConduitCluster(Cleanable):
           `conduit._cluster_creations.resolved_store()`.
         - `elect_leader(leader_conduit_id)` (transactional): opens an
           `ELECT_CONDUIT_CLUSTER_LEADER` transaction, then `bind_elected_leader`
-          walks `members` and binds every member root's facade to the elected
-          leader's `_creations`, recording `master_conduit_id`. Election is
-          inert -> active, so no lineage drain is required.
+          walks `members` and binds every member root's facade to the team
+          store with the elected leader's id (the facade's purge authority),
+          recording `master_conduit_id`. Election is inert -> active, so no
+          lineage drain is required.
         - `unelect_leader()` (transactional): opens an
           `UNELECT_CONDUIT_CLUSTER_LEADER` transaction whose strategy drains
           every member root lineage to zero (so no meld is mid-create against the
-          leader store), `unbind_elected_leader` unbinds every member facade and
+          team store), `unbind_elected_leader` unbinds every member facade and
           clears `master_conduit_id`, then the lineages reopen on every exit path
-          (fail-closed).
+          (fail-closed). The team store and its instances stay with the cluster.
         - `bind_elected_leader` REFUSES re-election: it raises if
           `master_conduit_id` is already set. Unelect back to inert before
           electing a different leader.
@@ -103,10 +119,18 @@ class ConduitCluster(Cleanable):
         - `master_conduit_id` is the single source of truth for "is a leader
           elected": set by `bind_elected_leader`, cleared by
           `unbind_elected_leader`, `None` when inert.
-        - One cluster per conduit (INTENDED): a conduit owns a single
+        - One cluster per conduit: a conduit owns a single
           `_cluster_creations` facade, so it can only ever front ONE cluster's
-          team store. Rejecting a join when the conduit is already clustered is
-          planned; it is not enforced yet.
+          team store; `ConduitCloud.add_conduit_to_cluster` refuses a join when
+          the conduit is already clustered.
+        - A torn-down root is never a member: a normal root's teardown leaves
+          its cluster first (`Conduit._leave_cluster_for_teardown`), so
+          `members` and `master_conduit_id` only ever hold live roots and every
+          member walk (elect, unelect, join, delete) finds each member
+          (0.2.8236; before, the dead id stayed and those walks failed on it).
+        - The team store lives exactly as long as the cluster: built with it,
+          never disposed by an election, an unelection or a member's exit, and
+          disposed by `cleanup()` (0.2.8237).
 
     Threading:
         One internal `_lock` (RLock) guards membership and shared-root state.
@@ -115,7 +139,8 @@ class ConduitCluster(Cleanable):
 
     Lifecycle:
         Becomes unusable after `cleanup()` completes; cleanup clears membership
-        and shared-root state and drops references.
+        and shared-root state, disposes the team store's instances (raising their
+        disposal failures after it finished) and drops references.
 
     Attributes:
         members:
@@ -185,6 +210,7 @@ class ConduitCluster(Cleanable):
         "_devops_identity",
         "_devops_information_registry",
         "master_conduit_id",
+        "_team_store",
     ]
 
     def __init__(
@@ -206,6 +232,11 @@ class ConduitCluster(Cleanable):
                 Frame-owned dev-ops registry used for cluster identity and
                 membership tracking.
             auto_link_dependencies: If True, sharing pulls dependency closure.
+
+        Contract:
+            - Builds the cluster's team store (owner and scope id = the cluster
+              id), which holds the cluster's `unique_per_conduit_cluster`
+              instances until `cleanup()`.
 
         Returns:
             None.
@@ -243,6 +274,13 @@ class ConduitCluster(Cleanable):
             object_ref=self,
         )
         self.master_conduit_id: Optional[str] = None
+        # The cluster's team store (0.2.8237): `unique_per_conduit_cluster`
+        # instances live here for the cluster's whole life; an election only
+        # binds the member facades to it.
+        self._team_store: Creations = Creations(
+            owner_conduit_id=self._id,
+            id=self._id,
+        )
         # Record: an empty created cluster IS configured state (its name
         # exists in the frame cloud); emit the birth snapshot so restore
         # rebuilds empty clusters too (config-less-unit-at-init precedent).
@@ -251,13 +289,29 @@ class ConduitCluster(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear cluster membership state and release references.
+        Idempotently clear cluster membership state, dispose the team store and release references.
 
         Contract:
             - Safe to call multiple times.
             - Clears member and shared-root registries before dropping owned
               references.
+            - Disposes the team store - the cluster's `unique_per_conduit_cluster`
+              instances - once, outside the cluster lock, after everything else
+              is released (0.2.8237; until then the instances belonged to the
+              elected leader conduit and deleting the cluster disposed nothing).
+            - Every step runs when a disposal method fails; the failures are
+              raised last, as one ExceptionGroup.
             - Leaves the instance permanently cleaned.
+
+        Raises:
+            ExceptionGroup: One or more team-store instances failed a disposal
+                method ("Conduit cluster cleaned with disposal failures.").
+
+        Threading:
+            Membership state is cleared under the cluster lock; user disposal
+            methods run after the lock is released. Callers quiesce cluster melds
+            first: `delete_cluster` unelects (which drains every member lineage)
+            and frame teardown has torn every member down.
 
         Returns:
             None.
@@ -299,7 +353,18 @@ class ConduitCluster(Cleanable):
             del self._registry
             del self._aetheric_frame_name
             del self._name
+            team_store = self._team_store
+            del self._team_store
         del self._lock
+        failures: List[Exception] = []
+        try:
+            team_store.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
+        if failures:
+            raise ExceptionGroup(
+                "Conduit cluster cleaned with disposal failures.", failures
+            )
 
     def _emit_cluster_record(self) -> None:
         """
@@ -549,6 +614,13 @@ class ConduitCluster(Cleanable):
             - Removes roots owned by the leaver from all remaining peers.
             - Removes roots owned by remaining peers from the leaving conduit.
             - Drops the leaver's shared-root registry entry after teardown.
+            - Reads the leaver's share record, so it must run while that record
+              is present: callers take the ordered exit `release_member`, which
+              calls this first and `remove_member` (which pops the record)
+              after. Until 0.2.8236 the cloud's leave called `remove_member`
+              first, and the leaver's roots stayed contracted to every remaining
+              member.
+            - Leaves the DevOps membership edge to `remove_member`.
 
         Args:
             conduit: The conduit leaving the cluster.
@@ -559,11 +631,12 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         self._assert_normal_conduit(conduit)
 
-        # If the conduit leaving IS the elected leader, dissolve the team store
-        # first through the drained UNELECT transaction (v1: owner-leave dissolves
-        # the cluster to inert -- no re-home). This runs BEFORE the membership
-        # transaction so the leader is still a member for the unbind walk and
-        # every member lineage is drained before the leader store is released.
+        # If the conduit leaving IS the elected leader, unelect first through the
+        # drained UNELECT transaction: the cluster becomes inert until the next
+        # election, and its instances stay in the team store, which the cluster
+        # owns (0.2.8237), so the next leader serves them. This runs BEFORE the
+        # membership transaction so the leader is still a member for the unbind
+        # walk and every member lineage is drained before the facades are unbound.
         if (
             self.master_conduit_id is not None
             and conduit._id == self.master_conduit_id
@@ -620,9 +693,9 @@ class ConduitCluster(Cleanable):
                 self.shared_spells.pop(leaver_id, None)
 
             # Drop the leaver's own team-store facade (idempotent). For a
-            # non-leader leave this releases its handle to the leader store; for a
-            # leader-leave the cluster was already dissolved above and this drops
-            # the departed leader's own facade. No-op while inert.
+            # non-leader leave this releases its handle to the team store; for a
+            # leader-leave the cluster was already unelected above and its walk
+            # unbound this facade too. No-op while inert.
             self.unbind_member(conduit)
             succeeded = True
         finally:
@@ -631,29 +704,123 @@ class ConduitCluster(Cleanable):
                 success=succeeded,
             )
 
+    def release_member(self, conduit: Conduit) -> None:
+        """
+        Run one member's ordered exit: leave first, then drop the membership record.
+
+        Purpose:
+            The single exit every leave takes - the cloud's explicit leave
+            (`ConduitCloud.remove_conduit_from_cluster`) and a root's teardown
+            (`Conduit._leave_cluster_for_teardown`). Until 0.2.8236 the cloud
+            removed the membership first (`remove_member` pops the leaver's share
+            record) and `handle_leave` then found no record to unshare, so the
+            leaver's shared roots stayed contracted to every remaining member.
+
+        Contract:
+            - `handle_leave(conduit)` first: when the conduit leads, the cluster
+              is unelected (the drained UNELECT transaction); then, inside one
+              CLUSTER_LEAVE transaction, the conduit leaves `members`, its shared
+              roots are unshared from every peer and every peer's roots from it
+              while its share record is still present, the record is popped and
+              its facade is unbound.
+            - `remove_member(conduit._id)` second: the DevOps membership edge goes
+              and the record is emitted (its discard and pop are no-ops by then).
+            - Safe for a conduit that is no longer a member: every effect is a
+              discard, a pop or an idempotent unbind.
+
+        Args:
+            conduit: The normal root conduit leaving the cluster.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned, the conduit is not
+                normal, or the frame refuses the transaction (a frame being torn
+                down does; root teardown then uses `drop_member`).
+            Exception: An error of the unelect or leave transaction propagates
+                after that transaction is aborted.
+
+        Threading:
+            The membership change runs inside the transactions' held windows, as
+            `handle_leave` documents; `remove_member` takes the cluster lock.
+
+        Returns:
+            None.
+        """
+        self.handle_leave(conduit)
+        self.remove_member(conduit._id)
+
+    def drop_member(self, conduit: Conduit) -> None:
+        """
+        Remove one member without transactions, for a root that is being torn down.
+
+        Purpose:
+            The exit's effects when no transaction can run: a root torn down while
+            its frame is torn down (the frame is marked cleaned first, so the
+            mediator refuses), or a root whose transactional exit
+            (`release_member`) failed during its teardown.
+
+        Contract:
+            - When the conduit leads, `unbind_elected_leader()` unbinds every
+              member's facade and clears `master_conduit_id`, so the cluster is
+              inert. The walk meets only live members: every member torn down
+              earlier left the cluster in its own teardown.
+            - `remove_member(conduit._id)` drops the membership, the share record
+              and the DevOps edge and emits the record; then the conduit's own
+              facade is unbound.
+            - Shares are not unshared here: the root's ward cleanup, later in the
+              same teardown, severs every contract the root takes part in.
+            - Idempotent for a conduit that is no longer a member.
+
+        Args:
+            conduit: The departing normal root conduit.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned.
+
+        Threading:
+            Opens no transaction and drains no lineage. It is for teardown, when
+            no meld runs against the departing root; a live leave takes
+            `release_member`.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if (
+            self.master_conduit_id is not None
+            and conduit._id == self.master_conduit_id
+        ):
+            self.unbind_elected_leader()
+        self.remove_member(conduit._id)
+        conduit._cluster_creations.unbind()
+
     # ------------------------------------------------------------------
     # Cluster leader election (bind / unbind the shared team store)
     # ------------------------------------------------------------------
     def bind_elected_leader(self, leader_conduit_id: str) -> None:
         """
-        Bind the elected leader's creation store into every member root's facade.
+        Bind the cluster's team store into every member root's facade under the elected leader.
 
         Purpose:
-            Activate the cluster team store: make the elected leader conduit's
-            creation store the single store every member resolves
-            `unique_per_conduit_cluster` instances into.
+            Activate the cluster team store: every member resolves
+            `unique_per_conduit_cluster` instances into the store the cluster
+            owns, and the facade records the elected leader as the conduit with
+            purge authority over it.
 
         Contract:
             - Resolves the elected leader, then walks the current member set and
-              binds the leader conduit's creation store into each member root's
+              binds the team store, with the leader's id, into each member root's
               `_cluster_creations` facade. The leader is itself a member, so its
-              own facade binds to its own store.
+              own facade is bound too.
+            - The store is the cluster's (0.2.8237): a later election after an
+              unelection binds the same store, so the instances built under an
+              earlier leader are served again, never built twice. Until 0.2.8236
+              each election bound the elected leader conduit's own store.
             - After this runs, a `unique_per_conduit_cluster` meld on any member
-              lineage resolves into the leader store instead of hard-erroring.
+              lineage resolves into the team store instead of hard-erroring.
             - Refuses re-election: raises if a leader is already elected
-              (`master_conduit_id` is set), so an active cluster's leader store
-              is never silently overwritten. The cluster must be unelected back
-              to inert before a different leader can be elected.
+              (`master_conduit_id` is set), so an active cluster's leader is
+              never silently replaced. The cluster must be unelected back to
+              inert before a different leader can be elected.
             - Records the elected leader id in `master_conduit_id`.
             - Binds only: it does not begin, commit, or abort the election
               transaction. The caller runs it as the in-window effect.
@@ -661,7 +828,8 @@ class ConduitCluster(Cleanable):
         Args:
             leader_conduit_id (str):
                 Conduit id of the elected leader. Must resolve to a live, normal
-                cluster member root whose creation store becomes the shared store.
+                cluster member root; it holds purge authority over the team
+                store while elected.
 
         Threading:
             Runs inside the election transaction's held window, after the member
@@ -674,8 +842,9 @@ class ConduitCluster(Cleanable):
             None.
 
         Raises:
-            RuntimeError: If the cluster has been cleaned, or a leader is already
-                elected (re-election without an intervening unelect).
+            RuntimeError: If the cluster has been cleaned, a leader is already
+                elected (re-election without an intervening unelect), or the
+                leader conduit cannot be resolved.
         """
         self.check_cleaned()
         if self.master_conduit_id is not None:
@@ -683,17 +852,20 @@ class ConduitCluster(Cleanable):
                 "Cannot elect a cluster leader: a leader is already elected "
                 f"('{self.master_conduit_id}'). Unelect the current leader first."
             )
-        leader = self._resolve_conduit_by_id(leader_conduit_id)
+        if self._resolve_conduit_by_id(leader_conduit_id) is None:
+            raise RuntimeError(
+                "Cannot elect a cluster leader: leader conduit could not be resolved."
+            )
         for member_id in self.members:
             member = self._resolve_conduit_by_id(member_id)
-            member._cluster_creations.bind(leader._creations)
+            member._cluster_creations.bind(self._team_store, leader_conduit_id)
         self.master_conduit_id = leader_conduit_id
         with self._lock:
             self._emit_cluster_record()
 
     def unbind_elected_leader(self) -> None:
         """
-        Unbind the leader's creation store from every member root's facade.
+        Unbind the team store from every member root's facade (the cluster turns inert).
 
         Purpose:
             Deactivate the cluster team store and return the cluster to inert, so a
@@ -702,9 +874,10 @@ class ConduitCluster(Cleanable):
 
         Contract:
             - Walks the current member set and unbinds each member root's
-              `_cluster_creations` facade, dropping its reference to the leader
-              store. The leader conduit still owns and cleans that store; the
-              facade only releases the reference, never cleans the store.
+              `_cluster_creations` facade, dropping its reference to the team
+              store and the leader's id. The cluster still owns the store and its
+              instances (0.2.8237): nothing is disposed here, and the next
+              election serves them again.
             - Idempotent per facade: unbinding an inert facade is a no-op.
             - Clears `master_conduit_id`.
             - Unbinds only: it does not begin, commit, or abort the unelection
@@ -713,7 +886,7 @@ class ConduitCluster(Cleanable):
         Threading:
             Runs inside the unelection transaction's held window, after every
             member root lineage has been drained to zero, so no meld is mid-create
-            against the leader store when it is released. Members are live root
+            against the team store when the facades release it. Members are live root
             conduits and the member set is a thread-safe collection, so the walk
             needs no snapshot and no extra lock.
 
@@ -730,7 +903,7 @@ class ConduitCluster(Cleanable):
 
     def bind_member(self, conduit: "Conduit") -> None:
         """
-        Bind one joining member's facade to the elected leader's store.
+        Bind one joining member's facade to the team store under the current leader.
 
         Purpose:
             Activate the team store for a single conduit that joins a cluster
@@ -743,8 +916,8 @@ class ConduitCluster(Cleanable):
               joiner's facade stays disabled until a leader is elected, which
               picks it up via `bind_elected_leader`.
             - When a leader is elected, binds the joining conduit's
-              `_cluster_creations` to the elected leader's `_creations`. Does NOT
-              change `master_conduit_id` (the leader is unchanged).
+              `_cluster_creations` to the team store with the current leader's
+              id. Does NOT change `master_conduit_id` (the leader is unchanged).
 
         Args:
             conduit:
@@ -763,12 +936,11 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         if self.master_conduit_id is None:
             return
-        leader = self._resolve_conduit_by_id(self.master_conduit_id)
-        conduit._cluster_creations.bind(leader._creations)
+        conduit._cluster_creations.bind(self._team_store, self.master_conduit_id)
 
     def unbind_member(self, conduit: "Conduit") -> None:
         """
-        Unbind one leaving member's facade from the elected leader's store.
+        Unbind one leaving member's facade from the team store.
 
         Purpose:
             Deactivate the team store for one conduit leaving the cluster, by
@@ -778,14 +950,13 @@ class ConduitCluster(Cleanable):
         Contract:
             - Always drops the leaving conduit's `_cluster_creations` reference
               (idempotent: a no-op when its facade is already inert). Never cleans
-              the leader's store. Does NOT change `master_conduit_id`.
+              the team store. Does NOT change `master_conduit_id`.
             - Drops the leaver's OWN facade only. When the leaving conduit is the
               elected leader, `handle_leave` first dissolves the cluster through
               `unelect_leader` (drained: clears `master_conduit_id` and unbinds
-              the remaining members); this call then drops the departed leader's
-              own facade. The cloud removes the leaver from `members` before
-              `handle_leave`, so that drained walk cannot reach the leaver's
-              facade -- which is why this unbind is unconditional.
+              every member, the leader included, which is still a member then);
+              this call is unconditional so a non-leader's facade is dropped too
+              and a repeated exit stays a no-op.
 
         Args:
             conduit:
@@ -794,8 +965,8 @@ class ConduitCluster(Cleanable):
         Threading:
             Runs inside the `CLUSTER_LEAVE` transaction's held window, whose seal
             holds the leaver. No lineage drain is required: `unbind` only drops
-            the facade pointer, the leader's store stays alive (owned by the
-            leader conduit), and any in-flight meld holds its own store reference.
+            the facade pointer, the team store stays alive (owned by the
+            cluster), and any in-flight meld holds its own store reference.
 
         Returns:
             None.
@@ -830,7 +1001,8 @@ class ConduitCluster(Cleanable):
         Args:
             leader_conduit_id (str):
                 Conduit id of the elected leader. Must resolve to a live, normal
-                cluster member root whose creation store becomes the shared store.
+                cluster member root; it holds purge authority over the team
+                store while elected.
 
         Returns:
             None.
@@ -889,7 +1061,7 @@ class ConduitCluster(Cleanable):
             - The strategy claims the member conduits EXCLUSIVE and, in its
               `on_start`, drains every member root lineage to zero through the
               DevOps-owned `ConduitLineageGateOps`, so no meld is mid-create
-              against the leader store. Its `on_end` reopens every member root
+              against the team store. Its `on_end` reopens every member root
               lineage on every exit path (fail-closed).
             - Runs `unbind_elected_leader` as the in-window effect, then commits.
             - An empty cluster has no bound leader, so this is a no-op and opens no
@@ -910,8 +1082,8 @@ class ConduitCluster(Cleanable):
 
         Threading:
             Every member root lineage is drained to zero before the in-window
-            unbind, so no meld is mid-create against the leader store when its
-            reference is released.
+            unbind, so no meld is mid-create against the team store when the
+            facades release it.
         """
         self.check_cleaned()
         member_ids = tuple(sorted(self.members))
@@ -1312,7 +1484,7 @@ class ConduitCluster(Cleanable):
 
         Args:
             owner_id: Conduit id that owns the shared spell.
-            spell_id: Spell version id for the shared root.
+            spell_id: The shared root's spell_id.
 
         Returns:
             str: Deterministic cluster-scoped root identifier.
@@ -1327,7 +1499,7 @@ class ConduitCluster(Cleanable):
         Returns:
             dict:
                 Snapshot containing cluster name, dependency-link policy,
-                member ids, and shared-root lineage ids grouped by owner.
+                member ids, and shared root SpellIndex ids grouped by owner.
         """
         self.check_cleaned()
         with self._lock:

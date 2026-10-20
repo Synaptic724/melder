@@ -1,0 +1,12 @@
+round1 before P3 conjure S=200 D=0: median 35.4 ms min 33.4 ms (9 runs) flag=False; register_conduit 456 us, 601 refreshes totalling 129 us
+round1 before P3 conjure S=200 D=20: median 39.7 ms min 36.3 ms (9 runs) flag=True; register_conduit 953 us, 621 refreshes totalling 181 us
+round1 before P3 conjure S=200 D=100: median 42.0 ms min 37.4 ms (9 runs) flag=True; register_conduit 671 us, 701 refreshes totalling 136 us
+round1 after P3 conjure S=200 D=0: median 34.7 ms min 30.8 ms (9 runs) flag=False; register_conduit 382 us, 401 refreshes totalling 80 us
+round1 after P3 conjure S=200 D=20: median 38.0 ms min 33.2 ms (9 runs) flag=False; register_conduit 443 us, 401 refreshes totalling 97 us
+round1 after P3 conjure S=200 D=100: median 40.5 ms min 36.0 ms (9 runs) flag=False; register_conduit 855 us, 401 refreshes totalling 196 us
+round2 before P3 conjure S=200 D=0: median 35.1 ms min 32.9 ms (9 runs) flag=False; register_conduit 847 us, 601 refreshes totalling 197 us
+round2 before P3 conjure S=200 D=20: median 39.2 ms min 36.6 ms (9 runs) flag=True; register_conduit 476 us, 621 refreshes totalling 122 us
+round2 before P3 conjure S=200 D=100: median 41.9 ms min 37.2 ms (9 runs) flag=True; register_conduit 792 us, 701 refreshes totalling 146 us
+round2 after P3 conjure S=200 D=0: median 36.5 ms min 30.3 ms (9 runs) flag=False; register_conduit 642 us, 401 refreshes totalling 84 us
+round2 after P3 conjure S=200 D=20: median 41.2 ms min 35.1 ms (9 runs) flag=False; register_conduit 452 us, 401 refreshes totalling 97 us
+round2 after P3 conjure S=200 D=100: median 43.0 ms min 38.4 ms (9 runs) flag=False; register_conduit 673 us, 401 refreshes totalling 140 us

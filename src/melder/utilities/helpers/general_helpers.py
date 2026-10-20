@@ -457,10 +457,10 @@ class SpellInputUtils:
     @staticmethod
     def describe_spell_id(spell_id: Optional[str], spells: Mapping[str, Spell]) -> str:
         """
-        Name a spell version id for a user-facing message.
+        Name a spell_id for a user-facing message.
 
         Purpose:
-            Validation and resolution run on spell version ids; users know spells
+            Validation and resolution run on spell_ids; users know spells
             by name. Messages call this so a 64-character id is shown only when
             no name is available.
 
@@ -471,7 +471,7 @@ class SpellInputUtils:
             - Pure; reads one mapping entry and the spell's name.
 
         Args:
-            spell_id: Spell version id, or None.
+            spell_id: A spell_id, or None.
             spells: Visible spell id -> Spell lookup (a spellbook's
                 `_spell_id_pool` or a phase's `spell_lookup`).
 

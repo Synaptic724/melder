@@ -53,7 +53,7 @@ class SpellContract(Cleanable):
 
     When the reporting conduit is conjured, the socket remains unresolved but
     explicitly declared. When a provider conduit is linked later, the linker
-    can satisfy the contract and trigger revalidation of the reporting lineage.
+    can satisfy the contract and trigger revalidation of the reporting spell.
 
     Contract:
         - Pure intent object; it does not perform linking or resolution itself.
@@ -95,7 +95,7 @@ class SpellContract(Cleanable):
         The same asymmetry explains why linking is not merely a registry write.
         Satisfying a contract changes what the consumer graph resolves to, so
         `SpellSystemStates` marks contract dependents dirty and the consumer
-        lineage re-runs its resolution phases against the now-satisfied edge.
+        spell re-runs its resolution phases against the now-satisfied edge.
         A contract is therefore a REVALIDATION TRIGGER, not just a lookup key -
         which is also why `SpellContract` requires at least a `spell` or a
         `spellframe`: with neither there is no identity for a future linker to

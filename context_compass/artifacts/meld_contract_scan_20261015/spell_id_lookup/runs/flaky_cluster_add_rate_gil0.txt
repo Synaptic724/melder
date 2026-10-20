@@ -1,0 +1,6 @@
+Pre-existing flake check, 2026-10-17T22:03:35Z, melder_1: one pytest process per run, GIL off (-X gil=0), 3.14.7t.
+Test: tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py::test_concurrent_adds_of_same_conduit_admit_exactly_one
+Failure seen: assert len(errors) >= 1 (0 rejections: no add raced another), work tree int_aether chunk.
+untouched copy (base: today's src, __version__ 0.2.8251): 40 runs -> passed=38 failed=2
+fix #1 work tree:                     40 runs -> passed=38 failed=2
+(an earlier 5-run sample: base 5/5 passed, work 4/5 passed)

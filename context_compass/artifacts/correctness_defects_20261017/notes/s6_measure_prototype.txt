@@ -1,0 +1,29 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The direction holds on a prototype (a /tmp mirror of src/ and tests/; the repo untouched), and the tree shows
+    the defect on the plain settings-change path too. Tree (probe R1): Worker limit 1 with one object out,
+    `cleanup_spell`, `bind` with limit 2 - a new spell_id and a second pool; releasing the first object with no filter
+    puts it into the new pool uncounted while the disposed version's pool counts it out for good. R2: staging limit 2
+    is a second spell; R3: a mode change is a second pool. Prototype (the managed part dropped from `sha256_profile`;
+    `_rebind_spell` re-composes mode, limit, timeout, reset names and retention sizes under the pool lock, called by
+    `ensure_managed_quantity` after the store lock): R1 the same spell_id and pool object, limit 2, counts true after
+    the release; R2 refused ("Spell ID collision detected"); R3 count 3 above limit 1 stays, the fixed capacity trims
+    one per release. Test impact in the mirror: 2 unit tests (the managed part's form; each option moving the id) and
+    13 integration tests that build a second version from one class with other settings fail; the other managed
+    suites pass (2858, 672, 123 and 80 passed). Identical with the GIL off and on (ids masked).
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_settings_rebind.py:1-144
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_settings_rebind_tree_gil0.txt:1-42
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_settings_rebind_tree_gil1.txt:1-42
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_settings_rebind_proto_gil0.txt:1-34
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_settings_rebind_proto_gil1.txt:1-34
+  - tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py:481-518
+  - tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py
+  - tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py
+  IMPACT: Part A is two small src changes plus tests; the failing tests encode the old rule (a second version made
+    from one class by its settings) and move to versions made from two classes.
+  NEXT: Patch docs (architecture, Binding Pipeline and Managed Spell Pools components, the pool's code description).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

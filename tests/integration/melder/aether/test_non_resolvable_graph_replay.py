@@ -55,6 +55,27 @@ class GraphConsumer:
         self.definition = definition
 
 
+class GraphImplementationRevision(GraphDefinition):
+    """
+    A revised GraphImplementation, staged beside it.
+
+    One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): staging GraphImplementation
+    itself again is refused, so a revision is new code - here a class of its own with the same base, so its
+    base relationship is GraphDefinition's as the original's is. Module level, so a restore or a graft
+    imports it.
+    """
+
+    def value(self) -> str:
+        """Return the revised value."""
+        return "revised"
+
+
+class GraphConsumerRevision(GraphConsumer):
+    """A revised GraphConsumer, staged non-resolvable: new code, since one object is one spell; module level."""
+
+    revision = 2
+
+
 @pytest.fixture(autouse=True)
 def clean_graph_world() -> Iterator[None]:
     """Reset runtime ownership before and after every complete graph scenario."""
@@ -116,7 +137,7 @@ def test_nexus_exposes_definition_reference_and_base_relationships() -> None:
     source_view = rift.space.command_system.research_source(definition_id)
     assert "class GraphDefinition" in repr(source_view)
     index = book._spells_by_id[child_id].spell_index
-    revision_id = conduit.bind_inactive(spell=GraphImplementation, spell_index=index, existence="unique")
+    revision_id = conduit.bind_inactive(spell=GraphImplementationRevision, spell_index=index, existence="unique")
     assert revision_id != child_id
     assert rift.space.command_system.research_history(revision_id)["lane_name"] == "default"
     conduit.notch_spell(spell_index=index, spell=book._inactive_spells[revision_id])
@@ -141,7 +162,7 @@ def test_checkpoint_replay_preserves_false_and_reemits_it(tmp_path: Path, monkey
     original_conduit = book.conjure(dynamic=True, name="root")
     consumer_index = book._spells_by_id[consumer_id].spell_index
     parked_id = original_conduit.bind_inactive(
-        spell=GraphConsumer, spell_index=consumer_index, existence="many", resolvable=False,
+        spell=GraphConsumerRevision, spell_index=consumer_index, existence="many", resolvable=False,
     )
     assert root.get_spell_crystal(definition_id).describe()["resolvable"] is False
     checkpoint_id = root.create_checkpoint()
@@ -167,7 +188,7 @@ def test_graft_preserves_active_and_parked_capability() -> None:
     false_id = source.bind(spell=GraphImplementation, existence="unique", resolvable=False)
     conduit = source.conjure(dynamic=True, name="source-root")
     index = source._spells_by_id[false_id].spell_index
-    true_id = conduit.bind_inactive(spell=GraphImplementation, spell_index=index, existence="unique")
+    true_id = conduit.bind_inactive(spell=GraphImplementationRevision, spell_index=index, existence="unique")
     record = root.capture_index_graft(index.id)
     # Graft from detached custody after releasing live claims; process-wide uniqueness stays enforced.
     conduit.permanent_cleanup()

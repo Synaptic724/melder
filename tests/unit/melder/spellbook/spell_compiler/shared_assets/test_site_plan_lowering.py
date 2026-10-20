@@ -40,6 +40,7 @@ class FakeStore:
         self._creations: Dict[str, Any] = {}
         self._slot_guards: Dict[str, threading.RLock] = {}
         self.disposal_adds: List[Tuple[str, Any]] = []
+        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> threading.RLock:
         """Return one RLock per slot."""
@@ -59,6 +60,10 @@ class FakeStore:
     def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
         """Record one disposal-bearing many instance registered through the hot verb (2026-10-01)."""
         self.disposal_adds.append((key, item))
+
+    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
+        """Record one adoption an emitted miss made right after publishing its holder (0.2.8238)."""
+        self.adoptions.append((holder_key, holder, children))
 
 
 def _factory(name: str, built: Counter) -> Callable[..., Any]:
@@ -608,8 +613,16 @@ def test_generic_step_inside_a_miss_reads_inner_and_outer_values() -> None:
     assert built == Counter({"y": 1, "z": 1, "x": 1, "s": 1, "root": 2})
 
 
-def test_disposal_bearing_many_inside_a_miss_registers_in_the_innermost_scope() -> None:
-    """A disposal-bearing many built inside S's miss goes to the spellspace store, else the conduit store."""
+def test_disposal_bearing_many_inside_a_miss_registers_in_the_store_its_holder_publishes_to() -> None:
+    """
+    A disposal-bearing many built inside S's miss is recorded in S's store, never in a spellspace.
+
+    S is `unique_per_conduit`, so the child belongs to the conduit store S is published to, even when the plan
+    runs under a SpellSpace meld (many_child_follows_holder, 2026-10-14). Until 0.2.8235 the child went to the
+    meld's innermost scope - the spellspace store here - whose exit disposed it while S kept it. Since 0.2.8238 S's
+    miss also adopts the child into S's disposal record right after publishing S, once per publication: a warm meld
+    adopts nothing.
+    """
     built: Counter = Counter()
     spells = {
         "d": _spell("d", built, disposal=("close",)), "s": _spell("s", built, Existence.unique_per_conduit),
@@ -631,8 +644,12 @@ def test_disposal_bearing_many_inside_a_miss_registers_in_the_innermost_scope() 
     plan(first_meld, {})
     second = plan(SimpleNamespace(_spellspace_creations=space_store, _conduit_creations=second_store), {})
     assert first_store.disposal_adds == [("d", first.args[0].args[0])]
-    assert space_store.disposal_adds == [("d", second.args[0].args[0])]
-    assert second_store.disposal_adds == []
+    assert second_store.disposal_adds == [("d", second.args[0].args[0])]
+    assert space_store.disposal_adds == []
+    held_first, held_second = first.args[0], second.args[0]
+    assert first_store.adoptions == [("s", held_first, (("d", held_first.args[0]),))]
+    assert second_store.adoptions == [("s", held_second, (("d", held_second.args[0]),))]
+    assert space_store.adoptions == []
     assert built == Counter({"d": 2, "s": 2, "root": 3})
 
 
@@ -1382,3 +1399,77 @@ def test_per_conduit_site_read_is_unchanged_by_the_owner_store_constant() -> Non
 
     assert "    c1 = meld._conduit_creations" in source
     assert "c1" not in namespace
+
+
+def _adoption_world() -> Tuple[Counter, Tuple[SitePlanStep, ...], Dict[str, Any]]:
+    """
+    Root(s: S(a: D1, b: N, c: D2, t: T), limit=1) with S and T `unique_per_conduit`, D1 and D2 disposal-bearing.
+
+    Step indexes: D1 0, N 1, D2 2, T 3, S 4, root 5. N is a `many` without disposal methods and T a shared site
+    nested in S's miss; neither is adopted.
+    """
+    built: Counter = Counter()
+    shared = Existence.unique_per_conduit
+    spells = {
+        "d1": _spell("d1", built, disposal=("close",)), "n": _spell("n", built),
+        "d2": _spell("d2", built, disposal=("close",)), "t": _spell("t", built, shared),
+        "s": _spell("s", built, shared), "root": _spell("root", built),
+    }
+    steps = (
+        _step(("d1", 1), spells["d1"]),
+        _step(("n", 2), spells["n"]),
+        _step(("d2", 3), spells["d2"]),
+        _step(("t", None), spells["t"]),
+        _step(
+            ("s", None), spells["s"],
+            ("a", (("d1", 1),)), ("b", (("n", 2),)), ("c", (("d2", 3),)), ("t", (("t", None),)),
+        ),
+        _step(("root", 0), spells["root"], ("s", (("s", None),))),
+    )
+    topologies = {
+        "root": SpellLocalTopology("root", (_socket("root", "s", 0), _socket("root", "limit", 1, optional=True))),
+        "s": SpellLocalTopology(
+            "s", (_socket("s", "a", 0), _socket("s", "b", 1), _socket("s", "c", 2), _socket("s", "t", 3)),
+        ),
+    }
+    return built, steps, topologies
+
+
+def _function_source(source: str, name: str) -> str:
+    """Return the source of one emitted function (`_miss4`, `_site_plan_executor`, ...) up to the next def."""
+    return source.split(f"def {name}(")[1].split("\ndef ")[0]
+
+
+@pytest.mark.parametrize("keys", [(), ("limit",)], ids=["normal-key-set", "override-key-set"])
+def test_a_miss_adopts_exactly_the_disposal_bearing_children_it_registered(keys: Tuple[str, ...]) -> None:
+    """
+    S's miss adopts D1 and D2 - in step order, after publishing S and before returning it - and nothing else: N has
+    no disposal methods, T adopts nothing of its own, and the plan body never adopts (0.2.8238). An override key set
+    that supplies none of S's parameters emits the same adoption.
+    """
+    _built, steps, topologies = _adoption_world()
+    source, _namespace = _shared_source(steps, topologies, keys)
+
+    adoption_lines = [line.strip() for line in source.splitlines() if "adopt_children" in line]
+    assert adoption_lines == ["c4.adopt_children(sid4, v4, ((sid0, v0), (sid2, v2)))"]
+    miss = _function_source(source, "_miss4")
+    assert miss.index("c4._creations[sid4] = v4") < miss.index("c4.adopt_children(") < miss.index("return v4")
+    assert "adopt_children" not in _function_source(source, "_miss3")
+    assert "adopt_children" not in _function_source(source, SitePlanLowering.PLAN_FUNCTION_NAME)
+
+
+def test_a_miss_hands_its_built_children_to_the_store_once_per_publication() -> None:
+    """Run the plan: the store receives S and its two disposal-bearing children once; a warm meld adopts nothing."""
+    built, steps, topologies = _adoption_world()
+    plan = _compile_plan(steps, topologies, ("root", 0))
+    store = FakeStore()
+    meld = SimpleNamespace(_conduit_creations=store)
+
+    first = plan(meld, {})
+    plan(meld, {})
+
+    held = first.args[0]
+    values = list(held.args) + list(held.kwargs.values())
+    children = {value.name: value for value in values}
+    assert store.adoptions == [("s", held, (("d1", children["d1"]), ("d2", children["d2"])))]
+    assert built == Counter({"d1": 1, "n": 1, "d2": 1, "t": 1, "s": 1, "root": 2})

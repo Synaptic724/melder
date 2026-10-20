@@ -1,3 +1,4 @@
+import hashlib
 import importlib
 import sys
 from pathlib import Path
@@ -43,6 +44,9 @@ class DummySpell:
         # double should report).
         self.disposal_method_names = []
         self.profile = SimpleNamespace()
+        # Binding hash (record 4.3.0): SpellCrystal records the spell's `binding_hash`, the SHA256 of its
+        # binding manifest (`Spell.binding_hash`). A double carries a fixed 64-hex value per spell_id.
+        self.binding_hash = hashlib.sha256(("binding:" + spell_id).encode("utf-8")).hexdigest()
 
 
 def clear_modules(*module_names: str) -> None:

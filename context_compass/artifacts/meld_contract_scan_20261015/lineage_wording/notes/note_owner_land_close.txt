@@ -1,0 +1,18 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner chose "Land + close" (chat 2026-10-18, after the audit report): notch 0.2.8255 for the wording
+    edits and the three audit corrections, one release-note line, turn in this ticket (archive its patch folders,
+    release spellbook.py, conduit.py and the lane's other held files to melder_0), rebuild last. `__version__` reads
+    0.2.8254 at landing and no message for this lane is waiting. Order (contribution guide): this Note, the notch,
+    the release-note line under "Packaging and documentation", the closure (summary, move to completed/, board and
+    artifact sync), the rebuild with both checks, then NOTICE M1-28 to melder_0.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/special_instructions/agent_contribution_guide.md:75-97
+  IMPACT: The lane ends with this landing; the open borrower-side items, melder_0's managed-settings text fixes
+    (M0-192) and the correctness-epic stories stay with the owner and are listed in the closure summary.
+  NEXT: Notch `__version__` to 0.2.8255.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

@@ -1,0 +1,9 @@
+CHECK (no writes): src_graph.md + src_graph_index.md in /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/system_docs
+  sections=591  nodes=1227  edges=1415
+  document=28067 lines  index=618 lines (2% of document)
+  all 591 ranges verified against their own headers
+assemble --check rc=0
+OK: src_architecture_index.md is current (62 sections over 4665 lines)
+OK: src_components_index.md is current (153 sections over 11641 lines)
+OK: tests_architecture_index.md is current (32 sections over 972 lines)
+OK: tests_components_index.md is current (69 sections over 3549 lines)

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus.py",
- "source_sha256": "dc00c866a0497777153b4a4c2208823cca049c32a80c7b744a4ad817d7e78852",
+ "source_sha256": "cc0e89ec077f77acf136721e4d86e9dc5fcde5120db18e46b360a3631d7c6934",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus": {
@@ -97,7 +97,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "fed73958c9e7ff2514407cade997110c9ba5faba67627aa9f61918a6d7895ab5",
+   "span_sha256": "05a6378beeb804942d19c92ce3da0ca8fbbf66351fdf9897a17b0b79f00c863a",
    "role": "Public AR root.",
    "responsibilities": [
     "creates and registers live Rift instances",

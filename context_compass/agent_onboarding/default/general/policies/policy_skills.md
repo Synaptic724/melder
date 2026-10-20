@@ -6,7 +6,8 @@ Purpose
 - Enforce the policy chain so edits stay deterministic and reviewable.
 
 When to use
-- At the start of every session and before editing in a new directory.
+- At actual startup/recovery or when applicable directory/source policy changes. Reuse valid
+  reads in intact context; an ordinary comment is not another full-policy read trigger.
 
 Canonical Contract (from AGENTS.MD)
 This repository is a public library. Code quality and documentation are
@@ -16,21 +17,27 @@ Placement
 - Keep `AGENTS.MD` at the repository root.
 - Per-directory variants are allowed when explicitly needed.
 
-Certification gate (mandatory)
-- Complete onboarding skills and request approval.
-- Require the approval message to include the exact token
+Certification gate (default unless explicitly overridden)
+- Apply `AGENTS.MD` / Project Instructions Bootstrap before this procedure.
+- Complete the effective onboarding readset and any required attestation.
+- By default, request approval and require the approval message to include the exact token
   `CERTIFY: APPROVED`.
-- Do not use tools or edit files until the user provides this approval token,
+- Do not use non-onboarding tools or edit files until effective onboarding authorization,
   **except tools needed to READ onboarding documents, boards and tickets.** Without
   that carve-out this rule would forbid the onboarding reads it depends on. Reads
-  are permitted; writes - including your mailbox check-in - wait for the token.
-  Root `AGENTS.MD` "Certification gating" is authoritative.
+  are permitted; writes - including your mailbox check-in - wait for effective
+  authorization. Normally this requires the token and assigned name; an explicit
+  waiver removes only its named requirement, without inventing a replacement prompt.
+  Root `AGENTS.MD` / Project Instructions Bootstrap and its certification gate govern.
 
 Required flow
 - Read `AGENTS.MD` and directory-local `AGENTS.MD` (if present).
+- Complete the Project Instructions Bootstrap and resolve project instructions
+  before applying the remaining onboarding or recovery defaults below.
 - Read
   `context_compass/agent_onboarding/default/general/skills/execution_contract.md`
-  in full immediately after `AGENTS.MD`.
+  in full after the Project Instructions Bootstrap, applying project
+  replacements/waivers resolved there within their stated scope.
 - Follow role `SKILLS.MD` routing from:
   - `context_compass/SKILLS.MD` - the single role registry; the registry table
     is the only place roles are declared
@@ -63,11 +70,14 @@ Required flow
   `context_compass/agent_onboarding/default/general/skills/execution_contract.md`
   and apply its active-partner + performance-engineering rules.
 - Route active work from `context_compass/attention_board.md` and keep detailed
-  state in ticket `## Notes`.
+  current state in the ticket. Supported attributed comments/documents may hold detailed evidence.
 - Use the Ticket Microcycle with meaningful-finding note gates during
   execution.
-- Use `tickets/epics/`, `tickets/stories/`, and `tickets/tasks/` tickets for
-  all planned work.
+- Use Epic/Story/Task tickets in the selected work backend for all planned
+  work. Local `tickets/` lanes apply only when `work_tracking.backend` resolves to `local`.
+- Resolve `agent_communication.backend` independently and read only the
+  selected message skill. Default `mailbox` remains compatible with both
+  ticket backends.
 - For code-engineering tasks, hand off to engineer profile docs after general
   onboarding:
   - `agent_onboarding/default/engineer/skills/context_protocol.md`
@@ -87,7 +97,8 @@ Documentation and Convention Precedence
   `README`, `CONTRIBUTING`, `docs/`, and any architecture/design notes.
 - Do not invent new conventions if the repo already has a pattern.
 - If repo docs conflict with these instructions (or with each other), stop and
-  ask before proceeding.
+  record the actual conflict. Resolve an already-authorized source correction within its scope;
+  ask only for an unresolved material policy/authority decision, not routine file selection.
 
 Unknowns Gate
 - Apply the canonical policy in
@@ -100,17 +111,19 @@ Unknowns Gate
   requesting user resolution.
 
 Operating Protocol (How You Should Work)
-A) Propose - Confirm - Implement
+A) Plan - Implement Within Authority
 Before making non-trivial edits:
 1. Restate the goal in 3-5 bullets.
 2. List the constraints you will obey (scope, policy, and workflow gates).
 3. List the exact files / symbols you will modify.
-   If any of the above is uncertain, stop and ask before editing.
+   Investigate implementation uncertainty within authorized scope. There is no per-step approval
+   for ordinary work already covered by the outcome. Preserve reserved decisions, security/action
+   permissions, owner STOPs and required tests/reviews; no ticket grants new access.
 
 B) Scope Control
 - Stay within the declared files/symbols.
-- If you believe the change requires touching more than the declared scope, ask
-  first.
+- Record related files required for the complete authorized outcome. Ask for materially expanded
+  scope or a consequential owner decision, not another admission for an ordinary included step.
 
 C) Documentation Ritual
 As a ritual, after implementing a change:
@@ -118,7 +131,7 @@ As a ritual, after implementing a change:
 - Ensure state, evidence, and next actions are accurate and current.
 
 Stop Conditions (Ask Before Proceeding)
-Ask for explicit confirmation if any of these are true:
+Ask for a missing decision/permission when these actions are outside current authorization:
 - You want to touch many files (repo-wide sweeps) and no codemod approach was
   approved.
 - You want to rename/move files or symbols.
@@ -137,11 +150,19 @@ Order of authority (highest to lowest)
 This ranking answers **"how should I behave?"** - it is a policy ordering, not a
 statement about where truth lives.
 
-1) AGENTS.MD and any other known AGENTS.MD read by you.
-2) SKILLS.MD and any other SKILLS.MD read by you.
-3) Example documentation.
-4) Repo documentation (`README`, `docs/`).
-5) Code (last resort *for policy*).
+This is a project-document ordering, subject to system/developer instructions
+and explicit user direction:
+
+1. The package `AGENTS.MD` bootstrap and delegation contract.
+2. Applicable project onboarding overrides within that delegated scope.
+3. Remaining `AGENTS.MD` requirements and inherited role-policy defaults.
+4. `SKILLS.MD` routing and remaining skill requirements.
+5. Example documentation.
+6. Repo documentation (`README`, `docs/`).
+7. Code (last resort *for policy*).
+
+Existing project-instruction precedence over role defaults remains in force.
+The delegation changes only explicitly overridden requirements, not unrelated policy.
 
 **A different question has the opposite answer.** For **"what does this system
 actually do?"** the ordering inverts: the code is authoritative and every document
@@ -162,8 +183,9 @@ Operational guidance (enriched)
 - Do not improvise conventions; mirror the skills and examples.
 - Treat skills as the executable version of policy.
 - Use examples as canonical style references, not suggestions.
-- Keep scope minimal and reviewable; do not widen without approval.
-- If a change implies touching many files or renames, ask first.
+- Keep scope coherent and reviewable; do not silently widen the authorized outcome.
+- Ordinary related multi-file selection/repair is not a new approval stage. Unapproved renames,
+  dependencies, public-API changes or security/action changes retain their actual permission gates.
 
 Workflow
 1) Check for AGENTS.override.md in the target directory.

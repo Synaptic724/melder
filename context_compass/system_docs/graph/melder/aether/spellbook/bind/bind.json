@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "892cf05579ea869e397009d6784e5037d631c8363c54f320fd5e4ff953278f78",
+ "source_sha256": "1bbfc68ae322390c3ae17056f08ddd5479f59ce821640dfebad5ed0c9581fbf3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -32,23 +32,22 @@
     "clear_hooks",
     "execute_post_hooks",
     "get_hook_names",
-    "sha256_profile",
     "spell_id_inspector"
    ],
    "shape": {
-    "method_count": 22,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "352c76bda7730da7d0101782405d7a75581834c3be93c2a8bb4d13e466241a73",
+   "span_sha256": "3ec903810cb7341d56eb3f5ee73abb74ef9afcad1be5e194786dae274bd64080",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
-    "fingerprints binding metadata into structural spell ids with no memory address in any input (address-free repr, default, signature and init_signature text), so the same object content gets one id in every process",
-    "validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids",
+    "takes each spell_id from SpellCodeDigest.spell_id(target) - the SHA256 of the target's code and, for an existing object, its data - and nothing from the bind call; spell_id_inspector(spell) answers the same id from the target alone, through a fresh SpellCodeDigest per call, and checks no binding rule",
+    "validates native resolvable bool before reflection; resolvable is a binding-manifest field, no part of the spell_id",
     "admits Protocol definitions only with resolvable=False without relaxing other binding rules",
     "resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement",
-    "matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members",
+    "matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding the shallow profile",
     "checks direct public Protocol members on classes and actual supplied objects before Spell creation",
     "creates canonical Spell records for Spellbook registration",
     "captures immutable configuration seeds once and owns subsequent Book-local registration hook changes",
@@ -57,19 +56,21 @@
     "retires unpublished failed Spell and index allocations locally without disposing supplied application objects",
     "classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)",
     "validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame",
-    "hands the Spell its spellframe_kind and implemented_protocols; the fingerprint does not hash the kind"
+    "hands the Spell its spellframe_kind and implemented_protocols; the spell_id does not read the kind, a binding-manifest field",
+    "validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings, binding-manifest fields (0.2.8242, 0.2.8258); the spell_id never reads them (0.2.8254, and since 0.2.8257 nothing from the bind call does)"
    ],
    "owns_state": [
     "_spellbook",
     "_spell_examiner",
-    "_lifecycle_hooks"
+    "_lifecycle_hooks",
+    "_spell_code_digest"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "352c76bda7730da7d0101782405d7a75581834c3be93c2a8bb4d13e466241a73"
+   "semantics_authored_against": "3ec903810cb7341d56eb3f5ee73abb74ef9afcad1be5e194786dae274bd64080"
   }
  },
  "edges_out": [
@@ -90,6 +91,12 @@
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
    "to_label": "SpellExaminer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.bind.Bind",
+   "to_label": "SpellCodeDigest",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -128,7 +135,7 @@
  "imports": {
   "inspect": "inspect",
   "threading": "threading",
-  "hashlib": "hashlib",
+  "math": "math",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
@@ -140,6 +147,7 @@
   "TypeVar": "typing.TypeVar",
   "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
   "Spell": "melder.aether.spellbook.spell.Spell",
@@ -154,10 +162,9 @@
   "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
   "ClassBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
   "CallableBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
-  "CallableParameterBindingSummary": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary",
   "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
   "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
-  "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+  "SpellCodeDigest": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "SpellBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
  },
@@ -195,7 +202,7 @@
    "from": "melder.aether.spellbook.bind.bind.Bind",
    "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
    "relation": "creates",
-   "why": "Bind creates a SpellIndex lineage key from the structural fingerprint before constructing the Spell record.",
+   "why": "Bind creates a SpellIndex lineage key from the spell_id (the code digest) before constructing the Spell record.",
    "cardinality": "one_to_many",
    "phase": [
     "init",
@@ -251,6 +258,30 @@
     "runtime"
    ],
    "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.bind.Bind",
+   "to": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
+   "relation": "uses",
+   "why": "Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting, a binding-manifest field; the spell_id never reads it (0.2.8254, 0.2.8257).",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.bind.Bind",
+   "to": "melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest",
+   "relation": "owns_lifecycle_of",
+   "why": "Bind builds one SpellCodeDigest at init, asks it for every spell_id under its own lock (the code-object memo lives as long as Bind) and cleans it in cleanup; spell_id_inspector builds and cleans its own per call.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
   }
  ]
 }

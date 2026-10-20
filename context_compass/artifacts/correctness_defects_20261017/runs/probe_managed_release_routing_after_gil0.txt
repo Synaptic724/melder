@@ -1,0 +1,49 @@
+Q1 control: one limited_quantity version (limit 1)
+    meld A -> Worker #1
+  [after the lease]
+    pool A: count 1, idle 0, active_version True
+  [after release(obj)]
+    pool A: count 1, idle 1, active_version True
+    meld A again -> Worker #1
+
+Q2 two versions of Worker on one index; the object leased from A released with no filter after a notch
+    meld A -> Worker #2
+  CASE RAISED RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+disposal metadata). The existing spell with this id is already registered in the 
+Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its 
+bind-time fingerprint differs so it produces a unique spell_id.
+
+Q3 Q2 with release(obj, spell_id=A)
+    meld A -> Worker #3
+  CASE RAISED RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+disposal metadata). The existing spell with this id is already registered in the 
+Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its 
+bind-time fingerprint differs so it produces a unique spell_id.
+
+Q4 Q2 with A disposed (cleanup_spell) after the notch away, before the release
+    meld A -> Worker #4
+  CASE RAISED RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+disposal metadata). The existing spell with this id is already registered in the 
+Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its 
+bind-time fingerprint differs so it produces a unique spell_id.
+
+Q5 cleanup_spell of the only version, then the same binding again (same content-stable spell_id)
+    meld A -> Worker #5
+  [after cleanup_spell(A)]
+    pool A: count 1, idle 1, active_version False
+    the same spell_id again: True
+  [after the same binding again]
+    pool A: count 1, idle 1, active_version True
+    meld A again -> Worker #5
+    served the object idle in the pool its earlier definition left: True
+
+Q6 control: A binds Worker, B binds WorkerV2 on the same index
+    meld A -> Worker #6
+  [Worker pools after the release]
+    pool A: count 1, idle 1, active_version False
+  [WorkerV2 pools]
+    pool B: count 0, idle 0, active_version True
+

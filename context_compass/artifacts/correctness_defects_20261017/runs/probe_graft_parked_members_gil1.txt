@@ -1,0 +1,26 @@
+G1 graft of English's index (English active, French parked)
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active', 'French': 'inactive'}
+    graft: status complete; bound 1; parked 1; shortfalls []
+    host Book: active=['English'] parked=['French']
+
+G2 graft of the index remove_from_spell_index minted (French alone, parked)
+    source Book: active=['English'] parked=['French']
+    live minted index selects: French
+    record: selected French; members {'French': 'inactive'}
+    graft: status complete; bound 1; parked 0; shortfalls []
+    host Book: active=['French'] parked=[]
+
+G3 control: graft of English's index after French was separated (English alone)
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active'}
+    graft: status complete; bound 1; parked 0; shortfalls []
+    host Book: active=['English'] parked=[]
+
+G4 graft of English's index with French staged under English's signature (Greeter, 'english')
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active', 'French': 'inactive'}
+    graft: status complete; bound 1; parked 1; shortfalls []
+    host Book: active=['English'] parked=['French']
+    host frame claim ('greeter', 'english'): None
+

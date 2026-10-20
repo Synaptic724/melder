@@ -1,0 +1,5 @@
+python 3.14.7 gil=disabled melder=0.2.8243 calls=200000 rounds=7
+Aether()               min   70.0 ns  median   71.8 ns
+ReleaseManagedSpell()  min   69.3 ns  median   70.2 ns
+Aether()               min   68.9 ns  median   69.4 ns
+ReleaseManagedSpell()  min   69.7 ns  median   70.3 ns

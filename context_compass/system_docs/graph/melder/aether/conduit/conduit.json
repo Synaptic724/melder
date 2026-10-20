@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "2a7cc7f3b78898874c115aff01272019f04f19202600ef5791375deff159a89e",
+ "source_sha256": "7cfae3cd4b07d97ac10b97d22076366ff18b13711a7e9b130df80bacb66ab400",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -29,7 +29,7 @@
    "label": "Conduit",
    "kind": "class",
    "file": "src/melder/aether/conduit/conduit.py",
-   "lineno": 81,
+   "lineno": 83,
    "bases": [
     "Cleanable"
    ],
@@ -73,8 +73,8 @@
     "get_provider_conduit",
     "get_provider_conduits",
     "get_resolution_state",
-    "get_spell_by_id",
     "get_spell_by_index_id",
+    "get_spell_by_spell_id",
     "get_spell_in_contracts",
     "get_spell_permissions",
     "get_spells_in_contract_by_conduit",
@@ -84,6 +84,7 @@
     "id",
     "inspect_spell",
     "link",
+    "managed_spell_meld",
     "meld",
     "meld_existing_spell",
     "mutation_research",
@@ -115,11 +116,11 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 132,
+    "method_count": 140,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d798c02ed1cd841e3244fd118aac61bd1fd9e330913ec296122f7c7fcdd0a30d",
+   "span_sha256": "dbc0666ba5375687ec371570a3dafdd5e22e24e4f18cac353a29716428a45f6e",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -141,7 +142,18 @@
     "creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged",
     "returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op",
     "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups",
-    "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal"
+    "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal",
+    "emits an index destroy to index-link borrowers exactly when the Book's disposal reports the index it destroyed (cleanup_spell, 0.2.8231)",
+    "looks up contracted spells over a one-call copy of the Book's contracted peer ids and inspects objects, both with no conduit lock held (find_contracted_spell, inspect_spell, 0.2.8232)",
+    "builds its SpellSpacePool and, as a normal root, its ConduitPool elastic: 20 idle always kept, up to 256 after a burst, decaying when quiet (0.2.8234)",
+    "leaves its cluster as the first step of a root's teardown (_leave_cluster_for_teardown, 0.2.8236): the cluster's ordered exit while the frame is live, drop_member during frame teardown or after a failed exit",
+    "forwards a managed binding's four options through both binding facades unchanged (0.2.8242)",
+    "leases a managed spell through managed_spell_meld (0.2.8245): resolves the target as meld does, refuses another existence and a version with no pool before melding, melds the version by id and returns ManagedSpellLease(object, pool)",
+    "names a notch's target by spell_id - the spell_id bind or bind_inactive returned - or by spell, exactly one; resolves a spell_id through the Book's _get_owned_spell to the exact owned version, active or parked; and refuses a version the Book does not own or one of another index before the notch transaction and again inside its seal, so a refused notch moves nothing (notch_spell, _resolve_notch_target, _owned_notch_target, 0.2.8249)",
+    "names the parked spell add_to_spell_index and remove_from_spell_index move by spell_id or by spell, exactly one, under the notch's argument rules; resolves a spell_id through the Book's _get_owned_spell and refuses one the Book does not own before the transaction, leaving the rest to the Spellbook seams (_resolve_spell_to_move, _check_spell_argument, _owned_spell_by_id, 0.2.8249)",
+    "after a notch's transaction, between the deactivate fan-out and the index emission, has every linked peer make its parked copy of the incoming version active again, so a version grant is active exactly while its version is (_activate_borrowed_spell, 0.2.8250)",
+    "answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version",
+    "takes a version out of every contract of its Book's root conduit before the Book disposes it: hands the root ward's _emit_spell_disposed to Spellbook._dispose_spell as release_contracts, from the root or a lesser of its lineage, and emits an index destroy with no member id when the index went too; the Spellbook's own cleanup_spell comes here once conjured (cleanup_spell, 0.2.8261)"
    ],
    "owns_state": [
     "_meld",
@@ -158,7 +170,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3ebdc50daec4b5914caaf0a6b6eedf0be3aa6066b4b02fb2cae03319b1e333ba"
+   "semantics_authored_against": "dea791cc56036fb2102b77939be3e7726adbb1488a2c3f44cd7bf2b190b18b3c"
   }
  },
  "edges_out": [
@@ -215,6 +227,12 @@
   {
    "from": "melder.aether.conduit.conduit.Conduit",
    "to_label": "TransferOfOwnership",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ManagedSpellLease",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -313,6 +331,7 @@
   "ConduitWard": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
   "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
   "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
+  "ManagedSpellLease": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
   "ConduitPool": "melder.aether.conduit.conduit_pool.ConduitPool",
   "ConduitCrystal": "melder.crystallizer.crystals.conduit_crystal.ConduitCrystal",
   "SpellSpace": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
@@ -329,6 +348,7 @@
   "TransactionMediator": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
   "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
@@ -337,7 +357,8 @@
   "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
   "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
-  "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership"
+  "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+  "SitePlanRuntimeHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers"
  },
  "collapse_candidate": {
   "module": "melder.aether.conduit.conduit",
@@ -504,6 +525,17 @@
     "runtime"
    ],
    "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease",
+   "relation": "creates",
+   "why": "managed_spell_meld melds a managed version and returns its object as a lease over the version's pool.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   }
  ]
 }

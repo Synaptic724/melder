@@ -1,0 +1,5 @@
+  ACCEPT melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.spellbook.spellbook.Spellbook  (was SEMANTICS_STALE)
+  ACCEPT melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem  (was SEMANTICS_STALE)
+
+  ACCEPTED into 3 descriptor(s). Reassemble to refresh the document.

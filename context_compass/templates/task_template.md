@@ -6,8 +6,9 @@
 - Task ID: TASK-YYYY-MM-DD-<slug>
 - Story: STORY-YYYY-MM-DD-<slug>
 - Status: draft | ready | in_progress | blocked | done
-- Owner:
-- Agent Name: <one or more assigned names, comma-separated>
+- Owner: <accountable person/coordinator/team; not inferred technical author>
+- Agent Name: <actual assigned executor names, comma-separated; not publishing account>
+- Agent Role: <actual executor role/function; UNKNOWN if not established>
 - Priority: p0 | p1 | p2 | p3
 - Created: YYYY-MM-DDTHH:MM:SSZ
 - Updated: YYYY-MM-DDTHH:MM:SSZ
@@ -37,7 +38,8 @@
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+      before dependent work; no forced body copy.
 
 ## Deliverables
 - 
@@ -56,7 +58,7 @@
 ## Applicable Anti-Patterns
 - [ ] No status transition without evidence-backed transition reason.
 - [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
 - [ ] Steps complete and checked off
@@ -67,10 +69,13 @@
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
 - [ ] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
+Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
+this does not make independent review mandatory for every ticket.
+
 - ARTIFACTS_REQUIRED: true | false
 - ARTIFACT_PATHS:
   - <artifacts/YYYY-MM-DD_<slug>.<ext>>
@@ -87,12 +92,20 @@
 
 ## Noting Behavior
 - Note focus: tactical findings, concrete impacts, and single-step continuation.
-- Add a `## Notes` entry after each meaningful finding before continuing.
+- Multiple meaningful comments or authorized documents may hold findings directly; no forced
+  body copy of every finding is required before ordinary continuation.
 - Keep notes append-only; correct history only for factual errors.
 - Promote `UNKNOWN` to `FACT` only with direct evidence pointers.
 
+## Contribution Attribution
+- Ticket/Work Author(s): <actor; contribution kind; scope; artifact revision; evidence>
+- Published By: <observed hosting service/account and receipt; UNKNOWN before publication>
+- Independent Review: <reviewer; exact target revision/scope; verdict/evidence; independence>
+
 ## Notes
 - DATETIME: YYYY-MM-DDTHH:MM:SSZ
+  AUTHOR: <full assigned agent name or verified human author>
+  AUTHOR_ROLE: <actual role/function>
   TYPE:
     FACT | UNKNOWN | HYPOTHESIS | DECISION | DECISION_REQUEST | PLAN |
     STRATEGY_DISCUSSION | ASSUMPTION_CHALLENGE | CONFLICT | TRADEOFF |
@@ -107,7 +120,9 @@
   SCORE_0_TO_10: <0-10 compaction usefulness>
 
 ## Context / Handoff Summary
-<Succinct summary of current state, key decisions, and next steps for future context.>
+<One current resume view: scope/outcome; controlling decisions/holds; source/evidence revision;
+completed/remaining criteria; failed/unrun limits; owners; next 1-3 actions and necessary links.>
+Update this view in place. Preserve historical Notes/comments and link unchanged context/full evidence.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

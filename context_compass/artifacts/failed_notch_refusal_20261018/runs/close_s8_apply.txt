@@ -1,0 +1,2 @@
+anchors: 12 | dropped: | managed_settings_spell_id | done | mel | story lines: 1099 | long story lines: 39 | ts: 2026-10-19T13:24:30Z
+applied: story moved, boards synced, patch archived

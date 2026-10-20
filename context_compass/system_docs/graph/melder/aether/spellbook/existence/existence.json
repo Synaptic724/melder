@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/existence/existence.py",
- "source_sha256": "52b1a4c5d1881ff9577d6bd4d4b04ebfebd434bdb464dbfee57ea2817bc12b7b",
+ "source_sha256": "e7857a53637d5bde2e51d5fba11341163adc12c86768c8b79a5b0eb585b8a14c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.existence.existence": {
@@ -30,10 +30,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1fc198d180e1e17dfcc988cdb29b8c07f84e2c7fc4fb2b6ce093938ce497bb2b",
+   "span_sha256": "6a644f1920e7586c5ac318311e85b4fc54f5a018def585542828c03c81eb884e",
    "role": "Lifecycle mode enum for a spell binding.",
    "responsibilities": [
-    "labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes"
+    "labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes",
+    "managed_spell_quantity (0.2.8241): objects leased from a pool the owning root keeps per version and released back explicitly - the only member whose objects come back to Melder, and only when their holder releases them"
    ],
    "owns_state": [
     "unique",
@@ -41,12 +42,13 @@
     "many",
     "unique_per_conduit_cluster",
     "unique_per_conduit_lineage",
-    "unique_per_spell_space"
+    "unique_per_spell_space",
+    "managed_spell_quantity"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "1fc198d180e1e17dfcc988cdb29b8c07f84e2c7fc4fb2b6ce093938ce497bb2b"
+   "semantics_authored_against": "6a644f1920e7586c5ac318311e85b4fc54f5a018def585542828c03c81eb884e"
   }
  },
  "edges_out": [],

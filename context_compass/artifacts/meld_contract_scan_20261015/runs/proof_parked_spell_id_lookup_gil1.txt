@@ -1,0 +1,14 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01y9fvdxngfz65nliarhkobj/v314t/bin/python
+rootdir: /tmp/cc_res/relex/proof
+collecting ... collected 6 items
+
+test_parked_spell_id_lookup_proof.py::test_french_has_its_own_spell_id_and_its_own_spell_parked_in_the_lender_book PASSED
+test_parked_spell_id_lookup_proof.py::test_get_spell_by_id_with_frenchs_spell_id_returns_the_english_spell PASSED
+test_parked_spell_id_lookup_proof.py::test_find_spell_by_id_finds_french_then_returns_its_index_active_spell PASSED
+test_parked_spell_id_lookup_proof.py::test_add_spell_to_contract_by_frenchs_spell_id_refuses_with_the_id_mismatch PASSED
+test_parked_spell_id_lookup_proof.py::test_add_spell_to_contract_with_the_french_spell_object_is_accepted PASSED
+test_parked_spell_id_lookup_proof.py::test_after_the_notch_to_french_englishs_spell_id_returns_the_french_spell PASSED
+
+============================== 6 passed in 0.75s ===============================
+rc=0

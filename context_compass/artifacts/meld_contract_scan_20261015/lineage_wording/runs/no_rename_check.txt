@@ -1,0 +1,39 @@
+# proposed new names (none may exist):
+# exit 2
+# old names still present (counts per file):
+src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py:10
+src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py:3
+src/melder/_build_assets/_system_documents/payloads/src_components_payload.py:12
+src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py:4
+src/melder/utilities/custom_exceptions/spell_space_scope_error.py:1
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py:2
+src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py:3
+src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:1
+src/melder/aether/conduit/spell_space/spell_space.py:1
+src/melder/aether/conduit/meld/spellspace_meld.py:7
+src/melder/aether/conduit/creations/creations.py:2
+src/melder/aether/conduit/meld/meld.py:2
+src/melder/aether/conduit/meld/creation_context/creation_context.py:2
+src/melder/aether/conduit/meld/conduit_meld.py:11
+src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:2
+src/melder/aether/conduit/conduit.py:3
+src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:1
+src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:1
+src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:4
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py:2
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:2
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:2
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:1
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:4
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1
+src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:2
+src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1
+src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:1
+src/melder/aether/spellbook/spellbinder.py:2
+src/melder/aether/spellbook/resolution_style_matrix.py:2
+src/melder/aether/spellbook/existence/existence.py:3
+src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py:1
+src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:10
+src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1
+# src rg exit 1
+# tests rg exit 1

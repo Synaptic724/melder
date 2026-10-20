@@ -1,0 +1,12 @@
+........................................................................ [ 37%]
+........................................................................ [ 75%]
+..............................................                           [100%]
+=============================== warnings summary ===============================
+src/melder/__init__.py:190
+  /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+190 passed, 1 warning in 5.53s

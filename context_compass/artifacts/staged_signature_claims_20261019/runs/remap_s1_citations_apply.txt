@@ -1,0 +1,43 @@
+spellbook.py: 8344 -> 8378 lines
+src_architecture.md:655
+  - EVIDENCE: src/melder/aether/spellbook/spellbook.py:4087-4845 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+  + EVIDENCE: src/melder/aether/spellbook/spellbook.py:4087-4878 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+src_architecture.md:1069
+  - - src/melder/aether/spellbook/spellbook.py:4558-4652
+  + - src/melder/aether/spellbook/spellbook.py:4558-4653
+src_architecture.md:1070
+  - - src/melder/aether/spellbook/spellbook.py:4735-4845
+  + - src/melder/aether/spellbook/spellbook.py:4768-4878
+src_architecture.md:2467
+  - - src/melder/aether/spellbook/spellbook.py:7519-7562
+  + - src/melder/aether/spellbook/spellbook.py:7553-7596
+src_architecture.md:2470
+  - - src/melder/aether/spellbook/spellbook.py:7775
+  + - src/melder/aether/spellbook/spellbook.py:7809
+src_architecture.md: 5 lines changed
+src_components.md:589
+  - - src/melder/aether/spellbook/spellbook.py:4701, 4735 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4734, 4768 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+src_components.md:661
+  - - src/melder/aether/spellbook/spellbook.py:8138-8159 (`_run_structural_phases`; the caller-held-lock
+  + - src/melder/aether/spellbook/spellbook.py:8172-8193 (`_run_structural_phases`; the caller-held-lock
+src_components.md:868
+  - - src/melder/aether/spellbook/spellbook.py:4558-4652 (`_apply_add_to_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4558-4653 (`_apply_add_to_index`)
+src_components.md:869
+  - - src/melder/aether/spellbook/spellbook.py:4735-4845 (`_apply_remove_from_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4768-4878 (`_apply_remove_from_index`)
+src_components.md:879
+  - - src/melder/aether/spellbook/spellbook.py:6590-6595 (`Spellbook._initialize_configuration`, the
+  + - src/melder/aether/spellbook/spellbook.py:6624-6629 (`Spellbook._initialize_configuration`, the
+src_components.md:1134
+  - - src/melder/aether/spellbook/spellbook.py:6113-6129 (`Spellbook.bind
+  + - src/melder/aether/spellbook/spellbook.py:6147-6163 (`Spellbook.bind
+src_components.md:6658
+  - - src/melder/aether/spellbook/spellbook.py:4087, 4558, 4735 (applied seams)
+  + - src/melder/aether/spellbook/spellbook.py:4087, 4558, 4768 (applied seams)
+src_components.md:11424
+  - `src/melder/aether/spellbook/spellbook.py:7451`; the patch-lane copy cited
+  + `src/melder/aether/spellbook/spellbook.py:7485`; the patch-lane copy cited
+src_components.md: 8 lines changed
+applied

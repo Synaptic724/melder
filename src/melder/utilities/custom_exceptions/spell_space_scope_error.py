@@ -20,7 +20,7 @@ class SpellSpaceScopeError(RuntimeError):
         Enter the scope before resolving: `conduit.enter_spellspace()` creates
         and activates one, and `SpellSpace.meld(...)` is the only door that can
         satisfy request-local storage. The conduit front door deliberately
-        REFUSES `unique_per_spell_space` lineages rather than inventing a scope,
+        REFUSES `unique_per_spell_space` spells rather than inventing a scope,
         so this error means you resolved through the wrong door, not that the
         binding is wrong.
 

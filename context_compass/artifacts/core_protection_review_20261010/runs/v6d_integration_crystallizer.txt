@@ -1,0 +1,5 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/integration/melder/crystallizer/test_ordered_disposal_replay.py tests/integration/melder/crystallizer/test_synthetic_module_integration.py
+started: 2026-10-10T13:16:37Z
+...............................................................          [100%]
+63 passed in 166.16s (0:02:46)
+exit: 0 finished: 2026-10-10T13:19:24Z

@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python
+rootdir: /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private
+configfile: pyproject.toml
+collecting ... collected 938 items
+
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_skip_existing_formation_composes_over_a_live_world PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_wide_pool_chaos_tears_down_three_book_world PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_restored_borrower_melds_the_granted_spell PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_identity_map_covers_every_recorded_structural_id PASSED [  0%]
+tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_full_vocabulary_world_restores_identically_on_both_drivers PASSED [  0%]
+tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py::test_the_crystal_records_both_versions_options PASSED [  0%]
+tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py::test_a_restore_rebinds_both_versions_with_their_options PASSED [  0%]
+tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py::test_a_graft_rebinds_the_selected_and_parked_versions_with_their_options PASSED [  0%]
+tests/integration/melder/crystallizer/test_named_lesser_persistence.py::test_public_frame_configuration_records_book_before_named_scope_replay[local-config-sequential] PASSED [  0%]
+tests/integration/melder/crystallizer/test_named_lesser_persistence.py::test_public_frame_configuration_records_book_before_named_scope_replay[local-config-parallel] 

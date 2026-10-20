@@ -91,17 +91,10 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
         assert isinstance(spell.profile, SpellGeneralProfile)
         assert isinstance(spell.profile.binding_profile, ClassBindingProfile)
         assert spell._spellbook is spellbook
-        # The fingerprint composes bind-time facts: _bind_logic hashes the
-        # RESOLVED spell name (derived from the class), the lookup signature,
-        # existence, and resolved disposal metadata. The inspector passes its
-        # inputs through unresolved, so parity requires supplying the same
-        # resolved facts the bind computed.
-        assert Bind.spell_id_inspector(
-            BasicService,
-            spell_name=spell.spell_name,
-            existence=spell.existence,
-            disposal_method_names=spell.disposal_method_names,
-        ) == spell.spell_id
+        # The spell_id is the class's code (S1 of EPIC-2026-10-18-spell_identity_is_the_code): no bind-time
+        # fact enters it - the resolved name, the existence and the disposal names belong to the Spell's
+        # binding manifest - so the inspector, given the class alone, answers the id bind gave.
+        assert Bind.spell_id_inspector(BasicService) == spell.spell_id
     finally:
         binder.cleanup()
         spellbook.cleanup()

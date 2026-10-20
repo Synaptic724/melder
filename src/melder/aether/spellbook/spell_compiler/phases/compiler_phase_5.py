@@ -93,18 +93,18 @@ class CompilerPhase5:
 
     def _get_required_current_spell_id(self, spell: Spell) -> str:
         """
-        Resolve the current spell version id for the bound spell.
+        Resolve the current spell_id for the bound spell.
 
         Args:
             spell:
-                Spell expected to have a current version id.
+                Spell expected to have a current spell_id.
 
         Returns:
             str: Current spell id.
 
         Raises:
             RuntimeError:
-                If the spell has no current version id.
+                If the spell has no current spell_id.
         """
         current_spell_id = spell.spell_index.selected_spell_id
         if current_spell_id is None:
@@ -277,7 +277,7 @@ class CompilerPhase5:
             Share index construction between frame-wide and local Phase 5 paths.
         Contract:
             - Requires every snapshot spell id to be present in "spell_lookup".
-            - Resolves lineage ids from SpellSystemStates.
+            - Resolves each spell's SpellIndex id from SpellSystemStates.
             - Does not mutate snapshot or spell_lookup.
         Args:
             snapshot:
@@ -403,7 +403,7 @@ class CompilerPhase5:
                 snapshot:
                     Frame-wide SpellSystemAdjacencySnapshot to filter.
                 visible_spell_ids:
-                    Version ids are visible to this Spellbook. This collection is treated
+                    The spell_ids visible to this Spellbook. This collection is treated
                     as a live view and is not copied.
             Returns:
                 SpellSystemAdjacencySnapshot:

@@ -1,0 +1,6 @@
+[
+  {"path": "context_compass/attention_board.md",
+   "old": "  beside `spell=`, exactly one, and checks its target before and inside its transaction; TASK-2026-10-16-\n  public_notch_target_for_staged_versions). Notch above it if you land after.\n",
+   "new": "  beside `spell=`, exactly one, and checks its target before and inside its transaction;\n  TASK-2026-10-16-public_notch_target_for_staged_versions). Notch above it if you land after.\n",
+   "count": 1}
+]

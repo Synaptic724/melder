@@ -1,0 +1,20 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner accepted fix #1 as landed at 0.2.8253 (chat 2026-10-18: "ok cool I accept fix sure"). In the same
+    message he asked that every other finding be explained - "you can't just blanket look for ID not every ID means
+    the same thing": each finding must say what the id at that place in the code names (a version's spell_id, a
+    lineage's SpellIndex id, a peer conduit's id) and why that is or is not a defect, with a concrete scenario, read
+    from the code and its callers, not from where "id" matches. The message I answered asked to accept fix #1 and
+    close this ticket; his reply accepts the fix and says nothing about closing, so closure, the archive of the two
+    active patch folders and the held-file release stay open until he says so.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:2052-2128
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:2856-2881
+  IMPACT: Fix #1 is accepted (not committed; the owner commits). The origins 2-6 report of 19:49Z is re-examined id
+    by id, read-only on src/, before any of it is put to the owner again; a finding that rests only on a name match
+    is withdrawn.
+  NEXT: Re-read the 19:49Z-21:36Z origin notes, then each origin method whole with its callers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

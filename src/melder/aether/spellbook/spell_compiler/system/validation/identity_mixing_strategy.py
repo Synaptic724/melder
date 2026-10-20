@@ -28,11 +28,11 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class IdentityMixingStrategy(SpellSystemValidationStrategy):
     """
-    Guard that dependency edges stay on version ids rather than lineage ids.
+    Guard that dependency edges stay on spell_ids rather than SpellIndex ids.
 
     The system graph is supposed to route concrete spell versions, while
-    lineage ids are DevOps/control-plane identity. If a dependency edge starts
-    pointing at lineage ids directly, later planning and resolution become
+    SpellIndex ids are DevOps/control-plane identity. If a dependency edge starts
+    pointing at SpellIndex ids directly, later planning and resolution become
     ambiguous because the graph is no longer naming executable versions. This
     strategy catches that identity-layer mixing.
     """
@@ -51,21 +51,21 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that dependency ids are version ids, not lineage ids.
+        Validate that dependency ids are spell_ids, not SpellIndex ids.
 
         Purpose:
-            Catch dependency edges that reference lineage ids directly, which
+            Catch dependency edges that reference SpellIndex ids directly, which
             can cause resolution to drift or fail.
         Contract:
-            - Emits an error for each dependency id that matches a lineage id.
+            - Emits an error for each dependency id that matches a SpellIndex id.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:
@@ -94,7 +94,7 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
                         code="identity_mixing_detected",
                         message=(
                             f"Spell '{node.spell_id}' depends on lineage id '{dep_id}' "
-                            "instead of a version id."
+                            "instead of a spell_id."
                         ),
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=node.spell_id,

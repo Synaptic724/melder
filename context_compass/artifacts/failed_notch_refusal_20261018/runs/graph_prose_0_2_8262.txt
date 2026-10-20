@@ -1,0 +1,3 @@
+melder.aether.spellbook.spellbook.Spellbook responsibilities: 30 | edge why rewritten
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError responsibilities: 6
+applied

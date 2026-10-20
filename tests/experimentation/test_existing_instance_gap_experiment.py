@@ -396,7 +396,7 @@ def test_existing_disposal_policy(gap_book: Spellbook, kind: str) -> None:
         spell=supplied if kind == "instance" else DisposableValue,
         existence="unique", disposal_method_names=["dispose"],
     )
-    spell = gap_book.find_spell_by_id(target)
+    spell = gap_book.find_spell_by_spell_id(target)
     assert spell is not None
     methods = list(spell.disposal_method_names)
     root = gap_book.conjure(dynamic=True)

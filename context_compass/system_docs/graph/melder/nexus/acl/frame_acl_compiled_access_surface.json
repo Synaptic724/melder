@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/frame_acl_compiled_access_surface.py",
- "source_sha256": "f3a4dab0e7b982d515976f9661bace76e8a86f137389e46c33d5555ee2ef8671",
+ "source_sha256": "7621c35dce13756f664c5c48896dc27caaf1b827e9b638afc3cc5aee1d85e158",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.frame_acl_compiled_access_surface": {
@@ -57,7 +57,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "82cef32ab83a0f4ef501838dda12440da3bb9d8ee5e31458563c56ca1d5617ba",
+   "span_sha256": "f7f8b58faa7c3a4734d612406ce532ef8ce39e71256383903ad99b29c8c53237",
    "role": "Derived consumer-facing ACL access surface for one frame.",
    "responsibilities": [
     "stores derived visibility and command enablement answers",

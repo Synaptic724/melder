@@ -1,5 +1,11 @@
 # Mailbox Protocol
 
+This skill applies only when `agent_communication.backend` resolves to
+`mailbox` (the default when absent). In `codex_mcp` mode skip the checking,
+sending, and receiving sections below and use `codex_mcp.md` for transport.
+Maintain shared presence and setup outcomes in both modes through
+`agent_session_state.md`; existing board columns and schemas are unchanged.
+
 Canonical board: `context_compass/mailbox_board.md`.
 Alert surface: `## Message Alerts` section at the top of
 `context_compass/attention_board.md`.
@@ -13,19 +19,29 @@ The mailbox gives addressed, consume-on-read delivery while keeping
 `attention_board.md` routing/broadcast-only and keeping tickets as the
 single durable history.
 
-## Check-in (mandatory, first action AFTER certification)
+## Check-in (mandatory, first action after effective onboarding authorization)
 
 - **Read** `mailbox_board.md` during onboarding and re-onboarding - the roster and
   any messages addressed to you. **Write** your check-in row as your FIRST action
-  once the user returns `CERTIFY: APPROVED`, not before.
+  once effective onboarding authorization is reached, per `AGENTS.MD` /
+  Project Instructions Bootstrap, and the agent name is known. By default,
+  authorization requires `CERTIFY: APPROVED`. With an explicit waiver, complete
+  the remaining requirements and any specified replacement; no substitute token
+  is required for a waived step.
   - Why not during the gate: a check-in is a write, and `AGENTS.MD`'s
-    pre-certification carve-out permits reads only. The row also needs an
-    `AGENT_NAME`, and that value arrives in the certification message - so before
-    certification there is nothing valid to write into it.
+    pre-authorization carve-out permits reads only. The row also needs an
+    `AGENT_NAME`: normally that value arrives in the certification message,
+    or with a certification replacement, from owner/project instructions - so
+    before authorization there is nothing valid to write into it.
 - Then add or update your row in `## Checked-In Agents`:
   `| <agent_name> | <owner> | <checked_in_at> | <last_checked> | active |`
 - `checked_in_at` is set when you first check in for the session;
   `last_checked` updates EVERY time you read the message section.
+- Keep any harness setup outcome under `## Notes` associated with your session
+  identity, following `harness_custom_instructions.md` and the shared duties in
+  `agent_session_state.md`. Keep the stable session identity when
+  the user changes your name during re-onboarding. The existing roster columns
+  and message schema are unchanged.
 - Timestamps are ISO-8601 UTC, same as all boards.
 - When your session ends deliberately (final closure of your last lane),
   set `status` to `departed`. Stale `active` rows older than a day may be
@@ -34,7 +50,7 @@ single durable history.
 ## When checking is required (keep it cheap)
 
 - If you are the ONLY agent in `## Checked-In Agents` with status
-  `active`, the mailbox imposes no further duty. Do not poll it.
+  `active`, do not poll messages.
 - If MULTIPLE agents are active, read your messages:
   - at onboarding / re-onboarding (after check-in),
   - at every lane open, lane switch, and lane closure,
@@ -78,9 +94,10 @@ single durable history.
 - Both boards are shared files: on a write-conflict, re-read the current
   content and retry your edit against it. Never resolve a race by
   overwriting another agent's concurrent change.
-- Legal writes are: appending messages, maintaining YOUR check-in row,
-  and deleting messages addressed TO YOU. Never delete or edit another
-  agent's messages or check-in row (stale-marking excepted).
+- Legal writes are: appending messages, maintaining YOUR check-in row and
+  setup outcome in `## Notes`, and deleting messages addressed TO YOU.
+  Never delete or edit messages or check-in rows owned by other agents
+  (stale-marking excepted).
 
 ## Boundary with attention_board.md
 

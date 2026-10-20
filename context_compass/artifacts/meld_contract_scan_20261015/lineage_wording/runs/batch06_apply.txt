@@ -1,0 +1,30 @@
+--- src/melder/nexus/rift/command_system/command_system.py
++++ src/melder/nexus/rift/command_system/command_system.py
+@@ -1623,3 +1623,3 @@
+                 If the spell id is empty, missing, or ambiguous across
+-                published lineages.
++                published spell indexes.
+         """
+--- src/melder/crystallizer/crystal_loader_system/restore_engine.py
++++ src/melder/crystallizer/crystal_loader_system/restore_engine.py
+@@ -2577,3 +2577,3 @@
+               entries are REPORTED (auto-share on join covers the shareable
+-              lineages; leader election is a runtime act).
++              spells; leader election is a runtime act).
+ 
+@@ -2660,3 +2660,3 @@
+         if shared_entries:
+-            # Auto-share on member join re-grants shareable lineages;
++            # Auto-share on member join re-grants the shareable spells;
+             # whether it reproduces EVERY recorded entry cannot be
+@@ -2679,3 +2679,3 @@
+             - Ward record truth: a plain detail lives in the map of the
+-              side that OWNS the lineage ("initiated" via the link-time
++              side that OWNS the spell ("initiated" via the link-time
+               bulk grant, "received" via the borrow verb, which files
+@@ -2749,3 +2749,3 @@
+             for detail in list(payload.get(details_key, [])):
+-                # The map holder OWNS the lineage (both detail labels);
++                # The map holder OWNS the spell (both detail labels);
+                 # the peer borrowed it. The live verb is borrower-
+2 files, 5 edits applied and read back

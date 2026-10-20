@@ -75,18 +75,17 @@ class Consumer:
         self.label = "consumer"
 
 
-def _pair(frame_name: str, **posture):
-    """An owner and a borrower in one world, each from its own book."""
+def _pair(frame_name: str, **posture: object) -> tuple[md.Conduit, md.Conduit]:
+    """An owner and a borrower in one world, each from its own book.
+
+    Both books are EMPTY on purpose. link() asks the frame posture before
+    it reads a single spell, so these worlds need nothing bound to be
+    refused - and Service and Consumer are already one spell each in
+    rewire-world: a spell_id is the SHA256 of the class's code, so
+    binding them again here, under any binding_name, would be refused
+    before the posture gate ever spoke (advanced 02)."""
     owner_book = md.Spellbook(aetheric_frame=frame_name)
     borrower_book = md.Spellbook(aetheric_frame=frame_name)
-    service_id = owner_book.bind(
-        spell=Service, existence="unique", permissions="create",
-        binding_name=f"{frame_name}-service",
-    )
-    borrower_book.bind(
-        spell=Consumer, existence="unique", permissions="create",
-        binding_name=f"{frame_name}-consumer",
-    )
     if posture:
         owner_book.configure_aether_frame(
             disposal=None, disposal_method_names=None, **posture,
@@ -96,7 +95,7 @@ def _pair(frame_name: str, **posture):
     borrower = borrower_book.conjure(
         dynamic=dynamic, name=f"{frame_name}-borrower",
     )
-    return owner, borrower, service_id
+    return owner, borrower
 
 
 def main() -> None:
@@ -145,7 +144,7 @@ def main() -> None:
 
     # A WORLD TOLD NOT TO LINK REFUSES, AND SAYS WHY. This one IS
     # dynamic; it has simply been braked.
-    braked_owner, braked_borrower, _ = _pair(
+    braked_owner, braked_borrower = _pair(
         "rewire-braked", system_state="dynamic", disable_linking=True,
     )
     try:
@@ -160,7 +159,7 @@ def main() -> None:
     # AN ORDINARY STATIC WORLD REFUSES TOO - and with the SAME sentence,
     # because the posture gate answers first and an unconfigured
     # non-dynamic frame is already "not allowed to link" to it.
-    static_owner, static_borrower, _ = _pair("rewire-static")
+    static_owner, static_borrower = _pair("rewire-static")
     try:
         static_owner.link(static_borrower)
         raise AssertionError("expected a refusal: static cannot link")

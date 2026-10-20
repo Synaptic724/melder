@@ -1,0 +1,26 @@
+tree=/tmp/cc_res/rule2/before runs=20 gil_enabled=False
+run  1: {'refused': 1} unexpected=4 final=A 0.10s
+run  2: {'A': 4, 'refused': 2} unexpected=0 final=A 0.02s
+run  3: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run  4: {'A': 4, 'refused': 2} unexpected=0 final=A 0.02s
+run  5: {'refused': 7} unexpected=4 final=A 0.02s
+run  6: {'A': 2, 'refused': 3} unexpected=2 final=A 0.02s
+run  7: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run  8: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run  9: {'A': 3, 'refused': 3} unexpected=1 final=A 0.02s
+run 10: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run 11: {'A': 3, 'refused': 6} unexpected=1 final=A 0.02s
+run 12: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run 13: {'A': 4, 'refused': 1} unexpected=0 final=A 0.02s
+run 14: {'refused': 6} unexpected=0 final=A 0.02s
+run 15: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run 16: {'A': 3, 'refused': 3} unexpected=1 final=A 0.02s
+run 17: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+run 18: {'refused': 5} unexpected=0 final=A 0.02s
+run 19: {'refused': 5} unexpected=4 final=A 0.02s
+run 20: {'A': 4, 'refused': 3} unexpected=0 final=A 0.02s
+runs with an unexpected exception: 7 of 20
+  9 x MeldExecutionError: [MELD] Execution failed for spell 'Consumer' (65a0bc0f7f223c831fbccce7b890a5ce7aa4f4db236b
+  8 x AttributeError: 'SpellContract' object has no attribute 'ping'
+melds: {'A': 55, 'refused': 68}
+first meld after the race: {'A': 20}

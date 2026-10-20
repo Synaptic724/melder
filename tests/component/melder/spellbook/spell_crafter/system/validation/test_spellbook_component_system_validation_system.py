@@ -73,7 +73,7 @@ def _register_index(states, spell_id: str) -> SpellIndex:
         - Registers the lineage in the states registry.
     Args:
         states: SpellSystemStates registry.
-        spell_id: Version id to register.
+        spell_id: The spell_id to register.
     Returns:
         SpellIndex: The created spell index.
     """

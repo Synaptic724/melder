@@ -1,0 +1,22 @@
+I1 constant x*2 -> x*3               today: same      code hash: different
+I2 call save -> store                today: same      code hash: different
+I3 compare > -> >=                   today: same      code hash: different
+I4 inside the lambda                 today: same      code hash: different
+I5 inside the nested def             today: same      code hash: different
+I6 inside the comprehension          today: same      code hash: different
+I7 two statements swapped            today: same      code hash: different
+I8 local renamed total -> amount     today: same      code hash: different
+I9 comment inside the nested def     today: same      code hash: same
+hashed for Base.handle (first 12 instructions, operands resolved):
+    RESUME 0
+    LOAD_FAST_BORROW 'x'
+    LOAD_SMALL_INT 2
+    BINARY_OP 5
+    STORE_FAST 'total'
+    LOAD_FAST_BORROW 'x'
+    LOAD_SMALL_INT 0
+    COMPARE_OP '>'
+    POP_JUMP_IF_FALSE 68
+    NOT_TAKEN None
+    LOAD_FAST_BORROW 'self'
+    LOAD_ATTR 'save'

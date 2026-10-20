@@ -1,0 +1,1730 @@
+== src/melder/aether/aether.py
+ 2554 ok    [def _check_for_spell] si=4 cl=0 (batch11_compiler_control_plane)
+        - conduits register and unregister their lineages).
+        + conduits register and unregister their spell indexes).
+== src/melder/aether/aetheric_frame/aetheric_frame.py
+   41 CHECK [class AethericFrame] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - - Owns the version registry for all `SpellIndex` lineages in this frame.
+        + - Owns the version registry for every `SpellIndex` in this frame.
+   84 CHECK [class AethericFrame] si=-1 cl=-1 OLD-CL (batch11_compiler_control_plane)
+        - conduits, clusters, and spell lineages without collision, which is why
+        + conduits, clusters, and spells without collision, which is why
+  197 CHECK [def __init__] si=8 cl=2 (batch11_compiler_control_plane)
+        - # Per-frame graph + dirtiness registry for all spell lineages.
+        + # Per-frame graph + dirtiness registry for all spell indexes.
+  489 ok    [def spell_system_states] si=5 cl=0 (batch11_compiler_control_plane)
+        - - lineage graph topology,
+        + - SpellIndex graph topology,
+  949 ok    [def find_index_for_spell] si=7 cl=0 (batch11_compiler_control_plane)
+        - - Returns `None` for empty ids or when no matching lineage is found.
+        + - Returns `None` for empty ids or when no matching SpellIndex is found.
+ 1018 ok    [def _find_index_for_spell_unless_cleaned] si=6 cl=0 (batch11_compiler_control_plane)
+        - Optional[SpellIndex]: The index whose lineage holds `spell_id` while the
+        + Optional[SpellIndex]: The index whose members hold `spell_id` while the
+ 1294 ok    [def find_conduit_id_for_spell] si=4 cl=0 (batch11_compiler_control_plane)
+        - str | None: Owning conduit id, or `None` when no lineage in this
+        + str | None: Owning conduit id, or `None` when no SpellIndex in this
+== src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
+   66 CHECK [class ChangeControlManager] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
+        + Provide DevOps-facing bookkeeping for spell indexes, dirty roots, and
+ 1127 ok    [def register_pending_change] si=14 cl=0 (batch11_compiler_control_plane)
+        - Record a pending change for a spell lineage.
+        + Record a pending change for a SpellIndex.
+ 1130 ok    [def register_pending_change] si=14 cl=0 (batch11_compiler_control_plane)
+        - Track DevOps/AI-visible metadata for a SpellIndex lineage.
+        + Track DevOps/AI-visible metadata for a SpellIndex.
+ 1133 ok    [def register_pending_change] si=14 cl=0 (batch11_compiler_control_plane)
+        - - Last-write-wins for duplicate lineage ids.
+        + - Last-write-wins for duplicate SpellIndex ids.
+ 1136 ok    [def register_pending_change] si=14 cl=0 (batch11_compiler_control_plane)
+        - The SpellIndex for the lineage being tracked.
+        + The SpellIndex being tracked.
+ 1171 ok    [def get_pending_change] si=8 cl=0 (batch11_compiler_control_plane)
+        - Return a snapshot of pending change metadata for a lineage.
+        + Return a snapshot of pending change metadata for a SpellIndex.
+ 1179 ok    [def get_pending_change] si=8 cl=0 (batch11_compiler_control_plane)
+        - SpellIndex id of the lineage to query.
+        + Id of the SpellIndex to query.
+ 1206 ok    [def list_pending_changes] si=4 cl=0 (batch11_compiler_control_plane)
+        - Provide a tooling-friendly snapshot of all pending lineage changes.
+        + Provide a tooling-friendly snapshot of all pending SpellIndex changes.
+ 1229 ok    [def clear_pending_change] si=9 cl=0 (batch11_compiler_control_plane)
+        - Clear pending-change metadata for a lineage.
+        + Clear pending-change metadata for a SpellIndex.
+== src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py
+   27 CHECK [class Incident] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - - `spell_index_id`: optional lineage id primarily associated with the
+        + - `spell_index_id`: optional SpellIndex id primarily associated with the
+  124 ok    [def __init__] si=5 cl=0 (batch11_compiler_control_plane)
+        - spell_index_id: Optional lineage id primarily associated with the
+        + spell_index_id: Optional SpellIndex id primarily associated with the
+  230 ok    [def spell_index_id] si=4 cl=0 (batch11_compiler_control_plane)
+        - Return the lineage id primarily associated with the incident, if any.
+        + Return the SpellIndex id primarily associated with the incident, if any.
+  232 ok    [def spell_index_id] si=4 cl=0 (batch11_compiler_control_plane)
+        - This is the incident's main lineage anchor, not a derived search over
+        + This is the incident's main SpellIndex anchor, not a derived search over
+== src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py
+  187 ok    [def create_incident] si=5 cl=0 (batch11_compiler_control_plane)
+        - spell_index_id: Optional lineage id the incident is tied to.
+        + spell_index_id: Optional SpellIndex id the incident is tied to.
+  244 ok    [def list_incidents] si=6 cl=0 (batch11_compiler_control_plane)
+        - spell_index_id: Optional lineage-id filter.
+        + spell_index_id: Optional SpellIndex-id filter.
+== src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
+   23 CHECK [class _ConduitRiskState] si=-1 cl=-1 (batch07_risk_manager)
+        - - which lineages the conduit currently knows about
+        + - which spell indexes the conduit currently knows about
+   24 CHECK [class _ConduitRiskState] si=-1 cl=-1 (batch07_risk_manager)
+        - - which of those lineages are structurally risky
+        + - which of those spell indexes are structurally risky
+   47 CHECK [class _ConduitRiskState] si=-1 cl=-1 (batch07_risk_manager)
+        - this package is built around. Which lineages a conduit KNOWS ABOUT
+        + this package is built around. Which spell indexes a conduit KNOWS ABOUT
+   53 CHECK [class _ConduitRiskState] si=-1 cl=-1 (batch07_risk_manager)
+        - one merged risky-lineage set - is what preserves the distinction at the
+        + one merged risky-index set - is what preserves the distinction at the
+   80 CHECK [def __init__] si=0 cl=0 (batch07_risk_manager)
+        - - Starts with empty lineage and risk sets.
+        + - Starts with empty spell-index and risk sets.
+  102 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - "Does this conduit currently own or see any lineage whose state means meld
+        + "Does this conduit currently own or see any SpellIndex whose state means meld
+  106 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - - structural risk is tracked by lineage id
+        + - structural risk is tracked by SpellIndex id
+  107 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - - resolution risk is tracked by conduit-local lineage or spell id key
+        + - resolution risk is tracked by conduit-local SpellIndex id or spell id key
+  110 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - set holds a key that is not excluded; a lineage whose state carries
+        + set holds a key that is not excluded; a SpellIndex whose state carries
+  135 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - per-lineage and per-conduit verdicts; this class folds many verdicts
+        + per-SpellIndex and per-conduit verdicts; this class folds many verdicts
+  142 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - relevant lineage is risky would be a scan; a single spellbook-level
+        + relevant SpellIndex is risky would be a scan; a single spellbook-level
+  148 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - than merely fast. A never-validated lineage is indistinguishable from a
+        + than merely fast. A never-validated SpellIndex is indistinguishable from a
+  153 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - (lineage, conduit) pair, so one conduit's gated lineage must not mark a
+        + (SpellIndex, conduit) pair, so one conduit's gated SpellIndex must not mark a
+  155 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - lineage id instead.
+        + SpellIndex id instead.
+  157 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - validation gating - removing a lineage must never leave a stale "valid"
+        + validation gating - removing a SpellIndex must never leave a stale "valid"
+  159 CHECK [class RiskManager] si=-1 cl=-1 (batch07_risk_manager)
+        - The one exclusion is declared, not inferred. A lineage whose selected
+        + The one exclusion is declared, not inferred. A SpellIndex whose selected
+  192 ok    [def __init__] si=13 cl=0 (batch07_risk_manager)
+        - SpellSystemStates registry used to resolve lineage ids and
+        + SpellSystemStates registry used to resolve SpellIndex ids and
+  198 ok    [def __init__] si=13 cl=0 (batch07_risk_manager)
+        - - Starts with empty conduit-state and lineage-to-conduit indexes.
+        + - Starts with empty conduit-state and index-to-conduit maps.
+  228 ok    [def cleanup] si=2 cl=0 (batch07_risk_manager)
+        - - Clears conduit and lineage indexes before dropping the
+        + - Clears the conduit and index-to-conduit maps before dropping the
+  299 ok    [def unregister_conduit] si=1 cl=0 (batch07_risk_manager)
+        - Remove conduit tracking and clear lineage mappings.
+        + Remove conduit tracking and clear its index-to-conduit mappings.
+  303 ok    [def unregister_conduit] si=1 cl=0 (batch07_risk_manager)
+        - - Removes the conduit from every lineage-to-conduit reverse index it
+        + - Removes the conduit from every index-to-conduit reverse map it
+  337 ok    [def register_spell] si=2 cl=0 (batch07_risk_manager)
+        - - Adds the spell lineage to the conduit risk state.
+        + - Adds the spell's SpellIndex to the conduit risk state.
+  363 ok    [def unregister_spell] si=2 cl=0 (batch07_risk_manager)
+        - - Removes the spell lineage from the conduit risk state.
+        + - Removes the spell's SpellIndex from the conduit risk state.
+  365 ok    [def unregister_spell] si=2 cl=0 (batch07_risk_manager)
+        - lineage.
+        + SpellIndex.
+  402 ok    [def on_structural_validity_change] si=4 cl=0 (batch07_risk_manager)
+        - Update risk when structural validity changes for a lineage.
+        + Update risk when structural validity changes for a SpellIndex.
+  405 ok    [def on_structural_validity_change] si=4 cl=0 (batch07_risk_manager)
+        - - Updates all conduits currently referencing the lineage.
+        + - Updates all conduits currently referencing the SpellIndex.
+  407 ok    [def on_structural_validity_change] si=4 cl=0 (batch07_risk_manager)
+        - registered that lineage.
+        + registered that SpellIndex.
+  412 ok    [def on_structural_validity_change] si=4 cl=0 (batch07_risk_manager)
+        - lineage_id: Lineage identifier whose structural validity changed.
+        + lineage_id: SpellIndex id whose structural validity changed.
+  439 ok    [def on_resolution_validity_change] si=3 cl=0 (batch07_risk_manager)
+        - - Treats resolution risk as conduit-local even when the same lineage is
+        + - Treats resolution risk as conduit-local even when the same SpellIndex is
+  441 ok    [def on_resolution_validity_change] si=3 cl=0 (batch07_risk_manager)
+        - - Prefers lineage id tracking when the current spell id can be folded
+        + - Prefers SpellIndex id tracking when the current spell id can be folded
+  442 ok    [def on_resolution_validity_change] si=3 cl=0 (batch07_risk_manager)
+        - back onto a known lineage; otherwise falls back to a spell-version key.
+        + back onto a known SpellIndex; otherwise falls back to a spell-version key.
+  468 ok    [def _register_spell_risk] si=7 cl=0 (batch07_risk_manager)
+        - Track one spell's lineage in a conduit's risk bucket without refreshing the Book flag.
+        + Track one spell's SpellIndex in a conduit's risk bucket without refreshing the Book flag.
+  474 ok    [def _register_spell_risk] si=7 cl=0 (batch07_risk_manager)
+        - - Adds the lineage to the bucket and to the lineage-to-conduit index,
+        + - Adds the SpellIndex to the bucket and to the index-to-conduit map,
+  476 ok    [def _register_spell_risk] si=7 cl=0 (batch07_risk_manager)
+        - recomputes the lineage's structural and resolution risk from the
+        + recomputes the SpellIndex's structural and resolution risk from the
+  479 ok    [def _register_spell_risk] si=7 cl=0 (batch07_risk_manager)
+        - is missing, the spell has no lineage (cleaned), or the conduit has
+        + is missing, the spell has no SpellIndex (cleaned), or the conduit has
+  484 ok    [def _register_spell_risk] si=7 cl=0 (batch07_risk_manager)
+        - spell: Spell whose lineage is tracked.
+        + spell: Spell whose SpellIndex is tracked.
+  487 ok    [def _register_spell_risk] si=7 cl=0 (batch07_risk_manager)
+        - bool: True when the bucket tracked the lineage, so a refresh is due.
+        + bool: True when the bucket tracked the SpellIndex, so a refresh is due.
+  536 ok    [def _resolve_lineage_id] si=3 cl=0 (batch07_risk_manager)
+        - Resolve the stable lineage id for a spell, if available.
+        + Resolve the stable SpellIndex id for a spell, if available.
+  541 ok    [def _resolve_lineage_id] si=3 cl=0 (batch07_risk_manager)
+        - Optional[str]: Lineage id or None if unavailable.
+        + Optional[str]: SpellIndex id or None if unavailable.
+  549 ok    [def _resolve_lineage_id_from_spell_id] si=5 cl=0 (batch07_risk_manager)
+        - Resolve a lineage id from a current spell_id.
+        + Resolve a SpellIndex id from a current spell_id.
+  553 ok    [def _resolve_lineage_id_from_spell_id] si=5 cl=0 (batch07_risk_manager)
+        - lineage.
+        + SpellIndex.
+  558 ok    [def _resolve_lineage_id_from_spell_id] si=5 cl=0 (batch07_risk_manager)
+        - Optional[str]: Lineage id or None if unavailable.
+        + Optional[str]: SpellIndex id or None if unavailable.
+  575 ok    [def _get_structural_validity] si=2 cl=0 (batch07_risk_manager)
+        - spell is cleaned, or SpellValidity.unknown when no lineage state
+        + spell is cleaned, or SpellValidity.unknown when no SpellIndex state
+  620 ok    [def _update_structural_risk] si=2 cl=0 (batch07_risk_manager)
+        - Update the structural-risk set for one conduit/lineage pair.
+        + Update the structural-risk set for one conduit/SpellIndex pair.
+  624 ok    [def _update_structural_risk] si=2 cl=0 (batch07_risk_manager)
+        - lineage_id: Lineage identifier to mark risky or safe.
+        + lineage_id: SpellIndex id to mark risky or safe.
+  646 ok    [def _update_resolution_risk] si=2 cl=0 (batch07_risk_manager)
+        - lineage can be structurally fine but still need conduit-local
+        + SpellIndex can be structurally fine but still need conduit-local
+  651 ok    [def _update_resolution_risk] si=2 cl=0 (batch07_risk_manager)
+        - lineage_key: Lineage id or spell id key for tracking.
+        + lineage_key: SpellIndex id or spell id key for tracking.
+  669 ok    [def _refresh_spellbook_flag] si=2 cl=0 (batch07_risk_manager)
+        - excluded - a `spell:<id>` key, or a lineage whose registered state does
+        + excluded - a `spell:<id>` key, or a SpellIndex whose registered state does
+  674 ok    [def _refresh_spellbook_flag] si=2 cl=0 (batch07_risk_manager)
+        - - The risk sets are read, never changed: a flagged lineage stays in
+        + - The risk sets are read, never changed: a flagged SpellIndex stays in
+  677 ok    [def _refresh_spellbook_flag] si=2 cl=0 (batch07_risk_manager)
+        - published set of flagged lineages is read outside it, with no lock
+        + published set of flagged spell indexes is read outside it, with no lock
+  707 ok    [def _has_unexcluded_risk] si=8 cl=0 (batch07_risk_manager)
+        - A lineage whose registered state carries `SpellState.non_resolvable` is
+        + A SpellIndex whose registered state carries `SpellState.non_resolvable` is
+  711 ok    [def _has_unexcluded_risk] si=8 cl=0 (batch07_risk_manager)
+        - the gate. A `spell:<id>` key (a verdict not folded onto a lineage) and a
+        + the gate. A `spell:<id>` key (a verdict not folded onto a SpellIndex) and a
+  712 ok    [def _has_unexcluded_risk] si=8 cl=0 (batch07_risk_manager)
+        - lineage with no registered state (removed, and not yet dropped by
+        + SpellIndex with no registered state (removed, and not yet dropped by
+  715 ok    [def _has_unexcluded_risk] si=8 cl=0 (batch07_risk_manager)
+        - The registry publishes the flagged lineages as one immutable set
+        + The registry publishes the flagged spell indexes as one immutable set
+  726 ok    [def _has_unexcluded_risk] si=8 cl=0 (batch07_risk_manager)
+        - every key is a flagged lineage.
+        + every key is a flagged SpellIndex.
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
+  105 CHECK [class ConduitResolutionState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - same lineage can be perfectly resolvable in one conduit and gated in
+        + same spell can be perfectly resolvable in one conduit and gated in
+  578 ok    [def forget_spell] si=4 cl=0 (batch11_compiler_control_plane)
+        - scope, not of verdict: lineage membership in the risk model is
+        + scope, not of verdict: SpellIndex membership in the risk model is
+  583 ok    [def forget_spell] si=4 cl=0 (batch11_compiler_control_plane)
+        - lineage again (a peer that resolved the id through a contract).
+        + SpellIndex again (a peer that resolved the id through a contract).
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
+   20 CHECK [class SpellState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - sets it when the lineage's selected version was bound resolvable=False and
+        + sets it when the SpellIndex's selected version was bound resolvable=False and
+   23 CHECK [class SpellState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - validity; its one reader is RiskManager, which leaves a flagged lineage's
+        + validity; its one reader is RiskManager, which leaves a flagged SpellIndex's
+   42 CHECK [class SpellState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - contract, mutation, and ops concerns genuinely overlap on one lineage.
+        + contract, mutation, and ops concerns genuinely overlap on one SpellIndex.
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
+   67 CHECK [class SpellSystemState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - the lineage is unregistered.
+        + the SpellIndex is unregistered.
+   73 CHECK [class SpellSystemState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - The per-lineage row of the control tower. Its per-conduit counterpart
+        + The per-SpellIndex row of the control tower. Its per-conduit counterpart
+   89 CHECK [class SpellSystemState] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - change time instead of revalidating every lineage in the frame.
+        + change time instead of revalidating every SpellIndex in the frame.
+  309 ok    [def has_flag] si=3 cl=0 (batch11_compiler_control_plane)
+        - published set of flagged lineages (`non_resolvable_index_ids`) in
+        + published set of flagged spell indexes (`non_resolvable_index_ids`) in
+  515 ok    [def _republish_validity] si=5 cl=0 (batch11_compiler_control_plane)
+        - the gate publishes nothing, and the conduits holding the lineage would
+        + the gate publishes nothing, and the conduits holding the SpellIndex would
+  518 ok    [def _republish_validity] si=5 cl=0 (batch11_compiler_control_plane)
+        - The registry calls this so every conduit holding the lineage
+        + The registry calls this so every conduit holding the SpellIndex
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
+   68 CHECK [class SpellSystemStates] si=-1 cl=-1 (batch08_spell_system_states)
+        - lineage downstream of the notched one revalidates at its next meld
+        + SpellIndex downstream of the notched one revalidates at its next meld
+   79 CHECK [class SpellSystemStates] si=-1 cl=-1 (batch08_spell_system_states)
+        - the binding key each lineage was registered under, per-conduit
+        + the binding key each SpellIndex was registered under, per-conduit
+   81 CHECK [class SpellSystemStates] si=-1 cl=-1 (batch08_spell_system_states)
+        - lineages flagged `SpellState.non_resolvable`.
+        + spell indexes flagged `SpellState.non_resolvable`.
+   92 CHECK [class SpellSystemStates] si=-1 cl=-1 (batch08_spell_system_states)
+        - Unregistering a lineage notifies `RiskManager` to force validation
+        + Unregistering a SpellIndex notifies `RiskManager` to force validation
+  104 CHECK [class SpellSystemStates] si=-1 cl=-1 (batch08_spell_system_states)
+        - lineages as one immutable set (`non_resolvable_index_ids`), which
+        + spell indexes as one immutable set (`non_resolvable_index_ids`), which
+  130 CHECK [class SpellSystemStates] si=-1 cl=-1 (batch08_spell_system_states)
+        - genuinely impacted lineages. The separate collection-dependency and
+        + genuinely impacted spell indexes. The separate collection-dependency and
+  205 ok    [def __init__] si=6 cl=0 (batch08_spell_system_states)
+        - # The binding key of each lineage's selected version (`register_index(binding_key=...)`): the contract key a
+        + # The binding key of each index's selected version (`register_index(binding_key=...)`): the contract key a
+  206 ok    [def __init__] si=6 cl=0 (batch08_spell_system_states)
+        - # SpellContract consumer of that lineage declares, read by the downstream walk (`_mark_dependents_locked`).
+        + # SpellContract consumer of that index declares, read by the downstream walk (`_mark_dependents_locked`).
+  209 ok    [def __init__] si=6 cl=0 (batch08_spell_system_states)
+        - # The lineages whose state carries SpellState.non_resolvable, replaced
+        + # The spell indexes whose state carries SpellState.non_resolvable, replaced
+  377 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - lineage refreshes its Book flag with the new flag - a borrower whose
+        + SpellIndex refreshes its Book flag with the new flag - a borrower whose
+  379 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - - Keep the published set of flagged lineages in step with the flag
+        + - Keep the published set of flagged spell indexes in step with the flag
+  382 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - - Record `binding_key` as the lineage's binding key when one is given;
+        + - Record `binding_key` as the SpellIndex's binding key when one is given;
+  385 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - consumers of a lineage through this key, because a consumer declares
+        + consumers of a SpellIndex through this key, because a consumer declares
+  386 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - the key, not an edge to the lineage.
+        + the key, not an edge to the SpellIndex.
+  405 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - ownership transfer's registrations keep the lineage's key).
+        + ownership transfer's registrations keep the SpellIndex's key).
+  409 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - The lineage's live state.
+        + The SpellIndex's live state.
+  497 ok    [def register_index] si=39 cl=0 (batch08_spell_system_states)
+        - # holding this lineage about the changed flag here.
+        + # holding this SpellIndex about the changed flag here.
+  520 ok    [def _record_selected_capability] si=3 cl=0 (batch08_spell_system_states)
+        - The lineage's live state.
+        + The SpellIndex's live state.
+  538 ok    [def _publish_non_resolvable_membership_locked] si=11 cl=0 (batch08_spell_system_states)
+        - Put `index_id` in or out of the published set of flagged lineages; caller holds `_lock`.
+        + Put `index_id` in or out of the published set of flagged spell indexes; caller holds `_lock`.
+  541 ok    [def _publish_non_resolvable_membership_locked] si=11 cl=0 (batch08_spell_system_states)
+        - - `member` is whether the lineage's state carries
+        + - `member` is whether the SpellIndex's state carries
+  548 ok    [def _publish_non_resolvable_membership_locked] si=11 cl=0 (batch08_spell_system_states)
+        - Spell-index id (the lineage id).
+        + Spell-index id (`SpellIndex.id`).
+  550 ok    [def _publish_non_resolvable_membership_locked] si=11 cl=0 (batch08_spell_system_states)
+        - Whether the lineage belongs in the set.
+        + Whether the SpellIndex belongs in the set.
+  599 ok    [def index_has_flag] si=10 cl=0 (batch08_spell_system_states)
+        - Return whether the lineage registered under `index_id` carries `flag`.
+        + Return whether the SpellIndex registered under `index_id` carries `flag`.
+  602 ok    [def index_has_flag] si=10 cl=0 (batch08_spell_system_states)
+        - The per-lineage flag read. It reads the registry rather than a held
+        + The per-index flag read. It reads the registry rather than a held
+  603 ok    [def index_has_flag] si=10 cl=0 (batch08_spell_system_states)
+        - state reference, so a lineage removed meanwhile answers False.
+        + state reference, so a SpellIndex removed meanwhile answers False.
+  616 ok    [def index_has_flag] si=10 cl=0 (batch08_spell_system_states)
+        - Spell-index id (the lineage id).
+        + Spell-index id (`SpellIndex.id`).
+  646 ok    [def non_resolvable_index_ids] si=4 cl=0 (batch08_spell_system_states)
+        - Return the lineages whose state carries `SpellState.non_resolvable`.
+        + Return the spell indexes whose state carries `SpellState.non_resolvable`.
+  654 ok    [def non_resolvable_index_ids] si=4 cl=0 (batch08_spell_system_states)
+        - - Exactly the registered lineages whose state carries the flag:
+        + - Exactly the registered spell indexes whose state carries the flag:
+  655 ok    [def non_resolvable_index_ids] si=4 cl=0 (batch08_spell_system_states)
+        - `register_index` puts a lineage in or out right after it writes the
+        + `register_index` puts a SpellIndex in or out right after it writes the
+  657 ok    [def non_resolvable_index_ids] si=4 cl=0 (batch08_spell_system_states)
+        - out, so a removed lineage is never in it.
+        + out, so a removed SpellIndex is never in it.
+  923 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - Mark for revalidation every lineage downstream of `index_ids`, by registry edge or by contract key.
+        + Mark for revalidation every index downstream of `index_ids`, by registry edge or by contract key.
+  926 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - A notch changes what every dependent of the notched lineage resolves: a dependent's plan names the
+        + A notch changes what every dependent of the notched index resolves: a dependent's plan names the
+  928 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - notched lineage, so each dependent's next meld rechecks its structure and rebuilds against the
+        + notched index, so each dependent's next meld rechecks its structure and rebuilds against the
+  933 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - - The walk starts from the given lineages (the seeds) and follows, from every lineage it reaches,
+        + - The walk starts from the given indexes (the seeds) and follows, from every index it reaches,
+  935 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - the SpellContract consumers, in every Spellbook of the frame, of the binding key that lineage was
+        + the SpellContract consumers, in every Spellbook of the frame, of the binding key that index was
+  937 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - edge. A lineage with no recorded key is followed by its edges only.
+        + edge. A SpellIndex with no recorded key is followed by its edges only.
+  938 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - - A lineage reached by an edge gets `mark_transitively_dirty()` (gated, `impacted_by_dependency`,
+        + - An index reached by an edge gets `mark_transitively_dirty()` (gated, `impacted_by_dependency`,
+  943 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - no registered state is passed over. Each lineage is visited once, so a cycle of edges or contracts
+        + no registered state is passed over. Each index is visited once, so a cycle of edges or contracts
+  945 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - - Every marked lineage joins the dirty set. `set_validity` publishes a validity only when it
+        + - Every marked index joins the dirty set. `set_validity` publishes a validity only when it
+  946 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - changes, so a walk over lineages already gated publishes nothing.
+        + changes, so a walk over indexes already gated publishes nothing.
+  950 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - Spell-index ids (lineage ids) whose change starts the walk; empty and None ids are ignored.
+        + Spell-index ids whose change starts the walk; empty and None ids are ignored.
+  954 ok    [def mark_dependents_for_revalidation] si=8 cl=0 (batch08_spell_system_states)
+        - The lineage ids this call marked, seeds excluded; empty when nothing is downstream.
+        + The spell-index ids this call marked, seeds excluded; empty when nothing is downstream.
+  975 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - Walk downstream of `seeds` and mark every lineage reached; the caller holds `_lock`.
+        + Walk downstream of `seeds` and mark every index reached; the caller holds `_lock`.
+  982 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - - Follows reverse edges and the contract consumers of each reached lineage's binding key, across
+        + - Follows reverse edges and the contract consumers of each reached index's binding key, across
+  983 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - every Spellbook, visiting each lineage once (see `mark_dependents_for_revalidation`).
+        + every Spellbook, visiting each index once (see `mark_dependents_for_revalidation`).
+  984 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - - Marks after the walk, so a lineage's mark knows every way it was reached: the contract mark
+        + - Marks after the walk, so an index's mark knows every way it was reached: the contract mark
+  985 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - first, then the edge mark. Seeds are never marked; lineages with no registered state are
+        + first, then the edge mark. Seeds are never marked; indexes with no registered state are
+  986 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - skipped; every marked lineage joins `_dirty_indexes`.
+        + skipped; every marked index joins `_dirty_indexes`.
+  990 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - Non-empty lineage ids the walk starts from.
+        + Non-empty spell-index ids the walk starts from.
+  994 ok    [def _mark_dependents_locked] si=8 cl=0 (batch08_spell_system_states)
+        - The lineage ids marked.
+        + The spell-index ids marked.
+ 1157 ok    [def unregister_index] si=37 cl=0 (batch08_spell_system_states)
+        - - Take the lineage out of the published set of flagged lineages.
+        + - Take the SpellIndex out of the published set of flagged spell indexes.
+ 1160 ok    [def unregister_index] si=37 cl=0 (batch08_spell_system_states)
+        - forget the lineage's binding key.
+        + forget the SpellIndex's binding key.
+ 1208 ok    [def unregister_index] si=37 cl=0 (batch08_spell_system_states)
+        - # A removed lineage is never in the published flagged set.
+        + # A removed SpellIndex is never in the published flagged set.
+ 1327 ok    [def forget_spell_resolution_verdicts] si=2 cl=0 (batch08_spell_system_states)
+        - The per-conduit axis of lineage retirement. `unregister_index` and
+        + The per-conduit axis of SpellIndex retirement. `unregister_index` and
+ 1734 ok    [def mark_contract_dependents_dirty] si=6 cl=0 (batch08_spell_system_states)
+        - Set[str]: The consumers this call gated (the lineages the walk-on
+        + Set[str]: The consumers this call gated (the spell indexes the walk-on
+== src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py
+   66 CHECK [class SpellValidity] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - lineage starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
+        + SpellIndex starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
+== src/melder/aether/conduit/conduit.py
+ 3112 ok    [def _add_spells_to_aether] si=2 cl=0 (batch04_conduit)
+        - Adds this Conduit's local spell lineages (SpellIndex keys) into the shared
+        + Adds this Conduit's local spell indexes (SpellIndex keys) into the shared
+ 3153 ok    [def get_conduit_by_spell_id] si=1 cl=0 (batch04_conduit)
+        - another frame, its owner cleaned, or a lineage between owners while an
+        + another frame, its owner cleaned, or its SpellIndex between owners while an
+ 3232 ok    [def get_spell_by_spell_id] si=4 cl=0 (batch04_conduit)
+        - another frame, its owner cleaned, or a lineage between owners while an
+        + another frame, its owner cleaned, or its SpellIndex between owners while an
+ 3250 ok    [def get_spell_by_index_id] si=11 cl=0 (batch04_conduit)
+        - Retrieve a spell object by its stable SpellIndex lineage id.
+        + Retrieve a spell object by the stable id of its SpellIndex.
+ 3253 ok    [def get_spell_by_index_id] si=11 cl=0 (batch04_conduit)
+        - Expose the Spellbook-owned stable-lineage lookup path on the
+        + Expose the Spellbook-owned SpellIndex lookup path on the
+ 3258 ok    [def get_spell_by_index_id] si=11 cl=0 (batch04_conduit)
+        - - Resolves by SPELL INDEX id, so it addresses a whole version LINEAGE
+        + - Resolves by SPELL INDEX id, so it addresses a whole SpellIndex
+ 3259 ok    [def get_spell_by_index_id] si=11 cl=0 (batch04_conduit)
+        - rather than one version - the spell you get back is the lineage's
+        + rather than one version - the spell you get back is the index's
+ 3266 ok    [def get_spell_by_index_id] si=11 cl=0 (batch04_conduit)
+        - Stable SpellIndex lineage id (ULID) to resolve.
+        + Stable SpellIndex id (ULID) to resolve.
+ 3352 ok    [def find_spell_id] si=10 cl=0 (batch04_conduit)
+        - 1) Spellbook.find_spell_index(...) to locate the SpellIndex lineage.
+        + 1) Spellbook.find_spell_index(...) to locate the SpellIndex.
+ 3354 ok    [def find_spell_id] si=10 cl=0 (batch04_conduit)
+        - 3) Returns spell.spell_id (the current head version for that lineage).
+        + 3) Returns spell.spell_id (the version that SpellIndex selects now).
+ 4198 ok    [def get_spell_permissions] si=1 cl=0 (batch04_conduit)
+        - permissions THAT spell was bound with. Until 0.2.8253 it matched by lineage,
+        + permissions THAT spell was bound with. Until 0.2.8253 it matched by SpellIndex,
+ 4290 CHECK [def transfer_spell_ownership] si=4 cl=3 (batch04_conduit)
+        - - The whole lineage moves: the spell's index, with its active and
+        + - The spell's whole SpellIndex moves: the index, with its active and
+ 4344 CHECK [def transfer_spell_ownership] si=4 cl=3 (batch04_conduit)
+        - invalidate_after_transfer: If True, mark lineage dirty after transfer.
+        + invalidate_after_transfer: If True, mark the moved SpellIndex dirty after transfer.
+ 4345 CHECK [def transfer_spell_ownership] si=4 cl=3 (batch04_conduit)
+        - mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+        + mark_dependencies_dirty: If True, mark the dependencies' indexes dirty (even if not moved).
+ 4419 CHECK [def _build_transfer_transaction_metadata] si=12 cl=2 (batch04_conduit)
+        - Spell object, spell id string, or SpellIndex-like lineage
+        + Spell object, spell id string, or SpellIndex
+ 4426 CHECK [def _build_transfer_transaction_metadata] si=12 cl=2 (batch04_conduit)
+        - Whether owned dependency lineages should also transfer.
+        + Whether the owned dependencies' indexes should also transfer.
+ 4431 CHECK [def _build_transfer_transaction_metadata] si=12 cl=2 (batch04_conduit)
+        - Whether the moved lineage should remain gated/dirty afterward.
+        + Whether the moved SpellIndex should remain gated/dirty afterward.
+ 4529 CHECK [def _discover_transfer_footprint] si=1 cl=13 (batch04_conduit)
+        - Whether owned dependency lineages should also transfer.
+        + Whether the owned dependencies' indexes should also transfer.
+ 4533 CHECK [def _discover_transfer_footprint] si=1 cl=13 (batch04_conduit)
+        - Whether the moved lineage should remain gated/dirty afterward.
+        + Whether the moved SpellIndex should remain gated/dirty afterward.
+ 5682 CHECK [def notch_spell] si=19 cl=2 (batch04_conduit)
+        - remove anything. The previous member stays in the lineage, parked, and a
+        + remove anything. The previous member stays in the index, parked, and a
+ 5784 CHECK [def notch_spell] si=19 cl=2 (batch04_conduit)
+        - # Index-link receivers follow the lineage: move their subscription head
+        + # Index-link receivers follow the index's selected spell: move their subscription head
+ 6024 ok    [def add_to_spell_index] si=16 cl=0 (batch04_conduit)
+        - Move a staged (parked) spell into another index's lineage, ahead of a notch to
+        + Move a staged (parked) spell into another SpellIndex, ahead of a notch to
+ 6037 ok    [def add_to_spell_index] si=16 cl=0 (batch04_conduit)
+        - - Adds a version to the lineage WITHOUT making it active - selection is a
+        + - Adds a version to the index WITHOUT making it active - selection is a
+ 6092 ok    [def add_to_spell_index] si=16 cl=0 (batch04_conduit)
+        - # Capture the source lineage BEFORE the move: the seam repoints
+        + # Capture the source index BEFORE the move: the seam repoints
+ 6137 ok    [def remove_from_spell_index] si=11 cl=0 (batch04_conduit)
+        - Take a staged (parked) spell out of an index's lineage, into an index of its
+        + Take a staged (parked) spell out of its SpellIndex, into an index of its
+ 6261 ok    [def cleanup_spell] si=5 cl=0 (batch04_conduit)
+        - # A destroyed index-linked lineage must be dropped on its receivers so they
+        + # A destroyed SpellIndex shared by index link must be dropped on its receivers so they
+ 7397 CHECK [def remove_root_from_contracts] si=0 cl=0 (batch04_conduit)
+        - Lineage root whose contracted details should be untracked across
+        + The root spell whose contracted details should be untracked across
+ 7460 CHECK [def add_spell_to_contract_with_dependencies] si=0 cl=0 (batch04_conduit)
+        - The spell or lineage to grant across the existing contract.
+        + The spell (one version) to grant across the existing contract.
+== src/melder/aether/conduit/conduit_cluster.py
+   40 CHECK [class ConduitCluster] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - shareable root `SpellIndex` lineages to one another, so every member can
+        + shareable root spell indexes to one another, so every member can
+ 1502 CHECK [def describe] si=1 cl=2 (batch10_cluster_phase6_strategies)
+        - member ids, and shared-root lineage ids grouped by owner.
+        + member ids, and shared root SpellIndex ids grouped by owner.
+== src/melder/aether/conduit/conduit_ward/conduit_ward.py
+  114 CHECK [class ConduitWard] si=-1 cl=-1 (batch03_conduit_ward)
+        - `Permissions` bounds what each granted lineage allows, and
+        + `Permissions` bounds what each granted spell or SpellIndex allows, and
+  117 CHECK [class ConduitWard] si=-1 cl=-1 (batch03_conduit_ward)
+        - operation wards cannot express - changing who OWNS a lineage rather
+        + operation wards cannot express - changing who OWNS a SpellIndex rather
+ 1666 ok    [def _create_detail] si=5 cl=0 (batch03_conduit_ward)
+        - Factory for a lineage-aware Detail entry.
+        + Factory for a Detail entry: one granted spell and the SpellIndex it is organized under.
+ 1670 ok    [def _create_detail] si=5 cl=0 (batch03_conduit_ward)
+        - permissions (Permissions): The permissions applied to this lineage.
+        + permissions (Permissions): The permissions applied to this spell.
+ 1862 ok    [def _add_spell_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - It contracts one version of the spell's SpellIndex lineage. The borrower
+        + It contracts one version, one member of the spell's SpellIndex. The borrower
+ 1863 ok    [def _add_spell_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - holds a copy of that version: active while the version is the lineage's
+        + holds a copy of that version: active while the version is its index's
+ 1870 ok    [def _add_spell_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - follows the lineage to every new version instead.
+        + follows the SpellIndex to every newly selected version instead.
+ 2106 ok    [def _add_index_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - Link a whole SpellIndex (lineage) into the contract with `conduit` as an
+        + Link a whole SpellIndex into the contract with `conduit` as an
+ 2113 ok    [def _add_index_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - index: The owned lineage to share.
+        + index: The owned SpellIndex to share.
+ 2114 ok    [def _add_index_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - conduit / conduit_id: The owner conduit of the lineage (peer in the
+        + conduit / conduit_id: The owner conduit of the SpellIndex (peer in the
+ 2148 ok    [def _add_index_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - # owner conduit. Reuse the spell eligibility on the lineage's active head.
+        + # owner conduit. Reuse the spell eligibility on the index's selected spell.
+ 2206 ok    [def _add_index_to_contract] si=6 cl=0 (batch03_conduit_ward)
+        - # Map every member of the lineage as a per-member spell contract of the
+        + # Map every member of the SpellIndex as a per-member spell contract of the
+ 2279 ok    [def _get_index_links] si=6 cl=0 (batch03_conduit_ward)
+        - through any of this ward's contracts. The owner uses this to emit lineage
+        + through any of this ward's contracts. The owner uses this to emit SpellIndex
+ 2331 ok    [def _emit_index_notch] si=6 cl=0 (batch03_conduit_ward)
+        - Owner-side emission for a notch on an index-linked lineage. For every
+        + Owner-side emission for a notch of a SpellIndex shared by index link. For every
+ 2335 ok    [def _emit_index_notch] si=6 cl=0 (batch03_conduit_ward)
+        - receivers follow the lineage. Version-anchored borrowers are handled
+        + receivers follow the index's selected spell. Version-anchored borrowers are handled
+ 2344 ok    [def _emit_index_notch] si=6 cl=0 (batch03_conduit_ward)
+        - index: The notched lineage.
+        + index: The notched SpellIndex.
+ 2393 ok    [def _emit_index_destroy] si=8 cl=0 (batch03_conduit_ward)
+        - Owner-side emission when an index-linked lineage is destroyed: for every
+        + Owner-side emission when a SpellIndex shared by index link is destroyed: for every
+ 2397 ok    [def _emit_index_destroy] si=8 cl=0 (batch03_conduit_ward)
+        - subscription to a dead lineage.
+        + subscription to a dead SpellIndex.
+ 2436 ok    [def _emit_index_destroy] si=8 cl=0 (batch03_conduit_ward)
+        - # Record: the destroyed lineage's subscriptions left these contracts.
+        + # Record: the destroyed index's subscriptions left these contracts.
+ 2453 CHECK [def _contract_member_spell] si=0 cl=0 (batch03_conduit_ward)
+        - contracted copy -- active if the member is the lineage's active head, parked
+        + contracted copy -- active if the member is the index's selected spell, parked
+ 2523 ok    [def _emit_index_member_added] si=5 cl=0 (batch03_conduit_ward)
+        - Owner-side emission when a member is added to an index-linked lineage: for
+        + Owner-side emission when a member is added to a SpellIndex shared by index link: for
+ 2528 ok    [def _emit_index_member_added] si=5 cl=0 (batch03_conduit_ward)
+        - index: The lineage that gained a member.
+        + index: The SpellIndex that gained a member.
+ 2561 ok    [def _emit_index_member_removed] si=5 cl=0 (batch03_conduit_ward)
+        - Owner-side emission when a member leaves an index-linked lineage: for every
+        + Owner-side emission when a member leaves a SpellIndex shared by index link: for every
+ 2566 ok    [def _emit_index_member_removed] si=5 cl=0 (batch03_conduit_ward)
+        - index_id: Stable id of the lineage that lost a member.
+        + index_id: Stable id of the SpellIndex that lost a member.
+ 2785 CHECK [def _remove_root_from_contracts] si=0 cl=0 (batch03_conduit_ward)
+        - lineage. This helper removes one `root_spell_id` source from matching
+        + spell. This helper removes one `root_spell_id` source from matching
+ 2925 CHECK [def walk] si=1 cl=4 (batch03_conduit_ward)
+        - Depth-first dependency contracting walk for one root lineage.
+        + Depth-first dependency contracting walk for one root spell.
+ 3157 ok    [def _add_spells_to_contract] si=1 cl=0 (batch03_conduit_ward)
+        - applies the single-spell lineage-aware add path repeatedly and returns
+        + applies the single-spell, SpellIndex-aware add path repeatedly and returns
+ 3363 ok    [def _remove_spells_from_contract] si=1 cl=0 (batch03_conduit_ward)
+        - lineage/source-aware removal semantics and cleanup behavior as the
+        + SpellIndex- and source-aware removal semantics and cleanup behavior as the
+ 3498 ok    [def _get_all_spells_in_contracts] si=10 cl=0 (batch03_conduit_ward)
+        - so if the lineage has mutated, we get the **current** spell object.
+        + so if the index's selected spell has moved, we get the **current** spell object.
+ 3504 ok    [def _get_all_spells_in_contracts] si=10 cl=0 (batch03_conduit_ward)
+        - - Returns the current visible version for each contracted lineage,
+        + - Returns the current visible version for each contracted SpellIndex,
+ 3539 ok    [def _get_all_spells_in_contracts] si=10 cl=0 (batch03_conduit_ward)
+        - # lineage-based resolution
+        + # SpellIndex-based resolution
+ 3597 ok    [def _get_spell_in_contracts] si=14 cl=0 (batch03_conduit_ward)
+        - This now behaves in a lineage-aware way:
+        + This now resolves through each Detail's SpellIndex:
+ 3599 ok    [def _get_spell_in_contracts] si=14 cl=0 (batch03_conduit_ward)
+        - * spell_id may be ANY version SHA belonging to the lineage.
+        + * spell_id may be ANY version SHA in a contracted spell's SpellIndex.
+ 3612 ok    [def _get_spell_in_contracts] si=14 cl=0 (batch03_conduit_ward)
+        - lineage, not necessarily the historical version string the caller
+        + SpellIndex, not necessarily the historical version string the caller
+ 3631 ok    [def _get_spell_in_contracts] si=14 cl=0 (batch03_conduit_ward)
+        - # O(1) first: the detail contracted for exactly this version. The lineage walk runs
+        + # O(1) first: the detail contracted for exactly this version. The index walk runs
+ 3632 ok    [def _get_spell_in_contracts] si=14 cl=0 (batch03_conduit_ward)
+        - # only when the id is another version of a contracted lineage; every detail whose index
+        + # only when the id is another version in a contracted SpellIndex; every detail whose index
+ 3820 ok    [def _transfer_spell_ownership] si=9 cl=0 (batch03_conduit_ward)
+        - invalidate_after_transfer: If True, mark lineage dirty after transfer.
+        + invalidate_after_transfer: If True, mark the moved SpellIndex dirty after transfer.
+ 3821 ok    [def _transfer_spell_ownership] si=9 cl=0 (batch03_conduit_ward)
+        - mark_dependencies_dirty: If True, mark dependency lineages dirty (even if not moved).
+        + mark_dependencies_dirty: If True, mark the dependencies' indexes dirty (even if not moved).
+== src/melder/aether/conduit/conduit_ward/contract/contract.py
+   24 CHECK [class Contract] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - which lineages are shared and with what permissions. Each side can grant
+        + which spells and spell indexes are shared and with what permissions. Each side can grant
+   30 CHECK [class Contract] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - - lineage-aware source tagging used by dependency-linked rollback
+        + - root-spell source tagging used by dependency-linked rollback
+   71 CHECK [class Contract] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - a `SpellIndex`, so the borrower follows the lineage HEAD rather than a
+        + a `SpellIndex`, so the borrower follows the index's selected spell rather than a
+  121 ok    [def __init__] si=2 cl=0 (batch12_contracts_crystals_views)
+        - # Index-link details: per-ward maps of index_id -> IndexDetail (lineage
+        + # Index-link details: per-ward maps of index_id -> IndexDetail (SpellIndex
+  274 CHECK [def _add] si=0 cl=0 (batch12_contracts_crystals_views)
+        - # Merge sources if this lineage already exists with the same permissions.
+        + # Merge sources if this spell_id already has a Detail with the same permissions.
+== src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py
+    9 CHECK [class ContractTypes] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - map describing which spell lineages it exposed or borrowed in that
+        + map describing which spells it exposed or borrowed in that
+   13 CHECK [class ContractTypes] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - This matters during reconciliation and rollback because the same lineage
+        + This matters during reconciliation and rollback because the same spell
+   17 CHECK [class ContractTypes] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the owning ward is the source of the lineage. This detail records a
+        + the owning ward is the source of the spell. This detail records a
+   21 CHECK [class ContractTypes] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the owning ward is the borrower. This detail records a lineage that came
+        + the owning ward is the borrower. This detail records a spell that came
+   39 CHECK [class ContractTypes] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - lineage appears as `initiated` on the granting side and `received` on
+        + spell appears as `initiated` on the granting side and `received` on
+== src/melder/aether/conduit/conduit_ward/contract/detail_reason.py
+    7 CHECK [class DetailReason] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - The ward uses this enum to distinguish directly shared lineages from
+        + The ward uses this enum to distinguish directly shared spells from
+   26 CHECK [class DetailReason] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - does it exist" for every lineage inside a contract.
+        + does it exist" for every Detail inside a contract.
+== src/melder/aether/conduit/conduit_ward/contract/details.py
+   18 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - A `Detail` records which lineage is being shared, which version was
+        + A `Detail` records which spell is being shared (the spell_id granted), / the SpellIndex that spell is organized under, and what permission / applies. It is direction-aware (via `contract_type`). It also carries / optional `sources`, which lets the ward
+   22 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - present when the contract was created, and what permission applies.
+        + 
+   22 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - It is lineage-aware (uses `SpellIndex`) and direction-aware (via
+        + 
+   22 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - `contract_type`). It also carries optional `sources`, which lets the ward
+        + 
+   26 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - spell_index (SpellIndex): Lineage identity for the contracted spell.
+        + spell_index (SpellIndex): The SpellIndex the contracted spell is organized under.
+   53 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - lineage is granted or borrowed; users read contract state through ward
+        + spell is granted or borrowed; users read contract state through ward
+   58 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - `IndexDetail`, which subscribes to a whole lineage instead. Its three
+        + `IndexDetail`, which subscribes to a whole SpellIndex instead. Its three
+   64 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - `sources` is what makes dependency-linked rollback correct. One lineage
+        + `sources` is what makes dependency-linked rollback correct. One spell
+   68 CHECK [class Detail] si=-1 cl=-1 (batch01_details_spell_index)
+        - root would revoke a lineage another root still depends on.
+        + root would revoke a spell another root still depends on.
+  103 ok    [def __init__] si=14 cl=0 (batch01_details_spell_index)
+        - spell_index: Lineage identifier for the contracted spell.
+        + spell_index: The SpellIndex the contracted spell is organized under.
+  105 ok    [def __init__] si=14 cl=0 (batch01_details_spell_index)
+        - permissions: Permission granted to this lineage.
+        + permissions: Permission granted for this spell.
+  116 ok    [def __init__] si=14 cl=0 (batch01_details_spell_index)
+        - `spell_index` remains the durable lineage anchor used for later
+        + `spell_index` records the SpellIndex that spell is organized under,
+  117 ok    [def __init__] si=14 cl=0 (batch01_details_spell_index)
+        - current-head resolution.
+        + which later reads use to find the index's selected spell.
+  163 ok    [def cleanup] si=2 cl=0 (batch01_details_spell_index)
+        - Drops references to the lineage, version, permissions, and contract
+        + Drops references to the SpellIndex, spell id, permissions, and contract
+  195 ok    [def has_spell] si=4 cl=0 (batch01_details_spell_index)
+        - Check whether this lineage contains a specific version SHA.
+        + Check whether this row's SpellIndex contains a specific spell id.
+  201 ok    [def has_spell] si=4 cl=0 (batch01_details_spell_index)
+        - bool: True if the lineage advertises the version, else False; False once the
+        + bool: True if the SpellIndex holds that spell id, else False; False once the
+  205 ok    [def has_spell] si=4 cl=0 (batch01_details_spell_index)
+        - The index belongs to the Book that owns the lineage, which can clean it while
+        + The index belongs to the Book that owns its spells, which can clean it while
+  219 CHECK [def add_source] si=0 cl=0 (batch01_details_spell_index)
+        - detail when they transitively require the same contracted lineage.
+        + detail when they transitively require the same contracted spell.
+  254 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - whole SpellIndex (lineage). It is identified by the index's stable id
+        + whole SpellIndex. It is identified by the index's stable id
+  255 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - (`index_id`), and `selected_spell_id` tracks the lineage's CURRENT active
+        + (`index_id`), and `selected_spell_id` tracks the index's CURRENT selected
+  256 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - member -- it is updated as the owner notches, so the contract surface never has
+        + spell -- it is updated as the owner notches, so the contract surface never has
+  261 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - spell_index (SpellIndex): The contracted lineage (durable identity).
+        + spell_index (SpellIndex): The contracted SpellIndex (durable identity).
+  262 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - selected_spell_id (str): The lineage's current active member id (mutable).
+        + selected_spell_id (str): The index's currently selected spell id (mutable).
+  296 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - an owner can notch a lineage - repointing its active spell - and every
+        + an owner can notch a SpellIndex - repointing its selected spell - and every
+  298 CHECK [class IndexDetail] si=-1 cl=-1 (batch01_details_spell_index)
+        - alternative, re-granting each borrowed lineage on every notch, would
+        + alternative, re-granting each borrowed SpellIndex on every notch, would
+  336 ok    [def __init__] si=13 cl=0 (batch01_details_spell_index)
+        - spell_index: The contracted lineage (durable identity / map key source).
+        + spell_index: The contracted SpellIndex (durable identity / map key source).
+  337 ok    [def __init__] si=13 cl=0 (batch01_details_spell_index)
+        - selected_spell_id: The lineage's active member id at creation time.
+        + selected_spell_id: The index's selected spell id at creation time.
+  338 ok    [def __init__] si=13 cl=0 (batch01_details_spell_index)
+        - permissions: Permission granted to this lineage.
+        + permissions: Permission granted for this SpellIndex.
+  391 CHECK [def update_selected] si=0 cl=0 (batch01_details_spell_index)
+        - Repoint the subscription to the lineage's new active member.
+        + Repoint the subscription to the index's newly selected spell.
+  397 CHECK [def update_selected] si=0 cl=0 (batch01_details_spell_index)
+        - spell_id: The lineage's new active member id.
+        + spell_id: The index's newly selected spell id.
+  431 ok    [def has_spell] si=4 cl=0 (batch01_details_spell_index)
+        - Check whether the contracted lineage contains a specific version SHA.
+        + Check whether the contracted SpellIndex contains a specific spell id.
+  437 ok    [def has_spell] si=4 cl=0 (batch01_details_spell_index)
+        - bool: True if the lineage advertises the version, else False; False once the
+        + bool: True if the SpellIndex holds that spell id, else False; False once the
+  441 ok    [def has_spell] si=4 cl=0 (batch01_details_spell_index)
+        - The index belongs to the Book that owns the lineage, which can clean it while
+        + The index belongs to the Book that owns its spells, which can clean it while
+== src/melder/aether/conduit/conduit_ward/permissions/permissions.py
+    5 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - Capability ceiling for a spell lineage in ward-local and contracted views.
+        + Capability ceiling for a spell in ward-local and contracted views.
+   12 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - that lineage
+        + that spell
+   15 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - ward logic deliberately never escalates a contracted lineage beyond the
+        + ward logic deliberately never escalates a contracted spell beyond the
+   19 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the lineage may be resolved and inspected through a contract, but it
+        + the spell may be resolved and inspected through a contract, but it
+   24 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the lineage may participate in creation-capable dependency resolution and
+        + the spell may participate in creation-capable dependency resolution and
+   28 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the lineage should not be contractable in normal flows. The ward treats
+        + the spell should not be contractable in normal flows. The ward treats
+   37 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - The PER-LINEAGE half of the ward vocabulary, paired with `Policies`
+        + The PER-SPELL half of the ward vocabulary, paired with `Policies`
+   39 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - is the load-bearing invariant: a contracted lineage is never granted
+        + is the load-bearing invariant: a contracted spell is never granted
+   49 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the lineage cannot act as a creation-capable dependency when work
+        + the spell cannot act as a creation-capable dependency when work
+   54 CHECK [class Permissions] si=-1 cl=-1 OLD-CL (batch12_contracts_crystals_views)
+        - lineages, and a `read`-only default would make the cluster inert.
+        + spells, and a `read`-only default would make the cluster inert.
+   59 CHECK [class Permissions] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - access: public. Capability ceiling for a lineage: read (resolve/inspect only), create
+        + access: public. Capability ceiling for a spell: read (resolve/inspect only), create
+== src/melder/aether/conduit/conduit_ward/policies/policies.py
+   12 CHECK [class Policies] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - - whether it may accept inbound borrowed lineages
+        + - whether it may accept inbound borrowed spells
+   27 CHECK [class Policies] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - expose local lineages without requiring per-spell whitelist flags and
+        + expose local spells without requiring per-spell whitelist flags and
+   47 CHECK [class Policies] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - `Permissions` is the PER-LINEAGE ceiling (what a peer may do with a
+        + `Permissions` is the PER-SPELL ceiling (what a peer may do with a
+   51 CHECK [class Policies] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - lineage's own permission allows the capability.
+        + spell's own permission allows the capability.
+   60 CHECK [class Policies] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - it lets a lineage marked `Permissions.block` pass the ward gate. That
+        + it lets a spell marked `Permissions.block` pass the ward gate. That
+== src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
+   42 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - Control-plane helper that migrates a spell lineage between conduit owners.
+        + Control-plane helper that migrates a spell's SpellIndex between conduit owners.
+   51 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - - `preflight()` performs a read-only inventory of the lineage, its
+        + - `preflight()` performs a read-only inventory of the SpellIndex, its
+   55 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - lineage, flipping the canonical registry/spellbook ownership under lock,
+        + SpellIndex, flipping the canonical registry/spellbook ownership under lock,
+   61 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - - Transfer moves canonical lineage ownership plus conduit-owned runtime
+        + - Transfer moves canonical SpellIndex ownership plus conduit-owned runtime
+   64 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - - If a spellspace-scoped lineage is transferred while an old source
+        + - If the SpellIndex of a spellspace-scoped spell is transferred while an old source
+   97 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - `ConduitWard` grants and revokes access to a lineage someone else owns;
+        + `ConduitWard` grants and revokes access to a spell or SpellIndex someone else owns;
+  105 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - then does `execute()` disable the lineage, flip ownership under guard,
+        + then does `execute()` disable the SpellIndex, flip ownership under guard,
+  123 CHECK [class TransferOfOwnership] si=-1 cl=-1 (batch05_transfer_of_ownership)
+        - access: internal. Control-plane helper that migrates a spell lineage between conduit
+        + access: internal. Control-plane helper that migrates a spell's SpellIndex between conduit
+  167 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - whether owned dependencies move with the root lineage, whether existing
+        + whether owned dependencies move with the root spell, whether existing
+  168 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - shares are force-unshared or repointed, and whether impacted lineages
+        + shares are force-unshared or repointed, and whether impacted indexes
+  173 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - source_conduit: Conduit that currently owns the root lineage.
+        + source_conduit: Conduit that currently owns the spell's SpellIndex.
+  176 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - lineage to move.
+        + SpellIndex to move.
+  177 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - move_creations: When true, move the lineage's instances from the
+        + move_creations: When true, move the index members' instances from the
+  184 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - include_dependencies: When true, transfer owned dependency lineages
+        + include_dependencies: When true, transfer the owned dependencies' indexes
+  189 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - invalidate_after_transfer: When true, leave the moved lineage and
+        + invalidate_after_transfer: When true, leave the moved SpellIndex and
+  193 ok    [def __init__] si=4 cl=0 (batch05_transfer_of_ownership)
+        - lineages dirty so stale downstream state is not reused.
+        + indexes dirty so stale downstream state is not reused.
+  290 ok    [def preflight] si=1 cl=0 (batch05_transfer_of_ownership)
+        - Build a read-only transfer plan for the requested lineage.
+        + Build a read-only transfer plan for the requested SpellIndex.
+  374 CHECK [def execute] si=11 cl=5 (batch05_transfer_of_ownership)
+        - 1. disable the lineage so callers cannot resolve it mid-transfer
+        + 1. disable the SpellIndex so callers cannot resolve it mid-transfer
+  379 CHECK [def execute] si=11 cl=5 (batch05_transfer_of_ownership)
+        - 5. leave the lineage gated/dirty or simply re-enable it according to
+        + 5. leave the SpellIndex gated/dirty or simply re-enable it according to
+  388 CHECK [def execute] si=11 cl=5 (batch05_transfer_of_ownership)
+        - runtime view, the lineage is lifted back to a safe gated state, and the
+        + runtime view, the SpellIndex is lifted back to a safe gated state, and the
+  443 CHECK [def execute] si=11 cl=5 (batch05_transfer_of_ownership)
+        - # After successful transfer, move lineage back to gated/dirty so validation can clear it.
+        + # After successful transfer, move the SpellIndex back to gated/dirty so validation can clear it.
+  517 ok    [def _assert_dynamic_mode] si=1 cl=0 (batch05_transfer_of_ownership)
+        - the move depends on runtime contract teardown/repointing and lineage
+        + the move depends on runtime contract teardown/repointing and SpellIndex
+  534 ok    [def _resolve_spell] si=7 cl=0 (batch05_transfer_of_ownership)
+        - so it can inspect ownership, dependencies, creations, and lineage
+        + so it can inspect ownership, dependencies, creations, and SpellIndex
+  596 CHECK [def _enumerate_borrowers] si=1 cl=14 (batch05_transfer_of_ownership)
+        - Enumerate downstream runtime surfaces currently borrowing this lineage.
+        + Enumerate downstream runtime surfaces currently borrowing this spell or its SpellIndex.
+  702 ok    [def _deps_resolvable_on_target] si=2 cl=0 (batch05_transfer_of_ownership)
+        - ids, the root lineage would arrive in a knowingly broken state.
+        + ids, the moved SpellIndex would arrive in a knowingly broken state.
+  741 ok    [def _mark_lineage_dirty] si=11 cl=0 (batch05_transfer_of_ownership)
+        - Record a structural-change gate for one lineage in `SpellSystemStates`.
+        + Record a structural-change gate for one SpellIndex in `SpellSystemStates`.
+  744 ok    [def _mark_lineage_dirty] si=11 cl=0 (batch05_transfer_of_ownership)
+        - hard-disabling the lineage, it marks the lineage as structurally changed
+        + hard-disabling the SpellIndex, it marks the SpellIndex as structurally changed
+  745 ok    [def _mark_lineage_dirty] si=11 cl=0 (batch05_transfer_of_ownership)
+        - so later spell-crafter phases rerun before callers trust the lineage
+        + so later spell-crafter phases rerun before callers trust the SpellIndex
+  749 ok    [def _mark_lineage_dirty] si=11 cl=0 (batch05_transfer_of_ownership)
+        - spell_index: Lineage whose spell-system state should be marked dirty.
+        + spell_index: SpellIndex whose spell-system state should be marked dirty.
+  772 CHECK [def _gate_transfer_impacts] si=10 cl=1 (batch05_transfer_of_ownership)
+        - Dirty the moved lineage and every conduit that may now see changed
+        + Dirty the moved SpellIndex and every conduit that may now see changed
+  775 CHECK [def _gate_transfer_impacts] si=10 cl=1 (batch05_transfer_of_ownership)
+        - The root lineage itself is structurally changed by the ownership flip,
+        + The moved SpellIndex itself is structurally changed by the ownership flip,
+  778 CHECK [def _gate_transfer_impacts] si=10 cl=1 (batch05_transfer_of_ownership)
+        - lineage may all need to rerun later spell-crafter phases before their
+        + SpellIndex may all need to rerun later spell-crafter phases before their
+  820 CHECK [def _collect_impacted_conduit_ids] si=0 cl=16 (batch05_transfer_of_ownership)
+        - of the impacted lineages
+        + of the impacted indexes
+  852 CHECK [def _collect_impacted_conduit_ids] si=0 cl=16 OLD-CL (batch05_transfer_of_ownership)
+        - # lineage sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+        + # impacted-index sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+  876 ok    [def _conduit_has_impacted_lineage] si=7 cl=0 (batch05_transfer_of_ownership)
+        - Check whether a conduit currently holds any lineage in the impacted
+        + Check whether a conduit currently holds any SpellIndex in the impacted
+  903 ok    [def _mark_lineage_disabled] si=12 cl=0 (batch05_transfer_of_ownership)
+        - Hard-disable the lineage while the ownership flip is actively in flight.
+        + Hard-disable the SpellIndex while the ownership flip is actively in flight.
+  906 ok    [def _mark_lineage_disabled] si=12 cl=0 (batch05_transfer_of_ownership)
+        - successful move. During the critical transfer window the lineage should
+        + successful move. During the critical transfer window the SpellIndex should
+  912 ok    [def _mark_lineage_disabled] si=12 cl=0 (batch05_transfer_of_ownership)
+        - spell_index: Lineage being moved between conduit owners.
+        + spell_index: SpellIndex being moved between conduit owners.
+  989 ok    [def _rollback_spellbook_move] si=16 cl=0 (batch05_transfer_of_ownership)
+        - partially moved target-side entries, restores lineage ownership pointers
+        + partially moved target-side entries, restores the index's ownership pointers
+  996 ok    [def _rollback_spellbook_move] si=16 cl=0 (batch05_transfer_of_ownership)
+        - the lineage after the failed move.
+        + the SpellIndex after the failed move.
+ 1000 ok    [def _rollback_spellbook_move] si=16 cl=0 (batch05_transfer_of_ownership)
+        - src_book: Original owner spellbook that should regain the lineage.
+        + src_book: Original owner spellbook that should regain the SpellIndex.
+ 1002 ok    [def _rollback_spellbook_move] si=16 cl=0 (batch05_transfer_of_ownership)
+        - lineage.
+        + SpellIndex.
+ 1131 CHECK [def _rollback_creations_move] si=0 cl=0 (batch05_transfer_of_ownership)
+        - target-side creations for the lineage, then restores the original
+        + target-side creations for the index's members, then restores the original
+ 1154 CHECK [def _snapshot_current_state] si=2 cl=4 (batch05_transfer_of_ownership)
+        - Capture the minimal transfer-recovery snapshot for this lineage.
+        + Capture the minimal transfer-recovery snapshot for this SpellIndex.
+ 1175 ok    [def _spell_in_registry] si=7 cl=0 (batch05_transfer_of_ownership)
+        - Check whether Aether already records this lineage under the conduit.
+        + Check whether Aether already records this SpellIndex under the conduit.
+ 1184 ok    [def _spell_in_registry] si=7 cl=0 (batch05_transfer_of_ownership)
+        - spell_index: Lineage key to look for in that registry.
+        + spell_index: SpellIndex key to look for in that registry.
+ 1186 ok    [def _spell_in_registry] si=7 cl=0 (batch05_transfer_of_ownership)
+        - bool: `True` when the lineage is already registered for the conduit.
+        + bool: `True` when the SpellIndex is already registered for the conduit.
+ 1215 ok    [def _spell_in_spellbook] si=2 cl=0 (batch05_transfer_of_ownership)
+        - bool: `True` when the spellbook currently contains the lineage.
+        + bool: `True` when the spellbook currently contains the SpellIndex.
+ 1328 CHECK [def _snapshot_cluster_shares] si=2 cl=10 OLD-CL (batch05_transfer_of_ownership)
+        - lineage was exposed through any conduit clusters before transfer began.
+        + SpellIndex was exposed through any conduit clusters before transfer began.
+ 1390 ok    [def _lift_disable] si=11 cl=0 (batch05_transfer_of_ownership)
+        - The method does not "return to normal" blindly. It converts the lineage
+        + The method does not "return to normal" blindly. It converts the SpellIndex
+ 1394 ok    [def _lift_disable] si=11 cl=0 (batch05_transfer_of_ownership)
+        - lineage is trusted again, or
+        + SpellIndex is trusted again, or
+ 1399 ok    [def _lift_disable] si=11 cl=0 (batch05_transfer_of_ownership)
+        - lineage no longer looks mid-flight to downstream readers.
+        + SpellIndex no longer looks mid-flight to downstream readers.
+ 1402 ok    [def _lift_disable] si=11 cl=0 (batch05_transfer_of_ownership)
+        - spell_index: Lineage leaving the hard-disabled transfer state.
+        + spell_index: SpellIndex leaving the hard-disabled transfer state.
+ 1403 ok    [def _lift_disable] si=11 cl=0 (batch05_transfer_of_ownership)
+        - gated: Whether the lineage should remain blocked behind validation
+        + gated: Whether the SpellIndex should remain blocked behind validation
+ 1437 ok    [def _flip_registry_and_spellbooks] si=29 cl=0 (batch05_transfer_of_ownership)
+        - the lineage.
+        + the SpellIndex.
+ 1443 ok    [def _flip_registry_and_spellbooks] si=29 cl=0 (batch05_transfer_of_ownership)
+        - - spellbook-local ownership maps and lineage/risk registrations
+        + - spellbook-local ownership maps and SpellIndex/risk registrations
+ 1562 CHECK [def _move_creations] si=2 cl=1 (batch05_transfer_of_ownership)
+        - the new owner build its own, it extracts the lineage's creation payload
+        + the new owner build its own, it extracts the index members' creation payload
+ 1581 CHECK [def _move_creations] si=2 cl=1 (batch05_transfer_of_ownership)
+        - # Migrate creations for every member of the lineage (active + inactive),
+        + # Migrate creations for every member of the SpellIndex (active + inactive),
+ 1637 ok    [def _migrate_inactive_members] si=9 cl=0 (batch05_transfer_of_ownership)
+        - Carry the lineage's INACTIVE members to the target spellbook.
+        + Carry the SpellIndex's INACTIVE members to the target spellbook.
+ 1639 ok    [def _migrate_inactive_members] si=9 cl=0 (batch05_transfer_of_ownership)
+        - Transfer of ownership moves an index (lineage). `_flip_registry_and_spellbooks`
+        + Transfer of ownership moves a whole SpellIndex. `_flip_registry_and_spellbooks`
+ 1782 ok    [def _restamp] si=1 cl=0 (batch05_transfer_of_ownership)
+        - Make the owner stamp follow the lineage both ways (2026-10-15): the
+        + Make the owner stamp follow the SpellIndex both ways (2026-10-15): the
+ 1838 ok    [def _discard_composed_pool] si=1 cl=0 (batch05_transfer_of_ownership)
+        - - A removed pool is cleaned. It is empty: the lineage is disabled for
+        + - A removed pool is cleaned. It is empty: the SpellIndex is disabled for
+ 1859 CHECK [def _unshare_everywhere] si=1 cl=1 (batch05_transfer_of_ownership)
+        - is enabled. After the root lineage changes owners, peers that used to
+        + is enabled. After the moved SpellIndex changes owners, peers that used to
+ 2028 ok    [def _transfer_owned_dependencies] si=5 cl=0 (batch05_transfer_of_ownership)
+        - Transfer source-owned dependency lineages alongside the root lineage.
+        + Transfer the source-owned dependencies' indexes alongside the root spell's SpellIndex.
+ 2077 ok    [def _transfer_owned_dependencies] si=5 cl=0 (batch05_transfer_of_ownership)
+        - # Mark dependency lineage dirty if requested
+        + # Mark the dependency's SpellIndex dirty if requested
+ 2086 ok    [def _dirty_dependencies] si=2 cl=0 (batch05_transfer_of_ownership)
+        - Leave dependencies in place but force their lineages back through
+        + Leave dependencies in place but force their indexes back through
+ 2091 ok    [def _dirty_dependencies] si=2 cl=0 (batch05_transfer_of_ownership)
+        - lineages, it marks them dirty so downstream runtime state is not
+        + indexes, it marks them dirty so downstream runtime state is not
+ 2095 ok    [def _dirty_dependencies] si=2 cl=0 (batch05_transfer_of_ownership)
+        - deps: Dependency spell ids whose lineages should be marked dirty.
+        + deps: Dependency spell ids whose indexes should be marked dirty.
+ 2116 ok    [def _record_change_intent] si=5 cl=0 (batch05_transfer_of_ownership)
+        - surrounding governance layer that a lineage is about to undergo an
+        + surrounding governance layer that a SpellIndex is about to undergo an
+ 2125 ok    [def _record_change_intent] si=5 cl=0 (batch05_transfer_of_ownership)
+        - summary: Preflight payload that describes the lineage, endpoints,
+        + summary: Preflight payload that describes the SpellIndex, endpoints,
+ 2161 ok    [def _clear_change_intent] si=5 cl=0 (batch05_transfer_of_ownership)
+        - spell_index: Lineage whose pending transfer record should be
+        + spell_index: SpellIndex whose pending transfer record should be
+ 2176 ok    [def _record_incident] si=6 cl=0 (batch05_transfer_of_ownership)
+        - transfer first tries to restore a coherent lineage state; this helper
+        + transfer first tries to restore a coherent SpellIndex state; this helper
+ 2183 ok    [def _record_incident] si=6 cl=0 (batch05_transfer_of_ownership)
+        - lineage and participants.
+        + SpellIndex and participants.
+== src/melder/aether/conduit/meld/conduit_meld.py
+  755 CHECK [def meld_existing_spell] si=0 cl=12 (batch09_meld_conduit_meld)
+        - - Rejects spellspace-request lineages on the conduit-facing door.
+        + - Rejects spellspace-scoped spells on the conduit-facing door.
+  915 CHECK [def describe_live_creation_status] si=0 cl=0 (batch09_meld_conduit_meld)
+        - - Rejects spellspace-request lineages on the conduit-facing door
+        + - Rejects spellspace-scoped spells on the conduit-facing door
+== src/melder/aether/conduit/meld/contracts/spell_contract.py
+   56 CHECK [class SpellContract] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - can satisfy the contract and trigger revalidation of the reporting lineage.
+        + can satisfy the contract and trigger revalidation of the reporting spell.
+   98 CHECK [class SpellContract] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - lineage re-runs its resolution phases against the now-satisfied edge.
+        + spell re-runs its resolution phases against the now-satisfied edge.
+== src/melder/aether/conduit/meld/meld.py
+  176 CHECK [class Meld] si=-1 cl=-1 (batch09_meld_conduit_meld)
+        - lazy phases when a lineage's validity is UNKNOWN or GATED. Contract
+        + lazy phases when a SpellIndex's validity is UNKNOWN or GATED. Contract
+  956 ok    [def _ensure_lineage_resolvable] si=3 cl=0 (batch09_meld_conduit_meld)
+        - - rerun structural phases when the lineage is unknown or gated; for a
+        + - rerun structural phases when its SpellIndex is unknown or gated; for a
+ 1224 ok    [def _gated_validation_required] si=5 cl=0 (batch09_meld_conduit_meld)
+        - "Is this lineage eligible to continue as-is, or must meld force a
+        + "Is this SpellIndex eligible to continue as-is, or must meld force a
+ 1235 ok    [def _gated_validation_required] si=5 cl=0 (batch09_meld_conduit_meld)
+        - SpellbookValidationError: If the lineage is already in a hard-fail
+        + SpellbookValidationError: If the SpellIndex is already in a hard-fail
+ 1363 ok    [def _may_compile] si=5 cl=0 (batch09_meld_conduit_meld)
+        - - True when the lineage has no registered state, or is `unknown` or
+        + - True when its SpellIndex has no registered state, or is `unknown` or
+ 1366 ok    [def _may_compile] si=5 cl=0 (batch09_meld_conduit_meld)
+        - - For a `valid` lineage, True exactly when its effective verdict for
+        + - For a `valid` SpellIndex, True exactly when its effective verdict for
+ 1369 ok    [def _may_compile] si=5 cl=0 (batch09_meld_conduit_meld)
+        - - False otherwise: an `invalid`, `disabled` or `cleaned` lineage or
+        + - False otherwise: an `invalid`, `disabled` or `cleaned` SpellIndex or
+ 1400 ok    [def _is_stale] si=3 cl=0 (batch09_meld_conduit_meld)
+        - Report whether a dependency's structure is stale: its lineage is
+        + Report whether a dependency's structure is stale: its SpellIndex is
+ 1404 ok    [def _is_stale] si=3 cl=0 (batch09_meld_conduit_meld)
+        - - A registered lineage that is `gated` or `unknown` needs phases 1-4
+        + - A registered SpellIndex that is `gated` or `unknown` needs phases 1-4
+ 1428 ok    [def _refresh_stale_dependencies] si=3 cl=0 (batch09_meld_conduit_meld)
+        - Refresh the structure of every stale lineage the spell's plan expands,
+        + Refresh the structure of every stale dependency the spell's plan expands,
+ 1438 ok    [def _refresh_stale_dependencies] si=3 cl=0 (batch09_meld_conduit_meld)
+        - refused. The catch-up reruns phases 1-4 of each stale lineage first
+        + refused. The catch-up reruns phases 1-4 of each stale dependency first
+ 1439 ok    [def _refresh_stale_dependencies] si=3 cl=0 (batch09_meld_conduit_meld)
+        - and resets that lineage's own plan, so it rebuilds at its own next
+        + and resets that dependency's own plan, so it rebuilds at its own next
+ 1449 ok    [def _refresh_stale_dependencies] si=3 cl=0 (batch09_meld_conduit_meld)
+        - dependency is walked through, not refreshed: a stale lineage
+        + dependency is walked through, not refreshed: a stale dependency
+ 1492 ok    [def _iter_planned_dependencies] si=11 cl=0 (batch09_meld_conduit_meld)
+        - lineages select now, as Phase 8 expands them.
+        + indexes select now, as Phase 8 expands them.
+ 1503 ok    [def _iter_planned_dependencies] si=11 cl=0 (batch09_meld_conduit_meld)
+        - - Each dependency is taken to the version its lineage selects now
+        + - Each dependency is taken to the version its SpellIndex selects now
+ 1507 ok    [def _iter_planned_dependencies] si=11 cl=0 (batch09_meld_conduit_meld)
+        - - May return one lineage twice (two sockets naming it); the caller's
+        + - May return one dependency twice (two sockets naming it); the caller's
+ 1516 ok    [def _iter_planned_dependencies] si=11 cl=0 (batch09_meld_conduit_meld)
+        - spell_system_states: The frame's lineage registry.
+        + spell_system_states: The frame's SpellIndex state registry.
+ 1562 ok    [def _current_in_pool] si=8 cl=0 (batch09_meld_conduit_meld)
+        - Return the active Spell of the lineage a version id belongs to, from the
+        + Return the active Spell of the SpellIndex a version id belongs to, from the
+ 1567 ok    [def _current_in_pool] si=8 cl=0 (batch09_meld_conduit_meld)
+        - lineage (`get_by_spell_id`; a notch adds the incoming id and keeps
+        + SpellIndex (`get_by_spell_id`; a notch adds the incoming id and keeps
+ 1568 ok    [def _current_in_pool] si=8 cl=0 (batch09_meld_conduit_meld)
+        - the old one), so a superseded id leads to the lineage's current
+        + the old one), so a superseded id leads to the index's current
+ 1575 ok    [def _current_in_pool] si=8 cl=0 (batch09_meld_conduit_meld)
+        - spell_system_states: The frame's lineage registry.
+        + spell_system_states: The frame's SpellIndex state registry.
+ 1580 ok    [def _current_in_pool] si=8 cl=0 (batch09_meld_conduit_meld)
+        - Optional[Spell]: The lineage's active Spell in the Book, or None.
+        + Optional[Spell]: The SpellIndex's active Spell in the Book, or None.
+ 1590 ok    [def _refresh_dependency_structure] si=4 cl=0 (batch09_meld_conduit_meld)
+        - uses a plan built before its lineage went stale.
+        + uses a plan built before its SpellIndex went stale.
+ 1599 ok    [def _refresh_dependency_structure] si=4 cl=0 (batch09_meld_conduit_meld)
+        - - Broken after the rerun: pins the lineage `invalid`, as the gate
+        + - Broken after the rerun: pins its SpellIndex `invalid`, as the gate
+ 1622 ok    [def _refresh_dependency_structure] si=4 cl=0 (batch09_meld_conduit_meld)
+        - dependency: A stale lineage's active Spell, found by the walk.
+        + dependency: The active Spell of a stale SpellIndex, found by the walk.
+ 2156 CHECK [def _resolve_spell_by_id] si=0 cl=0 (batch09_meld_conduit_meld)
+        - exact current lineage id and do not need logical frame/binding
+        + exact current spell_id and do not need logical frame/binding
+== src/melder/aether/spellbook/bind/spell_index.py
+   48 CHECK [class SpellIndex] si=-1 cl=-1 (batch01_details_spell_index)
+        - the index is the lineage. Version HISTORY belongs to MutationResearch,
+        + the index organizes versions and selects one of them. Version HISTORY
+   49 CHECK [class SpellIndex] si=-1 cl=-1 (batch01_details_spell_index)
+        - not here.
+        + belongs to MutationResearch, not here.
+   63 CHECK [class SpellIndex] si=-1 cl=-1 (batch01_details_spell_index)
+        - membership is lineage truth, distinct from any one spell's custody.
+        + membership is the index's own truth, distinct from any one spell's custody.
+   71 CHECK [class SpellIndex] si=-1 cl=-1 (batch01_details_spell_index)
+        - access: public. The stable lineage identity (immutable ULID) pointing at a mutable
+        + access: public. The stable index identity (immutable ULID) pointing at a mutable
+  183 CHECK [def update] si=0 cl=0 (batch01_details_spell_index)
+        - MEMBER - parked in its Book - so the member set is the lineage
+        + MEMBER - parked in its Book - so the member set holds every version
+  184 CHECK [def update] si=0 cl=0 (batch01_details_spell_index)
+        - and the selected id only the current head. A lookup by spell_id
+        + and the selected id names only the selected one. A lookup by spell_id
+  220 CHECK [def add_member] si=0 cl=0 (batch01_details_spell_index)
+        - - Adds to the lineage WITHOUT changing the selected id, so it grows the
+        + - Adds to the index WITHOUT changing the selected id, so it grows the
+  298 CHECK [def has_spell] si=0 cl=0 (batch01_details_spell_index)
+        - - Tests MEMBERSHIP OF THE LINEAGE, not equality with the selected id, so a
+        + - Tests MEMBERSHIP OF THE INDEX, not equality with the selected id, so a
+  301 CHECK [def has_spell] si=0 cl=0 (batch01_details_spell_index)
+        - the lineage's selected head.
+        + the index's selected spell.
+  340 CHECK [def _has_spell_unless_cleaned] si=0 cl=0 (batch01_details_spell_index)
+        - - Same membership semantics as `has_spell` (the whole version
+        + - Same membership semantics as `has_spell` (every member
+  341 CHECK [def _has_spell_unless_cleaned] si=0 cl=0 (batch01_details_spell_index)
+        - lineage, not only the selected id) while the index is live.
+        + spell id, not only the selected id) while the index is live.
+  374 CHECK [def _is_selected_unless_cleaned] si=0 cl=0 (batch01_details_spell_index)
+        - - Tests SELECTION, not membership: a parked member of the lineage answers False.
+        + - Tests SELECTION, not membership: a parked member of the index answers False.
+  482 ok    [def __hash__] si=1 cl=0 (batch01_details_spell_index)
+        - key while its lineage evolves.
+        + key while its member set changes.
+== src/melder/aether/spellbook/spell.py
+   77 CHECK [class Spell] si=-1 cl=-1 (batch02_spell_spellbook)
+        - - Wraps exactly one registered spell target plus its `SpellIndex`
+        + - Wraps exactly one registered spell target plus its `SpellIndex`, the
+   78 CHECK [class Spell] si=-1 cl=-1 (batch02_spell_spellbook)
+        - lineage/version record.
+        + index that organizes this spell with the other members and selects one.
+  215 CHECK [class Spell] si=-1 cl=-1 (batch02_spell_spellbook)
+        - (paired with its `SpellIndex` lineage/version record) from a user target;
+        + (paired with the `SpellIndex` that organizes it) from a user target;
+  217 CHECK [class Spell] si=-1 cl=-1 (batch02_spell_spellbook)
+        - registers the lineage into `SpellSystemStates`. Downstream, the SpellCompiler
+        + registers its SpellIndex into `SpellSystemStates`. Downstream, the SpellCompiler
+  341 ok    [def __init__] si=13 cl=0 (batch02_spell_spellbook)
+        - spell_index (SpellIndex): Lineage/version tracker for this spell.
+        + spell_index (SpellIndex): The SpellIndex this spell is organized under (it selects one member).
+ 1027 ok    [def _configure_creation_context_factory] si=1 cl=0 (batch02_spell_spellbook)
+        - spell-lineage gate operations.
+        + spell-index gate operations.
+ 1613 ok    [def invalidate_spell] si=9 cl=0 (batch02_spell_spellbook)
+        - 2. lineage/control-plane invalidation
+        + 2. control-plane invalidation of its SpellIndex
+ 1614 ok    [def invalidate_spell] si=9 cl=0 (batch02_spell_spellbook)
+        - - mark the lineage structurally gated in `SpellSystemStates`
+        + - mark its SpellIndex structurally gated in `SpellSystemStates`
+ 1634 ok    [def invalidate_spell] si=9 cl=0 (batch02_spell_spellbook)
+        - Optional structural change reason to record in the lineage
+        + Optional structural change reason to record in its SpellIndex's
+ 1766 ok    [def system_state] si=16 cl=0 (batch02_spell_spellbook)
+        - Return the SpellSystemState instance associated with this spell's lineage.
+        + Return the SpellSystemState instance associated with this spell's SpellIndex.
+ 1772 ok    [def system_state] si=16 cl=0 (batch02_spell_spellbook)
+        - - Mutation and contract operations can ask for the current lineage state.
+        + - Mutation and contract operations can ask for the current state of its SpellIndex.
+ 1775 ok    [def system_state] si=16 cl=0 (batch02_spell_spellbook)
+        - - Returns `None` when SpellSystemStates are unavailable or the lineage is
+        + - Returns `None` when SpellSystemStates are unavailable or the SpellIndex is
+ 1780 ok    [def system_state] si=16 cl=0 (batch02_spell_spellbook)
+        - The state object for this spell's lineage, if available.
+        + The state object for this spell's SpellIndex, if available.
+== src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py
+   27 CHECK [class RootResolutionBlueprint] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - - `root_lineage_id` is optional lineage metadata for DevOps/change-
+        + - `root_lineage_id` is the root spell's optional SpellIndex id, for DevOps/change-
+   58 ok    [def __init__] si=1 cl=0 (batch11_compiler_control_plane)
+        - Optional lineage id for DevOps/change-control consumers.
+        + Optional SpellIndex id of the root spell, for DevOps/change-control consumers.
+  148 ok    [def root_lineage_id] si=1 cl=0 (batch11_compiler_control_plane)
+        - Return the optional lineage id for the root spell.
+        + Return the optional SpellIndex id for the root spell.
+== src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
+ 1278 ok    [def emit_specialized_step_plan_source] si=1 cl=0 (batch11_compiler_control_plane)
+        - clear only on teardown paths already blocked by lineage/validity
+        + clear only on teardown paths already blocked by SpellIndex-unregister/validity
+== src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
+  602 ok    [def _indexed_annotation_candidates] si=1 cl=0 (batch11_compiler_control_plane)
+        - # matches through multiple pool entries (version lineages), the scan
+        + # matches through multiple pool entries (several of its versions), the scan
+== src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
+  153 ok    [def run] si=17 cl=0 (batch11_compiler_control_plane)
+        - # Update global structural validity for this lineage.
+        + # Update global structural validity for this spell's SpellIndex.
+  158 ok    [def run] si=17 cl=0 (batch11_compiler_control_plane)
+        - # First-fail semantics: validation errors make the lineage invalid.
+        + # First-fail semantics: validation errors make the SpellIndex state invalid.
+== src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
+  280 ok    [def _build_system_index_for_snapshot] si=8 cl=0 (batch13_mixed_endings)
+        - - Resolves lineage ids from SpellSystemStates.
+        + - Resolves each spell's SpellIndex id from SpellSystemStates.
+== src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
+   57 CHECK [class StructuralSnapshot] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - registered `SpellLocalTopology`, the lineage `SpellSystemState`
+        + registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
+  365 ok    [def build_payload] si=15 cl=0 (batch11_compiler_control_plane)
+        - the lineage state and the registered local topology; returns
+        + the SpellIndex's state and the registered local topology; returns
+  370 ok    [def build_payload] si=15 cl=0 (batch11_compiler_control_plane)
+        - - `phase4.validity` is the lineage validity name and
+        + - `phase4.validity` is the SpellIndex state's validity name and
+  378 ok    [def build_payload] si=15 cl=0 (batch11_compiler_control_plane)
+        - Frame registry holding the lineage state and topology.
+        + Frame registry holding the SpellIndex state and topology.
+  644 ok    [def hydrate_full_hit] si=15 cl=0 (batch11_compiler_control_plane)
+        - - A spell whose lineage state is missing raises RuntimeError (it
+        + - A spell whose SpellIndex state is missing raises RuntimeError (it
+  662 ok    [def hydrate_full_hit] si=15 cl=0 (batch11_compiler_control_plane)
+        - When an owned spell has no lineage state.
+        + When an owned spell has no SpellIndex state.
+== src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py
+   16 CHECK [class SpellSystemNode] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - This does *not* replace SpellSystemStates (which are lineage/ DevOps-centric).
+        + This does *not* replace SpellSystemStates (which hold DevOps state per SpellIndex).
+   21 CHECK [class SpellSystemNode] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - * lineage_id – lineage ULID (SpellIndex.id).
+        + * lineage_id – the ULID of its SpellIndex (SpellIndex.id).
+  117 ok    [def lineage_id] si=1 cl=0 (batch11_compiler_control_plane)
+        - """Return the lineage ULID associated with this system node."""
+        + """Return the ULID of the SpellIndex this system node's spell sits in."""
+== src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
+  104 ok    [def build_root_blueprints] si=1 cl=0 (batch11_compiler_control_plane)
+        - root_lineage_id=None,          # lineages can be threaded later if needed
+        + root_lineage_id=None,          # SpellIndex ids can be threaded later if needed
+  165 ok    [def build_blueprint_for_spell_id] si=1 cl=0 (batch11_compiler_control_plane)
+        - root_lineage_id=None,          # lineages can be threaded later if needed
+        + root_lineage_id=None,          # SpellIndex ids can be threaded later if needed
+== src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py
+   55 CHECK [class SpellSystemValidationSystem] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - Aggregate system-level validation diagnostics and update lineage validity
+        + Aggregate system-level validation diagnostics and update per-conduit resolution validity
+  118 ok    [def validate] si=9 cl=0 (batch11_compiler_control_plane)
+        - Run system-level validation and update per-lineage validity.
+        + Run system-level validation and record per-conduit resolution validity.
+== src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
+   62 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - roots when its lineage is shared across those rooted DAGs.
+        + roots when that spell is shared across those rooted DAGs.
+   69 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py
+   69 ok    [def run] si=6 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py
+   31 CHECK [class ContractedVersionDriftStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Guard that the visible system index does not drift onto stale lineage versions.
+        + Guard that the visible system index does not drift onto stale versions of a SpellIndex.
+   34 CHECK [class ContractedVersionDriftStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - against the currently visible spell versions for each lineage. It is aimed
+        + against the currently visible spell versions for each SpellIndex. It is aimed
+   54 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - Validate that index nodes align with visible lineage versions.
+        + Validate that index nodes align with the visible versions of each SpellIndex.
+   58 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_ids for a lineage visible in the spellbook.
+        + spell_ids for a SpellIndex visible in the spellbook.
+   68 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py
+   75 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py
+   73 CHECK [def run] si=5 cl=47 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py
+   31 CHECK [class IdentityMixingStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Guard that dependency edges stay on spell_ids rather than lineage ids.
+        + Guard that dependency edges stay on spell_ids rather than SpellIndex ids.
+   34 CHECK [class IdentityMixingStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - lineage ids are DevOps/control-plane identity. If a dependency edge starts
+        + SpellIndex ids are DevOps/control-plane identity. If a dependency edge starts
+   35 CHECK [class IdentityMixingStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - pointing at lineage ids directly, later planning and resolution become
+        + pointing at SpellIndex ids directly, later planning and resolution become
+   54 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - Validate that dependency ids are spell_ids, not lineage ids.
+        + Validate that dependency ids are spell_ids, not SpellIndex ids.
+   57 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - Catch dependency edges that reference lineage ids directly, which
+        + Catch dependency edges that reference SpellIndex ids directly, which
+   60 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - - Emits an error for each dependency id that matches a lineage id.
+        + - Emits an error for each dependency id that matches a SpellIndex id.
+   67 ok    [def run] si=8 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py
+   69 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py
+   36 CHECK [class IndexDependencySanityStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Before later strategies reason about reachability, lineage, or root
+        + Before later strategies reason about reachability, SpellIndex identity, or root
+   71 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py
+   32 CHECK [class LineageAlignmentStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Guard that root-blueprint lineage metadata agrees with the system index.
+        + Guard that root-blueprint SpellIndex metadata agrees with the system index.
+   34 CHECK [class LineageAlignmentStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Root blueprints are spell_id-rooted, but they can still carry lineage
+        + Root blueprints are spell_id-rooted, but they can still carry SpellIndex
+   36 CHECK [class LineageAlignmentStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - the optional root-lineage ids embedded in the blueprints stay aligned with
+        + the optional root SpellIndex ids embedded in the blueprints stay aligned with
+   37 CHECK [class LineageAlignmentStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - the lineage ids tracked on the corresponding `SpellSystemIndex` nodes.
+        + the SpellIndex ids (`lineage_id`) tracked on the corresponding `SpellSystemIndex` nodes.
+   40 CHECK [class LineageAlignmentStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - - Emits `root_lineage_mismatch` when a root lineage id disagrees with
+        + - Emits `root_lineage_mismatch` when a root SpellIndex id disagrees with
+   42 CHECK [class LineageAlignmentStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - - Skips checks when a blueprint intentionally lacks lineage metadata.
+        + - Skips checks when a blueprint intentionally lacks SpellIndex metadata.
+   59 ok    [def run] si=11 cl=0 (batch10_cluster_phase6_strategies)
+        - Validate that blueprint root lineage ids match index lineage ids.
+        + Validate that blueprint root SpellIndex ids match the index nodes' SpellIndex ids.
+   62 ok    [def run] si=11 cl=0 (batch10_cluster_phase6_strategies)
+        - Ensure the Phase-5 blueprint lineage metadata stays aligned with
+        + Ensure the Phase-5 blueprint SpellIndex metadata stays aligned with
+   63 ok    [def run] si=11 cl=0 (batch10_cluster_phase6_strategies)
+        - the SpellSystemIndex lineage ids used for system tracking.
+        + the SpellSystemIndex nodes' SpellIndex ids used for system tracking.
+   65 ok    [def run] si=11 cl=0 (batch10_cluster_phase6_strategies)
+        - - Emits root_lineage_mismatch when the lineage ids differ.
+        + - Emits root_lineage_mismatch when the SpellIndex ids differ.
+   66 ok    [def run] si=11 cl=0 (batch10_cluster_phase6_strategies)
+        - - Omits diagnostics when root lineage metadata is absent.
+        + - Omits diagnostics when root SpellIndex metadata is absent.
+   73 ok    [def run] si=11 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py
+   32 CHECK [class LineageVersionConflictStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Guard that one root DAG does not mix multiple versions of the same lineage.
+        + Guard that one root DAG does not mix multiple versions of the same SpellIndex.
+   35 CHECK [class LineageVersionConflictStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - coherent runtime slice. If the same lineage appears multiple times under a
+        + coherent runtime slice. If the same SpellIndex appears multiple times under a
+   38 CHECK [class LineageVersionConflictStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - strategy checks the blueprint DAG against the index lineage map and turns
+        + strategy checks the blueprint DAG against the index's SpellIndex ids and turns
+   57 ok    [def run] si=10 cl=0 (batch10_cluster_phase6_strategies)
+        - Validate that each root DAG contains at most one version per lineage.
+        + Validate that each root DAG contains at most one version per SpellIndex.
+   61 ok    [def run] si=10 cl=0 (batch10_cluster_phase6_strategies)
+        - of the same logical spell lineage.
+        + of the same SpellIndex.
+   64 ok    [def run] si=10 cl=0 (batch10_cluster_phase6_strategies)
+        - system index as the source of lineage identity.
+        + system index as the source of SpellIndex identity.
+   65 ok    [def run] si=10 cl=0 (batch10_cluster_phase6_strategies)
+        - - Missing index nodes and lineage-less nodes are ignored here
+        + - Missing index nodes and nodes without a SpellIndex id are ignored here
+   67 ok    [def run] si=10 cl=0 (batch10_cluster_phase6_strategies)
+        - - Emits one ERROR diagnostic per conflicting lineage within a root,
+        + - Emits one ERROR diagnostic per conflicting SpellIndex within a root,
+   77 ok    [def run] si=10 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py
+   71 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py
+   32 CHECK [class OwnershipConsistencyStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Guard that a lineage does not claim conflicting conduit ownership.
+        + Guard that a SpellIndex does not claim conflicting conduit ownership.
+   36 CHECK [class OwnershipConsistencyStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - validation. A lineage that points at multiple concrete conduit owners at
+        + validation. A SpellIndex that points at multiple concrete conduit owners at
+   38 CHECK [class OwnershipConsistencyStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - lineage id and checks whether the non-None owner set stays singular before
+        + SpellIndex id and checks whether the non-None owner set stays singular before
+   39 CHECK [class OwnershipConsistencyStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - later validation or change-control logic treats that lineage as belonging to
+        + later validation or change-control logic treats that SpellIndex as belonging to
+   60 ok    [def run] si=6 cl=0 (batch10_cluster_phase6_strategies)
+        - Catch lineages whose visible versions disagree about which conduit
+        + Catch spell indexes whose visible versions disagree about which conduit
+   69 ok    [def run] si=6 cl=0 (batch10_cluster_phase6_strategies)
+        - - Emits one ERROR diagnostic per conflicting lineage and includes
+        + - Emits one ERROR diagnostic per conflicting SpellIndex and includes
+   78 ok    [def run] si=6 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py
+   72 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py
+   32 CHECK [class RootLineageConflictStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - Guard that one lineage does not fan out into multiple structural roots.
+        + Guard that one SpellIndex does not fan out into multiple structural roots.
+   35 CHECK [class RootLineageConflictStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - the frame. If multiple root spell ids map back to the same lineage, the
+        + the frame. If multiple root spell ids map back to the same SpellIndex, the
+   37 CHECK [class RootLineageConflictStrategy] si=-1 cl=-1 (batch10_cluster_phase6_strategies)
+        - family at once. This strategy detects that root-lineage split before the
+        + family at once. This strategy detects that root SpellIndex split before the
+   56 ok    [def run] si=9 cl=0 (batch10_cluster_phase6_strategies)
+        - Validate that each lineage maps to at most one root spell id.
+        + Validate that each SpellIndex maps to at most one root spell id.
+   60 ok    [def run] si=9 cl=0 (batch10_cluster_phase6_strategies)
+        - for one logical spell lineage.
+        + for one SpellIndex.
+   62 ok    [def run] si=9 cl=0 (batch10_cluster_phase6_strategies)
+        - - Uses blueprint keys as the root set and resolves lineage identity
+        + - Uses blueprint keys as the root set and resolves SpellIndex identity
+   64 ok    [def run] si=9 cl=0 (batch10_cluster_phase6_strategies)
+        - - Missing index nodes and lineage-less roots are ignored here so
+        + - Missing index nodes and roots without a SpellIndex id are ignored here so
+   75 ok    [def run] si=9 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py
+   68 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py
+  103 CHECK [def run] si=5 cl=9 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py
+   71 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
+   70 CHECK [def run] si=5 cl=3 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py
+   67 ok    [def run] si=5 cl=0 (batch10_cluster_phase6_strategies)
+        - SpellSystemStates registry for topology and lineage data.
+        + SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py
+   67 ok    [def run] si=6 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
+   70 ok    [def run] si=7 cl=0 (batch10_cluster_phase6_strategies)
+        - spell_system_states: SpellSystemStates registry for topology and lineage data.
+        + spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+== src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
+   37 CHECK [class ContractProviderPresenceStrategy] si=-1 cl=-1 (batch11_compiler_control_plane)
+        - one warning Phase 4 gates a lineage on, so SpellbookValidationError
+        + one warning Phase 4 gates a SpellIndex on, so SpellbookValidationError
+== src/melder/aether/spellbook/spellbinder.py
+  635 CHECK [def with_permissions] si=0 cl=0 (batch11_compiler_control_plane)
+        - ceiling for this lineage.
+        + ceiling for this spell.
+== src/melder/aether/spellbook/spellbook.py
+  174 CHECK [class Spellbook] si=-1 cl=-1 (batch02_spell_spellbook)
+        - lineage, and Spellbook applies the membership change because it owns the index
+        + SpellIndex, and Spellbook applies the membership change because it owns the index
+ 1838 ok    [def _ensure_contracted_active] si=1 cl=0 (batch02_spell_spellbook)
+        - eager "follow" used when an owner notches an index-linked lineage to a
+        + eager "follow" used when an owner notches a SpellIndex this borrower holds through an
+ 1839 ok    [def _ensure_contracted_active] si=1 cl=0 (batch02_spell_spellbook)
+        - version this borrower has not seen:
+        + index link to a version this borrower has not seen:
+ 2079 ok    [def find_spell_by_spell_id] si=4 cl=0 (batch02_spell_spellbook)
+        - the whole lineage.
+        + every version of the index.
+ 2134 ok    [def get_spell_permissions] si=10 cl=0 (batch02_spell_spellbook)
+        - Read the capability ceiling recorded for one LOCAL spell lineage.
+        + Read the capability ceiling recorded for the active spell of one LOCAL SpellIndex.
+ 2137 ok    [def get_spell_permissions] si=10 cl=0 (batch02_spell_spellbook)
+        - Report what this Spellbook is willing to expose for a lineage it OWNS, which is
+        + Report what this Spellbook is willing to expose for a SpellIndex it OWNS, which is
+ 2141 ok    [def get_spell_permissions] si=10 cl=0 (batch02_spell_spellbook)
+        - - LOCAL ONLY. Contracted (borrowed) lineages are not searched, so a lineage
+        + - LOCAL ONLY. Contracted (borrowed) indexes are not searched, so a SpellIndex
+ 2155 ok    [def get_spell_permissions] si=10 cl=0 (batch02_spell_spellbook)
+        - Lineage handle whose owning spell should be read.
+        + The SpellIndex whose active spell's permissions are read.
+ 2335 ok    [def find_spell_index] si=9 cl=0 (batch02_spell_spellbook)
+        - Resolve the lineage (`SpellIndex`) behind one logical spell address.
+        + Resolve the `SpellIndex` behind one logical spell address.
+ 2339 ok    [def find_spell_index] si=9 cl=0 (batch02_spell_spellbook)
+        - durable lineage handle, so callers can follow the lineage rather than pinning
+        + durable SpellIndex, so callers can follow its selected spell rather than pinning
+ 2344 ok    [def find_spell_index] si=9 cl=0 (batch02_spell_spellbook)
+        - A borrowed lineage is therefore resolvable through the borrower's own book.
+        + A borrowed SpellIndex is therefore resolvable through the borrower's own book.
+ 2361 ok    [def find_spell_index] si=9 cl=0 (batch02_spell_spellbook)
+        - The lineage handle for the addressed spell. The returned index is the
+        + The SpellIndex of the addressed spell. The returned index is the
+ 2363 ok    [def find_spell_index] si=9 cl=0 (batch02_spell_spellbook)
+        - owner notches, which is the intended way to follow a lineage.
+        + owner notches, which is the intended way to follow the index's selected spell.
+ 2483 ok    [def find_spell_key] si=3 cl=0 (batch02_spell_spellbook)
+        - - Use `find_spell_index(...)` instead when you want the lineage itself; that is
+        + - Use `find_spell_index(...)` instead when you want the SpellIndex itself; that is
+ 2714 ok    [def _get_conduit_by_spell_id] si=1 cl=0 (batch02_spell_spellbook)
+        - another frame, its owner cleaned, or a lineage between owners while an ownership
+        + another frame, its owner cleaned, or its SpellIndex between owners while an ownership
+ 3060 ok    [def _find_contracted_spell_by_id] si=7 cl=0 (batch02_spell_spellbook)
+        - lineage's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+        + index's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+ 3077 ok    [def _find_contracted_spell_by_id] si=7 cl=0 (batch02_spell_spellbook)
+        - # Still O(1): a parked borrowed copy's index keys its lineage's active copy.
+        + # Still O(1): a parked borrowed copy's index keys that index's active copy.
+ 3263 ok    [def _add_inactive_contracted_spell] si=5 cl=0 (batch02_spell_spellbook)
+        - off resolution (unmeldable) until the owner notches the lineage and the
+        + off resolution (unmeldable) until the owner notches the SpellIndex and the
+ 3289 ok    [def _add_inactive_contracted_spell] si=5 cl=0 (batch02_spell_spellbook)
+        - # Existence: track every member id of the lineage, matching the active
+        + # Existence: track every member id of the SpellIndex, matching the active
+ 3871 ok    [def _notch_spell] si=11 cl=0 (batch02_spell_spellbook)
+        - threaded into the spell-owned invalidation so the lineage -- and its
+        + threaded into the spell-owned invalidation so the SpellIndex -- and its
+ 3940 ok    [def _apply_notch] si=21 cl=0 (batch02_spell_spellbook)
+        - 6. Mark every lineage downstream of this one for revalidation
+        + 6. Mark every SpellIndex downstream of this one for revalidation
+ 4007 ok    [def _apply_notch] si=21 cl=0 (batch02_spell_spellbook)
+        - # D2: everything downstream of the notched lineage - its dependents by registry edge, in any Book, and the
+        + # D2: everything downstream of the notched SpellIndex - its dependents by registry edge, in any Book, and the
+ 4029 ok    [def _apply_notch] si=21 cl=0 (batch02_spell_spellbook)
+        - # Mark the promoted lineage structurally changed (the walk above marked its
+        + # Mark the promoted spell's SpellIndex structurally changed (the walk above marked its
+ 4030 ok    [def _apply_notch] si=21 cl=0 (batch02_spell_spellbook)
+        - # dependents) and clear its stale CreationContext. invalidate_spell also sets
+        + # dependents) and clear the spell's stale CreationContext. invalidate_spell also sets
+ 4368 ok    [def cleanup_spell] si=5 cl=0 (batch02_spell_spellbook)
+        - lineage are flagged dirty (and dependents are rechecked) while the index
+        + SpellIndex are flagged dirty (and dependents are rechecked) while the index
+ 4381 ok    [def cleanup_spell] si=5 cl=0 (batch02_spell_spellbook)
+        - context is cleared and the lineage is marked structurally changed so
+        + context is cleared and its SpellIndex is marked structurally changed so
+ 4515 ok    [def _dispose_spell] si=8 cl=0 (batch02_spell_spellbook)
+        - # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
+        + # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its SpellIndex
+== src/melder/crystallizer/crystal_loader_system/restore_engine.py
+ 2578 CHECK [def _replay_clusters] si=0 cl=7 (batch06_command_system_restore_engine)
+        - lineages; leader election is a runtime act).
+        + spells; leader election is a runtime act).
+ 2661 CHECK [def _replay_one_cluster] si=0 cl=35 (batch06_command_system_restore_engine)
+        - # Auto-share on member join re-grants shareable lineages;
+        + # Auto-share on member join re-grants the shareable spells;
+ 2680 CHECK [def _replay_contracts] si=0 cl=0 (batch06_command_system_restore_engine)
+        - side that OWNS the lineage ("initiated" via the link-time
+        + side that OWNS the spell ("initiated" via the link-time
+ 2750 ok    [def _replay_one_contract] si=1 cl=0 (batch06_command_system_restore_engine)
+        - # The map holder OWNS the lineage (both detail labels);
+        + # The map holder OWNS the spell (both detail labels);
+== src/melder/crystallizer/crystallizer.py
+ 1225 ok    [def create_contract_crystal] si=5 cl=0 (batch12_contracts_crystals_views)
+        - both sides' spell Details and lineage subscriptions - into
+        + both sides' spell Details and SpellIndex subscriptions - into
+== src/melder/crystallizer/crystals/cluster_crystal.py
+   12 CHECK [class ClusterCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - contracts): named member groups with shared lineage roots and an
+        + contracts): named member groups with shared root spell indexes and an
+   47 CHECK [class ClusterCrystal] si=-1 cl=-1 OLD-CL (batch12_contracts_crystals_views)
+        - (`ContractCrystal`), clusters are named member groups with shared lineage
+        + (`ContractCrystal`), clusters are named member groups with shared root spell
+   48 CHECK [class ClusterCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - roots and an optional elected leader. This twin records membership,
+        + indexes and an optional elected leader. This twin records membership,
+== src/melder/crystallizer/crystals/contract_crystal.py
+   12 CHECK [class ContractCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - which conduits are linked, which spells/lineages are shared into
+        + which conduits are linked, which spells and spell indexes are shared into
+   21 CHECK [class ContractCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - its peer; index-detail rows describe lineage subscriptions. The two
+        + its peer; index-detail rows describe SpellIndex subscriptions. The two
+   50 CHECK [class ContractCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - RELATIONSHIP: which conduits are linked and which spells/lineages are
+        + RELATIONSHIP: which conduits are linked and which spells and spell indexes are
+  112 ok    [def __init__] si=2 cl=0 (batch12_contracts_crystals_views)
+        - Plain-dict projections of ward A's lineage subscriptions.
+        + Plain-dict projections of ward A's SpellIndex subscriptions.
+  114 ok    [def __init__] si=2 cl=0 (batch12_contracts_crystals_views)
+        - Plain-dict projections of ward B's lineage subscriptions.
+        + Plain-dict projections of ward B's SpellIndex subscriptions.
+== src/melder/crystallizer/crystals/spell_index_crystal.py
+   12 CHECK [class SpellIndexCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - (which parked members ride which lineage, and which member is
+        + (which parked members sit in which SpellIndex, and which member is
+   14 CHECK [class SpellIndexCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - regroup staged members onto the right lineage and transfer of
+        + regroup staged members onto the right SpellIndex and transfer of
+   48 CHECK [class SpellIndexCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - index-owned GROUPING state: which parked members ride which lineage and
+        + index-owned GROUPING state: which parked members sit in which SpellIndex and
+   50 CHECK [class SpellIndexCrystal] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - the right lineage, and transfer-of-ownership uses it to re-anchor a moved
+        + the right SpellIndex, and transfer-of-ownership uses it to re-anchor a moved
+== src/melder/nexus/acl/frame_acl_compiled_access_surface.py
+  483 ok    [def visible_spell_index_ids] si=3 cl=0 (batch12_contracts_crystals_views)
+        - Tuple[str, ...]: Visible stable spell lineage ids.
+        + Tuple[str, ...]: Visible stable SpellIndex ids.
+  505 ok    [def enabled_spell_index_ids] si=3 cl=0 (batch12_contracts_crystals_views)
+        - Tuple[str, ...]: Enabled spell lineage ids.
+        + Tuple[str, ...]: Enabled SpellIndex ids.
+== src/melder/nexus/acl/frame_acl_compiler.py
+  408 ok    [def _compile_spell_access] si=5 cl=0 (batch12_contracts_crystals_views)
+        - runtime consumers can target lineages directly.
+        + runtime consumers can target spell indexes directly.
+== src/melder/nexus/rift/command_system/command_system.py
+ 1624 ok    [def _get_required_published_spell_index_id_by_spell_id] si=6 cl=0 (batch06_command_system_restore_engine)
+        - published lineages.
+        + published spell indexes.
+== src/melder/nexus/rift/frame_viewer/frame_viewer.py
+ 3637 CHECK [def describe_visible_collisions] si=0 cl=0 (batch13_mixed_endings)
+        - binding name, spell name, lineage, or spellframe.
+        + binding name, spell name, spell index, or spellframe.
+ 6486 CHECK [def describe_spell_crosswalk] si=0 cl=0 (batch13_mixed_endings)
+        - conduit, root conduit, peer conduits, spellbook, lineage, and
+        + conduit, root conduit, peer conduits, spellbook, spell index, and
+== src/melder/nexus/rift/frame_viewer/view_frame.py
+ 1434 ok    [def list_visible_index_ids] si=2 cl=0 (batch12_contracts_crystals_views)
+        - Deduplicate yourself if you want distinct lineages.
+        + Deduplicate yourself if you want distinct spell indexes.
+== src/melder/nexus/rift/frame_viewer/view_multiframe.py
+ 1477 CHECK [def describe_index_groups] si=2 cl=3 (batch12_contracts_crystals_views)
+        - - Groups by spell INDEX id, so each group is one version LINEAGE rather than
+        + - Groups by spell INDEX id, so each group is one SpellIndex's versions rather than
+ 2405 CHECK [def list_index_ids] si=7 cl=3 (batch12_contracts_crystals_views)
+        - one lineage.
+        + one SpellIndex.
+== src/melder/nexus/rift/frame_viewer/view_spell.py
+  854 ok    [def describe_spell_index] si=6 cl=0 (batch13_mixed_endings)
+        - - Describes the spell's INDEX, i.e. its version lineage, so it answers
+        + - Describes the spell's INDEX, the SpellIndex organizing its versions, so it answers
+ 1731 ok    [def list_spells_by_index_id] si=8 cl=0 (batch13_mixed_endings)
+        - a whole version lineage, this returns EVERY visible spell sharing that
+        + every version it organizes, this returns EVERY visible spell in that
+ 1732 ok    [def list_spells_by_index_id] si=8 cl=0 (batch13_mixed_endings)
+        - lineage, not one spell.
+        + index, not one spell.
+== src/melder/utilities/custom_exceptions/spell_space_scope_error.py
+   23 CHECK [class SpellSpaceScopeError] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - REFUSES `unique_per_spell_space` lineages rather than inventing a scope,
+        + REFUSES `unique_per_spell_space` spells rather than inventing a scope,
+== src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+   37 CHECK [class SpellbookValidationError] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - counted here, except one that holds a spell's lineage gated (a lost
+        + counted here, except one that holds a spell's SpellIndex gated (a lost
+   65 CHECK [class SpellbookValidationError] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - lineage is gated, so they are its reason (2026-10-16).
+        + SpellIndex is gated, so they are its reason (2026-10-16).
+  142 CHECK [class SpellbookValidationError] si=-1 cl=-1 (batch12_contracts_crystals_views)
+        - # Phase-4 warnings that hold a lineage `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
+        + # Phase-4 warnings that hold a SpellIndex `gated` (`CompilerPhase4.run`): a spell refused only because of one lists
+total edits 552, flagged 200

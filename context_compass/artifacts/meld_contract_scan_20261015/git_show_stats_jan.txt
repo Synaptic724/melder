@@ -1,0 +1,21 @@
+######## 4dd6efdd5
+4dd6efdd5 2026-01-25 10:15:12 -0700 Mark | Refactor spell melding process to ensure lineage resolvability and adjust hook execution order
+
+
+ src/melder/aether/conduit/meld/meld.py | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+######## c21be881c
+c21be881c 2026-01-25 15:14:54 -0700 Mark | Add RiskManager integration for spell validity tracking in conduit resolution
+
+
+ src/melder/aether/conduit/meld/meld.py             |  24 +-
+ .../conduit/meld/meld_runtime/meld_runtime.py      | 105 +++----
+ src/melder/aether/dev_ops/dev_ops_manager.py       |  14 +
+ src/melder/aether/dev_ops/risk_manager/__init__.py |   3 +
+ .../aether/dev_ops/risk_manager/risk_manager.py    | 302 +++++++++++++++++++++
+ .../conduit_resolution_state.py                    |  49 ++++
+ .../spell_system_states/spell_system_state.py      | 143 ++++++----
+ .../spell_system_states/spell_system_states.py     | 115 +++++---
+ src/melder/spellbook/spellbook.py                  | 119 ++++++++
+ src/melder/utilities/interfaces/interfaces.py      |  13 +
+ 10 files changed, 729 insertions(+), 158 deletions(-)

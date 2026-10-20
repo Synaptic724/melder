@@ -18,6 +18,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+from tests._spell_identity_test_support import version_of
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +38,7 @@ def reset_melder() -> Iterator[None]:
 
 
 class ScanProfile:
-    """The provider, bound once under "agents" and once under "artificial_intelligence_tools"."""
+    """The provider bound under "agents"; its namesake under "artificial_intelligence_tools" is a version."""
 
     def __init__(self) -> None:
         """No collaborators."""
@@ -85,7 +86,7 @@ def test_bind_spellmap_spellcontract_and_meld_keep_the_name_and_share_one_addres
     book = _automatic_book("binding-name-case-address")
     try:
         spell_id = book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         spellmap = SpellMap(spellframe="agents", binding_name="ScanProfile")
         contract = SpellContract(spellframe="agents", binding_name="ScanProfile")
@@ -118,8 +119,10 @@ def test_capitalized_spellmap_binding_name_no_longer_fails_to_resolve(explicit: 
     """
     book = _automatic_book("binding-name-case-spellmap")
     book.bind(spell=ScanProfile, existence="unique", spellframe="agents", binding_name="ScanProfile")
-    book.bind(spell=ScanProfile, existence="unique", spellframe="artificial_intelligence_tools",
-              binding_name="ScanProfile")
+    # The namesake is other code under the same name, as in the report: one class is one spell
+    # (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so ScanProfile itself cannot be bound at a second address.
+    book.bind(spell=version_of(ScanProfile, toolset="artificial_intelligence_tools"), existence="unique",
+              spellframe="artificial_intelligence_tools", binding_name="ScanProfile")
     if explicit:
         default = SpellMap(ScanProfile, spellframe=frame, binding_name=written)
     else:

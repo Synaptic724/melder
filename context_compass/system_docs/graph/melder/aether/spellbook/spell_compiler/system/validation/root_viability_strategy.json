@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py",
- "source_sha256": "ec8e88f1d051d08fb591855c7943e82d6f71f5f93c638861f874de649da22089",
+ "source_sha256": "0e07d9759563d5b3778cf1197b85727e6d55a227b6375a82edd8537093514f32",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "53e2f92bf7fcd74b246f78a896a9141388e57ee20666bfec6e6165219fbc9fa7",
+   "span_sha256": "f011f66763895a50a81f3993dd6d66724ad876c8d110211cb3835f96b5edbf56",
    "include": true,
    "role": "The verdict pass: performs no fresh analysis, but collapses the root-affecting errors earlier strategies already produced into one viability answer per root.",
    "responsibilities": [

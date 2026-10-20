@@ -1,0 +1,23 @@
+command: python -X gil=0 probe_custody.py /tmp/cc_probe_t3/world (cwd: scratch copy; PYTHONPATH=<copy>/src)
+ran_at: 2026-10-10T13:33:16Z
+python 3.14.7 | site roots ['~/v314t/lib/python3.14t/site-packages', '~/.local/lib/python3.14t/site-packages']
+missing root accepted: (PosixPath('/tmp/cc_probe_t3/world/no/such/root'),)
+symlink in root -> outside site-packages       -> site_package resolved=/tmp/cc_probe_t3/world/outside_env/lib/python3.14t/site-packages/linkpkg/__init__.py
+hard link in root (inode shared with env)      -> user_source  resolved=/tmp/cc_probe_t3/world/project/src/hardmod.py
+hard link's env-side name                      -> site_package resolved=/tmp/cc_probe_t3/world/outside_env/lib/python3.14t/site-packages/hardmod.py
+symlink outside root -> file in root           -> user_source  resolved=/tmp/cc_probe_t3/world/project/src/inside_mod.py
+native extension copied into root              -> user_source  resolved=/tmp/cc_probe_t3/world/project/src/_dbm.cpython-314t-x86_64-linux-gnu.so
+foreign venv site-packages outside root        -> site_package resolved=/tmp/cc_probe_t3/world/foreign_venv/lib/python3.14t/site-packages/foreignpkg/__init__.py
+foreign venv module outside site-packages      -> unknown      resolved=/tmp/cc_probe_t3/world/foreign_venv/lib/foreign_plain/plainmod.py
+nested venv (pyvenv.cfg) inside root           -> user_source  resolved=/tmp/cc_probe_t3/world/project/.venv_new/lib/python3.14t/site-packages/nestedpkg/__init__.py
+build/ artifact inside root                    -> user_source  resolved=/tmp/cc_probe_t3/world/project/build/lib/genmod.py
+hard link: same inode True | st_nlink 2
+write through the root name changes the env file: VALUE = 9
+walk: native kind user_source | fingerprinted False | provenance/binary identity False
+descent=False: pytest kind site_package | provenance row False
+descent=True: pytest kind site_package | provenance row True
+stat guard served the old hash: True | fresh hash differs: True
+windows case: True
+posix case: False
+windows dotdot (lexical): True
+exit: 0

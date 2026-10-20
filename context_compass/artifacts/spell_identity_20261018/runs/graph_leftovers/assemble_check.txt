@@ -1,0 +1,4 @@
+CHECK (no writes): src_graph.md + src_graph_index.md in /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/system_docs
+  sections=593  nodes=1231  edges=1419
+  document=28190 lines  index=620 lines (2% of document)
+  all 593 ranges verified against their own headers

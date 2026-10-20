@@ -1,0 +1,33 @@
+# Full tree on the scratch tree synced from the repository at 0.2.8240 (rsync, caches excluded; diff -rq clean).
+tree | unit_arch | rc=1 | secs=0 | 18 failed in 0.12s
+tree | unit_gh | rc=1 | secs=3 | 52 failed, 1 passed, 438 errors in 2.81s
+tree | unit_llm | rc=2 | secs=0 | 1 error in 0.06s
+tree | unit_mr | rc=0 | secs=2 | 277 passed in 1.28s
+tree | unit_aether | rc=0 | secs=14 | 4228 passed in 13.88s
+tree | unit_sb | rc=0 | secs=4 | 2355 passed in 3.59s
+tree | unit_util | rc=0 | secs=7 | 821 passed, 2 skipped, 7 xfailed in 7.21s
+tree | unit_cryst | rc=0 | secs=4 | 599 passed in 3.43s
+# unit_arch, unit_gh and unit_llm need the files outside src/ and tests/: they run on the repository itself ('melder_private' rows); the scratch rows for them above are void (FileNotFoundError / ModuleNotFoundError, no test ran).
+melder_private | unit_arch | rc=0 | secs=0 | 18 passed in 0.23s
+melder_private | unit_gh | rc=0 | secs=4 | 491 passed in 3.54s
+tree | comp_aether | rc=0 | secs=13 | 1352 passed, 1 xfailed in 13.09s
+tree | comp_sb | rc=0 | secs=11 | 819 passed in 10.13s
+tree | comp_util | rc=0 | secs=1 | 21 passed, 43 skipped in 1.15s
+tree | comp_mr | rc=0 | secs=1 | 40 passed in 0.33s
+tree | comp_cryst | rc=0 | secs=0 | 110 passed in 0.45s
+tree | int_aether | rc=0 | secs=18 | 785 passed, 5 xfailed in 16.88s
+tree | int_conduit | rc=0 | secs=3 | 301 passed in 3.24s
+tree | int_sb | rc=0 | secs=5 | 613 passed, 2 skipped, 2 xpassed in 4.84s
+tree | int_mr | rc=0 | secs=1 | 67 passed in 0.58s
+# comp_util on the scratch tree skips the agent-text-reader tests (they read context_compass/system_docs, absent there); it reruns on the repository after the system docs change.
+tree | int_cryst | rc=0 | secs=56 | 273 passed, 3 xfailed in 55.71s
+tree | int_mt | rc=0 | secs=4 | 54 passed in 3.85s
+tree | int_live | rc=0 | secs=1 | 1 passed, 1 xfailed in 0.17s
+tree | exper | rc=2 | secs=1 | 1 error in 0.54s
+# exper needs benchmarks/: copied from the repository into the scratch tree (rsync), then rerun.
+tree | exper | rc=0 | secs=9 | 250 passed, 4 skipped in 8.70s
+# asset-dependent chunks on the repository after the 0.2.8240 rebuild (2026-10-15, assets and bundles checked OK)
+melder_private | unit_llm | rc=0 | secs=0 | 28 passed in 0.23s
+melder_private | unit_build | rc=0 | secs=55 | 116 passed in 54.56s
+melder_private | unit_top | rc=0 | secs=56 | 145 passed in 56.29s
+melder_private | comp_util | rc=0 | secs=8 | 41 passed, 23 skipped in 7.76s

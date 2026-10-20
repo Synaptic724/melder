@@ -1,0 +1,9 @@
+/tmp/m0_mq/br_tree/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+              unique -> unique               same_id=True second_meld_is_old_object=True two_melds_same_object=True
+              unique -> unique_per_conduit   same_id=True second_meld_is_old_object=True two_melds_same_object=True
+  unique_per_conduit -> unique               same_id=True second_meld_is_old_object=True two_melds_same_object=True
+  unique_per_conduit -> many                 same_id=True second_meld_is_old_object=False two_melds_same_object=False
+                many -> unique_per_conduit   same_id=True second_meld_is_old_object=False two_melds_same_object=True

@@ -1,0 +1,25 @@
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7 gil_enabled=True rounds=2000
+[p1_auto_asis] after conjure and one meld: flag=True risky_structural=[] risky_resolution=['IThing']
+  root.meld(Task): gate=1.00 check=0.00 19.1 us per meld
+[p1_auto_excl] after conjure and one meld: flag=False risky_structural=[] risky_resolution=[]
+  root.meld(Task): gate=0.00 check=0.00 0.3 us per meld
+[p1_dyn_asis] after conjure and one meld: flag=True risky_structural=[] risky_resolution=['IThing']
+  root.meld(Task): gate=1.00 check=0.00 20.7 us per meld
+[p1_dyn_excl] after conjure and one meld: flag=False risky_structural=[] risky_resolution=[]
+  root.meld(Task): gate=0.00 check=0.00 0.8 us per meld
+[scan live (today)] before notch: consumer got A; flag=True risky_structural=[] risky_resolution=['01M50EWC1Z7V481SX62AZNMSZZ']
+  borrower.meld(Consumer): gate=1.00 check=1.00 2354.4 us per meld
+  after notch: consumer lineage valid []; flag=True risky_structural=[] risky_resolution=['01M50EWC1Z7V481SX62AZNMSZZ']
+  first meld after notch: consumer got B; gate=1 check=1; flag=True risky_structural=[] risky_resolution=['01M50EWC1Z7V481SX62AZNMSZZ']
+  second meld after notch: consumer got B; flag=True risky_structural=[] risky_resolution=['01M50EWC1Z7V481SX62AZNMSZZ']
+  after notching back to A: consumer got A; gate=1 check=1; flag=True risky_structural=['01M50EWC1Z7V481SX62AZNMSZZ'] risky_resolution=['01M50EWC1Z7V481SX62AZNMSZZ']
+[scan removed (state only)] before notch: consumer got A; flag=True risky_structural=[] risky_resolution=['01M50EWCNTHDCTQ1S2VV4MKE16']
+  borrower.meld(Consumer): gate=1.00 check=1.00 1.9 us per meld
+  after notch: consumer lineage valid []; flag=True risky_structural=[] risky_resolution=['01M50EWCNTHDCTQ1S2VV4MKE16']
+  first meld after notch: consumer got A; gate=1 check=1; flag=True risky_structural=[] risky_resolution=['01M50EWCNTHDCTQ1S2VV4MKE16']
+  second meld after notch: consumer got A; flag=True risky_structural=[] risky_resolution=['01M50EWCNTHDCTQ1S2VV4MKE16']
+  after notching back to A: consumer got A; gate=1 check=1; flag=True risky_structural=['01M50EWCNTHDCTQ1S2VV4MKE16'] risky_resolution=['01M50EWCNTHDCTQ1S2VV4MKE16']

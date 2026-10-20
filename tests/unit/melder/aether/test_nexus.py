@@ -1992,7 +1992,7 @@ def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeho
     assert "get_nexus_frame" in supported_methods
     assert "validate_codegen" in supported_methods
     assert "execute_codegen" in supported_methods
-    assert "get_spell_by_id" not in supported_methods
+    assert "get_spell_by_spell_id" not in supported_methods
     assert "get_resolution_state" not in supported_methods
     assert "snapshot_state" not in supported_methods
 
@@ -3370,7 +3370,7 @@ def test_capability_command_system_can_query_command_enabled_conduits() -> None:
     )
 
 
-def test_command_system_can_get_spell_by_id(
+def test_command_system_can_get_spell_by_spell_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -3429,13 +3429,10 @@ def test_command_system_can_get_spell_by_id(
     _attach_projection_backed_viewer(space, viewer)
     spell = object()
 
-    class _SpellIndex:
-        def has_spell(self, version_id: str) -> bool:
-            return version_id == "sha-1"
-
     owner_conduit = SimpleNamespace(
         _spellbook=SimpleNamespace(
-            _spells={_SpellIndex(): spell},
+            # The owner Book answers the spell_id lookup from its id maps (0.2.8230; exact since 0.2.8253).
+            find_spell_by_spell_id={"sha-1": spell}.get,
         )
     )
     aether_stub = SimpleNamespace(
@@ -3447,7 +3444,7 @@ def test_command_system_can_get_spell_by_id(
         aether_stub,
     )
 
-    result = space.command_system.get_spell_by_id(
+    result = space.command_system.get_spell_by_spell_id(
         "sha-1",
         frame_name="ops",
     )

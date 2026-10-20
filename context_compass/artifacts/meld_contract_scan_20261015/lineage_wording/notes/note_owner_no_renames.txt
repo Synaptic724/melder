@@ -1,0 +1,23 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner withdrew the renames and ended the wording sweep (chat 2026-10-18, after the 10:49Z
+    DECISION_REQUEST; this supersedes "Messages and renames" and the "Approve as written" answer). "leave the
+    objects alone": no identifier, class, module, diagnostic code, detail key or runtime message is renamed or
+    reworded. "if their docstrings were adjusted make sure they are fine ... after that ... move on get off this
+    docstring crusade": the 552 applied docstring and comment edits are verified against their code, any wrong line
+    goes back to its original text, and then the sweep stops - no tests, UX, docs, system-docs or graph wording
+    pass. He then named the code that keeps `unique_per_conduit_lineage` correct as the place to check first. The
+    managed-settings text fixes melder_0 named (M0-192), approved before the stop, are on hold until he says
+    otherwise. Nothing was renamed: none of the map's new names exists in src or tests.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/no_rename_check.txt:1-39
+  - context_compass/system_docs/patches/active/spell_index_naming_2026_10_18/architecture_patch.md:1-126
+  IMPACT: The rename patch docs are withdrawn; their files stay as they are until the owner's word on closure and
+    archive, and the artifact board row says withdrawn. What remains in the lane: this verification and its report,
+    then the landing of the docstring edits (one notch, a release-note line, the rebuild last) on the owner's word.
+  NEXT: Verify every applied edit, first those inside code that keeps unique_per_conduit_lineage correct, reading
+    each in its method; put back any wrong line; report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

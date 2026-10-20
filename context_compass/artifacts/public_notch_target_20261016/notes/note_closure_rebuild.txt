@@ -1,0 +1,29 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Closed and rebuilt. Re-onboarded after a context compaction (attestation about 16:04Z, self-certified on
+    the owner's standing instruction); no message was addressed to melder_0. The closure (16:06:21Z) moved this
+    ticket to tasks/completed/, synced the attention board (row and detail removed, the notch_borrower_docs anchor
+    dropped and this one added - 12 kept - and the 0.2.8249 notice worded for the extension) and the artifact
+    board (the folder row and the four patch rows became two cleared rows), and sent melder_1 NOTICE M0-177 with
+    its alert: conduit.py released, the INTENT docstrings in spellbook.py named. Then the rebuild, last, from the
+    repository root on Python 3.14.7t: the build assets (agent documentation 468 entries, bind guard 628, system
+    documents 4, all at v0.2.8249) with `--check` OK on all three; the LLM bundles with `--include-untracked` (src
+    583, tests 1123, other 404 files) with `--check --include-untracked` OK on all three. No .git/index.lock left.
+    This note and the board edits after the rebuild lie outside both builds' inputs (the LLM builder excludes
+    context_compass/; the assets read src/ and the four system documents); both checks are rerun after them.
+  EVIDENCE:
+  - context_compass/artifacts/public_notch_target_20261016/scripts/close_task_extension.py:1-292
+  - context_compass/artifacts/public_notch_target_20261016/runs/rebuild_assets_0_2_8249.txt:1-7
+  - context_compass/artifacts/public_notch_target_20261016/runs/rebuild_assets_check_0_2_8249.txt:1-7
+  - context_compass/artifacts/public_notch_target_20261016/runs/rebuild_llm_0_2_8249.txt:1-8
+  - context_compass/artifacts/public_notch_target_20261016/runs/rebuild_llm_check_0_2_8249.txt:1-7
+  - context_compass/attention_board.md:212-212
+  - context_compass/attention_board.md:293-296
+  - context_compass/mailbox_board.md:912-926
+  - llm_support/_builder.py:90-91
+  IMPACT: The EXIT_GATE's rebuild checks hold and the landing is complete; conduit.py is melder_1's.
+  NEXT: None in this lane; melder_1 lands D3 above 0.2.8249.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

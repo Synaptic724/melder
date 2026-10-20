@@ -1,0 +1,6 @@
+python 3.14.7, gil enabled: True, melder 0.2.8248
+C1 find_spell_by_id(x2) is x1's Spell: True; notch returned 8c4029c8; X: selected=8c4029c8 active_map=8c4029c8 members=['632f3b8f', '8c4029c8']; meld(x2) -> KeyError: '[MELD] No spell found with spell_id: 632f3b8f16709822699d1b080f53737eb9436c00f39db0adba03
+C2 private: meld(x2) after notch -> c2X2; after notch back meld(x1) -> c2X1
+C3 notch X to Y's parked y2: ValueError: notch_spell: version 'a34f911b652cbcaf783edd74615b6eb381359f93df9c18c3b39f88aff7; X: selected=8cc15a6d active_map=8cc15a6d members=['8cc15a6d', 'e717fc12']; Y: selected=c8251623 active_map=c8251623 members=['a34f911b', 'c8251623']; y2.spell_index is Y: True; meld(x1) -> c3X1; meld(y1) -> c3Y1; meld(y2) -> KeyError: '[MELD] No spell found with spell_id: a34f911b652cbcaf783edd74615b6eb381359f93df9c18c3b39f
+C4 notch X to Y's active y1: ValueError: notch_spell: version '141c8a3632e712bf7e73d78b5ca38ec161dc59108835a038daee3ab4f8; X: selected=d207282b active_map=d207282b members=['4cdcdd0c', 'd207282b']; meld(x1) -> c4X1; renotch X to x1 -> meld(x1) c4X1
+C5 notch X to another Book's parked version: ValueError: notch_spell: version 'ab06c0e0f74abee1ae8659866900f44771fd86c15f92866af535e5276d; X: selected=0a174b04 active_map=0a174b04 members=['0a174b04', '208eb539']; meld(x1) -> c5aX1

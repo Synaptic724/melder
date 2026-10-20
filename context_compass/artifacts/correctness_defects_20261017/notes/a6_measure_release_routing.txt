@@ -1,0 +1,37 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A6, read whole and proven (identical with the GIL off and on, ids masked). One defect: when two
+    versions of one index bind the same class, a release with no filter sends an object leased from the parked
+    version to the active version's pool, and the parked version's limited_quantity or queue pool counts that object
+    as out for good. `ReleaseManagedSpell.release` resolves several pools of a class by keeping the one whose version
+    its index selects (`_resolve_pool`, `_is_selected_version`; the managed epic's lifecycle table: "resolver
+    prefers the active version"), `put_back` pools any object uncounted, and only the leasing pool's `reserve()`
+    raised a count. Probe Q2: A (limited_quantity, limit 1) leases Worker #2; B (same class, limit 2) is staged and
+    notched in; `release(obj)` puts #2 into B's pool (B count 0, idle 1; A count 1, idle 0); B serves #2 next; after
+    a notch back, A refuses with ManagedSpellExhaustedError "has all 1 objects out" while nothing is out - stuck
+    until someone leases #2 from B and releases it with spell_id=A. Q3: `release(obj, spell_id=A)` keeps both
+    pools right. Q6: versions that are two classes route by class, untouched. The rest of A6 holds by the owner's
+    rulings of 2026-10-14 (notch and cleanup_spell destroy nothing; identity is not tracked): a disposed version's
+    pool stays registered with its idle objects (Q4); a rebind under the same spell_id meets it, re-pointed, and
+    serves its idle object (Q5); index moves leave the pool alone and `_is_selected_version` follows the Spell's
+    current index; a lease from `managed_spell_meld` carries its pool, so it never misroutes.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/release_managed_spell.py:357-399
+  - src/melder/aether/conduit/creations/release_managed_spell.py:515-580
+  - src/melder/aether/conduit/creations/release_managed_spell.py:625-645
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:474-545
+  - src/melder/aether/conduit/creations/managed_spell_quantity.py:548-606
+  - src/melder/aether/conduit/conduit.py:5067-5179
+  - context_compass/tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md:401-412
+  - context_compass/tickets/epics/completed/2026-10-14_managed_spell_quantity_epic.md:679-687
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_managed_release_routing.py:1-205
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil0.txt:1-64
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_managed_release_routing_gil1.txt:1-64
+  IMPACT: Structure stuck: a pool's count names an object out that the pool will never get back, so a limited or
+    queue version refuses every lease after a notch back. The preference is an accepted design, so the story carries
+    the fix direction as the owner's question. The fix sits in release_managed_spell.py, which no lane holds.
+  NEXT: File the story; then sweep A7 (Book teardown with parked versions).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

@@ -1,0 +1,31 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_0's M0-192 (NOTICE, 2026-10-18T02:14:40Z; consumed from the mailbox): S6 part A landed and rebuilt
+    at 0.2.8254 (02:13Z; the asset and LLM --checks print only OK). Released to this lane: src bind.py,
+    managed_spell_quantity.py, creations.py, caching_system.py, managed_spell_mode.py and spell_crystal.py, then
+    __version__, the release note, the four system documents with their indexes and the graph (descriptors and the
+    assembled document). Notch above 0.2.8254. His bundles carry this lane's src wording edits as they stood at
+    02:12Z; this lane's landing rebuilds. He points at text in files this lane holds that still states the old rule
+    (a managed spell's settings are part of its spell_id), confirmed on today's tree: spell.py 429-430 and the four
+    managed properties' contracts (792, 812, 829, 848), restore_engine.py 2156-2157 ("rebinds with its own options
+    and spell id") and conjure's collision message in spellbook.py 2827-2830 ("the same bind parameters mint the
+    same id", which could say a managed spell's settings are not among them); not read yet: the graph's Spellbook
+    r19 and RestoreEngine r13. For the lineage sweep: bind.json's Bind -> SpellIndex edge says "a SpellIndex
+    lineage key".
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_assets_check.txt:1-7
+  - context_compass/artifacts/correctness_defects_20261017/runs/s6_rebuild_llm_check.txt:1-7
+  - src/melder/aether/spellbook/spell.py:429-431
+  - src/melder/aether/spellbook/spell.py:788-850
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2150-2159
+  - src/melder/aether/spellbook/spellbook.py:2822-2834
+  - context_compass/system_docs/graph/melder/aether/spellbook/bind/bind.json:201-201
+  IMPACT: Nothing this lane needs is held any more: the system documents, the graph and the six S6 files join the
+    wording sweep and the rename plan. The managed-settings text is outside the lineage sweep's subject; it goes to
+    the owner as an item to approve, not edited unasked.
+  NEXT: Record batch 13 and the rename inventory, then write the rename patch docs for the owner's approval.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

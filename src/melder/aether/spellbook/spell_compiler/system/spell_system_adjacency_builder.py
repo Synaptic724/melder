@@ -18,7 +18,7 @@ class SpellSystemAdjacencyBuilder:
     intentionally dumb:
 
         * It trusts that SpellSystemStates contain correct per-spell
-          direct_dependencies at the **version-id** level.
+          direct_dependencies at the **spell_id** level.
         * It does **not** perform validation or cycle detection.
         * It does **not** understand sockets or contracts.
 
@@ -59,7 +59,7 @@ class SpellSystemAdjacencyBuilder:
         # All node ids that are used as dependencies anywhere.
         all_dependency_ids: Set[str] = set()
 
-        # Optional per-spell constructor topologies keyed by version-id.
+        # Optional per-spell constructor topologies keyed by spell_id.
         topologies: Dict[str, Optional[SpellLocalTopology]] = {}
 
         with spell_system_states._lock:

@@ -1,5 +1,6 @@
 from typing import Optional
 
+from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
@@ -17,8 +18,8 @@ class SoloCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
 
     Purpose:
         Claim any model whose visible spell set contains exactly one spell,
-        regardless of existence policy, so phase 10 can emit the dedicated
-        solo planning family.
+        of any existence policy but `managed_spell_quantity`, so phase 10 can
+        emit the dedicated solo planning family.
 
     Registration:
         MELDER KERNEL. A built-in
@@ -62,12 +63,19 @@ class SoloCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
               spell whose required collection wired zero providers still
               counts one visible spell yet must inject an empty list. Such
               models route to the collection-aware families instead.
+            - Declines a model holding a `managed_spell_quantity` spell: its
+              objects are leased through the generalized family's site plan
+              (managed_spell_quantity S5, 2026-10-15), which the solo lowering
+              does not dispense.
         """
         existence_occurrence_shape = spell_codegen_model.existence_occurrence_shape
         if existence_occurrence_shape is None:
             return None
         if existence_occurrence_shape.total_spell_count != 1:
             return None
+        for existence, _count in existence_occurrence_shape.existence_counts:
+            if existence is Existence.managed_spell_quantity:
+                return None
         injection_shape = spell_codegen_model.injection_shape
         if injection_shape is not None:
             for instance_spec in injection_shape.instance_specs_by_instance_key.values():

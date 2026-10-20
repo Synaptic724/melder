@@ -1,0 +1,51 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The user-facing docs describe managed spells (scripts/s7_docs_user.py, s7_docs_api.py,
+    s7_docs_release_api_line.py). README: "Seven Lifetimes, Not Three" adds the `managed_spell_quantity` row and a
+    lease-and-release example with the three modes and the teardown rule; the teardown section's stale sentence ("A
+    failing method stops that object's remaining method calls", wrong since 0.2.80) now says every declared method
+    runs, newest first within a store, the failures chained and raised together once the scope has ended, and a
+    managed object disposed only when its pool destroys it. probes/probe_s7_readme_examples.py runs both in both GIL
+    modes: the lease, the reset on release, the same object leased again, a ninth lease of a limit-8 pool refused,
+    teardown closing the 3 idle objects and none of the 5 out; `close` raising while `shutdown` still runs, the
+    worker disposed before its connection. docs/curriculum.toml's selector and description follow the heading (all
+    14 README selectors resolve); the scopes guide's purge table gains the managed row and a paragraph; the glossary
+    defines "Managed spell". Found: docs/api.toml never got S4's four root exports, so the docs site build has
+    refused the export list since 0.2.8244 ("Public API selection drift: missing=['ManagedSpellExhaustedError',
+    'ManagedSpellLease', 'ManagedSpellMode', 'ReleaseManagedSpell']"); the three managed surfaces now join the
+    "resolution" group (its guide is the lifetimes chapter) and the error joins "errors". docs/tests: 60 passed with
+    Sphinx 9.1.0 from docs/requirements.lock in a scratch venv under the VM's /tmp (the melder venv has no Sphinx).
+    The release note gains the packaging lines. The CRLF files stay CRLF: their HEAD blobs are LF and the owner's
+    Windows checkout converts, so the VM's plain diff shows whole files while the CR-insensitive diff is +55/-11.
+    Left out, beyond S7's boundary: architecture_and_design/02_architecture/ownership_and_lifetimes.md and
+    05_engineering_drawings/README.md (with their diagrams) list six members, but that set is stamped as verified
+    against Melder 0.1.2 as a whole; adding two lines would leave the stamp claiming a check nobody ran, so it is a
+    follow-up for the owner.
+  EVIDENCE:
+  - README.md:476-527
+  - README.md:568-573
+  - docs/curriculum.toml:55-61
+  - docs/intermediate/scopes.md:124-139
+  - docs/reference/glossary.md:52-58
+  - docs/api.toml:10-14
+  - docs/api.toml:53-56
+  - release_docs/next_version_release.md:525-539
+  - src/melder/aether/conduit/creations/creations.py:401-449
+  - src/melder/aether/conduit/creations/creations.py:525-578
+  - src/melder/aether/conduit/meld/conduit_meld.py:211-262
+  - src/melder/aether/conduit/meld/spellspace_meld.py:229-234
+  - context_compass/artifacts/managed_spell_quantity_20261015/probes/probe_s7_readme_examples.py:1-138
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_readme_examples_gil0.txt:1-5
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_readme_examples_gil1.txt:1-9
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_docs_user_selectors.txt:1-2
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_docs_tests_sphinx.txt:1-3
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_user.py:1-186
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_docs_api.py:1-39
+  IMPACT: A reader of the README, the site or the glossary meets the seventh member with an example that runs; the
+    site build accepts the root's export list again. Remaining for S7: the patch lane's archive, rubric scores,
+    the review handoff and the rebuild.
+  NEXT: D6 - move the patch lane to patches/completed/ and replace its 11 artifact-board rows with one cleared row.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

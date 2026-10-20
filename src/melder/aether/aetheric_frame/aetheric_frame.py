@@ -38,7 +38,7 @@ class AethericFrame(Cleanable):
     Contract:
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
-      - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns the version registry for every `SpellIndex` in this frame.
       - Owns one `DevOpsInformationRegistry` as the frame-local topology and
         transaction mirror for reporting and future strategy resolution.
       - Owns one `ConduitCloud` over the frame-local conduit registries.
@@ -81,7 +81,7 @@ class AethericFrame(Cleanable):
     System Context:
         The frame is the ISOLATION BOUNDARY that makes multi-tenant runtime
         work possible in one process. Two frames can hold identically named
-        conduits, clusters, and spell lineages without collision, which is why
+        conduits, clusters, and spells without collision, which is why
         Nexus can offer `single`, `indexed`, and `one_per_workspace` topologies
         as pure frame policy rather than as runtime special-cases.
         Frames also come BEFORE books in the canonical boot order
@@ -194,7 +194,7 @@ class AethericFrame(Cleanable):
             devops_information_registry=self._devops_information_registry,
         )
 
-        # Per-frame graph + dirtiness registry for all spell lineages.
+        # Per-frame graph + dirtiness registry for all spell indexes.
         self._spell_system_states: SpellSystemStates = SpellSystemStates(
             self,
             self._devops_information_registry,
@@ -240,6 +240,12 @@ class AethericFrame(Cleanable):
 
         Returns:
             None.
+
+        Lifecycle:
+            Deletes the frame's owned references but keeps `_lock` (and the
+            `_cleaned` flag), so a reader that holds the frame - Aether's cross-frame
+            sweep - can take the lock on a cleaned frame and read `_cleaned` under it.
+            (cross_object_lock_gaps, 0.2.8231)
         """
         if self._cleaned:
             return
@@ -267,7 +273,10 @@ class AethericFrame(Cleanable):
             del self.name
             del self._aether
             del self._crystallizer
-        del self._lock
+        # `_lock` is kept, a documented post-cleanup field: the cleanup-safe probes
+        # (`_has_spell_unless_cleaned` and kin) and the re-checks in has_spell and
+        # spells_in_index take it on a frame another thread may have cleaned, as Spell
+        # keeps its lock for `_spell_index_unless_cleaned` (cross_object_lock_gaps, 0.2.8231).
 
 
 
@@ -283,7 +292,9 @@ class AethericFrame(Cleanable):
           after `DevOpsManager` drops its borrowed reference.
         - Clears spell and version registries owned by the frame.
         - Cleans conduit cloud, spell-system-state, and DevOps services when
-          present.
+          present. The cloud raises its clusters' team-store disposal failures
+          after it finished (0.2.8237); frame teardown logs them through the
+          Aether logger, as it does a failing conduit, and keeps going.
 
         Returns:
             None.
@@ -317,9 +328,18 @@ class AethericFrame(Cleanable):
         if self._selected_spell_registry is not None:
             self._selected_spell_registry.clear()
 
-        # Dynamic conduit cloud
+        # Dynamic conduit cloud (cleaned after every root, so each root has left
+        # its cluster and only the clusters' team stores remain to dispose).
         if self._conduit_cloud is not None:
-            self._conduit_cloud.cleanup()
+            try:
+                self._conduit_cloud.cleanup()
+            except Exception:
+                if self._aether._logger is not None:
+                    self._aether._logger.error(
+                        "Error cleaning the conduit cloud during frame teardown",
+                        "_cleanup_data_structures",
+                        exc_info=True,
+                    )
 
         # Spell system states registry
         if self._spell_system_states is not None:
@@ -466,7 +486,7 @@ class AethericFrame(Cleanable):
         Per-frame SpellSystemStates registry.
 
         This is the "control tower" for:
-          - lineage graph topology,
+          - SpellIndex graph topology,
           - dirty vs transitively dirty flags,
           - basic impact analysis.
 
@@ -862,12 +882,19 @@ class AethericFrame(Cleanable):
             bool:
                 True when any conduit in this frame owns a `SpellIndex` whose
                 member-id set contains `spell_id`.
+
+        Raises:
+            RuntimeError: If the frame is cleaned, including by a cleanup that
+                races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         if not spell_id:
             return False
 
         with self._lock:
+            # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+            # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+            self.check_cleaned()
             if self._selected_spell_registry is None:
                 return False
 
@@ -878,7 +905,7 @@ class AethericFrame(Cleanable):
 
     def spells_in_index(self) -> set[str]:
         """
-        Return a flat set of all cached SHA256 version ids in this frame.
+        Return a flat set of all cached SHA256 spell_ids in this frame.
 
         Contract:
           - Uses the cached `_selected_spell_registry`.
@@ -886,29 +913,43 @@ class AethericFrame(Cleanable):
 
         Returns:
             set[str]:
-                All cached version ids across every conduit in the frame.
+                All cached spell_ids across every conduit in the frame.
+
+        Raises:
+            RuntimeError: If the frame is cleaned, including by a cleanup that
+                races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
+
+        Threading:
+            Holds the frame lock for the read and takes each conjured Book's live
+            `_spell_ids` with one `set.update` call, so a bind into that Book on
+            another thread cannot tear the copy. (cross_object_lock_gaps, 0.2.8231)
         """
         self.check_cleaned()
         result: set[str] = set()
         with self._lock:
+            # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+            # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+            self.check_cleaned()
             if self._selected_spell_registry is None:
                 return result
 
+            # One update call per conjured Book: each value is a LIVE reference to that Book's `_spell_ids`, which
+            # the Book writes under its own lock, not this one, so an element-by-element copy raised "Set changed
+            # size during iteration" while that Book bound (cross_object_lock_gaps, 0.2.8231).
             for spell_id_set in self._selected_spell_registry.values():
-                for spell_id in spell_id_set:
-                    result.add(spell_id)
+                result.update(spell_id_set)
         return result
 
     def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
         """
-        Find and return the `SpellIndex` that contains the given version id.
+        Find and return the `SpellIndex` that contains the given spell_id.
 
         Contract:
           - Scans the frame-owned `_spell_registry`.
-          - Returns `None` for empty ids or when no matching lineage is found.
+          - Returns `None` for empty ids or when no matching SpellIndex is found.
 
         Args:
-            spell_id: SHA256 version id to search for.
+            spell_id: The SHA256 spell_id to search for.
 
         Returns:
             SpellIndex | None:
@@ -934,6 +975,92 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Facade over the frame-owned LookupContainer, which carries its own
     # lock -- these never take the frame RLock.
+    def _has_spell_unless_cleaned(self, spell_id: str) -> bool:
+        """
+        Internal
+
+        `has_spell` for a caller that does not own this frame: False once the
+        frame is cleaned instead of raising.
+
+        Purpose:
+            Let Aether's cross-frame duplicate sweep ask a frame that another
+            thread may be tearing down; a frame being torn down holds nothing.
+
+        Returns:
+            bool: `has_spell(spell_id)` while the frame is live; False when cleaned.
+
+        Threading:
+            Takes the frame lock once - the lock cleanup() sets `_cleaned` and
+            deletes the registries under, and keeps - so the check and the read
+            cannot interleave with it. The membership test is `has_spell`'s: one
+            `in` per conjured Book's live `_spell_ids`, a single call that a
+            concurrent bind into that Book cannot tear. No re-entry, no second
+            check on the bind path, no other lock. (cross_object_lock_gaps, 0.2.8231)
+        """
+        if not spell_id:
+            return False
+        with self._lock:
+            if self._cleaned:
+                return False
+            for spell_id_set in self._selected_spell_registry.values():
+                if spell_id in spell_id_set:
+                    return True
+        return False
+
+    def _find_index_for_spell_unless_cleaned(self, spell_id: str) -> Optional[SpellIndex]:
+        """
+        Internal
+
+        `find_index_for_spell` for a caller that does not own this frame: None
+        once the frame is cleaned instead of raising.
+
+        Returns:
+            Optional[SpellIndex]: The index whose members hold `spell_id` while the
+                frame is live; None when none does or the frame is cleaned.
+
+        Threading:
+            Takes the frame lock once, as `_has_spell_unless_cleaned`, and asks each
+            index `SpellIndex._has_spell_unless_cleaned` under that index's lock (the
+            frame -> index order `find_index_for_spell` already takes): one O(1)
+            membership test per index, where `find_index_for_spell` copies every
+            index's member set, and an index cleaned meanwhile answers False
+            instead of raising. (cross_object_lock_gaps, 0.2.8231)
+        """
+        if not spell_id:
+            return None
+        with self._lock:
+            if self._cleaned:
+                return None
+            for spell_set in self._spell_registry.values():
+                for spell_index in spell_set:
+                    if spell_index._has_spell_unless_cleaned(spell_id):
+                        return spell_index
+        return None
+
+    def _spells_in_index_unless_cleaned(self) -> set[str]:
+        """
+        Internal
+
+        `spells_in_index` for a caller that does not own this frame: an empty
+        set once the frame is cleaned instead of raising.
+
+        Returns:
+            set[str]: The frame's cached spell_ids while it is live; empty when
+                cleaned.
+
+        Threading:
+            As `_has_spell_unless_cleaned`; each conjured Book's live `_spell_ids`
+            is taken with one `set.update` call, exact while that Book binds.
+            (cross_object_lock_gaps, 0.2.8231)
+        """
+        result: set[str] = set()
+        with self._lock:
+            if self._cleaned:
+                return result
+            for spell_id_set in self._selected_spell_registry.values():
+                result.update(spell_id_set)
+        return result
+
     def claim_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
         """
         Claim a binding signature for `spell_id` frame-wide.
@@ -1164,7 +1291,7 @@ class AethericFrame(Cleanable):
         scanning the frame-owned `_spell_registry` under the frame lock.
 
         Returns:
-            str | None: Owning conduit id, or `None` when no lineage in this
+            str | None: Owning conduit id, or `None` when no SpellIndex in this
             frame advertises that version.
         """
         self.check_cleaned()

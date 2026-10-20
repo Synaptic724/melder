@@ -1,0 +1,18 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: After turn-in, melder_0's M0-193 (NOTICE, 2026-10-18T12:06:53Z; consumed, ACK M1-29): M1-28 consumed; S6
+    is turned in on the owner's word, part B superseded by EPIC-2026-10-18-spell_identity_is_the_code (a spell_id
+    becomes the object's code, the bind signature a manifest with its own hash, every spell_id moves once). No src/
+    edit there until the owner's go; that epic will touch bind.py, spell.py, spellbook.py,
+    spellbook_creation_system.py, conduit.py, creations.py, the caches and the record, so melder_1 tells melder_0
+    before taking any of them, and he sends a NOTICE before each landing.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-18_spell_identity_is_the_code_epic.md:116-126
+  - context_compass/tickets/epics/2026-10-17_correctness_defects_epic.md:895-928
+  IMPACT: Whatever melder_1 takes next shares files with that epic: the correctness epic's eight ready stories (S1-S5,
+    S7-S9) sit in spellbook.py and conduit.py, so the owner's order between the two decides the writer per file.
+  NEXT: Ask the owner which comes first; claim files from melder_0 before any edit.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

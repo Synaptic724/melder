@@ -1,0 +1,23 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Evidence for the open question (sweep A11, probe B2-B3). A late `bind` whose commit validation fails keeps
+    its spell registered and active with every meld refused - documented ("refused at that bind and at its melds",
+    0.2.8224) - so option (b) has a precedent in bind. The difference: a failed late bind displaces nothing, while a
+    failed notch displaces the working version (probe N2: the lender cannot meld the index by address afterwards),
+    which is why (a) stays recommended. Whichever answer lands, `_stage_spell_for_structural_phases`'s docstring
+    ("Notch does NOT stage ... runs the structural phases directly via `_run_post_conjure_structural_phases`") is
+    stale: the validator runs phases 1-4 for a notch at its commit (its docstring, `_notch_spell`'s comment, probe
+    N2), and the fix should correct it.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4937-4958
+  - src/melder/aether/spellbook/spellbook.py:3851-3904
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:783-835
+  - context_compass/system_docs/src_architecture.md:2490-2502
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_broken_late_bind_gil0.txt:9-37
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_failed_notch_commit_gil0.txt:10-18
+  IMPACT: The owner has both precedents in front of him; the fix lane has one more line to correct.
+  NEXT: The owner's answer on the open question.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

@@ -1,0 +1,6 @@
+src/melder/aether/spellbook/spellbook.py lf lines now: 8344
+src/melder/aether/conduit/conduit.py lf lines now: 7907
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py crlf lines now: 541
+src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py crlf lines now: 1683
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py lf lines now: 97
+applied

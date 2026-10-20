@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner ruled S10 not a defect (chat 2026-10-17: moving a version is the agent's call - "you gotta use
+    notch"), so STORY-2026-10-17-minted_index_selects_its_parked_version is withdrawn and moved to completed; its
+    graft side stays in S5, whose lanes now decide from each member's recorded custody. On S6 the owner asked to see
+    the code and to talk it through properly: the two versions are one class object differing only in
+    `managed_spell_limit`, the earlier raise-on-ambiguity recommendation is withdrawn (it would fire on every release
+    of the class), and four options are with him, option 3 (one managed version per class per index) recommended.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_minted_index_selects_its_parked_version_story.md:107-112
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:99-106
+  IMPACT: Nine stories remain; one open question (S6) is with the owner.
+  NEXT: The owner's choice on S6.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

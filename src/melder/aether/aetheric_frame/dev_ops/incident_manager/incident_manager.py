@@ -184,7 +184,7 @@ class IncidentManager(Cleanable):
                 `"validation_failed"`.
             severity: `IncidentSeverity` value for the new incident.
             summary: Short description of the incident.
-            spell_index_id: Optional lineage id the incident is tied to.
+            spell_index_id: Optional SpellIndex id the incident is tied to.
             root_ids: Optional iterable of impacted root spell ids.
             details: Optional structured metadata copied into the incident.
 
@@ -241,7 +241,7 @@ class IncidentManager(Cleanable):
 
         Args:
             status: Optional `IncidentStatus` filter.
-            spell_index_id: Optional lineage-id filter.
+            spell_index_id: Optional SpellIndex-id filter.
             kind: Optional incident-kind filter.
 
         Returns:

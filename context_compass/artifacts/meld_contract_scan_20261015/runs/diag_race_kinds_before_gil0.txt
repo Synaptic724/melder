@@ -1,0 +1,197 @@
+tree=/tmp/cc_res/rule2/before gil_enabled=False max_runs=400 budget=140.0s
+--- first MeldExecutionError: [MELD] Execution failed for spell  (run 8) ---
+     5.779 ms MainThread notched      A
+     5.896 ms MainThread deactivate   A
+     5.904 ms MainThread reactivate   B
+     5.906 ms MainThread notched      B
+     6.094 ms MainThread deactivate   B
+     6.104 ms MainThread reactivate   A
+     6.106 ms MainThread notched      A
+     6.254 ms MainThread deactivate   A
+     6.263 ms MainThread reactivate   B
+     6.266 ms MainThread notched      B
+     6.460 ms meld1      pass-done    Consumer plan=False
+     6.471 ms MainThread deactivate   B
+     6.504 ms meld1      meld-refused SVE
+     6.535 ms meld2      meld-refused SVE
+     6.591 ms meld1      meld-raised  MeldExecutionError: [MELD] Execution failed for spell 
+  message: [MELD] Execution failed for spell 'Consumer' (65a0bc0f7f223c831fbccce7b890a5ce7aa4f4db236b741cd1ed7a715a5adb97) at node 65a0bc0f7f223c831fbccce7b890a5ce7aa4f4db236b741cd1ed7a715a5adb97 (parameter 'ser
+Traceback (most recent call last):
+  File "/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/cc_res/rule2/before/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 201, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/conduit.py", line 5044, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/conduit_meld.py", line 578, in meld
+    self._ensure_lineage_resolvable(target_spell)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/meld.py", line 984, in _ensure_lineage_resolvable
+    self._check_contracts_and_force_revalidation(spell)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/meld.py", line 1365, in _check_contracts_and_force_revalidation
+    raise MeldExecutionError(
+    ...<11 lines>...
+    )
+melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'Consumer' (65a0bc0f7f223c831fbccce7b890a5ce7aa4f4db236b741cd1ed7a715a5adb97) at node 65a0bc0f7f223c831fbccce7b890a5ce7aa4f4db236b741cd1ed7a715a5adb97 (parameter 'service'): SpellContract could not be resolved. Missing contracted provider for key (frame_key='iservice', binding_key='svc') on param 'service' for spell 'Consumer'. Contract=<SpellContract spell=None spellframe=<class 'tests.integration.melder.conduit.test_conduit_integration_notch_revalidation.IService'> binding_name='svc' override=None>.
+
+--- first AttributeError:  (run 9) ---
+     7.363 ms MainThread deactivate   A
+     7.369 ms MainThread reactivate   B
+     7.371 ms MainThread notched      B
+     7.468 ms MainThread deactivate   B
+     7.474 ms MainThread reactivate   A
+     7.476 ms MainThread notched      A
+     7.581 ms MainThread deactivate   A
+     7.586 ms MainThread reactivate   B
+     7.588 ms MainThread notched      B
+     7.681 ms MainThread deactivate   B
+     7.686 ms MainThread reactivate   A
+     7.687 ms MainThread notched      A
+     8.769 ms meld1      pass-done    Consumer plan=True
+     8.804 ms meld1      ctx-built    Consumer
+     9.018 ms meld1      meld-raised  AttributeError: 
+  message: 'SpellContract' object has no attribute 'ping'
+Traceback (most recent call last):
+  File "/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/cc_res/rule2/before/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 201, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SpellContract' object has no attribute 'ping'
+
+--- first RuntimeError: many_only manifest references unknown spell_id  (run 31) ---
+     0.000 ms MainThread ctx-built    Consumer
+     1.680 ms MainThread pass-done    Consumer plan=True
+     1.697 ms MainThread ctx-built    Consumer
+     3.468 ms MainThread deactivate   A
+     3.478 ms MainThread reactivate   fdfec831917c
+     3.480 ms MainThread notched      B
+     3.601 ms MainThread deactivate   B
+     3.606 ms MainThread reactivate   A
+     3.608 ms MainThread notched      A
+     3.706 ms meld1      pass-done    Consumer plan=True
+     3.728 ms meld1      ctx-built    Consumer
+     3.740 ms MainThread deactivate   A
+     3.747 ms MainThread reactivate   B
+     3.749 ms MainThread notched      B
+     3.786 ms meld1      meld-raised  RuntimeError: many_only manifest references unknown spell_id 
+  message: many_only manifest references unknown spell_id '<A>'.
+ns/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/cc_res/rule2/before/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 201, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/conduit.py", line 5044, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/conduit_meld.py", line 611, in meld
+    instance = self._execute_admitted(
+        target_spell,
+    ...<2 lines>...
+        False,
+    )
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/meld.py", line 928, in _execute_admitted
+    return creation_context._no_overrides_instance_executor(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 178, in _cold_no_overrides_instance_door
+    hydrated = _hydrate_once()
+  File "/tmp/cc_res/rule2/before/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 152, in _hydrate_once
+    hydrated = hydrate_many_only_creation_executors(
+        manifest=manifest,
+        spell=spell,
+    )
+  File "/tmp/cc_res/rule2/before/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 217, in hydrate_many_only_creation_executors
+    spell_lookup = _resolve_spell_lookup(
+        spell=spell,
+        step_spell_ids=no_overrides_payload["step_spell_ids"],
+    )
+  File "/tmp/cc_res/rule2/before/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 338, in _resolve_spell_lookup
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: many_only manifest references unknown spell_id 'c8b43f4a2a1c6d198dcf649eec39fe5081a4265213fbd659359f4ce8e4a78d66'.
+
+--- first RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer  (run 193) ---
+     7.222 ms MainThread reactivate   B
+     7.224 ms MainThread notched      B
+     7.373 ms MainThread deactivate   B
+     7.380 ms MainThread reactivate   A
+     7.382 ms MainThread notched      A
+     7.519 ms MainThread deactivate   A
+     7.526 ms MainThread reactivate   B
+     7.528 ms MainThread notched      B
+     7.653 ms MainThread deactivate   B
+     7.661 ms MainThread reactivate   A
+     7.662 ms MainThread notched      A
+     7.684 ms meld3      pass-done    Consumer plan=False
+     7.756 ms meld1      ctx-raised   Consumer RuntimeError
+     7.762 ms meld3      meld-refused SVE
+     7.780 ms meld1      meld-raised  RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer 
+  message: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+Traceback (most recent call last):
+  File "/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/cc_res/rule2/before/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 201, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/conduit.py", line 5044, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/conduit_meld.py", line 611, in meld
+    instance = self._execute_admitted(
+        target_spell,
+    ...<2 lines>...
+        False,
+    )
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/meld.py", line 922, in _execute_admitted
+    creation_context = spell._get_or_build_creation_context()
+  File "/tmp/cc_res/rule2/before/src/melder/aether/spellbook/spell.py", line 1087, in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/creation_context/creation_context_factory.py", line 361, in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+        spell,
+    ...<2 lines>...
+        creation_gate_index_id=index_id,
+    )
+  File "/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 89, in wrapped_build
+    result = ORIGINAL_BUILD(spell, **kwargs)
+  File "/tmp/cc_res/rule2/before/src/melder/aether/conduit/meld/creation_context/creation_context_builder.py", line 121, in build
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+
+runs=400 runs_with_unexpected=151 seconds=11.0
+  257 x AttributeError: 
+  151 x MeldExecutionError: [MELD] Execution failed for spell 
+  8 x RuntimeError: many_only manifest references unknown spell_id 
+  2 x RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer 

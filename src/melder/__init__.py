@@ -16,9 +16,11 @@ Quickstart:
 
 Workflow map - every name below is importable from this root:
 - BIND: Spellbook, SpellBinder, scan_bind (decorator), Spell,
-  SpellIndex; vocabulary Existence, Permissions, Policies, SystemState.
+  SpellIndex; vocabulary Existence, ManagedSpellMode, Permissions,
+  Policies, SystemState.
 - RESOLVE: Conduit (meld, lesser conduits, link/sever), SpellSpace,
-  declarative descriptors SpellMap and SpellContract.
+  declarative descriptors SpellMap and SpellContract; managed objects go
+  back through ReleaseManagedSpell (release, managed -> ManagedSpellLease).
 - AUGMENTED RUNTIME (AR): Nexus -> Rift -> RiftSpace rooms; Workstation,
   FrameViewer and its ViewFrame/ViewConduit/ViewSpell/ViewMultiFrame;
   vocabulary NexusFrameMode, RiftSpaceType.
@@ -30,7 +32,8 @@ Workflow map - every name below is importable from this root:
 - ERRORS (catchable from this root): SpellbookValidationError,
   MeldExecutionError, SpellSpaceScopeError, HookExecutionError,
   InternalRegistrationError, PhaseSchedulerError, PhaseExecutionError,
-  PhaseTimeoutError, DeadReferenceError, UnresolvedInputError.
+  PhaseTimeoutError, DeadReferenceError, UnresolvedInputError,
+  ManagedSpellExhaustedError.
 - AGENT DOCS: __architecture__, __components__, __graph_network__, and
   __graph_details__ are live hardcopy objects carrying the system's own
   self-description - agents should read these before deep work.
@@ -71,6 +74,8 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
 # ---- user-held work surfaces (returned by the objects above; exported so
 # ---- user code can type, isinstance, and discover them from the root) ----
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.creations.managed_spell_lease import ManagedSpellLease
+from melder.aether.conduit.creations.release_managed_spell import ReleaseManagedSpell
 
 # ---- front-facing enum vocabularies ----
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -87,6 +92,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
@@ -148,6 +154,9 @@ from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenc
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.internal_registration_error import (
     InternalRegistrationError,
+)
+from melder.utilities.custom_exceptions.managed_spell_exhausted_error import (
+    ManagedSpellExhaustedError,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
@@ -219,6 +228,9 @@ __all__ = [
     "InternalRegistrationError",
     "LaneState",
     "LaneType",
+    "ManagedSpellExhaustedError",
+    "ManagedSpellLease",
+    "ManagedSpellMode",
     "MeldExecutionError",
     "MutationResearch",
     "MutationResearchConfiguration",
@@ -235,6 +247,7 @@ __all__ = [
     "PhaseTimeoutError",
     "Policies",
     "ProtocolCrafter",
+    "ReleaseManagedSpell",
     "ResearchSet",
     "Rift",
     "RiftConfiguration",

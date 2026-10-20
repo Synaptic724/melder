@@ -1,0 +1,53 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner asked (chat 2026-10-16): "double check if we're not using a real version id somewhere else for
+    something else". Audit of every live term of the family - version id / version_id / version-id / versionid
+    and plurals, "version identifier", "version identity" - in src, tests, the system docs, graph descriptors,
+    release note, README, docs/, agents/, architecture_and_design/, benchmarks/ and .github/, each hit classified
+    by the token it sits in (492 hits). Every "version id" names a spell's own id, a spell_id: no src code
+    identifier holds the term; the 310 test identifiers (the three helpers, `version_id` parameters, test names)
+    all carry spell_ids (`spell_id: str` signatures, passed on as `spell_id=`); none of the 330 inventoried lines
+    names another id (the six with the thinnest context re-read against their code - AethericFrame.spells_in_index
+    returns each Book's `_spell_ids`). Real ids for other things exist and none was touched: the distribution
+    version (verify_distributions.py, site_package_custody_strategy.py "name/version identity"), Nexus's published
+    source id `spellbook_id:spell_id` ("book/version identity" in frame_viewer.py and view_spell.py) and a Phase-11
+    `plan_version_id` in old benchmark plan notes (never implemented under that name). The other versions in src
+    are format versions (RecordVersion, payload, nexus and profile versions, the cache generation, the package
+    version), none called a version id; MutationResearch's "version identity" is the spell_id by contract.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/runs/version_term_audit.txt:1-512
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/supplement_after_audit/other_version_terms.json:1-142
+  - src/melder/mutation_research/research_set/research_node.py:20-23
+  - src/melder/nexus/rift/command_system/command_system.py:1527-1551
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:906-940
+  - src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:46-53
+  - .github/scripts/verify_distributions.py:1-1
+  - benchmarks/competitors/melder_implementation_plan/melder_system_maps/melder_override_codegen_supporting_notes.md:37-38
+  IMPACT: Nothing renamed so far meant another id; the term had no second meaning in the code to protect.
+  NEXT: Apply the lines the first inventory missed (DECISION below).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The first inventory missed 17 lines: its prose pattern did not take "version_id" written in docstrings or
+    the spelled-out "version identifier", and it set every `version_id` aside as a code name. 12 are reworded by
+    hand (V331-V340, V343-V344): SpellSystemAdjacencySnapshot's docstrings (3 lines) and
+    SpellSystemRootBlueprintBuilder's (5), MeldExecutionError's `spell_id` argument, a test helper's Args line, and
+    two lines of Conduit.get_spell_by_id (held: conduit.py). 5 stay (V341, V342, V345-V347): they name a stub
+    parameter literally called `version_id` or `_version_id`, a code name the ruling keeps, and must match it.
+    "version identity" is another phrase and is not changed: in MutationResearch, the Nexus diff commands,
+    SpellCrystal.id, two system-doc lines and one graph descriptor it means the spell_id by contract (the owner's
+    call whether to reword those); in the distribution check and the custody strategy it is the package version,
+    and in the frame viewer the `spellbook_id:spell_id` source id - neither may become spell_id.
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/supplement_after_audit/occurrences.json:1-121
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/supplement_after_audit/decisions_331_347.json:1-87
+  IMPACT: 10 apply now in four files nobody holds; 2 join the held scope (127 rewrites, 5 kept, in 25 files).
+  NEXT: Apply the 10, compare with HEAD, compile, and run the touched tests with the GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

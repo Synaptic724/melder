@@ -1,0 +1,17 @@
+- Scope: replace "version id" by hand where it relates to a spell index (owner, 2026-10-16); wording only, no
+  identifier renamed, no blanket rename. The owner's double check (chat, 19:45Z): no "version id" in the code means
+  another id; the real ones elsewhere (distribution version, Nexus `spellbook_id:spell_id` source id, a plan version
+  id in old benchmark notes) are untouched (FACT, 20:03:17Z).
+- State: blocked (melder_0) since @@NOW@@. Free scope complete: 214 lines in 113 files (the first 204, committed by
+  the owner at 19:47Z, and 10 the audit found), compiled, tests green with the GIL off and on apart from the
+  pre-existing order dependence filed as TASK-2026-10-16-stamp_test_boots_its_own_aether (backlog).
+- Hold: 127 rewrites and 5 kept lines in 25 files melder_1 holds - its rule-2 src and tests, the four system docs
+  and indexes, the graph descriptors, the release note and __version__.py - until its closure and rebuild (M1-22);
+  that closure waits on the owner's direction on its open findings (BLOCKER note).
+- Open for the owner: whether "version identity" (MutationResearch, the Nexus diff commands, SpellCrystal.id,
+  meaning the spell_id) should be reworded too (DECISION, 20:03:17Z).
+- Evidence: inventory, supplement, audit, decisions, scripts and runs in artifacts/spell_id_wording_20261016/.
+- Next: (1) on melder_1's NOTICE, recheck the held decisions against the files (both inventory folders) and apply
+  them, then py_compile and their tests with the GIL off and on; (2) the system doc indexes, the graph descriptors
+  and reassembly, each with its check; (3) the notch above __version__, the release-note bullet under Packaging
+  and documentation, closure and board sync, the rebuild last with both checks OK.

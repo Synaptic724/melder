@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/mutation_research.py",
- "source_sha256": "37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36",
+ "source_sha256": "5bee6950e19b25fe715620300ad20e71e6cc92804286cecc78fa94e2c693cb71",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.mutation_research": {
@@ -89,14 +89,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a5912127fd003ab5493343cae8e84d811c99831ba67bf7691fa1e21c211fa3a3",
+   "span_sha256": "ece73e2c024339b819f7e65b2e52ed45a99769415b65f787f4b0252274a46107",
    "role": "Aether-hosted singleton mutation-research root: the formal declaration record over the live spell world, plus the agent foresight surface (source_view / impact_view with residency join / module_graph_view / source_drift_view / preview_candidate - all read-only over crystallizer custody).",
    "responsibilities": [
     "owns the ResearchSet registry with one guaranteed default set",
     "carries the mutation-research configuration lifecycle",
     "is the package's ONLY crystallizer touchpoint: re-emits the MutationResearchCrystal composition twin after every set mutation and flips RecordedUnitState",
     "rebuilds the registry from recorded compositions (load_recorded_composition hydration seam)",
-    "residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read)",
+    "residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read); a version is active only when its index selects it and the frame's lineage registry tracks it as that index's current version, so a version moved into an index of its own reads parked until a notch (0.2.8259)",
     "ambient campaign context (set/clear/active_campaign) stamps every runtime auto-record",
     "diff_research/create_diff_engine = derived diff reads over custody material through the owned strategy-dispatched DiffEngine (source + structural defaults)",
     "foresight reads = source_view (recorded-first module text, live-disk fallback w/ drift marker), impact_view (blast radius JOINED with research residency), module_graph_view (walkable module world), source_drift_view (full drift report), preview_candidate (read-only candidate mock: AST analysis + would-be diff + would-be radius)",

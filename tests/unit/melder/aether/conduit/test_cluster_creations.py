@@ -3,9 +3,12 @@
 Validation: Not run.
 
 Unit tests for `melder.aether.conduit.creations.cluster_creations.ClusterCreations`.
-Focus: the active-state contract and leader-store ISOLATION, exercised against a
-fake store with no Aether / Conduit runtime. (The conduit-unit conftest resets
-the singletons automatically; these tests do not need them.)
+Focus: the active-state contract, the elected leader's id and team-store
+ISOLATION, exercised against a fake store with no Aether / Conduit runtime. (The
+conduit-unit conftest resets the singletons automatically; these tests do not
+need them.) Since 0.2.8237 the facade fronts the cluster's own team store and
+`bind` takes the elected leader's id with it; these tests were updated from the
+one-argument `bind(store)` of the leader-conduit store.
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 
 
 class _FakeStore:
-    """Minimal stand-in for an elected leader's `Creations` store."""
+    """Minimal stand-in for a cluster's team store (a `Creations`)."""
 
     def __init__(self, tag: str) -> None:
         self.tag = tag
@@ -42,6 +45,10 @@ def test_new_facade_is_disabled() -> None:
     assert ClusterCreations().is_active() is False
 
 
+def test_new_facade_names_no_leader() -> None:
+    assert ClusterCreations().leader_conduit_id is None
+
+
 def test_disabled_facade_hard_errors_on_use() -> None:
     facade = ClusterCreations()
     with pytest.raises(RuntimeError):
@@ -53,11 +60,12 @@ def test_disabled_facade_hard_errors_on_use() -> None:
 
 
 def test_bind_activates_and_delegates_through_to_store() -> None:
-    store = _FakeStore("leader")
+    store = _FakeStore("team")
     facade = ClusterCreations()
-    facade.bind(store)
+    facade.bind(store, "leader-1")
     assert facade.is_active() is True
     assert facade.resolved_store() is store
+    assert facade.leader_conduit_id == "leader-1"
     sentinel = object()
     facade.add_creation("s1", sentinel)
     assert facade.get_creation("s1") is sentinel
@@ -66,32 +74,34 @@ def test_bind_activates_and_delegates_through_to_store() -> None:
 
 def test_unbind_deactivates_and_drops_store() -> None:
     facade = ClusterCreations()
-    facade.bind(_FakeStore("leader"))
+    facade.bind(_FakeStore("team"), "leader-1")
     facade.unbind()
     assert facade.is_active() is False
+    assert facade.leader_conduit_id is None
     with pytest.raises(RuntimeError):
         facade.resolved_store()
 
 
-def test_rebind_retargets_to_new_leader_store() -> None:
+def test_rebind_retargets_to_new_store_and_leader() -> None:
     facade = ClusterCreations()
     first = _FakeStore("first")
     second = _FakeStore("second")
-    facade.bind(first)
+    facade.bind(first, "leader-1")
     assert facade.resolved_store() is first
     facade.unbind()
-    facade.bind(second)
+    facade.bind(second, "leader-2")
     assert facade.resolved_store() is second
+    assert facade.leader_conduit_id == "leader-2"
 
 
-def test_two_facades_resolve_their_own_leader_store() -> None:
-    """Facade-level isolation: each cluster's facade fronts its OWN leader store."""
+def test_two_facades_resolve_their_own_team_store() -> None:
+    """Facade-level isolation: each cluster's facade fronts its OWN team store."""
     store_a = _FakeStore("a")
     store_b = _FakeStore("b")
     facade_a = ClusterCreations()
     facade_b = ClusterCreations()
-    facade_a.bind(store_a)
-    facade_b.bind(store_b)
+    facade_a.bind(store_a, "leader-a")
+    facade_b.bind(store_b, "leader-b")
     assert facade_a.resolved_store() is store_a
     assert facade_b.resolved_store() is store_b
     item_a = object()
@@ -102,8 +112,21 @@ def test_two_facades_resolve_their_own_leader_store() -> None:
 
 def test_cleanup_is_idempotent_and_disables() -> None:
     facade = ClusterCreations()
-    facade.bind(_FakeStore("leader"))
+    facade.bind(_FakeStore("team"), "leader-1")
     facade.cleanup()
     facade.cleanup()  # idempotent: must not raise
     with pytest.raises(Exception):
         facade.is_active()  # check_cleaned trips after cleanup
+    with pytest.raises(RuntimeError):
+        facade.leader_conduit_id  # check_cleaned trips after cleanup
+
+
+def test_cleanup_never_cleans_the_store_it_fronts() -> None:
+    """The cluster owns the team store; a member's facade cleanup only drops its reference."""
+    store = _FakeStore("team")
+    sentinel = object()
+    facade = ClusterCreations()
+    facade.bind(store, "leader-1")
+    facade.add_creation("s", sentinel)
+    facade.cleanup()
+    assert store.get_creation("s") is sentinel

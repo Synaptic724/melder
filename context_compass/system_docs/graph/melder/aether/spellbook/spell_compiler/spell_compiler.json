@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_compiler.py",
- "source_sha256": "62aa5f4f964b7282acc6360d6a2c2e8a62a4d0576283cab9f0f4cf750e0eb6f6",
+ "source_sha256": "035b2c7e333ae49d98eefd134f3dfdc101d218fbb877164eea1d154451a886a1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_compiler": {
@@ -46,7 +46,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9c609117ef3c2ba6e0e932a2a1401859f950bc7935b8c624e06fc1803ee32d62",
+   "span_sha256": "42bcaea4321812a47e7dbf630c2164e605c951db6a9695ad6b67d5c8dca79972",
    "role": "Per-spell phase pipeline owner.",
    "responsibilities": [
     "builds Phase 1 requirements from the bound spell signature",

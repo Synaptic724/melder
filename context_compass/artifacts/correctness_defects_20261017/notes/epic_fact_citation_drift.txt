@@ -1,0 +1,22 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_1's lookup fix is now in the tree (its board row: "Fix #1's code is in the repo"; the files were
+    written at 22:22:06Z, __version__ still 0.2.8252), so this epic's line citations into two of its files moved:
+    spellbook.py by +5 to +6 lines after `find_spell_by_spell_id` (`_notch_spell` 3856, `_apply_notch` 3911,
+    `_apply_add_to_index` 4101, `_destroy_spell_index` 4197, `_apply_remove_from_index` 4276, `_dispose_spell` 4427,
+    `transaction` 4794, `bind_inactive` 5248, `bind` 5574), conduit.py by +8 at `bind_inactive` (4018) and +28 to +30
+    from `managed_spell_meld` (5095) on (`notch_spell` 5650, `add_to_spell_index` 6009, `remove_from_spell_index`
+    6122, `cleanup_spell` 6212). spell.py, conduit_ward.py, restore_engine.py and graft_runner.py citations hold.
+    Notes keep the ranges of their DATETIME; a fix lane re-reads the code it changes.
+  EVIDENCE:
+  - context_compass/attention_board.md:186-186
+  - src/melder/aether/spellbook/spellbook.py:2052-2052
+  - src/melder/aether/spellbook/spellbook.py:3911-3911
+  - src/melder/aether/conduit/conduit.py:5650-5650
+  IMPACT: A reader following an older note into spellbook.py or conduit.py lands a few lines early; the method names
+    in each note stay the reliable key.
+  NEXT: The owner's choice on S6.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

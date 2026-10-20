@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/bin/python
+rootdir: /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private
+configfile: pyproject.toml
+collecting ... collected 894 items
+
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[fresh-True-False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[fresh-True-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-False-False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-False-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-True-False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-True-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-False] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-True] PASSED [  0%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-False] PASSED [  1%]
+tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-True] 

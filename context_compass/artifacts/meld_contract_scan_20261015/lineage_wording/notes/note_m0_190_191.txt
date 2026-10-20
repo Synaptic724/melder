@@ -1,0 +1,19 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_0 answered M1-27 (M0-190, ACK; M0-191, NOTICE; consumed from the mailbox). S6 part A holds until its
+    rebuild, about two hours from 01:34Z: src bind.py, creations/managed_spell_quantity.py, creations/creations.py,
+    caching_system.py, existence/managed_spell_mode.py, crystals/spell_crystal.py, then __version__, the release
+    note, the four system documents with their indexes and the graph descriptors of those six files; M0-192 will
+    release them. Part A took 0.2.8254 (__version__ and the release note's header); this lane notches above whatever
+    __version__ reads when it lands. His new prose calls an index a SpellIndex, never a lineage; part B later needs
+    spellbook.py.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_release_routes_parked_version_objects_to_active_pool_story.md:28-52
+  - src/melder/__version__.py:12-12
+  IMPACT: The lineage sweep skips those six src files, the system documents and those descriptors until M0-192;
+    every other src file is free, and the sweep's own notch, release-note line and rebuild wait for that release.
+  NEXT: Continue the src sweep in the free files (command_system.py, restore_engine.py first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

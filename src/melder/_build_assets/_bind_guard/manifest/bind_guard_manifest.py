@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8227"
-SOURCE_SHA256 = "62d28e84748a8d656a54b819ea3ca02dd7a9051aca2280b3c01dfa34131fe294"
-ENTRY_COUNT = 622
+BUILT_FOR_VERSION = "0.2.8265"
+SOURCE_SHA256 = "e73c45a97b8ee726f8889eac53151e86fb94b8d003958327534972d823a44a62"
+ENTRY_COUNT = 630
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -134,7 +134,11 @@ ENTRIES = (
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'),
     ('melder.aether.conduit.creations.creations', 'Creations'),
+    ('melder.aether.conduit.creations.creations', 'HolderDisposalEntry'),
     ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'),
+    ('melder.aether.conduit.creations.managed_spell_lease', 'ManagedSpellLease'),
+    ('melder.aether.conduit.creations.managed_spell_quantity', 'ManagedSpellQuantity'),
+    ('melder.aether.conduit.creations.release_managed_spell', 'ReleaseManagedSpell'),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'),
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'),
@@ -149,12 +153,15 @@ ENTRIES = (
     ('melder.aether.conduit.spell_space.spell_space_thread_state', 'SpellSpaceThreadState'),
     ('melder.aether.conduit.spell_space.spell_space_thread_state', '_SpellSpaceLocal'),
     ('melder.aether.spellbook.bind.bind', 'Bind'),
+    ('melder.aether.spellbook.bind.binding_manifest', 'BindingManifest'),
     ('melder.aether.spellbook.bind.scan', 'Scan'),
     ('melder.aether.spellbook.bind.scan', 'ScanBindMetadata'),
+    ('melder.aether.spellbook.bind.spell_code_digest', 'SpellCodeDigest'),
     ('melder.aether.spellbook.bind.spell_index', 'SpellIndex'),
     ('melder.aether.spellbook.configuration.spellbook_configuration', 'SpellbookConfiguration'),
     ('melder.aether.spellbook.configuration.system_state', 'SystemState'),
     ('melder.aether.spellbook.existence.existence', 'Existence'),
+    ('melder.aether.spellbook.existence.managed_spell_mode', 'ManagedSpellMode'),
     ('melder.aether.spellbook.resolution_style_matrix', 'ResolutionStyleMatrix'),
     ('melder.aether.spellbook.spell', 'Spell'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis', 'SpellInjectionAnalysis'),
@@ -594,6 +601,7 @@ ENTRIES = (
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'),
     ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'),
     ('melder.utilities.custom_exceptions.internal_registration_error', 'InternalRegistrationError'),
+    ('melder.utilities.custom_exceptions.managed_spell_exhausted_error', 'ManagedSpellExhaustedError'),
     ('melder.utilities.custom_exceptions.meld_execution_error', 'MeldExecutionError'),
     ('melder.utilities.custom_exceptions.operation_cancelled_error', 'OperationCancelledError'),
     ('melder.utilities.custom_exceptions.phase_execution_error', 'PhaseExecutionError'),

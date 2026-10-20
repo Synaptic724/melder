@@ -1,0 +1,8 @@
+CHECK held: files 25 decisions applied 125 kept 2
+KEEP V024 context_compass/system_docs/src_architecture.md 4357 quotes the retired term in the 0.2.8249 handoff entry (a mention, not a use)
+KEEP V029 context_compass/system_docs/src_components.md 11336 quotes the retired term in the 0.2.8249 handoff entry (a mention, not a use)
+LINE OVER 120 V001 context_compass/system_docs/graph/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.json 76 245
+LINE OVER 120 V009 context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.json 44 143
+LINE OVER 120 V013 context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json 44 135
+LINE OVER 120 V015 context_compass/system_docs/graph/melder/aether/spellbook/spellbook.json 82 141
+LINE OVER 120 V016 context_compass/system_docs/graph/melder/utilities/helpers/general_helpers.json 79 143

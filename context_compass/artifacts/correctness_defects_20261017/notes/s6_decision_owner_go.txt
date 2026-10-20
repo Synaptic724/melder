@@ -1,0 +1,21 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner confirmed the scope and gave the go (chat 2026-10-18): "just do the 4 you know then come back
+    later, and we can talk about it but the bind signature can be left out of SHA256 binding I think it makes sense
+    so if you agree with that unless you have an objection the rest make sense". Part A lands now with exactly the
+    four managed settings (mode, limit, queue timeout, reset names) out of the spell_id. The address, existence,
+    disposal names and resolvable stay in it, and melder_0 agrees with no objection: existence, disposal names and
+    resolvable shape the plan the creation cache keeps under the spell_id, and the address keeps two bindings of
+    one class apart. For the talk after part A: part B's staging refusal; a legacy record holding two settings-only
+    versions of one class in one index (with no extra code its restore fails whole on the collision, the answer
+    recommended); and whether anything more of the bind call should leave the spell_id.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/managed_settings_spell_id_2026_10_17/architecture_patch.md:1-106
+  - src/melder/aether/spellbook/bind/bind.py:1019-1150
+  IMPACT: Part A's entry gate is met (patch docs linked, mapping in the PLAN note, the owner's go, M1-26); S6 moves
+    to implementation.
+  NEXT: Re-read bind.py's fingerprint, managed_spell_quantity.py and creations.py whole on 0.2.8253; then red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

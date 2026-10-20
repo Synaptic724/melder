@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
- "source_sha256": "de31ea1c63b3ededc4fee50aa80e0bf2243235030963bb23dfc4c7d3a94fa697",
+ "source_sha256": "49dd0cbab8abfcac6c09e128f0dbaead1b8c15dee32954094dee8942114a2b2a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": {
@@ -39,20 +39,21 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "af0184293afedde95fb64dd66fd544818cdb5e428f27a2024ee72bbde900fa9f",
+   "span_sha256": "0e4c9bcb403c398fec8e82c83d4326d431ab4c6686caaec339ba2b41581e32d2",
    "include": true,
    "role": "Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.",
    "responsibilities": [
     "error on malformed contract descriptors and on more than one provider matching a contract key",
     "warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state",
-    "read the Spellbook's contracted-spell maps and the frame system_state",
+    "read one-call snapshots of the Spellbook's contracted-spell maps - this is the recheck a marked consumer's next meld runs, so a provider change may still be writing them under the Book lock (0.2.8250) - and the frame system_state",
     "caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations",
-    "each error says what to change; an ambiguity error states how many providers match the contract"
+    "each error says what to change; an ambiguity error states how many providers match the contract",
+    "names the contract key and the remedy in its SPELL_CONTRACT_MISSING_PROVIDER warning, the one Phase 4 gates a lineage on, which SpellbookValidationError shows as the consumer's reason (0.2.8250)"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "af0184293afedde95fb64dd66fd544818cdb5e428f27a2024ee72bbde900fa9f"
+   "semantics_authored_against": "6d88f21d0e39170d940cb892e3a39cdda7afdd5f80dcfa0532b113a138e2772e"
   }
  },
  "edges_out": [

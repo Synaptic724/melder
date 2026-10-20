@@ -10,6 +10,7 @@ from typing import (
     Callable,
     ClassVar,
     Optional,
+    Union,
 )
 
 from melder.aether.aether import Aether
@@ -45,6 +46,7 @@ from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers, SpellInputUtils
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -59,6 +61,8 @@ if TYPE_CHECKING:
         SpellSystemStates,
     )
     from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
     from melder.crystallizer.crystallizer import Crystallizer
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
@@ -169,7 +173,7 @@ class Spellbook(Cleanable):
         _apply_remove_from_index - which run inside the held change-control window. The
         PUBLIC verbs are on Conduit (notch_spell, add_to_spell_index,
         remove_from_spell_index): the Conduit admits the transaction because it owns the
-        lineage, and Spellbook applies the membership change because it owns the index
+        SpellIndex, and Spellbook applies the membership change because it owns the index
         maps. Neither half is callable on its own.
     """
     _aether: ClassVar[Aether] = Aether()
@@ -335,6 +339,9 @@ class Spellbook(Cleanable):
         # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
         self._spell_ids: set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
         self._inactive_spells: dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
+        # DISPOSAL IN FLIGHT: ids `cleanup_spell` is disposing right now, read and written only under `_lock`, so a
+        # second disposal of the same spell refuses instead of repeating the first (lock_residuals, 0.2.8232).
+        self._disposing_spell_ids: set[str] = set()
 
         # Contracted (borrowed, keyed by peer conduit id) — same split
         self._contracted_spells: dict[str, dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
@@ -404,9 +411,11 @@ class Spellbook(Cleanable):
         Clean up owned registries and component references under the Spellbook lock.
 
         Contract:
-            - Cleans local spells and SpellIndex instances.
+            - Cleans local spells and SpellIndex instances, the parked
+              versions and the indexes only they hold included
+              (`_cleanup_spells`).
             - Clears and nulls owned and contracted registries, lookup maps,
-              version caches, and spell_id maps.
+              version caches, spell_id maps, and the in-flight disposal marks.
             - Cleans local rich configuration only when it is not the
               frame-owned shared configuration object.
             - Cleans validation subsystems.
@@ -543,6 +552,12 @@ class Spellbook(Cleanable):
             self._logger.error(f"Error cleaning _contracted_indexes: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_indexes
 
+        try:
+            self._disposing_spell_ids.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _disposing_spell_ids: {e}", "_cleanup_components", exc_info=True)
+        del self._disposing_spell_ids
+
     def _cleanup_spells(self) -> None:
         """
         Internal
@@ -552,7 +567,22 @@ class Spellbook(Cleanable):
         Contract:
             - Unregisters each local SpellIndex entry from SpellSystemStates.
             - Cleans Spell and SpellIndex instances (best-effort).
+            - Then retires every parked version (`_inactive_spells`) with the
+              local teardown the parked branch of `_dispose_spell` runs
+              (`_spellbook_cleanup` set, then `Spell.cleanup()`), and cleans
+              every index only parked versions hold - one
+              `remove_from_spell_index` minted; a shared index was cleaned with
+              its active member above. A parked version holds no lineage
+              registration, resolution-map entry or frame lookup of its own, and
+              the root's teardown has already unregistered its index from the
+              frame (`_unregister_conduit_spells_from_aether`), so nothing else
+              is owed. (book_teardown_parked, 0.2.8260)
             - Logs cleanup errors and continues.
+
+        Threading:
+            Runs under the Spellbook lock (`_cleanup_components`); each spell's
+            and each index's lock is taken under it, the order the active loop
+            and conjure's ownership stamping already take.
 
         Returns:
             None.
@@ -587,6 +617,34 @@ class Spellbook(Cleanable):
                     "_cleanup_spells",
                     exc_info=True,
                 )
+        # Parked versions and the indexes only they hold (book_teardown_parked, 0.2.8260). The loop above reaches an
+        # index through its active member, so until 0.2.8260 a parked version - on a shared index, or alone in one
+        # `remove_from_spell_index` minted - stayed uncleaned, and its direct `cleanup()` then routed to this
+        # torn-down Book and raised. Each version's index is read while the version is live, then the version is
+        # retired locally; an index no active member holds is cleaned after its versions.
+        parked_only_indexes: dict[str, SpellIndex] = {}
+        for spell_id, spell in self._inactive_spells.items():
+            try:
+                parked_index = spell.spell_index
+                if parked_index not in self._spells:
+                    parked_only_indexes[parked_index.id] = parked_index
+                spell._spellbook_cleanup = True
+                spell.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning parked spell '{spell_id}': {e}",
+                    "_cleanup_spells",
+                    exc_info=True,
+                )
+        for index_id, parked_index in parked_only_indexes.items():
+            try:
+                parked_index.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning parked-only spell index '{index_id}': {e}",
+                    "_cleanup_spells",
+                    exc_info=True,
+                )
 
     def cleanup_and_remove_spell(self, spell: Spell | str) -> None:
         """
@@ -602,6 +660,11 @@ class Spellbook(Cleanable):
         Contract:
             - Accepts either a live `Spell` or its current `spell_id`.
             - Supports only locally owned spells in this Spellbook.
+            - Refuses the active member of an index that also holds parked
+              versions (`SpellIndex.is_sole_member` False) before anything is
+              unregistered, as `cleanup_spell` refuses it, and changes nothing.
+              The sole member of an index is removed with its index. Book
+              teardown and the parked disposal never reach this method.
             - Unregisters the spell index from `SpellSystemStates` before local
               spell cleanup.
             - Removes Spellbook id maps and lookup maps before local spell
@@ -623,11 +686,48 @@ class Spellbook(Cleanable):
             RuntimeError:
                 If the spell is not found locally or is not owned by this
                 Spellbook.
+            RuntimeError:
+                If the spell is the active member of an index that also holds
+                parked versions; nothing changes. Notch the index to one of
+                them, dispose them with `cleanup_spell`, or move them out with
+                `remove_from_spell_index` first.
+            RuntimeError:
+                If this Spellbook has been cleaned - including one torn down
+                while the call waited for its lock, unless that teardown cleaned
+                the Spell given (then the call returns).
+
+        Threading:
+            Resolves the spell, refuses an active member whose index holds
+            parked versions (the index's membership is read under the index
+            lock inside the Spellbook lock - Spellbook -> index, the order
+            `_dispose_spell` takes, so no new edge), unregisters its index and
+            drops it from `_spells` and `_lookup_spells` under the Spellbook
+            lock; releases the lock for
+            the risk-manager and Aether/frame calls; takes it again to drop the
+            id maps (the Nexus record is removed after); releases the frame
+            lookup; and cleans the spell and its index last, holding no Spellbook
+            or frame lock itself. A direct `Spell.cleanup()` reaches here outside
+            its spell lock (0.2.8233), so Book teardown and conjure's ownership
+            stamping, which take spell locks under the Spellbook lock, never wait
+            on a removal that waits on them. A call that passes `check_cleaned()`
+            and then waits for the lock while the Book is torn down re-checks
+            under it: teardown cleaned every active spell, so a Spell it cleaned
+            returns and anything else raises the cleaned-Book error. A teardown
+            that starts after the first locked section is not ordered against the
+            rest of the removal (callers quiesce removals before tearing a Book
+            down). (direct_spell_cleanup_lock_order, 0.2.8233)
         """
         self.check_cleaned()
         target_spell: Spell | None
         target_spell_id: str
         with self._lock:
+            if self._cleaned:
+                # Torn down while this call waited for the lock: the maps below are gone. Book teardown cleaned every
+                # active spell, so a Spell it cleaned has nothing left to remove; anything else gets the error a call
+                # made after the teardown gets (direct_spell_cleanup_lock_order, 0.2.8233).
+                if not isinstance(spell, str) and spell._cleaned:
+                    return
+                self.check_cleaned()
             if isinstance(spell, str):
                 target_spell_id = spell
                 target_spell = self._spells_by_id.get(target_spell_id)
@@ -643,6 +743,19 @@ class Spellbook(Cleanable):
                 return
 
             target_spell_index = target_spell.spell_index
+            # The active member of an index that still holds parked versions is refused, as cleanup_spell refuses
+            # it: removing it here would clean the index under those versions, where no later call reaches them.
+            # Book teardown and the parked disposal never route here - they set _spellbook_cleanup first - so this
+            # refuses only a caller's removal (direct_cleanup_refusal, 0.2.8256).
+            if not target_spell_index.is_sole_member(target_spell_id):
+                refusal = (
+                    f"Spellbook cannot remove spell {target_spell_id}: it is the active member of a multi-member "
+                    f"index, and disposing it would leave the index's parked versions without an active one. Notch "
+                    f"the index to one of them, dispose them with cleanup_spell, or move them out with "
+                    f"remove_from_spell_index first."
+                )
+                self._logger.error(refusal, "cleanup_and_remove_spell", exc_info=True)
+                raise RuntimeError(refusal)
             target_lookup_key = target_spell.key
             owner_conduit_id = target_spell._owner_conduit_id
 
@@ -1598,6 +1711,11 @@ class Spellbook(Cleanable):
             - Leaves `_contracted_spell_ids[conduit_id]` untouched: borrowed
               existence is kept across the inactive window.
             - Does not touch the SpellIndex or the framewide lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2 of
+              contract_recheck_on_notch_2026_10_16): their next meld rechecks
+              the provider. Mark only.
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
@@ -1609,10 +1727,13 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the spell is not the active contracted spell for
                 its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the park
+                stays published.
 
         Threading:
             - Acquires the Spellbook lock; the admitting transaction serializes
-              the wider operation.
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
         """
         spell_id = spell.spell_id
         spell_index = spell.spell_index
@@ -1647,6 +1768,10 @@ class Spellbook(Cleanable):
                 parked = {}
                 self._inactive_contracted_spells[conduit_id] = parked
             parked[spell_id] = spell
+            conjured = self._conjured
+        # Rule 2: the copy this key's consumers resolved is parked - they recheck at their next meld.
+        if conjured:
+            self._mark_contract_dependents_dirty({binding_key})
 
     def _reactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -1665,6 +1790,10 @@ class Spellbook(Cleanable):
             - Assumes the conduit's contract maps are live (park never drops the
               conduit sub-dicts); does not touch the SpellIndex or framewide
               lookup.
+            - Once the Book has conjured, marks the Book's SpellContract
+              consumers of the copy's key for revalidation after releasing the
+              lock (`_mark_contract_dependents_dirty`; rule 2): their next meld
+              builds against the copy now active. Mark only.
 
         Args:
             conduit_id (str): Peer conduit id that owns the contract.
@@ -1676,10 +1805,13 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the spell is not the parked contracted spell for
                 its id under `conduit_id`.
+            Exception: Whatever the registry's mark raises, logged; the
+                reactivation stays published.
 
         Threading:
             - Acquires the Spellbook lock; the admitting transaction serializes
-              the wider operation.
+              the wider operation. The consumer mark runs after the lock is
+              released and takes only the registry lock.
         """
         spell_id = spell.spell_id
         spell_index = spell.spell_index
@@ -1710,6 +1842,10 @@ class Spellbook(Cleanable):
             self._lookup_contracted_spells[conduit_id][binding_key] = spell_index
             self._contracted_spells_by_id[conduit_id][spell_id] = spell
             self._spell_id_pool[spell_id] = spell
+            conjured = self._conjured
+        # Rule 2: this key's consumers resolve the reactivated copy now - they rebuild at their next meld.
+        if conjured:
+            self._mark_contract_dependents_dirty({binding_key})
 
     def _inactivate_contract_spell(self, conduit_id: str, spell_id: str) -> None:
         """
@@ -1773,8 +1909,8 @@ class Spellbook(Cleanable):
 
         Ensure `spell` is the ACTIVE contracted (borrowed) spell for `conduit_id`,
         contracting it eagerly if this spellbook does not hold it yet. This is the
-        eager "follow" used when an owner notches an index-linked lineage to a
-        version this borrower has not seen:
+        eager "follow" used when an owner notches a SpellIndex this borrower holds through an
+        index link to a version this borrower has not seen:
             - already active for this conduit -> no-op.
             - parked inactive for this conduit -> reactivate it.
             - not held at all -> add it as a fresh active contracted copy.
@@ -1987,71 +2123,96 @@ class Spellbook(Cleanable):
 
     #region Core Methods
     #region General Methods
-    def find_spell_by_id(self, spell_id: str) -> Spell | None:
+    def find_spell_by_spell_id(self, spell_id: str) -> Optional[Spell]:
         """
         Public API
 
-        Return the local spell whose index owns `spell_id`, or None.
+        Return the spell this Spellbook owns under `spell_id`, or None.
 
         Purpose:
-            Resolve any id in a spell's version lineage back to the live
-            `Spell` object that currently represents it.
+            Look a spell up by its spell_id - the SHA256 `bind` and
+            `bind_inactive` return - and answer with exactly the spell bound
+            under it, active or parked. A spell_id and a SpellIndex are separate
+            things (owner ruling, 2026-10-17): the spell an index has active is a
+            lookup by the index's id (`get_spell_by_index_id`), never the answer
+            to a spell_id.
 
         Contract:
+            - Returns the Spell whose `spell_id` is the argument: the active
+              version from `_spells_by_id`, else the parked version from
+              `_inactive_spells`. Never another version of its index, and never
+              the spell the index has active in its place.
             - Searches THIS spellbook's registry only. Spells reachable through
               contracted conduits or through other books in the frame are not
               consulted; `inspect_spell` is the frame-wide search.
-            - Ownership is decided by `SpellIndex.has_spell`, which tests
-              MEMBERSHIP of the index's version lineage rather than equality
-              with the currently selected id. A superseded or parked version id
-              therefore still resolves - and it resolves to the spell as it
-              exists NOW, not to the state that version described.
+            - Answers from the Book's two id maps and never walks a live map.
+              Every owned version is a key of one of them: bind publishes an
+              active version to `_spells_by_id`; `bind_inactive` and a notch
+              park a version in `_inactive_spells`; index moves and parked
+              disposal keep that map in step; an ownership transfer migrates
+              every version of the index.
+            - O(1): at most two dict reads.
             - Returns None on a miss. This is deliberately unlike the
               `find_spell_index` / `find_spell_key` siblings, which raise on a
-              miss; a None here means "no local index claims this id", not
-              "lookup failed".
+              miss; a None here means "this Book owns no spell under this
+              spell_id", not "lookup failed".
             - Pure lookup: creates, registers, and mutates nothing.
+            - Until 0.2.8253 this was `find_spell_by_id`, which answered a
+              parked spell_id with the spell its index had active.
 
         Threading:
-            Does not acquire `self._lock`. The returned object is a live
-            reference, so a concurrent removal or graft can invalidate it after
-            this returns. Callers that need the result to stay valid must hold
-            the lock across their own use of it.
+            Does not acquire `self._lock`, by design: conjure holds that lock
+            while it waits on phase workers and runs conduit hooks, and both can
+            call this lookup from another thread. Each map read is one atomic
+            dict operation and no live map is iterated, so a concurrent bind,
+            removal, notch, index move or transfer can never make this raise or
+            skip a registered spell. A notch, and a transfer between its flip
+            and its inactive-member migration, move spell_ids between the maps
+            in steps; a lookup that lands between two steps answers None for
+            that spell_id, so answers are not linearized against writers.
+            The returned `Spell` is a borrowed reference, not a lease: a
+            concurrent removal, notch or transfer can retire or move it after
+            this returns. A parked version disposed while the lookup runs is
+            returned as it was read, or missed once its spell_id has left the
+            map; the lookup never raises for it.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Args:
             spell_id:
-                Any id belonging to the target spell's version lineage.
+                The spell_id of the spell, active or parked.
 
         Returns:
             Optional[Spell]:
-                The owning spell, or None when no local index claims the id.
+                The spell bound under `spell_id`, or None when this Book owns no
+                spell under it.
 
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
         self.check_cleaned()
-        for spell_index, spell in self._spells.items():
-            # SpellIndex is responsible for telling us whether it owns this version
-            if spell_index.has_spell(spell_id):
-                return spell
-
-        return None
+        # The active version: one atomic read of the active spell_id map.
+        spell = self._spells_by_id.get(spell_id)
+        if spell is not None:
+            return spell
+        # A parked version - staged by bind_inactive or parked by a notch - is the answer itself. Its
+        # index is not consulted: the spell the index has active is a lookup by index id
+        # (get_spell_by_index_id), not by spell_id. Until 0.2.8253 this branch returned that spell.
+        return self._inactive_spells.get(spell_id)
 
     def get_spell_permissions(self, spell_index: SpellIndex) -> str | None:
         """
         Public API
 
-        Read the capability ceiling recorded for one LOCAL spell lineage.
+        Read the capability ceiling recorded for the active spell of one LOCAL SpellIndex.
 
         Purpose:
-            Report what this Spellbook is willing to expose for a lineage it OWNS, which is
+            Report what this Spellbook is willing to expose for a SpellIndex it OWNS, which is
             the upper bound any contract can grant a peer.
 
         Contract:
-            - LOCAL ONLY. Contracted (borrowed) lineages are not searched, so a lineage
+            - LOCAL ONLY. Contracted (borrowed) indexes are not searched, so a SpellIndex
               this book borrows raises rather than reporting the lender's permission. That
               is deliberate: the ceiling belongs to the owner, not the borrower.
             - Returns the enum's NAME as a string, not the `Permissions` member. Compare
@@ -2065,7 +2226,7 @@ class Spellbook(Cleanable):
 
         Args:
             spell_index:
-                Lineage handle whose owning spell should be read.
+                The SpellIndex whose active spell's permissions are read.
 
         Returns:
             str:
@@ -2245,16 +2406,16 @@ class Spellbook(Cleanable):
         """
         Public API
 
-        Resolve the lineage (`SpellIndex`) behind one logical spell address.
+        Resolve the `SpellIndex` behind one logical spell address.
 
         Purpose:
             Turn the human-facing `(spellframe, spell_name, binding_name)` address into the
-            durable lineage handle, so callers can follow the lineage rather than pinning
+            durable SpellIndex, so callers can follow its selected spell rather than pinning
             whichever version happens to be selected right now.
 
         Contract:
             - Searches LOCAL spells first, then every contracted (borrowed) spellbook map.
-              A borrowed lineage is therefore resolvable through the borrower's own book.
+              A borrowed SpellIndex is therefore resolvable through the borrower's own book.
             - The three inputs are normalized into one lookup key before matching, so
               casing differences in the binding name do not change the result.
             - NEVER RETURNS None. Despite the `Optional[SpellIndex]` annotation, the only
@@ -2271,9 +2432,9 @@ class Spellbook(Cleanable):
 
         Returns:
             SpellIndex:
-                The lineage handle for the addressed spell. The returned index is the
+                The SpellIndex of the addressed spell. The returned index is the
                 stable identity - its `selected_spell_id` may move underneath you when the
-                owner notches, which is the intended way to follow a lineage.
+                owner notches, which is the intended way to follow the index's selected spell.
 
         Raises:
             RuntimeError: If the address matches neither a local nor a contracted spell.
@@ -2393,7 +2554,7 @@ class Spellbook(Cleanable):
               bound?", not to discover an address you did not already have.
             - NEVER RETURNS None. Despite the `Optional[tuple]` annotation, the outcomes
               are a key or a raised `RuntimeError`.
-            - Use `find_spell_index(...)` instead when you want the lineage itself; that is
+            - Use `find_spell_index(...)` instead when you want the SpellIndex itself; that is
               the call that returns information you did not already hold.
 
         Args:
@@ -2450,13 +2611,13 @@ class Spellbook(Cleanable):
               2. IDENTITY frame-wide - every other conduit's Spellbook in the named frame
                  is walked, which is what keeps foreign spells (cluster shares, dynamic-link
                  providers) inspectable by object.
-              3. FINGERPRINT fallback - only if identity found nothing, the id is
+              3. CODE fallback - only if identity found nothing, the id is
                  re-derived from the object alone.
-            - Stage 3 is a LEGACY path and rarely matches a registered binding. The spell
-              fingerprint composes BIND-TIME facts (existence, disposal methods, binding
-              name, spell name) that a bare class, function, or instance cannot supply, so
-              an id re-derived from the object generally cannot equal the id recorded at
-              bind. Identity matching exists precisely because of that.
+            - Stage 3 matches exactly: a spell_id is the SHA256 of the registered object's
+              code (an existing object's class code plus its data) with nothing from the
+              bind call, so the id re-derived from the object equals the id recorded at bind
+              while the object's code and data are unchanged. Identity runs first: it is
+              cheaper, and it still finds an object whose data changed after bind.
             - Every stage confirms the candidate id against the Aether registry before
               returning it; a spell known locally but absent from the registry returns None.
             - THIS METHOD NEVER RAISES. Every exception is caught, logged, and converted to
@@ -2478,62 +2639,82 @@ class Spellbook(Cleanable):
                 the object is unbound.
 
         Threading:
-            Holds the Spellbook lock for the entire search, including the frame-wide walk
-            across other conduits' spellbooks.
+            Holds this Spellbook's lock only while stage 1 walks this Spellbook's own
+            spells, the lock bind and removal write them under. Stage 2, stage 3 and
+            every registry confirmation run with no lock held here: the Aether and
+            frame reads take frame locks, and frame teardown takes this Spellbook's
+            lock under its frame lock, so holding it through them could hang
+            against a racing frame teardown (until 0.2.8232 it was held for the
+            whole search). Stage 2 walks a one-call copy of the frame's conduit map,
+            which root registration and removal write under the frame lock, and a
+            one-call copy of each other Spellbook's spell map (0.2.8230); a conduit
+            or spell added or removed during the walk may be missed or still seen.
+            (lock_residuals, 0.2.8232)
         """
-        with self._lock:
-            try:
-                # The spell fingerprint composes bind-time facts (existence,
-                # disposal methods, binding name, spell name) that a bare
-                # class/function/instance cannot supply, so re-deriving the
-                # id from the object alone can never match a registered
-                # binding. Resolve by object identity against this
-                # Spellbook's registered spells first; fall back to the
-                # legacy default-fact fingerprint for foreign objects so
-                # cross-book inspection semantics stay unchanged.
+        try:
+            # A spell_id is the object's code (SpellCodeDigest), so the id
+            # re-derived from the object matches its registered binding
+            # exactly while its code and data are what they were at bind.
+            # Resolve by object identity against this Spellbook's
+            # registered spells first - cheaper, and it still finds an
+            # object whose data changed after bind - then frame-wide by
+            # identity, and only then by the re-derived id (stage 3),
+            # which the Aether registry confirms like the other stages.
+            # Only this walk holds this Spellbook's lock, the lock its writers hold: the confirmation and the stages
+            # below take frame locks, and frame teardown takes this lock under its frame lock
+            # (lock_residuals, 0.2.8232).
+            matched = False
+            candidate_spell_id: Optional[str] = None
+            with self._lock:
                 for candidate_spell in self._spells.values():
                     if (
                             candidate_spell.spell is spell
                             or candidate_spell.user_created_object is spell
                     ):
                         candidate_spell_id = candidate_spell.spell_index.selected_spell_id
+                        matched = True
+                        break
+            if matched:
+                found = Spellbook._aether._check_for_spell(
+                    candidate_spell_id,
+                    aetheric_frame,
+                )
+                return candidate_spell_id if found else None
+            # Frame-wide object inspection: walk the frame's registered
+            # conduits' spellbooks so foreign spells (cluster shares,
+            # dynamic-link providers) are found by object identity too,
+            # before stage 3 re-derives the id from the object's code
+            # (an existing object whose data changed misses there).
+            if aetheric_frame != "default":
+                frame = Spellbook._aether._aetheric_frames[aetheric_frame]
+            else:
+                frame = Spellbook._aether._ensure_default_frame()
+            # Root registration and removal write the frame's conduit map under the frame lock, which is not held
+            # here: walk a one-call snapshot (lock_residuals, 0.2.8232).
+            for frame_conduit in list(frame._conduits.values()):
+                conduit_spellbook = frame_conduit._spellbook
+                if conduit_spellbook is None or conduit_spellbook is self:
+                    continue
+                # Another Book's map, read without that Book's lock: walk a one-call snapshot.
+                for candidate_spell in list(conduit_spellbook._spells.values()):
+                    if (
+                            candidate_spell.spell is spell
+                            or candidate_spell.user_created_object is spell
+                    ):
+                        candidate_spell_id = (
+                            candidate_spell.spell_index.selected_spell_id
+                        )
                         found = Spellbook._aether._check_for_spell(
                             candidate_spell_id,
                             aetheric_frame,
                         )
                         return candidate_spell_id if found else None
-                # Frame-wide object inspection: walk the frame's registered
-                # conduits' spellbooks so foreign spells (cluster shares,
-                # dynamic-link providers) remain inspectable by object, which
-                # the legacy fingerprint path provided before bind-time facts
-                # joined the id composition.
-                if aetheric_frame != "default":
-                    frame = Spellbook._aether._aetheric_frames[aetheric_frame]
-                else:
-                    frame = Spellbook._aether._ensure_default_frame()
-                for frame_conduit in frame._conduits.values():
-                    conduit_spellbook = frame_conduit._spellbook
-                    if conduit_spellbook is None or conduit_spellbook is self:
-                        continue
-                    for candidate_spell in conduit_spellbook._spells.values():
-                        if (
-                                candidate_spell.spell is spell
-                                or candidate_spell.user_created_object is spell
-                        ):
-                            candidate_spell_id = (
-                                candidate_spell.spell_index.selected_spell_id
-                            )
-                            found = Spellbook._aether._check_for_spell(
-                                candidate_spell_id,
-                                aetheric_frame,
-                            )
-                            return candidate_spell_id if found else None
-                spell_id = self._bind.spell_id_inspector(spell)
-                found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
-                return spell_id if found else None
-            except Exception as e:
-                self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
-                return None
+            spell_id = self._bind.spell_id_inspector(spell)
+            found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
+            return spell_id if found else None
+        except Exception as e:
+            self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
+            return None
 
     def _register_conduit_spells_in_aether(self, conduit_id: str) -> None:
         """
@@ -2564,6 +2745,12 @@ class Spellbook(Cleanable):
 
         Remove this Spellbook's local spell indices from Aether for one conduit.
 
+        Contract:
+            - Removes every index this Book has registered: the indexes of its
+              active spells and, since 0.2.8259 (minted_index_registry), an index
+              that holds only parked versions (the one `remove_from_spell_index`
+              mints), so the frame keeps no entry for the torn-down root.
+
         Args:
             conduit_id:
                 Conduit id whose local spell indices should be removed from the
@@ -2571,9 +2758,22 @@ class Spellbook(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            Collects the indexes under the Book lock, reading each parked
+            version's index through its cleanup-safe read (Book -> spell, the
+            order Book teardown takes), and removes them with the frame lock
+            alone after the Book lock is released.
         """
         with self._lock:
             spell_set = set(self._spells.keys())
+            # A parked version's index joins the set: an index that holds only parked versions - the one
+            # remove_from_spell_index mints - is registered too (minted_index_registry, 0.2.8259). An index
+            # shared with an active version is already in it; a version cleaned meanwhile is skipped.
+            for parked_spell in self._inactive_spells.values():
+                parked_index = parked_spell._spell_index_unless_cleaned()
+                if parked_index is not None:
+                    spell_set.add(parked_index)
         if spell_set:
             self._aether._remove_spells_from_aether(
                 conduit_id,
@@ -2585,7 +2785,7 @@ class Spellbook(Cleanable):
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Conduit | None:
+    ) -> Conduit:
         """
         Internal
 
@@ -2599,8 +2799,14 @@ class Spellbook(Cleanable):
                 Spellbook's current frame.
 
         Returns:
-            Optional[Conduit]:
-                Owning conduit when found, otherwise "None".
+            Conduit:
+                The root conduit that owns the spell id.
+
+        Raises:
+            ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+                another frame, its owner cleaned, or its SpellIndex between owners while an ownership
+                transfer runs - or the frame does not exist (`Aether._get_conduit_by_spell_id`).
+                It always raised; until 0.2.8230 this docstring promised None.
         """
         if aetheric_frame_name == "default":
             aetheric_frame_name = self._aetheric_frame_name
@@ -2711,18 +2917,18 @@ class Spellbook(Cleanable):
             f"'{self._aetheric_frame_name}' by \n"
             "another Spellbook:\n"
             f"{described}\n"
-            "A spell_id is a SHA256 over the bind-time fingerprint (structural profile, \n"
-            "lookup signature, existence, and resolved disposal metadata) and does NOT \n"
-            "include the frame, so two Spellbooks binding the same target with the same \n"
-            "bind parameters mint the same id. That includes spells staged inactive \n"
-            "by bind_inactive - a parked spell still holds its id. \n"
+            "A spell_id is the SHA256 of the registered object's code (its methods, \n"
+            "constructor, class-level values and base classes, or an existing object's \n"
+            "class and data) and includes neither the frame nor the bind call, so two \n"
+            "Spellbooks binding the same object mint the same id. That includes spells \n"
+            "staged inactive by bind_inactive - a parked spell still holds its id. \n"
             "SCOPE: a spell_id is unique per PROCESS while "
             "`process_wide_unique_spell_ids` \n"
             "is on (the default), and per FRAME only when it is off. \n"
-            "Fix: differentiate the binding with a distinct spellframe or "
-            "binding_name. \n"
+            "Fix: bind the object in one Spellbook and share it with the others (a link "
+            "or a contract); one object is one spell. \n"
             "Moving to another aetheric frame is NOT a fix under the process-wide \n"
-            "regime - the id follows the fingerprint, and the fingerprint has no frame \n"
+            "regime - the id follows the code, and the code has no frame \n"
             "in it."
         )
 
@@ -2783,18 +2989,32 @@ class Spellbook(Cleanable):
         """
         Internal
 
-        Resolve a spell by id through Aether ownership lookup.
+        Resolve a spell by its spell_id through Aether ownership lookup.
+
+        Contract:
+            - Two steps: Aether names the conduit that owns `spell_id`
+              (`_get_conduit_by_spell_id`), and that conduit's Spellbook answers
+              with the spell bound under it, active or parked
+              (`Spellbook.find_spell_by_spell_id`) - never the spell its index has
+              active in its place.
 
         Args:
             spell_id:
-                Version id / spell id to resolve.
+                The spell_id (SHA256) to resolve, active or parked.
             aetheric_frame_name:
                 Frame name to search. `"default"` is normalized to this
                 Spellbook's current frame.
 
         Returns:
             Optional[Spell]:
-                Matching spell when found, otherwise "None".
+                The spell that owns `spell_id` in the owning conduit's Spellbook,
+                or None when that Spellbook holds no spell under it (it moved or
+                left between the two steps).
+
+        Raises:
+            ValueError: If no conduit in the frame claims the id, or the frame does not exist
+                (`_get_conduit_by_spell_id`).
+            RuntimeError: If the owning conduit has no spellbook.
         """
         owner = self._get_conduit_by_spell_id(spell_id, aetheric_frame_name)
         if owner is None:
@@ -2802,7 +3022,7 @@ class Spellbook(Cleanable):
         owner_spellbook = owner._spellbook
         if owner_spellbook is None:
             raise RuntimeError("Owner conduit has no spellbook.")
-        return owner_spellbook.find_spell_by_id(spell_id)
+        return owner_spellbook.find_spell_by_spell_id(spell_id)
 
     def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
         """
@@ -2925,16 +3145,42 @@ class Spellbook(Cleanable):
 
         Returns:
             Optional[Spell]: The resolved spell, or None if not found.
+
+        Threading:
+            Lock-free. Answers by key first (cross_object_lock_gaps, 0.2.8231): the active borrowed copy is held in
+            `_contracted_spells_by_id` under its own version id, and a parked one in
+            `_inactive_contracted_spells`, whose index (read under the parked spell's own lock) keys the
+            index's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+            Book holds no copy of falls back to the walk: a one-call snapshot of the contracted map, which
+            grants and revocations change while no lock is held here, probing each index with
+            `SpellIndex._has_spell_unless_cleaned` (the lender can clean an index this map still holds, and
+            a cleaned index owns nothing; 0.2.8230).
         """
 
+        # O(1) first: the active borrowed copy under its own version id.
+        active_by_id = self._contracted_spells_by_id.get(conduit_id)
+        if active_by_id is not None:
+            active = active_by_id.get(spell_id)
+            if active is not None:
+                return active
         # Pull the map of SpellIndex? Spell for this conduit
         spell_map = self._contracted_spells.get(conduit_id)
         if spell_map is None:
             return None
+        # Still O(1): a parked borrowed copy's index keys that index's active copy.
+        parked = self._inactive_contracted_spells.get(conduit_id)
+        if parked is not None:
+            parked_spell = parked.get(spell_id)
+            if parked_spell is not None:
+                parked_index = parked_spell._spell_index_unless_cleaned()
+                if parked_index is not None:
+                    head = spell_map.get(parked_index)
+                    if head is not None:
+                        return head
 
         # Search for a SpellIndex whose version list contains this SHA
-        for spell_index, spell in spell_map.items():
-            if spell_index.has_spell(spell_id):
+        for spell_index, spell in list(spell_map.items()):
+            if spell_index._has_spell_unless_cleaned(spell_id):
                 return spell
 
         return None
@@ -3041,11 +3287,18 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Once the Book has conjured, the Book's SpellContract consumers of the
+        copy's key are marked for revalidation after the Book lock is released
+        (`_mark_contract_dependents_dirty`; rule 2 of
+        contract_recheck_on_notch_2026_10_16), so their next meld builds against
+        the new copy; the mark walks on to what depends on them.
+
         Args:
             spell (Spell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
         Raises:
             RuntimeError: If the contracted spell's binding key collides with existing bindings.
+            Exception: Whatever a registry mark raises, logged; the added copy stays published.
         """
         frame_key = None
         should_mark = False
@@ -3084,6 +3337,9 @@ class Spellbook(Cleanable):
 
         if should_mark and frame_key:
             self._mark_collection_dependents_dirty({frame_key})
+        if should_mark:
+            # Rule 2: a new active copy for this key - its consumers rebuild against it at their next meld.
+            self._mark_contract_dependents_dirty({spell_key})
         self._try_update_staged_contract_keys(conduit_id)
         if self._conjured and self._conduit is not None:
             self._register_spell_with_risk_manager(self._conduit._id, spell)
@@ -3097,7 +3353,7 @@ class Spellbook(Cleanable):
         and the per-conduit existence set are populated -- NOT the active
         `_contracted_spells` / `_lookup_contracted_spells` / `_contracted_spells_by_id`
         maps and NOT the shared `_spell_id_pool`. The borrowed copy therefore stays
-        off resolution (unmeldable) until the owner notches the lineage and the
+        off resolution (unmeldable) until the owner notches the SpellIndex and the
         owning Conduit drives `_activate_contract_spell` on this spellbook.
 
         This is the inactive counterpart of `_add_contracted_spell`. The linking
@@ -3123,7 +3379,7 @@ class Spellbook(Cleanable):
                 parked = {}
                 self._inactive_contracted_spells[conduit_id] = parked
             parked[spell_id] = spell
-            # Existence: track every member id of the lineage, matching the active
+            # Existence: track every member id of the SpellIndex, matching the active
             # path, so the borrower knows all versions exist.
             conduit_spell_ids = self._contracted_spell_ids[conduit_id]
             member_ids = spell_index._spells_in_index
@@ -3196,12 +3452,33 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        It removes the copy of exactly the version `spell_id` names: the active
+        copy only when that copy's own `spell_id` is `spell_id`, otherwise the
+        version's parked copy; when the Book holds neither it raises and changes
+        nothing. The index's member set is never consulted, so with one version
+        parked and another version of the same index active (an index link after
+        a notch, or two version grants) removing the parked version leaves the
+        active copy alone, and an index unlink completes in any member order
+        (contracted_copy_removal_by_version_2026_10_16, 0.2.8251).
+
+        Removing an ACTIVE copy (an uncontract, an index unlink or destroy, a
+        version leaving its index) marks the Book's SpellContract consumers of
+        its key for revalidation after the Book lock is released, once the Book
+        has conjured (`_mark_contract_dependents_dirty`; rule 2): their next meld
+        fails with the first meld's missing-provider report. A parked copy is
+        dropped without a mark - no consumer resolves it.
+
         Args:
             spell_id (str): The version SHA of the spell to remove.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
+        Raises:
+            RuntimeError: If the conduit has no contracted maps or holds no copy of `spell_id`.
+            Exception: Whatever the registry's mark raises, logged; the removal stays published.
         """
 
         removed_spell = None
+        removed_key: Optional[tuple[str, str]] = None
+        conjured = False
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
             lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -3215,27 +3492,25 @@ class Spellbook(Cleanable):
                 )
                 raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
 
-            # Find the contracted SpellIndex holding this member id. A destroyed
-            # (cleaned) contracted index can no longer report its member set, so
-            # fall back to matching the contracted spell's own id -- the removed
-            # member's live copy -- so its stale entry is still dropped.
+            # Find the ACTIVE copy of exactly this version: the entry whose copy's own
+            # id is `spell_id`, for a live or a destroyed (cleaned) index alike. Never
+            # match by index membership: a live index lists every version, so a
+            # membership match took another version's active copy whenever this
+            # version was parked beside it (the unlink after a notch), and the later
+            # removal of that version then raised
+            # (contracted_copy_removal_by_version_2026_10_16, 0.2.8251). The index comes
+            # from the map key, so neither a cleaned index's member set nor a cleaned
+            # copy's `spell_index` is read.
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
-                if idx._cleaned:
-                    if s.spell_id == spell_id:
-                        spell_index = idx
-                        spell = s
-                        break
-                    continue
-                member_ids = idx._spells_in_index
-                if member_ids and spell_id in member_ids:
+                if s.spell_id == spell_id:
                     spell_index = idx
                     spell = s
                     break
 
             if spell_index is None or spell is None:
-                # Not in the ACTIVE contracted maps. A borrowed member can be
+                # No ACTIVE copy of this version. A borrowed member can be
                 # parked (inactive) instead of active: `_add_inactive_contracted_spell`
                 # populates ONLY `_inactive_contracted_spells` plus the per-conduit
                 # existence set -- never the active maps, the lookup, or the risk
@@ -3283,6 +3558,11 @@ class Spellbook(Cleanable):
                 else:
                     conduit_spell_ids.discard(spell_id)
                 removed_spell = spell
+                removed_key = key
+                conjured = self._conjured
+        # Rule 2: the active copy for this key is gone - its consumers recheck (and fail) at their next meld.
+        if removed_key is not None and conjured:
+            self._mark_contract_dependents_dirty({removed_key})
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spell is not None and self._conjured and self._conduit is not None:
             self._unregister_spell_with_risk_manager(self._conduit._id, removed_spell)
@@ -3302,11 +3582,22 @@ class Spellbook(Cleanable):
         keys for the peer conduit so change-control commit hooks can observe
         the updated contract scope.
 
+        Once the Book has conjured, the Book's SpellContract consumers of every
+        active copy's key are marked for revalidation after the Book lock is
+        released (`_mark_contract_dependents_dirty`; rule 2) - the keys the
+        copies were filed under (`_make_spell_key`, as `_add_contracted_spell`
+        files them), so the mark names exactly the keys the clear drops.
+
         Args:
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
+        Raises:
+            RuntimeError: If the conduit has no contracted maps.
+            Exception: Whatever the registry's mark raises, logged; the clear stays published.
         """
 
         removed_spells: list[Spell] = []
+        cleared_keys: set[tuple[str, str]] = set()
+        conjured = False
         with self._lock:
             if (
                 conduit_id not in self._contracted_spells
@@ -3323,6 +3614,11 @@ class Spellbook(Cleanable):
 
             spell_map = self._contracted_spells[conduit_id]
             removed_spells = list(spell_map.values())
+            cleared_keys = {
+                self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+                for spell in removed_spells
+            }
+            conjured = self._conjured
             for spell in spell_map.values():
                 self._unregister_contracted_spell_id(conduit_id, spell.spell_index.selected_spell_id, spell)
 
@@ -3338,6 +3634,9 @@ class Spellbook(Cleanable):
             parked = self._inactive_contracted_spells.get(conduit_id)
             if parked is not None:
                 parked.clear()
+        # Rule 2: every active copy this clear dropped leaves its key's consumers without a provider.
+        if cleared_keys and conjured:
+            self._mark_contract_dependents_dirty(cleared_keys)
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spells and self._conjured and self._conduit is not None:
             for spell in removed_spells:
@@ -3658,45 +3957,132 @@ class Spellbook(Cleanable):
         Internal -- called by the owning Conduit (Conduit.notch_spell is the public surface).
 
         Notch a SpellIndex so `spell` becomes its selected (resolvable) spell,
-        admitted as a `notch` change-control transaction through the mediator.
+        admitted as a `notch` change-control transaction through the mediator. A
+        version that fails its structural check is refused with nothing moved.
 
         `change_reason` records WHY the active member was repointed; it defaults
         to `selected_different_spell` (a general selection, not a mutation) and is
-        threaded into the spell-owned invalidation so the lineage -- and its
+        threaded into the spell-owned invalidation so the SpellIndex -- and its
         dependents -- are flagged with that reason.
 
         Contract:
-            - Admits a `notch` transaction (claims the owning spellbook INTENT
-              and the spell binding key EXCLUSIVE), performs the selected-spell
-              switch inside the held window, then commits.
+            - Runs inside the `notch` transaction the owning Conduit admits and
+              ends (`Conduit.notch_spell`): its seal claims this spellbook, the
+              acting conduit, the conduits linked to it and the spell binding key,
+              all EXCLUSIVE, and freezes those conduits' creation gates
+              (`NotchTransactionStrategy`; corrected 2026-10-16: this said the
+              spellbook admits the transaction and claims itself INTENT). It
+              performs the selected-spell switch inside the held window.
             - The actual switch (a SpellIndex repoint via `SpellIndex.update`) is
               the SpellIndex-model seam `_apply_notch`.
+            - A NOTCH EITHER STANDS OR LEAVES THE STRUCTURE AS IT WAS (2026-10-19;
+              STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers, the
+              owner's answer: refuse it and throw). The entry records the
+              before-state, runs the seam, then checks the incoming version
+              (`_check_notched_version`: phases 1-4 for a version never compiled,
+              while it is active and so in the pool Phase 3 resolves against).
+            - A version that passes, or needs no check, is journaled to the
+              research record and returned; the commit's structural validator
+              then finds its Phase-4 result and skips it.
+            - A version that fails is refused: `_revert_refused_notch` puts the
+              before-state back and resets the refused version's Phase 1-4
+              artifacts, nothing is journaled, and the error is raised before the
+              Conduit fans out to its borrowers, so they are untouched. A retry is
+              checked, and refused, again.
+            - A notch to the index's active version is a no-op and journals
+              nothing.
 
         Args:
             spell_index: The SpellIndex whose selected spell is switched.
             spell: The already-bound spell to make selected.
+            change_reason: Why the active member is repointed; threaded into the
+                seam's invalidation.
 
         Returns:
             Spell: The now-selected `spell`.
 
         Raises:
-            RuntimeError: If the Spellbook is cleaned.
+            SpellbookValidationError: When `spell` fails its structural check. The
+                message's first line says the notch did not happen and names the
+                version still active (`_notch_refusal_line`), the validation report
+                follows, and the error is chained from the check's own. Nothing has
+                moved.
+            RuntimeError: If the Spellbook is cleaned or the seam refuses `spell`;
+                or when the reversal of a refused notch fails, a Melder bug whose
+                message names both versions.
+            Exception: Any other error the check raises, as it is, after the
+                reversal has run.
+
+        Threading:
+            Runs on the notch thread inside the held window. Takes the Book lock to
+            read the before-state and adds no lock: the seam and the phase runner
+            take the locks they take at a notch commit today.
         """
         self.check_cleaned()
         # The owning Conduit admits the `notch` transaction (it owns the
-        # change-control envelope and the conduit-link surface); this seam performs
-        # the local selected-spell switch inside that held window.
-        notched_spell = self._apply_notch(
-            spell_index=spell_index, spell=spell, change_reason=change_reason
+        # change-control envelope and the conduit-link surface); this entry
+        # performs the local selected-spell switch inside that held window. The
+        # before-state is read first, while the seal keeps every other operation
+        # off this Book, its conduits and the binding key.
+        with self._lock:
+            restored = self._spells.get(spell_index)
+            before_selected = spell_index.selected_spell_id
+            before_lookup = self._lookup_spells.get(spell._key)
+            before_claim = self._aetheric_frame.get_lookup(spell._key)
+        if restored is spell:
+            # Already the active member: the seam's no-op, nothing to check or journal.
+            return spell
+        # The lineage's registration before the switch: whether it is tracked, the
+        # dependencies its active version registered, and that version's topology -
+        # the check's Phase 3 overwrites both on the lineage.
+        tracked_state = self._spell_system_states.get_by_index_id(spell_index.id)
+        before_dependencies = tuple(tracked_state.direct_dependencies) if tracked_state is not None else ()
+        before_topology = (
+            self._spell_system_states.get_local_topology_by_id(restored.spell_id) if restored is not None else None
         )
-        # The promoted member's phases 1-4 now run at the NOTCH transaction
-        # commit through the generalized staged-binding-key structural validator
-        # (the same commit path bind uses), which delegates back to this
-        # spellbook's own phase runner. Phase-4/phase-6 results are transient
-        # (nulled at conjure end), so they must never be used as a compile
-        # signal here; the duplicate rerun previously keyed on them fired on
-        # every notch, including no-op notches.
-        return notched_spell
+        self._apply_notch(spell_index=spell_index, spell=spell, change_reason=change_reason)
+        # The promoted member's phases 1-4 run HERE, inside the held window, for a
+        # member never compiled - the commit validator's own test (no Phase-4
+        # result and no Phase-5 root blueprint; `_check_notched_version`), not the
+        # Phase-4 result alone: Phase-4/phase-6 results are transient (nulled at
+        # conjure end), so they must never be the only compile signal; a rerun
+        # once keyed on them fired on every notch, including no-op notches.
+        # Running here, not at the transaction commit, lets a failing check undo
+        # the switch while the seal still holds (corrected 2026-10-19: the check
+        # ran at the NOTCH commit, after the switch, and nothing undid it).
+        try:
+            self._check_notched_version(spell)
+        except Exception as error:
+            # A failing check undoes the switch. A validation verdict is raised as the
+            # refusal, built first because its report renders from the Phase-4 result
+            # still on the spell, which the reversal resets; any other error is
+            # re-raised as it is.
+            refusal = (
+                SpellbookValidationError(error.broken_spells, preface=self._notch_refusal_line(spell, restored))
+                if isinstance(error, SpellbookValidationError) else None
+            )
+            self._revert_refused_notch(
+                spell_index=spell_index,
+                refused=spell,
+                restored=restored,
+                before_selected=before_selected,
+                before_lookup=before_lookup,
+                before_claim=before_claim,
+                before_dependencies=before_dependencies,
+                before_topology=before_topology,
+                tracked=tracked_state is not None,
+            )
+            if refusal is None:
+                raise
+            raise refusal from error
+        # Research record: the notch stands - journal the promotion
+        # (forward-only; None on a first selection; the root declares an
+        # unknown incoming id before journaling).
+        self._record_research_promotion(
+            restored.spell_id if restored is not None else None,
+            spell.spell_id,
+        )
+        return spell
 
     def _apply_notch(
             self,
@@ -3708,8 +4094,10 @@ class Spellbook(Cleanable):
         """
         Internal SEAM -- notch the SpellIndex's ACTIVE member to `spell`.
 
-        Runs inside the held `notch` transaction window (owning spellbook INTENT
-        + binding key EXCLUSIVE). A SpellIndex holds a SET of member spell ids;
+        Runs inside the held `notch` transaction window (the owning spellbook,
+        the acting conduit, the conduits linked to it and the binding key, all
+        EXCLUSIVE; corrected 2026-10-16: this said spellbook INTENT). A
+        SpellIndex holds a SET of member spell ids;
         `selected_spell_id` is the one currently active. Notch swaps which member
         is active using the active/inactive park machinery.
 
@@ -3725,10 +4113,24 @@ class Spellbook(Cleanable):
             4. Repoint the framewide binding signature old -> new active id.
             5. Re-register the index so it is structurally gated + dirty; meld-time
                revalidation recompiles lazily on next resolve.
+            6. Mark every SpellIndex downstream of this one for revalidation
+               (`SpellSystemStates.mark_dependents_for_revalidation`; D2 of
+               contract_recheck_on_notch_2026_10_16): its dependents by registry
+               edge, in any Book, and the SpellContract consumers of its binding
+               key, transitively. Mark only: each rechecks and rebuilds at its next
+               meld; objects already built keep what they were built with.
 
-        Contracted borrowers are NOT yet fanned out here (owner-side only); a notch
-        on a shared index does not yet update borrowers' contracted maps -- that is
-        the next slice (cross-conduit fan-out under the same seal).
+        Borrowers are updated by the owning Conduit after the transaction window, not
+        here: `Conduit._deactivate_borrowed_spell` parks every linked peer's copy of the
+        outgoing version and `ConduitWard._emit_index_notch` moves index-link
+        subscriptions to the incoming one; the borrower Book's contracted-map mutators
+        mark its consumers (rule 2).
+
+        The seam journals nothing to the research record: its entry
+        (`_notch_spell`) journals the promotion once the notch stands, after the
+        incoming version's structural check. When that check fails, the entry runs
+        this seam back toward the outgoing version (`_revert_refused_notch`, change
+        reason `mutation_rolled_back`), as a notch back does (2026-10-19).
 
         Args:
             spell_index: The SpellIndex whose active member is switched.
@@ -3769,19 +4171,21 @@ class Spellbook(Cleanable):
                         spell_index, self._id
                     )
                 )
-        # Research record: the selection moved - journal the promotion
-        # (forward-only; None on a first selection; the root declares an
-        # unknown incoming id before journaling).
-        self._record_research_promotion(
-            outgoing.spell_id if outgoing is not None else None,
-            new_id,
-        )
+        # Research record: the entry (`_notch_spell`) journals the promotion once
+        # the notch stands - after the incoming version's structural check - so a
+        # refused notch, and this seam run back to undo it, journal nothing
+        # (2026-10-19; the promotion was journaled here until then).
         # Structural gate: re-register marks the index gated + dirty so meld-time
         # revalidation recompiles on next resolve (lazy).
         self._spell_system_states.register_index(
             spell_index=spell_index,
             owner_spellbook_id=self._id,
+            resolvable=spell.resolvable,
+            binding_key=spell._key,
         )
+        # D2: everything downstream of the notched SpellIndex - its dependents by registry edge, in any Book, and the
+        # SpellContract consumers of its binding key - revalidates at its next meld (mark only).
+        self._spell_system_states.mark_dependents_for_revalidation((spell_index.id,))
         # Refresh the spellbook validation-required flag for the promoted member:
         # register_spell recomputes its structural/resolution validity and, for a
         # not-yet-validated member, flips `_spellbook_validation_required` True --
@@ -3801,8 +4205,8 @@ class Spellbook(Cleanable):
                 self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
             else:
                 self._publish_spell_record_to_nexus(spell)
-        # Mark the lineage structurally changed so dependents revalidate, and clear
-        # the promoted member's stale CreationContext. invalidate_spell also sets
+        # Mark the promoted spell's SpellIndex structurally changed (the walk above marked its
+        # dependents) and clear the spell's stale CreationContext. invalidate_spell also sets
         # resolution_required=True as a side effect; bind-parity routing below sets
         # it back to False so meld's validation-required lane (the one that runs
         # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
@@ -3813,11 +4217,14 @@ class Spellbook(Cleanable):
         # this recompile.)
         spell.invalidate_spell(change_reason=change_reason)
         spell.resolution_required = False
-        # Phases 1-4 for the promoted member now run at the NOTCH transaction
-        # commit: the strategy stages this binding key and the generalized
-        # structural commit validator delegates back to this spellbook's own
-        # phase runner, exactly like a bind commit. No hand-rolled structural
-        # run here -- the seam owns the swap, the commit owns the checks.
+        # Phases 1-4 for the promoted member run in the entry (`_notch_spell`),
+        # after this seam returns and still inside the held window, for a member
+        # never compiled; when they fail, the entry runs this seam back toward the
+        # outgoing version. The strategy still stages this binding key, so the
+        # structural commit validator meets the member and skips it (its Phase-4
+        # result is present). No structural run here -- the seam owns the swap,
+        # the entry owns the check (corrected 2026-10-19: the check ran at the
+        # NOTCH commit, after the switch, and nothing undid it).
         #
         # Bind gets its meld revalidation for free because a freshly bound id has
         # never been validated in this conduit (UNKNOWN verdict). A notched member
@@ -3839,6 +4246,281 @@ class Spellbook(Cleanable):
                 change_reason=change_reason,
             )
         return spell
+
+    def _check_notched_version(self, spell: Spell) -> None:
+        """
+        Internal
+
+        Run phases 1-4 for a version a notch just made active, when it was never compiled.
+
+        Contract:
+            - The test is the commit structural validator's own
+              (`ChangeControlManager._default_structural_validator`): a conjured
+              Book, and a version with no Phase-4 result and no Phase-5 root
+              blueprint. Phase-4 results are transient (nulled at conjure end), so
+              the blueprint is what tells a compiled version - a notch back - from
+              one never compiled; a compiled version recompiles through its gated
+              verdicts at its next meld.
+            - Runs while `spell` is active, so it is in the pool Phase 3 resolves
+              against (parked, it is not, and a self-dependency could not resolve
+              to itself).
+            - A version that passes keeps its Phase 1-4 results; the commit
+              validator finds them and skips it.
+
+        Args:
+            spell (Spell): The version the seam just promoted.
+
+        Returns:
+            None.
+
+        Raises:
+            SpellbookValidationError: When the version validates as broken.
+            Exception: Any phase execution failure, as the phase runner raises it.
+
+        Threading:
+            Called by `_notch_spell` on the notch thread inside the held window,
+            without the Book lock, as the commit validator calls the phase runner.
+        """
+        if not self._conjured:
+            return
+        if spell.validation_result_phase4 is not None:
+            return
+        if spell._compiler_artifact._root_blueprint_phase5 is not None:
+            return
+        self._run_post_conjure_structural_phases([spell])
+
+    @staticmethod
+    def _notch_refusal_line(refused: Spell, restored: Optional[Spell]) -> str:
+        """
+        Internal
+
+        The first line of a refused notch's SpellbookValidationError.
+
+        Contract:
+            - One line: the notch did not happen; the refused version and the
+              version still active (or that the index still has none), each by
+              name and spell_id.
+
+        Args:
+            refused (Spell): The version that failed its structural check.
+            restored (Optional[Spell]): The version active before the notch, or
+                None for an index with no active version.
+
+        Returns:
+            str: The refusal line.
+        """
+        line = (
+            f"notch_spell refused: '{refused.spell_name}' (spell_id {refused.spell_id}) failed its structural "
+            "check, so the notch did not happen; "
+        )
+        if restored is None:
+            return line + "the index still has no active version."
+        return line + (
+            f"'{restored.spell_name}' (spell_id {restored.spell_id}) is still the active version of the index."
+        )
+
+    def _revert_refused_notch(
+            self,
+            *,
+            spell_index: SpellIndex,
+            refused: Spell,
+            restored: Optional[Spell],
+            before_selected: Optional[str],
+            before_lookup: Optional[SpellIndex],
+            before_claim: Optional[str],
+            before_dependencies: tuple[str, ...],
+            before_topology: Optional[SpellLocalTopology],
+            tracked: bool,
+    ) -> None:
+        """
+        Internal
+
+        Undo a notch whose incoming version failed its structural check, inside the held window.
+
+        Contract:
+            - With an outgoing version (`restored`): the seam runs back toward it
+              (`_apply_notch`, change reason `mutation_rolled_back`), as a notch
+              back does - `restored` active, selected, claimed and routed by its
+              key, registered with SpellSystemStates and the RiskManager, published
+              to Nexus; `refused` parked with its creation context cleaned. The
+              lineage's dependencies and the topology-derived indexes are then put
+              back (`update_dependencies` with `before_dependencies`,
+              `register_local_topology` with `before_topology`): the check's Phase 3
+              registered `refused`'s on the lineage, and another Book's resolution
+              would otherwise read `restored` as depending on them (a self-dependent
+              `refused` made `restored` depend on `refused` itself). When
+              `refused` is keyed elsewhere, that key's Book lookup and frame claim
+              are then set back to their before-values (`_restore_binding_key`),
+              since the seam repoints only the key it promotes. A key the two share
+              is left as the promotion set it: setting it back would release the
+              claim and the lookup wherever staging `refused` dropped them
+              (STORY-2026-10-17-staged_version_releases_active_signature), and
+              `restored` could not be melded by address.
+            - With none (an index `remove_from_spell_index` minted):
+              `_revert_refused_activation` parks `refused` again and puts the
+              selection, the lineage registration, the RiskManager entry and the
+              Nexus record back; then the key is set back.
+            - Then `refused`'s Phase 1-4 artifacts are reset, so a retry checks it
+              again instead of reading a verdict computed while it was active.
+            - Not restored, by design: `restored`'s creation context (the switch
+              cleaned it) and its per-conduit verdicts (gated, as after any notch),
+              the marks the switch left on dependents (mark only), the Crystallizer's
+              twins, which take the switch and then this reversal, and `refused`'s
+              own topology under its spell_id (nothing reads it while it is parked;
+              its next check replaces it).
+
+        Args:
+            spell_index (SpellIndex): The notched index.
+            refused (Spell): The version that failed its check, active now.
+            restored (Optional[Spell]): The version active before the notch, or None.
+            before_selected (Optional[str]): The index's selected spell_id before the notch.
+            before_lookup (Optional[SpellIndex]): The Book's address lookup for `refused`'s key before the notch.
+            before_claim (Optional[str]): The spell_id holding the frame claim for `refused`'s key before the notch.
+            before_dependencies (tuple[str, ...]): The lineage's direct dependencies before the notch.
+            before_topology (Optional[SpellLocalTopology]): `restored`'s registered topology, or None.
+            tracked (bool): Whether SpellSystemStates tracked the index before the notch.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: When any step fails - a Melder bug; the message names both
+                versions and the error is chained from the failing step's.
+
+        Threading:
+            Called by `_notch_spell` inside the held window. The seam and the helpers
+            take the locks a notch takes: the Book lock with the frame lookup's leaf
+            lock inside it, then the registry and the RiskManager outside the Book lock.
+        """
+        try:
+            if restored is not None:
+                self._apply_notch(
+                    spell_index=spell_index,
+                    spell=restored,
+                    change_reason=SpellStateChangeReason.mutation_rolled_back,
+                )
+                self._spell_system_states.update_dependencies(spell_index, before_dependencies)
+                if before_topology is not None:
+                    self._spell_system_states.register_local_topology(spell_index, before_topology)
+                if refused._key != restored._key:
+                    self._restore_binding_key(refused._key, before_lookup, before_claim)
+            else:
+                self._revert_refused_activation(
+                    spell_index=spell_index, refused=refused, before_selected=before_selected, tracked=tracked,
+                )
+                self._restore_binding_key(refused._key, before_lookup, before_claim)
+            refused._compiler_artifact.reset_phase_artifacts()
+        except Exception as error:
+            active = (
+                f"'{restored.spell_name}' (spell_id {restored.spell_id})" if restored is not None
+                else "no active version"
+            )
+            self._logger.error(
+                f"Reversal of the refused notch to spell_id={refused.spell_id} failed: {error}",
+                "_revert_refused_notch",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"notch_spell refused '{refused.spell_name}' (spell_id {refused.spell_id}) but could not put the "
+                f"index back to {active}: {error}. The index may be left switched to the refused version. This is "
+                "a Melder bug; please report it with this message."
+            ) from error
+
+    def _revert_refused_activation(
+            self,
+            *,
+            spell_index: SpellIndex,
+            refused: Spell,
+            before_selected: Optional[str],
+            tracked: bool,
+    ) -> None:
+        """
+        Internal
+
+        Undo a refused notch on an index that had no active version (one `remove_from_spell_index` minted).
+
+        Contract:
+            - Parks `refused` again (`_deactivate_owned_spell`) and cleans its
+              creation context, sets the selection back to `before_selected` when
+              it moved, and emits the index crystal while the Crystallizer
+              records - all under the Book lock, as the seam does.
+            - SpellSystemStates forgets the index when it did not track it before
+              the notch (`unregister_index`), else re-registers it to follow the
+              selection; the RiskManager entry the seam added for an untracked
+              index is removed, and the Nexus record the seam published is removed.
+            - Leaves the binding key to the caller (`_restore_binding_key`).
+
+        Args:
+            spell_index (SpellIndex): The notched index.
+            refused (Spell): The version that failed its check, active now.
+            before_selected (Optional[str]): The index's selected spell_id before the notch.
+            tracked (bool): Whether SpellSystemStates tracked the index before the notch.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: As the steps raise them (the caller reports a Melder bug).
+
+        Threading:
+            The Book lock for the park and the selection (the seam's order); the
+            registry, the RiskManager and Nexus outside it.
+        """
+        with self._lock:
+            self._deactivate_owned_spell(refused)
+            refused._cleanup_creation_context()
+            if before_selected is not None and spell_index.selected_spell_id != before_selected:
+                spell_index.update(before_selected)
+            if self._crystallizer.activated:
+                self._crystallizer.emit(
+                    self._crystallizer.create_spell_index_crystal(spell_index, self._id)
+                )
+        if tracked:
+            self._spell_system_states.register_index(spell_index=spell_index, owner_spellbook_id=self._id)
+        else:
+            self._spell_system_states.unregister_index(spell_index)
+        if self._conjured and self._conduit is not None:
+            if not tracked:
+                self._unregister_spell_with_risk_manager(self._get_required_conduit_surface()._id, refused)
+            self._remove_spell_record_from_nexus(refused.spell_id)
+
+    def _restore_binding_key(
+            self,
+            key: tuple[str, str],
+            lookup: Optional[SpellIndex],
+            claim: Optional[str],
+    ) -> None:
+        """
+        Internal
+
+        Set one binding key's Book address lookup and frame claim back to the values a refused notch recorded.
+
+        Contract:
+            - The Book lookup is set to `lookup`, or removed when it was None.
+            - The frame claim is re-pointed to `claim` (`update_lookup`, which sets
+              unconditionally), or released when it was None.
+
+        Args:
+            key (tuple[str, str]): The `(frame_key, binding_key)` to restore.
+            lookup (Optional[SpellIndex]): The index the Book routed the key to, or None.
+            claim (Optional[str]): The spell_id that held the frame claim, or None.
+
+        Returns:
+            None.
+
+        Threading:
+            Under the Book lock, taking the frame lookup's leaf lock inside it as
+            the seam does.
+        """
+        with self._lock:
+            if lookup is None:
+                self._lookup_spells.pop(key, None)
+            else:
+                self._lookup_spells[key] = lookup
+            if claim is None:
+                self._aetheric_frame.release_lookup(key)
+            else:
+                self._aetheric_frame.update_lookup(key, claim)
 
     def _add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
         """
@@ -3949,6 +4631,7 @@ class Spellbook(Cleanable):
         if source_emptied:
             self._destroy_spell_index(
                 source_index,
+                spell_id=spell_id,
                 binding_key=binding_key,
                 owner_conduit_id=owner_conduit_id,
             )
@@ -3973,6 +4656,7 @@ class Spellbook(Cleanable):
             self,
             spell_index: SpellIndex,
             *,
+            spell_id: str,
             binding_key: tuple[str, str],
             owner_conduit_id: str | None,
     ) -> None:
@@ -3987,22 +4671,53 @@ class Spellbook(Cleanable):
         NOTE: contracted/borrower fan-out for a SHARED index is intentionally NOT
         handled here -- this covers the local (un-shared) case only.
 
+        Contract:
+            - Every caller hands it an index a PARKED member just left empty: the
+              index Bind mints for a `bind_inactive` (folded off by
+              `_apply_add_to_index`), a source index an index move emptied, or the
+              index a lone parked version is disposed out of (`_dispose_spell`).
+            - It touches no other spell's binding signature: the Book route for
+              `binding_key` goes only when it routes the key to THIS index, and the
+              frame claim is released only when the departing member `spell_id`
+              holds it. A parked member shares its key with the active version it
+              was staged beside - or with an active spell of another Book of the
+              frame - so releasing by key took that version's claim and route while
+              it still served (staged_signature_claims_2026_10_19, 0.2.8263;
+              STORY-2026-10-17-staged_version_releases_active_signature).
+
         Steps:
-            1. Spellbook: drop the active-map entry + the binding-key lookup.
-            2. Frame: release the binding signature + unregister from the spell
-               registry.
+            1. Spellbook: drop the active-map entry, and the binding-key route only
+               when it routes the key to this index.
+            2. Frame: release the claim the departing member holds (by spell_id; a
+               no-op when it holds none, as a parked version claims no signature)
+               + unregister from the spell registry.
             3. SpellSystemStates: `unregister_index` (states, closure, risk).
             4. The index object: `cleanup()`.
 
         Args:
             spell_index: The emptied index to destroy.
-            binding_key: The `(frame_key, bind_key)` signature the index held.
+            spell_id: The departing member's spell_id - the last member the index
+                held, moved out or being disposed.
+            binding_key: The `(frame_key, bind_key)` key of the departing member.
             owner_conduit_id: The owning conduit id, or None when unconjured.
+
+        Threading:
+            The route check and pops run under the Book lock; the claim release is
+            the frame lookup's leaf call, taken after the Book lock is released, as
+            before. No lock or lock-order edge is added.
         """
         with self._lock:
             self._spells.pop(spell_index, None)
-            self._lookup_spells.pop(binding_key, None)
-        self._aetheric_frame.release_lookup(binding_key)
+            # The route goes only when it routes the key to THIS index: the departing
+            # parked member shares its key with the active version it was staged
+            # beside, and the route is that version's (0.2.8263).
+            if self._lookup_spells.get(binding_key) is spell_index:
+                self._lookup_spells.pop(binding_key, None)
+        # BY SPELL_ID, NOT BY KEY: `release_lookup` pops whoever holds the key - the
+        # active version keyed like the departing member, in this Book or another of
+        # the frame - while `release_lookup_by_spell_id` releases only a claim the
+        # departing member holds, as `cleanup_and_remove_spell` releases (0.2.8263).
+        self._aetheric_frame.release_lookup_by_spell_id(spell_id)
         if owner_conduit_id is not None:
             Spellbook._aether._remove_single_spell_index(
                 owner_conduit_id,
@@ -4029,8 +4744,10 @@ class Spellbook(Cleanable):
             - If the spell is the sole member of `source_index` this raises;
               use `cleanup_spell` to dispose it instead.
             - Otherwise the spell leaves `source_index` (which keeps its remaining
-              members) and becomes the sole member of a fresh inactive index. No
-              index is destroyed.
+              members) and becomes the sole member of a fresh inactive index, which
+              is registered with the frame as `bind` registers the index it creates,
+              so the frame's lookups by spell_id find the spell there. No index is
+              destroyed.
 
         Args:
             spell: The owned, inactive spell to separate.
@@ -4056,7 +4773,8 @@ class Spellbook(Cleanable):
         only: the spell stays owned and inactive, so its id-keyed state
         (`_inactive_spells`, `_spell_ids`, id pools, Nexus, fast-door, Creations)
         is untouched. No index is destroyed -- the source keeps its remaining
-        members; the separated spell gets a fresh inactive index.
+        members; the separated spell gets a fresh inactive index, registered with
+        the frame as `bind` registers the index it creates.
 
         Steps:
             1. Enforce ownership (`spell._spellbook is self`) + inactive + that the
@@ -4065,6 +4783,14 @@ class Spellbook(Cleanable):
                `cleanup_spell` to dispose it instead).
             3. Otherwise mint a fresh `SpellIndex` seeded with this spell id, remove
                the spell from `source_index`, and repoint `spell.spell_index`.
+            4. Register the fresh index in the frame's spell registry the way a
+               post-conjure `bind` registers the index it creates: the same guard
+               (the Book is conjured) and the same call, under the Book's root
+               conduit. The frame's lookups by spell_id (the Aether conduit lookup,
+               a grant or transfer by spell_id, bind's collision guard,
+               MutationResearch residency) walk that registry. Until 0.2.8259
+               (minted_index_registry) the index was never registered, so they all
+               missed the version, parked or later notched active there.
 
         Args:
             spell: The owned, inactive spell to separate.
@@ -4076,6 +4802,11 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If `spell` is not owned here, is active, or is not a
                 member of `source_index`.
+
+        Threading:
+            The move runs under the Book lock; the registration takes the frame
+            lock alone, after the Book lock is released, as bind's registration
+            and `_destroy_spell_index`'s unregistration do. No lock-order edge.
         """
         self.check_cleaned()
         if spell._spellbook is not self:
@@ -4121,6 +4852,17 @@ class Spellbook(Cleanable):
             new_index = SpellIndex(initial_id=spell_id)
             source_index.remove_member(spell_id)
             spell.spell_index = new_index
+        # Register the fresh index with the frame the way a post-conjure bind registers the index it creates: the
+        # same guard and the same call, under the Book's root conduit, so every lookup that walks the frame's
+        # spell registry finds the spell. Frame lock alone, after the Book lock. `_destroy_spell_index`
+        # unregisters the index when it empties, and the root's teardown with the rest
+        # (`_unregister_conduit_spells_from_aether`) (minted_index_registry, 0.2.8259).
+        if self._conjured and self._conduit is not None:
+            Spellbook._aether._register_single_spell_index(
+                self._get_required_conduit_surface()._id,
+                new_index,
+                self._aetheric_frame_name,
+            )
         if self._crystallizer.activated:
             # The member split onto a FRESH index: snapshot both sides.
             self._crystallizer.emit(
@@ -4139,21 +4881,26 @@ class Spellbook(Cleanable):
         """
         Public API
 
-        Fully dispose an owned spell. Invalidate it FIRST so the spell and its
-        lineage are flagged dirty (and dependents are rechecked) while the index
-        and dependency edges still exist, then take it off every resolution
-        surface, destroying its index when the spell was that index's only member.
+        Fully dispose an owned spell. On a conjured Book every contract that holds
+        the version drops it first, through the root conduit's `cleanup_spell`.
+        Then invalidate it so the spell and its SpellIndex are flagged dirty (and
+        dependents are rechecked) while the index and dependency edges still exist,
+        then take it off every resolution surface, destroying its index when the
+        spell was that index's only member.
         This is the disposal path `remove_from_spell_index` points at for a
         sole-member index.
 
         Contract:
             - Only a spell owned by THIS Spellbook may be disposed.
             - The ACTIVE member of a MULTI-member index cannot be disposed
-              directly (it would leave the index headless); notch away from it
-              first. The sole member of an index may always be disposed -- the
-              index is destroyed with it.
-            - Invalidation happens FIRST (`spell.invalidate_spell()`): the creation
-              context is cleared and the lineage is marked structurally changed so
+              (it would leave the index's parked versions without an active
+              one): notch the index to one of them, dispose them with
+              `cleanup_spell`, or move them out with `remove_from_spell_index`
+              first. `cleanup_and_remove_spell`, and so a direct
+              `Spell.cleanup()`, refuses it the same way. The sole member of an
+              index may always be disposed -- the index is destroyed with it.
+            - Invalidation happens before any teardown (`spell.invalidate_spell()`): the creation
+              context is cleared and its SpellIndex is marked structurally changed so
               dependents are rechecked, while the index and dependency edges still
               exist. Teardown only runs afterwards.
             - An ACTIVE spell is then disposed through `cleanup_and_remove_spell`,
@@ -4165,20 +4912,141 @@ class Spellbook(Cleanable):
             - Conduit Creations persist in this model and are left alone here.
             - NOTE: not yet sealed by a mediator transaction (no cleanup strategy
               exists); the map mutations run under the Spellbook lock.
+            - On a conjured Book the call goes through its root conduit's
+              `cleanup_spell`: after this Book's decision and before its
+              disposal, every contract that holds the version drops it - an
+              index link's member Detail or a version grant, with the borrower's
+              entry and borrowed id - and an index that dies with it leaves its
+              index links (cleanup_releases_contracts_2026_10_19, 0.2.8261).
+              Before conjure no contract exists and the Book disposes it
+              directly.
 
         Args:
             spell: The owned spell to dispose.
 
         Raises:
-            RuntimeError: If the spell is not owned here, or it is the active
+            RuntimeError: If the spell has already been disposed ("cleanup_spell:
+                spell <id> has already been disposed."; before 0.2.8231 a second
+                call raised AttributeError), is not owned here, or is the active
                 member of a multi-member index.
+            RuntimeError: If another cleanup_spell of the same spell is still
+                running ("cleanup_spell: spell <id> is already being disposed by
+                another call."; before 0.2.8232 both calls ran the disposal).
+
+        Threading:
+            Ownership, activity and sole membership are read under the Book lock
+            from the Book's own maps; a spell no longer in them is classified
+            through the spell's own lock (`Spell._spell_index_unless_cleaned`),
+            outside the Book lock, so the two locks are never nested here: Book
+            cleanup and conjure's ownership stamping take them Book -> spell, and
+            a direct `Spell.cleanup` no longer holds its spell lock when it
+            reaches the Book (direct_spell_cleanup_lock_order, 0.2.8233).
+            (cross_object_lock_gaps, 0.2.8231)
+            The same locked section marks the spell id as being disposed and the
+            disposal clears the mark when it ends, so of two calls for one spell
+            that overlap, the second refuses before touching anything. The spell
+            lock is not held across the disposal: that would take the Book and
+            frame locks under it, against Book and frame teardown, which take the
+            spell lock under theirs. (lock_residuals, 0.2.8232)
 
         Returns:
             None.
         """
         self.check_cleaned()
+        if self._conduit is not None:
+            # Conjured: the root conduit's cleanup_spell runs this Book's disposal with the contract release
+            # first, so no borrower keeps the version (cleanup_releases_contracts_2026_10_19, 0.2.8261). Before
+            # conjure no conduit and no contract exist.
+            self._conduit.cleanup_spell(spell=spell)
+            return
+        self._dispose_spell(spell)
+
+    def _dispose_spell(
+            self,
+            spell: Spell,
+            *,
+            release_contracts: Optional[Callable[[str], None]] = None,
+    ) -> Optional[str]:
+        """
+        Internal
+
+        The body of `cleanup_spell`, returning what the owning Conduit needs to
+        tell index-link borrowers: the id of the index the disposal destroyed, or
+        None when the index survived.
+
+        Contract:
+            - Same checks, order and disposal as `cleanup_spell`.
+            - Returns the destroyed index's id when the spell was the sole member
+              of its index (an active sole member, or the last inactive member);
+              None when other members keep the index alive.
+            - Marks the spell id in `_disposing_spell_ids` in the decision's own
+              Book-locked section, and clears it under the Book lock when the
+              disposal ends (finished or failed), so a second call for the same
+              spell that starts meanwhile refuses before it touches anything.
+            - `release_contracts`, when given, is called once with the spell_id
+              after the decision and the refusals and before anything is
+              invalidated or disposed: `Conduit.cleanup_spell` passes the root
+              ward's `_emit_spell_disposed`, so every contract drops the version
+              while it is still live. A refused call never reaches it; a raise
+              from it ends the call with nothing disposed, and the finally
+              clears the in-flight mark. (cleanup_releases_contracts_2026_10_19,
+              0.2.8261)
+
+        Args:
+            spell: The owned spell to dispose.
+            release_contracts: Optional hook taking the spell_id, run between the
+                decision and the disposal; None disposes with no contract release
+                (an unconjured Book holds no contract).
+
+        Returns:
+            Optional[str]: The destroyed index's id, or None.
+
+        Raises:
+            RuntimeError: As `cleanup_spell`.
+            Exception: Whatever `release_contracts` raises; nothing is disposed.
+
+        Threading:
+            As `cleanup_spell`. (cross_object_lock_gaps, 0.2.8231; the in-flight
+            mark, lock_residuals, 0.2.8232) `release_contracts` runs with no Book
+            lock held: the decision's section is released before it and the
+            disposal's sections are taken after it.
+        """
+        self.check_cleaned()
         spell_id = spell.spell_id
-        if spell._spellbook is not self:
+        owned = False
+        is_active = False
+        is_sole = False
+        already_disposing = False
+        with self._lock:
+            # A disposal of this spell already in flight: refuse before reading or touching anything
+            # (lock_residuals, 0.2.8232).
+            already_disposing = spell_id in self._disposing_spell_ids
+            if not already_disposing:
+                is_active = self._spells_by_id.get(spell_id) is spell
+                owned = is_active or self._inactive_spells.get(spell_id) is spell
+                if owned:
+                    # Still in this Book's maps, so no cleanup has popped it, and Spell.cleanup deletes the spell's
+                    # fields only after that pop (under this lock): its index is live here. Index moves repoint it
+                    # under this lock too.
+                    index = spell.spell_index
+                    index_id = index.id
+                    is_sole = index.is_sole_member(spell_id)
+                    if is_sole or not is_active:
+                        # This call disposes it: mark it in the decision's own locked section, so a second call
+                        # that starts before this one ends refuses instead of repeating the disposal; cleared in the
+                        # finally below (lock_residuals, 0.2.8232).
+                        self._disposing_spell_ids.add(spell_id)
+        if already_disposing:
+            raise RuntimeError(
+                f"cleanup_spell: spell {spell_id} is already being disposed by another call."
+            )
+        if not owned:
+            # Classified outside the Book lock, so the two locks are never nested here: Book cleanup and conjure's
+            # ownership stamping take the spell lock under this Book's lock (cross_object_lock_gaps, 0.2.8231;
+            # corrected lock_residuals, 0.2.8232), and a direct Spell.cleanup no longer takes this Book's lock under
+            # the spell lock (direct_spell_cleanup_lock_order, 0.2.8233).
+            if spell._spell_index_unless_cleaned() is None:
+                raise RuntimeError(f"cleanup_spell: spell {spell_id} has already been disposed.")
             self._logger.error(
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook.",
                 "cleanup_spell",
@@ -4187,10 +5055,7 @@ class Spellbook(Cleanable):
             raise RuntimeError(
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook."
             )
-        index = spell.spell_index
         with self._lock:
-            is_active = spell_id in self._spells_by_id
-            is_sole = index.is_sole_member(spell_id)
             if is_active and not is_sole:
                 self._logger.error(
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member index.",
@@ -4198,56 +5063,73 @@ class Spellbook(Cleanable):
                     exc_info=True,
                 )
                 raise RuntimeError(
-                    f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
-                    f"index; notch away from it before disposing it."
+                    f"cleanup_spell: spell {spell_id} is the active member of a multi-member index, and disposing "
+                    f"it would leave the index's parked versions without an active one. Notch the index to one of "
+                    f"them, dispose them with cleanup_spell, or move them out with remove_from_spell_index first."
                 )
-        # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
-        # dirty (clear the creation context, force a next-meld rebuild) while the index
-        # and dependency edges still exist, so dependents can be rechecked before
-        # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
-        # through it and dependents run through the active member -- so it is dropped
-        # without invalidation (invalidating a parked spell is pointless, and pre-notch
-        # it is not even valid).
-        if is_active:
-            # Authoritative disposal: unregisters the index (its compute_impact_closure
-            # fans the dependent closure), removes every id/lookup map, and cleans the
-            # spell and the index. Self-guards re-entry via _spellbook_cleanup.
-            spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
-            self.cleanup_and_remove_spell(spell)
-        else:
-            # Inactive member: drop just this member; the shared index and its other
-            # members survive unless this empties it.
-            binding_key = spell._key
-            owner_conduit_id = spell._owner_conduit_id
+        # Reached only when this call marked the spell above: nothing between the mark and here can raise.
+        try:
+            # CONTRACTS FIRST (the owner's order, 2026-10-19): the caller's hook takes the version out of every
+            # contract that holds it while it is still live, before anything below invalidates or disposes it;
+            # a raise here leaves it undisposed and the finally clears the mark
+            # (cleanup_releases_contracts_2026_10_19, 0.2.8261).
+            if release_contracts is not None:
+                release_contracts(spell_id)
+            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its SpellIndex
+            # dirty (clear the creation context, force a next-meld rebuild) while the index
+            # and dependency edges still exist, so dependents can be rechecked before
+            # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
+            # through it and dependents run through the active member -- so it is dropped
+            # without invalidation (invalidating a parked spell is pointless, and pre-notch
+            # it is not even valid).
+            if is_active:
+                # Authoritative disposal: unregisters the index (its compute_impact_closure
+                # fans the dependent closure), removes every id/lookup map, and cleans the
+                # spell and the index. Self-guards re-entry via _spellbook_cleanup.
+                spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
+                self.cleanup_and_remove_spell(spell)
+                return index_id
+            else:
+                # Inactive member: drop just this member; the shared index and its other
+                # members survive unless this empties it.
+                binding_key = spell._key
+                owner_conduit_id = spell._owner_conduit_id
+                with self._lock:
+                    self._inactive_spells.pop(spell_id, None)
+                    self._spell_ids.discard(spell_id)
+                    # True removal (parked lane): custody leaves the record
+                    # entirely so restore never rebuilds a shed spell.
+                    if self._crystallizer.activated:
+                        self._crystallizer.emit_spell_removed(
+                            spell_id, frame_name=self._aetheric_frame_name
+                        )
+                    index.remove_member(spell_id)
+                    index_emptied = index.is_empty()
+                if index_emptied:
+                    self._destroy_spell_index(
+                        index,
+                        spell_id=spell_id,
+                        binding_key=binding_key,
+                        owner_conduit_id=owner_conduit_id,
+                    )
+                elif self._crystallizer.activated:
+                    # The shared index survived minus one member: re-emit its
+                    # membership snapshot.
+                    self._crystallizer.emit(
+                        self._crystallizer.create_spell_index_crystal(
+                            index, self._id
+                        )
+                    )
+                # Local teardown only (already off the maps); set the guard so
+                # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
+                spell._spellbook_cleanup = True
+                spell.cleanup()
+                return index_id if index_emptied else None
+        finally:
+            # The disposal is over, finished or failed: a later call for this spell decides afresh
+            # (lock_residuals, 0.2.8232).
             with self._lock:
-                self._inactive_spells.pop(spell_id, None)
-                self._spell_ids.discard(spell_id)
-                # True removal (parked lane): custody leaves the record
-                # entirely so restore never rebuilds a shed spell.
-                if self._crystallizer.activated:
-                    self._crystallizer.emit_spell_removed(
-                        spell_id, frame_name=self._aetheric_frame_name
-                    )
-                index.remove_member(spell_id)
-                index_emptied = index.is_empty()
-            if index_emptied:
-                self._destroy_spell_index(
-                    index,
-                    binding_key=binding_key,
-                    owner_conduit_id=owner_conduit_id,
-                )
-            elif self._crystallizer.activated:
-                # The shared index survived minus one member: re-emit its
-                # membership snapshot.
-                self._crystallizer.emit(
-                    self._crystallizer.create_spell_index_crystal(
-                        index, self._id
-                    )
-                )
-            # Local teardown only (already off the maps); set the guard so
-            # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
-            spell._spellbook_cleanup = True
-            spell.cleanup()
+                self._disposing_spell_ids.discard(spell_id)
 
     def begin_transaction(
             self,
@@ -4631,9 +5513,13 @@ class Spellbook(Cleanable):
         the session, which the change-control commit consumes to run the phases.
 
         Used by the active bind path. Notch does NOT stage -- it promotes an
-        existing member under a NOTCH transaction, whose commit never fires the
-        bind structural validator, so it runs the structural phases directly via
-        `_run_post_conjure_structural_phases`.
+        existing member under a NOTCH transaction, and its entry (`_notch_spell`)
+        runs the structural phases for a never-compiled member directly via
+        `_run_post_conjure_structural_phases`, inside the held window, refusing
+        the notch when they fail. The NOTCH commit does fire the structural
+        validator (it resolves the strategy's staged binding key), which then
+        finds the Phase-4 result and skips (corrected 2026-10-19: this said the
+        commit never fires it).
 
         Args:
             spell (Spell): The spell to stage.
@@ -4773,6 +5659,59 @@ class Spellbook(Cleanable):
             )
             raise
 
+    def _mark_contract_dependents_dirty(self, contract_keys: set[tuple[str, str]]) -> None:
+        """
+        Internal
+
+        Mark this Book's SpellContract consumers of `contract_keys` for revalidation after a contracted copy changed.
+
+        Purpose:
+            Rule 2 of contract_recheck_on_notch_2026_10_16: a satisfied SpellContract is not checked on every meld.
+            Instead every change of an active contracted (borrowed) copy - a lender's notch and notch back, a parked
+            or reactivated version-anchored copy, an add, a removal, an index unlink or destroy, a contract clear -
+            marks the consumers of the copy's key, so their next meld reruns phases 1-4 (Phase 4 rechecks the
+            provider) and rebuilds against the copy now active, or fails with the first meld's error. Mark only:
+            objects already built keep their provider.
+
+        Contract:
+            - A no-op for no keys. Otherwise one `SpellSystemStates.mark_contract_dependents_dirty` call for this
+              Book, which gates the consumers (`contract_unvalidated`) and walks on to what depends on them.
+            - The five contracted-map mutators call it after releasing the Book lock, and only once the Book has
+              conjured: before conjure, conjure runs phases 1-4 for every spell anyway.
+
+        Args:
+            contract_keys: The normalized `(frame_key, binding_key)` keys of the copies that changed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell system state is unavailable.
+            Exception: Whatever the registry raises, after logging it; the map change the mark follows stays
+                published.
+
+        Threading:
+            Called with the Book lock free. The registry lock it takes is never held while a Book, ward, contract
+            or conduit lock is taken (registry -> state -> RiskManager), so no lock-order cycle can close.
+        """
+        if not contract_keys:
+            return
+        if self._spell_system_states is None:
+            self._logger.error("SpellSystemStates unavailable for revalidation", "_mark_contract_dependents_dirty")
+            raise RuntimeError("SpellSystemStates unavailable for revalidation.")
+        try:
+            self._spell_system_states.mark_contract_dependents_dirty(
+                spellbook_id=self._id,
+                contract_keys=contract_keys,
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Failed to mark contract dependents dirty: {e}",
+                "_mark_contract_dependents_dirty",
+                exc_info=True,
+            )
+            raise
+
     def add_bind_hooks(
             self,
             *,
@@ -4886,6 +5825,10 @@ class Spellbook(Cleanable):
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
             **kwargs: Any,
     ) -> str:
         """
@@ -4942,6 +5885,19 @@ class Spellbook(Cleanable):
             resolvable (bool):
                 Native capability of this parked version, independent of index selection.
                 Defaults to True; False retains existing naming and lifecycle restrictions.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+                Pool policy of an `Existence.managed_spell_quantity` binding: elastic (default),
+                limited_quantity or queue - a ManagedSpellMode member or its name.
+            managed_spell_limit (Optional[int]):
+                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+                most objects alive at once (required). An int >= 1.
+            managed_spell_timeout_seconds (Optional[float]):
+                queue only, required there: how long a lease waits for a release before it raises.
+            managed_spell_reset_methods (Optional[Sequence[str]]):
+                Names of zero-argument methods of the class run, in order, on every release.
+                The four managed options must stay None on any other existence; all four are part
+                of a managed spell's id.
+                A parked managed version keeps its own options.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
 
@@ -4954,7 +5910,10 @@ class Spellbook(Cleanable):
                 If the spell_id collides, the Spellbook is not in a dynamic
                 posture, or `spell_index` is not owned here.
             TypeError:
-                If resolvable is not a bool or the target violates Bind admission rules.
+                If resolvable is not a bool or the target violates Bind admission rules,
+                including a managed option of the wrong type or a managed non-class.
+            ValueError:
+                If a managed option is malformed or set on another existence.
             HookExecutionError:
                 A Book bind callback failed. Activation failure cleans its
                 unpublished allocation; post failure does not undo registration.
@@ -4988,6 +5947,10 @@ class Spellbook(Cleanable):
                     binding_name=binding_name,
                     profile=profile,
                     resolvable=resolvable,
+                    managed_spell_mode=managed_spell_mode,
+                    managed_spell_limit=managed_spell_limit,
+                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+                    managed_spell_reset_methods=managed_spell_reset_methods,
                     _lifecycle_hooks=bind_hooks,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
@@ -5017,11 +5980,16 @@ class Spellbook(Cleanable):
                         exc_info=True,
                     )
                     raise RuntimeError(
-                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
-                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
-                        "disposal metadata). The existing spell with this id is already registered in the \n"
-                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
-                        "bind-time fingerprint differs so it produces a unique spell_id."
+                        "Spell ID collision detected: this object is already registered as spell_id "
+                        f"{new_spell.spell_id}. A spell_id is the SHA256 of the object's code (its methods, \n"
+                        "constructor, class-level values and base classes, or an existing object's class and \n"
+                        "data), and one object is one spell: registering it again - under another binding \n"
+                        "name, existence or spellframe, or in another Spellbook where spell_ids are unique \n"
+                        "(the process by default, the frame under per-frame spell ids) - is refused. Use the \n"
+                        "spell already registered (another conduit shares it through a link or a contract), \n"
+                        "or cleanup_spell it and bind it again to change how it is bound. A changed method, \n"
+                        "constructor, class-level value or base class is a new spell_id: stage it with \n"
+                        "bind_inactive and notch to it."
                     )
 
                 self._add_hooks_to_spell(new_spell, **kwargs)
@@ -5050,7 +6018,10 @@ class Spellbook(Cleanable):
                 # If a conduit already exists (post-conjure bind_inactive), follow the
                 # same conduit wiring an active bind does so the parked spell owns a
                 # CreationContextFactory. Pre-conjure inactive spells have no conduit
-                # yet; they are wired at conjure like pre-conjure active spells.
+                # yet; they are wired at conjure like pre-conjure active spells
+                # (SpellbookCreationSystem.define_conduit_into_spells stamps
+                # `_inactive_spells` with this same stamp since 0.2.8248; before it,
+                # conjure walked only the active spells and left them unwired).
                 if self._conjured and self._conduit is not None:
                     conduit = self._get_required_conduit_surface()
                     caching_enabled = self._resolve_system_caching_enabled()
@@ -5128,7 +6099,7 @@ class Spellbook(Cleanable):
 
         Args:
             spell_id:
-                Binding-signature SHA256 entering the world.
+                The spell_id (the SHA256 of the registered object's code) entering the world.
             staged:
                 True for parked (`bind_inactive`) entries.
 
@@ -5184,6 +6155,10 @@ class Spellbook(Cleanable):
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
             resolvable: bool = True,
+            managed_spell_mode: Optional[Union[ManagedSpellMode, str]] = None,
+            managed_spell_limit: Optional[int] = None,
+            managed_spell_timeout_seconds: Optional[float] = None,
+            managed_spell_reset_methods: Optional[Sequence[str]] = None,
             **kwargs: Any,
     ) -> str:
         """
@@ -5237,6 +6212,18 @@ class Spellbook(Cleanable):
                 enforce_priority_disposal_methods=True. Shared names belong to that block
                 in both modes; spell-only names keep their supplied order. Missing names
                 are skipped and duplicates run once. Empty input still permits book methods.
+            managed_spell_mode (Optional[Union[ManagedSpellMode, str]]):
+                Pool policy of an `Existence.managed_spell_quantity` binding: elastic (default),
+                limited_quantity or queue - a ManagedSpellMode member or its name.
+            managed_spell_limit (Optional[int]):
+                elastic: the most idle objects kept (default 256); limited_quantity and queue: the
+                most objects alive at once (required). An int >= 1.
+            managed_spell_timeout_seconds (Optional[float]):
+                queue only, required there: how long a lease waits for a release before it raises.
+            managed_spell_reset_methods (Optional[Sequence[str]]):
+                Names of zero-argument methods of the class run, in order, on every release.
+                The four managed options must stay None on any other existence; all four are part
+                of a managed spell's id.
             **kwargs:
                 Optional application-object lifecycle hooks, executed during Meld
                 and separate from add_bind_hooks registration callbacks:
@@ -5255,7 +6242,10 @@ class Spellbook(Cleanable):
                 If ``spell`` is a primitive value (int, float, bool, complex,
                 str, bytes, bytearray); a spell must be a class, function,
                 lambda, or an existing object instance.
-                Also raised when resolvable is not a bool.
+                Also raised when resolvable is not a bool, when a managed option has the
+                wrong type, or when a managed binding targets a non-class.
+            ValueError:
+                If a managed option is malformed or set on another existence.
             HookExecutionError:
                 A registration callback failed; the original error is chained.
                 Activation failure retires its unpublished Spell/index. Post
@@ -5311,6 +6301,10 @@ class Spellbook(Cleanable):
                     binding_name=binding_name,
                     profile=profile,
                     resolvable=resolvable,
+                    managed_spell_mode=managed_spell_mode,
+                    managed_spell_limit=managed_spell_limit,
+                    managed_spell_timeout_seconds=managed_spell_timeout_seconds,
+                    managed_spell_reset_methods=managed_spell_reset_methods,
                     _lifecycle_hooks=bind_hooks,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
@@ -5340,11 +6334,16 @@ class Spellbook(Cleanable):
                         exc_info=True,
                     )
                     raise RuntimeError(
-                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
-                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
-                        "disposal metadata). The existing spell with this id is already registered in the \n"
-                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
-                        "bind-time fingerprint differs so it produces a unique spell_id."
+                        "Spell ID collision detected: this object is already registered as spell_id "
+                        f"{new_spell.spell_id}. A spell_id is the SHA256 of the object's code (its methods, \n"
+                        "constructor, class-level values and base classes, or an existing object's class and \n"
+                        "data), and one object is one spell: registering it again - under another binding \n"
+                        "name, existence or spellframe, or in another Spellbook where spell_ids are unique \n"
+                        "(the process by default, the frame under per-frame spell ids) - is refused. Use the \n"
+                        "spell already registered (another conduit shares it through a link or a contract), \n"
+                        "or cleanup_spell it and bind it again to change how it is bound. A changed method, \n"
+                        "constructor, class-level value or base class is a new spell_id: stage it with \n"
+                        "bind_inactive and notch to it."
                     )
 
                 self._add_hooks_to_spell(new_spell, **kwargs)
@@ -5354,9 +6353,16 @@ class Spellbook(Cleanable):
                 # local-only lookup-key check): claim before committing local maps.
                 self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
                 registration_started = True
-                self._lookup_spells[new_spell._key] = spell_index
-                self._spells[spell_index] = new_spell
-                self._register_owned_spell_id(new_spell.spell_id, new_spell)
+                # Publish into the four active maps (_lookup_spells, _spells, and through
+                # _register_owned_spell_id _spells_by_id and _spell_id_pool) under the Book lock, as every
+                # other writer of `_spells` does (removal, notch park and promote, index destruction,
+                # transfer and its rollback), so a walk that holds the lock never meets this insert
+                # mid-walk. Narrow on purpose: claim_lookup above and the bind callbacks stay outside it.
+                # No new lock-order edge: _register_owned_spell_id always took this lock at this point.
+                with self._lock:
+                    self._lookup_spells[new_spell._key] = spell_index
+                    self._spells[spell_index] = new_spell
+                    self._register_owned_spell_id(new_spell.spell_id, new_spell)
 
                 # Configuration-discipline evidence: count binds that ran
                 # while the SpellbookConfiguration was still mutable. The
@@ -5414,6 +6420,8 @@ class Spellbook(Cleanable):
                 self._spell_system_states.register_index(
                     spell_index=new_spell.spell_index,
                     owner_spellbook_id=self._id,
+                    resolvable=new_spell.resolvable,
+                    binding_key=new_spell._key,
                 )
                 if self._conjured and self._conduit is not None:
                     self._register_spell_with_risk_manager(
@@ -5488,20 +6496,20 @@ class Spellbook(Cleanable):
               system state is anything other than `dynamic`. In practice:
               POST-CONJURE SCANNING REQUIRES A DYNAMIC FRAME. The refusal is a
               `RuntimeError` raised here, before any binding is attempted.
-            - Transaction window is chosen, not always opened. When a
-              bind-capable transaction is already active, scan runs inside the
-              caller's window and opens nothing, so the whole scan commits or
-              rolls back with that outer window. Only when no such window
-              exists does scan open its own `"bind"` transaction, which makes
-              the scan atomic in isolation.
+            - Transaction window is chosen, not always opened: inside an active
+              bind-capable window scan opens nothing; otherwise it opens its own
+              `"bind"` transaction. Neither window makes the scan atomic: ending
+              a bind window unregisters nothing, so when one target's bind
+              raises, the targets bound before it stay registered and the error
+              propagates. (Corrected 2026-10-10; this claimed a rollback.)
             - Pre-conjure books always take the "already active" branch, so a
               pre-conjure scan never opens a transaction of its own.
             - Post-conjure, "already active" means a live BIND session on this
               spellbook's transaction identity, or - failing that - on its
               conduit's identity, and that session must advertise the `bind`
               capability.
-            - Binding is delegated to `Scan.scan_module`, which walks the
-              module dict in definition order.
+            - Binding is delegated to `Scan.scan_module`, which walks the module dict
+              in definition order and binds each self-declared object once.
 
         Threading:
             Takes no lock itself; serialization comes from the bind lane and
@@ -6155,6 +7163,35 @@ class Spellbook(Cleanable):
             self._aetheric_frame_name,
         )
         self._nexus._publish_spell_record(self, spell, spell._owner_conduit_id)
+
+    def _remove_spell_record_from_nexus(self, spell_id: str) -> None:
+        """
+        Internal
+
+        Remove one published SpellRecord of this Spellbook from Nexus.
+
+        Contract:
+            - The gates of `_publish_spell_record_to_nexus`: a publishing frame and
+              a conjured Book with a root conduit; otherwise nothing happens.
+            - Used when a refused notch takes back the record its switch published
+              for a version that is parked again (`_revert_refused_activation`).
+
+        Args:
+            spell_id:
+                The spell_id whose record is removed.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if not self._conjured or self._conduit is None:
+            return
+        self._nexus._remove_spell_record(
+            self._id,
+            spell_id,
+            self._aetheric_frame_name,
+        )
 
     def _remove_spells_from_nexus(self) -> None:
         """

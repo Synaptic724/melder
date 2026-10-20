@@ -242,3 +242,66 @@ def test_scope_ordering_violation_names_both_spells_and_the_fix() -> None:
     message = diagnostics[0].message
     assert "Spell 'Holder' (unique) depends on 'Leaf' (unique_per_spell_space)" in message
     assert "Give 'Holder' the same or a shorter existence (or many), or give 'Leaf' a longer one." in message
+
+
+def _rank_diagnostics(holder_existence: Existence, dependency_existence: Existence) -> list:
+    """Run Phase 6 scope ordering over one holder -> dependency edge and return its diagnostics."""
+    index = SpellSystemIndex()
+    index.upsert_node(SpellSystemNode(spell_id="holder", lineage_id="lh", dependencies={"dependency"},
+                                      existence=holder_existence))
+    index.upsert_node(SpellSystemNode(spell_id="dependency", lineage_id="ld", dependencies=set(),
+                                      existence=dependency_existence))
+    diagnostics: list = []
+    ScopeOrderingStrategy().run(
+        index=index, blueprints={}, phase4_results={}, broken_spell_ids=set(), spell_system_states=object(),
+        spell_lookup={}, diagnostics=diagnostics, cancel_event=None,
+    )
+    return diagnostics
+
+
+@pytest.mark.parametrize(
+    "dependency_existence",
+    [Existence.unique, Existence.managed_spell_quantity, Existence.many],
+)
+def test_scope_ordering_lets_a_managed_spell_depend_on_unique_managed_and_many(
+        dependency_existence: Existence,
+) -> None:
+    """A managed spell ranks with unique: it may depend on unique, managed and many (S1)."""
+    assert _rank_diagnostics(Existence.managed_spell_quantity, dependency_existence) == []
+
+
+@pytest.mark.parametrize(
+    "dependency_existence",
+    [
+        Existence.unique_per_conduit_cluster,
+        Existence.unique_per_conduit_lineage,
+        Existence.unique_per_conduit,
+        Existence.unique_per_spell_space,
+    ],
+)
+def test_scope_ordering_refuses_a_managed_spell_depending_on_a_narrower_lifetime(
+        dependency_existence: Existence,
+) -> None:
+    """A managed spell holding a narrower-scoped dependency is a scope-ordering violation (S1)."""
+    diagnostics = _rank_diagnostics(Existence.managed_spell_quantity, dependency_existence)
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0].code == "scope_ordering_violation"
+    assert diagnostics[0].details["spell_existence"] == "managed_spell_quantity"
+    assert diagnostics[0].details["dependency_existence"] == dependency_existence.name
+
+
+@pytest.mark.parametrize(
+    "holder_existence",
+    [
+        Existence.unique,
+        Existence.unique_per_conduit_cluster,
+        Existence.unique_per_conduit_lineage,
+        Existence.unique_per_conduit,
+        Existence.unique_per_spell_space,
+        Existence.many,
+    ],
+)
+def test_scope_ordering_lets_every_holder_depend_on_a_managed_spell(holder_existence: Existence) -> None:
+    """Any holder may take a managed dependency: it ranks with unique, the broadest scope (S1)."""
+    assert _rank_diagnostics(holder_existence, Existence.managed_spell_quantity) == []

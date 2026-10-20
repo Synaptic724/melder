@@ -1,0 +1,20 @@
+{
+  "base_revision": "e6b41f3220082ac604c42839d26bbca21336bf41",
+  "tracked_input_count": 1802,
+  "tracked_inputs_sha256": "39dfa164938cc9470253e316b8dc09c06a387f15935f4c25855a2f205b11b990",
+  "test_sha256": "25ea402517ea879a0ab76ed779c2a0bf898626528e5271eeb21fe6d88bdb9c72",
+  "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Scripts\\python.exe",
+  "gil_enabled": false,
+  "dependencies": {
+    "pytest": "9.1.1",
+    "pytest-cov": "7.1.0",
+    "coverage": "7.16.1",
+    "PyYAML": "6.0.3",
+    "iniconfig": "2.3.0",
+    "packaging": "26.3",
+    "pluggy": "1.6.0",
+    "Pygments": "2.21.0",
+    "colorama": "0.4.6"
+  }
+}

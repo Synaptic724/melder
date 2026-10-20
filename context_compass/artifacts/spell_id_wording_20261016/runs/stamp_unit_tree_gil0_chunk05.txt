@@ -1,0 +1,122 @@
+........................................................................ [  4%]
+........................................................................ [  9%]
+........................................................................ [ 13%]
+........................................................................ [ 18%]
+........................................................................ [ 23%]
+........................................................................ [ 27%]
+........................................................................ [ 32%]
+........................................................................ [ 37%]
+..................F..................................................... [ 41%]
+........................................................................ [ 46%]
+........................................................................ [ 51%]
+........................................................................ [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 65%]
+.............................................x.......................... [ 69%]
+...x....x.....x...x..................................................... [ 74%]
+...x................x.............s....................s................ [ 79%]
+........................................................................ [ 83%]
+........................................................................ [ 88%]
+........................................................................ [ 93%]
+........................................................................ [ 97%]
+..................................                                       [100%]
+=================================== FAILURES ===================================
+_________ test_generated_build_assets_are_stamped_for_the_live_version _________
+
+    def test_generated_build_assets_are_stamped_for_the_live_version() -> None:
+        """
+        Purpose:
+            THE contract the old literal pin was reaching for. Melder ships
+            generated build assets whose `BUILT_FOR_VERSION` must track
+            `__version__`, and one of them - the internal-bind manifest - IS the
+            enforced registration policy read by `bind.py` at import. A version bump
+            that leaves an asset stamped for the previous release means the shipped
+            wheel enforces a stale class list, silently.
+    
+            This is not hypothetical: the manifest was found stamped 0.1.0 while the
+            package read 0.1.1.
+        Contract:
+            Every generated asset's `BUILT_FOR_VERSION` equals `melder.__version__`.
+            If this fails, regenerate:
+                python src/melder/_build_assets/_build_asset_runner.py
+        """
+        import re
+        from pathlib import Path
+    
+        import melder
+        from melder.__version__ import __version__
+    
+        # Generated manifests live under `_build_assets/<asset>/manifest/` and stamp
+        # BARE constants - the annotations moved out when the loaders were split
+        # from the data. Both details have moved once already, and each time the
+        # glob or the pattern silently matched NOTHING, turning this gate into a
+        # no-op that still reported green. Hence the explicit emptiness assertion
+        # below: this test must fail loudly when it stops finding assets, not pass
+        # vacuously.
+        #
+        # Keyed by FILE, not by asset directory. An asset may emit more than one
+        # manifest module - `_system_documents` emits three, splitting the eager
+        # navigable surface from its deferred index and graph adjacency - and
+        # keying by directory collapsed those into a single entry while the
+        # comparison counted files. That made the gate read "3 of 5 stamped" when
+        # all five were stamped, and would equally have hidden ONE unstamped file
+        # behind a stamped sibling in the same directory.
+        assets_root = Path(melder.__file__).parent / "_build_assets"
+        manifests = sorted(assets_root.glob("*/manifest/*.py"))
+        stamped = {}
+        for generated in manifests:
+            match = re.search(
+                r'^BUILT_FOR_VERSION\s*=\s*"([^"]+)"',
+                generated.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            if match:
+                stamped[generated.relative_to(assets_root).as_posix()] = match.group(1)
+    
+        assert stamped, (
+            "no generated build assets carried a BUILT_FOR_VERSION stamp - the glob or "
+            "the pattern has drifted from the generated layout, so this gate is inert"
+        )
+        unstamped = [
+            generated.relative_to(assets_root).as_posix()
+            for generated in manifests
+            if generated.relative_to(assets_root).as_posix() not in stamped
+        ]
+        assert not unstamped, f"generated manifests carrying no version stamp: {unstamped}"
+        drifted = {name: v for name, v in stamped.items() if v != __version__}
+>       assert not drifted, f"assets stamped for the wrong version: {drifted} (package is {__version__})"
+E       AssertionError: assets stamped for the wrong version: {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8249', '_bind_guard/manifest/bind_guard_manifest.py': '0.2.8249', '_system_documents/manifest/graph_adjacency_manifest.py': '0.2.8249', '_system_documents/manifest/system_documents_index.py': '0.2.8249', '_system_documents/manifest/system_documents_manifest.py': '0.2.8249'} (package is 0.2.8250)
+E       assert not {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8249', '_bind_guard/manifest/bind_guard_manifes...fest/graph_adjacency_manifest.py': '0.2.8249', '_system_documents/manifest/system_documents_index.py': '0.2.8249', ...}
+
+tests/unit/melder/test_package_version_metadata.py:84: AssertionError
+=============================== warnings summary ===============================
+tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_dict.py::test_concurrent_auto_prune_heavy
+  /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.venv314t/lib/python3.14t/site-packages/_pytest/threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-56 (churn)
+  
+  Traceback (most recent call last):
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/threading.py", line 1082, in _bootstrap_inner
+      self._context.run(self.run)
+      ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/threading.py", line 1024, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/tests/unit/melder/utilities/data_structures/weak_data_structures/test_weak_concurrent_dict.py", line 538, in churn
+      len(d)
+      ~~~^^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py", line 1268, in __len__
+      self._prune_dead_locked()
+      ~~~~~~~~~~~~~~~~~~~~~~~^^
+    File "/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py", line 822, in _prune_dead_locked
+      for k, node in self._dict.items():
+                     ~~~~~~~~~~~~~~~~^^
+  RuntimeError: dictionary changed size during iteration
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+1 failed, 1536 passed, 2 skipped, 7 xfailed, 1 warning in 75.49s (0:01:15)
+<sys>:0: RuntimeWarning: coroutine 'coro' was never awaited

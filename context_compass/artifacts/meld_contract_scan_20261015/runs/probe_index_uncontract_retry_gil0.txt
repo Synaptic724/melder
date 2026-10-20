@@ -1,0 +1,16 @@
+== tree=landed (0.2.8250) gil=0 PYTHONHASHSEED=3
+before the unlink: active=['French'] parked=['English'] borrower tracks index=True contract links index=True
+first remove_index_from_contract: RuntimeError: Spell version French not found for conduit ID <lender>.
+  after first remove_index_from_contract: active=[] parked=['English'] borrower tracks index=True contract links index=False
+second remove_index_from_contract: returned
+  after second remove_index_from_contract: active=[] parked=['English'] borrower tracks index=False contract links index=False
+order of spells_in_index(): ['English', 'French']
+melder 0.2.8250
+== tree=landed (0.2.8250) gil=0 PYTHONHASHSEED=0
+before the unlink: active=['French'] parked=['English'] borrower tracks index=True contract links index=True
+first remove_index_from_contract: returned
+  after first remove_index_from_contract: active=[] parked=[] borrower tracks index=False contract links index=False
+second remove_index_from_contract: returned
+  after second remove_index_from_contract: active=[] parked=[] borrower tracks index=False contract links index=False
+order of spells_in_index(): ['French', 'English']
+melder 0.2.8250

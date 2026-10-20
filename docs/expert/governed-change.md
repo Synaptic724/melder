@@ -16,14 +16,18 @@ reference, activation annotates the new Spell, and post observes the registered 
 ## Staging is not promotion
 
 `bind_inactive` places a candidate into the existing SpellIndex while the selected
-member remains unchanged. Expert 17 asserts the member set, unchanged selection,
-and unchanged resolved result.
+member remains unchanged, and returns the candidate's spell_id. Expert 17 asserts the
+member set, unchanged selection, and unchanged resolved result.
 
-The runtime's promoting verb is `notch_spell`, which accepts a Spell object. The
-saved public staging lesson deliberately stops before hand-driving that operation:
-its demonstrated lookup by the parked ID returns the currently active member.
-Do not substitute a private-map access or claim that this lesson performs a full swap.
-The README's notch sketch assumes those version objects are already held.
+Promotion is `notch_spell(spell_index=..., spell_id=...)` given that spell_id: the
+candidate becomes the selected member and the next meld builds it, and a notch back by
+the previous spell_id restores the old version, which stayed parked. Expert 17 runs the
+whole loop on public calls, as does the README's sketch. A lookup by spell_id is exact:
+`get_spell_by_spell_id` returns the version that spell_id names, parked or active, and the
+version an index has active is a lookup by the index, `get_spell_by_index_id`.
+`notch_spell` refuses a version of another index, or one another Spellbook owns, before
+it changes anything. `add_to_spell_index` and `remove_from_spell_index` take `spell_id=`
+the same way, to move a parked candidate onto another index or out into one of its own.
 
 ## Keep history and code reconciliation distinct
 

@@ -1,0 +1,17 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: melder_1 answered (M1-25, 2026-10-17T23:54:28Z, re M0-188 and M0-189): it takes 0.2.8253 next (re-read at
+    the notch), then its release-note entry, the graph and the rebuild last; `__version__`, the release note, the four
+    system documents with their indexes and the graph are free after that rebuild, announced by NOTICE M1-26 with the
+    number taken. spellbook.py, conduit.py and fix #1's other files (among them spell.py and restore_engine.py) stay
+    held until the owner decides its closure. bind.py, managed_spell_quantity.py, creations.py and caching_system.py
+    are not in fix #1 and it does not touch them.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_recheck_contract_consumers_when_provider_changes_task.md:2680-2705
+  IMPACT: Part A can land after M1-26 in its own files; the docstrings of Spell and RestoreEngine that state the old
+    rule move to part B's turn (they sit in fix #1's held files), with spellbook.py's refusal.
+  NEXT: Wait for M1-26 and the owner's approval of the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

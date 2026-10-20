@@ -1,0 +1,187 @@
+--- src/melder/aether/spellbook/spell.py
++++ src/melder/aether/spellbook/spell.py
+@@ -76,4 +76,4 @@
+     Contract:
+-    - Wraps exactly one registered spell target plus its `SpellIndex`
+-      lineage/version record.
++    - Wraps exactly one registered spell target plus its `SpellIndex`, the
++      index that organizes this spell with the other members and selects one.
+     - Owns spell-local mutable runtime state such as hooks, dependency/build
+@@ -214,5 +214,5 @@
+         The unit of currency of the spellbook subsystem. `Bind` produces one `Spell`
+-        (paired with its `SpellIndex` lineage/version record) from a user target;
++        (paired with the `SpellIndex` that organizes it) from a user target;
+         `Spellbook` registers it into its owned/contracted maps and spell-id caches and
+-        registers the lineage into `SpellSystemStates`. Downstream, the SpellCompiler
++        registers its SpellIndex into `SpellSystemStates`. Downstream, the SpellCompiler
+         keys every phase artifact on this spell (by `spell_index.selected_spell_id`) and
+@@ -340,3 +340,3 @@
+             spell (Any): The underlying callable/class/instance being registered.
+-            spell_index (SpellIndex): Lineage/version tracker for this spell.
++            spell_index (SpellIndex): The SpellIndex this spell is organized under (it selects one member).
+             spellframe (Optional[Any]): Logical frame/contract used to scope the spell.
+@@ -1026,3 +1026,3 @@
+                 Frame-owned CreationGateController used by the factory for
+-                spell-lineage gate operations.
++                spell-index gate operations.
+ 
+@@ -1612,4 +1612,4 @@
+                - force deferred runtime resolution to run again
+-            2. lineage/control-plane invalidation
+-               - mark the lineage structurally gated in `SpellSystemStates`
++            2. control-plane invalidation of its SpellIndex
++               - mark its SpellIndex structurally gated in `SpellSystemStates`
+ 
+@@ -1633,3 +1633,3 @@
+             change_reason:
+-                Optional structural change reason to record in the lineage
++                Optional structural change reason to record in its SpellIndex's
+                 state. When omitted, the helper uses
+@@ -1765,3 +1765,3 @@
+         """
+-        Return the SpellSystemState instance associated with this spell's lineage.
++        Return the SpellSystemState instance associated with this spell's SpellIndex.
+ 
+@@ -1771,6 +1771,6 @@
+         Contract:
+-            - Mutation and contract operations can ask for the current lineage state.
++            - Mutation and contract operations can ask for the current state of its SpellIndex.
+             - Higher-level dev-ops and validation pipelines can inspect this value
+               while orchestrating Phase 1-7 revalidation.
+-            - Returns `None` when SpellSystemStates are unavailable or the lineage is
++            - Returns `None` when SpellSystemStates are unavailable or the SpellIndex is
+               not currently tracked.
+@@ -1779,3 +1779,3 @@
+             Optional[SpellSystemState]:
+-                The state object for this spell's lineage, if available.
++                The state object for this spell's SpellIndex, if available.
+ 
+--- src/melder/aether/spellbook/spellbook.py
++++ src/melder/aether/spellbook/spellbook.py
+@@ -173,3 +173,3 @@
+         remove_from_spell_index): the Conduit admits the transaction because it owns the
+-        lineage, and Spellbook applies the membership change because it owns the index
++        SpellIndex, and Spellbook applies the membership change because it owns the index
+         maps. Neither half is callable on its own.
+@@ -1837,4 +1837,4 @@
+         contracting it eagerly if this spellbook does not hold it yet. This is the
+-        eager "follow" used when an owner notches an index-linked lineage to a
+-        version this borrower has not seen:
++        eager "follow" used when an owner notches a SpellIndex this borrower holds through an
++        index link to a version this borrower has not seen:
+             - already active for this conduit -> no-op.
+@@ -2078,3 +2078,3 @@
+               disposal keep that map in step; an ownership transfer migrates
+-              the whole lineage.
++              every version of the index.
+             - O(1): at most two dict reads.
+@@ -2133,6 +2133,6 @@
+ 
+-        Read the capability ceiling recorded for one LOCAL spell lineage.
++        Read the capability ceiling recorded for the active spell of one LOCAL SpellIndex.
+ 
+         Purpose:
+-            Report what this Spellbook is willing to expose for a lineage it OWNS, which is
++            Report what this Spellbook is willing to expose for a SpellIndex it OWNS, which is
+             the upper bound any contract can grant a peer.
+@@ -2140,3 +2140,3 @@
+         Contract:
+-            - LOCAL ONLY. Contracted (borrowed) lineages are not searched, so a lineage
++            - LOCAL ONLY. Contracted (borrowed) indexes are not searched, so a SpellIndex
+               this book borrows raises rather than reporting the lender's permission. That
+@@ -2154,3 +2154,3 @@
+             spell_index:
+-                Lineage handle whose owning spell should be read.
++                The SpellIndex whose active spell's permissions are read.
+ 
+@@ -2334,3 +2334,3 @@
+ 
+-        Resolve the lineage (`SpellIndex`) behind one logical spell address.
++        Resolve the `SpellIndex` behind one logical spell address.
+ 
+@@ -2338,3 +2338,3 @@
+             Turn the human-facing `(spellframe, spell_name, binding_name)` address into the
+-            durable lineage handle, so callers can follow the lineage rather than pinning
++            durable SpellIndex, so callers can follow its selected spell rather than pinning
+             whichever version happens to be selected right now.
+@@ -2343,3 +2343,3 @@
+             - Searches LOCAL spells first, then every contracted (borrowed) spellbook map.
+-              A borrowed lineage is therefore resolvable through the borrower's own book.
++              A borrowed SpellIndex is therefore resolvable through the borrower's own book.
+             - The three inputs are normalized into one lookup key before matching, so
+@@ -2360,5 +2360,5 @@
+             SpellIndex:
+-                The lineage handle for the addressed spell. The returned index is the
++                The SpellIndex of the addressed spell. The returned index is the
+                 stable identity - its `selected_spell_id` may move underneath you when the
+-                owner notches, which is the intended way to follow a lineage.
++                owner notches, which is the intended way to follow the index's selected spell.
+ 
+@@ -2482,3 +2482,3 @@
+               are a key or a raised `RuntimeError`.
+-            - Use `find_spell_index(...)` instead when you want the lineage itself; that is
++            - Use `find_spell_index(...)` instead when you want the SpellIndex itself; that is
+               the call that returns information you did not already hold.
+@@ -2713,3 +2713,3 @@
+             ValueError: If no conduit in the frame claims the id - unknown or removed, bound in
+-                another frame, its owner cleaned, or a lineage between owners while an ownership
++                another frame, its owner cleaned, or its SpellIndex between owners while an ownership
+                 transfer runs - or the frame does not exist (`Aether._get_conduit_by_spell_id`).
+@@ -3059,3 +3059,3 @@
+             `_inactive_contracted_spells`, whose index (read under the parked spell's own lock) keys the
+-            lineage's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
++            index's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+             Book holds no copy of falls back to the walk: a one-call snapshot of the contracted map, which
+@@ -3076,3 +3076,3 @@
+             return None
+-        # Still O(1): a parked borrowed copy's index keys its lineage's active copy.
++        # Still O(1): a parked borrowed copy's index keys that index's active copy.
+         parked = self._inactive_contracted_spells.get(conduit_id)
+@@ -3262,3 +3262,3 @@
+         maps and NOT the shared `_spell_id_pool`. The borrowed copy therefore stays
+-        off resolution (unmeldable) until the owner notches the lineage and the
++        off resolution (unmeldable) until the owner notches the SpellIndex and the
+         owning Conduit drives `_activate_contract_spell` on this spellbook.
+@@ -3288,3 +3288,3 @@
+             parked[spell_id] = spell
+-            # Existence: track every member id of the lineage, matching the active
++            # Existence: track every member id of the SpellIndex, matching the active
+             # path, so the borrower knows all versions exist.
+@@ -3870,3 +3870,3 @@
+         to `selected_different_spell` (a general selection, not a mutation) and is
+-        threaded into the spell-owned invalidation so the lineage -- and its
++        threaded into the spell-owned invalidation so the SpellIndex -- and its
+         dependents -- are flagged with that reason.
+@@ -3939,3 +3939,3 @@
+                revalidation recompiles lazily on next resolve.
+-            6. Mark every lineage downstream of this one for revalidation
++            6. Mark every SpellIndex downstream of this one for revalidation
+                (`SpellSystemStates.mark_dependents_for_revalidation`; D2 of
+@@ -4006,3 +4006,3 @@
+         )
+-        # D2: everything downstream of the notched lineage - its dependents by registry edge, in any Book, and the
++        # D2: everything downstream of the notched SpellIndex - its dependents by registry edge, in any Book, and the
+         # SpellContract consumers of its binding key - revalidates at its next meld (mark only).
+@@ -4028,4 +4028,4 @@
+                 self._publish_spell_record_to_nexus(spell)
+-        # Mark the promoted lineage structurally changed (the walk above marked its
+-        # dependents) and clear its stale CreationContext. invalidate_spell also sets
++        # Mark the promoted spell's SpellIndex structurally changed (the walk above marked its
++        # dependents) and clear the spell's stale CreationContext. invalidate_spell also sets
+         # resolution_required=True as a side effect; bind-parity routing below sets
+@@ -4367,3 +4367,3 @@
+         Fully dispose an owned spell. Invalidate it FIRST so the spell and its
+-        lineage are flagged dirty (and dependents are rechecked) while the index
++        SpellIndex are flagged dirty (and dependents are rechecked) while the index
+         and dependency edges still exist, then take it off every resolution
+@@ -4380,3 +4380,3 @@
+             - Invalidation happens FIRST (`spell.invalidate_spell()`): the creation
+-              context is cleared and the lineage is marked structurally changed so
++              context is cleared and its SpellIndex is marked structurally changed so
+               dependents are rechecked, while the index and dependency edges still
+@@ -4514,3 +4514,3 @@
+         try:
+-            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
++            # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its SpellIndex
+             # dirty (clear the creation context, force a next-meld rebuild) while the index
+2 files, 40 edits applied and read back

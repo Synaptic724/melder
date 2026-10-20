@@ -14,6 +14,7 @@ explicit public operations.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
 - Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.
+- Managed spell pools: lease, release and reset pooled objects in elastic, limited and queue modes.
 - Named lesser scopes: Cloud lookup, creation-only names, collisions and retirement before pool reuse.
 
 ## Choose a route

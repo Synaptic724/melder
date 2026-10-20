@@ -1,0 +1,30 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Sweep A10, read whole and proven (identical with the GIL off and on). `cleanup_spell` of the active member
+    of an index that also holds parked versions is refused by design ("notch away from it first": it would leave
+    the index headless), and D1 shows the refusal changes nothing. One defect: the two other public ways to dispose
+    that member skip the rule. A direct `Spell.cleanup()` routes to `Spellbook.cleanup_and_remove_spell`, which
+    resolves the active spell and then unregisters its whole index from SpellSystemStates, drops the index from the
+    frame registry and the record, and cleans the index - with no check for parked members. Probe D2
+    (`English.cleanup()`) and D3 (`cleanup_and_remove_spell(english_id)`), French parked on English's index: the
+    index is cleaned, French stays parked in the Book, uncleaned, pointing at the cleaned index and unknown to the
+    frame; a notch to it raises AttributeError, `add_to_spell_index` and `cleanup_spell` of it raise "SpellIndex has
+    already been cleaned.", the Book's teardown leaves it (S7) and `French.cleanup()` then raises "Spellbook has
+    already been cleaned.". The index-linked borrower keeps an active copy of the cleaned English and a parked copy
+    of French (the direct path sends no ward emission - the gap already with melder_1, A1 note).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4358-4421
+  - src/melder/aether/spellbook/spellbook.py:4422-4563
+  - src/melder/aether/spellbook/spellbook.py:602-748
+  - src/melder/aether/spellbook/spell.py:581-723
+  - src/melder/aether/spellbook/spell.py:725-763
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_direct_cleanup_active_member.py:1-186
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_direct_cleanup_active_member_gil0.txt:1-49
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_direct_cleanup_active_member_gil1.txt:1-49
+  IMPACT: Structure stuck: a parked version left on a cleaned index can be neither notched, moved, disposed nor
+    cleaned by its Book's teardown. The fix sits in spellbook.py (melder_1 holds it): apply cleanup_spell's own rule.
+  NEXT: File the story; then sweep A11 (a bind whose commit validation fails).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

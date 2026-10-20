@@ -1,0 +1,6 @@
+head: 3d184cac699dfb5981449e8b841624e2eea59276 (codex_features2)
+HEAD files: 5985 | byte-identical: 4232 | line-ending-only differences: 1753 | content changes and additions listed below: 0
+
+summary (kind, area: count)
+
+files (kind, path, sha256 of the working-tree bytes)

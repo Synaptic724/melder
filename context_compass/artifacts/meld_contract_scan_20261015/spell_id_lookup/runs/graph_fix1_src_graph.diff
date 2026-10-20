@@ -1,0 +1,76 @@
+231c231
+< - source_sha256: `3f5f0b7c9b658ac0c30524b3a5c004e8208f62f3112c82a94c9a8554d1003fd6`
+---
+> - source_sha256: `050126fe3a5c37157ef732e40e1671a6b7764451d089fc00d09145e0b340fa5d`
+4434c4434
+< - source_sha256: `b3c9d9f6ab123dfadbde190813b29c0f9bfa55bb5f07a31a75d83194ac219f0a`
+---
+> - source_sha256: `1b446d6efdf6bf7502ce02275ef0df7d4e4019e70d09a7e305fbc70aeee934f1`
+4485a4486
+>   - answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version
+4699c4700
+< - source_sha256: `16de3e7d18f7b74871f878ba1f0de65785da1e17e91c6f68a705df4007f14869`
+---
+> - source_sha256: `81d96c19ee4dd35074f6fdd42a985f7b85db7b4d51dcfb25d350cd9a989274d2`
+4732a4734
+>   - resolves a grant's or release's spell_id exactly (_check_spell_id_and_spell), so a parked spell_id is granted or released as itself, and names each granted version's own Spell in the outbound half of a contract listing; the contract dependency walk and its preflight (_link_spell_dependencies, _preflight_contract_dependency_collisions) and the transfer's spell_id handle (_transfer_spell_ownership) take an explicit index step - the spell that owns the spell_id, then the spell its index has active in the owner's Book (0.2.8253)
+5026c5028
+< - source_sha256: `11aad5b7f51686309534e7bf8f391cffc24ab48047b7be8dcdce954341093a85`
+---
+> - source_sha256: `03c0cffd316a6fac7c3e199ff0c3e8c1c9f967b531ae29e4ea2413c5433d9808`
+5054a5057
+>   - resolves a spell_id in two explicit steps - the spell that owns it, then the spell its index has active in the source Book (in the member's own Book for the target-side dependency check) - for its own spell handle (_resolve_spell, RuntimeError when that index has no active spell), the target-side dependency check (_deps_resolvable_on_target) and the owned-dependency sub-transfers (_transfer_owned_dependencies), so a parked Spell object never reaches a transfer (0.2.8253)
+6267c6270
+< - source_sha256: `b47ad32b2bc1b1fe524044b81af7952866c81324751bd5ef7d3cedc7fd85405c`
+---
+> - source_sha256: `1c1376fe544c3c957daec5a7fa1cc8642775f326f4b4f28964314f7a30099b44`
+6503c6506
+< - source_sha256: `10162d70abc7843bcfc8bae2f77bb4cada0842fa40b19eae9664597b7e3f20d8`
+---
+> - source_sha256: `911901862888719a984a21d84729dff3845188a9466ad71c71a5581ec14e62bf`
+14902c14905
+< - source_sha256: `37d88be311c3aba244a8a81cd8089ca5828afd1041257b44b86ac0a29284fd5e`
+---
+> - source_sha256: `111a14a692ae19c5caf81b39f06e74302487799b70cd1bee1cc4c662937bd9bb`
+15740c15743
+< - source_sha256: `47eac897c84c8ac3066418791e02f1d4ccca366a96c4c7cbc76201df48ce3ea9`
+---
+> - source_sha256: `30d474731077ad9a85ce7b2734520592202849329e7f6594b3af65eb60d19c7b`
+15774c15777
+<   - answers contracted-spell lookups by key - the active copy by version id, a parked copy through its index - before walking (0.2.8231)
+---
+>   - answers contracted-spell lookups by key - the active copy by spell_id, a parked copy through its index - before walking (0.2.8231)
+15781a15785
+>   - answers a spell_id with exactly the Spell bound under it - one read of _spells_by_id (active), else one of _inactive_spells (parked), else None - with no lock and no index read; the spell an index has active is a lookup by the index (find_spell_by_spell_id, renamed from find_spell_by_id with no alias, 0.2.8253)
+17577c17581
+< - source_sha256: `a30e13be7e95bde23ec7d03432f4a59541ad6bc763837257abaabbf4fa89a309`
+---
+> - source_sha256: `f7e5bcf9af03e9385f86541f4efc6e9f0b783c6645c670120a6b0cb3f6f65a67`
+17743c17747
+< - source_sha256: `36829dd899804709efd18079de7ff56816dacdc3e433b716b702e092f11d9352`
+---
+> - source_sha256: `f0ceace9f90bcdd931f5d223d62103c91a85c943ed4851691488218a1d22c75c`
+24367c24371
+< - source_sha256: `d5bc442f3e6e0f8925af0d602af96078a52c1ca65ac69e0cfce80b30acb0045a`
+---
+> - source_sha256: `914bff88f9eb6442c16ce753493502b1ff343d0852e91d6fda749856fa12b745`
+24381c24385
+< - defined at: `src/melder/nexus/rift/command_system/command_system.py:18`
+---
+> - defined at: `src/melder/nexus/rift/command_system/command_system.py:20`
+24390a24395
+>   - answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused
+24393c24398
+< - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id` (+7 more)
+---
+> - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id` (+7 more)
+24422c24427
+< - source_sha256: `a6c528c7110983fb7e29d92667cdd74c6b6860514661b64661a88a3b39c35be5`
+---
+> - source_sha256: `32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47`
+24443a24449
+>   - answers get_spell_by_spell_id (renamed from get_spell_by_id, 0.2.8253) and get_spell_by_source_id with the live object of only the version named - the records published for that spell_id, or the one record the source id names - each melded by its own spell_id through _meld_live_spell_from_records_locked, the reuse-only loop the index path shares, whose refusals name what was asked (Spell id '<id>', Spell '<source_id>', Spell index '<id>')
+24445c24451
+< - public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id`, `list_supported_command_methods`, `meld_existing_spell`
+---
+> - public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id`, `list_supported_command_methods`, `meld_existing_spell`

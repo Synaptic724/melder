@@ -1,0 +1,25 @@
+landed | unit_arch | rc=0 | secs=1 | 18 passed in 0.11s
+landed | unit_gh | rc=0 | secs=4 | 491 passed in 2.69s
+landed | unit_llm | rc=0 | secs=1 | 28 passed in 0.09s
+landed | unit_build | rc=0 | secs=4 | 116 passed in 3.13s
+landed | unit_top | rc=0 | secs=7 | 146 passed in 6.47s
+landed | unit_aether | rc=0 | secs=26 | 4540 passed in 24.54s
+landed | unit_sb | rc=0 | secs=7 | 2582 passed in 5.67s
+landed | unit_util | rc=0 | secs=9 | 831 passed, 2 skipped, 7 xfailed in 8.77s
+landed | unit_mr | rc=0 | secs=4 | 277 passed in 2.33s
+landed | unit_cryst | rc=0 | secs=7 | 607 passed in 6.50s
+landed | comp_aether | rc=0 | secs=22 | 1386 passed, 1 xfailed in 20.50s
+landed | comp_sb | rc=0 | secs=27 | 819 passed in 26.28s
+landed | comp_util | rc=0 | secs=3 | 41 passed, 23 skipped in 1.95s
+landed | comp_mr | rc=0 | secs=2 | 40 passed in 1.03s
+landed | comp_cryst | rc=0 | secs=2 | 110 passed in 1.33s
+landed | exper | rc=0 | secs=14 | 250 passed, 4 skipped in 12.37s
+landed | int_conduit | rc=0 | secs=12 | 350 passed, 1 xfailed in 10.64s
+landed | int_mr | rc=0 | secs=3 | 67 passed in 1.73s
+landed | int_sb | rc=0 | secs=11 | 647 passed, 2 skipped, 2 xpassed in 9.84s
+landed | int_mt | rc=0 | secs=21 | 54 passed in 20.00s
+landed | int_live | rc=0 | secs=2 | 1 passed, 1 xfailed in 0.30s
+landed | int_aether | rc=0 | secs=24 | 822 passed, 5 xfailed in 22.80s
+landed | int_cryst | rc=0 | secs=77 | 276 passed, 3 xfailed in 76.27s (0:01:16)
+landed | ux_harness | rc=1 | 9 failed, 562 passed in 16.06s
+landed | ux_harness (crystallizer cache below its cap) | rc=1 | 7 failed, 564 passed in 13.80s

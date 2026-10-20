@@ -31,7 +31,7 @@ class _SpellIndexStub:
         Initialize the stub with a current spell id.
 
         Args:
-            current: Spell version id used by error messages.
+            current: The spell_id used by error messages.
         """
         self.selected_spell_id = current
         self.id = f"lineage-{current}"

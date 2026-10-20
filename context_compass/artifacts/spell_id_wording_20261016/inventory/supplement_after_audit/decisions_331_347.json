@@ -1,0 +1,87 @@
+[
+ [
+  "V331",
+  "each spell version_id:",
+  "each spell_id:"
+ ],
+ [
+  "V332",
+  "each spell version_id:",
+  "each spell_id:"
+ ],
+ [
+  "V333",
+  "All known spell version_ids",
+  "All known spell_ids"
+ ],
+ [
+  "V334",
+  "Dict[version_id, Set[version_id]]",
+  "Dict[spell_id, Set[spell_id]]"
+ ],
+ [
+  "V335",
+  "direct dependency version_ids;",
+  "direct dependency spell_ids;"
+ ],
+ [
+  "V336",
+  "Set[version_id] of structural roots",
+  "Set[spell_id] of structural roots"
+ ],
+ [
+  "V337",
+  "from root version_id ->",
+  "from root spell_id ->"
+ ],
+ [
+  "V338",
+  "all version_ids reachable",
+  "all spell_ids reachable"
+ ],
+ [
+  "V339",
+  "The root spell's version identifier (typically SHA256).",
+  "The root spell's spell_id (typically SHA256)."
+ ],
+ [
+  "V340",
+  "Version identifier to attach to the spell.",
+  "The spell_id to attach to the spell."
+ ],
+ [
+  "V341",
+  "KEEP",
+  "names the stub's parameter `version_id` (a code name, kept by the owner's ruling); its text must match the code"
+ ],
+ [
+  "V342",
+  "KEEP",
+  "names the stub's parameter `_version_id` (a code name, kept by the owner's ruling); its text must match the code"
+ ],
+ [
+  "V343",
+  "by its unique version identifier (spell_id) from the",
+  "by its spell_id from the"
+ ],
+ [
+  "V344",
+  "The unique version identifier of the spell (SHA256).",
+  "The spell_id to look up (SHA256), as `bind` or `bind_inactive` returned it."
+ ],
+ [
+  "V345",
+  "KEEP",
+  "names the stub's parameter `version_id` (a code name, kept by the owner's ruling); its text must match the code"
+ ],
+ [
+  "V346",
+  "KEEP",
+  "names the stub's parameter `version_id` (a code name, kept by the owner's ruling); its text must match the code"
+ ],
+ [
+  "V347",
+  "KEEP",
+  "names the stub's parameter `version_id` (a code name, kept by the owner's ruling); its text must match the code"
+ ]
+]

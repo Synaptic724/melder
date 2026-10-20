@@ -14,7 +14,7 @@ permissions:
 jobs:
   discover:
     name: Runtime / read the test manifests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.runtimes.outputs.matrix }}
@@ -105,7 +105,7 @@ jobs:
       actions: read
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     # Reporting availability must not turn passing tests into a release failure.
     continue-on-error: true

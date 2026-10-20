@@ -1,0 +1,5 @@
+command: python -X gil=0 -m pytest -q -p no:cacheprovider -rsxX tests/integration/melder/mutation_research
+started: 2026-10-10T13:19:56Z
+...................................................................      [100%]
+67 passed in 5.11s
+exit: 0 finished: 2026-10-10T13:20:02Z

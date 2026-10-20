@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/contracts/spell_contract.py",
- "source_sha256": "9c2914db2ceb3f92a8938955d13765272724eb0537030534ee3e2b6cd394fdfc",
+ "source_sha256": "d45f4395b311fe751b7f77f8bb9235f5bf698eeac3fdd51158ced412fa484d7f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.contracts.spell_contract": {
@@ -42,7 +42,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c2662ce1d408b4800b7a779dfe0e4a336dc2402c92564d538025f0a794c19bdd",
+   "span_sha256": "48557bdeee15bd4d84d0a4512f32e574cb4192ee2482eab1443fea9fd035a176",
    "role": "Declarative late-binding contract socket descriptor.",
    "responsibilities": [
     "describes cross-conduit dependency identity and optional override payload",

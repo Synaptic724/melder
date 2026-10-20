@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T23:01:16Z
+- Updated: 2026-10-18T21:09:31Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -1162,6 +1162,31 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-18T21:09:31Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer (mailbox consumption at check-in)
+  TYPE: FACT
+  CLAIM: Consumed the 39 mailbox NOTICEs addressed to melder_2 (2026-09-27 to 2026-10-01: M0-57..M0-173, F0-3,
+    WF0-6, WF0-10; none asked for an ACK). Two close this task's open owner decisions: M0-76 - the 17:57:01Z
+    SpellSpace active-scope RISK is resolved at 0.2.8203 (a space released to its pool refuses meld and purge with
+    SpellSpaceScopeError; the documents that promised an active-scope check were corrected); WF0-10 - the
+    system_document_view lazy-index race (the P4 task's RISK) was fixed at 0.2.8207. M0-122..126: the shared
+    gauntlet's fixed library order biased its three-way numbers (a later slot ran 5-12% slower in the VM, Melder
+    ran last); since 2026-09-30 the wrapper runs each library in its own process. The rest were notch notices and
+    sole-writer claims since released; the notch history lives in attention_board.md notes.
+  EVIDENCE:
+  - src/melder/aether/conduit/spell_space/spell_space.py:513-533
+  - src/melder/aether/conduit/spell_space/spell_space.py:628-629
+  - src/melder/aether/conduit/spell_space/spell_space.py:772-773
+  - tickets/tasks/completed/2026-09-28_fix_system_document_lazy_publication_race_task.md:10-13
+  - tickets/tasks/completed/2026-09-30_investigate_gauntlet_order_dependence_task.md:15-22
+  IMPACT: The 17:57:01Z RISK is closed; ratios this task measured before 2026-09-30 carry the position bias. Only
+    the lever pick remains open.
+  NEXT: Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door)
+    is worth a task.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in order:
 - P1, positional constructor calls: turned in; the site-plan lowering carries the rule (P5).
@@ -1169,9 +1194,9 @@ Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in
 - Lever 1, interning: no gain, dropped.
 - Lever 2, thread-affine pools: -6% to -7% per cycle on Linux, effect on Windows unknown, needs a design.
 - P4, SpellSpace.meld warm id lane: in the tree at 0.2.68, turned in.
-Open owner decisions:
-- The SpellSpace active-scope RISK: enforce the check, or correct the documents.
-- The system_document_view lazy-index race (RISK in the P4 task): which lane fixes it.
+Open owner decisions: the lever pick only. The SpellSpace active-scope RISK closed at 0.2.8203 (a released space
+refuses meld and purge; the documents were corrected) and the system_document_view lazy-index race at 0.2.8207
+(Notes, 2026-10-18). Ratios measured before 2026-09-30 carry the fixed-order bias the runner now avoids.
 Levers must remove work, and pools and shells are created when they are today (owner, 2026-09-26). Lever 1's
 lifecycle is closed as measured (owner, 21:15Z; about 15 contract-bearing pieces, trims worth about 0.1 us). The
 spellspace build locks led to the nested slot-guard removal (0.2.73); both turned in. Thread-affine pools need the owner's view under the

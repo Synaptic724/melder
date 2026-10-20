@@ -1,0 +1,51 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Lineage sweep batches 06-10 applied: 210 hand edits in 28 files (435 in 35 files since 01:29Z), each
+    occurrence read in its method and classified. 06: command_system.py 1624 (the published spell indexes a
+    spell_id is looked up across) and restore_engine.py 2578-2750 (the cluster stage re-grants shareable spells; a
+    plain detail lives with the side that owns the granted spell); command_system.py 209 is the scope tree and
+    stays; static_command_system.py and graft_runner.py hold none. 07: risk_manager.py, 55 edits - risk is tracked
+    per SpellIndex id; its `__slots__` names and identifiers keep their names. 08: spell_system_states.py, 55 edits -
+    one SpellSystemState per SpellIndex; `Meld._ensure_lineage_resolvable` (121) is an identifier. 09: meld.py, 26
+    edits - the gate's state reads and the catch-up read the SpellSystemState of a spell's SpellIndex, and 2156
+    called a spell_id "the current lineage id"; kept 166, 353, 1297 and 1852 (scope tree). conduit_meld.py 755 and
+    915 mean spells scoped to a spellspace request; its store selection and runtime labels stay. 10:
+    conduit_cluster.py 40 and 1502 (members share root spell indexes, recorded per owner by SpellIndex id; its 20
+    member-root drains stay) and 65 edits in the 21 Phase 6 validation strategies, whose `lineage_id` is the
+    SpellIndex id (Phase 5 fills it from `SpellSystemState.spell_index_id`); their identifiers, diagnostic codes
+    and detail keys are kept, and broken_spell_in_dag 62 now says the shared thing is the spell node. All scope
+    tree, not edited: creation_gate_controller.py, conduit_lineage_gate_ops.py, dev_ops_manager.py,
+    spellspace_meld.py, creation_runtime_door_compiler.py. Every edited file parses and keeps its line count and
+    line endings, and the "lineage" text left in it is the kept lines.
+  EVIDENCE:
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch06_command_system_restore_engine.py:1-28
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch07_risk_manager.py:1-176
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch08_spell_system_states.py:1-176
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch09_meld_conduit_meld.py:1-100
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/edits/batch10_cluster_phase6_strategies.py:1-194
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch06_apply.txt:1-30
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch07_apply.txt:1-250
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch08_apply.txt:1-227
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch09_apply.txt:1-137
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/runs/batch10_apply.txt:1-334
+  - context_compass/artifacts/meld_contract_scan_20261015/lineage_wording/remaining_text.py:1-33
+  - src/melder/nexus/rift/command_system/command_system.py:1624-1624
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:2578-2750
+  - src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:23-726
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:68-1734
+  - src/melder/aether/conduit/meld/meld.py:176-2156
+  - src/melder/aether/conduit/meld/conduit_meld.py:755-915
+  - src/melder/aether/conduit/conduit_cluster.py:40-1502
+  - src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:32-73
+  - src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:40-106
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:266-315
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:14-24
+  IMPACT: The control plane (risk, per-index state), the meld gate, the cluster and the Phase 6 checks now say
+    SpellIndex where they meant it; lineage stays only where it is the conduit scope tree. Identifiers, diagnostic
+    codes and runtime strings that still say lineage for a SpellIndex go on the owner's list unchanged.
+  NEXT: Continue the free src files (compiler and system: spell_system_node.py, spell_system_index.py,
+    root_resolution_blueprint.py, compiler_phase_5.py and _6.py first), then the transaction strategies.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

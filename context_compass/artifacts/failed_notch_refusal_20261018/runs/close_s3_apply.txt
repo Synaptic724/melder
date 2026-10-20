@@ -1,0 +1,2 @@
+anchors: 12 | dropped: | direct_cleanup_refusal | done | melder | story lines: 690 | long story lines: 13 | ts: 2026-10-19T13:26:06Z
+applied: story moved, boards synced, patch archived

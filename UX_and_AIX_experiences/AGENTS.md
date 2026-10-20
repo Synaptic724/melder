@@ -96,13 +96,21 @@ a probe here first; the probe's printed outcome then hardens the example.
   identity uses explicit `spell_id=`. Human-name/class forms derive the frame key
   from the NAME (so they miss framed binds), and a bind with binding_name answers
   only when the meld carries the same binding_name. binding_name alone is refused.
-- Spell NAMES are unique per book at conjure - CURRENT behavior refuses any
-  name collision regardless of binding names, frames, or content SHA.
-  DIVERGENCE FLAG: owner design intent (twice stated) is SHA256 content
-  matching with binding-name disambiguation; DuplicateSpellNameStrategy
-  ignores the disambiguators its own error message recommends. Tracked as a
-  runtime bug candidate on the beginner epic. Until fixed: subclass-per-role
-  (24) and collection-as-spell registries (33) are the working patterns.
+- SPELL IDENTITY IS THE CODE (0.2.8257): a spell_id is the SHA256 of the
+  registered object's code - its methods and constructor (bodies included),
+  class-level values and bases, or an existing object's class and data -
+  and of nothing from the bind call. One object registers once: binding it
+  again under any binding_name, existence or spellframe is refused at bind
+  ("Spell ID collision"), or at conjure when another Book holds it
+  ("Conjure refused"). A changed class is a new spell_id: stage it with
+  bind_inactive and notch. Same-NAMED classes with different code coexist
+  at different addresses (0.2.8206). Working patterns: subclass-per-role
+  (24) and collection-as-spell registries (33).
+  History: this bullet carried a DIVERGENCE FLAG - spell NAMES unique per
+  book at conjure, refused regardless of binding names, frames or content
+  SHA, against the owner's stated intent of SHA256 content matching.
+  0.2.8206 made Phase 4 check the full address and 0.2.8257 made the
+  spell_id the code; the flag is closed.
 - One book conjures ONE conduit ever (RuntimeError on the second); scopes are
   lesser conduits, extra roots are extra books.
 - Unregistered meld raises one stable KeyError. Same-spell double-bind is

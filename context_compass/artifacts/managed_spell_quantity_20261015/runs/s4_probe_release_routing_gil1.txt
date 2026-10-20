@@ -1,0 +1,4 @@
+python 3.14.7 gil=enabled melder=0.2.8243 cycles=200000 rounds=7
+A put_back                         min    68.2 ns  median    69.3 ns  routing +   0.0 (min) +   0.0 (median)
+B registry.release                 min   117.8 ns  median   119.4 ns  routing +  49.6 (min) +  50.2 (median)
+C ReleaseManagedSpell().release    min   204.6 ns  median   207.1 ns  routing + 136.5 (min) + 137.9 (median)

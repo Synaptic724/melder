@@ -1,0 +1,6 @@
+modules not imported: 0
+targets: 784 (628 classes, 156 functions); digest errors: 0
+cold   n=784 total=555.5 ms median=525.0 us p95=1835.2 us max=7536.7 us (melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer)
+warm   n=784 total=147.1 ms median=145.5 us p95=511.4 us max=2573.8 us (melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer)
+today  n=784 total=87.8 ms median=77.6 us p95=232.8 us max=11763.7 us (melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy)
+digests written: 784 -> /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/artifacts/spell_identity_20261018/staged/runs/src_digest_corpus_gil0_seed1.tsv

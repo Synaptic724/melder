@@ -1,0 +1,8 @@
+WROTE: tests_architecture_index.md
+  32 sections over 1073 document lines
+  index 62 lines (5% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 201 lines (C1 Code Map (Core Only))
+  all 32 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/tests_architecture.md

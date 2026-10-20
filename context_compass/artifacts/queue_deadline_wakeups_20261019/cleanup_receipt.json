@@ -1,0 +1,17 @@
+{
+  "retained": "Test reports, reproducer, mutation runner, input hashes and pre-edit document snapshot",
+  "verified_at": "2026-10-20T00:39:01Z",
+  "removed_targets": [
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_baseline",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_early_expiry",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_focused",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_full",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_full_timeout_wait",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_managed",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_python3142",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_repeat_gil0",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_repeat_gil1",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\cache_restart_deadline",
+    "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\queue_deadline_wakeups_20261019\\tmp_full_runtime"
+  ]
+}

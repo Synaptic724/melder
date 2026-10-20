@@ -29,14 +29,14 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
     """
-    Guard that a lineage does not claim conflicting conduit ownership.
+    Guard that a SpellIndex does not claim conflicting conduit ownership.
 
     Ownership metadata becomes important once the system is reasoning about
     contracted spells, transfer-of-ownership flows, and conduit-scoped
-    validation. A lineage that points at multiple concrete conduit owners at
+    validation. A SpellIndex that points at multiple concrete conduit owners at
     once is a system-level inconsistency, so this strategy groups nodes by
-    lineage id and checks whether the non-None owner set stays singular before
-    later validation or change-control logic treats that lineage as belonging to
+    SpellIndex id and checks whether the non-None owner set stays singular before
+    later validation or change-control logic treats that SpellIndex as belonging to
     one authoritative conduit.
     """
     __slots__: list[str] = []
@@ -57,7 +57,7 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
         Validate ownership consistency across index nodes.
 
         Purpose:
-            Catch lineages whose visible versions disagree about which conduit
+            Catch spell indexes whose visible versions disagree about which conduit
             currently owns them.
         Contract:
             - Operates entirely on the `SpellSystemIndex`; blueprint and
@@ -66,7 +66,7 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
             - Uses `lineage_id` as the grouping key and compares only concrete
               non-None conduit ids so unpublished or unresolved nodes do not
               create false conflicts on their own.
-            - Emits one ERROR diagnostic per conflicting lineage and includes
+            - Emits one ERROR diagnostic per conflicting SpellIndex and includes
               both the participating conduit ids and the spell versions that
               contributed to the conflict.
             - Cancellation is honored between nodes.
@@ -75,8 +75,8 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py",
- "source_sha256": "f937441d04c15930a20fba1f0f6aebacdee82a0cc79e6699a69d7968f9f7d30d",
+ "source_sha256": "42b395b00b5ab57873fa3aea3d639dd87f09ea39d1b8a3daff151484b6e7a41b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_node": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d70d2ef8d29b030f028d3c4d81d7fd58b2a2eadadb48030beae01db7778d8397",
+   "span_sha256": "64fbd254922d5a92b5bd7bbcb931a87f0ea92bfeaf348fb8273fd1d4ab9cfd86",
    "role": "Version-id keyed Phase 5-7 system node.",
    "responsibilities": [
     "stores one spell version id plus its lineage id",

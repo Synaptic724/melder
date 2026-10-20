@@ -304,7 +304,7 @@ def test_conduit_scan_after_conjure_validates_every_scanned_spell() -> None:
     assert len(spell_ids) == 2
     assert len(spellbook.spells) == 2
     for spell_id in spell_ids:
-        spell = conduit.get_spell_by_id(spell_id)
+        spell = conduit.get_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.validation_result_phase4 is not None
 

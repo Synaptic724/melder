@@ -13,7 +13,7 @@ Ensure continuity and minimize lost context when a session is compacted or hande
 - If empty summaries are not allowed, write only minimal pointer summaries:
   - high-level outcomes (no narrative replay)
   - policy anchor paths that MUST be re-read
-  - active ticket path(s)
+  - active ticket path(s) or Issue URL(s)
   - changed file path(s)
   - next immediate action
 
@@ -26,9 +26,10 @@ Core review set (ALWAYS required) - review these files in order:
 - `context_compass/SKILLS.MD`
 - resolved role `SKILLS.MD` chain (parent-first; the SKILLS files themselves)
 - `agent_onboarding/default/general/skills/compaction_requirements.md`
-- `agent_onboarding/default/general/skills/workflow.md`
+- the workflow skill for the selected work backend
 - `attention_board.md`
-- Active epic/story/task tickets in `tickets/epics/`, `tickets/stories/`, `tickets/tasks/`
+- Active Epic/Story/Task tickets in the selected backend; in plugin mode also
+  read `issue_board.md`, fetch Issue-body Status/Notes, and read relevant comments.
 - **The role's baseline system-orientation set, when the role declares one and the
   files exist.** For `engineer` and everything inheriting it that is:
   - `system_docs/src_architecture.md`
@@ -79,9 +80,9 @@ Read discipline (non-negotiable)
   next actions stay current.
 - Before compaction/handoff, verify `attention_board.md` is current and matches
   active ticket status.
-- Update the `## Notes` section of all active tickets with latest findings and
-  `path:start_line-end_line` evidence pointers (use `start=end` for single-line evidence).
-- Ensure each meaningful finding was written as a note before the next investigation tranche.
+- Retain latest meaningful findings in supported Notes/comments or authorized linked evidence,
+  with exact source/evidence pointers. Preserve historical Notes/comments; do not copy all reports.
+- Keep current scope/state/decisions/handoff coherent before a material transition or recovery.
 - Ensure UNKNOWN-first discipline was followed (unverified claims remain `UNKNOWN`).
 - Ensure note entries carry re-entry metadata when required by the ticket contract.
 - Capture open questions, decisions, and next steps in the relevant ticket.
@@ -90,11 +91,14 @@ Read discipline (non-negotiable)
 - If artifacts exist: keep ticket `Artifact Links` sections and `artifact_board.md` synchronized.
 
 ## Handoff Summary Checklist
-- Current state and progress (what is done vs remaining).
-- Key decisions and rationale.
-- Known risks and active blockers.
-- Immediate next steps (1-3 concrete actions).
-- References to any critical files or paths.
+- Keep one current resume view, updated in place rather than several dated "Current" snapshots.
+- Include scope/outcome, controlling decisions/holds, source/evidence revision, completed/remaining
+  criteria, failed/unrun limits, owners and next 1-3 actions with necessary evidence links.
+- Link unchanged context/full evidence; preserve history and artifacts. REQUIRED versus HELPFUL
+  expresses relevance to the applicable continuation, not a perpetual checkpoint reread order.
+- An ordinary comment in intact context does not trigger a full-policy reread or another cycle.
+  Mandatory onboarding/reentry, role/name recovery, certification and changed-source reads still
+  apply at their actual triggers; a resume view or old read receipt cannot replace them.
 
 ## Post-Compaction Verification
 After compaction, re-open the core review set and confirm:

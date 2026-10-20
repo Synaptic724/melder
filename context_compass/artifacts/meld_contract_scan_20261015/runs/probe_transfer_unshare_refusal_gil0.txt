@@ -1,0 +1,7 @@
+Banner: HELLO
+owner before: lender
+  _remove_spell_from_contract raised: RuntimeError Spell '<English id>' is a member of index-link contract '<ulid>' and cannot be removed on its own. Use remove_index_from_contrac
+owner after: steward
+steward book has English: True index in steward._spells: True
+lender book has English: False index in lender._spells: False
+spell._spellbook is steward_book: True

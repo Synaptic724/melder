@@ -1,0 +1,17 @@
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+D1 dataclass default_factory list -> dict                      expect=different got=different ok       ef000aed68f4/6634740f5c6a
+D2 decorator's wrapper body changed, function the same         expect=different got=different ok       32c7b1b84c2c/f73a253438a7
+D3 decorated function body changed, decorator the same         expect=different got=different ok       32c7b1b84c2c/e2697073e062
+D4 the same decorated source executed twice                    expect=same      got=same      ok       32c7b1b84c2c/32c7b1b84c2c
+D5 two packaging Version objects (Python-visible state)        expect=different got=different ok       d960524465ea/4b5112fa7788
+D6 two yaml C Mark objects: has __dict__?                      False
+D6a prototype: two C objects without Python-visible state      expect=different got=same      MISMATCH a849ba42a24b/a849ba42a24b
+D6b repr fallback (today's rule) for the same two              expect=different got=same      MISMATCH 97da50465131/97da50465131
+D7 a class-level reference's class body changed (named)        expect=same      got=same      ok       d8a708fd9cdb/d8a708fd9cdb
+D8 a module-level helper a method calls changed (named)        expect=same      got=same      ok       7dcdfe77bc43/7dcdfe77bc43
+D9 class over pygments PythonLexer                             cold_ms=   2.595 warm_ms=   1.973 mro=5
+D9b plain one-method class                                     cold_ms=   0.029 warm_ms=   0.006 mro=2
+D10 two existing objects with equal data (one spell)           expect=same      got=same      ok       d6f06e97db9b/d6f06e97db9b

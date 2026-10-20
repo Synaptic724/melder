@@ -765,7 +765,7 @@ def test_add_spell_to_contract_flow(ward):
     spell.spell_name = "TestSpell"
     
     # Mock retrieval
-    ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
+    ward._conduit.get_spell_by_spell_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
     ward._conduit._conduit_ward._conduit_cloud.get_conduit_by_id = MagicMock(
         return_value=target_conduit
@@ -797,7 +797,7 @@ def test_add_spell_no_contract_raises(ward):
     )
     spell = MagicMock(spec=Spell)
     spell.spell_id = "sha-1"
-    ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
+    ward._conduit.get_spell_by_spell_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
     
     with pytest.raises(RuntimeError, match="No contract found"):
@@ -1132,7 +1132,7 @@ def test_check_spell_id_and_spell_raises_when_unresolved(ward):
     """
     Verify _check_spell_id_and_spell errors when spell_id cannot be resolved.
     """
-    ward._conduit.get_spell_by_id = MagicMock(return_value=None)
+    ward._conduit.get_spell_by_spell_id = MagicMock(return_value=None)
 
     with pytest.raises(RuntimeError, match="Could not resolve spell"):
         ward._check_spell_id_and_spell(spell_id="missing")
@@ -1142,7 +1142,7 @@ def test_check_spell_id_and_spell_raises_on_id_mismatch(ward):
     Verify _check_spell_id_and_spell rejects mismatched spell IDs.
     """
     spell = MagicMock(spec=Spell)
-    ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
+    ward._conduit.get_spell_by_spell_id = MagicMock(return_value=spell)
     spell.spell_id = "sha-2"
 
     with pytest.raises(RuntimeError, match="does not match inspected ID"):
@@ -1153,7 +1153,7 @@ def test_check_spell_id_and_spell_success(ward):
     Verify _check_spell_id_and_spell resolves and returns the spell.
     """
     spell = MagicMock(spec=Spell)
-    ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
+    ward._conduit.get_spell_by_spell_id = MagicMock(return_value=spell)
     spell.spell_id = "sha-1"
 
     resolved_id, resolved_spell = ward._check_spell_id_and_spell(spell_id="sha-1")
@@ -2024,7 +2024,9 @@ def test_transfer_spell_ownership_raises_when_non_dynamic():
 
 def test_transfer_spell_ownership_calls_transfer_flow(ward):
     """
-    Verify _transfer_spell_ownership performs preflight and execute via TransferOfOwnership.
+    Verify _transfer_spell_ownership resolves a spell_id handle to the spell its index has active - the spell that
+    owns the spell_id, then its index through `get_spell_by_index_id` - and performs preflight and execute via
+    TransferOfOwnership.
     """
     target_conduit, _ = _make_conduit_with_ward("conduit-2")
     summary = {"ok": True}
@@ -2046,10 +2048,14 @@ def test_transfer_spell_ownership_calls_transfer_flow(ward):
             mark_dependencies_dirty=True,
         )
 
+    member = ward._conduit.get_spell_by_spell_id.return_value
+    ward._conduit.get_spell_by_index_id.assert_called_once_with(
+        member._spell_index_unless_cleaned.return_value.id
+    )
     mock_transfer.assert_called_once_with(
         source_conduit=ward._conduit,
         target_conduit=target_conduit,
-        spell=ward._conduit.get_spell_by_id.return_value,
+        spell=ward._conduit.get_spell_by_index_id.return_value,
         move_creations=True,
         include_dependencies=True,
         force_unshare=False,
@@ -2203,13 +2209,13 @@ def test_check_spell_id_and_spell_passes_aetheric_frame(ward):
     Verify _check_spell_id_and_spell forwards aetheric_frame to ID resolution.
     """
     spell = MagicMock(spec=Spell)
-    ward._conduit.get_spell_by_id = MagicMock(return_value=spell)
+    ward._conduit.get_spell_by_spell_id = MagicMock(return_value=spell)
     ward._conduit.inspect_spell = MagicMock(return_value="sha-1")
     spell.spell_id = "sha-1"
 
     ward._check_spell_id_and_spell(spell_id="sha-1", aetheric_frame="frame-1")
 
-    assert ward._conduit.get_spell_by_id.call_args == (("sha-1", "frame-1"),)
+    assert ward._conduit.get_spell_by_spell_id.call_args == (("sha-1", "frame-1"),)
     assert ward._conduit.inspect_spell.call_count == 0
 
 def test_check_conduit_id_and_conduit_uses_cloud_lookup_directly(ward):

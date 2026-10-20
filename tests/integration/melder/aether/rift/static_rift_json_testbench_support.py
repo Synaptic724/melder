@@ -444,7 +444,7 @@ class StaticRiftJsonBench:
         """
         spell_entries: Dict[str, Dict[str, object]] = {}
         for case_name, spell_id in self._bound_spell_ids_by_case_name.items():
-            spell_object = self.root_conduit.get_spell_by_id(
+            spell_object = self.root_conduit.get_spell_by_spell_id(
                 spell_id,
                 self.frame_name,
             )

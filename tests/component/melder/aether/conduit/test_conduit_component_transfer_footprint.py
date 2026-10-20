@@ -46,7 +46,7 @@ def _make_spellbook() -> Spellbook:
 
 
 def _local_spell(spellbook: Spellbook, spell_id: str) -> Optional[object]:
-    """Resolve a locally owned spell by its current version id."""
+    """Resolve a locally owned spell by its current spell_id."""
     for spell_index, spell in spellbook.spells.items():
         if spell_index.selected_spell_id == spell_id:
             return spell

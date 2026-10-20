@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
- "source_sha256": "1fee54289c4e16d56b1ad6ed8c5e8440d1cf638efd9f307a3002a1c80ebf06b0",
+ "source_sha256": "09876c31ade99d1403ce9178222cdf3872cd832a99a00a2b96af78fb82683b4f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder": {
@@ -31,7 +31,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "66384f3a3aee98bf91801703280f995338e7c5e4b03400510864f5b31907957b",
+   "span_sha256": "0498791b3375f42e8723d7e0318bc81e54de37f95fe7441fbbac31a1a82faf2d",
    "role": "Phase 5 structural rooted-blueprint builder.",
    "responsibilities": [
     "builds rooted deep DAG blueprints from a frame-wide adjacency snapshot",

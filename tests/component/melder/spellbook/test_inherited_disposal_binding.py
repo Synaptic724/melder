@@ -7,7 +7,6 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.bind import Bind
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.nexus.nexus import Nexus
 from tests.component.melder.spellbook.test_ordered_disposal_binding import (
@@ -149,14 +148,12 @@ def test_requested_inherited_cleanup_is_retained(source: str, profile: str) -> N
             spell=InheritedCleanup, existence="many", profile=profile,
             disposal_method_names=["cleanup"] if source == "explicit" else [],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["cleanup"]
         assert spell.has_disposal_methods is True
-        assert spell_id == Bind.spell_id_inspector(
-            InheritedCleanup, spell_name=spell.spell_name,
-            existence=Existence.many, disposal_method_names=["cleanup"],
-        )
+        assert spell.binding_manifest.disposal_method_names == ("cleanup",)
+        assert spell_id == Bind.spell_id_inspector(InheritedCleanup)
 
 
 @pytest.mark.parametrize("target,expected", [
@@ -185,7 +182,7 @@ def test_unavailable_or_unsupported_cleanup_stays_excluded(target: type) -> None
     """Do not revive shadowed methods, evaluate properties or admit metaclass-only callables."""
     with configured_book(["cleanup"]) as book:
         spell_id = book.bind(spell=target, existence="many", disposal_method_names=["cleanup"])
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == []
         assert spell.has_disposal_methods is False
@@ -197,7 +194,7 @@ def test_inherited_staticmethod_keeps_existing_callable_eligibility() -> None:
         spell_id = book.bind(
             spell=InheritedStaticCleanup, existence="many", disposal_method_names=["cleanup"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == ["cleanup"]
 
@@ -214,7 +211,7 @@ def test_inherited_disposal_preserves_priority_overlap_and_deduplication(
             spell=OrderedCleanup, existence="many",
             disposal_method_names=["cleanup", "close", "close", "missing", "__str__"],
         )
-        spell = book.find_spell_by_id(spell_id)
+        spell = book.find_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == expected
         conduit = book.conjure()
@@ -223,27 +220,41 @@ def test_inherited_disposal_preserves_priority_overlap_and_deduplication(
         assert instance.calls == expected
 
 
-def test_unrequested_base_callable_does_not_change_binding_identity(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Preserving the shallow profile avoids unrelated ID drift from expanding inherited members."""
-    before = Bind.spell_id_inspector(InheritedCleanup, existence=Existence.many)
+def test_a_method_added_to_the_base_moves_the_child_spell_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    A base class's code is part of its subclasses' code (the owner's ruling, S1 of
+    EPIC-2026-10-18-spell_identity_is_the_code): an unrequested base method added is a new spell_id for the
+    child. Until S1 the shallow profile kept the child's fingerprint unchanged here.
+    """
+    before = Bind.spell_id_inspector(InheritedCleanup)
 
     def unrelated_method(self: CleanupBase) -> None:
-        """Supply an unrequested base method whose existence must not affect the child fingerprint."""
+        """Supply an unrequested base method; it is code, so the child's spell_id moves with it."""
         return
 
     monkeypatch.setattr(CleanupBase, "unrelated_operation", unrelated_method, raising=False)
-    after = Bind.spell_id_inspector(InheritedCleanup, existence=Existence.many)
-    assert after == before
+    after = Bind.spell_id_inspector(InheritedCleanup)
+    assert after != before
 
 
-def test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting() -> None:
-    """A staged member receives its own inherited disposal policy without changing the active one."""
+def test_inactive_binding_resolves_inherited_cleanup_for_the_staged_version() -> None:
+    """
+    A staged version receives its own inherited disposal policy without changing the active one.
+
+    One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): staging InheritedCleanup itself
+    again is refused, so the staged member is a second version - the same name and base, one class-level value
+    more - which inherits `cleanup` from the same base.
+    """
+    second_version = type(
+        "InheritedCleanup", (CleanupBase,),
+        {"__module__": __name__, "__qualname__": "InheritedCleanup", "version": 2},
+    )
     with configured_book([], dynamic=True) as book:
         active_id = book.bind(spell=InheritedCleanup, existence="many")
-        active = book.find_spell_by_id(active_id)
+        active = book.find_spell_by_spell_id(active_id)
         assert active is not None
         staged_id = book.bind_inactive(
-            spell=InheritedCleanup, spell_index=active.spell_index, existence="many",
+            spell=second_version, spell_index=active.spell_index, existence="many",
             disposal_method_names=["cleanup"],
         )
         staged = book._get_owned_spell(staged_id)

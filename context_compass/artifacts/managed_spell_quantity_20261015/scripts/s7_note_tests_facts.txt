@@ -1,0 +1,28 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The tests docs' facts, measured on disk before the first edit. tests_components' Key Files union is 219 paths
+    and equals its 219 C1 records (the join script dropped `pyproject.toml`, a root file with no slash, until its
+    filter was fixed). The three CI tiers hold 833 `test_*.py` modules (unit 502 of 505 `.py`, component 165 of 167,
+    integration 166 of 173); mocks 44 `.py`; experimentation 204 `.py`, 33 of them tests. The lane's 28 new files hold
+    397 test functions (unit 331, component 23, integration 43) - the 22:02:20Z note's "312" was wrong. 22 C1
+    records are stale (20 in tests_components, 2 in tests_architecture), 17 of them from earlier lanes; the suites'
+    subtree counts lag earlier lanes too (unit aether +2, unit spellbook +2, component spellbook +3). The nine
+    changed files are read through their CR-insensitive diffs. Found: tests_architecture's C1 header says its map is
+    the union of tests_components' key files, but the map holds the 36 harness and entrypoint surfaces the document
+    names; the header is corrected in this pass. Plan: a new "Managed Spell Pools Unit Cluster" (the nine
+    aether/conduit files), dated Protects bullets and key files in ten clusters and the three suites, a stress flow,
+    28 measured code-map records, the 22 stale ones remeasured, the counts and the 247-path core set, sources and
+    handoff in both documents.
+  EVIDENCE:
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_tests_facts.txt:1-114
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_tests_names.txt:1-511
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s7_tests_join_before.txt:1-23
+  - context_compass/artifacts/managed_spell_quantity_20261015/scripts/s7_tests_join.py:1-113
+  - context_compass/system_docs/tests_architecture.md:587-779
+  - tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:77-124
+  IMPACT: The tests docs are written from counts and ranges measured now, not carried forward.
+  NEXT: Write and run scripts/s7_docs_tests.py over tests_components and tests_architecture, then the gates.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

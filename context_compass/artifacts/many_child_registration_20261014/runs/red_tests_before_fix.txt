@@ -1,0 +1,221 @@
+melder 0.2.8234 (before the fix), Python 3.14.7 free-threaded build; run 2026-10-14T15:33:38Z
+== PYTHON_GIL=0
+FFFFFFFFFFFF.FF.FFF.....FF                                               [100%]
+=================================== FAILURES ===================================
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e3836c7e10> = <test_conduit_component_many_child_disposed_with_its_holder.UniqueHolder object at 0x5e3836c7c90>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb3490> = <test_conduit_component_many_child_disposed_with_its_holder.UniqueHolder object at 0x5e385fb2f90>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb2950> = <test_conduit_component_many_child_disposed_with_its_holder.UniqueHolder object at 0x5e385fb3990>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb0790> = <test_conduit_component_many_child_disposed_with_its_holder.PerConduitHolder object at 0x5e3836c8590>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb26d0> = <test_conduit_component_many_child_disposed_with_its_holder.PerConduitHolder object at 0x5e385fb4890>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb08d0> = <test_conduit_component_many_child_disposed_with_its_holder.LineageHolder object at 0x5e3836c8710>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb4250> = <test_conduit_component_many_child_disposed_with_its_holder.LineageHolder object at 0x5e385fb5a10>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e385fb6550>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:340: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e382729910>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e382728210>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e382728710>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e382728510>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e3827a4fb0>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:340: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e3827a41b0>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the root owns the unique holder's child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e382857390>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:380: AssertionError: the root owns the unique holder's child
+E   AssertionError: the root owns the unique holder's child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5e382857990>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:408: AssertionError: the root owns the unique holder's child
+E   AssertionError: warm melds built a many child the captured unique holder does not need
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:436: AssertionError: warm melds built a many child the captured unique holder does not need
+E   AssertionError: the owner root must record the child of the unique holder it owns
+      
+      Right contains one more item: <test_conduit_integration_many_child_disposed_with_its_holder.Child object at 0x5e3836cb590>
+      Use -v to get more diff
+tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py:126: AssertionError: the owner root must record the child of the unique holder it owns
+E   AssertionError: the elected leader must record the child of the cluster holder it stores
+      
+      Right contains one more item: <test_conduit_integration_many_child_disposed_with_its_holder.Child object at 0x5e385fb6050>
+      Use -v to get more diff
+tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py:172: AssertionError: the elected leader must record the child of the cluster holder it stores
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-at-lesser]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[spellspace-holder-in-root-spellspace]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[unique]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[per-conduit]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[lineage]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_per_conduit_holder_at_a_lesser_takes_its_many_child_with_it
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_spellspace_holder_takes_its_many_child_with_it
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_lesser_return_disposes_the_many_child_of_a_unique_built_for_a_per_conduit_consumer
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_lesser_return_disposes_the_many_child_of_a_unique_first_built_by_an_override_meld
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_specializer_builds_and_records_a_new_many_child_on_every_warm_meld_of_a_captured_unique
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py::test_borrower_teardown_disposes_the_many_child_of_a_contracted_unique_it_first_melded
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py::test_member_teardown_disposes_the_many_child_of_a_cluster_holder_it_first_melded
+19 failed, 7 passed in 6.19s
+== PYTHON_GIL=1
+FFFFFFFFFFFF.FF.FFF.....FF                                               [100%]
+=================================== FAILURES ===================================
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d16c7e10> = <test_conduit_component_many_child_disposed_with_its_holder.UniqueHolder object at 0x5d0d16c7c90>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb3490> = <test_conduit_component_many_child_disposed_with_its_holder.UniqueHolder object at 0x5d0d3fb2f90>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb2950> = <test_conduit_component_many_child_disposed_with_its_holder.UniqueHolder object at 0x5d0d3fb3990>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb0790> = <test_conduit_component_many_child_disposed_with_its_holder.PerConduitHolder object at 0x5d0d16c8590>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb26d0> = <test_conduit_component_many_child_disposed_with_its_holder.PerConduitHolder object at 0x5d0d3fb44d0>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb08d0> = <test_conduit_component_many_child_disposed_with_its_holder.LineageHolder object at 0x5d0d16c8710>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+     +    where <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb4250> = <test_conduit_component_many_child_disposed_with_its_holder.LineageHolder object at 0x5d0d3fb5a10>.child
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:274: AssertionError: the scope that first melded the holder disposed its many child while the holder is still handed out
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb6550>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:340: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d0729910>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d0728210>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d0728710>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d0728510>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d07a4fb0>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:340: AssertionError: the holder's owner must record its child
+E   AssertionError: the holder's owner must record its child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d07a41b0>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:355: AssertionError: the holder's owner must record its child
+E   AssertionError: the root owns the unique holder's child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d0857390>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:380: AssertionError: the root owns the unique holder's child
+E   AssertionError: the root owns the unique holder's child
+      
+      Right contains one more item: <test_conduit_component_many_child_disposed_with_its_holder.Child object at 0x5d0d0857990>
+      Use -v to get more diff
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:408: AssertionError: the root owns the unique holder's child
+E   AssertionError: warm melds built a many child the captured unique holder does not need
+tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py:436: AssertionError: warm melds built a many child the captured unique holder does not need
+E   AssertionError: the owner root must record the child of the unique holder it owns
+      
+      Right contains one more item: <test_conduit_integration_many_child_disposed_with_its_holder.Child object at 0x5d0d16cb590>
+      Use -v to get more diff
+tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py:126: AssertionError: the owner root must record the child of the unique holder it owns
+E   AssertionError: the elected leader must record the child of the cluster holder it stores
+      
+      Right contains one more item: <test_conduit_integration_many_child_disposed_with_its_holder.Child object at 0x5d0d3fb6050>
+      Use -v to get more diff
+tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py:172: AssertionError: the elected leader must record the child of the cluster holder it stores
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-at-lesser]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[spellspace-holder-in-root-spellspace]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[unique]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[per-conduit]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cycles[lineage]
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_per_conduit_holder_at_a_lesser_takes_its_many_child_with_it
+PASSED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_control_spellspace_holder_takes_its_many_child_with_it
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_many_child_is_recorded_in_the_store_of_its_holders_owner[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_lesser_return_disposes_the_many_child_of_a_unique_built_for_a_per_conduit_consumer
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_lesser_return_disposes_the_many_child_of_a_unique_first_built_by_an_override_meld
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py::test_specializer_builds_and_records_a_new_many_child_on_every_warm_meld_of_a_captured_unique
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py::test_borrower_teardown_disposes_the_many_child_of_a_contracted_unique_it_first_melded
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py::test_member_teardown_disposes_the_many_child_of_a_cluster_holder_it_first_melded
+19 failed, 7 passed in 6.27s

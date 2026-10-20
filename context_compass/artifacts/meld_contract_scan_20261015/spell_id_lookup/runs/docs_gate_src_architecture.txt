@@ -1,0 +1,4 @@
+stored baseline multiset agrees with the .before copy: True
+remap step: 20 lines changed, unaccounted 0
+edit step: 61 lines removed or rewritten, unaccounted 0
+GATE: PASS

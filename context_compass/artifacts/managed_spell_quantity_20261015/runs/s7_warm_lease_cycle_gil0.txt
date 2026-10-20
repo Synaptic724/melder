@@ -1,0 +1,9 @@
+python 3.14.7 gil=disabled melder=0.2.8246 cycles=200000 rounds=7
+A managed direct             min    302.5 ns  median    305.7 ns
+B many direct                min    201.6 ns  median    206.6 ns
+C unique direct              min    167.6 ns  median    174.4 ns
+D many holder of managed     min    357.6 ns  median    364.5 ns
+E many holder of many        min    261.1 ns  median    263.5 ns
+F managed direct, dynamic    min    733.4 ns  median    739.0 ns
+G many direct, dynamic       min    596.7 ns  median    601.6 ns
+pools after the run: [('Worker', 1, 1), ('DynWorker', 1, 1)]

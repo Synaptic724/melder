@@ -1,0 +1,50 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The four system documents and the graph carry the owner's extension, checked from disk. src_architecture
+    (4696 lines, 62 sections): the boundary bullet (all three verbs by spell_id; the add and remove docstrings
+    fixed), the summary, the mutation sequence (step 1 and the seams' refusals in step 5), the notch invariant
+    with the index moves appended, a fourth failure mode for the index moves and the notch messages in their
+    spell_id text, the code map (conduit.py 7784) and the handoff. src_components (11695 lines, 154 sections): the
+    Conduit Runtime's index-move paragraph, Inputs, Outputs, Responsibilities and Failure Modes; the SpellIndex
+    Mutation Surface (both verbs resolve a spell_id, the docstring warning marked resolved, citations remeasured);
+    a new flow "Conduit Index Moves by spell_id -> Spellbook Seams"; Spellbook Core's mediator citations
+    (5708/6041/6148); the code map and the handoff. tests_components and tests_architecture: the two new files in
+    the same clusters as the notch files (16 and 10 tests read from disk), key files, code-map records and sources;
+    the counts recounted (unit 507 of 510, component 166 of 168, integration 169 of 176, aether trees 206 and 46;
+    842 test modules). Every remeasured conduit.py citation lands on the line it names (5622, 5708, 5731, 5753,
+    5791, 5846, 5897, 5932, 5971, 6041, 6061, 6084, 6148, 6159, 6228). Each index rebuilt and `--check` OK; the
+    preservation diff loses only this pass's replacements (51, 38, 7 and 26 lines: rewording, remeasured
+    citations and extents, recounts, rewraps, the resolved warning); the measurable rubric half clean on all four
+    (one H1, no duplicate or wrapped headings, contracts in order, no portability or absolute-path hit, every C1
+    extent equal to its file, every path resolving); the citation recipe's two misses are the 0.2.8247 handoff's
+    bare file names, as before. Graph: re-extracted with `--strict` (rc 0), the Conduit node's notch line reworded
+    to spell_id and the index-move line appended, not accepted; reassembled (28068 lines, 591 sections, 1227
+    nodes, 1415 edges, `--check` rc 0); the walker census is unchanged (AUTHORED 1074, SEMANTICS_STALE 144,
+    UNSEMANTIC 9, RETIRED 5). Rubric scores, self-scored from disk (no independent reviewer), unchanged from the
+    14:15:45Z note: 83 / 83 / 83 / 77, band B; the edited sections were re-read against conduit.py 5622-6257 and
+    spellbook.py 3969-4262, and the weak points recorded then stand.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:494-512
+  - context_compass/system_docs/src_architecture.md:922-976
+  - context_compass/system_docs/src_architecture.md:1069-1099
+  - context_compass/system_docs/src_architecture.md:2029-2051
+  - context_compass/system_docs/src_components.md:2759-2772
+  - context_compass/system_docs/src_components.md:6080-6168
+  - context_compass/system_docs/src_components.md:7977-7995
+  - context_compass/system_docs/tests_components.md:1129-1135
+  - context_compass/system_docs/tests_components.md:1600-1605
+  - context_compass/system_docs/tests_architecture.md:461-467
+  - context_compass/artifacts/public_notch_target_20261016/runs/docs_checks_extension.txt:1-4
+  - context_compass/artifacts/public_notch_target_20261016/runs/preservation_extension.txt:1-125
+  - context_compass/artifacts/public_notch_target_20261016/runs/rubric_checks_extension.txt:1-52
+  - context_compass/artifacts/public_notch_target_20261016/runs/citation_bounds_extension.txt:1-3
+  - context_compass/artifacts/public_notch_target_20261016/runs/graph_assemble_check_extension.txt:1-4
+  - context_compass/artifacts/public_notch_target_20261016/runs/graph_walker_extension.txt:1-10
+  - src/melder/aether/conduit/conduit.py:5622-6257
+  IMPACT: The packaged docs and graph describe the landing as built; the patch lane can be archived and the
+    task closed.
+  NEXT: Archive the patch lane (status and handoff of the four patch docs, move to completed/, board rows).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8

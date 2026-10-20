@@ -178,7 +178,7 @@ result = inspect.getsource(GeneratedService)
             "GeneratedService",
             "generated_service",
         )
-        spell = conduit.get_spell_by_id(spell_id, "ops")
+        spell = conduit.get_spell_by_spell_id(spell_id, "ops")
         outside_error = None
         try:
             inspect.getsource(spell.spell)

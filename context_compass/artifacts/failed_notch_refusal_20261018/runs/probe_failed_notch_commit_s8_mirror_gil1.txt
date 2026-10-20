@@ -1,0 +1,38 @@
+<mirror>/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+N1 control: notch to a sound staged version (French)
+  [before the notch]
+    lender: index selects English; active ['English']; parked ['French']
+    borrower: active copies ['English']; parked copies ['French']
+    notch_spell(-> French) returned
+  [after the notch]
+    lender: index selects French; active ['French']; parked ['English']
+    borrower: active copies ['French']; parked copies ['English']
+
+N2 notch to a staged version that fails structural validation (SelfMade, SELF_DEPENDENCY)
+  [before the notch]
+    lender: index selects English; active ['English']; parked ['SelfMade']
+    borrower: active copies ['English']; parked copies ['SelfMade']
+    notch_spell(-> SelfMade) raised SpellbookValidationError: notch_spell refused: 'SelfMade' (spell_id 83717df2406a5957a10898302310b093f1fa3bdf90fca745124e5cb443c4ca10) failed its structural check, so the notch 
+  [after the failed notch]
+    lender: index selects English; active ['English']; parked ['SelfMade']
+    borrower: active copies ['English']; parked copies ['SelfMade']
+    lender meld(spellframe=Greeter, binding_name='greeter') -> English
+    lender meld(spell_id=English) -> English
+
+N3 N2, then a notch back to English
+  [before the notch]
+    lender: index selects English; active ['English']; parked ['SelfMade']
+    borrower: active copies ['English']; parked copies ['SelfMade']
+    notch_spell(-> SelfMade) raised SpellbookValidationError: notch_spell refused: 'SelfMade' (spell_id 83717df2406a5957a10898302310b093f1fa3bdf90fca745124e5cb443c4ca10) failed its structural check, so the notch 
+  [after the failed notch]
+    lender: index selects English; active ['English']; parked ['SelfMade']
+    borrower: active copies ['English']; parked copies ['SelfMade']
+    notch_spell(-> English) returned
+  [after the notch back]
+    lender: index selects English; active ['English']; parked ['SelfMade']
+    borrower: active copies ['English']; parked copies ['SelfMade']
+    lender meld(spell_id=English) -> English
+

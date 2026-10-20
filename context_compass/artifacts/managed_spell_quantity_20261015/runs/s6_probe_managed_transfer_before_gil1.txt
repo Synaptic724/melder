@@ -1,0 +1,41 @@
+A move (default), active member only
+  before: owner pool=(2, 2) target pool=None registry=[('ae7b4bdc', 'owner', 2, 2)]
+  after: owner pool=None target pool=(2, 2) registry=[('ae7b4bdc', 'target', 2, 2)]
+  same pool object moved: True
+  spell owner store is target's: True
+  target meld reuses an idle object: True
+  after release: owner pool=None target pool=(2, 2) registry=[('ae7b4bdc', 'target', 2, 2)]
+B move with a version parked after conjure, then a notch to it on the target
+  parked owner store is owner's before: True pool: True
+  parked pool in target store: True in owner store: False
+  parked owner store after: owner's = True target's = False owner conduit id = target: True
+  meld after notch raised: MeldExecutionError [MELD] Execution failed for spell 'Session' (1d3b6678cc89c02d7ee8225b3518d6b7e1653dfe762cae8b24e498f14b1af430) at node 1d3b6678cc89c02d7ee8225b3518d6b7e1653dfe762cae8b24e498f14b1af430: Managed spell 'Session' has no pool to lease from: its 
+C no move
+  before: owner pool=(2, 2) target pool=None registry=[('ae7b4bdc', 'owner', 2, 2)]
+  after: owner pool=None target pool=(0, 0) registry=[('ae7b4bdc', 'target', 0, 0)]
+  new pool on the target: True old idle objects undisposed: True
+  target meld builds new: True
+D failed transfer, move
+  before: owner pool=(2, 2) target pool=None registry=[('ae7b4bdc', 'owner', 2, 2)]
+  transfer raised: RuntimeError forced failure after the creations step
+  after rollback: owner pool=(2, 2) target pool=None registry=[('ae7b4bdc', 'owner', 2, 2)]
+  owner keeps the same pool: True
+  spell found in owner book: True
+  spell owner store: owner's = False target's = True
+  owner meld/release after rollback raised: MeldExecutionError [MELD] Execution failed for spell 'Session' (ae7b4bdc357620626af54e846d0272e1f41ddc4e6baf3a75fc0301b3a0442462) at node ae7b4bdc357620626af54e846d0272e1f41ddc4e6baf3a75fc0301b3a0442462: Managed spell 'Session' has no pool to lease from: its 
+E failed transfer, no move
+  before: owner pool=(2, 2) target pool=None registry=[('ae7b4bdc', 'owner', 2, 2)]
+  transfer raised: RuntimeError forced failure after the creations step
+  after rollback: owner pool=(2, 2) target pool=(0, 0) registry=[('ae7b4bdc', 'target', 0, 0), ('ae7b4bdc', 'owner', 2, 2)]
+  owner keeps the same pool: True
+  spell found in owner book: True
+  spell owner store: owner's = False target's = True
+  owner meld after rollback: new object
+  owner meld/release after rollback raised: ValueError Session is managed by 2 pools: spell_id=ae7b4bdc357620626af54e846d0272e1f41ddc4e6baf3a75fc0301b3a0442462, binding=default, frame=default, root=01M50CX42BAEWVPPQC9SBVD8TX, active=True; spell_id=ae7b4bdc357620626af54e846d0272e1f41ddc4e6baf3a7
+F unique: failed transfer (move), then a meld on the owner
+  transfer raised: RuntimeError
+  spell owner store: owner's = False target's = True
+  owner store holds the first object: True
+  owner meld returns the first object: False | target store holds an object: True
+G unique: version parked after conjure, moved, notched in on the target
+  object stored in: owner store = True target store = False

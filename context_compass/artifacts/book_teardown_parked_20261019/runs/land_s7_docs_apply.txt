@@ -1,0 +1,5 @@
+src_architecture.md: 8 edits, 5422 -> 5457 lines
+src_components.md: 6 edits, 12325 -> 12348 lines
+tests_components.md: 10 edits, 4045 -> 4069 lines
+tests_architecture.md: 4 edits, 1051 -> 1056 lines
+applied 2026-10-19T01:22:58Z

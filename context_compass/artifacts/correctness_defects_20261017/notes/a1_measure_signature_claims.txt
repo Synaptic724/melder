@@ -1,0 +1,29 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The hypothesis holds on 0.2.8251, proven in fresh worlds (seven cases, identical with the GIL off and on,
+    ids masked). C1: after `bind_inactive(French)` keyed like the active English, the frame holds no claim for
+    ('greeter', 'greeter'), the Book's address map no longer routes it, `find_spell_index` raises "Spell not found
+    in the spellbook.", and another Book's `bind` of the same signature is ACCEPTED while English stays active - two
+    active spells with one signature in the frame (a meld by address made before the staging still served English).
+    C2, the same before conjure: after conjure the first `meld(spellframe=Greeter, binding_name='greeter')` raises
+    KeyError "[MELD] No spell found ...". C3: `remove_from_spell_index` keeps the claim; `add_to_spell_index` back
+    drops it. C4: `cleanup_spell` of the version alone in its minted index drops it. C6: staging in Book L a version
+    keyed like Book O's active spell drops O's claim, and a third Book binds that signature. Second seam: C5, after
+    a notch from English to a version under another key, the parked English still holds ('greeter', 'greeter'), so
+    a new bind of it is refused naming English; C7, a notch inside the index `remove_from_spell_index` minted gives
+    French the signature English still holds active, and the next meld by address raises SpellbookValidationError
+    [DUPLICATE_SPELL_NAME].
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_signature_claims.py:1-278
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil0.txt:1-91
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_signature_claims_gil1.txt:1-91
+  - src/melder/aether/spellbook/spellbook.py:4192-4237
+  - src/melder/aether/spellbook/spellbook.py:3966-3978
+  IMPACT: Two defects by the owner's definition (structure wrong or stuck): one seam (`_destroy_spell_index`)
+    drops a claim it never held, the other (`_apply_notch` step 4) moves claims by the incoming key alone. Neither
+    is in melder_1's lane; both fixes sit in spellbook.py, which melder_1 holds.
+  NEXT: File one story for each seam under this epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

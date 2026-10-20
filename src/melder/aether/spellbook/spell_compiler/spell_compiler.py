@@ -218,7 +218,7 @@ class SpellCompiler(Cleanable):
                   bound Spell.
                 * Resolve **normal** DI sockets (single, collection, SpellMap)
                   against the Spellbook and build a **local-frame DAG** where:
-                      - the root node is this Spell's version id, and
+                      - the root node is this Spell's spell_id, and
                       - direct edges represent first-hop constructor dependencies.
                 * Track, per constructor parameter, which dependency spell ids were
                   bound during resolution.

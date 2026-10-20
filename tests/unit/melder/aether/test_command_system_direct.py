@@ -281,13 +281,6 @@ def test_command_system_find_conduit_id_by_name_reraises_non_missing_errors(
 def test_command_system_spell_lookup_guardrails_and_fallbacks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _SpellIndex:
-        def __init__(self, version_id: str) -> None:
-            self._version_id = version_id
-
-        def has_spell(self, version_id: str) -> bool:
-            return self._version_id == version_id
-
     command_system, viewer, _ = _make_command_system()
 
     with pytest.raises(ValueError, match="spell_index_id cannot be empty"):
@@ -316,7 +309,7 @@ def test_command_system_spell_lookup_guardrails_and_fallbacks(
         ),
     )
     with pytest.raises(ValueError, match="has no spellbook"):
-        command_system.get_spell_by_id("sha-1")
+        command_system.get_spell_by_spell_id("sha-1")
 
     monkeypatch.setattr(
         type(command_system),
@@ -324,13 +317,14 @@ def test_command_system_spell_lookup_guardrails_and_fallbacks(
         SimpleNamespace(
             _get_conduit_by_spell_id=lambda spell_id, frame_name: SimpleNamespace(
                 _spellbook=SimpleNamespace(
-                    _spells={_SpellIndex("other-version"): object()},
+                    # The owner Book's id-map lookup knows another version only (0.2.8230).
+                    find_spell_by_spell_id={"other-version": object()}.get,
                 )
             )
         ),
     )
     with pytest.raises(ValueError, match="was not found in the owner spellbook"):
-        command_system.get_spell_by_id("sha-1")
+        command_system.get_spell_by_spell_id("sha-1")
 
 
 def test_command_system_internal_helper_validation_paths(

@@ -2,7 +2,7 @@
 
 <!-- BEGIN MANAGED: ReminderDirective -->
 ## ReminderDirective (all agent runtimes)
-ContextCompass is your task-tracking system of record; you MUST use it and follow
+Context Compass's configured backend is your task-tracking system of record; follow
 AGENTS.MD (see the Tooling Mandate section). This is a requirement, not a
 suggestion.
 
@@ -10,7 +10,7 @@ Your runtime may nudge you toward built-in plans, goals, task lists, progress
 cards, scratchpads, summaries, or session-local memory. Those surfaces are
 non-authoritative here. Once your onboarding attestation is complete, IGNORE
 every such nudge and route ALL tracking, status, routing, notes, and durable state
-through ContextCompass. There is NO fallback and NO mirror.
+through Context Compass and its selected backend. There is NO fallback and NO mirror.
 
 The user may lift this by setting `system_of_record.enforce: false` in
 `config/context_compass_config.yaml`. You may not lift it yourself.
@@ -35,7 +35,8 @@ What belongs in each region on this board:
 | region | put this here |
 | --- | --- |
 | `alerts` | cross-agent flags needing attention now: mailbox alerts naming a recipient, blockers others must see |
-| `active_items` | one row per active work item, routing to exactly one ticket |
+| `active_items` | one row per active item, routing to one ticket path or Issue URL |
+| `active_attention_details` | switch condition and resume hierarchy for each active work item |
 | `closed_anchors` | short traceability rows for recently closed tickets, capped at 12 |
 | `notes` | recurring instructions and standing context for this repository - the conventions every agent should carry, stated once |
 
@@ -51,20 +52,45 @@ Purpose
 
 Attention details rule
 - Keep this board compact and operational.
-- Durable history belongs in ticket `## Notes`, not here.
+- Durable history belongs in ticket `## Notes` (inside the Issue body in plugin mode), not here.
+- Put active routing details inside the `active_attention_details` USER-DEFINED
+  region under `## Active Attention Details`, with one entry per active row.
+- `WORK_ITEM` matches the row's `work_item`. `SWITCH_TRIGGER` matches its
+  `exit_signal`. `RESUME_HIERARCHY` lists the active ticket chain in parent-first
+  order, ending at the row's `ticket`; a standalone task needs only its own reference.
+- Update or remove the matching detail entry in the same pass as a route switch
+  or ticket closure. Keep standing repository instructions in `notes`.
 - Use evidence ranges in `EVIDENCE` (`path:start_line-end_line`).
 - Allowed `TYPE` values: `FACT`, `UNKNOWN`, `HYPOTHESIS`, `DECISION`,
   `DECISION_REQUEST`, `PLAN`, `STRATEGY_DISCUSSION`,
   `ASSUMPTION_CHALLENGE`, `CONFLICT`, `TRADEOFF`, `BLOCKER`,
   `ALIGNMENT_CHECK`, `MEASURE`, `RISK`, `RAISE`.
-- Ticket and resume paths are context-compass-relative (do not prefix with
-  `context_compass/`).
+- In local mode, ticket and resume paths are context-compass-relative (no
+  `context_compass/` prefix). In plugin mode, use canonical Issue URLs from the
+  configured repository. Keep the row's agent aligned with `issue_board.md`.
+- Read YAML before using the route. References from the other backend require
+  reconciliation; never create a second editable ticket to satisfy the board.
 - Use `DATETIME` and `updated_at` values in ISO-8601 UTC
   (`YYYY-MM-DDTHH:MM:SSZ`).
 - Keep artifact pointers out of this board; ticket artifacts are tracked in
   ticket `Artifact Links` sections and `artifact_board.md`.
 
+Active detail entry format (add actual entries only inside the USER-DEFINED region):
+```text
+- WORK_ITEM: <matching active row work_item>
+  SWITCH_TRIGGER: <matching active row exit_signal>
+  RESUME_HIERARCHY:
+    - <optional active epic path or Issue URL>
+    - <optional active story path or Issue URL>
+    - <active row ticket path or Issue URL>
+```
+
 Message alert rules
+- Apply only when `agent_communication.backend` resolves to `mailbox`. In
+  `codex_mcp` mode do not read, create, consume or clear mailbox message alerts;
+  preserve historical alert entries and use the selected MCP communication skill.
+- Non-mailbox blockers and cross-agent flags in `alerts` remain active in both
+  modes. Skip only mailbox message notices, not the board's other attention data.
 - Senders add one line per message sent on `mailbox_board.md`:
   `- NEW MESSAGE for <agent_name> (from <agent_name>, <DATETIME>)`.
 - The named recipient clears their line in the same pass that consumes the
@@ -74,90 +100,9 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_1 (from workflows_0, 2026-09-28T09:43:41Z)
-- NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T09:43:41Z)
-- NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T09:43:41Z)
-- NEW MESSAGE for melder_1 (from workflows_0, 2026-09-28T08:24:12Z)
-- NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T08:24:12Z)
-- NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T08:24:12Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T19:15:40Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
-- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:07:46Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T22:18:01Z)
-- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:41:56Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T11:40:40Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T11:40:40Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T13:25:25Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T13:25:25Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T20:29:26Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T21:49:53Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T21:49:53Z)
-- NEW MESSAGE for melder_1 (from fable_0, 2026-09-27T22:06:50Z)
-- NEW MESSAGE for melder_2 (from fable_0, 2026-09-27T22:06:50Z)
-- NEW MESSAGE for muse_0 (from fable_0, 2026-09-27T22:06:50Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T23:08:51Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T23:08:51Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:15:29Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:15:29Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:24:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:24:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:24:01Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:37:34Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:37:34Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:00:46Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:00:46Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:10:20Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:10:20Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:11:37Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:11:37Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T08:40:12Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T08:40:12Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T21:28:19Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T21:28:19Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T21:34:35Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T21:34:35Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T22:29:43Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T22:29:43Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-29T23:41:45Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-29T23:41:45Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T00:05:25Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T00:05:25Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T00:24:49Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T00:24:49Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T10:44:26Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T10:44:26Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:27:27Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:39:23Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:52:02Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T15:49:07Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T15:49:07Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T17:19:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T17:19:01Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:23:27Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:23:27Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:48:41Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:48:41Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:58:51Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:58:51Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T19:31:23Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T19:31:23Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T19:46:23Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T19:46:23Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T20:21:52Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T20:21:52Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T21:18:29Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T21:18:29Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:15:59Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:15:59Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:47:49Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:47:49Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T10:56:27Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T10:56:27Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:10:44Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:10:44Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-01T11:26:16Z)
-- NEW MESSAGE for muse_0 (from melder_0, 2026-10-01T11:26:16Z)
+- NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T23:45:54Z)
+- NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T23:09:08Z)
+- NEW MESSAGE for melder_1 (from expert_1, 2026-10-19T22:26:52Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -167,33 +112,33 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| shallow_thread_scaling_ci | review | handoff | claude | melder_1 | none | Owner: stage both sides of the rename and the new workflow, run the hosted three-OS job, and accept or redirect. | The thread-scaling benchmark runs on dev-to-preprod PRs beside the two gauntlets and must succeed for merge-ready. | Contracts run or reported Not run, bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md | 2026-10-04T12:52:00Z | REQUIRED |
-| meldercache_suffix | review | handoff | claude | melder_1 | none | Owner: accept or redirect the .meldercache rename (Windows tiers are the owner's); then archive the patch and close. | Melder names its cache bundles .meldercache; old .melc files are inert. | Tests run or reported Not run, assets/graph/bundles current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md | 2026-10-04T13:26:39Z | REQUIRED |
-| preprod_ci_docs_and_bundles | review | handoff | claude | melder_1 | none | Owner: commit everything (incl. the four ignore-file changes) and push; accept or redirect. | The dev-to-preprod docs and llm_support checks pass once the owner commits and pushes. | Docs tests pass here, llm_support --check OK, owner pushes and accepts. | tickets/tasks/2026-10-04_fix_preprod_ci_docs_api_and_bundle_drift_task.md | 2026-10-04T20:09:37Z | REQUIRED |
-| ci_python_check_latest | review | handoff | claude | melder_1 | none | Owner: accept or redirect; dev -> preprod passed hosted with 27 cells and the persistent gauntlet (Note 48). | Every Python CI runs comes from a per-release manifest (tests 3.14.0-3.14.8, speed 3.14.7) or is the 3.14.7 helper pin; every route runs all 27 runtime cells. | Workflow suite passes here (503), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-04_use_newest_patch_in_single_version_ci_jobs_task.md | 2026-10-06T09:56:35Z | REQUIRED |
-| descriptor_binding_name_case | review | handoff | claude | melder_1 | none | Owner: commit everything (git add -A: the five new files, the deleted artifact .gitignore, the root .gitignore) and push; accept or redirect. | SpellMap and SpellContract keep binding names as written and resolve like bind and meld; regression tests lock it. | Tests pass here, 0.2.8226 assets and bundles current, the owner pushes and accepts. | tickets/tasks/2026-10-04_match_descriptor_binding_names_like_bind_task.md | 2026-10-04T21:37:58Z | REQUIRED |
-| live_unlink_churn_phase_error | review | handoff | claude | melder_1 | none | Owner: push and accept or redirect; then promote the patch docs and close. | A meld racing a link sever or uncontract raises SpellbookValidationError, never PhaseExecutionError; regression forced red/green. | Tiers pass here, 0.2.8227 assets and bundles current, the owner accepts. | tickets/tasks/2026-10-04_fix_live_unlink_churn_phase_error_task.md | 2026-10-04T23:59:15Z | REQUIRED |
-| codecov_upload_tls | review | handoff | claude | melder_1 | none | Owner: keep as is (Note 16); accept or redirect; then close. | The Codecov upload retries once with the PyPI uploader when the signed download fails; diagnosis recorded. | Workflow suite passes here (481), llm_support check OK, and the owner accepts or redirects. | tickets/tasks/2026-10-05_diagnose_codecov_upload_tls_failure_task.md | 2026-10-06T09:45:54Z | REQUIRED |
-| agent_cicd_guide | review | handoff | claude | melder_1 | none | Owner: git add -A (six new .github/ci_cd/ pages) and push; keep the special instruction local or force-add it; accept or redirect. | Agents can read what each CI piece is for and how to extend it, and learn of the guide at onboarding. | Workflow suite passes here (500), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-05_write_agent_cicd_guide_task.md | 2026-10-05T12:07:51Z | REQUIRED |
-| rc_testpypi_recovery | review | handoff | claude | melder_1 | none | Owner: commit and push; Re-run all jobs on RC run 37443362134; accept or redirect. | A TestPyPI blip is retried and a failed-jobs RC re-run reuses the run's build; publication stays fresh-only. | Workflow suite passes here (512), assets and llm_support current, and the owner accepts or redirects. | tickets/tasks/2026-10-06_recover_release_candidate_from_testpypi_outage_task.md | 2026-10-06T09:56:18Z | REQUIRED |
+| correctness_defects | in_progress | handoff | claude | melder_1 | none | S1, S8 and S3 are turned in and the pass is rebuilt for 0.2.8263; S2 and S5 follow on the owner's word; S11 waits for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-19T14:25:39Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
+
+## Active Attention Details
+<!-- BEGIN USER-DEFINED: active_attention_details -->
+- WORK_ITEM: correctness_defects
+  SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-17_correctness_defects_epic.md
+<!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| static_codegen_strategies | done | fable_0 | tickets/stories/completed/2026-10-01_lazy_instance_results_story.md | S8 lazy instance_results shipped at 0.2.8217 (plan -26..-32% on dict-mode roots, generation 17); story and task turned in by owner directive; gauntlet Not run. Next: S2a (with S9/S11) on the owner's word. | 2026-10-03T21:22:15Z |
-| flat_warm_body | done | fable_0 | tickets/tasks/completed/2026-10-03_certify_and_implement_site_store_constants_task.md | S9 owner-store constants landed at 0.2.8221 (plan -7..-17% on roots with unique providers; dynamic plans byte-identical; no generation bump); S11 already true. Turned in by owner directive; suites and gauntlet Not run. Next: none. | 2026-10-04T00:13:33Z |
-| flat_warm_body_story | done | fable_0 | tickets/stories/completed/2026-10-03_flat_warm_body_constants_story.md | The S9/S11 story behind the task; S2a parked. Turned in by owner directive. Next: none. | 2026-10-04T00:13:33Z |
-| static_codegen_and_door_strategies | done | fable_0 | tickets/epics/completed/2026-10-01_static_codegen_and_door_strategies_epic.md | S1, S8 and S9 shipped (0.2.8216/0.2.8217/0.2.8221); S4 dropped, S2a parked; the door lane (D1-D5) not reached, its story parked in the backlog. Closed by owner directive; gauntlet ranking Not run. Next: the door lane under a new epic on the owner's word. | 2026-10-04T00:13:33Z |
-| reproduce_annotation_category_collision | done | fable_1 | tickets/tasks/completed/2026-10-03_reproduce_annotation_category_collision_task.md | Melder-only reproduction on 0.2.8221 (2 failed / 2 passed), the matcher read, the 441-frame survey, three options and the owner's DECISION (kind rule + concrete-class refusal). Closed by owner directive. Next: none. | 2026-10-04T12:05:00Z |
-| annotation_kind_matching | done | fable_1 | tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md | Landed at 0.2.8222 (notched from 0.2.8221): spellframe kind recorded on the binding, concrete-class frames refused (Breaking), kind-aware Phase 3, crystal frame kind (record 4.1.0), generation 20; 18 files swept, regressions added; docs/graph/assets current. Closed by owner directive; the four tiers after the final regressions Not run (owner-owed). Next: the owner's tier run and the Actions acceptance (story row). | 2026-10-04T12:05:00Z |
-| annotation_type_vs_category_matching_story | done | fable_1 | tickets/stories/completed/2026-10-03_annotation_type_vs_category_matching_story.md | Kind-matching repair landed at 0.2.8222; owner's Windows tiers green except the fixed-name cache temp race (backlog task). Turned in by owner directive; the Actions acceptance on a delivered build was not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
-| annotation_category_provider_collision | done | fable_1 | tickets/epics/completed/2026-10-03_annotation_category_provider_collision_epic.md | A type annotation never reads a same-named category as its provider set (0.2.8222); story and tasks completed. Closed by owner directive; consumer acceptance not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
-| rebind_after_first_meld_story | done | fable_1 | tickets/stories/completed/2026-10-03_rebind_after_first_meld_repair_story.md | Repair at 0.2.8219 with both tasks completed; turned in by owner directive, work package C not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
-| rebind_after_first_meld_epic | done | fable_1 | tickets/epics/completed/2026-10-03_rebind_after_first_meld_epic.md | Verdict retirement on unregister/register (0.2.8219); closed by owner directive, work package C not reported (owner). Next: none. | 2026-10-04T12:20:00Z |
-| ambiguous_provider_report | done | fable_1 | tickets/tasks/completed/2026-10-04_report_ambiguous_providers_in_validation_task.md | Ambiguous providers refuse through the readable report with every candidate's address and the remedies (0.2.8224); five pinned tests converted, 9 regressions. Closed by owner directive; full tiers owner-owed. Next: none. | 2026-10-04T17:35:00Z |
-| graph_external_base_targets | done | fable_1 | tickets/tasks/completed/2026-10-04_resolve_external_base_targets_in_graph_task.md | Extractor resolves `import X` dotted bases and builtins; zero unresolved targets in the shipped adjacency; the system-document-view test green; assets/bundles rebuilt (no notch). Next: none. | 2026-10-04T18:35:00Z |
+| readme_managed_spells | done | expert_1 | tickets/tasks/completed/2026-10-20_readme_managed_spell_intermediate_example_task.md | Dedicated intermediate example runs; 41 managed checks, 60 docs tests, 313-page build and local links pass. | 2026-10-20T10:44:56Z |
+| frame_link_cleanup_guard | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_frame_link_cleanup_guard_test_task.md | Deterministic guard check replaces timed workers; 14399 full-runtime passes without unhandled-thread warnings, 400 repeats and two rejected guard mutants. | 2026-10-20T10:16:36Z |
+| queue_deadline_wakeups | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_queue_deadline_wakeup_test_task.md | Deterministic deadline regression: 14399 full-runtime passes, 400 repeated cases, three rejected mutants; test-only repair. | 2026-10-20T00:39:01Z |
+| cluster_duplicate_add | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_cluster_duplicate_add_concurrency_task.md | Notched 0.2.8265: atomic admission, callback progress and retry verified; 272 cluster checks, 120 repeated cases and 14398 full-runtime passes. | 2026-10-19T23:41:23Z |
+| managed_spell_mode_failures | done | expert_1 | tickets/tasks/completed/2026-10-19_fix_managed_spell_mode_test_failures_task.md | Landed 0.2.8264: runtime enum import restores Spell constructor/mock reflection; all 51 reported cases pass, 14393 runtime passes and 274 post-notch passes; assets checked. | 2026-10-19T22:35:14Z |
+| spell_identity_is_the_code | done | melder_0 | tickets/epics/completed/2026-10-18_spell_identity_is_the_code_epic.md | Turned in on the owner's word: S1 (0.2.8257) and S2 (0.2.8258) landed; S3-S5 parked in the backlog with S6; the leftovers packaged by melder_1's 0.2.8259 rebuild. Next: S3-S6 on the owner's word. | 2026-10-19T00:49:20Z |
+| minted_index_registry | done | melder_1 | tickets/stories/completed/2026-10-17_minted_index_missing_from_frame_registry_story.md | Landed 0.2.8259 (S4 of EPIC-2026-10-17-correctness_defects: the index remove_from_spell_index mints is registered with the frame as bind registers its new one, unregistered at the root's teardown; residency reads its version parked). Next: S7 with melder_1; spellbook.py and spell.py back to melder_0 (M1-42). | 2026-10-19T00:21:48Z |
+| root_teardown_wording | done | melder_2 | tickets/tasks/completed/2026-10-19_correct_root_teardown_docs_wording_task.md | Documentation only, no src change: after the owner's review both documents say a root's teardown cleans what it holds (the children of out objects included) and that a raising disposal method is reported; the "open with the owner" framing is gone. Next: none. | 2026-10-19T00:43:26Z |
+| book_teardown_parked | done | melder_1 | tickets/stories/completed/2026-10-17_book_teardown_leaves_parked_versions_uncleaned_story.md | Landed 0.2.8260 (S7 of EPIC-2026-10-17-correctness_defects: a Spellbook's teardown retires its parked versions and cleans the indexes only they hold). Next: S8 on the owner's word; spellbook.py and spell.py back to melder_0 (M1-44). | 2026-10-19T01:32:05Z |
+| failed_notch_refusal | done | melder_1 | tickets/stories/completed/2026-10-17_failed_notch_keeps_switch_without_borrowers_story.md | Landed 0.2.8262 (S8 of EPIC-2026-10-17-correctness_defects: a notch whose incoming version fails its structural check is refused with nothing moved, its borrowers untouched). Next: S3's turn-in, then small fixes; the rebuild last. | 2026-10-19T13:24:30Z |
+| parked_cleanup_contracts | done | melder_0, melder_1 | tickets/stories/completed/2026-10-17_parked_cleanup_leaves_borrower_copies_story.md | Landed 0.2.8261 by melder_0 (S3 of EPIC-2026-10-17-correctness_defects: every cleanup_spell door takes a version out of every contract first); turned in by melder_1 on the owner's word. Next: small fixes; the rebuild last. | 2026-10-19T13:26:06Z |
+| staged_signature_claims | done | melder_1 | tickets/stories/completed/2026-10-17_staged_version_releases_active_signature_story.md | Landed 0.2.8263 (S1 of EPIC-2026-10-17-correctness_defects: staging, an index move back and a lone parked disposal keep the active spell's binding signature). Next: S2 and S5 on the owner's word. | 2026-10-19T14:25:39Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -203,29 +148,6 @@ Message alert rules
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
-- shallow_thread_scaling_ci: SWITCH_TRIGGER is the owner's acceptance of the dev-to-preprod thread-scaling job
-  (the hosted three-OS run is the owner's) or an owner redirect. RESUME_HIERARCHY:
-  tickets/tasks/2026-10-04_add_shallow_thread_scaling_to_preprod_benchmarks_task.md.
-- meldercache_suffix: SWITCH_TRIGGER is the owner's acceptance of the `.meldercache` rename or an owner
-  redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_rename_cache_suffix_to_meldercache_task.md.
-- preprod_ci_docs_and_bundles: SWITCH_TRIGGER is a green dev-to-preprod run after the owner's push, or
-  an owner redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-04_fix_preprod_ci_docs_api_and_bundle_drift_task.md.
-- ci_python_check_latest: SWITCH_TRIGGER is the owner's acceptance of the manifest-driven CI, every route
-  running all 27 runtime cells (ticket Notes 24-47), after the hosted runs, or an owner redirect. RESUME_HIERARCHY:
-  tickets/tasks/2026-10-04_use_newest_patch_in_single_version_ci_jobs_task.md.
-- descriptor_binding_name_case: SWITCH_TRIGGER is the regression tests passing with assets and bundles
-  current and the owner's acceptance, or an owner redirect. RESUME_HIERARCHY:
-  tickets/tasks/2026-10-04_match_descriptor_binding_names_like_bind_task.md.
-- live_unlink_churn_phase_error: SWITCH_TRIGGER is the owner's acceptance after the push, or an owner
-  redirect. RESUME_HIERARCHY:
-  tickets/tasks/2026-10-04_fix_live_unlink_churn_phase_error_task.md.
-- codecov_upload_tls: SWITCH_TRIGGER is the owner's acceptance of the PyPI fallback after the push, or an
-  owner redirect. RESUME_HIERARCHY:
-  tickets/tasks/2026-10-05_diagnose_codecov_upload_tls_failure_task.md.
-- agent_cicd_guide: SWITCH_TRIGGER is the owner's acceptance of the CI/CD guide folder, or an owner
-  redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-05_write_agent_cicd_guide_task.md.
-- rc_testpypi_recovery: SWITCH_TRIGGER is the owner's acceptance after a hosted release-candidate run (Notes
-  6-9), or an owner redirect. RESUME_HIERARCHY: tickets/tasks/2026-10-06_recover_release_candidate_from_testpypi_outage_task.md.
 ### Notch notice (fable_1, 2026-10-04)
 - fable_1 landed 0.2.8224 (ambiguous providers reported through Phase 4) and, before it, 0.2.8222 (annotation
   matching by kind; caching_system.py generation 20 `annotation_kind_matching`).
@@ -238,6 +160,117 @@ Message alert rules
   Notch above it if you land after.
 - melder_1 landed 0.2.8227 (a meld racing a link sever or uncontract raises SpellbookValidationError, not
   PhaseExecutionError). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-10)
+- melder_1 landed 0.2.8228 (scan_bind takes bind()'s target options; only an object's own declaration is
+  registered, once per scan). It is the first notch after the 0.2.8227 release and opens the running release
+  note. Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-11)
+- melder_1 landed 0.2.8229 (Spellbook.find_spell_by_id answers from the Book's id maps instead of walking the
+  live index map). Notch above it if you land after.
+- melder_1 landed 0.2.8230 (bind publishes the spell maps under the Book lock; unlocked spell-map walks take
+  snapshots; SpellIndex.has_spell and the contract details survive a racing cleanup; the Conduit spell lookups
+  document their ValueError). Notch above it if you land after.
+- melder_1 landed 0.2.8231 (index-link notifications walk the ward's contracts under the ward lock; contract reads
+  under the contract lock and the listing deadlock removed; cleanup_spell emits what the Book's disposal reports;
+  bind's cross-frame sweep reads a published frame view). Notch above it if you land after.
+- melder_1 landed 0.2.8232 (find_contracted_spell and inspect_spell walk one-call copies and hold no Book or conduit lock
+  while asking the frames; an overlapping cleanup_spell of one spell refuses). Notch above it if you land after.
+- melder_1 landed 0.2.8233 (a direct Spell.cleanup() removes the spell outside the spell lock, under a per-spell removal
+  lock, so it no longer hangs against Book teardown or conjure; cleanup_and_remove_spell re-checks a torn-down Book).
+  Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-12)
+- melder_1 landed 0.2.8234 (the kernel pools keep what a burst needed, up to 256, and decay back to 20 when quiet;
+  AbstractElasticPool's stretch and decay rewritten). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-14)
+- melder_1 landed 0.2.8235 (a slotted holder's disposal-bearing `many` children register in the holder's store,
+  not the meld's innermost scope; the opt-in singleton specializer declines graphs that feed a `many` step into
+  a non-`many` step). Notch above it if you land after.
+- melder_1 landed 0.2.8236 (a root's teardown leaves its cluster; the cloud's leave unshares the leaver's roots;
+  the cloud finds a conduit's cluster through the frame's membership index). Notch above it if you land after.
+- melder_1 landed 0.2.8237 (a cluster owns its team store: `unique_per_conduit_cluster` objects survive leader
+  changes, die with the cluster, and `delete_cluster` raises their disposal failures). Notch above it if you land after.
+- melder_1 landed 0.2.8238 (a slotted holder's disposal-bearing `many` children are recorded with the holder: purging
+  the holder disposes them, an ownership move carries them, a `many` purge of their spell leaves them). Notch above it
+  if you land after.
+- melder_1 landed 0.2.8239 (`transfer_spell_ownership` defaults to `move_creations=True`: the source's objects for
+  the spell move with it and a transfer disposes nothing). Notch above it if you land after.
+- melder_1 landed 0.2.8240 (docstring and docs only: `transfer_spell_ownership` says a transfer hands over
+  stewardship, not a working setup, and `include_dependencies` moves the direct dependencies). Notch above it if
+  you land after.
+### Notch notice (melder_0, 2026-10-15)
+- melder_0 landed 0.2.8241 (`Existence.managed_spell_quantity` declared: the matrix, the "managed" route family
+  and Phase 6 rank 0; S1 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land after.
+- melder_0 landed 0.2.8242 (the four `managed_spell_*` bind options, `ManagedSpellMode`, the Spell fields, the
+  managed-only id part, RecordVersion 4.2.0 with restore/graft replay; S2). Notch above it if you land after.
+- melder_0 landed 0.2.8243 (the managed pool `ManagedSpellQuantity` in the owning root's Creations,
+  `ManagedSpellExhaustedError`, the probes' managed answer and purge 0; S3). Notch above it if you land after.
+- melder_0 landed 0.2.8244 (`ReleaseManagedSpell`, the Aether-owned registry that gives managed objects back,
+  `ManagedSpellLease` and four package-root exports; S4). Notch above it if you land after.
+- melder_0 landed 0.2.8245 (managed objects leased through the emitted plans and doors - direct melds and
+  injections - and `Conduit.managed_spell_meld`; S5). Notch above it if you land after.
+- melder_0 landed 0.2.8246 (an ownership transfer stamps every version onto the new owner and a failed one stamps
+  them back, discarding the empty pools its stamps composed; `Creations.discard_managed_quantity`; S6). Notch above
+  it if you land after.
+### Notch notice (melder_1, 2026-10-16)
+- melder_1 landed 0.2.8247 (a lineage whose selected version was bound resolvable=False carries
+  `SpellState.non_resolvable` and no longer holds its Book's validation flag up; `register_index(resolvable=...)`
+  at bind, notch and the transfer flip and rollback). Notch above it if you land after.
+- melder_1 landed 0.2.8250 (a satisfied SpellContract is not checked on every meld: the borrower Book's
+  contracted-map mutators and a notch's downstream walk mark contract consumers and dependents for revalidation,
+  the meld refreshes their stale dependencies before a plan compiles, a lost provider is named with its remedy, and
+  a notch back reactivates a parked version grant;
+  TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if you land after.
+- melder_1 landed 0.2.8251 (`Spellbook._remove_contracted_spell` removes exactly the copy of the spell_id it is
+  given - the active copy only when it is that version, else the parked copy - so an index unlink after a notch
+  completes in any member order; TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it
+  if you land after.
+### Notch notice (melder_0, 2026-10-16)
+- melder_0 landed 0.2.8248 (conjure wires the versions staged with `bind_inactive` before it, so they meld after a
+  notch; creation cache generation 21; S8 of EPIC-2026-10-14-managed_spell_quantity). Notch above it if you land
+  after.
+- melder_0 landed 0.2.8249 (`Conduit.notch_spell` takes `spell_id=` - the spell_id `bind` or `bind_inactive`
+  returned - beside `spell=`, exactly one, and checks its target before and inside its transaction; on the owner's
+  extension `add_to_spell_index` and `remove_from_spell_index` take `spell_id=` too;
+  TASK-2026-10-16-public_notch_target_for_staged_versions). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-17)
+- melder_1 landed 0.2.8253 (a spell_id lookup answers the spell it names: `Spellbook.find_spell_by_spell_id` and
+  `Conduit.get_spell_by_spell_id`, renamed from `find_spell_by_id` / `get_spell_by_id` with no alias, return the
+  active or parked version the spell_id names, and the Rift rooms' command is renamed with them;
+  TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if you land after.
+### Notch notice (melder_0, 2026-10-18)
+- melder_0 landed 0.2.8254 (a managed spell's four settings - mode, limit, queue timeout, reset names - are not part
+  of its spell_id; a rebind under the same spell_id gives its pool the new settings; creation cache generation 22;
+  STORY-2026-10-17-release_routes_parked_version_objects_to_active_pool, part A). Notch above it if you land after.
+- melder_0 landed 0.2.8257 (a spell_id is the SHA256 of the registered object's code, nothing from the bind call;
+  one object is one spell; S1 of EPIC-2026-10-18-spell_identity_is_the_code) and 0.2.8258 (the binding manifest and
+  its hash in both cache tiers and the SpellCrystal, record 4.3.0, creation cache generation 23; S2). Notch above it
+  if you land after.
+### Notch notice (melder_1, 2026-10-18)
+- melder_1 landed 0.2.8255 (docstrings and comments call a SpellIndex a SpellIndex; lineage stays for the conduit
+  scope tree; nothing renamed; TASK-2026-10-16-recheck_contract_consumers_when_provider_changes). Notch above it if
+  you land after.
+- melder_1 landed 0.2.8256 (`Spellbook.cleanup_and_remove_spell` and a direct `Spell.cleanup()` refuse the active
+  version of an index that holds parked versions, as `cleanup_spell` does, all three naming the remedies;
+  STORY-2026-10-17-direct_cleanup_of_active_member_orphans_parked_versions). Notch above it if you land after.
+- melder_1 landed 0.2.8259 (the index `remove_from_spell_index` mints is registered with the frame as `bind` registers
+  the index it creates and leaves with its root; residency reads its version parked until a notch;
+  STORY-2026-10-17-minted_index_missing_from_frame_registry). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-19)
+- melder_1 landed 0.2.8260 (a Spellbook's teardown retires its parked versions and cleans the indexes only they hold;
+  STORY-2026-10-17-book_teardown_leaves_parked_versions_uncleaned). Notch above it if you land after.
+### Notch notice (melder_0, 2026-10-19)
+- melder_0 landed 0.2.8261 (`cleanup_spell` takes a version out of every contract of its Book's root conduit
+  - index links and version grants - before it disposes it, and the Spellbook's own door goes through the
+  root conduit; STORY-2026-10-17-parked_cleanup_leaves_borrower_copies). No rebuild, on the owner's word:
+  melder_1's S8 landing rebuilds for both. Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-19, S8)
+- melder_1 landed 0.2.8262 (a notch whose incoming version fails its structural check is refused with nothing moved
+  and its borrowers untouched; `SpellbookValidationError` takes a one-line `preface`;
+  STORY-2026-10-17-failed_notch_keeps_switch_without_borrowers). Notch above it if you land after.
+### Notch notice (melder_1, 2026-10-19, S1)
+- melder_1 landed 0.2.8263 (staging, an index move back and a lone parked disposal keep the active spell's
+  binding signature: `_destroy_spell_index` drops only its own route and releases only the departing member's
+  claim; STORY-2026-10-17-staged_version_releases_active_signature). Notch above it if you land after.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.
@@ -262,6 +295,12 @@ Message alert rules
 ### Device VM Python (melder_0, 2026-09-27)
 - Bare `python3` in the device VM is the system CPython 3.10 and cannot be repointed (read-only PATH dirs, no
   sudo). Load a 3.14 venv in every device command (for melder_0: `. ~/.melder_env`); the repository floor is 3.14.
+### Device VM disk (melder_1, 2026-10-11)
+- `/sessions` (9.8 GB) holds every Cowork session's home and its TMPDIR, and it is full: about 39 old session
+  folders own ~8.9 GB, and one session cannot read or delete another's. pytest's tmp_path and tempfile then fail
+  with ENOSPC (it broke the crystallizer integration tests on 2026-10-11), and the shell tool itself can fail to
+  start. Run tests on the VM with `export TMPDIR=/tmp/<your scratch>/tmp` (`/` has free space), keep scratch
+  trees under /tmp, and delete them when the lane lands. Freeing `/sessions` is the owner's (the desktop app).
 ### Versioning and releases (owner, 2026-09-27)
 - Superseded the 2026-09-26 "0.01 per change" note: the rule is now 0.0001 per honest change to `src/`
   (not per ticket), written as four decimal digits in the third segment (`0.2.82` -> `0.2.8201`), releases at

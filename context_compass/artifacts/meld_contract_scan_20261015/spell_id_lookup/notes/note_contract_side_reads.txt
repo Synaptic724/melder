@@ -1,0 +1,50 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Origins 2-6 re-examined id by id on 0.2.8253 (each method and its callers read whole; probe in four worlds,
+    GIL off and on identical). The borrower holds each borrowed version under its own spell_id - active copies in
+    `_contracted_spells_by_id`, parked ones in `_inactive_contracted_spells` - and the lender keeps one `Detail` row
+    per granted version, keyed by that spell_id. (1) `Spellbook._find_contracted_spell_by_id` (behind
+    `Conduit.find_contracted_spell` and the inbound half of `get_spells_in_contract_by_conduit`) and
+    `ConduitWard._get_spell_in_contracts` (behind `Conduit.get_spell_in_contracts` and the capability and codegen
+    rooms' command) take a version's spell_id and, unless it is an active copy, answer the borrower's active copy of
+    that version's index: index link with English active and French parked - French's spell_id -> English, though
+    the borrower holds French; English granted, French never granted - French's spell_id -> English; English granted,
+    notch, French granted - English's spell_id -> French; English granted and parked by a notch - None. The inbound
+    listing pairs French's row with English's Spell and English's row with French's Spell, and drops a parked grant's
+    row. (2) `get_all_spells_in_contracts` asks what the conduit can consume now - an index question, so resolving
+    each row's index is right and every pair it returns is self-consistent; it lists a lineage once per row
+    (duplicates). (3) `_validate_contracts_and_define` checks a version row by its index's active copy, so a grant
+    parked by a notch away - the 0.2.8250 design - makes the contract invalid, `validate_received_contracts()` False
+    and `get_all_spells_in_contracts()` raise "One or more contracts are invalid..." until the lender notches back.
+    (4) `_remove_spell_from_contract` invalidates by the key of the copy (1) returns; for a parked grant that is None,
+    which `_invalidate_contract_consumers` reads as every SpellContract consumer of the Book: removing a parked
+    English grant gated an unrelated consumer (Ticker, provider Clock, never changed) and took its stored object out
+    of the store; with English active (control) Ticker was untouched. (5) `Detail` stores the version's spell_id and
+    its index; its docstring's "where they disagree, the index resolves the current head" describes what only an
+    `IndexDetail` does since 0.2.8250, and `Detail.has_spell` answers lineage membership - what lets (1) answer a
+    French that was never granted.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:3041-3093
+  - src/melder/aether/conduit/conduit.py:3288-3341
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3591-3664
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3668-3723
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3483-3587
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3915-3973
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:3209-3350
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2690-2748
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-246
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_contract_side_reads.py:1-175
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_contract_side_reads_gil0.txt:1-45
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_contract_side_reads_gil1.txt:1-49
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/probes/probe_parked_grant_removal_scope.py:1-112
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_parked_grant_removal_scope_gil0.txt:1-11
+  - context_compass/artifacts/meld_contract_scan_20261015/spell_id_lookup/runs/probe_parked_grant_removal_scope_gil1.txt:1-11
+  IMPACT: Real, with scenarios: (1) wrong answers from spell_id lookups and listings (read side; melds resolve by
+    binding key and never go through these reads); (3) a by-design parked grant reported broken and the listing
+    raising; (4) an unrelated consumer's stored object dropped. (2) is right in principle (duplicates only). No src
+    change without the owner's word.
+  NEXT: Record what is by design or withdrawn, then the re-check of the other findings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

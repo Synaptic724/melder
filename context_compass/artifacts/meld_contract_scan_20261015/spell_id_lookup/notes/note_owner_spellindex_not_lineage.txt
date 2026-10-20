@@ -1,0 +1,24 @@
+- DATETIME: {ts}
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's correction and direction (chat 2026-10-18): a SpellIndex is not a lineage - it is an index
+    that organizes spells, like a table index in SQL, and it has one selected spell; "lineage is for a scope tree" (a
+    root conduit and its lessers). Three different things: a spell_id names exactly one spell; a SpellIndex organizes
+    spells and selects one of them; a lineage is a conduit scope tree. Direction: "fix that ... remove that" - every
+    place the code or the docs call a SpellIndex (or its member set) a lineage is reworded; places where lineage
+    means the conduit scope tree stay as they are. melder_1 had repeated the code's wording ("lineage identity",
+    "a spell index holds a lineage of versions") in its explanations and in the Notes of 00:55Z-00:56Z; those Notes'
+    findings stand, read with "the SpellIndex the spell sits in" wherever they say lineage.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:14-246
+  - src/melder/aether/conduit/conduit_ward/contract/details.py:249-497
+  - src/melder/aether/spellbook/bind/spell_index.py:83-116
+  - context_compass/system_docs/src_architecture.md:19-19
+  IMPACT: A wording change across src docstrings and comments, the system documents, the graph's authored prose and
+    the docs, classified occurrence by occurrence (never a blanket replace); identifiers keep their names unless the
+    owner says otherwise; src docstrings take a notch, a release-note line and a rebuild; files melder_0's lane holds
+    are coordinated through the mailbox first.
+  NEXT: Inventory every "lineage" occurrence, by tree and file.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

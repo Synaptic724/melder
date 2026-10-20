@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/view_multiframe.py",
- "source_sha256": "32cbf6453a0c3e21449046dd1d22ffa7afbbd81500cf39fe43ac0ae30e6875b9",
+ "source_sha256": "3226c5e625b5f8c904c5caa03f44491552bffb95fe2cb5fad7730bbc57c03272",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.view_multiframe": {
@@ -82,7 +82,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d2c991529e1e91c129e30dc0463a62ba0cbe6eaf2a12b75a2ddcbe881ab3bd7c",
+   "span_sha256": "93bf31b92afdbb2198bbd228ca04da68af250dd19e35825c6c20e0b4448e7de2",
    "role": "Cross-frame descriptor helper surface for FrameViewer.",
    "responsibilities": [
     "reuses FrameViewer utilities for multi-frame inventory and comparison behavior",

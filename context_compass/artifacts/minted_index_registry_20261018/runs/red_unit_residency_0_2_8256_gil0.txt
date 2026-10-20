@@ -1,0 +1,10 @@
+......................F...............                                   [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert 'active' == 'parked'
+      
+      - parked
+      + active
+tests/unit/melder/mutation_research/test_mutation_research_root.py:551: AssertionError: assert 'active' == 'parked'
+=========================== short test summary info ============================
+FAILED tests/unit/melder/mutation_research/test_mutation_research_root.py::test_residency_view_reads_a_selected_version_no_lineage_tracks_as_parked
+1 failed, 37 passed in 5.83s

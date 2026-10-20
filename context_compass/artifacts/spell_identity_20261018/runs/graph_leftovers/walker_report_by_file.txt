@@ -1,0 +1,257 @@
+  593 descriptors, 1236 nodes
+
+  state               count   share
+  ------------------ ------   -----
+  AUTHORED             1001    81.0%
+  SEMANTICS_STALE       221    17.9%
+  UNSEMANTIC              9     0.7%
+  RETIRED                 5     0.4%
+
+  SEMANTICS_STALE - re-read the source, then --accept:
+    melder.__architecture__  (src/melder/__architecture__.py)
+    melder.__author__  (src/melder/__author__.py)
+    melder.__components__  (src/melder/__components__.py)
+    melder.__description__  (src/melder/__description__.py)
+    melder.__graph_details__  (src/melder/__graph_details__.py)
+    melder.__graph_network__  (src/melder/__graph_network__.py)
+    melder.__license__  (src/melder/__license__.py)
+    melder.__melder_cache__.__melder_cache__  (src/melder/__melder_cache__/__melder_cache__.py)
+    melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset  (src/melder/_build_assets/_agent_documentation/agent_documentation.py)
+    melder._build_assets._bind_guard.bind_guard.BindGuardAsset  (src/melder/_build_assets/_bind_guard/bind_guard.py)
+    melder.aether.aether.Aether  (src/melder/aether/aether.py)
+    melder.aether.aether_configuration.AetherConfiguration  (src/melder/aether/aether_configuration.py)
+    melder.aether.aether_configuration_builder.AetherConfigurationBuilder  (src/melder/aether/aether_configuration_builder.py)
+    melder.aether.aether_utility_system.AetherUtilitySystem  (src/melder/aether/aether_utility_system.py)
+    melder.aether.aetheric_frame.aetheric_frame.AethericFrame  (src/melder/aether/aetheric_frame/aetheric_frame.py)
+    melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration  (src/melder/aether/aetheric_frame/aetheric_frame_configuration.py)
+    melder.aether.aetheric_frame.conduit_cloud.ConduitCloud  (src/melder/aether/aetheric_frame/conduit_cloud.py)
+    melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager  (src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py)
+    melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager  (src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py)
+    melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident  (src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py)
+    ... +201 more
+
+  RETIRED - prose retained, gone from source:
+    melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind  (was in src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py)
+    melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef  (was in src/melder/aether/spellbook/spell_compiler/dag/dag_index.py)
+    melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex  (was in src/melder/aether/spellbook/spell_compiler/dag/dag_index.py)
+    melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine  (was in src/melder/aether/spellbook/spell_compiler/dag/dag_index.py)
+    melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder  (was in src/melder/aether/spellbook/spell_compiler/dag/dag_index.py)
+
+  BY SOURCE - where the work is (211 with any):
+
+   unsem  stale   auth   source
+       1      6      2   src/melder/utilities/ai_native_support_tools/system_document_view.py
+       0      3      1   src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py
+       0      3      4   src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py
+       0      2      1   src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
+       0      2      1   src/melder/aether/conduit/conduit_ward/contract/details.py
+       0      2      7   src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py
+       2      0      0   src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py
+       2      0      0   src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
+       0      2      1   src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
+       2      0      0   src/melder/nexus/configuration/nexus_configuration_builder.py
+       0      2      3   src/melder/utilities/ai_native_support_tools/agent_text_reader.py
+       0      2      3   src/melder/utilities/helpers/class_surface_ast_describer.py
+       0      1      0   src/melder/__architecture__.py
+       0      1      0   src/melder/__author__.py
+       0      1      0   src/melder/__components__.py
+       0      1      0   src/melder/__description__.py
+       0      1      0   src/melder/__graph_details__.py
+       0      1      0   src/melder/__graph_network__.py
+       0      1      0   src/melder/__license__.py
+       0      1      0   src/melder/__melder_cache__/__melder_cache__.py
+       0      1      1   src/melder/_build_assets/_agent_documentation/agent_documentation.py
+       0      1      1   src/melder/_build_assets/_bind_guard/bind_guard.py
+       1      0      1   src/melder/_build_assets/_system_documents/system_documents.py
+       0      1      1   src/melder/aether/aether.py
+       0      1      1   src/melder/aether/aether_configuration.py
+       0      1      1   src/melder/aether/aether_configuration_builder.py
+       0      1      1   src/melder/aether/aether_utility_system.py
+       0      1      1   src/melder/aether/aetheric_frame/aetheric_frame.py
+       0      1      1   src/melder/aether/aetheric_frame/aetheric_frame_configuration.py
+       0      1      1   src/melder/aether/aetheric_frame/conduit_cloud.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
+       0      1      1   src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py
+       0      1      1   src/melder/aether/aetheric_frame/lookup_container.py
+       0      1      2   src/melder/aether/aetheric_mediator/information_registry.py
+       0      1      1   src/melder/aether/aetheric_mediator/mediator.py
+       0      1      2   src/melder/aether/aetheric_mediator/participation.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py
+       0      1      1   src/melder/aether/aetheric_mediator/unwind_conflict_error.py
+       0      1      1   src/melder/aether/conduit/conduit.py
+       0      1      1   src/melder/aether/conduit/conduit_cluster.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/conduit_ward.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/contract/contract.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/contract/detail_reason.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/permissions/permissions.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/policies/policies.py
+       0      1      1   src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
+       0      1      1   src/melder/aether/conduit/creations/cluster_creations.py
+       0      1      1   src/melder/aether/conduit/creations/release_managed_spell.py
+       0      1      1   src/melder/aether/conduit/meld/conduit_meld.py
+       0      1      1   src/melder/aether/conduit/meld/contracts/spell_contract.py
+       0      1      1   src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
+       0      1      1   src/melder/aether/conduit/meld/meld.py
+       0      1      1   src/melder/aether/conduit/meld/spellspace_meld.py
+       0      1      1   src/melder/aether/conduit/spell_space/spell_space.py
+       0      1      1   src/melder/aether/spellbook/bind/spell_index.py
+       0      1      1   src/melder/aether/spellbook/configuration/spellbook_configuration.py
+       0      1      1   src/melder/aether/spellbook/spell.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py
+       0      1      2   src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_codegen_creation_discovery_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/solo_codegen_creation_discovery_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py
+       0      1      4   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_creation_cache.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/hydration/solo_hydrator.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_creation_cache.py
+       0      1      0   src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_11.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/spell_compiler.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py
+       0      1      1   src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
+       0      1      1   src/melder/aether/spellbook/spellbinder.py
+       0      1      1   src/melder/aether/spellbook/spellbook.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/crystal_analyzer.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/impact_engine.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py
+       0      1      2   src/melder/crystallizer/crystal_analysis/strategies/base_strategy.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/strategies/from_import_statement_strategy.py
+       0      1      1   src/melder/crystallizer/crystal_analysis/strategies/import_statement_strategy.py
+       0      1      1   src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
+       0      1      1   src/melder/crystallizer/crystal_loader_system/load_admission.py
+       0      1      2   src/melder/crystallizer/crystal_loader_system/restore_engine.py
+       0      1      0   src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py
+       0      1      1   src/melder/crystallizer/crystallizer.py
+       0      1      1   src/melder/crystallizer/crystals/cluster_crystal.py
+       0      1      1   src/melder/crystallizer/crystals/conduit_crystal.py
+       0      1      1   src/melder/crystallizer/crystals/contract_crystal.py
+       0      1      1   src/melder/crystallizer/crystals/spell_index_crystal.py
+       0      1      1   src/melder/crystallizer/persistence/persistence_crystal.py
+       0      1      1   src/melder/crystallizer/persistence/persistence_profile.py
+       0      1      1   src/melder/crystallizer/persistence/persistence_system.py
+       0      1      1   src/melder/mutation_research/mutation_research.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/codegen/precision.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
+       0      1      0   src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/command/precision.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/command/safe_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/view/precision.py
+       0      1      1   src/melder/nexus/acl/configurations/profiles/view/safe_profile.py
+       0      1      1   src/melder/nexus/acl/frame_acl_compiled_access_surface.py
+       0      1      1   src/melder/nexus/acl/frame_acl_compiler.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/command/precision_strategy.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/command/safe_strategy.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/common.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/view/precision_strategy.py
+       0      1      0   src/melder/nexus/acl/validator/profiles/view/safe_strategy.py
+       0      1      1   src/melder/nexus/configuration/rift_space_type.py
+       0      1      1   src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py
+       0      1      1   src/melder/nexus/frame_descriptor/conduit_record.py
+       0      1      1   src/melder/nexus/frame_descriptor/spell_record.py
+       0      1      1   src/melder/nexus/frame_descriptor_manager.py
+       0      1      1   src/melder/nexus/nexus.py
+       0      1      1   src/melder/nexus/nexus_frame_manager.py
+       0      1      1   src/melder/nexus/rift/codegen_system/codegen_system.py
+       0      1      1   src/melder/nexus/rift/command_system/capability_command_system.py
+       0      1      1   src/melder/nexus/rift/command_system/codegen_command_system.py
+       0      1      1   src/melder/nexus/rift/command_system/command_system.py
+       0      1      1   src/melder/nexus/rift/frame_viewer/frame_viewer.py
+       0      1      0   src/melder/nexus/rift/frame_viewer/view_action_hooks.py
+       0      1      1   src/melder/nexus/rift/frame_viewer/view_frame.py
+       0      1      1   src/melder/nexus/rift/frame_viewer/view_multiframe.py
+       0      1      1   src/melder/nexus/rift/frame_viewer/view_spell.py
+       0      1      1   src/melder/nexus/rift/rift.py
+       0      1      1   src/melder/nexus/rift/rift_space/codegen_rift_space.py
+       0      1      1   src/melder/nexus/rift/rift_space/workstation.py
+       0      1      1   src/melder/system_document.py
+       0      1      1   src/melder/utilities/caching_system/asset_cache.py
+       0      1      1   src/melder/utilities/custom_exceptions/hook_execution_error.py
+       0      1      1   src/melder/utilities/custom_exceptions/managed_spell_exhausted_error.py
+       0      1      1   src/melder/utilities/custom_exceptions/meld_execution_error.py
+       0      1      1   src/melder/utilities/custom_exceptions/spell_space_scope_error.py
+       0      1      1   src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+       0      1      2   src/melder/utilities/helpers/general_helpers.py
+       0      1      1   src/melder/utilities/helpers/package.py
+       1      0      1   src/melder/utilities/helpers/ulid_factory.py
+
+  Nothing was written. Semantics must be AUTHORED BY READING THE CODE -
+  `owns_lifecycle_of`, `uses` and `borrows` are the same syntax, so a
+  name-based guess is worse than leaving a node unsemantic.

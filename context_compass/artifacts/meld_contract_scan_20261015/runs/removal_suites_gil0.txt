@@ -1,0 +1,23 @@
+tree | unit_aether | rc=0 | secs=22 | 4528 passed in 21.64s
+tree | unit_sb | rc=0 | secs=7 | 2582 passed in 5.63s
+tree | unit_util | rc=0 | secs=10 | 831 passed, 2 skipped, 7 xfailed in 9.08s
+tree | comp_aether | rc=0 | secs=21 | 1386 passed, 1 xfailed in 19.58s
+tree | comp_sb | rc=0 | secs=24 | 819 passed in 23.56s
+tree | int_conduit | rc=0 | secs=9 | 350 passed, 1 xpassed in 8.85s
+tree | int_sb | rc=0 | secs=9 | 647 passed, 2 skipped, 2 xpassed in 7.36s
+tree | int_mt | rc=0 | secs=18 | 54 passed in 17.80s
+tree | int_aether | rc=0 | secs=22 | 808 passed, 5 xfailed in 20.58s
+tree | int_cryst | rc=0 | secs=71 | 276 passed, 3 xfailed in 70.94s (0:01:10)
+tree | unit_cryst | rc=0 | secs=7 | 607 passed in 5.69s
+tree | comp_cryst | rc=0 | secs=2 | 110 passed in 0.98s
+tree | unit_mr | rc=0 | secs=2 | 277 passed in 1.86s
+tree | comp_mr | rc=0 | secs=2 | 40 passed in 0.83s
+tree | int_mr | rc=0 | secs=2 | 67 passed in 1.12s
+tree | unit_top | rc=1 | secs=6 | 1 failed, 145 passed in 5.01s
+tree | int_live | rc=0 | secs=1 | 1 passed, 1 xfailed in 0.29s
+tree | exper | rc=0 | secs=13 | 250 passed, 4 skipped in 11.83s
+tree | unit_build | rc=0 | secs=3 | 116 passed in 2.63s
+tree | unit_arch | rc=0 | secs=1 | 18 passed in 0.09s
+tree | unit_llm | rc=0 | secs=1 | 28 passed in 0.08s
+tree | unit_gh | rc=0 | secs=3 | 491 passed in 2.44s
+tree | comp_util | rc=0 | secs=3 | 41 passed, 23 skipped in 1.84s

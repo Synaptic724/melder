@@ -1391,8 +1391,10 @@ class MutationResearch(Cleanable):
         Contract:
             - Total read: never raises for unknown identities (empty sha is
               the only refusal); every uncertainty reports honestly.
-            - `runtime` verdicts: `active` (some index's selected member),
-              `parked` (a live index member, not selected), `stored`
+            - `runtime` verdicts: `active` (some index's selected member that
+              its lineage tracks as current), `parked` (any other live index
+              member - a version moved into an index of its own stays parked
+              until a notch, though that index selects it), `stored`
               (custody only), `declared_only` (record only), `unknown`
               (nowhere, incl. custody unavailable).
             - `in_custody` is None when the crystallizer is not recording
@@ -1494,10 +1496,18 @@ class MutationResearch(Cleanable):
                 Identity to locate.
 
         Contract:
-            - Scans EVERY live frame: a selected (active) membership
-              anywhere wins over any unselected membership, honoring the
-              residency contract's active-if-any verdict rule.
-            - When no frame selects the identity, the first live unselected
+            - Scans EVERY live frame: an active membership anywhere wins
+              over any parked one, honoring the residency contract's
+              active-if-any verdict rule.
+            - Active means the index selects the identity AND the frame's
+              lineage registry tracks it as that index's current version
+              (`SpellSystemStates.get_by_index_id(...).current_spell_id`). The
+              index `remove_from_spell_index` mints selects its parked member
+              (activation takes a notch) and no lineage tracks that member
+              until a notch registers it, so it reads parked
+              (minted_index_registry, 0.2.8259). The state is read by index id:
+              `get_by_spell_id` also answers a version a notch moved away from.
+            - When no frame holds the identity active, the first live
               membership (frame iteration order) is reported as parked.
 
         Returns:
@@ -1513,11 +1523,16 @@ class MutationResearch(Cleanable):
                 if frame.cleaned:
                     continue
                 index = frame.find_index_for_spell(spell_id)
+                state = (
+                    None if index is None
+                    else frame.spell_system_states.get_by_index_id(index.id)
+                )
+                tracked = state is not None and state.current_spell_id == spell_id
             except Exception:
                 continue
             if index is None or index.cleaned:
                 continue
-            if index.selected_spell_id == spell_id:
+            if tracked and index.selected_spell_id == spell_id:
                 return frame_name, index.id, True
             if parked_frame is None:
                 parked_frame = frame_name

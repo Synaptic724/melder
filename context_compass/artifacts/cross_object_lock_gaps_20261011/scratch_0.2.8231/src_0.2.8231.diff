@@ -1,0 +1,664 @@
+diff -r base/src/melder/aether/aether.py cand/src/melder/aether/aether.py
+193a194,198
+>                 # Immutable (name, frame) view of _aetheric_frames, republished under the Aether lock by
+>                 # every registry write (frame birth, detach, teardown). Readers that must visit every frame -
+>                 # bind's cross-frame duplicate sweep - take it in one read instead of copying the dict per
+>                 # call (cross_object_lock_gaps, 0.2.8231).
+>                 self._aetheric_frame_view: tuple[tuple[str, AethericFrame], ...] = ()
+298a304
+>                     self._aetheric_frame_view = ()
+312a319
+>                 del self._aetheric_frame_view
+456a464
+>             self._aetheric_frame_view = tuple(self._aetheric_frames.items())
+1298a1307
+>             self._aetheric_frame_view = tuple(self._aetheric_frames.items())
+1431a1441
+>             self._aetheric_frame_view = tuple(self._aetheric_frames.items())
+2534a2545,2550
+>         Threading:
+>             The cross-frame sweep holds no Aether lock and copies nothing: it walks
+>             the immutable frame view the registry's writers republish under the
+>             Aether lock, and asks each other frame through its cleanup-safe probes,
+>             so a frame born, cleaned or detached meanwhile never makes it raise.
+>             (cross_object_lock_gaps, 0.2.8231)
+2575c2591,2598
+<         if len(self._aetheric_frames) <= 1:
+---
+>         # The published frame view: one read, no copy of the registry per call. Frame birth
+>         # (_ensure_frame_locked, _create_frame) and detach (_detach_cleaned_frame) write the registry
+>         # under the Aether lock and the plane's FRAME_CREATE claim, neither of which a bind holds, so a
+>         # live walk raised "dictionary changed size during iteration". A frame born after the view
+>         # was read holds no spell yet; one being torn down holds nothing, so the cleanup-safe probes
+>         # answer for it as empty (cross_object_lock_gaps, 0.2.8231).
+>         frames = self._aetheric_frame_view
+>         if len(frames) <= 1:
+2578c2601
+<         for other_name, other_frame in self._aetheric_frames.items():
+---
+>         for other_name, other_frame in frames:
+2581,2582c2604,2605
+<             if other_frame.has_spell(spell_id):
+<                 return other_frame.find_index_for_spell(spell_id)
+---
+>             if other_frame._has_spell_unless_cleaned(spell_id):
+>                 return other_frame._find_index_for_spell_unless_cleaned(spell_id)
+2776a2800,2805
+>         Threading:
+>             The cross-frame sweep holds no Aether lock and copies nothing: it walks
+>             the immutable frame view the registry's writers republish under the
+>             Aether lock, and asks each other frame through its cleanup-safe probes,
+>             so a frame born, cleaned or detached meanwhile never makes it raise.
+>             (cross_object_lock_gaps, 0.2.8231)
+2799c2828,2835
+<         if len(self._aetheric_frames) <= 1:
+---
+>         # The published frame view: one read, no copy of the registry per call. Frame birth
+>         # (_ensure_frame_locked, _create_frame) and detach (_detach_cleaned_frame) write the registry
+>         # under the Aether lock and the plane's FRAME_CREATE claim, neither of which a bind holds, so a
+>         # live walk raised "dictionary changed size during iteration". A frame born after the view
+>         # was read holds no spell yet; one being torn down holds nothing, so the cleanup-safe probes
+>         # answer for it as empty (cross_object_lock_gaps, 0.2.8231).
+>         frames = self._aetheric_frame_view
+>         if len(frames) <= 1:
+2803c2839
+<         for other_name, other_frame in self._aetheric_frames.items():
+---
+>         for other_name, other_frame in frames:
+2806c2842
+<             combined |= other_frame.spells_in_index()
+---
+>             combined |= other_frame._spells_in_index_unless_cleaned()
+diff -r base/src/melder/aether/aetheric_frame/aetheric_frame.py cand/src/melder/aether/aetheric_frame/aetheric_frame.py
+242a243,248
+> 
+>         Lifecycle:
+>             Deletes the frame's owned references but keeps `_lock` (and the
+>             `_cleaned` flag), so a reader that holds the frame - Aether's cross-frame
+>             sweep - can take the lock on a cleaned frame and read `_cleaned` under it.
+>             (cross_object_lock_gaps, 0.2.8231)
+270c276,279
+<         del self._lock
+---
+>         # `_lock` is kept, a documented post-cleanup field: the cleanup-safe probes
+>         # (`_has_spell_unless_cleaned` and kin) and the re-checks in has_spell and
+>         # spells_in_index take it on a frame another thread may have cleaned, as Spell
+>         # keeps its lock for `_spell_index_unless_cleaned` (cross_object_lock_gaps, 0.2.8231).
+864a874,877
+> 
+>         Raises:
+>             RuntimeError: If the frame is cleaned, including by a cleanup that
+>                 races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
+870a884,886
+>             # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+>             # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+>             self.check_cleaned()
+889a906,914
+> 
+>         Raises:
+>             RuntimeError: If the frame is cleaned, including by a cleanup that
+>                 races this call (checked again under the frame lock). (cross_object_lock_gaps, 0.2.8231)
+> 
+>         Threading:
+>             Holds the frame lock for the read and takes each conjured Book's live
+>             `_spell_ids` with one `set.update` call, so a bind into that Book on
+>             another thread cannot tear the copy. (cross_object_lock_gaps, 0.2.8231)
+893a919,921
+>             # Again under the lock cleanup() deletes the registries under: a racing cleanup raises the
+>             # documented RuntimeError, never AttributeError (cross_object_lock_gaps, 0.2.8231).
+>             self.check_cleaned()
+896a925,927
+>             # One update call per conjured Book: each value is a LIVE reference to that Book's `_spell_ids`, which
+>             # the Book writes under its own lock, not this one, so an element-by-element copy raised "Set changed
+>             # size during iteration" while that Book bound (cross_object_lock_gaps, 0.2.8231).
+898,899c929
+<                 for spell_id in spell_id_set:
+<                     result.add(spell_id)
+---
+>                 result.update(spell_id_set)
+936a967,1052
+>     def _has_spell_unless_cleaned(self, spell_id: str) -> bool:
+>         """
+>         Internal
+> 
+>         `has_spell` for a caller that does not own this frame: False once the
+>         frame is cleaned instead of raising.
+> 
+>         Purpose:
+>             Let Aether's cross-frame duplicate sweep ask a frame that another
+>             thread may be tearing down; a frame being torn down holds nothing.
+> 
+>         Returns:
+>             bool: `has_spell(spell_id)` while the frame is live; False when cleaned.
+> 
+>         Threading:
+>             Takes the frame lock once - the lock cleanup() sets `_cleaned` and
+>             deletes the registries under, and keeps - so the check and the read
+>             cannot interleave with it. The membership test is `has_spell`'s: one
+>             `in` per conjured Book's live `_spell_ids`, a single call that a
+>             concurrent bind into that Book cannot tear. No re-entry, no second
+>             check on the bind path, no other lock. (cross_object_lock_gaps, 0.2.8231)
+>         """
+>         if not spell_id:
+>             return False
+>         with self._lock:
+>             if self._cleaned:
+>                 return False
+>             for spell_id_set in self._selected_spell_registry.values():
+>                 if spell_id in spell_id_set:
+>                     return True
+>         return False
+> 
+>     def _find_index_for_spell_unless_cleaned(self, spell_id: str) -> Optional[SpellIndex]:
+>         """
+>         Internal
+> 
+>         `find_index_for_spell` for a caller that does not own this frame: None
+>         once the frame is cleaned instead of raising.
+> 
+>         Returns:
+>             Optional[SpellIndex]: The index whose lineage holds `spell_id` while the
+>                 frame is live; None when none does or the frame is cleaned.
+> 
+>         Threading:
+>             Takes the frame lock once, as `_has_spell_unless_cleaned`, and asks each
+>             index `SpellIndex._has_spell_unless_cleaned` under that index's lock (the
+>             frame -> index order `find_index_for_spell` already takes): one O(1)
+>             membership test per index, where `find_index_for_spell` copies every
+>             index's member set, and an index cleaned meanwhile answers False
+>             instead of raising. (cross_object_lock_gaps, 0.2.8231)
+>         """
+>         if not spell_id:
+>             return None
+>         with self._lock:
+>             if self._cleaned:
+>                 return None
+>             for spell_set in self._spell_registry.values():
+>                 for spell_index in spell_set:
+>                     if spell_index._has_spell_unless_cleaned(spell_id):
+>                         return spell_index
+>         return None
+> 
+>     def _spells_in_index_unless_cleaned(self) -> set[str]:
+>         """
+>         Internal
+> 
+>         `spells_in_index` for a caller that does not own this frame: an empty
+>         set once the frame is cleaned instead of raising.
+> 
+>         Returns:
+>             set[str]: The frame's cached version ids while it is live; empty when
+>                 cleaned.
+> 
+>         Threading:
+>             As `_has_spell_unless_cleaned`; each conjured Book's live `_spell_ids`
+>             is taken with one `set.update` call, exact while that Book binds.
+>             (cross_object_lock_gaps, 0.2.8231)
+>         """
+>         result: set[str] = set()
+>         with self._lock:
+>             if self._cleaned:
+>                 return result
+>             for spell_id_set in self._selected_spell_registry.values():
+>                 result.update(spell_id_set)
+>         return result
+> 
+diff -r base/src/melder/aether/conduit/conduit.py cand/src/melder/aether/conduit/conduit.py
+5557,5558c5557,5568
+<         drops its Creations, destroys its index if it was the sole member, and
+<         tears the spell object down.
+---
+>         destroys its index if it was the sole member, and tears the spell object
+>         down; when the index was destroyed, its index-link borrowers drop their
+>         subscription to it.
+> 
+>         Contract:
+>             - The Spellbook decides, under its own lock, whether the disposal
+>               destroys the spell's index, and reports the destroyed index's id;
+>               the destroy is emitted to index-link borrowers exactly then, with
+>               the disposed spell as the index's one member (an index is destroyed
+>               only when the spell was its sole member). Nothing about the spell or
+>               its index is read here before that decision.
+>             - Not admitted through a transaction (no cleanup strategy exists).
+5564a5575,5583
+>             RuntimeError: If the spell has already been disposed, is not owned by
+>                 the owning Spellbook, or is the active member of a multi-member
+>                 index (raised by `Spellbook.cleanup_spell`).
+> 
+>         Threading:
+>             Takes no lock of its own. The Spellbook takes the Book lock and the
+>             spell's own lock (never nested); the destroy emission walks the
+>             ward's contracts under the ward lock, so a concurrent link or sever
+>             of this conduit waits for it. (cross_object_lock_gaps, 0.2.8231)
+5572,5580c5591,5595
+<         # Capture the lineage id and whether disposal will destroy the index (the
+<         # spell is the sole member) BEFORE the spell is torn down.
+<         index = spell.spell_index
+<         index_id = index.id
+<         will_destroy = index.is_sole_member(spell.spell_id)
+<         # Capture the members BEFORE teardown: cleanup_spell destroys the index when the
+<         # spell is its sole member, so they cannot be read off the (cleaned) index after.
+<         destroyed_member_ids = index.spells_in_index() if will_destroy else set()
+<         self._spellbook.cleanup_spell(spell=spell)
+---
+>         spell_id = spell.spell_id
+>         # The Spellbook's own locked decision says whether the index went with the spell; the old unlocked
+>         # pre-read of spell.spell_index here raised AttributeError for a disposed spell and could disagree with
+>         # what the Spellbook then did (cross_object_lock_gaps, 0.2.8231).
+>         destroyed_index_id = self._spellbook._dispose_spell(spell)
+5583,5584c5598,5599
+<         if will_destroy:
+<             self._conduit_ward._emit_index_destroy(index_id, destroyed_member_ids)
+---
+>         if destroyed_index_id is not None:
+>             self._conduit_ward._emit_index_destroy(destroyed_index_id, (spell_id,))
+diff -r base/src/melder/aether/conduit/conduit_ward/conduit_ward.py cand/src/melder/aether/conduit/conduit_ward/conduit_ward.py
+2339a2340,2349
+> 
+>         Threading:
+>             Walks this ward's contract registry under the ward lock, the lock link
+>             (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+>             The caller runs this after its transaction has ended (notch, index moves,
+>             bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+>             does not order it against a link or sever; the ward lock does. Inside it
+>             the walk takes peer Book and contract locks in the order sever already
+>             takes (ward -> contract -> Book); contract records, when any, are
+>             emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
+2345,2364c2355,2377
+<         for contract in self._contracts.values():
+<             index_detail = (
+<                 contract._index_details_a.get(index_id)
+<                 or contract._index_details_b.get(index_id)
+<             )
+<             if index_detail is None:
+<                 continue
+<             index_detail.update_selected(new_spell_id)
+<             record_affected_contracts.append(contract)
+<             peer = contract._get_peer(self)._conduit
+<             if peer is None or peer._spellbook is None:
+<                 continue
+<             receiver_book = peer._spellbook
+<             if old_spell_id is not None:
+<                 receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
+<             # Eager follow: ensure the receiver holds the new active member, minting
+<             # the contracted copy if it has never seen this version.
+<             new_spell = self._conduit._spellbook.spells.get(index)
+<             if new_spell is not None:
+<                 receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
+---
+>         # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+>         # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+>         with self._lock:
+>             for contract in self._contracts.values():
+>                 index_detail = (
+>                     contract._index_details_a.get(index_id)
+>                     or contract._index_details_b.get(index_id)
+>                 )
+>                 if index_detail is None:
+>                     continue
+>                 index_detail.update_selected(new_spell_id)
+>                 record_affected_contracts.append(contract)
+>                 peer = contract._get_peer(self)._conduit
+>                 if peer is None or peer._spellbook is None:
+>                     continue
+>                 receiver_book = peer._spellbook
+>                 if old_spell_id is not None:
+>                     receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
+>                 # Eager follow: ensure the receiver holds the new active member, minting
+>                 # the contracted copy if it has never seen this version.
+>                 new_spell = self._conduit._spellbook.spells.get(index)
+>                 if new_spell is not None:
+>                     receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
+2382a2396,2405
+> 
+>         Threading:
+>             Walks this ward's contract registry under the ward lock, the lock link
+>             (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+>             The caller runs this after its transaction has ended (notch, index moves,
+>             bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+>             does not order it against a link or sever; the ward lock does. Inside it
+>             the walk takes peer Book and contract locks in the order sever already
+>             takes (ward -> contract -> Book); contract records, when any, are
+>             emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
+2386,2402c2409,2428
+<         for contract in self._contracts.values():
+<             detail_map = contract._get_index_detail_map(self)
+<             index_detail = detail_map.get(index_id)
+<             if index_detail is None:
+<                 continue
+<             record_affected_contracts.append(contract)
+<             peer = contract._get_peer(self)._conduit
+<             if peer is not None and peer._spellbook is not None:
+<                 peer._spellbook._remove_contracted_index(index_id)
+<             with contract._lock:
+<                 contract._remove_index(self, index_id)
+<             # Tear down the per-member spell Details for the destroyed index. The live
+<             # index is already cleaned by this point (cleanup_spell destroyed it before
+<             # emitting), so `member_ids` is captured by the caller before teardown.
+<             for member_id in member_ids:
+<                 self._uncontract_member_spell(contract, self, member_id)
+<             index_detail.cleanup()
+---
+>         # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+>         # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+>         with self._lock:
+>             for contract in self._contracts.values():
+>                 detail_map = contract._get_index_detail_map(self)
+>                 index_detail = detail_map.get(index_id)
+>                 if index_detail is None:
+>                     continue
+>                 record_affected_contracts.append(contract)
+>                 peer = contract._get_peer(self)._conduit
+>                 if peer is not None and peer._spellbook is not None:
+>                     peer._spellbook._remove_contracted_index(index_id)
+>                 with contract._lock:
+>                     contract._remove_index(self, index_id)
+>                 # Tear down the per-member spell Details for the destroyed index. The live
+>                 # index is already cleaned by this point (cleanup_spell destroyed it before
+>                 # emitting), so `member_ids` is captured by the caller before teardown.
+>                 for member_id in member_ids:
+>                     self._uncontract_member_spell(contract, self, member_id)
+>                 index_detail.cleanup()
+2435a2462,2465
+>         Threading:
+>             Writes the owner's Detail under the contract lock (the lock its readers
+>             and `_uncontract_member_spell` hold) and calls the borrower's Book after
+>             releasing it. (cross_object_lock_gaps, 0.2.8231)
+2439c2469,2472
+<         added = contract._add(owner_ward, detail)
+---
+>         # Under the contract lock, as _uncontract_member_spell removes under it: a borrower's contract
+>         # inspection walks this detail map under that lock (cross_object_lock_gaps, 0.2.8231).
+>         with contract._lock:
+>             added = contract._add(owner_ward, detail)
+2489a2523,2532
+> 
+>         Threading:
+>             Walks this ward's contract registry under the ward lock, the lock link
+>             (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+>             The caller runs this after its transaction has ended (notch, index moves,
+>             bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+>             does not order it against a link or sever; the ward lock does. Inside it
+>             the walk takes peer Book and contract locks in the order sever already
+>             takes (ward -> contract -> Book); contract records, when any, are
+>             emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
+2496,2502c2539,2548
+<         for contract in self._contracts.values():
+<             index_detail = contract._get_index_detail_map(self).get(index_id)
+<             if index_detail is None:
+<                 continue
+<             self._contract_member_spell(
+<                 contract, self, member_spell, index_detail.permissions, DetailReason.manual,
+<             )
+---
+>         # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+>         # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+>         with self._lock:
+>             for contract in self._contracts.values():
+>                 index_detail = contract._get_index_detail_map(self).get(index_id)
+>                 if index_detail is None:
+>                     continue
+>                 self._contract_member_spell(
+>                     contract, self, member_spell, index_detail.permissions, DetailReason.manual,
+>                 )
+2514a2561,2570
+> 
+>         Threading:
+>             Walks this ward's contract registry under the ward lock, the lock link
+>             (`_create_new_contract`) and sever (`_remove_contract`) write it under.
+>             The caller runs this after its transaction has ended (notch, index moves,
+>             bind_inactive) or with none (`Conduit.cleanup_spell`), so the mediator
+>             does not order it against a link or sever; the ward lock does. Inside it
+>             the walk takes peer Book and contract locks in the order sever already
+>             takes (ward -> contract -> Book); contract records, when any, are
+>             emitted after the lock is released. (cross_object_lock_gaps, 0.2.8231)
+2517,2523c2573,2582
+<         for contract in self._contracts.values():
+<             index_detail = contract._get_index_detail_map(self).get(index_id)
+<             if index_detail is None:
+<                 continue
+<             # The index dropped this member; eagerly remove its per-member contract
+<             # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
+<             self._uncontract_member_spell(contract, self, member_id)
+---
+>         # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
+>         # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+>         with self._lock:
+>             for contract in self._contracts.values():
+>                 index_detail = contract._get_index_detail_map(self).get(index_id)
+>                 if index_detail is None:
+>                     continue
+>                 # The index dropped this member; eagerly remove its per-member contract
+>                 # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
+>                 self._uncontract_member_spell(contract, self, member_id)
+3526a3586,3591
+>         Threading:
+>             Holds this ward's lock for the walk of its contracts and each contract's
+>             lock for the walk of that contract's detail map (the lock its writers
+>             hold); tries the detail keyed by the id (O(1)) before walking; resolves the
+>             matched index through this conduit's Book after the contract lock is
+>             released. (cross_object_lock_gaps, 0.2.8231)
+3531,3533c3596,3614
+<                 detail_map = contract._get_detail_map(peer_ward)
+< 
+<                 if not detail_map:
+---
+>                 # The peer writes this detail map under the contract lock (members gained or lost, contract
+>                 # grants), outside any lock this ward holds; walk it under the same lock so the walk never
+>                 # meets a resize or a Detail being torn down, and resolve after releasing it
+>                 # (cross_object_lock_gaps, 0.2.8231).
+>                 spell_index = None
+>                 with contract._lock:
+>                     detail_map = contract._get_detail_map(peer_ward)
+>                     # O(1) first: the detail contracted for exactly this version. The lineage walk runs
+>                     # only when the id is another version of a contracted lineage; every detail whose index
+>                     # holds the id shares that index, so both paths resolve the same head.
+>                     detail = detail_map.get(spell_id)
+>                     if detail is not None and detail.has_spell(spell_id):
+>                         spell_index = detail.spell_index
+>                     else:
+>                         for detail in detail_map.values():
+>                             if detail.has_spell(spell_id):
+>                                 spell_index = detail.spell_index
+>                                 break
+>                 if spell_index is None:
+3534a3616,3630
+>                 try:
+>                     spell = self._conduit._spellbook._find_contracted_spell(spell_index)
+>                 except Exception as e:
+>                     self._logger.error(
+>                         f"_get_spell_in_contracts: contracted spell lookup failed "
+>                         f"for version={spell_id}, index={spell_index}: {e}",
+>                         method_name="_get_spell_in_contracts",
+>                         exc_info=True,
+>                         owner_id=self._id,
+>                         owner_display=self._display_name,
+>                         mask=True,
+>                         groups=self._log_groups,
+>                         system_groups=self._log_sysgroups,
+>                     )
+>                     return None
+3536,3559c3632,3634
+<                 for detail in detail_map.values():
+<                     if not detail.has_spell(spell_id):
+<                         continue
+< 
+<                     spell_index = detail.spell_index
+<                     try:
+<                         spell = self._conduit._spellbook._find_contracted_spell(spell_index)
+<                     except Exception as e:
+<                         self._logger.error(
+<                             f"_get_spell_in_contracts: contracted spell lookup failed "
+<                             f"for version={spell_id}, index={spell_index}: {e}",
+<                             method_name="_get_spell_in_contracts",
+<                             exc_info=True,
+<                             owner_id=self._id,
+<                             owner_display=self._display_name,
+<                             mask=True,
+<                             groups=self._log_groups,
+<                             system_groups=self._log_sysgroups,
+<                         )
+<                         return None
+< 
+<                     if spell is None:
+<                         return None
+<                     return peer_ward._id, spell
+---
+>                 if spell is None:
+>                     return None
+>                 return peer_ward._id, spell
+3584a3660,3665
+>         Threading:
+>             Holds this ward's lock throughout and the contract's lock while it walks
+>             the two detail maps; resolves each id by key through this conduit's Book,
+>             taking no conduit lock (link and sever take the conduit lock before the
+>             ward lock, and the Conduit lookups used here before deadlocked with
+>             them). (cross_object_lock_gaps, 0.2.8231)
+3593a3675
+>             spellbook = self._conduit._spellbook
+3595,3613c3677,3693
+<             # Inbound: spells the peer has granted to us (live in peer's detail map).
+<             received_map = contract._get_detail_map(peer_ward)
+<             for sid, detail in received_map.items():
+<                 spell = self._conduit.find_contracted_spell(sid)
+<                 if spell:
+<                     spells_result["inbound"].append((sid, spell))
+< 
+<             # Outbound: spells we have granted to the peer (live in our detail map).
+<             our_map = contract._get_detail_map(self)
+<             for sid, detail in our_map.items():
+<                 owned_spell: Optional[Spell] = None
+<                 try:
+<                     # This is a local spell we own; resolve via SpellIndex-aware get_spell_by_id.
+<                     owned_spell = self._conduit.get_spell_by_id(sid)
+<                 except Exception:
+<                     owned_spell = None
+< 
+<                 if owned_spell is not None:
+<                     spells_result["outbound"].append((sid, owned_spell))
+---
+>             # Walk both detail maps under the contract lock their writers hold and resolve each id by key
+>             # through this conduit's Book. Never through the Conduit lookups: find_contracted_spell takes the
+>             # conduit lock, which link and sever hold before the ward lock held here, and the two deadlocked
+>             # (cross_object_lock_gaps, 0.2.8231).
+>             with contract._lock:
+>                 # Inbound: spells the peer has granted to us (live in peer's detail map).
+>                 for sid in contract._get_detail_map(peer_ward):
+>                     spell = spellbook._find_contracted_spell_by_id(sid, peer_ward._id)
+>                     if spell:
+>                         spells_result["inbound"].append((sid, spell))
+> 
+>                 # Outbound: spells we have granted to the peer (live in our detail map), answered from this
+>                 # Book's own id maps in O(1).
+>                 for sid in contract._get_detail_map(self):
+>                     owned_spell = spellbook.find_spell_by_id(sid)
+>                     if owned_spell is not None:
+>                         spells_result["outbound"].append((sid, owned_spell))
+diff -r base/src/melder/aether/spellbook/spellbook.py cand/src/melder/aether/spellbook/spellbook.py
+2971,2975c2971,2986
+<             Lock-free. Walks a one-call snapshot of the contracted map, which grants and revocations change
+<             while no lock is held here, and probes each index with `SpellIndex._has_spell_unless_cleaned`:
+<             the lender can clean an index this map still holds, and a cleaned index owns nothing (0.2.8230).
+<         """
+< 
+---
+>             Lock-free. Answers by key first (cross_object_lock_gaps, 0.2.8231): the active borrowed copy is held in
+>             `_contracted_spells_by_id` under its own version id, and a parked one in
+>             `_inactive_contracted_spells`, whose index (read under the parked spell's own lock) keys the
+>             lineage's active copy in `_contracted_spells` - single-key reads, no copy. Only a version this
+>             Book holds no copy of falls back to the walk: a one-call snapshot of the contracted map, which
+>             grants and revocations change while no lock is held here, probing each index with
+>             `SpellIndex._has_spell_unless_cleaned` (the lender can clean an index this map still holds, and
+>             a cleaned index owns nothing; 0.2.8230).
+>         """
+> 
+>         # O(1) first: the active borrowed copy under its own version id.
+>         active_by_id = self._contracted_spells_by_id.get(conduit_id)
+>         if active_by_id is not None:
+>             active = active_by_id.get(spell_id)
+>             if active is not None:
+>                 return active
+2979a2991,3000
+>         # Still O(1): a parked borrowed copy's index keys its lineage's active copy.
+>         parked = self._inactive_contracted_spells.get(conduit_id)
+>         if parked is not None:
+>             parked_spell = parked.get(spell_id)
+>             if parked_spell is not None:
+>                 parked_index = parked_spell._spell_index_unless_cleaned()
+>                 if parked_index is not None:
+>                     head = spell_map.get(parked_index)
+>                     if head is not None:
+>                         return head
+4219c4240,4242
+<             RuntimeError: If the spell is not owned here, or it is the active
+---
+>             RuntimeError: If the spell has already been disposed ("cleanup_spell:
+>                 spell <id> has already been disposed."; before 0.2.8231 a second
+>                 call raised AttributeError), is not owned here, or is the active
+4221a4245,4251
+>         Threading:
+>             Ownership, activity and sole membership are read under the Book lock
+>             from the Book's own maps; a spell no longer in them is classified
+>             through the spell's own lock (`Spell._spell_index_unless_cleaned`),
+>             outside the Book lock, because `Spell.cleanup` takes the spell lock
+>             before the Book lock. (cross_object_lock_gaps, 0.2.8231)
+> 
+4224a4255,4282
+>         self._dispose_spell(spell)
+> 
+>     def _dispose_spell(self, spell: Spell) -> Optional[str]:
+>         """
+>         Internal
+> 
+>         The body of `cleanup_spell`, returning what the owning Conduit needs to
+>         tell index-link borrowers: the id of the index the disposal destroyed, or
+>         None when the index survived.
+> 
+>         Contract:
+>             - Same checks, order and disposal as `cleanup_spell`.
+>             - Returns the destroyed index's id when the spell was the sole member
+>               of its index (an active sole member, or the last inactive member);
+>               None when other members keep the index alive.
+> 
+>         Args:
+>             spell: The owned spell to dispose.
+> 
+>         Returns:
+>             Optional[str]: The destroyed index's id, or None.
+> 
+>         Raises:
+>             RuntimeError: As `cleanup_spell`.
+> 
+>         Threading:
+>             As `cleanup_spell`. (cross_object_lock_gaps, 0.2.8231)
+>         """
+4227c4285,4302
+<         if spell._spellbook is not self:
+---
+>         owned = False
+>         is_active = False
+>         is_sole = False
+>         with self._lock:
+>             is_active = self._spells_by_id.get(spell_id) is spell
+>             owned = is_active or self._inactive_spells.get(spell_id) is spell
+>             if owned:
+>                 # Still in this Book's maps, so no cleanup has popped it, and Spell.cleanup deletes the spell's
+>                 # fields only after that pop (under this lock): its index is live here. Index moves repoint it
+>                 # under this lock too.
+>                 index = spell.spell_index
+>                 index_id = index.id
+>                 is_sole = index.is_sole_member(spell_id)
+>         if not owned:
+>             # Classified outside the Book lock: the spell's own lock is taken before this Book's lock by
+>             # Spell.cleanup, so it is never taken under it (cross_object_lock_gaps, 0.2.8231).
+>             if spell._spell_index_unless_cleaned() is None:
+>                 raise RuntimeError(f"cleanup_spell: spell {spell_id} has already been disposed.")
+4236d4310
+<         index = spell.spell_index
+4238,4239d4311
+<             is_active = spell_id in self._spells_by_id
+<             is_sole = index.is_sole_member(spell_id)
+4262a4335
+>             return index_id
+4296a4370
+>             return index_id if index_emptied else None

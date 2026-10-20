@@ -1,0 +1,26 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Implemented as the patches say (scripts/s6_apply_src.py): `Creations.discard_managed_quantity` (identity
+    check and pop under the store lock, unregister after it); TransferOfOwnership `_stamp_owner`, `_restamp` (stamp-back
+    registered before the stamp, the composed pool's discard registered in a `finally`) and `_discard_composed_pool`;
+    the flip's direct `_add_owned_conduit` call is now `self._restamp(spell_obj)`; `_migrate_inactive_members` re-stamps
+    each moved member whose `_owner_creations` is set. Red first in both modes (31 failed, 11 passed of 42), then green
+    in both (42 passed); the probe after the change shows B, D, E, F and G fixed and A, C unchanged. Targeted suites
+    green in both modes: unit conduit_ward, test_conduit_dynamic and creations (846), the five transfer and managed
+    component files (69; the structural-parity tests needed delete access, granted 2026-10-15T19:02Z), the ten
+    transfer and managed integration files (135).
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:1198-1247
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1492-1499
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1588-1648
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1680-1802
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s6_red_gil0.txt:1-153
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s6_green_gil1.txt:1-10
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s6_probe_managed_transfer_after_gil1.txt:1-46
+  - context_compass/artifacts/managed_spell_quantity_20261015/runs/s6_transfer_integration_gil1.txt:1-3
+  IMPACT: The fix holds on the paths S6 touches; the whole tree is the remaining gate before the notch.
+  NEXT: Run the whole tree in both GIL modes (resumable shards), then the notch and the release note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

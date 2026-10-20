@@ -1,0 +1,79 @@
+spellbook.py: 7771 -> 7802 lines
+spell.py: 1968 -> 1972 lines
+src_architecture.md:497
+  - same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3896-3898`, which states the
+  + same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3923-3925`, which states the
+src_architecture.md:514
+  - - src/melder/aether/spellbook/spellbook.py:4068 (`_add_to_spell_index` entry)
+  + - src/melder/aether/spellbook/spellbook.py:4095 (`_add_to_spell_index` entry)
+src_architecture.md:515
+  - - src/melder/aether/spellbook/spellbook.py:4101 (`_apply_add_to_index` seam)
+  + - src/melder/aether/spellbook/spellbook.py:4128 (`_apply_add_to_index` seam)
+src_architecture.md:626
+  - EVIDENCE: src/melder/aether/spellbook/spellbook.py:3911-4361 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+  + EVIDENCE: src/melder/aether/spellbook/spellbook.py:3938-4388 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+src_architecture.md:1022
+  - - src/melder/aether/spellbook/spellbook.py:3911-4066
+  + - src/melder/aether/spellbook/spellbook.py:3938-4093
+src_architecture.md:1023
+  - - src/melder/aether/spellbook/spellbook.py:4101-4195
+  + - src/melder/aether/spellbook/spellbook.py:4128-4222
+src_architecture.md:1024
+  - - src/melder/aether/spellbook/spellbook.py:4276-4361
+  + - src/melder/aether/spellbook/spellbook.py:4303-4388
+src_architecture.md:2124
+  - - src/melder/aether/spellbook/spellbook.py:706 (ownership check reads it)
+  + - src/melder/aether/spellbook/spellbook.py:733 (ownership check reads it)
+src_architecture.md:2125
+  - - src/melder/aether/spellbook/spellbook.py:764 (deleted on cleanup)
+  + - src/melder/aether/spellbook/spellbook.py:791 (deleted on cleanup)
+src_architecture.md:2171
+  - - src/melder/aether/spellbook/spellbook.py:6946-6989
+  + - src/melder/aether/spellbook/spellbook.py:6977-7020
+src_architecture.md:2174
+  - - src/melder/aether/spellbook/spellbook.py:7202
+  + - src/melder/aether/spellbook/spellbook.py:7233
+src_architecture.md: 11 lines changed
+src_components.md:572
+  - - src/melder/aether/spellbook/spellbook.py:3856, 3911 (`_notch_spell` -> `_apply_notch`)
+  + - src/melder/aether/spellbook/spellbook.py:3883, 3938 (`_notch_spell` -> `_apply_notch`)
+src_components.md:573
+  - - src/melder/aether/spellbook/spellbook.py:4068, 4101 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4095, 4128 (`_add_to_spell_index` -> `_apply_add_to_index`)
+src_components.md:574
+  - - src/melder/aether/spellbook/spellbook.py:4244, 4276 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4271, 4303 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+src_components.md:575
+  - - src/melder/aether/spellbook/spellbook.py:3896-3898 (states the Conduit admits it)
+  + - src/melder/aether/spellbook/spellbook.py:3923-3925 (states the Conduit admits it)
+src_components.md:644
+  - - src/melder/aether/spellbook/spellbook.py:7565-7586 (`_run_structural_phases`; the caller-held-lock
+  + - src/melder/aether/spellbook/spellbook.py:7596-7617 (`_run_structural_phases`; the caller-held-lock
+src_components.md:656
+  - - src/melder/aether/spellbook/spellbook.py:1092-1103 (the cache-emit flag re-checked and set under `_lock`)
+  + - src/melder/aether/spellbook/spellbook.py:1119-1130 (the cache-emit flag re-checked and set under `_lock`)
+src_components.md:751
+  - - src/melder/aether/spellbook/spellbook.py:3911-4066 (`_apply_notch`)
+  + - src/melder/aether/spellbook/spellbook.py:3938-4093 (`_apply_notch`)
+src_components.md:752
+  - - src/melder/aether/spellbook/spellbook.py:4101-4195 (`_apply_add_to_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4128-4222 (`_apply_add_to_index`)
+src_components.md:753
+  - - src/melder/aether/spellbook/spellbook.py:4276-4361 (`_apply_remove_from_index`)
+  + - src/melder/aether/spellbook/spellbook.py:4303-4388 (`_apply_remove_from_index`)
+src_components.md:763
+  - - src/melder/aether/spellbook/spellbook.py:6046-6051 (`Spellbook._initialize_configuration`, the
+  + - src/melder/aether/spellbook/spellbook.py:6077-6082 (`Spellbook._initialize_configuration`, the
+src_components.md:949
+  - - src/melder/aether/spellbook/spellbook.py:5574-5590 (`Spellbook.bind
+  + - src/melder/aether/spellbook/spellbook.py:5605-5621 (`Spellbook.bind
+src_components.md:6354
+  - `src/melder/aether/spellbook/spellbook.py:3896-3898` states it correctly.
+  + `src/melder/aether/spellbook/spellbook.py:3923-3925` states it correctly.
+src_components.md:6361
+  - - src/melder/aether/spellbook/spellbook.py:3911, 4101, 4276 (applied seams)
+  + - src/melder/aether/spellbook/spellbook.py:3938, 4128, 4303 (applied seams)
+src_components.md:11067
+  - `src/melder/aether/spellbook/spellbook.py:6878`; the patch-lane copy cited
+  + `src/melder/aether/spellbook/spellbook.py:6909`; the patch-lane copy cited
+src_components.md: 14 lines changed

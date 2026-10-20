@@ -1,0 +1,9 @@
+OK  | many-root-over-holder normal | plan body identical=True | other diff lines=0 | added=['c2.adopt_children(sid2, v2, ((sid0, v0),))']
+OK  | many-root-over-holder override(limit) | plan body identical=True | other diff lines=0 | added=['c2.adopt_children(sid2, v2, ((sid0, v0),))']
+OK  | holder-with-plain-child normal | plan body identical=True | other diff lines=0 | added=[]
+OK  | nested-holders + top-level disposal many normal | plan body identical=True | other diff lines=0 | added=['c1.adopt_children(sid1, v1, ((sid0, v0),))']
+OK  | door-held per-conduit root normal | plan body identical=True | other diff lines=0 | added=['c1.adopt_children(sid1, v1, ((sid0, v0),))']
+OK  | per-conduit root without door normal | plan body identical=True | other diff lines=0 | added=['c1.adopt_children(sid1, v1, ((sid0, v0),))']
+OK  | unique root holder normal | plan body identical=True | other diff lines=0 | added=['c2.adopt_children(sid2, v2, ((sid0, v0),))']
+OK  | unique root holder override(extra) | plan body identical=True | other diff lines=0 | added=['c1.adopt_children(sid1, v1, ((sid0, v0),))']
+shapes with unexpected changes: 0

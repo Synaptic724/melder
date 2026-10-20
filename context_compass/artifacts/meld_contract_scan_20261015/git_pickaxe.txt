@@ -1,0 +1,9 @@
+== -S 'def _check_contracts_and_force_revalidation'
+438efc387 2026-01-28 17:49:40 -0700 Mark | Update MeldEngine kwargs unit tests for instance-based wiring after phase migration
+6effac5cc 2026-05-30 04:46:00 -0600 Mark | Add task and epic to investigate mediator policy cleanup and lazy DevOps registry update, outlining replacement config model and mediator-owned registry upda
+1102bfab9 2026-05-30 05:28:05 -0600 Mark | Add architecture patch for `Meld` class refactor, introducing shared abstract base and concrete front-door implementations for `ConduitMeld` and `SpellSpaceM
+141545da5 2026-08-30 16:35:26 -0600 Mark | Remove `build-assets` workflow file and add LLM support task artifacts
+22a1cab10 2026-09-28 02:56:18 -0600 Mark | Bump version to 0.2.8206; update built for version in manifests and refresh source fingerprints.
+72b712179 2026-09-28 02:58:28 -0600 Mark | Remove unused modules and update file paths for consistency
+26f47eed0 2026-09-30 12:33:28 -0600 Mark | Bump version to 0.2.8214; add custody key handling for spells under frame-scoped keys
+== -S 'def _iter_spell_contract_defaults'

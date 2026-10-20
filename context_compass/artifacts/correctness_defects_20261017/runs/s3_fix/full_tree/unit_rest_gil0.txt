@@ -1,0 +1,140 @@
+.....................................s.................................. [  2%]
+........................................................................ [  5%]
+........................................................................ [  8%]
+........................................................................ [ 11%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 25%]
+........................................................................ [ 28%]
+........................................................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................FFFFFFF......................................... [ 45%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+..............................................................x......... [ 53%]
+....................x....x.....x...x.................................... [ 56%]
+....................x................x.............s.................... [ 59%]
+s....................................................................... [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 96%]
+........................................................................ [ 99%]
+..............                                                           [100%]
+=================================== FAILURES ===================================
+_______________ test_without_a_preface_the_message_is_unchanged ________________
+
+    def test_without_a_preface_the_message_is_unchanged() -> None:
+        """
+        Contract:
+            - `preface=None` (the default) renders the same message, starting with the report's first line.
+        """
+        spells = _broken_spell()
+    
+        plain = str(SpellbookValidationError(spells))
+>       explicit = str(SpellbookValidationError(spells, preface=None))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:47: TypeError
+______ test_a_preface_is_the_first_line_and_the_report_follows_unchanged _______
+
+    def test_a_preface_is_the_first_line_and_the_report_follows_unchanged() -> None:
+        """
+        Contract:
+            - The preface is the first line; the lines after it are the message without a preface, byte for byte.
+            - `broken_spells` is kept as given.
+        """
+        spells = _broken_spell()
+        preface = "notch_spell refused: 'SelfMade' (spell_id spell-1) failed its structural check."
+    
+>       error = SpellbookValidationError(spells, preface=preface)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:62: TypeError
+___ test_a_preface_goes_before_the_message_of_an_error_with_no_broken_spells ___
+
+    def test_a_preface_goes_before_the_message_of_an_error_with_no_broken_spells() -> None:
+        """With no spells and no diagnostics the message is its one fallback line; a preface still comes first."""
+>       error = SpellbookValidationError([], preface="notch_spell refused.")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:72: TypeError
+______________ test_a_preface_that_is_not_a_string_is_refused[42] ______________
+
+preface = 42
+
+    @pytest.mark.parametrize("preface", [42, b"bytes", ["a line"]])
+    def test_a_preface_that_is_not_a_string_is_refused(preface: Any) -> None:
+        """A non-str preface raises TypeError naming the type it got; nothing is built."""
+>       with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got " + type(preface).__name__):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'takes one line of text, a non-empty str; got int'
+E         Actual message: "SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'"
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:83: AssertionError
+____________ test_a_preface_that_is_not_a_string_is_refused[bytes] _____________
+
+preface = b'bytes'
+
+    @pytest.mark.parametrize("preface", [42, b"bytes", ["a line"]])
+    def test_a_preface_that_is_not_a_string_is_refused(preface: Any) -> None:
+        """A non-str preface raises TypeError naming the type it got; nothing is built."""
+>       with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got " + type(preface).__name__):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'takes one line of text, a non-empty str; got bytes'
+E         Actual message: "SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'"
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:83: AssertionError
+___________ test_a_preface_that_is_not_a_string_is_refused[preface2] ___________
+
+preface = ['a line']
+
+    @pytest.mark.parametrize("preface", [42, b"bytes", ["a line"]])
+    def test_a_preface_that_is_not_a_string_is_refused(preface: Any) -> None:
+        """A non-str preface raises TypeError naming the type it got; nothing is built."""
+>       with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got " + type(preface).__name__):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'takes one line of text, a non-empty str; got list'
+E         Actual message: "SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'"
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:83: AssertionError
+_______________________ test_an_empty_preface_is_refused _______________________
+
+    def test_an_empty_preface_is_refused() -> None:
+        """An empty preface would add a blank first line, so it is refused like a non-str one."""
+>       with pytest.raises(TypeError, match=r"takes one line of text, a non-empty str; got an empty str"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'takes one line of text, a non-empty str; got an empty str'
+E         Actual message: "SpellbookValidationError.__init__() got an unexpected keyword argument 'preface'"
+
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py:89: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_without_a_preface_the_message_is_unchanged
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_a_preface_is_the_first_line_and_the_report_follows_unchanged
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_a_preface_goes_before_the_message_of_an_error_with_no_broken_spells
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_a_preface_that_is_not_a_string_is_refused[42]
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_a_preface_that_is_not_a_string_is_refused[bytes]
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_a_preface_that_is_not_a_string_is_refused[preface2]
+FAILED tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py::test_an_empty_preface_is_refused
+7 failed, 2517 passed, 3 skipped, 7 xfailed in 159.98s (0:02:39)
+<sys>:0: RuntimeWarning: coroutine 'coro' was never awaited

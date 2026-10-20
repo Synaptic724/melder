@@ -79,7 +79,7 @@ def test_bind_conjure_and_meld_existing_creation() -> None:
     try:
         assert conduit.check_spell_id(spell_id) is True
 
-        spell = conduit.get_spell_by_id(spell_id)
+        spell = conduit.get_spell_by_spell_id(spell_id)
         assert spell is not None
         assert spell.owner_conduit_info == (conduit.id, conduit.name)
 

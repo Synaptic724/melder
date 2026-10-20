@@ -1432,7 +1432,7 @@ class Nexus(Cleanable):
             origin_spellbook_id:
                 Owning Spellbook id.
             spell_id:
-                Current spell/version id.
+                Current spell_id.
             frame_name:
                 Owning frame name.
 

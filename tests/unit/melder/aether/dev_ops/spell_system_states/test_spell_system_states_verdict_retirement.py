@@ -1,7 +1,7 @@
 """Unit coverage for per-conduit verdict retirement in `SpellSystemStates` (rebind-after-first-meld repair).
 
 `unregister_index` retires the removed spell id's resolution verdicts in every registered conduit state and
-`register_index` retires any verdict already held for the version id it publishes, so a definition bound
+`register_index` retires any verdict already held for the spell_id it publishes, so a definition bound
 again under the same content-stable id is resolved again by each conduit before it is built there.
 """
 
@@ -170,7 +170,7 @@ def test_unregister_index_missing_lineage_still_retires_the_selected_ids_verdict
 def test_register_index_retires_a_verdict_already_held_for_the_version_id(
         states: SpellSystemStates,
 ) -> None:
-    """A version id that re-enters the frame starts with no verdict in any conduit (the rebind case)."""
+    """A spell_id that re-enters the frame starts with no verdict in any conduit (the rebind case)."""
     _seed_verdicts(states, "spell-a", ("root", "peer"))
     _seed_verdicts(states, "spell-b", ("root",))
 

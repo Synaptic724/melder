@@ -1,0 +1,80 @@
+FAILED 424 CATEGORIZED 424
+a_doubles: 213
+b_retired_api: 96
+c_one_object_twice: 88
+d_reversed_premise: 2
+e_other: 4
+f_baseline_melder_1_s8: 18
+g_environment_fixed_in_mirror: 3
+
+## a_doubles
+  97 tests/unit/melder/crystallizer/test_spell_crystal.py
+  40 tests/component/melder/crystallizer/test_spell_crystal_component.py
+  31 tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py
+  22 tests/integration/melder/spellbook/test_cache_schema_version_integration.py
+  12 tests/unit/melder/spellbook/test_cache_runtime_verification.py
+   5 tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py
+   3 tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py
+   1 tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_capture.py
+   1 tests/unit/melder/crystallizer/persistence/test_restore_engine.py
+   1 tests/unit/melder/crystallizer/test_crystallizer.py
+
+## b_retired_api
+  48 tests/unit/melder/spellbook/bind/test_bind.py
+  18 tests/unit/melder/spellbook/bind/test_bind_managed_spell_options.py
+  11 tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py
+   8 tests/component/melder/spellbook/test_ordered_disposal_binding.py
+   5 tests/component/melder/spellbook/test_inherited_disposal_binding.py
+   2 tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py
+   1 tests/component/melder/spellbook/test_bind_lifecycle_hooks.py
+   1 tests/component/melder/spellbook/test_spellbook_component_bind.py
+   1 tests/integration/melder/crystallizer/test_ordered_disposal_replay.py
+   1 tests/unit/melder/spellbook/spell_crafter/spell_examiner/strategies/test_binding_profile_strategy.py
+
+## c_one_object_twice
+  22 tests/integration/melder/crystallizer/test_ordered_disposal_replay.py
+   8 tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py
+   7 tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py
+   6 tests/component/melder/spellbook/test_ordered_disposal_binding.py
+   6 tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py
+   5 tests/integration/melder/spellbook/test_binding_name_case_parity_integration.py
+   4 tests/experimentation/test_borrower_provider_validation_experiment.py
+   4 tests/integration/melder/aether/test_aether_integration_cluster_membership_transactions.py
+   3 tests/component/melder/spellbook/test_bind_lifecycle_hooks.py
+   3 tests/integration/melder/aether/test_non_resolvable_graph_replay.py
+   3 tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py
+   3 tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py
+   2 tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py
+   2 tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py
+   1 tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py
+   1 tests/component/melder/aether/test_configure_aether_frame_posture_component.py
+   1 tests/component/melder/spellbook/test_inherited_disposal_binding.py
+   1 tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py
+   1 tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py
+   1 tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py
+   1 tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+   1 tests/integration/melder/spellbook/test_managed_bind_options_integration.py
+   1 tests/integration/melder/spellbook/test_provider_artifact_ownership.py
+   1 tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py
+
+## d_reversed_premise
+   1 tests/component/melder/spellbook/test_ordered_disposal_binding.py
+   1 tests/integration/melder/spellbook/test_managed_bind_options_integration.py
+     1 test_ordered_disposal_binding.py :: AssertionError: assert '43ade5a92f6855b3b0930629ae023002c153e0fbb8f011ea054afd0ae3646bca' != '43ade5a92f6855b3
+     1 test_managed_bind_options_integration.py :: AssertionError: assert '1a8df98aab8ade0a3efe9de584067047679f06bf76e681296df40523eb901171' != '1a8df98aab8ade0a
+
+## e_other
+   2 tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py
+   1 tests/component/melder/spellbook/test_spell_id_process_stability.py
+   1 tests/integration/melder/aether/test_aether_integration_frames.py
+     1 test_spell_id_process_stability.py :: AssertionError: Traceback (most recent call last):
+     2 test_spellbook_component_resolvable_registration.py :: AssertionError: Regex pattern did not match.
+     1 test_aether_integration_frames.py :: RuntimeError: [SPELLBOOK] Conjure refused: 1 spell(s) owned by this
+
+## f_baseline_melder_1_s8
+  11 tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
+   7 tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py
+
+## g_environment_fixed_in_mirror
+   2 tests/unit/melder/build_assets/test_system_documents_builder.py
+   1 tests/unit/github_workflows/test_workflow_contracts.py

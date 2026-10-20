@@ -1,0 +1,350 @@
+F..FFFFFFF.FF..                                                          [100%]
+=================================== FAILURES ===================================
+__ test_conduit_purge_of_a_managed_spell_returns_zero_from_the_callers_store ___
+
+    def test_conduit_purge_of_a_managed_spell_returns_zero_from_the_callers_store() -> None:
+        """No authority check and no disposal: purge has nothing to retire for a managed spell."""
+        meld, _creations, spellbook = _make_conduit_meld(conduit_id="caller")
+        owner_creations = ConduitCreations(conduit_id="owner")
+        spell = _managed_spell(owner_creations)
+>       _with_objects(owner_creations, spell, idle=2, out=1)
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+owner_creations = <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x459e9196de0>
+spell = <tests.unit.melder.aether.conduit.meld.test_concrete_meld_subclasses._SpellStub object at 0x459e6336010>
+idle = 2, out = 1
+
+    def _with_objects(owner_creations: ConduitCreations, spell: _SpellStub, idle: int, out: int) -> None:
+        """
+        Ensure the spell's pool and give it `idle` idle objects and `out` objects out.
+    
+        Args:
+            owner_creations: The owner store.
+            spell: The managed spell.
+            idle: Objects to leave idle.
+            out: Objects to leave out.
+        """
+>       pool = owner_creations.ensure_managed_quantity(spell)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ConduitCreations' object has no attribute 'ensure_managed_quantity'
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:67: AttributeError
+__________________ test_conduit_probe_reports_the_owner_pool ___________________
+
+    def test_conduit_probe_reports_the_owner_pool() -> None:
+        """Live while the pool's objects are alive; the count is idle plus out."""
+        meld, _creations, spellbook = _make_conduit_meld(conduit_id="caller")
+        owner_creations = ConduitCreations(conduit_id="owner")
+        spell = _managed_spell(owner_creations)
+>       _with_objects(owner_creations, spell, idle=1, out=2)
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+owner_creations = <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x459e9197500>
+spell = <tests.unit.melder.aether.conduit.meld.test_concrete_meld_subclasses._SpellStub object at 0x459e6335590>
+idle = 1, out = 2
+
+    def _with_objects(owner_creations: ConduitCreations, spell: _SpellStub, idle: int, out: int) -> None:
+        """
+        Ensure the spell's pool and give it `idle` idle objects and `out` objects out.
+    
+        Args:
+            owner_creations: The owner store.
+            spell: The managed spell.
+            idle: Objects to leave idle.
+            out: Objects to leave out.
+        """
+>       pool = owner_creations.ensure_managed_quantity(spell)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ConduitCreations' object has no attribute 'ensure_managed_quantity'
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:67: AttributeError
+_____________ test_conduit_probe_reports_an_empty_pool_as_not_live _____________
+
+    def test_conduit_probe_reports_an_empty_pool_as_not_live() -> None:
+        """A pool that built nothing yet is not live."""
+        meld, _creations, spellbook = _make_conduit_meld(conduit_id="caller")
+        owner_creations = ConduitCreations(conduit_id="owner")
+        spell = _managed_spell(owner_creations)
+>       owner_creations.ensure_managed_quantity(spell)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ConduitCreations' object has no attribute 'ensure_managed_quantity'
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:130: AttributeError
+_________ test_conduit_probe_of_an_unstamped_managed_spell_is_not_live _________
+
+    def test_conduit_probe_of_an_unstamped_managed_spell_is_not_live() -> None:
+        """A version with no owner store yet (parked before conjure) has no pool to read."""
+        meld, _creations, spellbook = _make_conduit_meld(conduit_id="caller")
+        spell = _managed_spell(None, owner_conduit_id=None)
+        _seed_spell(spellbook, spell)
+>       status = meld.describe_live_creation_status(spell="managed-sid")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/meld/conduit_meld.py:950: in describe_live_creation_status
+    return self._describe_spell_live_creation_status(target_spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x459e7c0b300>
+spell = <tests.unit.melder.aether.conduit.meld.test_concrete_meld_subclasses._SpellStub object at 0x459e6336490>
+
+    def _describe_spell_live_creation_status(self, spell: Spell) -> Dict[str, object]:
+        """
+        Return conduit-scoped live-creation status for one resolved spell.
+    
+        Purpose:
+            Interpret one resolved spell against the conduit-facing storage
+            rules so diagnostics and tooling can tell whether the spell is live
+            in the caller conduit, in shared owner state, or only as an
+            existing-creation object.
+    
+        Contract:
+            - `many` and `unique_per_conduit` read from caller-local conduit
+              storage; a `many` without disposal methods is never tracked and
+              reports 0.
+            - `unique` reads the Spell owner's `owner_creations`;
+              `unique_per_conduit_lineage` the lineage-root store;
+              `unique_per_conduit_cluster` the cluster's team store, and is
+              not live while no leader is elected.
+            - spellspace-request spells never reach this helper because the
+              conduit-facing door rejects them earlier.
+        """
+        query_conduit_id = self._conduit_id
+        if spell.is_existing_creation:
+            return {
+                "is_live": spell.user_created_object is not None,
+                "spell_id": spell.spell_id,
+                "spell_name": spell.spell_name,
+                "existence": spell.existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "existing_creation",
+                "storage_owner_conduit_id": None,
+                "active_spellspace_id": None,
+                "creation_count": 1 if spell.user_created_object is not None else 0,
+            }
+    
+        existence = spell.existence
+        spell_id = spell.spell_id
+        caller_creations = self._conduit_creations
+    
+        if existence is Existence.many:
+            creation_bucket = caller_creations.get_creation(spell_id)
+            creation_count = (
+                len(creation_bucket)
+                if isinstance(creation_bucket, list)
+                else 0
+            )
+            return {
+                "is_live": creation_count > 0,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "caller_conduit_many",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": creation_count,
+            }
+    
+        if existence is Existence.unique_per_conduit:
+            creation = caller_creations.get_creation(spell_id)
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "caller_conduit",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": 1 if creation is not None else 0,
+            }
+    
+        if existence in {
+            Existence.unique,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
+        }:
+            # Only `unique` lives in the binding owner's _owner_creations.
+            # cluster/lineage live in the meld-supplied store (cluster team store
+            # / lineage root); a cluster with no elected leader is simply not live.
+            if existence is Existence.unique:
+                store = spell._owner_creations
+                storage_scope_kind = "owner_creations"
+                storage_owner_conduit_id = spell._owner_conduit_id
+            elif existence is Existence.unique_per_conduit_lineage:
+                store = self._root_creations
+                storage_scope_kind = "lineage_root"
+                storage_owner_conduit_id = None
+            else:  # unique_per_conduit_cluster
+                store = (
+                    self._cluster_creations.resolved_store()
+                    if (
+                        self._cluster_creations is not None
+                        and self._cluster_creations.is_active()
+                    )
+                    else None
+                )
+                # The label predates the team store (0.2.8237: the store is the
+                # cluster's, served while a leader is elected); it is kept because
+                # it is a published diagnostics value.
+                storage_scope_kind = "cluster_leader"
+                storage_owner_conduit_id = None
+            creation = (
+                store.get_creation(spell_id) if store is not None else None
+            )
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": storage_scope_kind,
+                "storage_owner_conduit_id": storage_owner_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": 1 if creation is not None else 0,
+            }
+    
+>       raise RuntimeError(
+            "Unsupported existence '{0}' for live creation probe.".format(
+                existence,
+            )
+        )
+E       RuntimeError: Unsupported existence 'managed_spell_quantity' for live creation probe.
+
+src/melder/aether/conduit/meld/conduit_meld.py:1100: RuntimeError
+_________________ test_spellspace_probe_reports_the_owner_pool _________________
+
+    def test_spellspace_probe_reports_the_owner_pool() -> None:
+        """The SpellSpace door reads the same pool: managed objects are root-owned, never space-local."""
+        meld, _space, _owner, spellbook = _make_spellspace_meld()
+        owner_creations = ConduitCreations(conduit_id="owner")
+        spell = _managed_spell(owner_creations)
+>       _with_objects(owner_creations, spell, idle=0, out=1)
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+owner_creations = <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x459e9197ec0>
+spell = <tests.unit.melder.aether.conduit.meld.test_concrete_meld_subclasses._SpellStub object at 0x459e6335b90>
+idle = 0, out = 1
+
+    def _with_objects(owner_creations: ConduitCreations, spell: _SpellStub, idle: int, out: int) -> None:
+        """
+        Ensure the spell's pool and give it `idle` idle objects and `out` objects out.
+    
+        Args:
+            owner_creations: The owner store.
+            spell: The managed spell.
+            idle: Objects to leave idle.
+            out: Objects to leave out.
+        """
+>       pool = owner_creations.ensure_managed_quantity(spell)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ConduitCreations' object has no attribute 'ensure_managed_quantity'
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:67: AttributeError
+______________ test_spellspace_probe_of_an_empty_pool_is_not_live ______________
+
+    def test_spellspace_probe_of_an_empty_pool_is_not_live() -> None:
+        """No object built, not live, from the SpellSpace door too."""
+        meld, _space, _owner, spellbook = _make_spellspace_meld()
+        owner_creations = ConduitCreations(conduit_id="owner")
+        spell = _managed_spell(owner_creations)
+>       owner_creations.ensure_managed_quantity(spell)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ConduitCreations' object has no attribute 'ensure_managed_quantity'
+
+tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py:170: AttributeError
+___ test_static_access_to_a_managed_spell_is_an_unsupported_static_existence ___
+
+    def test_static_access_to_a_managed_spell_is_an_unsupported_static_existence() -> None:
+        """Asking a static room for a managed spell's object names the existence instead of probing a store."""
+        command_system, viewer = _make_static_command_system()
+        viewer.compiled_access_surface.enabled_spell_index_ids = ("lineage-managed",)
+        viewer.descriptor.spell_records_by_key["ops-spellbook:managed-sha"] = _make_spell_record(
+            spell_id="managed-sha",
+            spell_index_id="lineage-managed",
+            existence=Existence.managed_spell_quantity,
+        )
+>       with pytest.raises(ValueError, match="unsupported static existence 'managed_spell_quantity'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: "unsupported static existence 'managed_spell_quantity'"
+E         Actual message: "Aetheric frame 'ops' does not exist."
+
+tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py:55: AssertionError
+_________ test_static_status_of_a_managed_spell_reports_it_unsupported _________
+
+    def test_static_status_of_a_managed_spell_reports_it_unsupported() -> None:
+        """The status payload says why a managed spell is never available statically."""
+        command_system, viewer = _make_static_command_system()
+        viewer.compiled_access_surface.enabled_spell_index_ids = ("lineage-managed",)
+        viewer.descriptor.spell_records_by_key["ops-spellbook:managed-sha"] = _make_spell_record(
+            spell_id="managed-sha",
+            spell_index_id="lineage-managed",
+            existence=Existence.managed_spell_quantity,
+        )
+        command_system._aether = type(
+            "_AetherStub",
+            (),
+            {"get_root_conduit_by_id": lambda self, conduit_id, frame_name: type(
+                "_Owner", (), {"has_live_creation": lambda self, *, spell: True},
+            )()},
+        )()
+        status = command_system.describe_spell_status_by_index_id("lineage-managed")
+>       assert (status["is_static_supported"], status["is_available"], status["reason"]) == (
+            False, False, "unsupported_static_existence",
+        )
+E       AssertionError: assert (True, True, 'available') == (False, False...ic_existence')
+E         
+E         At index 0 diff: True != False
+E         Use -v to get more diff
+
+tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py:76: AssertionError
+________________ test_stamping_a_managed_spell_ensures_its_pool ________________
+
+    def test_stamping_a_managed_spell_ensures_its_pool() -> None:
+        """The owner store is asked once per stamp for the version's pool."""
+        spell = _spell()
+        store = _RecordingStore()
+        try:
+            _stamp(spell, store)
+>           assert store.ensured == [spell]
+E           assert [] == [Spell(name=P...aged-version)]
+E             
+E             Right contains one more item: Spell(name=Pooled, binding=__default__, frame=type, SHA256=managed-version)
+E             Use -v to get more diff
+
+tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py:111: AssertionError
+_________ test_stamping_into_a_real_root_store_creates_the_pool_there __________
+
+    def test_stamping_into_a_real_root_store_creates_the_pool_there() -> None:
+        """The pool lands in the owner root's store under the version id, composed from the Spell."""
+        spell = _spell(managed_spell_mode=ManagedSpellMode.limited_quantity, managed_spell_limit=5)
+        store = ConduitCreations(conduit_id="root-1")
+        try:
+            _stamp(spell, store)
+>           pool = store.get_managed_quantity("managed-version")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'ConduitCreations' object has no attribute 'get_managed_quantity'
+
+tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py:123: AttributeError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py::test_conduit_purge_of_a_managed_spell_returns_zero_from_the_callers_store
+FAILED tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py::test_conduit_probe_reports_the_owner_pool
+FAILED tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py::test_conduit_probe_reports_an_empty_pool_as_not_live
+FAILED tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py::test_conduit_probe_of_an_unstamped_managed_spell_is_not_live
+FAILED tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py::test_spellspace_probe_reports_the_owner_pool
+FAILED tests/unit/melder/aether/conduit/meld/test_meld_doors_managed_spell_quantity.py::test_spellspace_probe_of_an_empty_pool_is_not_live
+FAILED tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py::test_static_access_to_a_managed_spell_is_an_unsupported_static_existence
+FAILED tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py::test_static_status_of_a_managed_spell_reports_it_unsupported
+FAILED tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py::test_stamping_a_managed_spell_ensures_its_pool
+FAILED tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py::test_stamping_into_a_real_root_store_creates_the_pool_there
+10 failed, 5 passed in 2.81s

@@ -1,0 +1,13 @@
+class node | repo stamp == span at 0.2.8252 before fix #1 | repo stamp == repo span | span 0.2.8252 == repo span | span now == span 0.2.8252
+melder.aether.spellbook.spellbook.Spellbook | True | True | True | False
+melder.aether.conduit.conduit.Conduit | True | True | True | False
+melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard | True | True | True | False
+melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership | False | False | True | False
+melder.aether.spellbook.bind.spell_index.SpellIndex | False | True | False | False
+melder.aether.spellbook.spell.Spell | True | True | True | False
+melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner | True | True | True | False
+melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport | True | True | True | True
+melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine | True | True | True | False
+melder.nexus.rift.command_system.command_system.CommandSystem | False | False | True | False
+melder.nexus.rift.command_system.static_command_system.StaticCommandSystem | True | True | True | False
+melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy.AmbiguousProviderStrategy | True | True | True | False

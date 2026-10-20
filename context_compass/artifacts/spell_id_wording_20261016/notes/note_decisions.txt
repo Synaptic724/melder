@@ -1,0 +1,31 @@
+- DATETIME: <NOW>
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Every occurrence is decided, by hand, before any edit. The inventory holds 330 lines with the term (src 177,
+    tests 118 - in docstrings, comments and one test literal -, the system docs 16, graph descriptors 16, the
+    release note 3, as `str.splitlines` numbers them), each with two lines of context. Read in context, every use
+    names the id of a spell in an index lineage - a spell_id: the index's selected, current, parked or member
+    spell's id, a lookup that answers through the index, a key set beside index ids - so 328 are rewritten by hand
+    with the precise name (spell_id, spell_ids, "the selected spell_id of its index", "spell index id" where the
+    index is meant), each as an exact old/new pair checked against its inventoried line; none means the index id.
+    Two are kept: the 0.2.8249 handoff entries of src_architecture and src_components quote the retired term ("not
+    'version id'") - a mention, not a use. One runtime text changes: IdentityMixingStrategy's diagnostic now ends
+    "instead of a spell_id." (no test asserts the old text); one test literal becomes "updated-spell-id" (used only
+    through its variable). Code names stay: the three test helpers, the local `version_id` names and parameters
+    such as `version_id` in stubs (their descriptions are reworded). 204 decisions in 113 files nobody holds apply
+    now; 124 in 24 files - melder_1's rule-2 files, the system docs, the graph descriptors and the release note -
+    apply after melder_1 releases them (M0-178). The apply script refuses a moved line or an `old` that is not
+    found exactly once, and keeps each line's own terminator (95 files are CRLF, 8 of them mixed).
+  EVIDENCE:
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/occurrences.txt:1-2309
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/decisions_001_100.json:1-102
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/decisions_101_154.json:1-56
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/decisions_155_209.json:1-57
+  - context_compass/artifacts/spell_id_wording_20261016/inventory/decisions_210_330.json:1-123
+  - context_compass/artifacts/spell_id_wording_20261016/scripts/apply_decisions.py:1-160
+  - src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py:90-100
+  IMPACT: The edit is reviewable line by line; the held quarter waits without blocking the rest.
+  NEXT: Apply the 204 free decisions, compile the touched files and run their tests with the GIL off and on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9

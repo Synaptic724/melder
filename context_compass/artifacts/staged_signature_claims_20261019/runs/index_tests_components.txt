@@ -1,0 +1,8 @@
+WROTE: tests_components_index.md
+  69 sections over 4171 document lines
+  index 99 lines (2% of document)
+  sectioned by: headings (level <= 3)
+  deepest level indexed: 3
+  largest section: 1536 lines (C1 Code Map (Core))
+  all 69 ranges validated against their own headings
+  the document was NOT modified: context_compass/system_docs/tests_components.md

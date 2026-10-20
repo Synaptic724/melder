@@ -1,0 +1,71 @@
+context_compass/system_docs/src_architecture.md: lines 5360 -> 5418
+removed (count fell): 6
+  -1 A root store cleans its managed pools first, newest first - their idle objects and the `many` children
+  -1 T[Root teardown] --> C[Pools cleaned before the store's registry]
+  -1 a scope teardown ends its stores, and a purge disposes what it retires. It does not police userland objects: it does
+  -1 composed at conjure, before the uniques its objects hold; their failures join the same group (0.2.8243).
+  -1 recorded with every pooled object, out ones included - before its disposable registry, because a pool is
+  -1 root teardown -> Creations.cleanup: pools first (idle objects + recorded children) -> unregistered
+added (count rose): 62
+  +1 - A root's teardown cleans only what the root holds (2026-10-18; the owner's rule in chat, "if the root cleans up it
+  +1 - Known, not fixed (open with the owner, 2026-10-18): a root's teardown raises ExceptionGroup "Conduit torn down with
+  +1 2026-10-18 a root's teardown cleans only what the root holds (documentation only; the owner's rule, in chat): a
+  +1 A root store unregisters its managed pools from `ReleaseManagedSpell`, then cleans them first, newest first -
+  +1 Checked against `Conduit._cleanup_normal_conduit`, `Creations.cleanup`, `ManagedSpellQuantity.cleanup` and
+  +1 EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._cleanup_normal_conduit`, `Conduit._permanent_cleanup`,
+  +1 EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.cleanup`,
+  +1 RuntimeError "Failed to dispose object ... using method '<name>': ..." chained from it; the teardown still
+  +1 SpellSpaces before the root's own store, so a consumer held by a lesser conduit or a spellspace gives its leased
+  +1 T[Root teardown] --> C[Pools unregistered, then cleaned before the store's registry]
+  +1 `Conduit._cleanup_normal_conduit` tears down the cluster facade, the Meld, the ward (the lesser lineage) and the
+  +1 `Creations._cleanup_managed_quantities`, `Creations._dispose_disposable_registry`,
+  +1 `ManagedSpellQuantity.put_back` and
+  +2 `ReleaseManagedSpell._resolve_pool`.
+  +1 `src/melder/aether/conduit/conduit.py:Conduit._cleanup_normal_conduit` and
+  +1 `src/melder/aether/conduit/creations/creations.py:Creations.cleanup`, `Creations._unregister_managed_quantities`,
+  +1 `src/melder/aether/conduit/creations/managed_spell_quantity.py:ManagedSpellQuantity.cleanup`,
+  +1 `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell._resolve_pool`.
+  +1 `src/melder/aether/conduit/creations/release_managed_spell.py:ReleaseManagedSpell.release`,
+  +1 a scope teardown ends its stores, and a purge disposes what it retires. A root's teardown cleans only what the root
+  +1 back cleanly, because those scopes end before the root's store. The owner questioned this raise with the rule
+  +1 back meets a pool already unregistered - the release raises the not-managed ValueError inside that method, the
+  +1 before the store), a new operational invariant (the rule, today's order, two places open with the owner, measured
+  +1 consumer held there gives a leased object back while the pools still take it; one the root's own store holds
+  +1 differs are open with the owner: Operational Invariants). It does not police userland objects: it does
+  +1 disposable registry, because a pool is composed at conjure, before the uniques its objects hold; their failures
+  +1 disposal failures." when a consumer its own store holds gives a leased object back in its disposal method. The
+  +1 disposes the children recorded for an object still out, which the root does not hold, under the holder that
+  +1 finishes and the object is left undisposed. A consumer held by a lesser conduit or a spellspace gives the object
+  +1 first ... -> unregistered"; the code unregisters first) carry it; the component map carries the per-component
+  +1 holds (owner, 2026-10-18): what its stores record and the idle objects of its managed pools; an object a holder
+  +1 its disposal method makes the teardown raise) and the managed lease diagram's teardown order (it read "pools
+  +1 join the same group (0.2.8243). The root's ward (its lesser lineage) and SpellSpaces end before its store, so a
+  +1 keeps the object. Measured on 0.2.8258 (3.14t, the GIL off and on): a root-held `many` handler whose `finish`
+  +1 leased from a pool is the holder's: Melder keeps no reference to it, never disposes it at teardown, and a release
+  +1 leased from a pool stays that holder's, with the `many` children recorded for it (two places where today's code
+  +1 lesser conduit gives it back cleanly, and an out session's `many` cursor closes at teardown while the session
+  +1 lock, unregisters every pool from `ReleaseManagedSpell`, cleans the pools newest first and disposes its registry
+  +1 meets an unregistered pool. The owner's rule that a root's teardown cleans only what it holds, and the two
+  +1 newest first, raising one group; `ManagedSpellQuantity.cleanup` disposes each idle object, newest first, with its
+  +1 object back while the root's pools still take it; then `Creations.cleanup` detaches its maps under the store
+  +1 object is left undisposed (the owner asked why a cleanup that disposes should raise at all); (2) the pool
+  +1 objects back before the root ends, or hold their consumers in a lesser conduit.
+  +1 of it after the teardown no longer reaches that root's pool (Failure Modes and Error Paths). Today's order:
+  +1 on 0.2.8258), a Known-not-fixed failure mode (a consumer the root's own store holds that gives its object back in
+  +1 only cleans up whats held by the root"; documentation only - the code is unchanged): what its stores record and
+  +1 open with the owner: (1) a consumer the root's own store holds whose disposal method gives its leased object
+  +1 places open with the owner, are under Operational Invariants (2026-10-18).
+  +1 raising, and whether a pool should leave the children recorded for an object still out to that object's holder.
+  +1 recorded child, out objects' included) -> the store's registry
+  +1 recorded children, then the children recorded for objects still out, then the orphaned records. Two places are
+  +1 releases its pooled connection makes the teardown raise and leaves the connection open, the same handler in a
+  +1 root teardown -> ward, SpellSpaces -> Creations.cleanup: unregister the pools -> clean them (idle objects, every
+  +1 sentence in the Runtime Model, the cleanup sequence (the unregister-first order, the ward and SpellSpaces ending
+  +1 spell class in any live root: ..." inside that method (when no other live root pools the class), collected as
+  +1 stays open. Until the owner decides, the cleanup sequence and the failure modes describe today's behaviour.
+  +1 store collects it, the teardown raises ExceptionGroup "Conduit torn down with disposal failures." and the
+  +1 store has already unregistered and cleaned its pools, so the release raises ValueError "<Type> is not a managed
+  +1 text. Open with the owner: whether the root-held consumer's release should be accepted at teardown instead of
+  +1 that a root's teardown cleans only what it holds (Operational Invariants); until the owner decides, give such
+  +1 the idle objects of its managed pools, with the `many` children recorded for those objects. An object a holder
+  +1 their idle objects and the `many` children recorded with every pooled object, out ones included - before its

@@ -1,0 +1,5 @@
+removal fix green (melder_1, 2026-10-16T21:47:55Z): the three touched test files on /tmp/cc_res/removal/tree after the CRLF restore (byte-identical to the real tree)
+gil0: 193 passed in 1.67s
+gil1: 193 passed in 1.71s
+targets gil0: 26 passed in 1.09s
+targets gil1: 26 passed in 1.09s

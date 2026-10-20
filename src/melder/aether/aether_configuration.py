@@ -102,9 +102,9 @@ class AetherConfiguration(Cleanable):
             "channel_logger_activation_enabled": False,
             "channel_logger_resolver": None,
             "default_logger": None,
-            # DEFAULT ON. A spell_id is a SHA256 over the bind-time fingerprint
-            # and does not include the frame, so the same target bound with the
-            # same parameters mints the same id in every frame. Owner ruling
+            # DEFAULT ON. A spell_id is the SHA256 of the registered object's
+            # code and does not include the frame, so the same object mints the
+            # same id in every frame, however it is bound. Owner ruling
             # 2026-08-02: one spell_id means one spell, process-wide.
             "process_wide_unique_spell_ids": True,
         }
@@ -606,7 +606,7 @@ class AetherConfiguration(Cleanable):
             - Turning this OFF restores per-frame id scoping, which permits the
               multi-tenant shape: the same class bound independently in several
               frames, each with its own instance. Leaving it ON means a second
-              bind of the same fingerprint is refused anywhere in the process.
+              bind of the same object is refused anywhere in the process.
 
         Args:
             enabled:

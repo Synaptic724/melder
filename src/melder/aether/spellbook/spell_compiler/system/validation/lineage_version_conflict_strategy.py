@@ -29,13 +29,13 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
     """
-    Guard that one root DAG does not mix multiple versions of the same lineage.
+    Guard that one root DAG does not mix multiple versions of the same SpellIndex.
 
-    Root blueprints are version-id graphs, but they still represent one
-    coherent runtime slice. If the same lineage appears multiple times under a
-    single root as different version ids, the root is effectively depending on
+    Root blueprints are spell_id graphs, but they still represent one
+    coherent runtime slice. If the same SpellIndex appears multiple times under a
+    single root as different spell_ids, the root is effectively depending on
     mutually conflicting revisions of the same logical spell family. This
-    strategy checks the blueprint DAG against the index lineage map and turns
+    strategy checks the blueprint DAG against the index's SpellIndex ids and turns
     that mismatch into a root-scoped error before later planning or execution
     phases reason over an internally inconsistent dependency closure.
     """
@@ -54,17 +54,17 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
             cancel_event: Optional[CancellationEvent],
     ) -> None:
         """
-        Validate that each root DAG contains at most one version per lineage.
+        Validate that each root DAG contains at most one version per SpellIndex.
 
         Purpose:
             Prevent one root blueprint from resolving multiple concrete versions
-            of the same logical spell lineage.
+            of the same SpellIndex.
         Contract:
             - Uses blueprint DAG node ids as the candidate version set and the
-              system index as the source of lineage identity.
-            - Missing index nodes and lineage-less nodes are ignored here
+              system index as the source of SpellIndex identity.
+            - Missing index nodes and nodes without a SpellIndex id are ignored here
               because other strategies already report broken index coverage.
-            - Emits one ERROR diagnostic per conflicting lineage within a root,
+            - Emits one ERROR diagnostic per conflicting SpellIndex within a root,
               with the concrete spell ids that collided.
             - Blueprint, phase-4, and broken-spell inputs are accepted to match
               the shared strategy interface but are not consulted by this check.
@@ -74,8 +74,8 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
             blueprints: Root blueprints keyed by root spell id.
             phase4_results: Phase-4 validation artifacts keyed by spell id.
             broken_spell_ids: Set of broken spell ids.
-            spell_system_states: SpellSystemStates registry for topology and lineage data.
-            spell_lookup: Mapping of visible spell version ids to spell objects.
+            spell_system_states: SpellSystemStates registry for topology and SpellIndex state data.
+            spell_lookup: Mapping of visible spell_ids to spell objects.
             diagnostics: Collection that receives diagnostics.
             cancel_event: Optional cancellation signal.
         Returns:

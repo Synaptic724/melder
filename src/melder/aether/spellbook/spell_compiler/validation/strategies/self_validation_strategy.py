@@ -122,7 +122,7 @@ class SelfDependencyStrategy(SpellValidationStrategy):
 
         Args:
             context: Validation context of the spell under validation.
-            root_id: The spell's selected version id.
+            root_id: The spell's selected spell_id.
 
         Returns:
             List[str]: Parameter names that resolve to the spell itself.

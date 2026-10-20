@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
- "source_sha256": "0ab351c9d78a1b2d47e7faa4de5ce83c6c467711647263a01440c8d845070135",
+ "source_sha256": "b5b402ff2742ea6623e30faa45d0fdf6c42f3185313ab1e590e3783ce06a006d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e60abe7edd0a0e44d155c839c4d03219357412ed13f83723ae908c17c56b241e",
+   "span_sha256": "2c678293c33ae56fb159767c1e97f020402adcf515f9513d6e2be348fb28a130",
    "include": true,
    "role": "Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.",
    "responsibilities": [
