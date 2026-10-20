@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-20T00:13:14Z
+- Updated: 2026-10-20T10:00:15Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -927,6 +927,10 @@ Purpose:
 - cover AR-facing runtime contracts, descriptors, ACLs, room surfaces, and
   related manager classes
 Protects:
+- FrameLink cleanup's inside-lock guard (`test_frame_link_runtime_contracts.py`): a real cleanup
+  completes before the outer lock acquisition, so the outer call must return without touching
+  retired fields; metadata then refuses access and another cleanup returns normally. The stand-in
+  uses no worker threads or scheduling deadline (see `### Flow: FrameLink Cleanup Guard Stand-In`)
 - cluster admission callback progress (0.2.8265): a second thread can read Cloud during member recording
   and during sharing; a failed registration before publication propagates its error and permits retry
 - Nexus singleton and cold-start rules (a Nexus needs an Aether and publishes no
@@ -2103,6 +2107,16 @@ Key Files (C1):
    EVIDENCE:
    - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:51-103
    - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:148-235
+
+### Flow: FrameLink Cleanup Guard Stand-In
+1. `test_frame_link_cleanup_rechecks_cleaned_inside_lock` installs `_CoordinatedLock`, whose first
+   entry clears a one-shot trigger before calling the real `FrameLink.cleanup` again. Nested entry
+   acquires the RLock without firing the trigger, and that cleanup retires the actual fields and lock.
+2. The outer entry then acquires the retained lock object. The inside-lock cleaned-state guard
+   returns before any retired field is touched, and the context manager releases the acquisition.
+3. The test checks the cleaned latch, metadata's cleaned-state refusal and repeated cleanup. A
+   missing inside-lock guard raises in the test thread; no coordination worker can time out or hang.
+   EVIDENCE: tests/unit/melder/aether/test_frame_link_runtime_contracts.py:145-191
 
 ### Flow: Managed Pool Stress Under Eight Threads
 1. each test builds one `ManagedSpellQuantity` over a Spell stub (the mode, the limit, the timeout, a `reset`
@@ -3881,6 +3895,10 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-19 FrameLink cleanup guard (test-only): the Aether/Nexus/Rift unit entry and a focused call flow
+describe the deterministic acquisition-boundary stand-in. It completes a real cleanup before the outer
+acquisition proceeds, replacing a timed two-worker arrangement that could strand a worker on failure.
 
 2026-10-19 queue deadline regression (test-only): the managed-pool unit entry describes its controlled clock
 and wake-ups, replacing a scheduling-sensitive elapsed-time assertion. Its C1 extent was remeasured; the

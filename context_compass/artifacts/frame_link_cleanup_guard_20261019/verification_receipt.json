@@ -1,0 +1,88 @@
+{
+  "verified_at": "2026-10-20T10:14:47.939608+00:00",
+  "author_and_self_reviewer": "expert_1 (synaptic_python_developer)",
+  "independent_review": false,
+  "production_changes": false,
+  "qualified_inputs": {
+    "base_revision": "e6b41f3220082ac604c42839d26bbca21336bf41",
+    "tracked_input_count": 1802,
+    "tracked_inputs_sha256": "39dfa164938cc9470253e316b8dc09c06a387f15935f4c25855a2f205b11b990",
+    "test_sha256": "25ea402517ea879a0ab76ed779c2a0bf898626528e5271eeb21fe6d88bdb9c72",
+    "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]",
+    "executable": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Scripts\\python.exe",
+    "gil_enabled": false,
+    "dependencies": {
+      "pytest": "9.1.1",
+      "pytest-cov": "7.1.0",
+      "coverage": "7.16.1",
+      "PyYAML": "6.0.3",
+      "iniconfig": "2.3.0",
+      "packaging": "26.3",
+      "pluggy": "1.6.0",
+      "Pygments": "2.21.0",
+      "colorama": "0.4.6"
+    }
+  },
+  "reports": {
+    "focused": {
+      "cases": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped_including_xfail": 0
+    },
+    "adjacent": {
+      "cases": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped_including_xfail": 0
+    },
+    "repeat_gil0": {
+      "cases": 200,
+      "failures": 0,
+      "errors": 0,
+      "skipped_including_xfail": 0
+    },
+    "repeat_gil1": {
+      "cases": 200,
+      "failures": 0,
+      "errors": 0,
+      "skipped_including_xfail": 0
+    },
+    "python3142": {
+      "cases": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped_including_xfail": 0
+    },
+    "mutant_inner": {
+      "cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped_including_xfail": 0,
+      "disposition": "expected main-thread rejection of removed guard"
+    },
+    "mutant_outer": {
+      "cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped_including_xfail": 0,
+      "disposition": "expected main-thread rejection of removed guard"
+    },
+    "full_runtime": {
+      "cases": 14447,
+      "failures": 0,
+      "errors": 0,
+      "skipped_including_xfail": 45
+    }
+  },
+  "full_runtime_summary": "14399 passed, 28 skipped, 17 xfailed, 3 xpassed in 752.40s (0:12:32)",
+  "driver_exit_code": 0,
+  "repaired_case_executed_in_full_suite": true,
+  "unhandled_thread_warning_in_full_suite": false,
+  "coroutine_shutdown_warning_present": true,
+  "limits": [
+    "Local Windows Python 3.14.7 GIL-off qualification; hosted Windows Python 3.14.3 not rerun",
+    "Coverage not measured",
+    "Author self-review; no independent reviewer"
+  ]
+}
