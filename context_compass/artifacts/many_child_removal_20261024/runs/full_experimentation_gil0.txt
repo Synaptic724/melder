@@ -1,0 +1,8 @@
+# Full suite chunk tests/experimentation with the change, -X gil=0 (working tree synced 2026-10-24T20:35Z: this change plus melder_0's in-progress cache-save fix)
+# Python 3.14.7 free-threading build; pytest 9.1.1; a /tmp mirror of the checkout (src, tests, pyproject.toml, benchmarks, llm_support, .github, context_compass, docs and the root files)
+# Command: python -X gil=0 -m pytest -q -p no:cacheprovider -rf[E] tests/experimentation
+............................sss......................................... [ 28%]
+........................................................................ [ 56%]
+...............................s........................................ [ 85%]
+......................................                                   [100%]
+250 passed, 4 skipped in 9.19s

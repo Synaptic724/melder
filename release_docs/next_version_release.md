@@ -1,4 +1,4 @@
-# Melder 0.2.8265
+# Melder 0.2.8266
 
 **Unreleased**
 
@@ -1275,6 +1275,42 @@ also holds when the calls target different clusters: the conduit joins only the 
 Previously several calls could all succeed, and competing clusters could both retain the conduit.
 Membership checking and registration now finish together before sharing starts.
 
+## A cache file that cannot be saved no longer fails a meld
+
+Melder keeps each root conduit's compiled creation plans in a cache file (`<conduit>.meldercache`, in the package's
+`__melder_cache__` folder) so a later conjure can skip compilation. A meld that staged new plans - the first meld of
+a spell compiled at that meld, such as one bound after `conjure` - saved the file before it returned, and a save the
+operating system refused was raised from the meld after its object had been built: on Windows `PermissionError:
+[WinError 5] Access is denied` while another program held the file open (a real-time virus scanner or an indexer,
+for example), on any platform for a read-only cache folder or a full disk. A `unique` built that way came back from
+the next meld, but a `many` was lost to its caller, a managed lease never went back to its pool, and while the
+refusal lasted every meld of the Spellbook raised.
+
+The cache file is now best-effort, as a missing or unreadable one already was (it only makes the cache cold):
+
+- A save the operating system refuses raises nothing. The meld returns its object, the cache stays in memory for
+  the next save, and the refusal is logged once per cache file at WARNING - later refusals of that file at DEBUG:
+
+```text
+Could not save the creation-cache bundle '.../__melder_cache__/__conjure_cache__/<frame>/<conduit>.meldercache':
+[WinError 5] Access is denied: ... Melds are not affected and the cache stays in memory for the next save. To
+persist it, make the cache folder writable (on Windows, also exclude it from real-time scanning), or turn caching
+off for the frame with with_system_caching_enabled(False). Later refused saves of this bundle log at DEBUG.
+```
+
+- On Windows a refused rename of the file is retried for about 100 ms before the save counts as refused.
+- Each process and thread writes a temp file of its own (`<conduit>.meldercache.<pid>.<thread id>.tmp`) and a
+  failed save removes it, so no `<conduit>.meldercache.tmp` is left behind, and two processes that share a frame
+  and conduit name never write into one temp file.
+
+**Breaking change:** `Spell.emit_cache_file()` returns `False` when the operating system refuses the save (the
+refusal is logged), where it raised the `OSError`. `True` still means the file was written, and `False` also means
+caching is off for the spell or nothing was staged since the last save; code that caught `OSError` around the call
+can check the result instead.
+
+What stays the same: the cache file's format and generation (23), when and where Melder saves it, and every other
+public signature. A save that fails for any reason other than an operating-system error still raises.
+
 ## Packaging and documentation
 
 - The README's "Declarative Binding by Module" example passes `permissions="create"`, without which it raised
@@ -1426,4 +1462,8 @@ Membership checking and registration now finish together before sharing starts.
 - The component map documents Spell constructor reflection; the test map records its four signature/spec
   regressions and the current unit-file inventory.
 - The component and test maps describe atomic cluster admission and its forced concurrency regressions.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8265.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  the best-effort cache save - the result of a refused save, the per-writer temp file, the Windows rename retry and
+  the one WARNING per cache file - and `Spell.emit_cache_file()`'s `False`; the code-map extents of
+  `caching_system.py`, `spellbook.py` and `spell.py` are remeasured, and their line citations remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8266.

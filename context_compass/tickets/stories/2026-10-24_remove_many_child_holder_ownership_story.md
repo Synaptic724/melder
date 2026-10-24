@@ -73,7 +73,7 @@ and nothing cascades from one object to its dependencies unless asked (`Owned<T>
 ## Tasks (Implementation Checklist)
 - [x] Patch remove_many_child_holder_ownership_2026_10_24 written and linked.
 - [x] Tests rewritten to the new contract; red on 0.2.8265 with the GIL off and on.
-- [ ] The src change; the tests green with the GIL off and on; the full suite run.
+- [x] The src change; the tests green with the GIL off and on; the full suite run.
 - [ ] Docstrings, `src_architecture.md`, `src_components.md` and indexes; the release note.
 - [ ] Notch, closure, board sync, rebuild.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
@@ -277,6 +277,57 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T20:57:42Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: With the change the 35 red tests pass: 156 passed of the six files, the GIL off and on. The first green
+    run showed one test bug of this lane, not a code bug: `test_a_failing_child_disposal_surfaces_at_its_store_end_
+    not_at_the_holder_purge` read `raised.value.exceptions`, but a root's teardown wraps each store's group in its
+    own, so the failure is a leaf two levels down; the test now flattens the group (`_leaf_errors`, as the cluster
+    tests do). Full suite on the working tree synced 2026-10-24T20:35Z (this change plus melder_0's in-progress
+    cache-save fix), in four chunks because a background run does not survive the device call: 14,711 collected,
+    0 failed both ways. GIL off: unit 9,712 passed (3 skipped, 7 xfailed), component 2,400 (43 skipped, 1 xfailed),
+    integration 2,277 (2 skipped, 10 xfailed, 2 xpassed), experimentation 250 (4 skipped). GIL on: unit 9,712 (3, 7),
+    component 2,420 (23 skipped, 1 xfailed), integration 2,277 (2 skipped, 9 xfailed, 3 xpassed), experimentation
+    250 (4). The unit chunk needs `.github/`, `context_compass/` and `docs/` in the mirror (the CI-contract and
+    document-builder tests read them); without them it fails 72 and errors 438 for missing files.
+  EVIDENCE:
+  - context_compass/artifacts/many_child_removal_20261024/runs/green_156_gil0.txt:1-6
+  - context_compass/artifacts/many_child_removal_20261024/runs/green_156_gil1.txt:1-14
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_unit_gil0.txt:1-141
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_component_gil0.txt:1-38
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_integration_gil0.txt:1-36
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_experimentation_gil0.txt:1-8
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_unit_gil1.txt:1-149
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_component_gil1.txt:1-46
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_integration_gil1.txt:1-44
+  - context_compass/artifacts/many_child_removal_20261024/runs/full_experimentation_gil1.txt:1-16
+  IMPACT: The removal is green across the suite with the GIL off and on; nothing else in the suite depended on
+    holder ownership.
+  NEXT: Wait for melder_0's 0.2.8266 landing, then re-read and edit the system docs, the tests docs and the
+    release note; notch; closure; rebuild last.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-24T21:04:30Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: M3-2 consumed (melder_3, QUESTION): it will trim src_architecture.md and move component detail into
+    src_components.md (STORY-2026-10-24-src_architecture_trim_to_spec, the owner's ask) after melder_0's F5, and
+    offered to land before or after this lane. Answered M1-51: this lane lands first, right after melder_0's
+    0.2.8266 - its doc edits are drafted and the code is green - and NOTICEs melder_3 when they are in, with the
+    sections touched, so it rebases once on both landings. The order of the shared docs is melder_0, melder_1,
+    melder_3.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md:1-15
+  IMPACT: One more writer on src_architecture.md and src_components.md; this lane edits them once, between
+    melder_0's landing and melder_3's pass, and tells melder_3 exactly which sections moved.
+  NEXT: Wait for melder_0's landing; then the doc edits, a NOTICE to melder_3, the notch and the release note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -293,10 +344,13 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: remove holder ownership of `many` dependencies (0.2.8235 placement + 0.2.8238 adoption) on the owner's
   decision; a `many` belongs to the scope that built it.
-- State: in_progress, melder_1; patch written and linked; the tests are red on 0.2.8265 (35 of 156, GIL off
-  and on; MEASURE note); nothing edited in src yet.
-- Next: (1) the src change (`site_plan_lowering.py`, then `creations.py`); (2) the tests green, GIL off and
-  on, then the full suite; (3) docstrings, system docs, release note, notch, closure, rebuild.
+- State: in_progress, melder_1; the src change and docstrings are in (`site_plan_lowering.py`, `creations.py`,
+  four docstring files), the scopes and ownership guides say the new rule; the 35 red tests are green and
+  the full suite is green, GIL off and on (MEASURE notes). Not yet: system docs, tests docs, release note,
+  notch, closure, rebuild.
+- Next: (1) wait for melder_0's 0.2.8266 landing (M0-215), then re-read and edit src_architecture,
+  src_components, tests_components and their indexes; (2) notch above __version__ and the release note;
+  (3) closure, board sync, rebuild last with both checks OK.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

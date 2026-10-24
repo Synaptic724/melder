@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-24T18:25:58Z
-- Updated: 2026-10-24T20:35:15Z
+- Updated: 2026-10-24T20:55:52Z
 
 ## Objective
 Document, with source evidence and a reproducer, the Melder defect behind the owner's Windows failure (chat
@@ -868,6 +868,59 @@ this does not make independent review mandatory for every ticket.
   NEXT: F5: the system docs, starting with src_architecture.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T20:48:36Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-31 (melder_2's NOTICE, 2026-10-24T20:35:02Z, consumed here): melder_2's 23-file CI set is in the owner's
+    working tree on his word and its lane is closed - .github/ (the 3.14.9, 3.15.0 and 3.15.1 manifests
+    untracked), tests/unit/github_workflows/test_workflow_contracts.py, tests_architecture.md, tests_components.md
+    and their indexes. melder_2 did not rebuild the llm_support bundles: by its MEASURE the tree carries this
+    lane's fix and melder_1's removal in flight (src changes, four tracked test files deleted) and the builder
+    refuses a missing tracked path, so the last of the two landings rebuilds, the three untracked manifests in.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-24_ci_python_315_and_release_test_rerun_task.md:422-443
+  - context_compass/attention_board.md:140-140
+  IMPACT: Note 22's hold is over: the tests_* docs are on disk as landed; this lane still leaves them alone (its
+    boundary) and files their entries for its new tests as a follow-up. The rebuild step becomes "the last
+    landing rebuilds": if melder_1 has not landed when this lane's turn-in is done, this lane reads the builder,
+    hands the rebuild (with --include-untracked) to melder_1's landing in its NOTICE and does not rebuild over
+    unfinished work. The F6 unit failure that waited on the pip pin is rerun on the current tree at closure.
+  NEXT: F5: fix the system-doc edit script's failed anchor (its run stopped before writing) and apply it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T20:55:52Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: F5, the system documents: src_architecture carries a new first operational invariant (best-effort cache saves:
+    the bool, the per-writer temp file, the Windows-only rename retry, one WARNING per bundle, the flag left
+    cleared, the locks), two failure modes (fixed in 0.2.8266; Breaking for `Spell.emit_cache_file()`), the code
+    map (caching_system.py 1122, spellbook.py 8398, spell.py 2035 lines) and a summary entry; src_components a
+    best-effort-saves bullet in the Spellbook Core cache list, a failure-mode bullet, step 6 of the cold-cache flow,
+    the three extents and a summary entry. Every numeric citation into spellbook.py past the edit moved 20 lines;
+    the script proves all 24 pairs on a line map of HEAD's and today's spellbook.py, and repoints the stale
+    settle-then-inherit (:6971-6983, :6984) and `_run_structural_phases` (:7423) citations, checked by content.
+    Checks: both indexes regenerated, --check OK (5700 and 12544 lines); the content-preservation multiset diff
+    lists only the remapped citations and the remeasured code-map fields; the portability and absolute-path greps
+    find nothing; the citation-bounds recipe flags only two bare file names in a 2026-10-16 summary entry
+    (src_components 12053-12054, pre-existing). Rubric not run: a targeted edit. The first try of the script
+    stopped on three seam citations that carry a description and wrote nothing.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1176-1200
+  - context_compass/system_docs/src_architecture.md:2551-2562
+  - context_compass/system_docs/src_architecture.md:2563-2566
+  - context_compass/system_docs/src_components.md:528-549
+  - context_compass/system_docs/src_components.md:836-839
+  - context_compass/artifacts/cache_write_failure_20261024/scripts/apply_system_docs_20261024.py:1-406
+  IMPACT: The two documents describe what landed, with citations that point at their code; the packaged copies
+    follow at the rebuild.
+  NEXT: The graph: extract with --strict on Python 3.14, read the drift report, re-accept the changed nodes after
+    reading them, reassemble and check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Scope: the defect is documented (Notes 1-13); the regression tests (Notes 14-17) fail on 0.2.8265, 9 of 9, the

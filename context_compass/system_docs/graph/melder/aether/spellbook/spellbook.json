@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "88968c6b0297ac3feddd21b413d52cccca91709ae93cedc1f6ba5f630949aea9",
+ "source_sha256": "66e4f3428dedfc1059f2c6a92d2d54469b87e5b621d47d7b73956f64ae8628e5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "767d811c7bc641cecc4ac58de0006df86e25f407976edd9e62afd0bfa3baab58",
+   "span_sha256": "43cf941115eeec6210fdc23772fc376bab72cb5fa439fc95e312d6f8579d0fdb",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -93,7 +93,8 @@
     "retires every parked version at Book teardown with the local teardown cleanup_spell's parked branch runs (_spellbook_cleanup set, then Spell.cleanup()) and then cleans every index only parked versions hold, one remove_from_spell_index minted, after the active loop; each step best-effort and logged (_cleanup_spells, 0.2.8260)",
     "routes cleanup_spell through its root conduit's cleanup_spell once conjured, and _dispose_spell calls the caller's release_contracts hook with the spell_id after its decision and refusals and before anything is invalidated or disposed, with no Book lock held; a raising hook disposes nothing and the in-flight mark is cleared (0.2.8261)",
     "refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, the lineage's dependencies and topology registered again, a refused version's own key set back (_revert_refused_notch) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)",
-    "destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)"
+    "destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)",
+    "saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)"
    ],
    "owns_state": [
     "_bind",
@@ -110,7 +111,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "767d811c7bc641cecc4ac58de0006df86e25f407976edd9e62afd0bfa3baab58"
+   "semantics_authored_against": "43cf941115eeec6210fdc23772fc376bab72cb5fa439fc95e312d6f8579d0fdb"
   }
  },
  "edges_out": [

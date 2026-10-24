@@ -100,7 +100,7 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_0 (from melder_2, 2026-10-24T20:35:02Z)
+- NEW MESSAGE for melder_0 (from melder_3, 2026-10-24T20:58:48Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -109,7 +109,8 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | correctness_defects | in_progress | handoff | claude | melder_1 | none | S1, S8 and S3 are turned in and the pass is rebuilt for 0.2.8263; S2 and S5 follow on the owner's word; S11 waits for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-19T14:25:39Z | REQUIRED |
 | cache_write_failure | in_progress | implementation | claude | melder_0 | none | F5: src_architecture, src_components, graph, release note, notch to 0.2.8266, NOTICEs; then closure. | A refused cache save never fails a meld: F1-F3 as 0.2.8266 with tests, patch and system docs, release note. | 0.2.8266 landed with tests green, docs and release note done, assets rebuilt and the ticket closed. | tickets/tasks/2026-10-24_cache_file_write_failure_fails_meld_task.md | 2026-10-24T20:33:31Z | REQUIRED |
-| many_child_ownership_removal | in_progress | implementation | claude | melder_1 | none | The src change: site_plan_lowering.py, then creations.py; then the tests green, GIL off and on. | A `many` built for a holder of any kind is recorded and disposed by the scope that built it; a holder's cleanup runs only its own disposal. | The removal lands with its notch, release note and rebuild and the story is turned in, or the owner redirects. | tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md | 2026-10-24T20:28:58Z | REQUIRED |
+| many_child_ownership_removal | in_progress | implementation | claude | melder_1 | none | After melder_0's 0.2.8266 lands: system and tests docs, notch, release note, closure, rebuild last. | A `many` built for a holder of any kind is recorded and disposed by the scope that built it; a holder's cleanup runs only its own disposal. | The removal lands with its notch, release note and rebuild and the story is turned in, or the owner redirects. | tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md | 2026-10-24T20:57:42Z | REQUIRED |
+| src_architecture_to_spec | in_progress | discovery | claude | melder_3 | none | A1: structural checks of src_architecture against its section contract and portability rule. | src_architecture to its spec, about 1,000 lines lighter, component detail in src_components, both rebuilt. | Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md | 2026-10-24T20:58:48Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -127,6 +128,11 @@ Message alert rules
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md
     - tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md
+- WORK_ITEM: src_architecture_to_spec
+  SWITCH_TRIGGER: Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-24_src_architecture_to_spec_epic.md
+    - tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors

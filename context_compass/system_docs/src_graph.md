@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `ba41b2b7a30a68942c459d80a04f1130768dee4788ebc8b4afc296687289af2c`
+- source_sha256: `fb7fbfbd7be2f9eeadc496cdc5b51e37ed6f8b20e02492d0e2fe086264e70956`
 - nodes: 1
 
 ### Nodes
@@ -6599,7 +6599,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f`
+- source_sha256: `b953163118b8794cc5e1912717fa47a966389e5eccff9c3d4b202afbb750a11a`
 - nodes: 2
 
 ### Nodes
@@ -6628,6 +6628,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - on a direct cleanup removes itself through its Spellbook outside its own lock, serialized per spell by a removal lock nothing else takes, so Book teardown and conjure, which take its lock under the Book lock, never wait on it (_direct_removal_route, 0.2.8233)
   - retains a managed binding's normalized options read-only per version (managed_spell_mode, limit, timeout, reset methods; None, None, None and () on other existences) and, when an owner stamp carries a store, ensures the version's pool there (_add_owned_conduit -> Creations.ensure_managed_quantity, 0.2.8242-0.2.8243)
   - a direct cleanup of the active version of an index that also holds parked versions raises the Book's refusal and leaves the spell as it was (Spellbook.cleanup_and_remove_spell, 0.2.8256)
+  - saves its Book's cache on request (emit_cache_file -> bool): False when caching is off, nothing was staged since the last save or the operating system refused the save, which no longer raises (0.2.8266)
 - owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`, `_managed_spell_mode`, `_managed_spell_limit`, `_managed_spell_timeout_seconds`, `_managed_spell_reset_methods`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `binding_hash`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation` (+17 more)
@@ -15843,7 +15844,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `88968c6b0297ac3feddd21b413d52cccca91709ae93cedc1f6ba5f630949aea9`
+- source_sha256: `66e4f3428dedfc1059f2c6a92d2d54469b87e5b621d47d7b73956f64ae8628e5`
 - nodes: 2
 
 ### Nodes
@@ -15892,6 +15893,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - routes cleanup_spell through its root conduit's cleanup_spell once conjured, and _dispose_spell calls the caller's release_contracts hook with the spell_id after its decision and refusals and before anything is invalidated or disposed, with no Book lock held; a raising hook disposes nothing and the in-flight mark is cleared (0.2.8261)
   - refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, the lineage's dependencies and topology registered again, a refused version's own key set back (_revert_refused_notch) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)
   - destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)
+  - saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -26104,7 +26106,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `bdcaa48c320c164960d8321bdf96315186084f1c629e0cbd4c0b6d62593d67cb`
+- source_sha256: `dd8fb4f01094b483a4544a1ecdf5bc29d3d7c5883fe0c8026c643e3d2285bf26`
 - nodes: 2
 
 ### Nodes
@@ -26121,7 +26123,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CachingSystem` (class)
 
 - id: `melder.utilities.caching_system.caching_system.CachingSystem`
-- defined at: `src/melder/utilities/caching_system/caching_system.py:16`
+- defined at: `src/melder/utilities/caching_system/caching_system.py:18`
 - extends: `Cleanable`
 - role: Conduit-scoped cache persistence utility.
 - responsibilities:
@@ -26138,7 +26140,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)
   - cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone
   - cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)
-- owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
+  - saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)
+- owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_refused_save_logged`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
 

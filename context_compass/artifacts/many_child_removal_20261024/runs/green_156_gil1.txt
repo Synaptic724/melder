@@ -1,0 +1,14 @@
+# Green run of the new and edited tests with the change (working tree synced 2026-10-24T20:35Z), -X gil=1
+# Python 3.14.7 free-threading build; pytest 9.1.1; same six files as red_0_2_8265_gil1.txt
+........................................................................ [ 46%]
+........................................................................ [ 92%]
+............                                                             [100%]
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/cc_res/mirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+156 passed, 1 warning in 1.13s

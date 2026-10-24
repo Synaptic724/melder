@@ -1,0 +1,6 @@
+# Green run of the new and edited tests with the change (working tree synced 2026-10-24T20:35Z), -X gil=0
+# Python 3.14.7 free-threading build; pytest 9.1.1; same six files as red_0_2_8265_gil0.txt
+........................................................................ [ 46%]
+........................................................................ [ 92%]
+............                                                             [100%]
+156 passed in 1.08s
