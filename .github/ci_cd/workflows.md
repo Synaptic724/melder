@@ -67,7 +67,7 @@ midway.
 | `source-qualification` | Reuses the full CI evidence for this tree (`verify-source-qualification.yml`). |
 | `build` | Builds and verifies the wheel and sdist (`build-distributions.yml`). |
 | `publish` (RC / publish-to-TestPyPI) | In the `pypitest` environment: compares the files with what TestPyPI already has, retrying a TestPyPI outage up to six times, and stages only the missing ones (`testpypi_candidate.py prepare-upload`), requires the `melder_api_token` secret, checks the head again and uploads. |
-| `install` (RC / installed-package / ...) | For every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash, installs it alone into a fresh environment and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
+| `install` (RC / installed-package / ...) | For every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash and Melder's runtime dependencies from PyPI at that release's test-manifest pins, installs them together into a fresh environment with no resolver, checks the set with `pip check` and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
 | `package-ready` (RC / package-ready) | Requires all five stages to have succeeded and the head to be unchanged (`ci_policy.py candidate-ready`, `candidate-head`). |
 
 `publish` and `install` download the build that `build` reports (`needs.build.outputs.artifact-name`), so **Re-run
@@ -124,9 +124,10 @@ output for 14 days. The documentation tooling lives in `docs/tools/`; see `docs/
 Takes `artifact-name` and an optional `release-tag`. On free-threaded Python it installs the locked build tools
 (`uv sync --locked --only-group build`), checks the build assets, builds the wheel and sdist with the commit's
 timestamp, normalizes the sdist (`normalize_sdist.py`), checks both archives (`verify_distributions.py`),
-installs the wheel alone into a fresh environment and runs `smoke_wheel.py` there with `PYTHON_GIL=0`, then keeps
-the files under the given artifact name for 14 days and returns that name as the output `artifact-name`, which jobs
-later in the same run download by.
+installs the wheel into a fresh environment beside Melder's runtime dependencies at the helper release's
+test-manifest pins (`python_runtime_matrix.py runtime-requirements`, no resolver), checks the set with
+`uv pip check` and runs `smoke_wheel.py` there with `PYTHON_GIL=0`, then keeps the files under the given artifact
+name for 14 days and returns that name as the output `artifact-name`, which jobs later in the same run download by.
 
 ### `verify-source-qualification.yml` (Source / full qualification)
 

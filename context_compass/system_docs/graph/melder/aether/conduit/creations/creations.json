@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/creations.py",
- "source_sha256": "e030e3c34c2ae9323ec8ec26256e2cb4ceb3323062f027d4c0bafb61970a9275",
+ "source_sha256": "f09244c389015e64f400f0d44dbb8fa8a4885832cb51cfb18dff09e4ff69e31e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.creations": {
@@ -55,46 +55,12 @@
    ],
    "semantics_authored_against": "a150bab45efb4987a628c9a04c9cdc6cbf055886262613614d0b644971222486"
   },
-  "melder.aether.conduit.creations.creations.HolderDisposalEntry": {
-   "id": "melder.aether.conduit.creations.creations.HolderDisposalEntry",
-   "label": "HolderDisposalEntry",
-   "kind": "class",
-   "file": "src/melder/aether/conduit/creations/creations.py",
-   "lineno": 55,
-   "bases": [],
-   "markers": [],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": false,
-    "trivial": true
-   },
-   "span_sha256": "144056027f8ba224a73f41e44906be9fc9330c197851c7a7f97d86db83468cec",
-   "include": true,
-   "role": "Cleanup-only record of one slotted holder and the disposal-bearing many children adopted for it (0.2.8238).",
-   "responsibilities": [
-    "item is the holder the store holds under the holder's spell id; methods is the holder Spell's ordered disposal list, borrowed (empty when the holder declares none, the record then exists for its children)",
-    "children lists (child, child_methods) pairs in build order; a child is in exactly one place, its spell's many bucket or one holder record",
-    "disposal runs the holder's methods, then each child's, newest child first, so a holder whose own disposal uses a child still finds it open",
-    "every field is borrowed: the owning Creations store detaches the record and disposes from it; the record owns nothing and needs no cleanup"
-   ],
-   "owns_state": [
-    "item",
-    "methods",
-    "children"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ],
-   "semantics_authored_against": "144056027f8ba224a73f41e44906be9fc9330c197851c7a7f97d86db83468cec"
-  },
   "melder.aether.conduit.creations.creations.Creations": {
    "id": "melder.aether.conduit.creations.creations.Creations",
    "label": "Creations",
    "kind": "class",
    "file": "src/melder/aether/conduit/creations/creations.py",
-   "lineno": 120,
+   "lineno": 59,
    "bases": [
     "Cleanable"
    ],
@@ -102,7 +68,6 @@
    "public_methods": [
     "add_creation",
     "add_many_creations",
-    "adopt_children",
     "cleanup",
     "clear_all",
     "discard_managed_quantity",
@@ -120,12 +85,12 @@
     "slot_guard"
    ],
    "shape": {
-    "method_count": 30,
+    "method_count": 28,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "91ace6558a201e888223c894ca6fbb3302fcec8d1c9187d37bdfd4b9eea242da",
-   "role": "Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a ManyDisposalBucket per disposal-bearing many key, a HolderDisposalEntry per slotted holder that adopted many children.",
+   "span_sha256": "6821efc1fe7bb1c9117f4637d34d061a8d27cabf865cde0ca4c8cf83f7b6f632",
+   "role": "Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a slotted holder's included, and a ManyDisposalBucket per disposal-bearing many key.",
    "responsibilities": [
     "stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once",
     "register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a disposal declaration that disagrees with the key's entries",
@@ -135,7 +100,7 @@
     "owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock",
     "keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build",
     "purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization",
-    "records a just-published slotted holder's disposal-bearing many children with the holder (adopt_children, 0.2.8238): moves them out of their spells' buckets into the holder's HolderDisposalEntry, so purge, extract/restore and whole-store disposal reach them through the holder's key with one dict read; a many purge or live-creation probe of a child's spell counts only children no holder adopted",
+    "keeps a slotted holder an ordinary unique entry (0.2.8267): its disposal and its purge run only its own methods, and the many objects built for it stay in their spells' buckets in the store that recorded them - the meld's innermost scope - so a many purge or live-creation probe of a child's spell counts every child that store holds; the holder record of 0.2.8238-0.2.8265 is removed",
     "keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent) and, when a definition bound again under the same spell_id meets the pool its earlier definition left, hands it the new Spell after releasing the store lock (ManagedSpellQuantity._rebind_spell takes the new settings, 0.2.8254), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)",
     "cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)",
     "registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)"
@@ -154,7 +119,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "91ace6558a201e888223c894ca6fbb3302fcec8d1c9187d37bdfd4b9eea242da"
+   "semantics_authored_against": "6821efc1fe7bb1c9117f4637d34d061a8d27cabf865cde0ca4c8cf83f7b6f632"
   }
  },
  "edges_out": [
@@ -198,12 +163,6 @@
   },
   {
    "from": "melder.aether.conduit.creations.creations.Creations",
-   "to_label": "HolderDisposalEntry",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.creations.creations.Creations",
    "to_label": "ManagedSpellQuantity",
    "relation": "creates",
    "confidence": "candidate"
@@ -233,6 +192,43 @@
   "Spell": "melder.aether.spellbook.spell.Spell"
  },
  "collapse_candidate": null,
+ "nodes_retired": {
+  "melder.aether.conduit.creations.creations.HolderDisposalEntry": {
+   "id": "melder.aether.conduit.creations.creations.HolderDisposalEntry",
+   "label": "HolderDisposalEntry",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/creations/creations.py",
+   "lineno": 55,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "144056027f8ba224a73f41e44906be9fc9330c197851c7a7f97d86db83468cec",
+   "include": true,
+   "role": "Cleanup-only record of one slotted holder and the disposal-bearing many children adopted for it (0.2.8238).",
+   "responsibilities": [
+    "item is the holder the store holds under the holder's spell id; methods is the holder Spell's ordered disposal list, borrowed (empty when the holder declares none, the record then exists for its children)",
+    "children lists (child, child_methods) pairs in build order; a child is in exactly one place, its spell's many bucket or one holder record",
+    "disposal runs the holder's methods, then each child's, newest child first, so a holder whose own disposal uses a child still finds it open",
+    "every field is borrowed: the owning Creations store detaches the record and disposes from it; the record owns nothing and needs no cleanup"
+   ],
+   "owns_state": [
+    "item",
+    "methods",
+    "children"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "144056027f8ba224a73f41e44906be9fc9330c197851c7a7f97d86db83468cec",
+   "retired_reason": "gone from source"
+  }
+ },
  "edges_authored": [
   {
    "from": "melder.aether.conduit.creations.creations.Creations",

@@ -100,8 +100,6 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_1 (from melder_2, 2026-10-24T21:27:30Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-10-24T21:39:13Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -109,9 +107,8 @@ Message alert rules
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
 | correctness_defects | in_progress | handoff | claude | melder_1 | none | S1, S8 and S3 are turned in and the pass is rebuilt for 0.2.8263; S2 and S5 follow on the owner's word; S11 waits for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-19T14:25:39Z | REQUIRED |
-| many_child_ownership_removal | in_progress | implementation | claude | melder_1 | none | After melder_0's 0.2.8266 lands: system and tests docs, notch, release note, closure, rebuild last. | A `many` built for a holder of any kind is recorded and disposed by the scope that built it; a holder's cleanup runs only its own disposal. | The removal lands with its notch, release note and rebuild and the story is turned in, or the owner redirects. | tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md | 2026-10-24T20:57:42Z | REQUIRED |
-| src_architecture_to_spec | in_progress | discovery | claude | melder_3 | none | Write the text-anchored edit script and test it on a scratch copy; apply after melder_1's turn-in NOTICE. | src_architecture to its spec, about 1,000 lines lighter, component detail in src_components, both rebuilt. | Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md | 2026-10-24T21:07:48Z | REQUIRED |
-| ci_lane_loose_ends | in_progress | discovery | claude | melder_2 | none | Read .github/ci_cd, the speed manifest, both probes and the pin tests; record the plan. | Melder's texts say it depends on pip; CI pins pip wherever it installs Melder's runtime dependencies; two stale backlog tickets settled. | All four loose ends done, tests/unit/github_workflows green and the ticket closed, or the owner redirects. | tickets/tasks/2026-10-24_ci_lane_loose_ends_task.md | 2026-10-24T21:16:30Z | REQUIRED |
+| src_architecture_to_spec | in_progress | discovery | claude | melder_3 | none | On melder_1's turn-in NOTICE: E0 baseline, rerun the dry run (script ready, clean), apply, re-index, gates, rebuild if last. | src_architecture to its spec, about 1,000 lines lighter, component detail in src_components, both rebuilt. | Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md | 2026-10-24T21:46:32Z | REQUIRED |
+| many_child_ownership_epic | in_progress | handoff | claude | melder_1 | none | Ask the owner whether to close the epic on his removal decision. | The owner's removal decision recorded and carried out at 0.2.8267; the epic closed on his word. | The owner closes the epic or redirects. | tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md | 2026-10-24T22:06:33Z | HELPFUL |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -120,20 +117,15 @@ Message alert rules
   SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
-- WORK_ITEM: many_child_ownership_removal
-  SWITCH_TRIGGER: The removal lands with its notch, release note and rebuild and the story is turned in, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md
-    - tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md
 - WORK_ITEM: src_architecture_to_spec
   SWITCH_TRIGGER: Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-24_src_architecture_to_spec_epic.md
     - tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md
-- WORK_ITEM: ci_lane_loose_ends
-  SWITCH_TRIGGER: All four loose ends done, tests/unit/github_workflows green and the ticket closed, or the owner redirects.
+- WORK_ITEM: many_child_ownership_epic
+  SWITCH_TRIGGER: The owner closes the epic or redirects.
   RESUME_HIERARCHY:
-    - tickets/tasks/2026-10-24_ci_lane_loose_ends_task.md
+    - tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
@@ -147,6 +139,10 @@ Message alert rules
 | board_cleanup | done | melder_1 | tickets/tasks/completed/2026-10-24_strip_old_board_and_artifact_state_task.md | Boards stripped to live state; 26 old tickets closed, old artifacts and patch docs deleted (owner). | 2026-10-24T18:35:08Z |
 | ci_python_315 | done | melder_2 | tickets/tasks/completed/2026-10-24_ci_python_315_and_release_test_rerun_task.md | 3.14.9/3.15.0/3.15.1 cells and no publication test rerun, in the owner's checkout; commit and bundle rebuild follow the concurrent landings. | 2026-10-24T20:35:02Z |
 | cache_write_failure | done | melder_0 | tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md | Notched 0.2.8266: a cache save the OS refuses no longer fails a meld; three follow-ups in backlog; rebuild after closure. | 2026-10-24T21:32:03Z |
+| cache_temp_file | done | melder_2 | tickets/tasks/completed/2026-10-04_per_process_conjure_cache_temp_file_task.md | Superseded by 0.2.8266's per-writer temp file; closed on the owner's word (ci_lane_loose_ends). | 2026-10-24T21:57:09Z |
+| shared_gauntlet_config_order | done | melder_2 | tickets/tasks/completed/2026-09-22_shared_gauntlet_configuration_order_followup_task.md | Obsolete since f1cd22a22; the lane-parity guard passes with the GIL off and on; closed on the owner's word. | 2026-10-24T21:57:09Z |
+| ci_lane_loose_ends | done | melder_2 | tickets/tasks/completed/2026-10-24_ci_lane_loose_ends_task.md | Melder says it depends on pip; pip pinned in the speed manifest, docs lock and both probes (pip check); two backlog tickets closed; rebuild at melder_1's landing. | 2026-10-24T21:59:15Z |
+| many_child_ownership_removal | done | melder_1 | tickets/stories/completed/2026-10-24_remove_many_child_holder_ownership_story.md | Notched 0.2.8267: a `many` belongs to the scope that built it, the holder record removed; rebuild after closure; the epic waits for the owner. | 2026-10-24T22:06:33Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

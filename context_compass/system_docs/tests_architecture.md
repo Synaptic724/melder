@@ -474,11 +474,11 @@ Direct evidence used in this pass:
 
 Current Python test inventory from direct filesystem count:
 - `unit/`: 518 `.py` files, 515 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 171 `.py` files, 169 of them `test_*.py` (143, 81)
+- `component/`: 172 `.py` files, 170 of them `test_*.py` (143, 81)
 - `integration/`: 185 `.py` files, 178 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-19 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 862 `test_*.py`
+Recounted 2026-10-24 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 863 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -919,6 +919,13 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-24 a `many` belongs to the scope that built it (0.2.8267): the inventory is recounted from disk (unit 518
+`.py`, 515 of them `test_*.py`; component 172, 170; integration 185, 178; 863 test modules in the three tiers) - the
+lane deletes four modules (the 0.2.8235 and 0.2.8238 feature tests, one of them a unit test of the removed holder
+record) and adds three for the new contract, catalogued in `tests_components`; the count also takes in the two
+0.2.8266 regression modules. No tier, conftest, declared marker or shared support module changes, and no extent in
+this map moves.
 
 2026-10-24 Python 3.14.9, 3.15.0 and 3.15.1 cells; publication without a test rerun (no notch; CI and
 documentation only): the test manifests add three releases (36 cells) and pin Melder's runtime dependency (pip)

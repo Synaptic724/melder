@@ -39,7 +39,8 @@ dependencies = [
 - `freethreaded` must be `true`: Melder CI qualifies free-threaded builds only.
 - `dependencies` is the whole install: exact `name==version` pins, one per distribution, each optionally followed
   by `; marker`. Installs skip dependency resolution, so a pinned package's own dependencies must be pinned too.
-  The test manifests hold Melder's runtime dependency (pip) and the `test` group's closure from `uv.lock`.
+  The test manifests hold Melder's runtime dependency (pip) and the `test` group's closure from `uv.lock`; the
+  speed manifest holds pip and the benchmarks' pins.
 - `build_from_source` (optional) lists pinned distributions built from their sdist because no usable wheel
   exists: dependency-injector in the speed manifest, PyYAML in the 3.15 test manifests. The speed install
   passes each to pip as `--no-binary`; a test cell's `uv pip install` builds any pin that has no wheel for
@@ -70,8 +71,23 @@ folder>`. That refuses any interpreter except the manifest's free-threaded relea
 requirements.txt` and keeps `install.log` beside them. The provenance step then asserts that
 `platform.python_version()` equals `SPEED_PYTHON`.
 
-The release candidate's probes install only the published wheel, without dependencies (see the dependency recipe
-below).
+The two installed-package probes install a built wheel beside Melder's runtime dependencies, at the pins of the
+test manifest of the release they run, with no resolver. `python_runtime_matrix.py runtime-requirements` writes
+those pins: the manifest's pins of the names in `[project.dependencies]`, refused when the manifest leaves one out.
+The wheel probe in `build-distributions.yml` runs, on the helper release:
+
+```bash
+python .github/scripts/python_runtime_matrix.py runtime-requirements --output "$RUNNER_TEMP/melder-runtime-requirements.txt"
+uv venv --python "<the helper interpreter>" "$RUNNER_TEMP/melder-wheel-probe"
+uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps -r "$RUNNER_TEMP/melder-runtime-requirements.txt" dist/*.whl
+uv pip check --python "$RUNNER_TEMP/melder-wheel-probe/bin/python"
+```
+
+and then `smoke_wheel.py` in that environment. The release candidate's probe (`testpypi_candidate.py
+probe-install`, on every test-manifest release) downloads the wheel from TestPyPI by its hash and the same pins
+from PyPI (`pip download --no-deps --only-binary=:all:`), installs them together into a fresh environment with
+`pip install --no-deps --no-index`, runs `pip check` and then `smoke_wheel.py`. `pip check` is what proves the
+pinned set satisfies the wheel's own requirements.
 
 ## Recipes
 
@@ -106,14 +122,15 @@ pin when a newer version of the library does not support it.
 
 1. Add it to `[project.dependencies]` in `pyproject.toml` and update `uv.lock`.
 2. Pin it, with its own dependencies, in every test manifest. A test fails while any test manifest leaves out a
-   declared dependency.
+   declared dependency, or pins one at another version than an exact `==` declaration.
 3. Pin it in the speed manifest too: the speed jobs import Melder from the checkout (`PYTHONPATH=src`), not from
-   an installed wheel.
-4. Before merging, change the two installed-package probes. They install the wheel without its dependencies and
-   would then fail to import Melder: the wheel probe in `build-distributions.yml`
-   (`uv pip install --no-deps dist/*.whl`) and `probe_install` in `testpypi_candidate.py`
-   (`pip install --no-deps --no-index`). Pinning the dependency for them keeps the probes reproducible.
-5. If the documentation build imports Melder, add the dependency to the documentation requirements as well.
+   an installed wheel. A test fails while the speed manifest leaves out a declared dependency.
+4. The installed-package probes follow on their own: both install, beside the wheel, the pins `runtime_pins`
+   selects (see "How each consumer installs"), and `pip check` runs before the smoke probe. They select
+   declared names only, so a dependency that brings its own dependencies fails `pip check` until `runtime_pins`
+   in `python_runtime_matrix.py` selects those too (pip declares none).
+5. The documentation build imports Melder from `src` for autodoc (`docs/conf.py`): pin the dependency in
+   `docs/requirements.lock` as well.
 
 ### Move the speed tests to another release
 

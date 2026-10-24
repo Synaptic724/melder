@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-20T21:59:39Z
-- Updated: 2026-10-24T20:05:23Z
+- Updated: 2026-10-24T22:09:11Z
 - Revision: 1
 - Target Window: Unscheduled; no investigation or implementation batch activated.
 - Related Program/Initiative: Melder runtime ownership and lifecycle design.
@@ -203,8 +203,9 @@ references and application disposal would leave the user's responsibility unclea
 - [ ] M3: Compatibility/migration and proposed acceptance agreed; Mark decides or explicitly defers.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-10-24-remove_many_child_holder_ownership - remove holder ownership of `many`
-  dependencies: a `many` belongs to the scope that built it (melder_1, on the owner's decision of 2026-10-24).
+- [x] Story: STORY-2026-10-24-remove_many_child_holder_ownership - remove holder ownership of `many`
+  dependencies: a `many` belongs to the scope that built it (melder_1, on the owner's decision of 2026-10-24;
+  done 2026-10-24, notched 0.2.8267: tickets/stories/completed/2026-10-24_remove_many_child_holder_ownership_story.md).
 Revision 1's text, before the decision:
 No child stories are created or assigned by this pass. Proposed workstreams, if later selected:
 - [ ] Establish current ownership and failure/handoff semantics across the required routes.
@@ -440,6 +441,27 @@ before authorizing product changes. Release timing, code pushes and publication 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-24T22:09:11Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner's decision is implemented: STORY-2026-10-24-remove_many_child_holder_ownership is turned in at
+    0.2.8267. A disposal-bearing `many` built for any slotted holder registers in the meld's innermost scope, a
+    holder's cleanup runs only its own disposal, the 0.2.8235 placement and the 0.2.8238 holder record are removed;
+    managed pools' recorded children and the specializer's decline are unchanged (F14 and the decision's scope). The
+    release note leads its section with the Breaking change and the remedies (meld the holder where it lives, or
+    leave the dependency without disposal methods). Per lifecycle row: the replacement owner is the resolving scope's
+    store (F6-F7); a child built before a failed holder stays in that store like any `many` (F8); purge, probes and
+    transfer follow the store that recorded the child (F12-F13). The rebuild runs last in the story.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-24_remove_many_child_holder_ownership_story.md:1-8
+  - release_docs/next_version_release.md:213-277
+  IMPACT: The owner's decision is recorded and carried out; the exploration criteria it made moot (the full route
+    matrix and three-option dossier) stay unticked, so closing the epic on that decision is the owner's call.
+  NEXT: Ask the owner whether to close the epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Exploration walkthrough delivered and owner disposition recorded.
 - [ ] All epic criteria and applicable required evidence/review satisfied.
@@ -453,10 +475,10 @@ Ticket authoring is delivered separately; these unchecked boxes keep the explora
 - Child evidence may be linked if actual children are authorized later; do not invent their IDs.
 
 ## Context / Handoff Summary
-Current (2026-10-24, melder_1): the owner decided removal - a `many` dependency belongs to the scope that
-built it, and a holder's cleanup runs only its own disposal (DECISION note of 2026-10-24T19:58:35Z). The
-story STORY-2026-10-24-remove_many_child_holder_ownership carries it; next: its patch, failing tests, the
-change. Revision 1's summary follows as written.
+Current (2026-10-24T22:09:11Z, melder_1): the owner decided removal - a `many` dependency belongs to the scope that
+built it, and a holder's cleanup runs only its own disposal (DECISION note of 2026-10-24T19:58:35Z) - and
+STORY-2026-10-24-remove_many_child_holder_ownership carried it out at 0.2.8267 (turned in; FACT note above).
+Next: the owner's word on closing this epic. Revision 1's summary follows as written.
 
 Revision 1 is a local, ticket-only draft exploring whether to retain, make explicit or remove
 holder-owned Many disposal. Source base 2f17867cddd608e66103e56c96f7fa5af995cdbd matches released

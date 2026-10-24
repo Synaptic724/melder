@@ -2,15 +2,21 @@
 
 # Task: Give the conjure-cache emit a per-process temp file so concurrent emitters never collide
 
+- Completed: 2026-10-24T21:57:09Z
+- Summary: Superseded by 0.2.8266 (melder_0, TASK-2026-10-24-cache_file_write_failure_fails_meld): the cache save
+  writes through its own `<bundle>.<pid>.<thread id>.tmp`, renames it onto the bundle and removes it when the save
+  is refused, and a test pins the per-writer name. Closed on the owner's word by melder_2
+  (TASK-2026-10-24-ci_lane_loose_ends); the Windows `pytest -n 4` rerun of the exit gate: Not run.
+
 ## Metadata
 - Task ID: TASK-2026-10-04-per-process-conjure-cache-temp-file
 - Story: none (standalone robustness task)
-- Status: draft
+- Status: done
 - Owner: user
-- Agent Name: unassigned
+- Agent Name: melder_2
 - Priority: p3
 - Created: 2026-10-04T12:15:00Z
-- Updated: 2026-10-04T12:15:00Z
+- Updated: 2026-10-24T21:57:09Z
 
 ## Objective
 `CachingSystem._write_current_cache_to_disk_locked` writes `<bundle>.melc.tmp` and replaces the bundle with it.
@@ -35,8 +41,11 @@ bundle and the last writer wins.
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: opened from the owner's 0.2.8222 tier results; parked until the owner picks it up.
+- to_state: done
+- transition_reason: superseded by 0.2.8266's per-writer temp file (Notes, 2026-10-24); closed on the owner's word
+  (chat 2026-10-24, 15:07 MDT: "yeah so get t hose loose ends fixed up") by melder_2 for
+  TASK-2026-10-24-ci_lane_loose_ends. Earlier: draft -> draft (opened from the owner's 0.2.8222 tier results;
+  parked until the owner picks it up).
 
 ## Steps / Checklist
 - [ ] Reproduce with two emitters on one bundle path (Windows or a simulated open-for-write hold).
@@ -99,8 +108,29 @@ bundle and the last writer wins.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-24T21:57:09Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Superseded. Since 0.2.8266 (TASK-2026-10-24-cache_file_write_failure_fails_meld, melder_0) the save writes
+    the envelope to `_temp_bundle_path()`, `<bundle name>.<pid>.<thread id>.tmp` - unique per process and thread -
+    replaces the bundle with it (`_replace_bundle_locked`, a Windows sharing refusal retried) and removes it when
+    the save is refused, so concurrent emitters never share a temp file and a refused save leaves none behind;
+    `test_each_writer_saves_through_its_own_temp_file` pins the naming. The bundle suffix is `.meldercache` since
+    0.2.8223 (this ticket said `.melc`). Not run: the Windows `pytest -n 4` rerun of the four 0.2.8222 tier failures
+    (no Windows host here; the owner's).
+  EVIDENCE:
+  - src/melder/utilities/caching_system/caching_system.py:948-1019
+  - tests/unit/melder/utilities/test_caching_system_refused_save.py:346-374
+  IMPACT: Nothing is left to build here; the ticket closes as superseded, on the owner's word.
+  NEXT: None (closed); a Windows tier run that still fails opens a new ticket.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-STATE 2026-10-04T12:15:00Z: DRAFT, parked in the backlog. Opened from the owner's 0.2.8222 tier results.
+STATE 2026-10-24T21:57:09Z: DONE - superseded by 0.2.8266's per-writer temp file (Notes). Opened 2026-10-04
+from the owner's 0.2.8222 tier results; closed on the owner's word by melder_2. Open: the Windows `-n 4` rerun
+(Not run).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

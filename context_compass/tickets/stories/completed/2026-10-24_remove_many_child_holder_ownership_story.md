@@ -1,15 +1,22 @@
 # Story: Remove holder ownership of `many` dependencies - a `many` belongs to the scope that built it
 
+- Completed: 2026-10-24T22:06:33Z
+- Summary: A disposal-bearing `many` dependency built for a slotted holder of any kind is recorded and disposed by the
+  meld's innermost scope, like any `many`, and cleaning up a holder runs only its own disposal methods: the 0.2.8235
+  placement and the 0.2.8238 holder record (`HolderDisposalEntry`, `adopt_children`) are removed. Notched 0.2.8267;
+  release-note section "A `many` dependency belongs to the scope that built it, not to the object that holds it". The
+  35 red tests are green and the full suite ran green, the GIL off and on. Rebuild last, after the closure.
+
 ## Metadata
 - Story ID: STORY-2026-10-24-remove_many_child_holder_ownership
 - Epic: EPIC-2026-10-20-reassess_many_child_disposal_ownership
-- Status: in_progress
+- Status: done
 - Owner: Mark
 - Agent Name: melder_1
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-24T20:05:23Z
-- Updated: 2026-10-24T20:05:23Z
+- Updated: 2026-10-24T22:06:33Z
 
 ## User Narrative
 As an agent working inside Melder, I want a `many` dependency to be recorded and disposed by the scope that built
@@ -60,8 +67,14 @@ and nothing cascades from one object to its dependencies unless asked (`Owned<T>
   they no longer carry, the stale `register_many` precondition (HYPOTHESIS in the correctness epic, 2026-10-24).
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
+- from_state: in_progress (implementation)
+- to_state: done
+- transition_reason: the EXIT_GATE is met but for its last item, the rebuild, which the turn-in order runs after
+  this closure: the new tests red on 0.2.8265 and green with the change, the GIL off and on; the full suite run;
+  the docstrings, system docs, tests docs, graph and release note written; notched 0.2.8267 (Notes of
+  2026-10-24T20:28:58Z, 20:57:42Z, 21:50:43Z, 21:56:52Z and 22:05:36Z). Routine closure under the owner's go.
+- from_state (earlier): draft
+- to_state (earlier): in_progress
 - transition_reason: the owner's go (chat 2026-10-24): "yeah so lets rip it out because it should behave like
   autofac not mysteriously cleanup transient objects".
 
@@ -74,10 +87,10 @@ and nothing cascades from one object to its dependencies unless asked (`Owned<T>
 - [x] Patch remove_many_child_holder_ownership_2026_10_24 written and linked.
 - [x] Tests rewritten to the new contract; red on 0.2.8265 with the GIL off and on.
 - [x] The src change; the tests green with the GIL off and on; the full suite run.
-- [ ] Docstrings, `src_architecture.md`, `src_components.md` and indexes; the release note.
-- [ ] Notch, closure, board sync, rebuild.
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
+- [x] Docstrings, `src_architecture.md`, `src_components.md` and indexes; the release note.
+- [x] Notch, closure, board sync; the rebuild runs last, after the closure.
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
 
 ## Acceptance Criteria
 - The release note's example: a `unique` Repository first melded in a lesser request scope gets its `many`
@@ -87,6 +100,8 @@ and nothing cascades from one object to its dependencies unless asked (`Owned<T>
 - A transfer moves the holder and not its children; a purge or probe of the child's spell counts every child the
   scope recorded.
 - No `HolderDisposalEntry` or `adopt_children` remains in src or tests.
+  - Reworded 2026-10-24T22:06:33Z (DECISION note): no code, emitted plan or store record uses either name; two unit tests
+    guard their absence; the system docs and their packaged copies name them only as removed history.
 
 ## Validation / Test Plan
 - Component and integration tests for the new contract (symptom-named, per route: lesser, root spellspace, lesser
@@ -104,15 +119,17 @@ and nothing cascades from one object to its dependencies unless asked (`Owned<T>
 - Missed emission paths (key-set plans, door-held roots, leasing managed misses): the unit tests cover each.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
 - None open; managed pools stay as they are unless the owner widens the scope.
 
 ## Decision Log
 - 2026-10-24T20:05:23Z: opened on the owner's go (epic DECISION note of 2026-10-24T19:58:35Z).
+- 2026-10-24T21:56:52Z: no `--reconcile` - it would delete five other lanes' retired graph nodes too.
+- 2026-10-24T22:06:33Z: the fourth acceptance criterion reworded to what can hold; closure under the owner's go.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -125,6 +142,8 @@ this does not make independent review mandatory for every ticket.
 - DISPOSITION: the patch folder promote_to_documentation (merged into the canonical docs, then deleted);
   the runs folder delete_on_close
 - CLEANUP_TRIGGER: the patch folder after its deltas merge into the canonical docs; the runs folder at closure.
+- APPLIED (2026-10-24T22:06:33Z): the patch deltas are in src_architecture and src_components, and both folders are deleted at
+  this closure (the committed runs and scripts stay in git history).
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -351,10 +370,216 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T21:47:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-219 and M2-32 consumed at re-onboarding. M0-219 (melder_0): its cache task is closed and its rebuild ran -
+    the asset --check prints three OK lines at 0.2.8266 (the bind guard at 629, this lane's removal); the LLM check is
+    OK for src and other and STALE for tests, because melder_2's CI edits rewrote three tests/unit/github_workflows
+    files after that build; its patch folder moved to patches/completed/; the owner committed both lanes' src and
+    melder_0's documents (3bedd65bb). M2-32 (melder_2, no src, no notch): it is editing one bullet in the release
+    note's "Packaging and documentation" before the rebuild line, three C1 extents in tests_components.md and its
+    index, pyproject.toml's description, README.md:44, docs/requirements.lock and .github, and NOTICEs when done.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:991-1052
+  - context_compass/artifacts/cache_write_failure_20261024/runs/rebuild_checks_0_2_8266.txt:1-21
+  - context_compass/tickets/tasks/2026-10-24_ci_lane_loose_ends_task.md:221-253
+  IMPACT: src_architecture, src_components, their indexes and the graph are this lane's to edit now; the release
+    note and tests_components wait for melder_2's done NOTICE and are re-read before this lane's edits; this
+    lane's rebuild runs last with --include-untracked and covers melder_2's files too.
+  NEXT: Apply the src_architecture and src_components edit scripts with a fresh stamp; regenerate and check both
+    indexes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:50:43Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: src_architecture and src_components carry the removal (the two text-anchored scripts, stamp
+    2026-10-24T21:49:23Z; both indexes regenerated, --check OK: 62 sections over 5,739 lines and 156 over 12,552).
+    src_architecture: a new first invariant "A `many` belongs to the scope that built it"; the meld step 4, the
+    transfer sequence, the Runtime Model's defect example and the transfer-default invariant; "Holder records" and
+    "Holder-owned many children" marked REMOVED (the specializer's decline kept); two Breaking failure modes in place
+    of the 0.2.8235 fix and the 0.2.8238 purge entry; the bind-guard count 629; the code map (bind_guard_manifest 651,
+    site_plan_lowering 2105, conduit 7909, transfer_of_ownership 2225, creations 1680). src_components: the emitted
+    line, the probe paragraph, the store selection, the emission bullet, one "Child registration" bullet in place of
+    the two holder bullets, Ownership Transfer, the Creations Disposal Pipeline, the transfer flow, the bind-guard
+    counts and the code map. Both docs: conduit.py citations past `transfer_spell_ownership` (def 4273) moved two
+    lines (10 and 7), each checked on its def or call line; src_components' creations.py citations, stale before,
+    point at `cleanup`, `_attempt_cleanup`, `_describe_for_disposal_error` and the two dispose methods; a handoff
+    entry each. `HolderDisposalEntry` and `adopt_children` remain only as removed history.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1178-1208
+  - context_compass/system_docs/src_architecture.md:2567-2587
+  - context_compass/system_docs/src_architecture.md:5074-5085
+  - context_compass/system_docs/src_components.md:5090-5113
+  - context_compass/system_docs/src_components.md:7596-7600
+  - context_compass/system_docs/src_components.md:11888-11900
+  - src/melder/aether/conduit/conduit.py:4273-4273
+  IMPACT: The architecture and component maps describe the code as it now runs; melder_3 can rebase its trim on
+    them and applies it after this lane's turn-in.
+  NEXT: NOTICE melder_3 with the sections touched; notch 0.2.8267; re-extract and reassemble the graph.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:56:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Notched 0.2.8267 (`__version__` read as 0.2.8266 first). The graph: re-extracted (--strict, exit 0, nothing
+    skipped); the authored edits in five descriptors (Creations' role and its holder responsibility, SitePlanEmission's
+    registration line rewritten and its adoption line dropped, TransferOfOwnership's move line, the generalized
+    compiler's and hydrator's decline lines); Creations re-read against creations.py (`__init__` fields, `purge`,
+    extract/restore) and accepted, the others left in their prior states; re-extracted again to undo the walker's
+    indent=2 rewrite (the stamp kept); assembled - 593 sections, 1,230 nodes, 1,419 edges, 28,193 lines - and the
+    --check verified all 593 ranges. src_graph.md names neither `adopt_children` nor `HolderDisposalEntry`.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/system_docs/graph/melder/aether/conduit/creations/creations.json:93-103
+  - src/melder/aether/conduit/creations/creations.py:1129-1240
+  IMPACT: The version and the generated graph match the source of this change set; the rebuild packages them.
+  NEXT: Wait for melder_2's done NOTICE (M2-32), then re-read and edit the tests docs and the release note.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:56:52Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: No `--reconcile` in this lane. The walker reports six retired nodes, not one: `HolderDisposalEntry` and five
+    from earlier lanes (`ManyOnlyCodegenPlanTargetKind`; dag_index's `SocketRef`, `DagIndex`, `DagTargetingEngine`,
+    `DagIndexBuilder`). `reconcile` takes no node filter and deletes every retired node's prose, so running it would
+    destroy five other lanes' retained semantics without their adjudication. `HolderDisposalEntry` stays under its
+    descriptor's `nodes_retired`; the assembler renders no retired node, so it is absent from src_graph.md and its
+    packaged payload. Adjudication: a deletion, not a move - drop it at the next reconcile that covers all six.
+  EVIDENCE:
+  - context_compass/tools/system_documents/python/graph_walker.py:306-350
+  - context_compass/system_docs/graph/melder/aether/conduit/creations/creations.json:195-230
+  IMPACT: The story's plan said reconcile once with one retired node; that step is dropped, and nothing of this lane's
+    remains in the assembled graph.
+  NEXT: Wait for melder_2's done NOTICE (M2-32).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T22:03:24Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-34 consumed (melder_2, NOTICE): its CI task is closed (no src, no notch). It edited, 21:52-21:53Z, the
+    release note (one bullet before the rebuild line, "Melder declares one runtime dependency, ..."), tests_components
+    (a Repository Tooling Protects bullet, three github_workflows C1 extents, a handoff entry; index regenerated),
+    .github/ci_cd/ and BRANCH_WORKFLOW.md; its bullet stays in the running note under 0.2.8267, and this lane's
+    rebuild covers its files and the stale tests corpus (M0-219). Before that edit: the release note's example and
+    claims were run on the working tree's src (0.2.8267), GIL off and on - the example's asserts hold; melding the
+    holder first at the root keeps the connection open through a lesser and the root's end closes it; a transfer
+    leaves the connection with the old owner, whose teardown closes it, and with `include_dependencies=True` it moves
+    and only the target's teardown closes it.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-24_ci_lane_loose_ends_task.md:1-20
+  - context_compass/artifacts/many_child_removal_20261024/runs/release_note_claims_gil0.txt:1-12
+  - context_compass/artifacts/many_child_removal_20261024/runs/release_note_claims_gil1.txt:1-12
+  IMPACT: The release note and tests_components are this lane's to edit now; both scripts are re-checked against the
+    landed text first (melder_2's handoff entry moves the tests_components handoff anchor).
+  NEXT: Re-read the release note and tests docs, adapt the anchors, apply both, regenerate the tests indexes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T22:05:36Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The release note and the tests docs carry the removal (stamp 2026-10-24T22:04:25Z). Release note: header
+    `# Melder 0.2.8267`; "A `many` dependency is disposed with the object that holds it" replaced by "A `many`
+    dependency belongs to the scope that built it, not to the object that holds it" (Breaking change lead, the
+    Connection/Repository example, the remedies, purge/probe/transfer, what stays the same, the specializer); in
+    "Packaging and documentation" the two holder bullets and the bind-guard bullet (629) corrected, melder_2's bullet
+    kept, a documentation bullet added, the rebuild line at 0.2.8267. tests_components: the lowering and door-held
+    entries, the component cluster entry (24 tests) and the two integration entries (2 and 10 tests; 36 collected),
+    three key-file swaps, 863 modules, six C1 extents (511, 1468, 402, 197, 440, 878), three Information Sources
+    lines and a handoff entry naming melder_0's two uncatalogued 0.2.8266 modules; tests_architecture: component 172
+    `.py`, 170 `test_*.py`, 863 in the three tiers (recounted from disk: unit 518/515, integration 185/178), a handoff
+    entry. All four system indexes regenerated or checked: OK.
+  EVIDENCE:
+  - release_docs/next_version_release.md:1-3
+  - release_docs/next_version_release.md:213-277
+  - release_docs/next_version_release.md:1378-1382
+  - release_docs/next_version_release.md:1483-1491
+  - context_compass/system_docs/tests_components.md:3914-3931
+  - context_compass/system_docs/tests_architecture.md:477-481
+  - context_compass/system_docs/tests_architecture.md:923-928
+  IMPACT: Every document the change set owes is written; what remains is the closure, the board and artifact sync,
+    and the rebuild.
+  NEXT: Record the acceptance DECISION and the closure, move the story to completed/, sync the boards, then rebuild.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T22:06:33Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The fourth acceptance criterion ("No `HolderDisposalEntry` or `adopt_children` remains in src or tests")
+    cannot hold as written and is reworded to what the change guarantees: no code, emitted plan or store record uses
+    either name. A whole-tree search finds them only in two unit tests that assert the emitted miss source no longer
+    contains `adopt_children`, and in the packaged system-document payloads under src/melder/_build_assets/, which
+    the rebuild regenerates from the docs - where they appear as removed history (the code map, the REMOVED
+    invariants, the handoff entries); the assembled graph names neither.
+  EVIDENCE:
+  - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:1444-1444
+  - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py:373-373
+  - context_compass/system_docs/src_architecture.md:1786-1793
+  IMPACT: The criterion now states the property the tests and the search prove, not an absence the history in the
+    docs makes impossible.
+  NEXT: Record the closure.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T22:06:33Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Closure. The EXIT_GATE is met but for the rebuild, which runs after this pass: the new tests failed on
+    0.2.8265 and pass with the change, the GIL off and on, and the full suite ran green both ways (MEASURE notes of
+    20:28:58Z and 20:57:42Z); the patch was consumed (PLAN note of 20:08:15Z) and its deltas promoted into
+    src_architecture and src_components (FACT note of 21:50:43Z); the graph is reassembled (21:56:52Z); the tests docs
+    and the release note are written and notched 0.2.8267 (22:05:36Z). Acceptance: routine completion under the
+    owner's go (the epic's DECISION note of 19:58:35Z); no independent review was requested; the criteria hold, the
+    fourth as reworded above. Board row and detail removed, closed anchor added; the patch folder (merged) and the
+    runs folder deleted per their dispositions. Not run: the owner's own checks.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md:423-441
+  - release_docs/next_version_release.md:213-277
+  IMPACT: The story is turned in; the epic stays open for the owner's word.
+  NEXT: Rebuild last and record it here as a MEASURE; NOTICE melder_0, melder_2 and melder_3; tell the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-24T22:16:06Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuild, last (22:12-22:14, Python 3.14.7 free-threaded, from the repository root): the asset runner, run in a
+    /tmp mirror of src/ and the system documents (the connected folder refuses the unlink its payload writer does),
+    rewrote eight files under src/melder/_build_assets/ for 0.2.8267 - the bind guard at 629 entries, the system
+    documents and the graph adjacency from the edited docs - copied back byte-equal, the mirror then equal to the
+    repository; its --check in the repository prints three OK lines, before and after the bundles. The LLM builder
+    (--include-untracked) wrote src (585 files), tests (1,145) and other (412), melder_2's stale tests corpus
+    included, and its --check prints OK for all three. The packaged graph payload and adjacency name neither
+    `HolderDisposalEntry` nor `adopt_children`. No .git/index.lock appeared.
+  EVIDENCE:
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:17-19
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:22-22
+  - context_compass/artifacts/minted_index_registry_20261018/scripts/rebuild_s4_assets.py:1-122
+  IMPACT: The change set is complete: the assets and bundles carry 0.2.8267 and every check is OK.
+  NEXT: NOTICE melder_3 (apply its trim), melder_0 and melder_2; tell the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -367,13 +592,10 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: remove holder ownership of `many` dependencies (0.2.8235 placement + 0.2.8238 adoption) on the owner's
   decision; a `many` belongs to the scope that built it.
-- State: in_progress, melder_1; the src change and docstrings are in (`site_plan_lowering.py`, `creations.py`,
-  four docstring files), the scopes and ownership guides say the new rule; the 35 red tests are green and
-  the full suite is green, GIL off and on (MEASURE notes). Not yet: system docs, tests docs, release note,
-  notch, closure, rebuild.
-- Next: (1) wait for melder_0's 0.2.8266 landing (M0-215), then re-read and edit src_architecture,
-  src_components, tests_components and their indexes; (2) notch above __version__ and the release note;
-  (3) closure, board sync, rebuild last with both checks OK.
+- State: done (2026-10-24T22:06:33Z), melder_1. src, tests, docstrings, the two guides, src_architecture, src_components, the
+  tests docs, the graph and the release note carry it; notched 0.2.8267; the patch and runs folders deleted.
+- Next: none in this story - rebuilt last with every check OK (MEASURE note); NOTICEs sent to melder_0, melder_2
+  and melder_3; the epic stays open for the owner's word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

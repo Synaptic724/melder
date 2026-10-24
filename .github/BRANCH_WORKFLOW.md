@@ -157,15 +157,17 @@ Nothing is looked up on the network, so a new Python release runs only after a m
   claims that patch too, so each release is its own matrix entry. The floor release from
   `project.requires-python` (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor
   is refused: raising the floor means deleting the retired manifests in the same change.
-- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7)
-  and the benchmark libraries' pins. Its `build_from_source` list names pins built from their source
-  distribution because no free-threaded wheel exists (dependency-injector); everything else installs as
-  a wheel. The speed release must also have a test manifest.
+- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7),
+  Melder's runtime dependency (pip) and the benchmark libraries' pins. Its `build_from_source` list
+  names pins built from their source distribution because no free-threaded wheel exists
+  (dependency-injector); everything else installs as a wheel. The speed release must also have a test
+  manifest.
 
 To add a release, copy the newest test manifest to `<release>.toml`, change `python`, and adjust any pin
 that does not install on that release. To move the speed tests, replace the speed manifest in one change;
 their first run afterwards is the new baseline. When Melder gains a runtime dependency, pin it in every
-test manifest; a contract test refuses a manifest that leaves one out.
+test manifest and in the speed manifest; a contract test refuses a manifest that leaves one out, and the
+installed-package probes install it beside the wheel from the test manifest's pins.
 
 Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
 manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
@@ -260,7 +262,8 @@ uv run --locked python llm_support/_builder.py --check
 `uv.lock` pins the development dependency resolution; in CI only the distribution jobs use it. Runtime
 test cells install their release's manifest pins instead (see Supported Python versions). Distribution
 jobs sync only the build group and build without isolation, using those locked tools. Their wheel
-probe still installs only the exact built wheel in a separate environment. Cache keys include the
+probe installs the exact built wheel in a separate environment beside the test-manifest pins of Melder's
+runtime dependencies, with no resolver, and `uv pip check` proves the set consistent. Cache keys include the
 lockfile or manifest and the runtime/build context. The documentation toolchain retains
 `docs/requirements.lock`. See [contributor setup](../CONTRIBUTING.md) for optional groups and
 deliberate lock updates.
@@ -356,7 +359,9 @@ fresh installation on every no-GIL OS/release cell built from the test manifests
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
-match this run's built wheel. No editable installation or repository conftest is used.
+match this run's built wheel. Melder's runtime dependencies come from PyPI at that release's test-manifest
+pins and install beside it with `--no-deps --no-index`; `pip check` must pass before the probe runs. No
+editable installation or repository conftest is used.
 
 Configure the TestPyPI upload credential as follows:
 

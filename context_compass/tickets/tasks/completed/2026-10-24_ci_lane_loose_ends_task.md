@@ -1,15 +1,24 @@
 # Task: ci_lane_loose_ends - say Melder depends on pip, pin pip where CI installs it, settle two stale backlog tickets
 
+- Completed: 2026-10-24T21:59:15Z
+- Summary: pyproject's description and README:44 say Melder depends on pip; pip==26.2.2 is pinned in the speed
+  manifest and docs/requirements.lock, and both installed-package probes install the wheel beside the running
+  release's test-manifest pins (`runtime-requirements`) and run `pip check`, documented in .github/ci_cd/ and
+  BRANCH_WORKFLOW.md; tests/unit/github_workflows 506 passed (hosted CI Not run). The 2026-10-04 cache temp-file task
+  closed superseded and the 2026-09-22 shared-gauntlet task obsolete. No src change, no notch. Owner-owed: the commit
+  of the guide, tests-map, release-note and ticket edits (the code is in 3cf114b9d); the LLM bundles are rebuilt at
+  melder_1's 0.2.8267 landing.
+
 ## Metadata
 - Task ID: TASK-2026-10-24-ci_lane_loose_ends
 - Story: none (standalone; the loose ends TASK-2026-10-24-ci_python_315_and_release_test_rerun flagged at closure)
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T21:14:14Z
-- Updated: 2026-10-24T21:25:11Z
+- Updated: 2026-10-24T21:59:15Z
 
 ## Objective
 Close the four loose ends left at the CI lane's closure, on the owner's word (chat 2026-10-24, 15:07 MDT: "yeah
@@ -54,21 +63,25 @@ next"):
   (a later pick).
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: opened and started on the owner's word (chat 2026-10-24, 15:07 MDT), quoted in Objective.
+- from_state: in_progress
+- to_state: done
+- transition_reason: every exit-gate item holds (Notes from 21:47:48Z): both texts true; the speed manifest and both
+  probes install pip==26.2.2 from a pin, documented in `.github/ci_cd/`; tests/unit/github_workflows green; items 3
+  and 4 closed with their evidence; the release-note line in. The bundle rebuild is the last lander's (melder_1,
+  0.2.8267), as the exit gate allows. Earlier: draft -> in_progress (opened and started on the owner's word, chat
+  2026-10-24, 15:07 MDT, quoted in Objective).
 
 ## Steps / Checklist
-- [ ] Read `.github/ci_cd/`, the speed manifest, both probes and the tests that pin dependencies; record the plan.
-- [ ] Item 1: the description and the README line.
-- [ ] Item 2: pin pip in the speed manifest and both probes; `.github/ci_cd/` and the tests documents; tests.
-- [ ] Item 3: close the 2026-10-04 cache temp-file task as superseded once 0.2.8266 is turned in.
-- [ ] Item 4: reproduce the shared gauntlet's setup on the current tree; close or update that ticket.
-- [ ] Release-note line; NOTICEs; closure; the bundles rebuilt last by whoever lands last.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Read `.github/ci_cd/`, the speed manifest, both probes and the tests that pin dependencies; record the plan.
+- [x] Item 1: the description and the README line.
+- [x] Item 2: pin pip in the speed manifest and both probes; `.github/ci_cd/` and the tests documents; tests.
+- [x] Item 3: close the 2026-10-04 cache temp-file task as superseded once 0.2.8266 is turned in.
+- [x] Item 4: reproduce the shared gauntlet's setup on the current tree; close or update that ticket.
+- [x] Release-note line; NOTICEs; closure; the bundles rebuilt last by whoever lands last (melder_1's landing).
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
       before dependent work; no forced body copy.
 
 ## Deliverables
@@ -87,11 +100,15 @@ next"):
 - context_compass/tickets/tasks/backlog/2026-09-22_shared_gauntlet_configuration_order_followup_task.md
 
 ## Validation
-- Not run.
-- Recommended commands:
-  - `python -m pytest tests/unit/github_workflows -q -p no:cacheprovider`
-  - `python src/melder/_build_assets/_build_asset_runner.py --check`
-  - `python llm_support/_builder.py --check --include-untracked`
+- Ran (device VM, CPython 3.14.7 free-threaded, the test-manifest pins in a venv):
+  - `python -X gil=0 -m pytest tests/unit/github_workflows -q -p no:cacheprovider`: 506 passed at 3cf114b9d and
+    506 passed after the guide edits (490 before the change, on 3bedd65bb).
+  - `python -X gil=0` and `-X gil=1 -m pytest benchmarks/testing_other_di/test_gauntlet_melder_lane_parity.py -q`:
+    5 passed each (item 4's evidence).
+  - `index_document.py --doc context_compass/system_docs/tests_components.md --check`: OK.
+- Not run: hosted CI (the owner's; the RC probe's PyPI download and the Windows and macOS cells are unseen); the
+  build-asset and LLM-bundle rebuilds and checks, which run last at melder_1's 0.2.8267 landing (M0-219: the
+  bundles' tests corpus is stale until then).
 
 ## Risks / Rollback Notes
 - The release note and the LLM bundles are shared with three landing lanes; edit the note by text anchor after a
@@ -99,21 +116,21 @@ next"):
 - Every edit is a few lines in a tracked file; git restores any of them.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -143,7 +160,8 @@ this does not make independent review mandatory for every ticket.
 ## Contribution Attribution
 - Ticket/Work Author(s): melder_2 (synaptic_python_developer); prose; created 2026-10-24T21:14:14Z; evidence in Notes.
 - Published By: UNKNOWN (a local ticket file; not published)
-- Independent Review: none yet
+- Independent Review: none (a routine CI and documentation change closed on the owner's word; my own checks
+  are not independent review)
 
 ## Notes
 - DATETIME: 2026-10-24T21:14:14Z
@@ -252,11 +270,118 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-24T21:47:48Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Items 1 and 2a-2f are in, as the PLAN note set them out, and the owner committed them in 3cf114b9d
+    (15:42 MDT) with melder_0's closure: both texts say "One dependency (pip)"; the speed manifest and
+    docs/requirements.lock pin pip==26.2.2; python_runtime_matrix.py has `declared_dependencies`, `runtime_pins`,
+    `release_manifest` and the `runtime-requirements` operation; the wheel probe installs the wheel beside those
+    pins with --no-deps and runs `uv pip check`; `probe_install` downloads the pins from PyPI (isolated, wheels
+    only, no deps), installs them with the TestPyPI wheel (--no-deps --no-index) and runs `pip check` before the
+    smoke test; 16 test cases added and the wheel-probe contract test updated. This context was re-onboarded
+    (REONBOARD at 21:45Z) after a compaction; these are the files as they stand at 3cf114b9d.
+  EVIDENCE:
+  - pyproject.toml:8-8
+  - README.md:44-44
+  - .github/python/speed/3.14.7.toml:7-8
+  - docs/requirements.lock:16-16
+  - .github/scripts/python_runtime_matrix.py:247-329
+  - .github/scripts/python_runtime_matrix.py:516-523
+  - .github/workflows/build-distributions.yml:68-78
+  - .github/scripts/testpypi_candidate.py:203-273
+  - tests/unit/github_workflows/test_python_runtime_matrix.py:250-366
+  - tests/unit/github_workflows/test_candidate_publication.py:438-530
+  - tests/unit/github_workflows/test_workflow_contracts.py:518-551
+  IMPACT: The speed manifest changed, so by its own rule (lines 1-3) the next speed run starts a new comparison
+    baseline; the LLM bundles' tests corpus was rebuilt before these edits (M0-219), so melder_1's landing rebuild
+    covers it. 2g (the guide and the tests map) is what remains of item 2.
+  NEXT: Update .github/ci_cd/ (python_versions.md, scripts.md, workflows.md) and BRANCH_WORKFLOW.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-24T21:47:48Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: `python -X gil=0 -m pytest tests/unit/github_workflows -q -p no:cacheprovider` gives 506 passed in 4.98 s
+    on 3cf114b9d (CPython 3.14.7 free-threaded, GIL off, the test-manifest pins in a venv on the device VM), against
+    490 on 3bedd65bb before the change. Hosted CI: Not run (the owner's).
+  EVIDENCE:
+  - tests/unit/github_workflows/test_python_runtime_matrix.py:250-366
+  - tests/unit/github_workflows/test_candidate_publication.py:438-530
+  IMPACT: The pin source, both probes and the contract tests agree on the committed tree; the guide edits next
+    must keep the ci_cd contract test green.
+  NEXT: Re-run the same command after the guide edits.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:53:45Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: 2g and the release-note line are in. The CI guide says the speed manifest holds pip, describes both
+    installed-package probes (the `runtime-requirements` pins beside the wheel, no resolver, `pip check` before the
+    smoke test; the RC probe's wheel from TestPyPI by hash and pins from PyPI) and rewrites the runtime-dependency
+    recipe (steps 2-5: the tests that refuse a manifest, the probes following on their own, a transitive
+    dependency left to `runtime_pins`, the docs lock); scripts.md lists the operation and the probe, workflows.md
+    the two probes, BRANCH_WORKFLOW.md the speed manifest, the dependency rule and both probes. The tests map's
+    Repository Tooling Unit Cluster protects the pins, the three C1 extents are remeasured (954, 530, 539) and its
+    index regenerated (`--check` OK). The release note's Packaging section says Melder declares pip==26.2.2 (the
+    owner's 0fddab923; the note had no line for it) and what CI checks, before the rebuild line. Afterwards
+    `pytest tests/unit/github_workflows` gives 506 passed (3.14.7t, GIL off).
+  EVIDENCE:
+  - .github/ci_cd/python_versions.md:41-43
+  - .github/ci_cd/python_versions.md:74-90
+  - .github/ci_cd/python_versions.md:121-133
+  - .github/ci_cd/scripts.md:13-13
+  - .github/ci_cd/scripts.md:43-46
+  - .github/ci_cd/scripts.md:75-78
+  - .github/ci_cd/workflows.md:70-70
+  - .github/ci_cd/workflows.md:127-130
+  - .github/BRANCH_WORKFLOW.md:160-170
+  - .github/BRANCH_WORKFLOW.md:264-266
+  - .github/BRANCH_WORKFLOW.md:361-364
+  - context_compass/system_docs/tests_components.md:1447-1450
+  - context_compass/system_docs/tests_components.md:3136-3155
+  - context_compass/system_docs/tests_components.md:3903-3908
+  - release_docs/next_version_release.md:1469-1473
+  IMPACT: Item 2's exit gate holds: the speed manifest and both probes install pip==26.2.2 from a pin, documented
+    in `.github/ci_cd/`, and the workflow suite is green. melder_1 re-reads the note and the tests map before
+    editing (M2-32); its 0.2.8267 header and rebuild-line bump take my bullet as it stands.
+  NEXT: Close the two backlog tickets (items 3 and 4) with their evidence, then this one.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-24T21:59:15Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Items 3 and 4 are closed and anchored, each moved to tickets/tasks/completed/:
+    TASK-2026-10-04-per-process-conjure-cache-temp-file (superseded by 0.2.8266; its Windows `-n 4` rerun Not run;
+    the Objective above spells its ID with underscores) and TASK-2026-09-22-shared-gauntlet-configuration-order-
+    followup (obsolete; the lane-parity guard 5 passed with the GIL off and on at 3cf114b9d). melder_1 consumed
+    M2-32, notched 0.2.8267 at 21:51 and has not yet edited the release note, so my bullet sits before its rebuild
+    line for that landing to keep.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-04_per_process_conjure_cache_temp_file_task.md:3-9
+  - context_compass/tickets/tasks/completed/2026-09-22_shared_gauntlet_configuration_order_followup_task.md:1-7
+  - context_compass/attention_board.md:144-145
+  - src/melder/__version__.py:12-12
+  IMPACT: Every exit-gate item holds but the bundle rebuild, which the exit gate gives to the last lander; this
+    ticket closes on the owner's word.
+  NEXT: Sync the board, NOTICE melder_1 and melder_3, report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-- Scope: the four loose ends in Objective. State: in_progress, melder_2; nothing edited yet outside this ticket and
-  its board row.
-- Next: (1) read `.github/ci_cd/`, the speed manifest, both probes and the pin tests and record the plan; (2) items
-  1 and 2; (3) items 3 and 4, the release-note line, closure.
+- DONE 2026-10-24T21:59:15Z: all four loose ends (Completed summary above). The code, texts and pins are in the
+  owner's 3cf114b9d; the CI guide (.github/ci_cd/python_versions.md, scripts.md, workflows.md), BRANCH_WORKFLOW.md,
+  the tests map and its index, the release-note bullet and the three ticket closures await his commit.
+- Owner-owed: that commit; hosted CI (Not run); the LLM bundles and build assets are rebuilt last by melder_1's
+  0.2.8267 landing (or melder_3 after it). The next speed run is a new comparison baseline (the speed manifest
+  changed).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

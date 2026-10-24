@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T20:58:00Z
-- Updated: 2026-10-24T20:58:00Z
+- Updated: 2026-10-24T21:46:21Z
 - Target Window: 2026-10; edits apply after the two lanes now writing the same documents land (Dependencies)
 - Related Program/Initiative: system documents kept to their authoring instructions
 
@@ -100,7 +100,7 @@ src_components, where the reading hierarchy sends a reader who needs them.
 - STORY-2026-10-24-remove_many_child_holder_ownership (melder_1)
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: audit - section and entry dispositions recorded in Story 1 Notes.
+- [x] Milestone 1: audit - section and entry dispositions recorded in Story 1 Notes.
 - [ ] Milestone 2: apply - the other lanes' writes landed, edits applied, gates pass.
 - [ ] Milestone 3: rebuild - both builders `--check` OK; Story 1 closed.
 - [ ] Milestone 4: src_components - Story 2 done or deferred by the owner.
@@ -110,7 +110,7 @@ src_components, where the reading hierarchy sends a reader who needs them.
 - [ ] Story: src_components to its own spec - planned; created when Story 1 closes (owner's first message).
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: Agree the write order with melder_0 and melder_1 through the mailbox.
+- [x] Task: Agree the write order with melder_0 and melder_1 through the mailbox.
 - [ ] Task: Complete story STORY-2026-10-24-src_architecture_trim_to_spec.
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
@@ -187,6 +187,23 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T21:46:21Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Story 1 is audited and scripted: its dry run takes src_architecture from 5,700 to 4,749 lines with every
+    removed line accounted for (git 3bedd65bb, or moved to src_components), and it waits only for melder_1's turn-in
+    (write order M1-51; melder_0's writes done, M0-218). Story 2 (src_components to its own spec) starts from three
+    items found on the way - its citation recipe's `system_docs` leak, its stale `Conduit.link` citation and the
+    MutationResearch inventory to fold - plus its own rubric pass.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md:1-12
+  - context_compass/artifacts/src_architecture_to_spec_20261024/trim_src_architecture.py:1-771
+  IMPACT: tranche order unchanged - Story 1 apply, gates and rebuild, then Story 2.
+  NEXT: apply Story 1 on melder_1's NOTICE.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -202,9 +219,10 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 Scope: src_architecture brought to its authoring spec and about 1,000 lines lighter (Story 1), then src_components
-to its own spec (Story 2, planned). State: in_progress, melder_3; Story 1 audits read-only. Hold: no edit to either
-document until melder_0's F5 and melder_1's turn-in land, or an order is agreed. Owner direction: the next session
-on this lane onboards as design_engineer. Next: NOTICEs to melder_0 and melder_1; the audit in Story 1.
+to its own spec (Story 2, planned). State: in_progress, melder_3; Story 1 audited (rubric 69, C) and scripted, dry
+run clean. Hold: order agreed (M1-51) - melder_0's writes are done, Story 1 applies after melder_1's turn-in.
+Owner direction: the next session on this lane onboards as design_engineer. Next: Story 1 apply, gates, rebuild;
+then create Story 2.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

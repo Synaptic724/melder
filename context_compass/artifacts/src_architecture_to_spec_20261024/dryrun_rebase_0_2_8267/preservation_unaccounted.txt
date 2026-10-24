@@ -1,0 +1,20 @@
+(0.2.8243-0.2.8246); `ensure_managed_quantity` rebinds a found pool after the store lock (0.2.8254); the holder
+(0.2.8267).
+- src/melder/aether/conduit/conduit.py:5601-5603 (the check and the raise -
+`(object, methods)` tuple again (0.2.8267).
+`ensure_managed_quantity`, `discard_managed_quantity`, pools cleaned first, the `managed` row
+explicit index step from a spell_id (0.2.8253); `_move_creations` says a holder's row carries the holder alone
+holder (0.2.8267; 0.2.8235-0.2.8265 registered it in the site's store and, from 0.2.8238, with the holder).
+inline pop, the reserve-first miss, the lease return (0.2.8245); the missing-pool message without the
+is refused with nothing moved (0.2.8262). `transfer_spell_ownership`'s docstring says a moved holder's `many`
+note: instance registry; `ManyDisposalBucket` and `register_many` (0.2.8216); the managed pool map,
+objects stay in the store that recorded them (0.2.8267).
+pre-conjure staging cause (0.2.8248); every disposal-bearing `many` child registers in the meld's innermost
+record of 0.2.8238 (`HolderDisposalEntry`, `adopt_children`) is removed and a slotted holder's entry is its own
+scope, a shared site's miss selecting it after its unresolved-input check, and nothing records it with the
+sites read their owner store as a plan constant (0.2.8221); the managed site kinds - leasing and fresh, the
+verified_at: 2026-10-24T21:49:23Z
+verified_at: 2026-10-24T21:49:23Z
+verified_at: 2026-10-24T21:49:23Z
+verified_at: 2026-10-24T21:49:23Z
+verified_at: 2026-10-24T21:49:23Z

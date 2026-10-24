@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 12544
-CONTENT_SHA256 = '61d8c5c02af650757a4337c15ab1e5bfdc6f677711f166eafe467bb6ec44ac68'
+LINE_COUNT = 12552
+CONTENT_SHA256 = '490d12625fc930191052d5d4ba8b655b853fa228d18415afab8918a5565b2a48'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -626,7 +626,7 @@ Responsibilities:
   - src/melder/aether/spellbook/spellbook.py:4545, 4578 (`_add_to_spell_index` -> `_apply_add_to_index`)
   - src/melder/aether/spellbook/spellbook.py:4754, 4788 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
   - src/melder/aether/spellbook/spellbook.py:4042-4044 (states the Conduit admits it)
-  - src/melder/aether/conduit/conduit.py:5751, 6094, 6201 (notch/add/remove
+  - src/melder/aether/conduit/conduit.py:5753, 6096, 6203 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
@@ -3402,7 +3402,7 @@ Failure Modes:
 - TypeError if `link` target is not a `Conduit`. This is a CONCRETE isinstance
   check, not a structural one: a conduit-shaped object that is not a `Conduit`
   subclass is rejected with "Expected Conduit-compatible object, got {type}".
-  EVIDENCE: src/melder/aether/conduit/conduit.py:5599-5601.
+  EVIDENCE: src/melder/aether/conduit/conduit.py:5601-5603.
 - RuntimeError if `link` target lacks a valid creation context.
 - RuntimeError if `transfer_spell_ownership` is called in non-dynamic mode.
 - ValueError or TypeError from `notch_spell` for its target (0.2.8249): both or neither of `spell` and `spell_id`,
@@ -3794,8 +3794,8 @@ step with the live bucket, and it could be sparse). Every reader takes the recor
 single purge removes the object from the aliased bucket and returns `(object, methods)`; bucket and record go
 together when empty), extract (one row per object, each carrying the key's list) and restore (one record over the
 restored bucket; rows of one key that disagree on `disposable` raise RuntimeError). The emitted line is
-`many_store.register_many(sidN, vN, dmN)` in the site plan (`c{i}.register_many(...)` for a shared site's child
-since 0.2.8235; see Component: SpellCompiler and Validation Pipeline, "Holder-owned many children"),
+`many_store.register_many(sidN, vN, dmN)` in the site plan, a shared site's child included (0.2.8267; it went
+through `c{i}` from 0.2.8235 to 0.2.8265; see Component: SpellCompiler and Validation Pipeline, "Child registration"),
 `many_creations.register_many(spell_id, instance, disposal_methods)` in the solo templates and
 `creations_i.register_many(...)` in the specializer; cache generation 16 (`many_registration_per_key_methods`)
 retires executors emitted with the old keyword call.
@@ -3923,7 +3923,7 @@ Lifecycle/Cleanup:
   ordering structure was added: `_disposable_creations` is a plain dict, dict
   iteration is insertion-ordered by language guarantee, and insertion happens at
   creation time, so the registry already IS the creation-order record.
-  EVIDENCE: src/melder/aether/conduit/creations/creations.py:376-468.
+  EVIDENCE: src/melder/aether/conduit/creations/creations.py:420-514.
 - That covers ordering WITHIN one scope. Ordering BETWEEN scopes (lesser conduit
   before root, narrower existence before broader) remains owned by the conduit
   cleanup cascade, so the two axes compose without any graph walk.
@@ -3985,9 +3985,9 @@ Observability:
   Since 0.2.80 this holds per method as well, and every error keeps the original
   exception as its cause, so the logged or raised group shows what actually failed.
   EVIDENCE:
-  - src/melder/aether/conduit/creations/creations.py:119-134
-  - src/melder/aether/conduit/creations/creations.py:277-293
-  - src/melder/aether/conduit/creations/creations.py:295-374
+  - src/melder/aether/conduit/creations/creations.py:264-337
+  - src/melder/aether/conduit/creations/creations.py:339-387
+  - src/melder/aether/conduit/creations/creations.py:390-418
 
 Extension Points:
 - Disposal method names in `SpellbookConfiguration`. The registry calls a
@@ -4253,12 +4253,10 @@ retires from, and never creates. ConduitMeld reads `many` ("caller_conduit_many"
 store, lineage from the lineage root and cluster from the cluster's team store (0.2.8237; not live without an
 elected leader). Only a disposal-bearing `many` is stored - in the innermost scope - so a `many` without
 disposal methods probes as 0. CORRECTED 2026-09-28: the SpellSpace door read `many` from the owner conduit's
-store, missing what the space held and counting what the conduit held. Since 0.2.8235 a `many` built as a
-shared site's child is stored with that site (the holder's owner), so the probe counts it there - the root
-for a `unique` holder, the conduit for a per-conduit holder melded in its space, the lineage root, the
-cluster's team store - and not at the lesser or space that melded the holder first. Since 0.2.8238 such a
-child is recorded with its holder (`HolderDisposalEntry`), so a `many` probe of the child's spell counts only
-children no holder adopted.
+store, missing what the space held and counting what the conduit held. A `many` built as a shared site's child is
+stored in the innermost scope like any `many` (0.2.8267), so the probe of the child's spell counts it in the lesser
+or space that melded the holder first, every child that scope recorded; from 0.2.8235 to 0.2.8265 it was stored
+with the holder's owner and, from 0.2.8238, recorded with the holder and left out of the count.
 EVIDENCE: `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld._describe_spell_live_creation_status`,
 `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld._describe_spell_live_creation_status`,
 `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._many_store_prologue`
@@ -4443,9 +4441,9 @@ Responsibilities:
   `unique_per_conduit_lineage` the lineage-root store and `unique_per_conduit_cluster` the cluster's team store
   through the member root's facade (0.2.8237; the elected leader's own store before); `unique_per_conduit` the
   (owner) conduit's store; `unique_per_spell_space` the space's; a disposal-bearing `many` the innermost
-  scope's (the space's through a SpellSpace door, else the conduit's) when it is the root or a `many` root's
-  child, and its holder's store when a shared site needs it (0.2.8235: a slotted holder's `many` children belong
-  to the holder's owner; 0.2.8238: recorded with the holder); a `many` without disposal methods is not stored.
+  scope's (the space's through a SpellSpace door, else the conduit's) wherever it is built - the root, a `many`
+  root's child or a shared site's child (0.2.8267; from 0.2.8235 to 0.2.8265 a slotted holder's children went to
+  the holder's store and, from 0.2.8238, into its holder record); a `many` without disposal methods is not stored.
   The old text put cluster and lineage in `spell._owner_creations` and every per-conduit lifetime in "caller
   creations".
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:_build_source`
@@ -5104,36 +5102,32 @@ Site-plan runtime for normal and override melds (2026-09-26, override design v2)
   the slot guard (the Spell lock for `unique` with the lock hint), rechecks, constructs and publishes. A stored
   shared site's children are therefore not built (B2), and a plan holds one build lock at a time, never across
   another site's constructor. A shared site with a winning key is pinned to the top level, so a key that targets
-  a stored instance keeps today's "already exists" refusal (P2). Disposal-bearing many sites at the top level
-  register in the innermost scope store through `many_store.register_many(sidN, vN, dmN)` (0.2.8216; the
-  positional hot verb of Creations and SpellSpace); one placed inside `_miss{i}` registers in `c{i}` (0.2.8235,
-  next bullet). Every registration passes the Spell's live `disposal_method_names` list.
-- Holder records (2026-10-14, 0.2.8238): right after a miss publishes holder i, under its build lock, it emits
-  `c{i}.adopt_children(sid{i}, v{i}, ((sidK, vK), ...))` naming the disposal-bearing `many` children it registered in
-  `c{i}` for the holder; `Creations.adopt_children` moves them into the holder's `HolderDisposalEntry`, so purge,
-  extract/restore and disposal of the holder take them along (Subcomponent: Creations Disposal Pipeline). Only misses
-  change; every `_site_plan_executor` body is byte-identical.
-  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_miss`.
-- Holder-owned many children (2026-10-14, 0.2.8235): a disposal-bearing many step registers in the store that owns
-  its context. `SitePlanEmission._emit_context(context, ...)` passes `many_store` to `_emit_many` at the top
-  level, where the plan prologue (`_many_store_prologue`) points it at the meld's innermost scope, and `c{i}`
-  inside shared site i's miss - the store the site is published to: the Spell owner's for `unique`, the
-  conduit's for `unique_per_conduit`, the space's for `unique_per_spell_space`, the lineage root's, the
-  cluster's team store (0.2.8237; the elected leader's before). So a slotted holder's `many` children are
-  recorded with whatever owns the holder and disposed with that store, never by a lesser's pool return, a
-  spellspace exit or a borrowing root's teardown that happened to meld the holder first (through 0.2.8234 they
-  went to the innermost scope, whose end ran their disposal under a
-  live holder; `unique_per_spell_space` holders, whose store is that scope, were not affected). A miss emits no
-  prologue. Children are still built before the site's guard and `register_many` is the same leaf call, so lock
-  order and construction order are unchanged and every `_site_plan_executor` body (the warm path) is
-  byte-identical; a losing thread's children in a cold race stay in the holder's store until it is disposed.
-  Plans are emitted at hydration from manifest rows, so no cache generation moves. The opt-in singleton
-  specializer, whose straight-line body builds every non-captured step on every warm call, declines a graph in
-  which a `many` row feeds a non-`many` row (`rows_feed_many_into_non_many_step`, checked in
-  `_install_specializing_door` after the zero-capture check) and keeps the plain door; other graphs specialize
-  as before.
+  a stored instance keeps today's "already exists" refusal (P2). Disposal-bearing many sites register in the
+  innermost scope store through `many_store.register_many(sidN, vN, dmN)` (0.2.8216; the positional hot verb of
+  Creations and SpellSpace), at the top level and inside `_miss{i}` alike (0.2.8267, next bullet). Every
+  registration passes the Spell's live `disposal_method_names` list.
+- Child registration (2026-10-24, 0.2.8267; STORY-2026-10-24-remove_many_child_holder_ownership, on the owner's
+  decision: "it should behave like autofac not mysteriously cleanup transient objects"): a disposal-bearing many step
+  registers through `many_store`, the meld's innermost scope, wherever it is placed. `SitePlanEmission._emit_context`
+  returns whether a step it emitted registers there, and the function it emits into selects the store first
+  (`_many_store_prologue`: the plan at its top; a shared site's `_miss{i}` after its unresolved-input check, before
+  its children); a leasing managed miss appends its children to `kids{i}` instead and never reads `many_store`. So a
+  `many` belongs to the scope that built it: nothing records it with the holder it was passed to, a holder's purge or
+  store end runs only the holder's own disposal methods, and the scope that built a child - a lesser's pool return, a
+  spellspace exit, a borrowing root's or a cluster member's teardown - disposes it when it ends, even while the
+  holder lives on; a losing thread's children in a cold race stay in its own innermost scope like any `many`.
+  Children are still built before the site's guard and `register_many` is the same leaf call, so lock order and
+  construction order are unchanged and every `_site_plan_executor` body (the warm path) is byte-identical; plans are
+  emitted at hydration from manifest rows, so no cache generation moves. Removed: from 0.2.8235 to 0.2.8265 a miss
+  passed `c{i}` - the store the site is published to - to `_emit_many`, so a slotted holder's children were recorded
+  with whatever owned the holder, and from 0.2.8238 it emitted `c{i}.adopt_children(sid{i}, v{i}, ((sidK, vK),
+  ...))` after publishing the holder, moving them into the holder's `HolderDisposalEntry`. Kept: the opt-in singleton
+  specializer, whose straight-line body builds every non-captured step on every warm call, declines a graph in which
+  a `many` row feeds a non-`many` row (`rows_feed_many_into_non_many_step`, checked in `_install_specializing_door`
+  after the zero-capture check) and keeps the plain door - a holder's `many` is needed only in the holder's first
+  build; other graphs specialize as before.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_context`,
-  `SitePlanEmission._emit_many`, `SitePlanEmission._emit_miss`,
+  `SitePlanEmission._emit_many`, `SitePlanEmission._emit_miss`, `SitePlanEmission._many_store_prologue`,
   `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:rows_feed_many_into_non_many_step`
   and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:_install_specializing_door`.
 - Lazy `instance_results` (2026-10-03, 0.2.8217): a plan with a generic step (an existing object, a contract payload,
@@ -6436,13 +6430,13 @@ Contract/Interface:
   with `raising=True`, so renaming or moving the seam fails LOUD instead of silently
   creating an attribute nothing reads. That matters because an autouse fixture
   neutralizes the guard for the whole file; a silently-dead patch would let the real
-  630-entry manifest (0.2.8257) start refusing binds mid-suite with no signal. Preserve
+  629-entry manifest (0.2.8267) start refusing binds mid-suite with no signal. Preserve
   `raising=True` if these sites are ever touched.
 Data Structures:
 - `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs,
   imported from the hand-written loader `melder._build_assets._bind_guard.bind_guard`,
   which also re-exports `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and
-  `MANIFEST_ENTRY_COUNT` (630 at 0.2.8257; 619 at 0.2.8215).
+  `MANIFEST_ENTRY_COUNT` (629 at 0.2.8267, `HolderDisposalEntry` left; 630 at 0.2.8257; 619 at 0.2.8215).
 - The TRUTH is the COMMITTED manifest `_bind_guard/manifest/bind_guard_manifest.py`. The
   loader hydrates it through a `.meldercache` under `__melder_cache__/__bind_guard__/` that is an
   ACCELERATOR, never the source; the manifest module is imported lazily on cache miss
@@ -6687,15 +6681,15 @@ Purpose:
 Contract/Interface:
 - `Conduit.notch_spell(spell_index=, spell_id= | spell=)` resolves and checks its target
   (`_resolve_notch_target`, `_owned_notch_target`: owned by the Book, a member of the index passed; 0.2.8249),
-  opens the `notch` transaction at `src/melder/aether/conduit/conduit.py:5775`, checks the target again inside
+  opens the `notch` transaction at `src/melder/aether/conduit/conduit.py:5777`, checks the target again inside
   the window, then calls `Spellbook._notch_spell(...)`, which delegates the member-store switch to the seam
   `_apply_notch(...)`.
 - `Conduit.add_to_spell_index(spell_id= | spell=, target_index=)` resolves a spell_id to the spell the Book owns
   (`_resolve_spell_to_move`; 0.2.8249), opens `add_to_index` at
-  `src/melder/aether/conduit/conduit.py:6114`, then calls `Spellbook._add_to_spell_index(...)`, which
+  `src/melder/aether/conduit/conduit.py:6116`, then calls `Spellbook._add_to_spell_index(...)`, which
   delegates the move-in to `_apply_add_to_index(...)`.
 - `Conduit.remove_from_spell_index(spell_id= | spell=, source_index=)` resolves it the same way, opens
-  `remove_from_index` at `src/melder/aether/conduit/conduit.py:6212`, then calls
+  `remove_from_index` at `src/melder/aether/conduit/conduit.py:6214`, then calls
   `Spellbook._remove_from_spell_index(...)`, which delegates the split to
   `_apply_remove_from_index(...)`.
   THE SPLIT OF OWNERSHIP IS THE POINT: the Conduit admits the transaction
@@ -6709,8 +6703,8 @@ Contract/Interface:
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5650, 6024, 6137 (public verbs)
-  - src/melder/aether/conduit/conduit.py:5804, 5843, 5898, 5949, 5985 (`_resolve_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5652, 6026, 6139 (public verbs)
+  - src/melder/aether/conduit/conduit.py:5806, 5845, 5900, 5951, 5987 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
   - src/melder/aether/spellbook/spellbook.py:4107, 4578, 4788 (applied seams)
 Data Structures:
@@ -7115,10 +7109,11 @@ Contract/Interface:
 - `Conduit.transfer_spell_ownership(...)` and `_transfer_spell_ownership(...)`; both default to `move_creations=True`
   since 0.2.8239 (`TransferOfOwnership`'s own constructor keeps False; the verbs always pass the value).
 - `move_creations=True`: `_move_creations` extracts every index member's entries from the source root's store and
-  restores them into the target's - a `unique` stays one object and a holder's row carries its adopted `many` children
-  (0.2.8238) - replacing, undisposed, whatever the target held under that id. `False`: `_teardown_creations` takes the
-  active member's entries out of the source store and keeps them only for the transfer's rollback; parked members'
-  entries stay. Lineage instances are skipped either way. Nothing is disposed.
+  restores them into the target's - a `unique` stays one object, and a holder's row carries the holder alone, its
+  `many` objects staying in the store that recorded them (0.2.8267) - replacing, undisposed, whatever the target held
+  under that id. `False`: `_teardown_creations` takes the active member's entries out of the source store and keeps
+  them only for the transfer's rollback; parked members' entries stay. Lineage instances are skipped either way.
+  Nothing is disposed.
 - Stewardship, not a working setup (0.2.8240): dependency spells stay with the source unless `include_dependencies`
   transfers each direct dependency the source owns with the same options; once the source tears down, the target
   purges what it does not want, binds what it needs (`UnresolvedInputError` names each missing input) and melds its
@@ -7617,16 +7612,16 @@ Contract/Interface:
 - `Creations.cleanup()`.
 - Every declared method of every object runs; each failing method is one chained `RuntimeError`,
   aggregated into one `ExceptionGroup` (0.2.80).
-- Holder records (0.2.8238): `Creations.adopt_children` moves a just-published slotted holder's disposal-bearing
-  `many` children from their buckets into its `HolderDisposalEntry(item, methods, children)`; disposal runs the
-  holder's methods, then each child's, newest child first (`_dispose_holder_entry`); purging the holder disposes
-  its children after it; a `many` purge or probe of a child's spell sees only children no holder adopted;
-  extract/restore rows carry the children.
+- A slotted holder is an ordinary unique entry (0.2.8267): its disposal and its purge run only its own methods; the
+  `many` objects built for it stay in their spells' buckets in the store that recorded them - the meld's innermost
+  scope - and are disposed when that store ends, and a `many` purge or probe of their spell counts them. From
+  0.2.8238 to 0.2.8265 `Creations.adopt_children` moved them into the holder's `HolderDisposalEntry`, disposed them
+  with the holder and carried them in its extract/restore row.
 Data Structures:
 - Existence maps for unique/many/scope.
 - `ManyDisposalBucket` per disposal-bearing many key: the live bucket aliased plus the key's one method
-  list (0.2.8216); unique keys keep their `(object, methods)` tuple.
-- `HolderDisposalEntry` per slotted holder that adopted children (0.2.8238), in place of its tuple.
+  list (0.2.8216); unique keys keep their `(object, methods)` tuple, a slotted holder's included (the
+  `HolderDisposalEntry` of 0.2.8238-0.2.8265 is removed).
 Concurrency/Threading:
 - RLock (a leaf; `register_many` takes it with explicit acquire/release, the public verbs with `with`).
 Key Files (C1):
@@ -8626,8 +8621,8 @@ These flows describe concrete method sequences for core behaviors.
    - Flips registries/spellbooks under SafeGuard lock.
    - Re-stamps every stamped member onto the target root, each stamp-back registered first (0.2.8246).
    - Moves the source store's entries of every index member to the target (`move_creations=True`, the default
-     since 0.2.8239; holder rows carry their adopted children) or takes the active member's out (`False`);
-     disposes nothing; adjusts contracts/clusters.
+     since 0.2.8239; a holder's row carries the holder alone since 0.2.8267) or takes the active member's out
+     (`False`); disposes nothing; adjusts contracts/clusters.
    - Marks lineage dirty/gated for revalidation.
 4. The target can start out broken once the source tears down; it binds what it needs and melds its own
    version (0.2.8240).
@@ -9183,9 +9178,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7907
-  loc: 7907
-  verified_at: 2026-10-19T13:16:16Z
+  end_line: 7909
+  loc: 7909
+  verified_at: 2026-10-24T21:49:23Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -9213,9 +9208,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1880
-  loc: 1880
-  verified_at: 2026-10-18T01:43:29Z
+  end_line: 1680
+  loc: 1680
+  verified_at: 2026-10-24T21:49:23Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -9588,9 +9583,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
-  end_line: 2223
-  loc: 2223
-  verified_at: 2026-10-17T23:12:45Z
+  end_line: 2225
+  loc: 2225
+  verified_at: 2026-10-24T21:49:23Z
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
   end_line: 1481
@@ -9784,9 +9779,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T14:28:07Z
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 650
-  loc: 650
-  verified_at: 2026-10-15T21:40:35Z
+  end_line: 651
+  loc: 651
+  verified_at: 2026-10-24T21:49:23Z
 - path: `src/melder/_build_assets/_build_asset_runner.py`
   start_line: 1
   end_line: 399
@@ -9889,9 +9884,9 @@ future expansion of a `Key Files (C1)` list must land here in the same pass.
   verified_at: 2026-09-27T23:41:28Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 2121
-  loc: 2121
-  verified_at: 2026-10-16T11:09:31Z
+  end_line: 2105
+  loc: 2105
+  verified_at: 2026-10-24T21:49:23Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
   end_line: 405
@@ -11908,6 +11903,19 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-24 a `many` belongs to the scope that built it (0.2.8267;
+STORY-2026-10-24-remove_many_child_holder_ownership): Creations and SpellSpace (the emitted-line note of the many
+registration trim, the live-creation probe paragraph), Meld Resolution Runtime (the store selection), SpellCompiler
+and Validation Pipeline (the emission bullet, and one Child registration bullet in place of Holder records and
+Holder-owned many children), Ownership Transfer, the Creations Disposal Pipeline (a slotted holder is an ordinary
+unique entry; `HolderDisposalEntry` removed), the transfer flow and the internal-bind count (629) say a `many`
+belongs to the scope that built it and a holder's cleanup runs only its own disposal. The code map remeasures
+conduit.py, creations.py, transfer_of_ownership.py, site_plan_lowering.py and the bind-guard manifest. Numeric
+citations into conduit.py past `transfer_spell_ownership` moved two lines and were remapped; the creations.py
+citations of the disposal order and of failure aggregation, stale before this lane, point at
+`_dispose_many_creations` and `_dispose_disposable_registry`, and at `cleanup`, `_attempt_cleanup` and
+`_describe_for_disposal_error` again.
 
 2026-10-24 cache saves are best-effort (0.2.8266; TASK-2026-10-24-cache_file_write_failure_fails_meld): the Spellbook
 Core's release-bound cache entry describes the save's bool, the per-writer temp file, the Windows-only rename retry,

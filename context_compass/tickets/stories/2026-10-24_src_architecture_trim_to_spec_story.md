@@ -11,7 +11,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T20:58:18Z
-- Updated: 2026-10-24T21:32:10Z
+- Updated: 2026-10-24T22:05:58Z
 
 ## User Narrative
 As an agent re-entering Melder after a compaction, I want src_architecture to hold the system as it is today -
@@ -64,7 +64,7 @@ git and the release notes, component mechanics to src_components; what remains m
 ## Tasks (Implementation Checklist)
 - [x] A1: structural checks - heading order against the contract, wrapped headings, the portability and
       absolute-path searches, C1 five-field completeness, index `--check`.
-- [ ] A2: read the example architecture document and the rubric; score the current document.
+- [x] A2: read the example architecture document and the rubric; score the current document.
 - [x] A3: disposition per section and per entry - keep, cut history, move to a named src_components section, or
       remove with its account - with line estimates.
 - [x] A4: for each move, slice the matching src_components section and record whether it already carries the
@@ -261,6 +261,129 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-24T21:46:00Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The edit is one script, `artifacts/src_architecture_to_spec_20261024/trim_src_architecture.py` (v2.1): 78
+    text-anchored operations on src_architecture and 3 on src_components, each asserting exactly one match; any miss
+    stops the run with nothing written. It carries the A3/A4 plan (handoff, invariants, failure modes, C1 notes,
+    re-absorption and correction notes, the three leaks, the MutationResearch move) plus: a C1 note keeps its first
+    clause when the rest names a version (the bind-guard manifest note is left for melder_1's count; the
+    MutationResearch root note and the eight research_set notes are rewritten from their class declarations); the
+    C1 intro moves under its heading; every C1 range is remeasured from disk with `verified_at` set to the run; the
+    `Conduit.link` type-check citation is computed from source; src_components gets the inventory, a handoff entry
+    and its Updated date. Dry run on the documents as melder_0 left them: src_architecture 5,700 -> 4,749 lines
+    (-951), src_components 12,544 -> 12,634 (+90); 1,143 normalized lines removed, every one present in git
+    3bedd65bb (owner commit, 21:06:20Z, holding both documents as they stand), 0 unaccounted; no added line over
+    the cap; the 17 contract sections in order; the portability and absolute-path checks clean.
+  EVIDENCE:
+  - context_compass/artifacts/src_architecture_to_spec_20261024/trim_src_architecture.py:1-771
+  - context_compass/artifacts/src_architecture_to_spec_20261024/dryrun/operations_report.md:1-1817
+  - context_compass/artifacts/src_architecture_to_spec_20261024/dryrun/preservation_unaccounted.txt:1-1
+  IMPACT: the edit applies in one pass once melder_1 lands; the preservation gate is mechanical - removed lines
+    against 3bedd65bb, moved lines against src_components - so E0-E4 become one run.
+  NEXT: on melder_1's turn-in NOTICE, capture E0, rerun the dry run on the documents as melder_1 leaves them, read
+    the operations report for any of its new lines the trim touches, then apply.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-24T21:46:00Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Review findings. (1) Five C1 entries are stale against disk: creations.py (1,880 cited, 1,680 on disk),
+    site_plan_lowering.py, conduit.py and transfer_of_ownership.py (melder_1's uncommitted source) and
+    bind_guard_manifest.py (652 cited, 651); the remeasure fixes them after melder_1 lands. (2) Runtime Type Names
+    cites `Conduit.link`'s type check as conduit.py:5599-5601, two lines high: the check and the raise are
+    5601-5603. src_components carries the same stale citation and the same citation recipe with its
+    `pathlib.Path("system_docs")` leak - both left to Story 2. (3) The moved MutationResearch inventory overlaps
+    the Root subcomponent's own Contract/Interface list; Story 2 folds the two.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1155-1156
+  - src/melder/aether/conduit/conduit.py:5601-5603
+  - context_compass/system_docs/src_architecture.md:4375-4380
+  - context_compass/system_docs/src_components.md:3386-3386
+  - context_compass/system_docs/src_components.md:7259-7347
+  IMPACT: Story 1 stays inside src_architecture plus the sections that receive material; Story 2 inherits three
+    concrete items instead of a re-audit.
+  NEXT: record the A2 rubric baseline.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:46:00Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: A2, rubric (src_architecture profile) on the document as it stands (5,700 lines, sha256 2bff3388...):
+    Fidelity 3 - claims carry citations that open to the code, but they drift (the type check above) and the
+    document logs its own remaps; Contract completeness 4 - all 17 sections populated, the Handoff Summary a 656-line
+    change log, not the concise summary its Handoff Rule asks for; Depth 5; Addressability 3 - one H1, unique
+    unwrapped names, but `## Data Flows and Sequences` and `## Diagrams` are pure containers (both are contract
+    sections, so the containers stay); Join integrity 3 - 164 of 164 C1 paths resolve in the graph index, but 76
+    entries carry ranges verified 2026-08-0x and 5 are stale; Mirror agreement 3 - tests_architecture has the same
+    17 sections in order and a current index, terminology not reviewed. Total 69/100, band C: usable, refresh
+    before high-risk work - this story is that refresh. The example architecture document was read for shape.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1155-1156
+  - context_compass/system_docs/src_architecture.md:5045-5700
+  - context_compass/system_docs/src_architecture.md:795-795
+  - context_compass/system_docs/src_architecture.md:4541-4541
+  - context_compass/system_docs/tests_architecture.md:3-921
+  - context_compass/agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md:49-54
+  - context_compass/agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md:118-122
+  IMPACT: the after-score is taken from the file on disk after the index rebuild, never from the draft; the apply
+    pass remeasures every range (Join integrity 3 -> 5 expected) and fixes the drifted citation.
+  NEXT: register the artifact; then wait for melder_1's turn-in NOTICE.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T22:05:15Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Consumed M1-53 (melder_1, 21:51:02Z, NOTICE): its 0.2.8267 edits to both documents are in (written
+    21:49:23Z, indexes regenerated) - in src_architecture a new first Operational Invariant ("A `many` belongs to
+    the scope that built it"), Meld Resolution step 4, the transfer sequence, the Runtime Model's defect paragraph,
+    the transfer-default invariant, "Holder records" and "Holder-owned many children" marked REMOVED, two Breaking
+    failure modes first, the guardrail count (629), five code-map entries, conduit.py citations past line 4273 +2, a
+    handoff entry; in src_components the Creations, Meld, SpellCompiler, Registration Refusal, Ownership Transfer
+    and Disposal Pipeline entries, the transfer flow, five extents, a handoff entry. It asks this pass to rebase
+    now and apply after its turn-in NOTICE, because its rebuild runs last in its lane. Consumed M2-35 (melder_2,
+    22:00:15Z, NOTICE): its CI task is closed with nothing in either document; a closing rebuild after melder_1
+    covers its files.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md:377-407
+  - context_compass/tickets/tasks/completed/2026-10-24_ci_lane_loose_ends_task.md:1-13
+  - src/melder/__version__.py:12-12
+  IMPACT: the write order holds - rebase the dry run on the 5,739/12,552-line documents now, apply only after
+    melder_1's turn-in NOTICE; this landing will then be the last, so V2 (both builders, then --check) is this
+    story's, covering melder_2's inputs too.
+  NEXT: rerun the dry run on the current documents and read what it does to melder_1's new lines.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T22:05:58Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebased dry run on the documents as melder_1's 0.2.8267 edits left them (5,739 and 12,552 lines): all 81
+    operations still anchor once; src_architecture 5,739 -> 4,784 (-955), src_components +90; melder_1's new first
+    invariant, its two REMOVED markers, its Breaking failure modes and its handoff entry are kept as written (they
+    are after the release-note boundary). Of 1,137 removed lines, 1,117 are in git 3bedd65bb; the other 20 are
+    melder_1's own: the per-version clauses of its five 0.2.8267 C1 notes (the change is recorded in its 0.2.8267
+    handoff entry and the release note), its five `verified_at` stamps (replaced by this run's remeasure) and its
+    remapped conduit.py citation line (rewritten from source as 5601-5603).
+  EVIDENCE:
+  - context_compass/artifacts/src_architecture_to_spec_20261024/dryrun_rebase_0_2_8267/preservation_unaccounted.txt:1-20
+  - context_compass/artifacts/src_architecture_to_spec_20261024/dryrun_rebase_0_2_8267/operations_report.md:1-1801
+  - context_compass/tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md:377-407
+  IMPACT: the apply run is a rerun of this one on whatever melder_1's turn-in leaves; every removed line has a
+    named home (3bedd65bb, src_components, the 0.2.8267 handoff entry, or the remeasure).
+  NEXT: wait for melder_1's turn-in NOTICE; then E0 baseline copies, the apply run, both indexes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -276,8 +399,11 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 Scope: src_architecture to its spec and about 1,000 lines lighter; component material to src_components. State:
-in_progress, melder_3, audit (A1-A4) read-only. Hold: no edit to either document until melder_0's F5 and
-melder_1's turn-in land. Next: A1 structural checks; NOTICEs to melder_0 and melder_1.
+in_progress, melder_3; audit A1-A4 done (baseline rubric 69, C); the edit is the v2.1 script in this story's
+artifact folder, dry run rebased on melder_1's 0.2.8267 edits and clean (5,739 -> 4,784; removed lines in git
+3bedd65bb or melder_1's own, accounted). Hold: melder_0 and melder_2 are done; melder_1 asked (M1-53) that this
+pass apply after its turn-in NOTICE. Next: on that NOTICE, E0 baseline, a final dry run, apply, both indexes, V1
+gates, rubric after, V2 rebuild (this landing is last).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

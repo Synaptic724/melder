@@ -10,7 +10,7 @@ non-zero; nothing falls back to a default. Tests load each script by path throug
 | Script | Operations or options | Called by | Tested in |
 | --- | --- | --- | --- |
 | `ci_policy.py` | `branch`, `speed-route`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `speed-tests.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
-| `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, the three speed tests | `test_python_runtime_matrix.py` |
+| `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `runtime-requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, `build-distributions.yml`, the three speed tests; `testpypi_candidate.py` imports its runtime-pin functions | `test_python_runtime_matrix.py` |
 | `run_runtime_tests.py` | `--report`, `--coverage-report` | `test-runtime.yml` | `test_ci_policy.py` |
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
 | `check_candidate_run.py` | `--wait-seconds` | `ci.yml`, `python-publish.yml` | `test_candidate_publication.py` |
@@ -40,7 +40,10 @@ remote, so a branch or tag that moved during a run is refused. The script also p
 
 Everything about which Python CI runs; see [python_versions.md](python_versions.md). Its `coverage` operation,
 used before the Codecov upload, requires a report for every matrix cell of this run, taking each cell's newest
-attempt.
+attempt. Its `runtime-requirements` operation writes the pins of Melder's declared runtime dependencies
+(`[project.dependencies]`) from the running release's test manifest, or `--manifest`, for the wheel probe;
+`testpypi_candidate.py` calls the same functions (`declared_dependencies`, `release_manifest`, `runtime_pins`).
+A declared dependency the manifest leaves unpinned is refused.
 
 ### `run_runtime_tests.py`
 
@@ -69,8 +72,10 @@ that is still in progress.
 accepted, missing ones are staged for upload, and different ones are refused (choose a new version). Its release
 lookup retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times, ten seconds apart; only a
 404 means nothing is uploaded yet.
-`probe-install` downloads the exact wheel from TestPyPI by its hash, installs it alone into a fresh environment
-and runs `smoke_wheel.py` against the expected version.
+`probe-install` downloads the exact wheel from TestPyPI by its hash and Melder's runtime dependencies from PyPI at
+the running release's test-manifest pins (isolated, wheels only, no dependencies), installs them together into a
+fresh environment with `--no-deps --no-index`, runs `pip check` and then `smoke_wheel.py` against the expected
+version.
 
 ### `verify_distributions.py`, `normalize_sdist.py` and `smoke_wheel.py`
 

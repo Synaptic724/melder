@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Trim src_architecture to its authoring spec; move the MutationResearch boundary inventory to src_components.
 
-EPIC-2026-10-24-src_architecture_to_spec, STORY-2026-10-24-src_architecture_trim_to_spec (melder_3). Version 2.
+EPIC-2026-10-24-src_architecture_to_spec, STORY-2026-10-24-src_architecture_trim_to_spec (melder_3). Version 2.1.
 
-    python3 trim_src_architecture.py --arch <src_architecture.md> --comp <src_components.md> --out <dir>
-        [--history <old src_architecture.md> <old src_components.md>] [--apply]
+    python3 trim_src_architecture.py --arch <src_architecture.md> --comp <src_components.md> --src <repo root>
+        --out <dir> [--history <old src_architecture.md> <old src_components.md>] [--apply]
+
+--src is the repository root: the C1 ranges are remeasured from it and one EVIDENCE line is computed from it.
 
 Every operation asserts that its anchor occurs exactly once; any miss stops the run before anything is written.
 Without --apply only <dir> is written: both results, a per-operation report of every removed and added line, and the
@@ -226,6 +228,53 @@ def c1_intro(text):
         b += 1
     ls = ls[:a] + ls[b:]
     return "\n".join(ls[:s + 2] + C1_INTRO_NEW + [""] + ls[s + 2:])
+
+
+def c1_remeasure(src_root, stamp):
+    """Remeasure every C1 entry from disk: whole-file range, splitlines() count, verified_at = this run."""
+    def fn(text):
+        ls = text.split("\n")
+        s, e = section_range(ls, C1_HEADING)
+        count = 0
+        for i in range(s, e):
+            m = re.match(r"^- path: `([^`]+)`$", ls[i])
+            if not m:
+                continue
+            path = src_root / m.group(1)
+            if not path.is_file():
+                raise OpError(f"C1 path does not resolve: {m.group(1)}")
+            n = len(path.read_bytes().decode("utf-8").splitlines())
+            fields = {}
+            for j in range(i + 1, min(i + 6, e)):
+                mm = re.match(r"^  (start_line|end_line|loc|verified_at): ", ls[j])
+                if mm:
+                    fields[mm.group(1)] = j
+            if set(fields) != {"start_line", "end_line", "loc", "verified_at"}:
+                raise OpError(f"C1 entry fields incomplete: {m.group(1)}")
+            ls[fields["start_line"]] = "  start_line: 1"
+            ls[fields["end_line"]] = f"  end_line: {n}"
+            ls[fields["loc"]] = f"  loc: {n}"
+            ls[fields["verified_at"]] = f"  verified_at: {stamp}"
+            count += 1
+        if count == 0:
+            raise OpError("no C1 entries")
+        return "\n".join(ls)
+    return fn
+
+
+def link_type_check_citation(src_root):
+    """The Runtime Type Names citation of Conduit.link's type check, measured from the source."""
+    def fn(text):
+        lines = (src_root / "src/melder/aether/conduit/conduit.py").read_text(encoding="utf-8").split("\n")
+        a = [i + 1 for i, x in enumerate(lines) if x.strip() == "if not isinstance(target_conduit, Conduit):"]
+        b = [i + 1 for i, x in enumerate(lines)
+             if x.strip().startswith('raise TypeError(f"Expected Conduit-compatible object')]
+        if len(a) != 1 or len(b) != 1 or not 0 < b[0] - a[0] <= 3:
+            raise OpError("Conduit.link type check not found in conduit.py")
+        return regex_once(
+            r"conduit\.py:\d+-\d+ \(the check and the raise -\n    cited as :4342-4344 in the patch lane, which was off "
+            r"by one\)", f"conduit.py:{a[0]}-{b[0]} (the check and the raise)")(text)
+    return fn
 
 
 OI = "## Operational Invariants"
@@ -538,7 +587,7 @@ def subsection(ls, section, h3):
     return a, b, e
 
 
-def run(arch_text, comp_text, today):
+def run(arch_text, comp_text, today, src_root, stamp):
     arch, comp = Doc("src_architecture", arch_text), Doc("src_components", comp_text)
     captured = {}
     h3 = "### Verifying the `path:line` citations in this document"
@@ -585,9 +634,7 @@ def run(arch_text, comp_text, today):
     arch.apply("runtime type names re-absorption note", replace_once(
         "Re-absorbed 2026-08-02 from the patch lane; every class below was verified to\n"
         "exist in `src/` and the enforcement citation was re-measured on the way in.\n\n", ""))
-    arch.apply("runtime type names patch-lane citation note", regex_once(
-        r"(conduit\.py:\d+-\d+) \(the check and the raise -\n    cited as :4342-4344 in the patch lane, which was off by one\)",
-        r"\1 (the check and the raise)"))
+    arch.apply("runtime type names citation: patch-lane note out, range remeasured", link_type_check_citation(src_root))
     arch.apply("extension points re-absorption note", replace_once(
         "Re-absorbed 2026-08-02 from the patch lane; every named seam verified present.\n", ""))
     for prefix in INVARIANT_REMOVALS:
@@ -615,6 +662,7 @@ def run(arch_text, comp_text, today):
         "across the crystallizer test tree validates it.\n", "the V3 subsystem model.\n"))
     arch.apply("C1 intro moved to the top", c1_intro)
     arch.apply("C1 notes: descriptions only", trim_c1_notes)
+    arch.apply("C1 ranges remeasured from disk", c1_remeasure(src_root, stamp), allow_noop=True)
     arch.apply("C1 carried-forward non-path note", regex_once(
         r"\n+Non-path notes carried forward from the previous revision:\n"
         r"- Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind\.py`\n+", "\n\n"))
@@ -656,14 +704,16 @@ def main():
     ap.add_argument("--arch", required=True)
     ap.add_argument("--comp", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--src", required=True)
     ap.add_argument("--history", nargs=2)
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
     arch_p, comp_p, out = pathlib.Path(args.arch), pathlib.Path(args.comp), pathlib.Path(args.out)
     arch_t, comp_t = arch_p.read_text(encoding="utf-8"), comp_p.read_text(encoding="utf-8")
-    today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+    started = datetime.datetime.now(datetime.timezone.utc)
+    today, stamp = started.strftime("%Y-%m-%d"), started.strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
-        arch, comp = run(arch_t, comp_t, today)
+        arch, comp = run(arch_t, comp_t, today, pathlib.Path(args.src), stamp)
     except OpError as exc:
         print(f"STOPPED, nothing written: {exc}")
         return 2

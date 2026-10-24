@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: a0eb34eb1091643c40cc7f4d244a2143d19e36109f9866d4d195682487455cf9
+SOURCE FINGERPRINT: a1133ed12aa4445da9afa858902838ff3f0debcd14ebd921799b52f7e43c8a3c
 FILE COUNT: 412
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 19ced0d1e245e96726e1e485d337dcc3c27f0c3a0e93c11bbaf5e5af76e9dc73
+CONTENT SHA256: b83657211912c4bce620cefea6b87f96809c4f9d7149cd9c1fe1e8d5a38fa53f
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -226,15 +226,17 @@ Nothing is looked up on the network, so a new Python release runs only after a m
   claims that patch too, so each release is its own matrix entry. The floor release from
   `project.requires-python` (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor
   is refused: raising the floor means deleting the retired manifests in the same change.
-- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7)
-  and the benchmark libraries' pins. Its `build_from_source` list names pins built from their source
-  distribution because no free-threaded wheel exists (dependency-injector); everything else installs as
-  a wheel. The speed release must also have a test manifest.
+- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7),
+  Melder's runtime dependency (pip) and the benchmark libraries' pins. Its `build_from_source` list
+  names pins built from their source distribution because no free-threaded wheel exists
+  (dependency-injector); everything else installs as a wheel. The speed release must also have a test
+  manifest.
 
 To add a release, copy the newest test manifest to `<release>.toml`, change `python`, and adjust any pin
 that does not install on that release. To move the speed tests, replace the speed manifest in one change;
 their first run afterwards is the new baseline. When Melder gains a runtime dependency, pin it in every
-test manifest; a contract test refuses a manifest that leaves one out.
+test manifest and in the speed manifest; a contract test refuses a manifest that leaves one out, and the
+installed-package probes install it beside the wheel from the test manifest's pins.
 
 Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
 manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
@@ -329,7 +331,8 @@ uv run --locked python llm_support/_builder.py --check
 `uv.lock` pins the development dependency resolution; in CI only the distribution jobs use it. Runtime
 test cells install their release's manifest pins instead (see Supported Python versions). Distribution
 jobs sync only the build group and build without isolation, using those locked tools. Their wheel
-probe still installs only the exact built wheel in a separate environment. Cache keys include the
+probe installs the exact built wheel in a separate environment beside the test-manifest pins of Melder's
+runtime dependencies, with no resolver, and `uv pip check` proves the set consistent. Cache keys include the
 lockfile or manifest and the runtime/build context. The documentation toolchain retains
 `docs/requirements.lock`. See [contributor setup](../CONTRIBUTING.md) for optional groups and
 deliberate lock updates.
@@ -425,7 +428,9 @@ fresh installation on every no-GIL OS/release cell built from the test manifests
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
-match this run's built wheel. No editable installation or repository conftest is used.
+match this run's built wheel. Melder's runtime dependencies come from PyPI at that release's test-manifest
+pins and install beside it with `--no-deps --no-index`; `pip check` must pass before the probe runs. No
+editable installation or repository conftest is used.
 
 Configure the TestPyPI upload credential as follows:
 
@@ -751,7 +756,7 @@ END FILE: .github/ci_cd/extending.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/python_versions.md
-CONTENT SHA256: c1fd32806e8fd99e1214047f7435d48f61deceff4aa4ce22236603fa7effac8f
+CONTENT SHA256: 985f8a5160bcf1ca39f8d70e2da87b73e2cabe9eb2d8a639be1af266b2759b2a
 SOURCE ENCODING: utf-8
 ================================================================================
 # Python versions and the manifests
@@ -795,7 +800,8 @@ dependencies = [
 - `freethreaded` must be `true`: Melder CI qualifies free-threaded builds only.
 - `dependencies` is the whole install: exact `name==version` pins, one per distribution, each optionally followed
   by `; marker`. Installs skip dependency resolution, so a pinned package's own dependencies must be pinned too.
-  The test manifests hold Melder's runtime dependency (pip) and the `test` group's closure from `uv.lock`.
+  The test manifests hold Melder's runtime dependency (pip) and the `test` group's closure from `uv.lock`; the
+  speed manifest holds pip and the benchmarks' pins.
 - `build_from_source` (optional) lists pinned distributions built from their sdist because no usable wheel
   exists: dependency-injector in the speed manifest, PyYAML in the 3.15 test manifests. The speed install
   passes each to pip as `--no-binary`; a test cell's `uv pip install` builds any pin that has no wheel for
@@ -826,8 +832,23 @@ folder>`. That refuses any interpreter except the manifest's free-threaded relea
 requirements.txt` and keeps `install.log` beside them. The provenance step then asserts that
 `platform.python_version()` equals `SPEED_PYTHON`.
 
-The release candidate's probes install only the published wheel, without dependencies (see the dependency recipe
-below).
+The two installed-package probes install a built wheel beside Melder's runtime dependencies, at the pins of the
+test manifest of the release they run, with no resolver. `python_runtime_matrix.py runtime-requirements` writes
+those pins: the manifest's pins of the names in `[project.dependencies]`, refused when the manifest leaves one out.
+The wheel probe in `build-distributions.yml` runs, on the helper release:
+
+```bash
+python .github/scripts/python_runtime_matrix.py runtime-requirements --output "$RUNNER_TEMP/melder-runtime-requirements.txt"
+uv venv --python "<the helper interpreter>" "$RUNNER_TEMP/melder-wheel-probe"
+uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps -r "$RUNNER_TEMP/melder-runtime-requirements.txt" dist/*.whl
+uv pip check --python "$RUNNER_TEMP/melder-wheel-probe/bin/python"
+```
+
+and then `smoke_wheel.py` in that environment. The release candidate's probe (`testpypi_candidate.py
+probe-install`, on every test-manifest release) downloads the wheel from TestPyPI by its hash and the same pins
+from PyPI (`pip download --no-deps --only-binary=:all:`), installs them together into a fresh environment with
+`pip install --no-deps --no-index`, runs `pip check` and then `smoke_wheel.py`. `pip check` is what proves the
+pinned set satisfies the wheel's own requirements.
 
 ## Recipes
 
@@ -862,14 +883,15 @@ pin when a newer version of the library does not support it.
 
 1. Add it to `[project.dependencies]` in `pyproject.toml` and update `uv.lock`.
 2. Pin it, with its own dependencies, in every test manifest. A test fails while any test manifest leaves out a
-   declared dependency.
+   declared dependency, or pins one at another version than an exact `==` declaration.
 3. Pin it in the speed manifest too: the speed jobs import Melder from the checkout (`PYTHONPATH=src`), not from
-   an installed wheel.
-4. Before merging, change the two installed-package probes. They install the wheel without its dependencies and
-   would then fail to import Melder: the wheel probe in `build-distributions.yml`
-   (`uv pip install --no-deps dist/*.whl`) and `probe_install` in `testpypi_candidate.py`
-   (`pip install --no-deps --no-index`). Pinning the dependency for them keeps the probes reproducible.
-5. If the documentation build imports Melder, add the dependency to the documentation requirements as well.
+   an installed wheel. A test fails while the speed manifest leaves out a declared dependency.
+4. The installed-package probes follow on their own: both install, beside the wheel, the pins `runtime_pins`
+   selects (see "How each consumer installs"), and `pip check` runs before the smoke probe. They select
+   declared names only, so a dependency that brings its own dependencies fails `pip check` until `runtime_pins`
+   in `python_runtime_matrix.py` selects those too (pip declares none).
+5. The documentation build imports Melder from `src` for autodoc (`docs/conf.py`): pin the dependency in
+   `docs/requirements.lock` as well.
 
 ### Move the speed tests to another release
 
@@ -886,7 +908,7 @@ END FILE: .github/ci_cd/python_versions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/scripts.md
-CONTENT SHA256: de41c5413ed18c6cfcf986332f851cb9498ceeb62907f6155c935a3ff48048fe
+CONTENT SHA256: a31f6cd15c3dd665b2a0cac3ec2d65814cd50614b72ed781eb99547a288abe41
 SOURCE ENCODING: utf-8
 ================================================================================
 # Scripts and other `.github` files
@@ -901,7 +923,7 @@ non-zero; nothing falls back to a default. Tests load each script by path throug
 | Script | Operations or options | Called by | Tested in |
 | --- | --- | --- | --- |
 | `ci_policy.py` | `branch`, `speed-route`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `speed-tests.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
-| `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, the three speed tests | `test_python_runtime_matrix.py` |
+| `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `runtime-requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, `build-distributions.yml`, the three speed tests; `testpypi_candidate.py` imports its runtime-pin functions | `test_python_runtime_matrix.py` |
 | `run_runtime_tests.py` | `--report`, `--coverage-report` | `test-runtime.yml` | `test_ci_policy.py` |
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
 | `check_candidate_run.py` | `--wait-seconds` | `ci.yml`, `python-publish.yml` | `test_candidate_publication.py` |
@@ -931,7 +953,10 @@ remote, so a branch or tag that moved during a run is refused. The script also p
 
 Everything about which Python CI runs; see [python_versions.md](python_versions.md). Its `coverage` operation,
 used before the Codecov upload, requires a report for every matrix cell of this run, taking each cell's newest
-attempt.
+attempt. Its `runtime-requirements` operation writes the pins of Melder's declared runtime dependencies
+(`[project.dependencies]`) from the running release's test manifest, or `--manifest`, for the wheel probe;
+`testpypi_candidate.py` calls the same functions (`declared_dependencies`, `release_manifest`, `runtime_pins`).
+A declared dependency the manifest leaves unpinned is refused.
 
 ### `run_runtime_tests.py`
 
@@ -960,8 +985,10 @@ that is still in progress.
 accepted, missing ones are staged for upload, and different ones are refused (choose a new version). Its release
 lookup retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times, ten seconds apart; only a
 404 means nothing is uploaded yet.
-`probe-install` downloads the exact wheel from TestPyPI by its hash, installs it alone into a fresh environment
-and runs `smoke_wheel.py` against the expected version.
+`probe-install` downloads the exact wheel from TestPyPI by its hash and Melder's runtime dependencies from PyPI at
+the running release's test-manifest pins (isolated, wheels only, no dependencies), installs them together into a
+fresh environment with `--no-deps --no-index`, runs `pip check` and then `smoke_wheel.py` against the expected
+version.
 
 ### `verify_distributions.py`, `normalize_sdist.py` and `smoke_wheel.py`
 
@@ -1055,7 +1082,7 @@ END FILE: .github/ci_cd/validating.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/workflows.md
-CONTENT SHA256: a56ba5c9bd94365009cc6867a7b84d0aed38b290a63dcece570d4d20c25ff136
+CONTENT SHA256: a2e33d64df82ab0dfa09026ed9eeda46288b679b391aa4a49fbac770ea2a5be1
 SOURCE ENCODING: utf-8
 ================================================================================
 # Workflows
@@ -1127,7 +1154,7 @@ midway.
 | `source-qualification` | Reuses the full CI evidence for this tree (`verify-source-qualification.yml`). |
 | `build` | Builds and verifies the wheel and sdist (`build-distributions.yml`). |
 | `publish` (RC / publish-to-TestPyPI) | In the `pypitest` environment: compares the files with what TestPyPI already has, retrying a TestPyPI outage up to six times, and stages only the missing ones (`testpypi_candidate.py prepare-upload`), requires the `melder_api_token` secret, checks the head again and uploads. |
-| `install` (RC / installed-package / ...) | For every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash, installs it alone into a fresh environment and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
+| `install` (RC / installed-package / ...) | For every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash and Melder's runtime dependencies from PyPI at that release's test-manifest pins, installs them together into a fresh environment with no resolver, checks the set with `pip check` and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
 | `package-ready` (RC / package-ready) | Requires all five stages to have succeeded and the head to be unchanged (`ci_policy.py candidate-ready`, `candidate-head`). |
 
 `publish` and `install` download the build that `build` reports (`needs.build.outputs.artifact-name`), so **Re-run
@@ -1184,9 +1211,10 @@ output for 14 days. The documentation tooling lives in `docs/tools/`; see `docs/
 Takes `artifact-name` and an optional `release-tag`. On free-threaded Python it installs the locked build tools
 (`uv sync --locked --only-group build`), checks the build assets, builds the wheel and sdist with the commit's
 timestamp, normalizes the sdist (`normalize_sdist.py`), checks both archives (`verify_distributions.py`),
-installs the wheel alone into a fresh environment and runs `smoke_wheel.py` there with `PYTHON_GIL=0`, then keeps
-the files under the given artifact name for 14 days and returns that name as the output `artifact-name`, which jobs
-later in the same run download by.
+installs the wheel into a fresh environment beside Melder's runtime dependencies at the helper release's
+test-manifest pins (`python_runtime_matrix.py runtime-requirements`, no resolver), checks the set with
+`uv pip check` and runs `smoke_wheel.py` there with `PYTHON_GIL=0`, then keeps the files under the given artifact
+name for 14 days and returns that name as the output `artifact-name`, which jobs later in the same run download by.
 
 ### `verify-source-qualification.yml` (Source / full qualification)
 
@@ -77093,10 +77121,10 @@ END FILE: release_docs/0.2.8227.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: d5861a3694884fadeb7b79bcc56d239d8a82b68387a753e00be8a1ddfbcb34e4
+CONTENT SHA256: 201f0779b0bf60e82ab3bf6f94cfe9d82f666219c1d52849050bb9e77d289c43
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8266
+# Melder 0.2.8267
 
 **Unreleased**
 
@@ -77308,18 +77336,17 @@ signature changes, and `describe()` keeps its keys.
 What stays the same: the number of live shells is never capped (a miss always builds), a returning shell is cleaned
 before it is pooled, and a released spellspace still refuses `meld` and `purge`.
 
-## A `many` dependency is disposed with the object that holds it
+## A `many` dependency belongs to the scope that built it, not to the object that holds it
 
-A `many` dependency that declares disposal methods and is built for a longer-lived object - a `unique`,
-`unique_per_conduit`, `unique_per_spell_space`, `unique_per_conduit_lineage` or `unique_per_conduit_cluster` spell -
-now belongs to that object: it is disposed when the object's owner is cleaned up, it is disposed right after the
-object when the object is purged, and it moves with the object to another root. Until 0.2.8234 it was recorded with
-the scope that happened to build the holder first: when a lesser conduit, a spellspace, a borrowing root or a cluster
-member built the holder and then ended, Melder ran the dependency's disposal methods while the holder - kept by the
-root, the conduit, the lineage root or the cluster - went on handing out the disposed object. Until 0.2.8237 purging
-the holder disposed the holder alone, leaving its dependencies registered and open until their scope ended (one more
-for every purge-and-meld cycle), and `transfer_spell_ownership(..., move_creations=True)` moved the holder and left
-its dependencies with the old root, whose teardown disposed them while the new owner kept serving the holder.
+**Breaking change:** a `many` dependency with disposal methods is now always recorded and disposed by the scope that
+built it - the spell space, else the conduit that melded - also when it is built for a longer-lived object (a
+`unique`, `unique_per_conduit`, `unique_per_spell_space`, `unique_per_conduit_lineage` or `unique_per_conduit_cluster`
+spell). Cleaning up that object - purging it, or the end of the creations that hold it - runs only the object's own
+disposal methods; what it does with the objects it holds is up to those methods. From 0.2.8235 to 0.2.8265 such a
+dependency belonged to the object that held it: it was recorded with the object's owner, disposed right after the
+object when the object was purged, and moved with the object to another root. That is removed on the owner's
+decision, so Melder behaves like Autofac: an object is disposed by the scope that built it, and cleaning up one
+object never cleans up the objects it was given.
 
 ```python
 class Connection:
@@ -77343,26 +77370,36 @@ root = book.conjure()
 with root.enter_lesser_conduit() as request:
     repository = request.meld("Repository")      # first built inside the request scope
 
-assert not repository.connection.closed          # 0.2.8234 closed it when the request scope ended
-assert root.meld("Repository") is repository
-
-root.purge("Repository")                          # disposes the repository, then its connection
-assert repository.connection.closed               # 0.2.8237 left it open, registered, until root.cleanup()
+assert repository.connection.closed              # the request scope closed the connection it built
+assert root.meld("Repository") is repository     # the root still serves the same repository
 ```
 
-A dependency that belongs to an object is no longer one of its `many` spell's own entries: `purge` and
-`has_live_creation` for that spell count only the instances no object holds, so purging the spell never disposes a
-dependency a live object still uses. Purging the object raises the dependencies' disposal failures together with its
-own, after the object is retired, and the object is disposed before its dependencies, as at teardown.
+The calls are the same as in 0.2.8235-0.2.8265; only Melder's answer differs: those releases left the connection
+open here and closed it when the root ended. The repository now holds a closed connection because the scope that
+built the connection has ended - what Autofac does when a singleton keeps a dependency from a shorter scope. To keep
+the connection as long as the repository, meld the repository first where it lives (`root.meld("Repository")`), so
+the root builds the connection and closes it when the root ends; or bind `Connection` without disposal methods and
+close it in the repository's own disposal method.
 
-What stays the same: a `many` spell melded directly, and the `many` dependencies of a `many` spell, are still
-recorded with the scope that melds them (the spellspace, else the conduit), so a lesser conduit or a spellspace still
-disposes the transients it built for itself. `purge` still returns the number of the target's own entries it removed.
-Warm melds run exactly the code they ran before.
+Purge, the live-creation probes and transfers follow the same rule:
+
+- Purging the object disposes the object alone. Its `many` dependencies are disposed when their scope ends, and
+  their disposal failures are raised there (0.2.8238-0.2.8265 disposed them right after the object and raised their
+  failures with its own).
+- `purge` and `has_live_creation` for the dependency's `many` spell count every instance its scope recorded, also
+  one a live object still holds (they skipped those).
+- `transfer_spell_ownership(..., move_creations=True)` moves the object, not its `many` dependencies, which stay
+  with the scope that built them (0.2.8238-0.2.8265 moved them with it); with `include_dependencies=True` the
+  dependency's spell moves too, and its objects with it.
+
+What stays the same: a `many` spell melded directly, and the `many` dependencies of a `many` spell, are recorded
+with the scope that melds them, as before; a `many` dependency without disposal methods is not recorded at all;
+managed pools keep the `many` dependencies of their objects with each object (see `Existence.managed_spell_quantity`
+below); warm melds run exactly the code they ran before, and cache files and saved records are unchanged.
 
 With `generalized_singleton_specialization_enabled` (opt-in, off by default), a root whose graph passes a `many`
-dependency to a longer-lived object is no longer specialized: the specialized path built and recorded a new
-dependency on every warm meld, which the stored holder never used.
+dependency to a longer-lived object is still not specialized: the specialized path would build a new dependency on
+every warm meld, which the stored object never uses.
 
 ## A root that is torn down leaves its cluster, and leaving a cluster unshares its roots
 
@@ -78430,8 +78467,9 @@ public signature. A save that fails for any reason other than an operating-syste
   how `cleanup_and_remove_spell` treats a Spellbook torn down while it waits.
 - The packaged system documents describe the elastic retention of the kernel pools: the sizes, the stretch
   under pressure, the timed decay and the prewarm ceiling.
-- The packaged system documents describe where a `many` dependency built for a longer-lived object is recorded (with
-  the holder's owner), the store selection and live-creation probe that follow, and the specializer's eligibility.
+- The packaged system documents describe where a `many` dependency built for a longer-lived object is recorded (the
+  scope that built it, since 0.2.8267), the store selection and live-creation probe that follow, and the
+  specializer's eligibility.
 - The ownership guide (`docs/intermediate/ownership.md`) says a transfer moves the spell's objects by default and
   hands over stewardship, not a working setup, and how the new owner rebuilds.
 - The packaged system documents (`melder.__architecture__`) open with what Melder is: not a DI container but a
@@ -78444,9 +78482,8 @@ public signature. A save that fails for any reason other than an operating-syste
 - The packaged system documents no longer call a notch's borrower update a known limitation: each linked borrower
   parks its copy of the old version, index-link borrowers move to the new version and build it at their next
   meld, and older versions stay alive.
-- The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
-  the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
-  transfer default and handover; the code-map extents of the files these changes touched are remeasured.
+- The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns, and
+  the transfer default and handover; the code-map extents of the files these changes touched are remeasured.
 - The README's lifetimes section is "Seven Lifetimes, Not Three": it lists `managed_spell_quantity` and links to
   its dedicated intermediate section. That section has a complete runnable example of request-scoped injection,
   explicit release, reset, lease-block reuse and root teardown, plus the three pool modes and links to lessons
@@ -78464,11 +78501,11 @@ public signature. A save that fails for any reason other than an operating-syste
   `ReleaseManagedSpell` and the lease, leasing through compiled melds and `managed_spell_meld`, and pools in an
   ownership transfer. The packaged graph describes the five new modules; the code-map extents of the changed files
   are remeasured, and line citations that had drifted since 0.2.8235 point at their code again.
-- The internal-bind guard manifest holds 630 entries at 0.2.8257 (628 at 0.2.8244, 622 at 0.2.8227):
-  `SpellCodeDigest` and `BindingManifest` joined at 0.2.8257; `HolderDisposalEntry`, the record that keeps a slotted
-  object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at 0.2.8242, the managed pool
-  (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and `ReleaseManagedSpell` and
-  `ManagedSpellLease` at 0.2.8244.
+- The internal-bind guard manifest holds 629 entries at 0.2.8267 (630 at 0.2.8257, 628 at 0.2.8244, 622 at
+  0.2.8227): `HolderDisposalEntry`, the record that kept a slotted object's `many` children with it, joined at
+  0.2.8238 and left at 0.2.8267; `SpellCodeDigest` and `BindingManifest` joined at 0.2.8257, `ManagedSpellMode` at
+  0.2.8242, the managed pool (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and
+  `ReleaseManagedSpell` and `ManagedSpellLease` at 0.2.8244.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the lineage flag `SpellState.non_resolvable`, the registry's published set of flagged lineages and the
   validation flag's exclusion of them; the code-map extents of the six changed files are remeasured, and line
@@ -78564,7 +78601,20 @@ public signature. A save that fails for any reason other than an operating-syste
   the best-effort cache save - the result of a refused save, the per-writer temp file, the Windows rename retry and
   the one WARNING per cache file - and `Spell.emit_cache_file()`'s `False`; the code-map extents of
   `caching_system.py`, `spellbook.py` and `spell.py` are remeasured, and their line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8266.
+- Melder declares one runtime dependency, `pip==26.2.2`, so installing Melder installs that pip release; the
+  package description and the README say so (both said "Zero dependencies"). The documentation build pins it in
+  `docs/requirements.lock`, and CI's installed-package checks - the wheel check after every build and the release
+  candidate's install from TestPyPI on every supported Python release - install the wheel beside it and confirm
+  with `pip check` that the installed set satisfies the wheel's requirements.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe a
+  `many` dependency belonging to the scope that built it: one registration rule in the compiled plans, a holder's
+  cleanup running only its own disposal, what purge, the live-creation probe and a transfer do with the dependency,
+  and the specializer's decline kept; the removed holder record is marked as removed. The scopes guide
+  (`docs/intermediate/scopes.md`) and the ownership guide (`docs/intermediate/ownership.md`) say a `many` dependency
+  belongs to the conduit or spell space that built it and stays there through a transfer, and the packaged test
+  documents describe the new tests; the code-map extents of the changed files are remeasured, and line citations
+  into `conduit.py` and `creations.py` remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8267.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

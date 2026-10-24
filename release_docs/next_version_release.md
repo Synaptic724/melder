@@ -1,4 +1,4 @@
-# Melder 0.2.8266
+# Melder 0.2.8267
 
 **Unreleased**
 
@@ -210,18 +210,17 @@ signature changes, and `describe()` keeps its keys.
 What stays the same: the number of live shells is never capped (a miss always builds), a returning shell is cleaned
 before it is pooled, and a released spellspace still refuses `meld` and `purge`.
 
-## A `many` dependency is disposed with the object that holds it
+## A `many` dependency belongs to the scope that built it, not to the object that holds it
 
-A `many` dependency that declares disposal methods and is built for a longer-lived object - a `unique`,
-`unique_per_conduit`, `unique_per_spell_space`, `unique_per_conduit_lineage` or `unique_per_conduit_cluster` spell -
-now belongs to that object: it is disposed when the object's owner is cleaned up, it is disposed right after the
-object when the object is purged, and it moves with the object to another root. Until 0.2.8234 it was recorded with
-the scope that happened to build the holder first: when a lesser conduit, a spellspace, a borrowing root or a cluster
-member built the holder and then ended, Melder ran the dependency's disposal methods while the holder - kept by the
-root, the conduit, the lineage root or the cluster - went on handing out the disposed object. Until 0.2.8237 purging
-the holder disposed the holder alone, leaving its dependencies registered and open until their scope ended (one more
-for every purge-and-meld cycle), and `transfer_spell_ownership(..., move_creations=True)` moved the holder and left
-its dependencies with the old root, whose teardown disposed them while the new owner kept serving the holder.
+**Breaking change:** a `many` dependency with disposal methods is now always recorded and disposed by the scope that
+built it - the spell space, else the conduit that melded - also when it is built for a longer-lived object (a
+`unique`, `unique_per_conduit`, `unique_per_spell_space`, `unique_per_conduit_lineage` or `unique_per_conduit_cluster`
+spell). Cleaning up that object - purging it, or the end of the creations that hold it - runs only the object's own
+disposal methods; what it does with the objects it holds is up to those methods. From 0.2.8235 to 0.2.8265 such a
+dependency belonged to the object that held it: it was recorded with the object's owner, disposed right after the
+object when the object was purged, and moved with the object to another root. That is removed on the owner's
+decision, so Melder behaves like Autofac: an object is disposed by the scope that built it, and cleaning up one
+object never cleans up the objects it was given.
 
 ```python
 class Connection:
@@ -245,26 +244,36 @@ root = book.conjure()
 with root.enter_lesser_conduit() as request:
     repository = request.meld("Repository")      # first built inside the request scope
 
-assert not repository.connection.closed          # 0.2.8234 closed it when the request scope ended
-assert root.meld("Repository") is repository
-
-root.purge("Repository")                          # disposes the repository, then its connection
-assert repository.connection.closed               # 0.2.8237 left it open, registered, until root.cleanup()
+assert repository.connection.closed              # the request scope closed the connection it built
+assert root.meld("Repository") is repository     # the root still serves the same repository
 ```
 
-A dependency that belongs to an object is no longer one of its `many` spell's own entries: `purge` and
-`has_live_creation` for that spell count only the instances no object holds, so purging the spell never disposes a
-dependency a live object still uses. Purging the object raises the dependencies' disposal failures together with its
-own, after the object is retired, and the object is disposed before its dependencies, as at teardown.
+The calls are the same as in 0.2.8235-0.2.8265; only Melder's answer differs: those releases left the connection
+open here and closed it when the root ended. The repository now holds a closed connection because the scope that
+built the connection has ended - what Autofac does when a singleton keeps a dependency from a shorter scope. To keep
+the connection as long as the repository, meld the repository first where it lives (`root.meld("Repository")`), so
+the root builds the connection and closes it when the root ends; or bind `Connection` without disposal methods and
+close it in the repository's own disposal method.
 
-What stays the same: a `many` spell melded directly, and the `many` dependencies of a `many` spell, are still
-recorded with the scope that melds them (the spellspace, else the conduit), so a lesser conduit or a spellspace still
-disposes the transients it built for itself. `purge` still returns the number of the target's own entries it removed.
-Warm melds run exactly the code they ran before.
+Purge, the live-creation probes and transfers follow the same rule:
+
+- Purging the object disposes the object alone. Its `many` dependencies are disposed when their scope ends, and
+  their disposal failures are raised there (0.2.8238-0.2.8265 disposed them right after the object and raised their
+  failures with its own).
+- `purge` and `has_live_creation` for the dependency's `many` spell count every instance its scope recorded, also
+  one a live object still holds (they skipped those).
+- `transfer_spell_ownership(..., move_creations=True)` moves the object, not its `many` dependencies, which stay
+  with the scope that built them (0.2.8238-0.2.8265 moved them with it); with `include_dependencies=True` the
+  dependency's spell moves too, and its objects with it.
+
+What stays the same: a `many` spell melded directly, and the `many` dependencies of a `many` spell, are recorded
+with the scope that melds them, as before; a `many` dependency without disposal methods is not recorded at all;
+managed pools keep the `many` dependencies of their objects with each object (see `Existence.managed_spell_quantity`
+below); warm melds run exactly the code they ran before, and cache files and saved records are unchanged.
 
 With `generalized_singleton_specialization_enabled` (opt-in, off by default), a root whose graph passes a `many`
-dependency to a longer-lived object is no longer specialized: the specialized path built and recorded a new
-dependency on every warm meld, which the stored holder never used.
+dependency to a longer-lived object is still not specialized: the specialized path would build a new dependency on
+every warm meld, which the stored object never uses.
 
 ## A root that is torn down leaves its cluster, and leaving a cluster unshares its roots
 
@@ -1332,8 +1341,9 @@ public signature. A save that fails for any reason other than an operating-syste
   how `cleanup_and_remove_spell` treats a Spellbook torn down while it waits.
 - The packaged system documents describe the elastic retention of the kernel pools: the sizes, the stretch
   under pressure, the timed decay and the prewarm ceiling.
-- The packaged system documents describe where a `many` dependency built for a longer-lived object is recorded (with
-  the holder's owner), the store selection and live-creation probe that follow, and the specializer's eligibility.
+- The packaged system documents describe where a `many` dependency built for a longer-lived object is recorded (the
+  scope that built it, since 0.2.8267), the store selection and live-creation probe that follow, and the
+  specializer's eligibility.
 - The ownership guide (`docs/intermediate/ownership.md`) says a transfer moves the spell's objects by default and
   hands over stewardship, not a working setup, and how the new owner rebuilds.
 - The packaged system documents (`melder.__architecture__`) open with what Melder is: not a DI container but a
@@ -1346,9 +1356,8 @@ public signature. A save that fails for any reason other than an operating-syste
 - The packaged system documents no longer call a notch's borrower update a known limitation: each linked borrower
   parks its copy of the old version, index-link borrowers move to the new version and build it at their next
   meld, and older versions stay alive.
-- The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns,
-  the record that carries a slotted object's `many` children through purge, transfer and disposal, and the
-  transfer default and handover; the code-map extents of the files these changes touched are remeasured.
+- The packaged system documents describe a root leaving its cluster at teardown, the team store a cluster owns, and
+  the transfer default and handover; the code-map extents of the files these changes touched are remeasured.
 - The README's lifetimes section is "Seven Lifetimes, Not Three": it lists `managed_spell_quantity` and links to
   its dedicated intermediate section. That section has a complete runnable example of request-scoped injection,
   explicit release, reset, lease-block reuse and root teardown, plus the three pool modes and links to lessons
@@ -1366,11 +1375,11 @@ public signature. A save that fails for any reason other than an operating-syste
   `ReleaseManagedSpell` and the lease, leasing through compiled melds and `managed_spell_meld`, and pools in an
   ownership transfer. The packaged graph describes the five new modules; the code-map extents of the changed files
   are remeasured, and line citations that had drifted since 0.2.8235 point at their code again.
-- The internal-bind guard manifest holds 630 entries at 0.2.8257 (628 at 0.2.8244, 622 at 0.2.8227):
-  `SpellCodeDigest` and `BindingManifest` joined at 0.2.8257; `HolderDisposalEntry`, the record that keeps a slotted
-  object's `many` children with it, joined at 0.2.8238, `ManagedSpellMode` at 0.2.8242, the managed pool
-  (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and `ReleaseManagedSpell` and
-  `ManagedSpellLease` at 0.2.8244.
+- The internal-bind guard manifest holds 629 entries at 0.2.8267 (630 at 0.2.8257, 628 at 0.2.8244, 622 at
+  0.2.8227): `HolderDisposalEntry`, the record that kept a slotted object's `many` children with it, joined at
+  0.2.8238 and left at 0.2.8267; `SpellCodeDigest` and `BindingManifest` joined at 0.2.8257, `ManagedSpellMode` at
+  0.2.8242, the managed pool (`ManagedSpellQuantity`) and `ManagedSpellExhaustedError` at 0.2.8243, and
+  `ReleaseManagedSpell` and `ManagedSpellLease` at 0.2.8244.
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph
   describe the lineage flag `SpellState.non_resolvable`, the registry's published set of flagged lineages and the
   validation flag's exclusion of them; the code-map extents of the six changed files are remeasured, and line
@@ -1466,4 +1475,17 @@ public signature. A save that fails for any reason other than an operating-syste
   the best-effort cache save - the result of a refused save, the per-writer temp file, the Windows rename retry and
   the one WARNING per cache file - and `Spell.emit_cache_file()`'s `False`; the code-map extents of
   `caching_system.py`, `spellbook.py` and `spell.py` are remeasured, and their line citations remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8266.
+- Melder declares one runtime dependency, `pip==26.2.2`, so installing Melder installs that pip release; the
+  package description and the README say so (both said "Zero dependencies"). The documentation build pins it in
+  `docs/requirements.lock`, and CI's installed-package checks - the wheel check after every build and the release
+  candidate's install from TestPyPI on every supported Python release - install the wheel beside it and confirm
+  with `pip check` that the installed set satisfies the wheel's requirements.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe a
+  `many` dependency belonging to the scope that built it: one registration rule in the compiled plans, a holder's
+  cleanup running only its own disposal, what purge, the live-creation probe and a transfer do with the dependency,
+  and the specializer's decline kept; the removed holder record is marked as removed. The scopes guide
+  (`docs/intermediate/scopes.md`) and the ownership guide (`docs/intermediate/ownership.md`) say a `many` dependency
+  belongs to the conduit or spell space that built it and stays there through a transfer, and the packaged test
+  documents describe the new tests; the code-map extents of the changed files are remeasured, and line citations
+  into `conduit.py` and `creations.py` remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8267.
