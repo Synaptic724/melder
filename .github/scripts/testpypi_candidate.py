@@ -1,10 +1,11 @@
-"""Verify TestPyPI uploads and exercise the exact downloaded wheel without checkout imports."""
+"""Verify TestPyPI uploads; install the exact downloaded wheel and its pinned dependencies without checkout imports."""
 
 import argparse
 import hashlib
 import json
 import os
 import pathlib
+import platform
 import re
 import shutil
 import subprocess
@@ -19,6 +20,7 @@ from collections.abc import Mapping, Sequence
 from typing import Optional, TypedDict
 
 from ci_policy import git_output, object_value, text_value
+from python_runtime_matrix import RuntimeMatrixPolicy, declared_dependencies, release_manifest, runtime_pins
 from verify_distributions import assignment, verify_distributions
 
 
@@ -40,6 +42,9 @@ class TestIndexPolicy:
     # Only these statuses, timeouts and failed connections are retried; every other answer is definitive.
     LOOKUP_ATTEMPTS = 6
     TRANSIENT_STATUSES: tuple[int, ...] = (429, 500, 502, 503, 504)
+    # Melder's runtime dependencies come from PyPI, where a user's install finds them; TestPyPI holds only the
+    # candidate.
+    DEPENDENCY_INDEX = "https://pypi.org/simple/"
 
 
 def package_version() -> str:
@@ -195,25 +200,75 @@ def download_wheel(directory: pathlib.Path, version: str, name: str, identity: F
     return wheel
 
 
-def probe_install(directory: pathlib.Path, report: pathlib.Path) -> None:
-    """Install the hash-pinned index wheel into a fresh environment and run the isolated smoke probe.
+def runtime_requirements() -> tuple[str, ...]:
+    """Return the pins of Melder's runtime dependencies for the running release, from its test manifest.
 
-    The repository's conftest and editable installation are never used. Downloads
-    and the virtual environment are owned by one temporary-directory context and
-    removed on success or failure. The report is written only after the probe passes.
+    The install job runs every test-manifest release, so the running interpreter's release names the manifest and
+    the probe installs what that release's test cells run with (`python_runtime_matrix.runtime_pins`).
+
+    Returns:
+        The exact pins, as the manifest writes them; empty when Melder declares no runtime dependency.
+
+    Raises:
+        ValueError: When the running release has no test manifest, or that manifest leaves a declared runtime
+            dependency unpinned.
+    """
+    directory = pathlib.Path(__file__).resolve().parents[2] / RuntimeMatrixPolicy.TESTS_DIRECTORY
+    return runtime_pins(release_manifest(directory, platform.python_version()), declared_dependencies())
+
+
+def download_dependencies(directory: pathlib.Path, pins: Sequence[str]) -> list[pathlib.Path]:
+    """Download the wheels of Melder's pinned runtime dependencies from PyPI for the isolated install.
+
+    TestPyPI holds the candidate, not its dependencies, so these come from PyPI, where a user's install finds
+    them. Pip runs without user/environment configuration, extra indexes, dependencies (the pins are the whole
+    set), its cache or source builds. A failure propagates: PyPI has no index propagation to wait out, so
+    nothing is retried.
+
+    Args:
+        directory: The probe's scratch directory; the requirement file and the downloads are written inside it.
+        pins: Exact pins, as runtime_requirements returns them.
+
+    Returns:
+        The downloaded wheels, sorted by name; empty, with nothing run, when pins is empty.
+    """
+    if not pins:
+        return []
+    requirement = directory / "runtime-requirements.txt"
+    requirement.write_text("".join(f"{pin}\n" for pin in pins), encoding="utf-8")
+    downloads = directory / "dependencies"
+    downloads.mkdir()
+    subprocess.run([sys.executable, "-m", "pip", "--isolated", "download", "--no-deps", "--no-cache-dir",
+                    "--only-binary=:all:", "--index-url", TestIndexPolicy.DEPENDENCY_INDEX,
+                    "--dest", str(downloads), "-r", str(requirement)], check=True, cwd=directory)
+    return sorted(downloads.iterdir())
+
+
+def probe_install(directory: pathlib.Path, report: pathlib.Path) -> None:
+    """Install the hash-pinned index wheel and its pinned dependencies afresh, check them, then smoke-test them.
+
+    The wheel comes from TestPyPI by its hash and Melder's runtime dependencies from PyPI at the running release's
+    test-manifest pins; both install with `--no-deps --no-index`, from those files only, and `pip check` must
+    find the set consistent with the wheel's own requirements before the isolated smoke probe runs. The
+    repository's conftest and editable installation are never used. Downloads and the virtual environment are
+    owned by one temporary-directory context and removed on success or failure. The report is written only
+    after the probe passes.
     """
     version = package_version()
     files = verified_files(directory, version)
     name = next(name for name in files if name.endswith(".whl"))
+    pins = runtime_requirements()
     smoke = pathlib.Path(__file__).with_name("smoke_wheel.py").resolve()
     with tempfile.TemporaryDirectory(prefix="melder-testpypi-", dir=os.environ.get("RUNNER_TEMP")) as scratch:
         root = pathlib.Path(scratch)
         wheel = download_wheel(root, version, name, files[name])
+        dependencies = download_dependencies(root, pins)
         environment = root / "environment"
         venv.EnvBuilder(with_pip=True).create(environment)
         python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-        subprocess.run([str(python), "-m", "pip", "--isolated", "install", "--no-deps",
-                        "--no-index", str(wheel)], check=True, cwd=root)
+        subprocess.run([str(python), "-m", "pip", "--isolated", "install", "--no-deps", "--no-index",
+                        *(str(path) for path in dependencies), str(wheel)], check=True, cwd=root)
+        subprocess.run([str(python), "-m", "pip", "--isolated", "check"], check=True, cwd=root)
         subprocess.run([str(python), "-I", str(smoke), "--expected-version", version], check=True, cwd=root)
     write_report(report, version, files, "installed-package-passed")
 

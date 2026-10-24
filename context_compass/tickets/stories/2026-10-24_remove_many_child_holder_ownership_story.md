@@ -328,6 +328,29 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T21:17:38Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-216 consumed at re-onboarding (melder_0, NOTICE): melder_0 took 0.2.8266 (the best-effort cache save),
+    so this lane notches 0.2.8267 unless another landing comes first. Landed in the working tree: `__version__.py`;
+    the release note (header, a section before "Packaging and documentation", a packaging bullet, the rebuild
+    line); src_architecture, src_components and both indexes (a new first invariant, failure modes, the code map and
+    summaries; spellbook.py citations moved 20 lines); the reassembled graph (the caching_system, spellbook, spell
+    and __version__ descriptors). This lane's six descriptors are untouched - `HolderDisposalEntry` retires at this
+    lane's re-extract - and the bind-guard count is this lane's to state (M1-52: 629). melder_0 still owes its
+    closure and its asset and LLM rebuild (--include-untracked); melder_3 trims src_architecture after this
+    lane's turn-in.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-3
+  - context_compass/tickets/tasks/2026-10-24_cache_file_write_failure_fails_meld_task.md:6-12
+  IMPACT: The shared docs are this lane's to edit now; the edits are prepared against the landed text and applied
+    after melder_0's rebuild has run, so its --check never runs over a half-applied edit.
+  NEXT: Re-read the landed docs and build the text-anchored edit scripts; apply them once melder_0's row closes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 5645
-CONTENT_SHA256 = 'ed033ee4d15efb63236fd11e029db82bcb2017d97c24ab958cf6394eb7293ce9'
+LINE_COUNT = 5700
+CONTENT_SHA256 = '2bff338882ca004e56ccaff60e20d53951319a59a8ae6b84a0beffe66cd0e804'
 
 TEXT = """# Src Architecture (C4)
 
@@ -538,7 +538,7 @@ External interfaces are Python APIs:
   CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
-  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:4022-4024`, which states the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:4042-4044`, which states the
   opposite correctly. The code settles it, and since 0.2.8249 all three Conduit docstrings say so.
   All three name the spell they act on by `spell_id=` - the spell_id `bind` or `bind_inactive` returned - or by
   `spell=`, exactly one, and resolve a spell_id inside the call to the exact spell the conduit's Spellbook owns,
@@ -557,8 +557,8 @@ External interfaces are Python APIs:
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
   - src/melder/aether/conduit/conduit.py:6024, 6114 (`add_to_spell_index`; starts it)
   - src/melder/aether/conduit/conduit.py:6137, 6212 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4525 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4558 (`_apply_add_to_index` seam)
+  - src/melder/aether/spellbook/spellbook.py:4545 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4578 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -671,7 +671,7 @@ fan-out). A notch names its target by spell_id or by Spell and checks that it is
 index before anything moves; the two index moves take a spell_id the same way (0.2.8249). A notch whose
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4087-4878 (the three seams, remeasured 2026-10-16 at 0.2.8251);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4107-4898 (the three seams, remeasured 2026-10-24 at 0.2.8266);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -1084,9 +1084,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4087-4878 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4087-4248
-   - src/melder/aether/spellbook/spellbook.py:4558-4653
-   - src/melder/aether/spellbook/spellbook.py:4768-4878
+   - src/melder/aether/spellbook/spellbook.py:4107-4268
+   - src/melder/aether/spellbook/spellbook.py:4578-4673
+   - src/melder/aether/spellbook/spellbook.py:4788-4898
    - src/melder/aether/conduit/conduit.py:5650-5802
    - src/melder/aether/conduit/conduit.py:5804-6022
    - src/melder/aether/conduit/conduit.py:6024-6225
@@ -1192,6 +1192,31 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Cache saves are best-effort (2026-10-24, 0.2.8266; TASK-2026-10-24-cache_file_write_failure_fails_meld, on the
+  owner's go, chat 2026-10-24: "yeah go ahead with all hte recommended things you need to do"): a creation-cache
+  bundle is an accelerator - a missing or unreadable one already only made the cache cold - so a save the operating
+  system refuses no longer fails the call that triggered it. `CachingSystem.emit()` returns True when the bundle was
+  written and False when the folder, the temp write or the rename raised OSError; it never raises one. A refused
+  save removes the temp file it started (one it cannot remove is logged with its path), leaves the bundle on disk as
+  it was, keeps every staged payload in memory and logs the refusal - at WARNING the first time for that bundle, with
+  the path, the error and the remedies (a writable cache folder; on Windows an exclusion from real-time scanning; or
+  `with_system_caching_enabled(False)` for the frame), at DEBUG after. Each writer saves through its own temp file,
+  `<conduit>.meldercache.<pid>.<thread id>.tmp`, so processes sharing a frame and root name never share one. On
+  Windows only (`RETRY_REFUSED_RENAME`) a rename refused with PermissionError - [WinError 5] while another handle,
+  such as an on-access scanner, holds the bundle open - is retried: five attempts within about 100 ms. POSIX renames
+  do not refuse for sharing, so elsewhere the first refusal is final. `Spellbook._emit_cache_file_if_required`,
+  which every meld door, the end of conjure and the explicit save call, returns what `emit()` returned and leaves its
+  save flag cleared after a refusal: no meld retries the save or waits on it, and the next staging or conjure saves
+  what is still staged. Any other error of a save still restores the flag and propagates (the end of conjure logs
+  it). `Spell.emit_cache_file()` returns False for a refused save. Locks: the save runs under the CachingSystem's
+  RLock as before and the Book lock is taken only around the flag; a Windows retry sleeps under the CachingSystem's
+  lock, delaying only that Book's cache calls; no lock or lock-order edge is added. The cache envelope and its
+  generation (23) are unchanged.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.emit`,
+  `CachingSystem._write_current_cache_to_disk_locked`, `CachingSystem._replace_bundle_locked`,
+  `CachingSystem._log_refused_save_locked`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
+  `src/melder/aether/spellbook/spell.py:Spell.emit_cache_file`.
 - Cluster admission reserves one conduit at a time (0.2.8265): ConduitCloud checks registered membership
   and pending admissions under its own lock, reserves the conduit id, then registers it outside that lock.
   The reservation is released in finally after registration; recording callbacks and the join's sharing
@@ -2490,10 +2515,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7553-7596
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6971-6983,
-    effective-mode return :6984; remeasured 2026-10-16 at 0.2.8251)
-  - src/melder/aether/spellbook/spellbook.py:7809
+  - src/melder/aether/spellbook/spellbook.py:7573-7616
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7603-7615,
+    effective-mode return :7616; remeasured 2026-10-24 at 0.2.8266)
+  - src/melder/aether/spellbook/spellbook.py:7829
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2542,6 +2567,22 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Fixed in 0.2.8266: a creation-cache save the operating system refuses no longer fails the meld that triggered it.
+  Every meld door saves the bundle after building its object when the meld staged new cache (a spell compiled at its
+  first meld - one bound after conjure, for example), and the save raised its OSError to the caller: on Windows
+  PermissionError [WinError 5] from the rename while another handle held the bundle (MelderOps' `Spectrum.configure`
+  failed so on 0.2.8265; the holder there is not identified - an on-access scanner is suspected), on any platform for
+  a read-only cache folder or a full disk. The object had been built and stored - a `unique` came back from the next
+  meld, a `many` was lost to its caller, a managed lease stayed out of its pool for good - and while the refusal
+  lasted every meld of the Book raised; the refused rename also left `<conduit>.meldercache.tmp` beside the bundle.
+  Now the meld returns its object, the pool keeps its place, and the save logs one WARNING per bundle and removes
+  its temp file.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.emit` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required`.
+- Breaking (0.2.8266): `Spell.emit_cache_file()` returns False when the operating system refuses the save (the
+  Book's cache utility logs it), where it raised the OSError; True still means the bundle was written, and False
+  also covers caching off and nothing staged since the last save.
+  EVIDENCE: `src/melder/aether/spellbook/spell.py:Spell.emit_cache_file`.
 - Fixed in 0.2.8263: staging a version keyed like the active one no longer takes the active version's binding
   signature. After `bind_inactive` (before or after conjure), an `add_to_spell_index` back, or a `cleanup_spell` of
   a parked version alone in its index, the active version lost its frame claim and its Book route: a meld by address
@@ -3460,9 +3501,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8378
-  loc: 8378
-  verified_at: 2026-10-19T14:19:12Z
+  end_line: 8398
+  loc: 8398
+  verified_at: 2026-10-24T20:54:46Z
   note: Spellbook core and conjure pipeline; `find_spell_by_id` answers from the id maps (0.2.8229); bind publishes
     its spell maps under the Book lock (0.2.8230); `cleanup_spell` decides through `_dispose_spell` and contracted
     lookups answer by key (0.2.8231); overlapping disposals refuse and `inspect_spell` asks the frames with no lock
@@ -3485,6 +3526,7 @@ Spellbook and binding:
     the check fails, puts the structure back before it raises (`_check_notched_version`, `_revert_refused_notch`);
     `_apply_notch` no longer journals (0.2.8262). `_destroy_spell_index` drops a route only when it routes its
     key to the destroyed index and releases only the departing member's claim, by spell_id (0.2.8263).
+    `_emit_cache_file_if_required` returns the save's bool and leaves its flag cleared after a refused save (0.2.8266).
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3551
@@ -3547,9 +3589,9 @@ Spellbook and binding:
     `has_spell` say a spell_id names its own spell, not the head (0.2.8253).
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 2027
-  loc: 2027
-  verified_at: 2026-10-19T00:01:11Z
+  end_line: 2035
+  loc: 2035
+  verified_at: 2026-10-24T20:54:46Z
   note: spell metadata and hooks; carries `spellframe_kind` and `implemented_protocols` (0.2.8222);
     `_spell_index_unless_cleaned`, the cleanup-safe index read (0.2.8229); a direct `cleanup()` removes the spell
     outside the spell lock, under its removal lock (0.2.8233); the four managed fields; `_add_owned_conduit` ensures a
@@ -3558,6 +3600,7 @@ Spellbook and binding:
     (0.2.8256).
     Builds and carries the binding manifest and `binding_hash` (0.2.8258); its spell_id docstrings say code digest
     (0.2.8257); `_spell_index_unless_cleaned` lists the root's teardown among its readers (0.2.8259).
+    `emit_cache_file` returns False for a refused save (0.2.8266).
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 165
@@ -4444,11 +4487,13 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 918
-  loc: 918
-  verified_at: 2026-10-18T20:24:47Z
+  end_line: 1122
+  loc: 1122
+  verified_at: 2026-10-24T20:54:46Z
   note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence;
     generation 22, "managed_settings_leave_spell_id" (0.2.8254). Generation 23, "binding_manifest_keys" (0.2.8258).
+    `emit()` is best-effort: a bool, a per-writer temp file, a Windows-only rename retry, one WARNING per bundle
+    (0.2.8266).
 
 - path: `src/melder/utilities/general_base/abstract_elastic_pool.py`
   start_line: 1
@@ -5017,6 +5062,16 @@ keeps the spell_id, moves the binding hash and is reported in the restore's `bin
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-10-24 cache saves are best-effort (0.2.8266; TASK-2026-10-24-cache_file_write_failure_fails_meld, on the
+owner's go "yeah go ahead with all hte recommended things you need to do"): a save the operating system refuses no
+longer fails a meld - `CachingSystem.emit()` returns False and logs, its temp file is per writer and removed, a
+Windows sharing refusal of the rename is retried, and the Book leaves its save flag cleared; `Spell.emit_cache_file()`
+returns False (Breaking). A new operational invariant, two failure modes (one fixed, one Breaking) and the code map
+(three files remeasured) carry it; the component map carries the per-component contracts. Numeric citations into
+spellbook.py past the edit moved 20 lines and were remapped line by line; the settle-then-inherit inner citations
+(:6971-6983, :6984), stale since an earlier lane, point at the settlement block and its return again. Open: the
+Windows holder behind the owner's failure is not identified (an on-access scanner is suspected).
 
 2026-10-19 cluster admission (0.2.8265): the pending-id reservation makes competing admissions exclusive
 without holding the Cloud lock across registration/recording or sharing. The operational invariant and

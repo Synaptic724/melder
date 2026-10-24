@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8265"
+BUILT_FOR_VERSION = "0.2.8266"
 NODE_COUNT = 1231
 EDGE_COUNT = 1419
 WHY_COUNT = 959
@@ -1156,7 +1156,7 @@ NODES = {
     'melder.utilities.caching_system.asset_cache': ('src/melder/utilities/caching_system/asset_cache.py', 'asset_cache', 'module', 1, False),
     'melder.utilities.caching_system.asset_cache.AssetCachePolicy': ('src/melder/utilities/caching_system/asset_cache.py', 'AssetCachePolicy', 'class', 85, False),
     'melder.utilities.caching_system.caching_system': ('src/melder/utilities/caching_system/caching_system.py', 'caching_system', 'module', 1, False),
-    'melder.utilities.caching_system.caching_system.CachingSystem': ('src/melder/utilities/caching_system/caching_system.py', 'CachingSystem', 'class', 16, False),
+    'melder.utilities.caching_system.caching_system.CachingSystem': ('src/melder/utilities/caching_system/caching_system.py', 'CachingSystem', 'class', 18, False),
     'melder.utilities.custom_exceptions.dead_reference_error': ('src/melder/utilities/custom_exceptions/dead_reference_error.py', 'dead_reference_error', 'module', 1, False),
     'melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError': ('src/melder/utilities/custom_exceptions/dead_reference_error.py', 'DeadReferenceError', 'class', 4, False),
     'melder.utilities.custom_exceptions.empty_error': ('src/melder/utilities/custom_exceptions/empty_error.py', 'empty_error', 'module', 1, False),

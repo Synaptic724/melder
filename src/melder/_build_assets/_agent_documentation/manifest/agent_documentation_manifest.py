@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8265"
-SOURCE_SHA256 = "e73c45a97b8ee726f8889eac53151e86fb94b8d003958327534972d823a44a62"
-MARKED_COUNT = 470
+BUILT_FOR_VERSION = "0.2.8266"
+SOURCE_SHA256 = "d0b06a32393545527b5bca17c118041ebf719eac481a1ec6912888cf02eb2659"
+MARKED_COUNT = 469
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
 
@@ -141,7 +141,6 @@ AGENT_METADATA = {
     ('melder.aether.conduit.creations.cluster_creations', 'ClusterCreations'): ('internal', "access: internal. Facade over a cluster's team store, active while the cluster has an elected leader. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.aether.conduit.creations.conduit_creations', 'ConduitCreations'): ('internal', 'access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.creations.creations', 'Creations'): ('internal', 'access: internal. Scoped live creation registry. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.aether.conduit.creations.creations', 'HolderDisposalEntry'): ('internal', ''),
     ('melder.aether.conduit.creations.creations', 'ManyDisposalBucket'): ('internal', ''),
     ('melder.aether.conduit.creations.managed_spell_lease', 'ManagedSpellLease'): ('public', 'access: public. One leased managed object and its way back: `with ReleaseManagedSpell().managed(obj) as o:` releases `o` on exit (resets run, the object is pooled for the next lease); `lease.release()` does it by hand, once. Get one from ReleaseManagedSpell().managed(obj).'),
     ('melder.aether.conduit.creations.managed_spell_quantity', 'ManagedSpellQuantity'): ('internal', "access: internal. The pool of one managed spell version in its root's store: idle objects, the count, the mode's refusal or wait, resets on release, disposal on destroy. Melder kernel machinery: read it to understand the runtime; give objects back through ReleaseManagedSpell, not this class."),

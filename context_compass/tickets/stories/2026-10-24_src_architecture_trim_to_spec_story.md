@@ -11,7 +11,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T20:58:18Z
-- Updated: 2026-10-24T20:58:18Z
+- Updated: 2026-10-24T21:32:10Z
 
 ## User Narrative
 As an agent re-entering Melder after a compaction, I want src_architecture to hold the system as it is today -
@@ -65,9 +65,9 @@ git and the release notes, component mechanics to src_components; what remains m
 - [x] A1: structural checks - heading order against the contract, wrapped headings, the portability and
       absolute-path searches, C1 five-field completeness, index `--check`.
 - [ ] A2: read the example architecture document and the rubric; score the current document.
-- [ ] A3: disposition per section and per entry - keep, cut history, move to a named src_components section, or
+- [x] A3: disposition per section and per entry - keep, cut history, move to a named src_components section, or
       remove with its account - with line estimates.
-- [ ] A4: for each move, slice the matching src_components section and record whether it already carries the
+- [x] A4: for each move, slice the matching src_components section and record whether it already carries the
       material (drop the duplicate) or not (move verbatim).
 - [ ] C1: NOTICEs to melder_0 and melder_1 (sent; order agreed, M1-51); record when their writes land.
 - [ ] E0: preservation baseline (multiset) of both documents immediately before the first edit.
@@ -106,7 +106,8 @@ git and the release notes, component mechanics to src_components; what remains m
 - [ ] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
-- The "recent" line for the handoff log: proposed as after the last cut release (0.2.8228 onward).
+- The "recent" line for the handoff log: proposed as the release-note boundary (0.2.8228 onward; 0.2.8227.md
+  is the last closed note, the running note starts at 0.2.8228).
 
 ## Decision Log
 - 2026-10-24: owner scope (chat) - see the epic.
@@ -205,6 +206,60 @@ this does not make independent review mandatory for every ticket.
   NEXT: A4 - read the src_components slices the condensed invariants will point at.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:07:48Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: A4, read in src_components (as at 12,544 lines): the mechanism of every old component-level invariant this
+    pass condenses is already carried by a component entry - Spellbook Core: generation 9 release admission,
+    generation 12 complete bundles, generation 15 structural snapshot, generation 19 world stamp, bind-hook ownership;
+    SpellCompiler: compiler pool reads, `CodegenSignature`, the site-plan runtime, lazy `instance_results`,
+    owner-store constants; Creations and SpellSpace: `ManyDisposalBucket`/`register_many`, slot guards, door-held
+    roots, purge; Meld Resolution Runtime: purge discovery, pooled Meld hooks, injected dependencies; Conduit
+    Runtime: named lessers, hook baselines, graduation, bind-hook facades; SpellSystemStates Registry and Conduit
+    Resolution State: verdict retirement; Crystallizer: custody keys, ConduitHierarchy replay; Packaged Hardcopy:
+    the document-view key map; Nexus Descriptor: published relationships and the named record lifecycle. Not
+    carried: the MutationResearch boundary bullet as a whole - its verbs are spread over several entries and
+    `create_diff_engine` appears nowhere - so it moves verbatim into Subcomponent: MutationResearch Root.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:436-440
+  - context_compass/system_docs/src_components.md:484-499
+  - context_compass/system_docs/src_components.md:4941-4946
+  - context_compass/system_docs/src_components.md:5118-5136
+  - context_compass/system_docs/src_components.md:3762-3770
+  - context_compass/system_docs/src_components.md:3857-3862
+  - context_compass/system_docs/src_components.md:4198-4222
+  - context_compass/system_docs/src_components.md:3240-3262
+  - context_compass/system_docs/src_components.md:7722-7732
+  - context_compass/system_docs/src_components.md:7259-7347
+  IMPACT: condensing those entries to their rule plus a named pointer loses no mechanism; the MR inventory is the
+    one migration that adds text to src_components. Line numbers here move with melder_1's turn-in; the pointers
+    name entries, not lines.
+  NEXT: write the edit script with text anchors and run it on a scratch copy while melder_1's turn-in lands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:32:10Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Consumed M0-218 (melder_0, 21:09:00Z, ACK of M3-1): its F5 writes to both documents, both indexes and the
+    graph landed for 0.2.8266 (now `__version__`), it writes neither document again in its lane, and melder_1
+    (0.2.8267) edits both next, then this pass. Consumed M2-33 (melder_2, 21:27:30Z, NOTICE): its CI lane (no src,
+    no notch) changes LLM-bundle inputs - pyproject.toml's description, README.md:44, docs/requirements.lock,
+    .github, tests/unit/github_workflows, a release-note bullet, tests_components.md's C1 extents and index - and
+    nothing in src_architecture or src_components; it will NOTICE again when done.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1278-1278
+  - context_compass/tickets/tasks/2026-10-24_ci_lane_loose_ends_task.md:1-13
+  IMPACT: the write order is unchanged (after melder_1's turn-in); tests_components stays out of this story; if
+    this landing is the last, its V2 rebuild also covers melder_2's inputs.
+  NEXT: read the src_architecture and src_components authoring instructions (triggered: this story writes both)
+    and review the trim script's dry run against them.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

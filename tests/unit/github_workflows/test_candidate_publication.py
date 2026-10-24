@@ -3,6 +3,7 @@
 import hashlib
 import io
 import json
+import os
 import pathlib
 import subprocess
 import urllib.error
@@ -432,3 +433,98 @@ def test_altered_download_is_refused_even_if_pip_reports_success(candidate: Modu
     monkeypatch.setattr(candidate.subprocess, "run", wrong_bytes)
     with pytest.raises(ValueError, match="differs"):
         candidate.download_wheel(tmp_path, "0.2.4", "melder.whl", {"sha256": "a" * 64, "size": 100})
+
+
+def refuse_process(*arguments: object, **keywords: object) -> None:
+    """Fail a test that reaches a process boundary it must not reach."""
+    raise AssertionError("No process may run here.")
+
+
+def test_runtime_requirements_are_the_running_release_manifest_pins(candidate: ModuleType,
+                                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """The probe installs what the running release's test cells run with: its manifest's runtime pins."""
+    monkeypatch.setattr(candidate.platform, "python_version", lambda: "3.14.7")
+    root = pathlib.Path(__file__).resolve().parents[3]
+    manifest = candidate.release_manifest(root / ".github/python/tests", "3.14.7")
+    assert candidate.runtime_requirements() == candidate.runtime_pins(manifest, candidate.declared_dependencies())
+
+
+def test_dependency_download_takes_exact_wheels_from_pypi(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    """Dependencies come from PyPI, isolated, without their own dependencies, the cache or source builds."""
+    calls: list[list[str]] = []
+
+    def download(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Model pip's process boundary: write the one wheel the requirement file names."""
+        calls.append(command)
+        assert check and cwd == tmp_path
+        assert "--isolated" in command and "--no-deps" in command and "--no-cache-dir" in command
+        assert "--only-binary=:all:" in command and "--extra-index-url" not in command
+        assert command[command.index("--index-url") + 1] == "https://pypi.org/simple/"
+        assert (cwd / "runtime-requirements.txt").read_text(encoding="utf-8") == "pip==26.2.2\n"
+        (pathlib.Path(command[command.index("--dest") + 1]) / "pip-26.2.2-py3-none-any.whl").write_bytes(b"pip")
+
+    monkeypatch.setattr(candidate.subprocess, "run", download)
+    assert candidate.download_dependencies(tmp_path, ("pip==26.2.2",)) == [
+        tmp_path / "dependencies" / "pip-26.2.2-py3-none-any.whl"]
+    assert len(calls) == 1
+
+
+def test_dependency_download_runs_nothing_without_pins(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Melder with no runtime dependency downloads nothing and adds nothing to the install."""
+    monkeypatch.setattr(candidate.subprocess, "run", refuse_process)
+    assert candidate.download_dependencies(tmp_path, ()) == []
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_probe_installs_the_wheel_with_its_pinned_dependencies_and_checks_them(
+        candidate: ModuleType, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One isolated install from the downloaded files only, then pip check, the smoke probe and last the report."""
+    files = {"melder-0.2.4-py3-none-any.whl": {"sha256": "a" * 64, "size": 1},
+             "melder-0.2.4.tar.gz": {"sha256": "b" * 64, "size": 1}}
+    environments: list[pathlib.Path] = []
+    commands: list[list[str]] = []
+    reports: list[tuple[str, int]] = []
+
+    class Builder:
+        """Model venv's environment builder without creating an interpreter."""
+
+        def __init__(self, with_pip: bool) -> None:
+            """Require the bundled pip the probe installs with."""
+            assert with_pip
+
+        def create(self, path: pathlib.Path) -> None:
+            """Record where the probe asked for its environment."""
+            environments.append(path)
+
+    def run(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Record each process the probe starts, in order."""
+        assert check
+        commands.append([str(part) for part in command])
+
+    def report(path: pathlib.Path, version: str, written: dict[str, object], status: str) -> None:
+        """Record the report's status and how many processes ran before it."""
+        reports.append((status, len(commands)))
+
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    monkeypatch.setattr(candidate, "package_version", lambda: "0.2.4")
+    monkeypatch.setattr(candidate, "verified_files", lambda directory, version: files)
+    monkeypatch.setattr(candidate, "runtime_requirements", lambda: ("pip==26.2.2",))
+    monkeypatch.setattr(candidate, "download_wheel", lambda root, version, name, identity: root / "downloads" / name)
+    monkeypatch.setattr(candidate, "download_dependencies",
+                        lambda root, pins: [root / "dependencies" / "pip-26.2.2-py3-none-any.whl"])
+    monkeypatch.setattr(candidate.venv, "EnvBuilder", Builder)
+    monkeypatch.setattr(candidate.subprocess, "run", run)
+    monkeypatch.setattr(candidate, "write_report", report)
+    candidate.probe_install(tmp_path / "dist", tmp_path / "installed.json")
+    (environment,) = environments
+    python = str(environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python"))
+    assert commands[0] == [python, "-m", "pip", "--isolated", "install", "--no-deps", "--no-index",
+                           str(environment.parent / "dependencies" / "pip-26.2.2-py3-none-any.whl"),
+                           str(environment.parent / "downloads" / "melder-0.2.4-py3-none-any.whl")]
+    assert commands[1] == [python, "-m", "pip", "--isolated", "check"]
+    assert commands[2][:2] == [python, "-I"] and commands[2][2].endswith("smoke_wheel.py")
+    assert commands[2][3:] == ["--expected-version", "0.2.4"]
+    assert reports == [("installed-package-passed", 3)]

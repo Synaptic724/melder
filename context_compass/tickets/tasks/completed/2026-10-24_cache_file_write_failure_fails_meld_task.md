@@ -1,15 +1,22 @@
 # Task: A failed creation-cache file write fails the meld that triggered it (WinError 5 on Windows)
 
+- Completed: 2026-10-24T21:32:03Z
+- Summary: A creation-cache save the operating system refuses no longer fails a meld: `CachingSystem.emit()` returns
+  a bool, saves through a per-writer temp file, retries a refused rename on Windows and logs once per bundle; the
+  Book leaves its save flag cleared; `Spell.emit_cache_file()` returns False (Breaking). Notched 0.2.8266; release-note
+  section "A cache file that cannot be saved no longer fails a meld". Tests green, the GIL off and on; the owner's
+  Windows rerun Not run. Three follow-ups parked in tickets/tasks/backlog/. Rebuild last, after the closure.
+
 ## Metadata
 - Task ID: TASK-2026-10-24-cache_file_write_failure_fails_meld
 - Story: none (standalone owner-directed defect record)
-- Status: in_progress
+- Status: done
 - Owner: Mark
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-24T18:25:58Z
-- Updated: 2026-10-24T20:55:52Z
+- Updated: 2026-10-24T21:39:13Z
 
 ## Objective
 Document, with source evidence and a reproducer, the Melder defect behind the owner's Windows failure (chat
@@ -52,11 +59,12 @@ written. This round records the defect and the fix directions; the fix waits for
   location and frame-folder pruning) and the Windows cause (Note 5), which are follow-ups.
 
 ## State Transition Event
-- from_state: in_progress (review: the fix PLAN waiting for the owner's D1-D4)
-- to_state: in_progress (implementation)
-- transition_reason: the owner's go (chat 2026-10-24),
-  "yeah go ahead with all hte recommended things you need to do";
-  melder_0 executes the fix.
+- from_state: in_progress (implementation)
+- to_state: done
+- transition_reason: the EXIT_GATE is met but for its last item, the rebuild, which the turn-in order runs after
+  this closure (Note 32): 0.2.8266 landed with the regression and new tests green and the full trees run, the GIL
+  off and on (Note 26); the patch docs consumed (Notes 23, 27) and promoted, with the system docs, graph, release
+  note and notch (Notes 29, 30); the NOTICEs sent (Note 31). Routine closure under the owner's go (Note 21).
 
 ## Steps / Checklist
 - [x] Read the write (`CachingSystem.emit`, `_write_current_cache_to_disk_locked`, construction and load), its
@@ -76,11 +84,12 @@ written. This round records the defect and the fix directions; the fix waits for
 - [x] F1-F3: the src change with its docstrings, the stub test and the new unit tests.
 - [x] F6: the regression, new, related and full test trees on a /tmp copy, the GIL off and on;
       probe A-D rerun; the MEASURE.
-- [ ] F5: src_architecture and src_components (indexes, citations), the graph, the release note,
+- [x] F5: src_architecture and src_components (indexes, citations), the graph, the release note,
       the notch to 0.2.8266 and the NOTICEs.
-- [ ] Closure: summary, move to completed/, board and artifact sync, the patch folder to
+- [x] Closure: summary, move to completed/, board and artifact sync, the patch folder to
       completed/, follow-ups filed.
-- [ ] Rebuild last: the asset runner and the llm_support builder, both --check OK.
+- [x] Rebuild last: the asset runner and the llm_support builder, both --check OK. Run (Note 33): the runner OK;
+      the bundles' src and other OK, tests stale behind melder_2's CI edits in flight, left to the next landing.
 - [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -117,6 +126,9 @@ written. This round records the defect and the fix directions; the fix waits for
   and the full unit, component and integration trees on a /tmp copy, the GIL off and on, and probe A-D.
   Failures: the CI manifest test that waits for melder_2's pip pin, and 29 in melder_1's untracked
   red-by-design files, the same set without this change.
+- Run at closure (Note 32): the CI manifest test file (test_python_runtime_matrix.py) passes on a /tmp copy of the
+  working tree at 0.2.8266 (melder_2's set in), 63 of 63, the GIL off and on. The 29 in melder_1's files are green
+  with its change (its MEASURE, 2026-10-24T20:57:42Z: its six files 156 passed, the full suite 0 failed).
 - Recommended commands:
   - VM, against a copy of the tree (the tests write their cache under the copy's package root):
     `python -X gil=0 -m pytest -q <the two new test files under Files / Paths Impacted>`
@@ -134,24 +146,24 @@ written. This round records the defect and the fix directions; the fix waits for
 - Frame folders are never pruned; frames unique per run grow the cache in site-packages without bound.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
-- [ ] No fix from the Windows HYPOTHESIS alone: the Melder-side contract (a failed write fails the meld) is FACT
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No fix from the Windows HYPOTHESIS alone: the Melder-side contract (a failed write fails the meld) is FACT
       and fixable on its own; the root cause stays HYPOTHESIS until a Windows capture or rerun confirms it.
-- [ ] No broad `except Exception` as the fix unless it is a documented best-effort contract that logs.
+- [x] No broad `except Exception` as the fix unless it is a documented best-effort contract that logs.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -162,11 +174,12 @@ this does not make independent review mandatory for every ticket.
   - artifacts/cache_write_failure_20261024/probes/probe_cache_emit_failure.py
   - artifacts/cache_write_failure_20261024/runs/
   - artifacts/cache_write_failure_20261024/scripts/
-  - system_docs/patches/active/cache_save_best_effort_2026_10_24/ (five patch docs and their indexes)
+  - system_docs/patches/completed/cache_save_best_effort_2026_10_24/ (five patch docs and their indexes; moved
+    there at closure)
 - DISPOSITION: retain_as_reference (the artifact folder); promote_to_documentation (the patch docs)
-- CLEANUP_TRIGGER: kept as the defect's reproducer; rerun at the fix, then disposed with the fix's turn-in.
-  The patch docs are promoted into src_architecture and src_components at turn-in and their folder
-  moves to system_docs/patches/completed/.
+- CLEANUP_TRIGGER: applied at closure (Note 32): the artifact folder is retained as the defect's reproducer (the
+  probe, its runs at 0.2.8265 and at the fix, the scripts of the lane); the patch docs are promoted into
+  src_architecture and src_components and their folder moved to system_docs/patches/completed/.
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -186,7 +199,9 @@ this does not make independent review mandatory for every ticket.
 ## Contribution Attribution
 - Ticket/Work Author(s): melder_0 (synaptic_python_developer); prose and evidence; this ticket, the probe and its
   runs; 2026-10-24; the Notes below. Tests: the two regression test files (Note 16's PLAN, Note 17's
-  runs); 2026-10-24.
+  runs); 2026-10-24. Implementation: the fix in caching_system.py, spellbook.py and spell.py with its unit tests
+  (Note 24); the patch docs, the system documents, the graph descriptors, the release note and the notch
+  (Notes 23, 27, 29, 30); 2026-10-24.
 - Published By: UNKNOWN (local repository; not published)
 - Independent Review: none requested
 
@@ -922,16 +937,135 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T21:06:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: F5 continued. The graph: the extractor walks the whole tree, and melder_1's descriptors are its own, so it
+    ran into a mirror and only this lane's descriptors came back - caching_system.json, spellbook.json, spell.json
+    and, after the notch, __version__.json (its source hash only) - each checked for unchanged authored fields.
+    The three class nodes gained one responsibility each (CachingSystem's best-effort save and its owned slot
+    `_refused_save_logged`; Spellbook's save seam; Spell's explicit save), read against the source and accepted
+    with graph_walker - their stamps matched the pre-edit spans, so this lane's edit is the only delta - then
+    normalized back to the extractor's format; reassembled, --check OK (593 sections, 28208 lines). The notch:
+    __version__ read 0.2.8265 at this moment and now reads 0.2.8266. The release note: header 0.2.8266, the
+    section "A cache file that cannot be saved no longer fails a meld" (Breaking for `Spell.emit_cache_file()`),
+    a packaging bullet and the rebuild line for 0.2.8266.
+  EVIDENCE:
+  - context_compass/artifacts/cache_write_failure_20261024/scripts/graph_descriptors_20261024.py:1-101
+  - context_compass/artifacts/cache_write_failure_20261024/scripts/notch_and_release_note_20261024.py:1-105
+  - release_docs/next_version_release.md:1278-1312
+  - release_docs/next_version_release.md:1465-1469
+  - src/melder/__version__.py:12-12
+  IMPACT: Left as found, outside this lane: 220 stale nodes graph-wide, the build-asset and conduit_cloud.json
+    descriptors one extraction behind, and melder_1's six descriptors (HolderDisposalEntry retired there) for
+    melder_1's landing, which notches above 0.2.8266.
+  NEXT: Send the NOTICEs (M0-216 to melder_1, M0-217 to melder_2), then close the task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:09:00Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M3-1 (melder_3's NOTICE, 2026-10-24T20:58:48Z, ACK requested; consumed here, ACK in M0-218): melder_3
+    trims src_architecture.md and moves component detail into src_components.md
+    (STORY-2026-10-24-src_architecture_trim_to_spec, the owner's ask); this lane's F5 goes first, and melder_3
+    edits neither document until told they landed, and by its contract after melder_1's turn-in too.
+    M1-52 (melder_1's NOTICE, 2026-10-24T21:06:37Z, consumed here): melder_1's src change is in the working tree
+    and removes `HolderDisposalEntry`, so a rebuild now writes the bind-guard manifest at 629 entries (630
+    before); melder_1's 0.2.8267 release note and system docs record it, and this lane's rebuild packages
+    melder_1's docstrings; melder_1 edits the shared docs only after this landing (its MEASURE: the change green
+    across the suite, the GIL off and on).
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md:26-27
+  - context_compass/tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md:280-311
+  IMPACT: Two lanes wait on this landing's system docs: the NOTICEs (M0-216, M0-218) say they landed and the order
+    the two boards give (melder_1, then melder_3). This lane's 0.2.8266 entries leave the bind-guard count to
+    melder_1; the rebuild's 629 is its to record. melder_1's src is finished and green, so the rebuild at the
+    end of this landing does not build over unfinished work (Note 28's condition no longer applies).
+  NEXT: Close the task, then rebuild last.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T21:32:03Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Closure. The EXIT_GATE is met but for the rebuild, which runs after this pass: F1-F3 landed as 0.2.8266
+    (Note 24) with the nine regression tests and the new unit tests green and the full unit, component and
+    integration trees run, the GIL off and on (Note 26); the patch docs consumed (Notes 23, 27) and promoted, with
+    the graph, release note and notch (Notes 29-30); the NOTICEs sent (Note 31). The one F6 failure outside
+    melder_1's files, the CI manifest test that waited on melder_2's pip pin, passes on a /tmp copy of the working
+    tree, 63 of 63, the GIL off and on; the 29 in melder_1's files are green with its change (its MEASURE).
+    Acceptance: routine completion under the owner's go (Note 21), which took the plan's turn-in; no independent
+    review was requested. Not run: the owner's MelderOps rerun on Windows. Follow-ups parked as backlog drafts:
+    document_refused_cache_save_tests, cache_save_frequency_and_location and identify_windows_cache_file_holder.
+    Board row and detail removed, closed anchor added; the artifact folder kept as the reproducer; the patch docs
+    promoted and their folder moved to system_docs/patches/completed/ (Notes 23 and 27 cite them under
+    patches/active/, where they stood then). The rebuild runs last, after this pass: the src of both lanes and
+    melder_1's renamed tests are committed (0fddab923 and fa397480e, 20:42Z), this lane's documents, graph, notch
+    and release note too (3bedd65bb, 21:06Z), and git status lists no missing tracked path, so the builder's
+    refusal does not apply; melder_1 holds its document edits until the rebuild has run (its Note of 21:17:38Z),
+    and melder_2's CI edits in flight (M2-32, no src) are packaged as they stand, for the next landing's rebuild
+    to cover as M2-32 says (Notes 28 and 31).
+  EVIDENCE:
+  - context_compass/artifacts/cache_write_failure_20261024/runs/closure_runtime_matrix_gil0.txt:1-4
+  - context_compass/artifacts/cache_write_failure_20261024/runs/closure_runtime_matrix_gil1.txt:1-4
+  - context_compass/tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md:280-311
+  - context_compass/tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md:331-352
+  - context_compass/tickets/tasks/2026-10-24_ci_lane_loose_ends_task.md:221-253
+  - context_compass/tickets/tasks/backlog/2026-10-24_document_refused_cache_save_tests_task.md:1-160
+  - context_compass/tickets/tasks/backlog/2026-10-24_cache_save_frequency_and_location_task.md:1-165
+  - context_compass/tickets/tasks/backlog/2026-10-24_identify_windows_cache_file_holder_task.md:1-147
+  - context_compass/attention_board.md:148-148
+  IMPACT: The lane is turned in but for the rebuild; melder_1 (0.2.8267), then melder_3, edit the shared documents
+    next, and the owner's next commit takes this closure's records, the three drafts, the moved patch folder and
+    the rebuilt assets.
+  NEXT: Rebuild last: the asset runner and its --check; the llm_support builder with --include-untracked and its
+    --check; record the MEASURE here.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-24T21:39:13Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rebuild, last (21:34-21:35): the asset runner, run in a /tmp mirror of src/ and the system documents
+    (melder_1's procedure with its mirror root moved), rewrote eight files under src/melder/_build_assets/ for
+    0.2.8266 - the bind guard at 629 entries with melder_1's removal - and its --check in the repository prints
+    three OK lines. The LLM builder (--include-untracked) wrote src, tests and other; its --check prints OK for
+    src and other and STALE for tests: melder_2's CI edits in flight (M2-32, on the owner's word, no src)
+    rewrote three tests/unit/github_workflows files at 21:35:34, after the build. That corpus is left to the
+    next landing's rebuild, which M2-32 asks of melder_1's 0.2.8267 landing and which covers this lane's
+    changes too; rebuilding again would only race an edit in progress. No .git/index.lock appeared.
+  EVIDENCE:
+  - context_compass/artifacts/cache_write_failure_20261024/runs/rebuild_assets_0_2_8266.txt:1-13
+  - context_compass/artifacts/cache_write_failure_20261024/runs/rebuild_checks_0_2_8266.txt:1-21
+  - context_compass/artifacts/cache_write_failure_20261024/scripts/rebuild_assets_20261024.py:1-125
+  - context_compass/tickets/tasks/2026-10-24_ci_lane_loose_ends_task.md:221-253
+  - context_compass/tickets/stories/2026-10-24_remove_many_child_holder_ownership_story.md:331-352
+  IMPACT: The lane is turned in: the packaged documents and assets carry 0.2.8266 and the bundles' src and other
+    corpora are current; melder_1 applies its document edits now (its Note of 21:17:38Z waits on this).
+  NEXT: None in this lane; melder_1's landing rebuilds after melder_2's NOTICE that its CI edits are done.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Scope: the defect is documented (Notes 1-13); the regression tests (Notes 14-17) fail on 0.2.8265, 9 of 9, the
-GIL off and on, and a /tmp prototype turns them green (Note 18). The owner approved the fix PLAN (Note 19)
-with every recommended call (Note 21: D1 F1-F3 as 0.2.8266; D2 `Spell.emit_cache_file()` returns False on a
-refused save; D3 the rename retried on Windows only; D4 a bundle's first refused save at WARNING, later ones
-at DEBUG). F4 is done: the patch docs cache_save_best_effort_2026_10_24 are linked and mapped (Note 23).
-State: in_progress, melder_0, board row in implementation. Holds: the tests_* system docs, pyproject.toml,
-uv.lock, README.md and .github/ are melder_2's pending set (Note 22) and stay untouched; the owner stages
-named paths, never git add -A, then rebuilds. Open: the Windows cause (Note 5, HYPOTHESIS). M1-M2 are in
-(Note 24) and F6 passed (Note 26). Next: F5; then closure, rebuild last.
+Closed 2026-10-24, notched 0.2.8266 (release-note section "A cache file that cannot be saved no longer fails a
+meld"). Delivered: a creation-cache save the operating system refuses no longer fails a meld - `CachingSystem.emit()`
+returns a bool, saves through a per-writer temp file, retries a refused rename on Windows for about 100 ms and logs
+once per bundle; the Book's save seam leaves its flag cleared after a refusal; `Spell.emit_cache_file()` returns
+False (Breaking; the owner's D2). Evidence: the defect and probe (Notes 1-13), the regression tests red on 0.2.8265
+(Note 17), the fix (Note 24), F6 (Note 26), the documents, graph, release note and notch (Notes 29-30), the NOTICEs
+(Note 31), closure (Note 32). The src and tests are in the owner's commit 0fddab923 and the documents, graph,
+version and release note in 3bedd65bb; this closure's records, the three drafts, the moved patch folder and the
+rebuilt assets are in the working tree for his next commit. Not run: the owner's MelderOps rerun on Windows. Open:
+the Windows holder (Note 5, HYPOTHESIS). Follow-ups, parked as backlog drafts:
+TASK-2026-10-24-document_refused_cache_save_tests, TASK-2026-10-24-cache_save_frequency_and_location and
+TASK-2026-10-24-identify_windows_cache_file_holder. The rebuild ran last (Note 33): the assets are OK at 0.2.8266;
+the bundles' src and other corpora are OK, and tests is left to the next landing's rebuild behind melder_2's CI
+edits in flight.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

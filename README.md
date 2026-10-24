@@ -41,7 +41,7 @@ If you like the work we're doing, [please give us a star on GitHub](https://gith
 pip install melder
 ```
 
-**Zero dependencies.** Nothing else comes with it. Requires Python 3.14+.
+**One dependency: pip.** Nothing else comes with it. Requires Python 3.14+.
 
 Working from a clone? Use the repository's `uv.lock` and
 [locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).

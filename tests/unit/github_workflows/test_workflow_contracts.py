@@ -516,7 +516,11 @@ def test_distribution_build_reports_the_artifact_it_uploaded() -> None:
 
 
 def test_package_verification_precedes_artifact_upload() -> None:
-    """Only built, inspected, installed-wheel-verified files become distributable artifacts."""
+    """Only built, inspected, installed-wheel-verified files become distributable artifacts.
+
+    The wheel probe installs the wheel beside the helper release's test-manifest pins of Melder's runtime
+    dependencies, with no resolver, and pip check confirms that set before the smoke probe runs.
+    """
     document = workflow("build-distributions.yml")
     assert document["permissions"] == {"contents": "read"}
     steps = document["jobs"]["build"]["steps"]
@@ -534,8 +538,15 @@ def test_package_verification_precedes_artifact_upload() -> None:
     assert setup["with"]["freethreaded"] == "true"
     assert setup["with"]["allow-prereleases"] == "false"
     assert "uv run --no-sync python -m build --no-isolation --sdist --wheel" in commands
-    assert 'uv venv --python "${{ steps.python.outputs.python-path }}"' in commands[smoke]
-    assert 'uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps dist/*.whl' in commands[smoke]
+    assert commands[smoke].splitlines() == [
+        '"${{ steps.python.outputs.python-path }}" .github/scripts/python_runtime_matrix.py runtime-requirements '
+        '--output "$RUNNER_TEMP/melder-runtime-requirements.txt"',
+        'uv venv --python "${{ steps.python.outputs.python-path }}" "$RUNNER_TEMP/melder-wheel-probe"',
+        'uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps '
+        '-r "$RUNNER_TEMP/melder-runtime-requirements.txt" dist/*.whl',
+        'uv pip check --python "$RUNNER_TEMP/melder-wheel-probe/bin/python"',
+        '"$RUNNER_TEMP/melder-wheel-probe/bin/python" -I .github/scripts/smoke_wheel.py',
+    ]
 
 
 def test_locked_build_uses_the_selected_interpreter() -> None:

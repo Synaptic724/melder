@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 91493a2217b4b225200beb974095113e15f9537af10efa612a7f929776ae8ed6
-FILE COUNT: 1144
+SOURCE FINGERPRINT: 97705574199d071eda43719b57d1bab27c5aa827e01b390140dacfaf9cd66b2a
+FILE COUNT: 1145
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -11459,42 +11459,35 @@ def test_dynamic_root_leases_through_the_per_creation_pool_read() -> None:
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py
 ================================================================================
 ================================================================================
-BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py
-CONTENT SHA256: e135275fa6dcd1232d0d1a3336cc23cdcd30f8382e1ff6d3adaecae6c55220d7
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py
+CONTENT SHA256: 6b26a8aeaa5e5a0f917f3e4fadfa2e05d343df084954dde0622f4e795d66b76e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
-Regression tests: a slotted holder's disposal-bearing `many` child belongs to whatever owns the holder.
+Regression tests: a `many` dependency belongs to the scope that built it, never to the holder it was passed to.
 
-The owner's rule (EPIC-2026-10-14-many_child_follows_holder, Decision Log 2026-10-14): "if a root makes a unique its
-many should be owned by the root, corresponding to all the unique types ... make sure the corresponding object owns
-it". So a holder's `many` child is recorded in, and disposed with, the store that owns the holder: the spell-owning
-root for `unique`, that conduit for `unique_per_conduit`, that spellspace for `unique_per_spell_space`, the lineage
-root for `unique_per_conduit_lineage` (and the elected leader for cluster - the integration module).
+The owner's decision (EPIC-2026-10-20-reassess_many_child_disposal_ownership, DECISION note of 2026-10-24; chat
+2026-10-24: "it should behave like autofac not mysteriously cleanup transient objects"): a disposal-bearing `many`
+dependency built for a slotted holder of any kind is recorded in, and disposed by, the meld's innermost scope - the
+spellspace store, else the melding conduit's store - exactly as a `many` root is. Cleaning up the holder runs only the
+holder's own disposal methods; what the holder holds is its own dispose rule's business.
 
-The defect (TASK-2026-10-14-prove_many_child_registration_bug, measured on 0.2.8234):
-    The child is built inside the holder's first build and the site plan registered it in the meld's innermost scope
-    - the spellspace store, else the melding conduit's store. When that scope ends before the holder's owner, the
-    scope's end runs the child's disposal while the holder keeps handing the child out:
-        - `unique` first melded through a lesser, in a root spellspace or in a lesser's spellspace;
-        - `unique_per_conduit` first melded in a spellspace;
-        - `unique_per_conduit_lineage` first melded through a lesser or in a root spellspace;
-        - `unique` built as the dependency of a per-conduit consumer melded in a lesser;
-        - `unique` first built by an override meld (a key-set plan) through a lesser.
-    The opt-in singleton specializer also built and recorded an unused child on every warm meld of a `many` root over
-    a captured `unique` holder.
+The removed behaviour (0.2.8235-0.2.8265):
+    The site plan registered the child in the store the holder was published to and, from 0.2.8238, moved it into
+    the holder's disposal record. Ending the scope that built the child left it open, and the holder's owner disposed
+    it with the holder - when that owner ended or purged the holder.
 
 What these tests assert:
-    - Ownership: the child is recorded in the store of the holder's owner, not in the melding scope's store. Since
-      0.2.8238 it is recorded with the holder itself (its `HolderDisposalEntry`) and leaves its spell's `many` bucket.
-    - Lifetime: ending the scope that first melded the holder leaves the child open; ending the holder's owner disposes
-      it, exactly once.
-    - The specializer builds and records no child its holder does not need.
-    - Controls (green on 0.2.8234 too): holders built where they live keep their child through scope cycles; a
-      per-conduit holder at a lesser and a spellspace holder take their child with them when their scope ends.
+    - Placement: the child is recorded in the store of the scope that melded the holder; the holder's owner keeps no
+      record of it.
+    - Lifetime: ending the scope that built the child disposes it, once, while the holder's owner keeps serving the
+      holder; the owner's end does not dispose it again.
+    - The opt-in specializer still builds one child for a captured holder, and the scope that built it records it.
+    - Controls (green before and after the change): holders built where they live keep their child until that
+      scope ends.
 
 The dynamic routes (a borrowing root, a cluster member) are covered by
-`tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py`.
+`tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py`.
 """
 
 from collections.abc import Iterator
@@ -11504,7 +11497,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.creations.creations import Creations, HolderDisposalEntry
+from melder.aether.conduit.creations.creations import Creations
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -11637,34 +11630,31 @@ def _bucket(store: Creations, child_id: str) -> List[Any]:
     """
     Return a copy of one store's live `many` bucket for Child's spell id (empty when it keeps none).
 
-    Since 0.2.8238 a child built for a holder leaves this bucket once the holder is published (the holder's record
-    adopts it), so the bucket holds only children that no holder owns.
-
     Args:
         store: A conduit's or a spellspace's creations store.
         child_id: Child's spell id.
 
     Returns:
-        List[Any]: A copy of the bucket.
+        List[Any]: A copy of the bucket - every Child this store recorded.
     """
     return list(store._creations.get(child_id) or [])
 
 
-def _adopted(store: Creations, holder_id: str) -> List[Any]:
+def _holder_disposal_record(store: Creations, holder_id: str) -> Optional[Any]:
     """
-    Return the children one store records with a holder, in build order (0.2.8238).
+    Return the disposal record one store keeps under a holder's spell id, or None.
+
+    The holders in this module declare no disposal method, so a store that records only the holder keeps nothing
+    here; a record means the store tied something else - the holder's child - to the holder.
 
     Args:
-        store: A conduit's or a spellspace's creations store.
+        store: The holder's owner store.
         holder_id: The holder's spell id.
 
     Returns:
-        List[Any]: The children of the holder's `HolderDisposalEntry`; empty when the store keeps no such record.
+        Optional[Any]: The record, or None when the store keeps none.
     """
-    record = store._disposable_creations.get(holder_id)
-    if not isinstance(record, HolderDisposalEntry):
-        return []
-    return [child for child, _methods in record.children]
+    return store._disposable_creations.get(holder_id)
 
 
 def _first_meld_through_lesser(root: Conduit, holder_id: str) -> Tuple[Any, Any, Optional[Conduit]]:
@@ -11691,65 +11681,51 @@ def _first_meld_in_lesser_spellspace(root: Conduit, holder_id: str) -> Tuple[Any
 
 
 @pytest.mark.parametrize(
-    ("holder", "existence", "route", "owner"),
+    ("holder", "existence", "route"),
     [
+        pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+        pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
         pytest.param(
-            UniqueHolder, Existence.unique, _first_meld_through_lesser, "root", id="unique-through-lesser",
-        ),
-        pytest.param(
-            UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, "root", id="unique-in-root-spellspace",
-        ),
-        pytest.param(
-            UniqueHolder,
-            Existence.unique,
-            _first_meld_in_lesser_spellspace,
-            "root",
-            id="unique-in-lesser-spellspace",
+            UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
         ),
         pytest.param(
             PerConduitHolder,
             Existence.unique_per_conduit,
             _first_meld_in_root_spellspace,
-            "root",
             id="per-conduit-in-root-spellspace",
         ),
         pytest.param(
             PerConduitHolder,
             Existence.unique_per_conduit,
             _first_meld_in_lesser_spellspace,
-            "lesser",
             id="per-conduit-in-lesser-spellspace",
         ),
         pytest.param(
             LineageHolder,
             Existence.unique_per_conduit_lineage,
             _first_meld_through_lesser,
-            "root",
             id="lineage-through-lesser",
         ),
         pytest.param(
             LineageHolder,
             Existence.unique_per_conduit_lineage,
             _first_meld_in_root_spellspace,
-            "root",
             id="lineage-in-root-spellspace",
         ),
     ],
 )
-def test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it(
+def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
         holder: type,
         existence: Existence,
         route: Any,
-        owner: str,
 ) -> None:
     """
-    The scope that first melded a longer-lived holder must not dispose the holder's `many` child; the holder's
-    owner does, when it ends.
+    The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+    child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
 
-    Symptom (0.2.8234): after the route's scope ends, the owning scope still returns the same holder, but its
-    child's `close()` has already run. Corrected: the child stays open while the holder lives and is closed exactly
-    once when the holder's owner ends - root teardown for `unique`, lineage and a root's per-conduit holder; the
-    lesser's pool return for a per-conduit holder first melded in that lesser's spellspace.
+    Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+    and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+    passed to.
     """
     book, _child_id = _book()
     holder_id = book.bind(spell=holder, existence=existence, permissions="create")
@@ -11757,18 +11733,12 @@ def test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it(
     try:
         first, again, lesser = route(root, holder_id)
         assert again is first, "precondition: the holder outlives the scope that first melded it"
-        assert first.child.closes == 0, (
-            "the scope that first melded the holder disposed its many child while the holder is still handed out"
-        )
-        if owner == "lesser":
-            assert lesser is not None
+        assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+        if lesser is not None:
             lesser.cleanup()
-        else:
-            root.cleanup()
-        assert first.child.closes == 1, "the child must be disposed when its holder's owner ends"
     finally:
         root.cleanup()
-    assert first.child.closes == 1, "the child must be disposed exactly once"
+    assert first.child.closes == 1, "the child must be disposed exactly once, by the scope that built it"
 
 
 @pytest.mark.parametrize(
@@ -11799,19 +11769,18 @@ def test_scope_end_disposes_the_many_child_of_a_holder_that_outlives_it(
         ),
     ],
 )
-def test_many_child_is_recorded_in_the_store_of_its_holders_owner(
+def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
         holder: type,
         existence: Existence,
         route_kind: str,
 ) -> None:
     """
-    The first build of a holder records its `many` child in the store that owns the holder, not in the store of the
-    scope that melded it.
+    The first build of a holder records its `many` child in the store of the scope that melded it - the
+    spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
 
-    Owners: the root for `unique` and lineage; the conduit a per-conduit holder is cached in (the root behind a root
-    spellspace, the lesser behind a lesser's spellspace or a direct lesser meld); the spellspace for a spellspace
-    holder. Where the owner is the melding scope itself (a per-conduit holder at a lesser, a spellspace holder) the
-    case passes on 0.2.8234 too.
+    Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+    spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+    from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
     """
     book, child_id = _book()
     holder_id = book.bind(spell=holder, existence=existence, permissions="create")
@@ -11823,9 +11792,12 @@ def test_many_child_is_recorded_in_the_store_of_its_holders_owner(
             child = lesser.meld(spell_id=holder_id).child
             owner_store = root._creations if owned_by_root else lesser._creations
             melding_store = lesser._creations
-            assert _adopted(owner_store, holder_id) == [child], "the holder's owner must record its child"
+            assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+            assert _holder_disposal_record(owner_store, holder_id) is None, (
+                "the holder's owner must not tie the child to the holder"
+            )
             if owner_store is not melding_store:
-                assert child not in _bucket(melding_store, child_id), "the melding lesser must not record the child"
+                assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
             lesser.cleanup()
         else:
             conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
@@ -11838,23 +11810,28 @@ def test_many_child_is_recorded_in_the_store_of_its_holders_owner(
                 else:
                     owner_store = conduit._creations
                 melding_store = space._creations
-                assert _adopted(owner_store, holder_id) == [child], "the holder's owner must record its child"
+                assert child in _bucket(melding_store, child_id), (
+                    "the melding spellspace must record the child it built"
+                )
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
                 if owner_store is not melding_store:
-                    assert child not in _bucket(melding_store, child_id), (
-                        "the melding spellspace must not record the child"
+                    assert child not in _bucket(owner_store, child_id), (
+                        "the holder's owner must not record the child"
                     )
     finally:
         root.cleanup()
     assert child.closes == 1, "the child must be disposed exactly once"
 
 
-def test_lesser_return_disposes_the_many_child_of_a_unique_built_for_a_per_conduit_consumer() -> None:
+def test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer() -> None:
     """
-    A `unique` holder built as a dependency inside a lesser keeps its `many` child after the lesser returns.
+    A per-conduit consumer melded in a lesser builds its `unique` holder (published in the root) and the holder's
+    `many` child; the lesser built the child, so the lesser records it and its pool return disposes it.
 
-    Symptom (0.2.8234): a per-conduit consumer melded in a lesser builds the `unique` holder (published in the root's
-    owner store) and the holder's child, which was recorded in the lesser; the lesser's pool return closed the child
-    while the root kept returning the holder. Corrected: the root records the child and closes it once, at teardown.
+    Symptom (0.2.8235-0.2.8265): the root recorded the child with its unique holder, so the lesser's pool return left
+    it open and the root closed it at teardown.
     """
     book, child_id = _book()
     holder_id = book.bind(spell=UniqueHolder, existence=Existence.unique, permissions="create")
@@ -11863,24 +11840,23 @@ def test_lesser_return_disposes_the_many_child_of_a_unique_built_for_a_per_condu
     try:
         lesser = root.create_lesser_conduit()
         held = lesser.meld(spell_id=consumer_id).holder
-        assert _adopted(root._creations, holder_id) == [held.child], "the root owns the unique holder's child"
-        assert held.child not in _bucket(lesser._creations, child_id), "the lesser must not record the child"
+        assert held.child in _bucket(lesser._creations, child_id), "the lesser built the child and records it"
+        assert held.child not in _bucket(root._creations, child_id), "the root must not record the child"
+        assert _holder_disposal_record(root._creations, holder_id) is None, "the root must not tie it to the holder"
         lesser.cleanup()
         assert root.meld(spell_id=holder_id) is held, "precondition: the unique holder outlives the lesser"
-        assert held.child.closes == 0, "the lesser's pool return disposed the many child of a live unique holder"
+        assert held.child.closes == 1, "the lesser's pool return must dispose the many child it built"
     finally:
         root.cleanup()
-    assert held.child.closes == 1, "the child must be disposed exactly once, with its holder"
+    assert held.child.closes == 1, "the child must be disposed exactly once"
 
 
-def test_lesser_return_disposes_the_many_child_of_a_unique_first_built_by_an_override_meld() -> None:
+def test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique() -> None:
     """
-    A `unique` holder first built by an override meld through a lesser keeps its `many` child after the lesser
-    returns.
+    An override meld through a lesser first builds a `unique` holder with the supplied Extra and a new Child; the
+    lesser's key-set plan built the child, so the lesser records it and its pool return disposes it.
 
-    Symptom (0.2.8234): the override meld's key-set plan builds the holder with the supplied Extra and a new Child,
-    publishes the holder in the root's owner store and recorded the child in the lesser's store; the lesser's pool
-    return closed the child. Corrected: the root records the child and closes it once, at teardown.
+    Symptom (0.2.8235-0.2.8265): the root recorded the child with its unique holder and closed it at teardown.
     """
     book, child_id = _book()
     book.bind(spell=Extra, existence=Existence.many, permissions="create")
@@ -11891,23 +11867,23 @@ def test_lesser_return_disposes_the_many_child_of_a_unique_first_built_by_an_ove
         lesser = root.create_lesser_conduit()
         first = lesser.meld(spell_id=holder_id, override={"extra": supplied})
         assert first.extra is supplied, "precondition: the override supplied the Extra"
-        assert _adopted(root._creations, holder_id) == [first.child], "the root owns the unique holder's child"
+        assert first.child in _bucket(lesser._creations, child_id), "the lesser built the child and records it"
+        assert _holder_disposal_record(root._creations, holder_id) is None, "the root must not tie it to the holder"
         lesser.cleanup()
         assert root.meld(spell_id=holder_id) is first, "precondition: the unique holder outlives the lesser"
-        assert first.child.closes == 0, "the lesser's pool return disposed the many child of a live unique holder"
+        assert first.child.closes == 1, "the lesser's pool return must dispose the many child it built"
     finally:
         root.cleanup()
-    assert first.child.closes == 1, "the child must be disposed exactly once, with its holder"
+    assert first.child.closes == 1, "the child must be disposed exactly once"
 
 
-def test_specializer_builds_and_records_a_new_many_child_on_every_warm_meld_of_a_captured_unique() -> None:
+def test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it() -> None:
     """
-    With the opt-in singleton specializer on, warm melds of a `many` root over a captured `unique` holder must not
-    build or record a `many` child for that holder: it already has one.
+    With the opt-in singleton specializer on, warm melds of a `many` root over a captured `unique` holder build no
+    further child (the specializer still declines a graph that feeds a `many` step into a holder); the one child is
+    recorded by the scope that built it - the root - and disposed once, when the root ends.
 
-    Symptom (0.2.8234): the specialized straight-line body emitted every non-captured step, so each warm meld built
-    a Child no holder used and recorded it for disposal (7 builds and 6 root records for 6 root melds and one
-    spellspace meld). Corrected: one Child, recorded once by the root, closed once at teardown.
+    Symptom (0.2.8235-0.2.8265): the child was recorded with the holder, out of its spell's bucket.
     """
     book, child_id = _book(specialize=True)
     holder_id = book.bind(spell=UniqueHolder, existence=Existence.unique, permissions="create")
@@ -11920,12 +11896,12 @@ def test_specializer_builds_and_records_a_new_many_child_on_every_warm_meld_of_a
         held = melded[0].holder
         assert all(each.holder is held for each in melded), "precondition: every meld reuses the one unique holder"
         assert Child.built == 1, "warm melds built a many child the captured unique holder does not need"
-        assert _adopted(root._creations, holder_id) == [held.child], "the root records only the holder's own child"
-        assert _bucket(root._creations, child_id) == [], "no stray child is recorded in the child spell's bucket"
+        assert _bucket(root._creations, child_id) == [held.child], "the root, which built the child, records it once"
+        assert _holder_disposal_record(root._creations, holder_id) is None, "the root must not tie it to the holder"
         assert held.child.closes == 0
     finally:
         root.cleanup()
-    assert held.child.closes == 1, "the child must be disposed exactly once, with its holder"
+    assert held.child.closes == 1, "the child must be disposed exactly once"
 
 
 @pytest.mark.parametrize(
@@ -11941,8 +11917,8 @@ def test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cy
         existence: Existence,
 ) -> None:
     """
-    Control (passes on 0.2.8234): a holder first built at the root keeps its child through a lesser cycle and a
-    spellspace cycle that meld it again, and the child is closed once, at root teardown.
+    Control (green before and after the change): a holder first built at the root has its child built by the root,
+    so lesser and spellspace cycles that meld it again leave the child open; the root's teardown closes it once.
     """
     book, _child_id = _book()
     holder_id = book.bind(spell=holder, existence=existence, permissions="create")
@@ -11963,8 +11939,8 @@ def test_control_holder_built_at_its_owner_keeps_its_many_child_through_scope_cy
 
 def test_control_per_conduit_holder_at_a_lesser_takes_its_many_child_with_it() -> None:
     """
-    Control (passes on 0.2.8234): a per-conduit holder built at a lesser lives in the lesser's store, so the
-    lesser's pool return disposes the holder's child once.
+    Control (green before and after the change): a per-conduit holder built at a lesser and its child both live in
+    the lesser's store, so the lesser's pool return disposes the child once.
     """
     book, _child_id = _book()
     holder_id = book.bind(spell=PerConduitHolder, existence=Existence.unique_per_conduit, permissions="create")
@@ -11983,8 +11959,8 @@ def test_control_per_conduit_holder_at_a_lesser_takes_its_many_child_with_it() -
 
 def test_control_spellspace_holder_takes_its_many_child_with_it() -> None:
     """
-    Control (passes on 0.2.8234): a `unique_per_spell_space` holder and its child live and die with the spellspace,
-    so its exit disposes the child once.
+    Control (green before and after the change): a `unique_per_spell_space` holder and its child live and die with
+    the spellspace, so its exit disposes the child once.
     """
     book, _child_id = _book()
     holder_id = book.bind(spell=SpellSpaceHolder, existence=Existence.unique_per_spell_space, permissions="create")
@@ -11999,7 +11975,7 @@ def test_control_spellspace_holder_takes_its_many_child_with_it() -> None:
         root.cleanup()
     assert first.child.closes == 1
 ================================================================================
-END FILE: tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_many_registration_trim.py
@@ -16233,6 +16209,448 @@ def test_single_instance_purge_does_not_invoke_application_equality(spellspace: 
         root.permanent_cleanup()
 ================================================================================
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_purge.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py
+CONTENT SHA256: 79ecdd5c0836b9724852c22cfe062ec06c5111f5bd3a8ee8cbde294a97d406ff
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Regression tests: a creation-cache save that fails does not fail the meld that triggered it.
+
+The defect (TASK-2026-10-24-cache_file_write_failure_fails_meld; the owner's Windows run, chat 2026-10-24):
+    MelderOps' `Spectrum.configure` melded a spell whose first meld staged its plan into the conduit's
+    creation-cache bundle. The save writes `<conduit>.meldercache.tmp` and renames it onto the bundle with
+    `os.replace`; Windows refused the rename (PermissionError [WinError 5] - another handle held the bundle) and the
+    meld raised it after it had built its object. Every meld door saves the bundle after its object is built, through
+    `Spellbook._emit_cache_file_if_required`, which re-raises a failed save and leaves it pending, so on 0.2.8265 (the
+    ticket's probe, cases A-D, the GIL off and on):
+        - one failed save fails the meld that staged the plan, after the object was built and stored;
+        - while saves keep failing (a read-only install, a scanner holding the file) every meld of the Book raises,
+          warm melds of spells built earlier included, because each one retries the pending save;
+        - a conjure whose save failed (conjure only logs it) leaves its first melds to raise;
+        - a managed meld that raises has already taken its lease, so a limited pool loses the place for good;
+        - the spellspace doors save, and raise, the same way.
+    A bundle is an accelerator - a missing or unreadable one only makes the cache cold - so a meld must not fail
+    because one could not be saved.
+
+What these tests assert:
+    - Each meld returns its object while saves fail, at the rename (the Windows refusal) or at the temp-file write
+      (a read-only folder), once or every time; a second meld of a slotted spell returns the same object.
+    - A lease taken through a failed save comes back, and once released the pool leases its object again.
+    - Each test proves its fault fired, so none passes on a save that never ran.
+    They do not assert where the failure is tolerated, how it is logged or whether the save is retried: that is the
+    fix's choice (the ticket's DECISION_REQUEST) and belongs to its own tests.
+
+The fault is injected at the operating-system boundary - `os.replace`, which `Path.replace` calls, and
+`Path.write_bytes` - for `.meldercache` files in the test's own cache folder only, so it behaves alike on every
+platform CI runs. The save's clean-up (no temp file left behind) is pinned in
+`tests/unit/melder/utilities/test_caching_system_refused_save.py`.
+"""
+
+import errno
+import os
+import shutil
+from collections.abc import Callable, Iterator
+from pathlib import Path
+from typing import Any, List, Optional
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+
+
+class Settings:
+    """`unique`, bound before conjure: the spell a root already serves when a later one arrives."""
+
+
+class ReportWriter:
+    """`unique`, bound after conjure, so its first meld compiles it and stages its plan into the bundle."""
+
+
+class LateReport:
+    """`unique`, bound after conjure and first melded while every save fails."""
+
+
+class AutomaticService:
+    """`unique`, bound before an automatic conjure whose save fails."""
+
+
+class PooledConnection:
+    """`managed_spell_quantity`, limited_quantity with a limit of one, bound after conjure."""
+
+
+class SpaceSession:
+    """`unique_per_spell_space`, bound after conjure and first melded in a spellspace."""
+
+
+class _FailingCacheSaves:
+    """
+    Fails the creation-cache saves in one frame's cache folder, as an operating system refuses a write.
+
+    Contract:
+        - Wraps `os.replace` (which `Path.replace` calls) and `Path.write_bytes` through `monkeypatch`, which
+          restores both after the test. It starts disarmed.
+        - `fail(step, times)` arms it. Step `REPLACE` refuses the rename of the temp file onto the bundle with
+          PermissionError (errno EACCES; Windows reports [WinError 5] while another handle holds the bundle); step
+          `WRITE` refuses the write of the temp file with PermissionError (errno EACCES; a read-only folder).
+          `times` is how many calls fail; None fails every one for the rest of the test.
+        - Only a call on a `.meldercache` file inside `folder` can fail; every other call passes through unchanged.
+        - `failures` counts the failures raised, so a test can prove its fault fired.
+
+    Threading:
+        Not thread-safe; these tests meld on one thread.
+    """
+
+    REPLACE: str = "replace"
+    WRITE: str = "write"
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch, folder: Path) -> None:
+        """
+        Install the two wrappers, disarmed.
+
+        Args:
+            monkeypatch: The test's monkeypatch fixture; it restores both wrapped calls at teardown.
+            folder: Resolved cache folder of the test's frame; only `.meldercache` files under it can fail.
+        """
+        self.failures: int = 0
+        self._folder: Path = folder
+        self._step: Optional[str] = None
+        self._remaining: Optional[int] = 0
+        real_replace: Callable[..., None] = os.replace
+        real_write_bytes: Callable[[Path, Any], int] = Path.write_bytes
+
+        def replace(source: Any, target: Any, *args: Any, **kwargs: Any) -> None:
+            """Refuse a rename onto a bundle in the folder while armed for REPLACE; pass any other through."""
+            if self._consume(self.REPLACE, target):
+                raise PermissionError(
+                    errno.EACCES,
+                    "Access is denied (injected; Windows reports [WinError 5])",
+                    os.fspath(source),
+                    None,
+                    os.fspath(target),
+                )
+            real_replace(source, target, *args, **kwargs)
+
+        def write_bytes(path: Path, data: Any) -> int:
+            """Refuse a temp-file write in the folder while armed for WRITE; pass any other through."""
+            if self._consume(self.WRITE, path):
+                raise PermissionError(
+                    errno.EACCES,
+                    "Permission denied (injected; a read-only cache folder)",
+                    os.fspath(path),
+                )
+            return real_write_bytes(path, data)
+
+        monkeypatch.setattr(os, "replace", replace)
+        monkeypatch.setattr(Path, "write_bytes", write_bytes)
+
+    def fail(self, step: str, times: Optional[int]) -> None:
+        """
+        Arm the wrappers.
+
+        Args:
+            step: `REPLACE` or `WRITE` - which call of the save fails.
+            times: How many such calls fail; None fails every one for the rest of the test.
+        """
+        self._step = step
+        self._remaining = times
+
+    def _consume(self, step: str, target: Any) -> bool:
+        """
+        Decide whether one wrapped call fails, and count it when it does.
+
+        Args:
+            step: The wrapped call's step.
+            target: The file the call writes: the rename's destination, or the written path.
+
+        Returns:
+            bool: True when the call must fail.
+        """
+        if step != self._step or self._remaining == 0:
+            return False
+        path = Path(os.fspath(target)).resolve()
+        if ".meldercache" not in path.name or not path.is_relative_to(self._folder):
+            return False
+        if self._remaining is not None:
+            self._remaining -= 1
+        self.failures += 1
+        return True
+
+
+_SAVE_FAILURES = [
+    pytest.param(_FailingCacheSaves.REPLACE, id="rename_refused"),
+    pytest.param(_FailingCacheSaves.WRITE, id="temp_write_refused"),
+]
+
+
+def _reset_world() -> None:
+    """Install a fresh Aether (and Nexus) and hand it to Spellbook and Conduit."""
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_world() -> Iterator[None]:
+    """
+    Give each test a fresh Aether and reset it again afterwards.
+
+    Yields:
+        None.
+    """
+    _reset_world()
+    yield
+    _reset_world()
+
+
+@pytest.fixture
+def cache_frame(monkeypatch: pytest.MonkeyPatch) -> Iterator[Callable[[str], _FailingCacheSaves]]:
+    """
+    Turn caching on for frames of the test's own, empty their cache folders and watch their saves.
+
+    Contract:
+        Each call takes a frame name unique to its test, ensures the frame, enables caching on its configuration
+        (the default cache root, under the melder package), removes whatever an earlier run left in that frame's
+        cache folder and returns a disarmed `_FailingCacheSaves` over it. At teardown each such folder is removed,
+        best-effort: on Windows a scanner may still hold a just-written bundle, and the next run's preparation
+        removes what is left.
+
+    Args:
+        monkeypatch: Restores the wrapped calls after the test.
+
+    Yields:
+        Callable[[str], _FailingCacheSaves]: The preparation call.
+    """
+    folders: List[Path] = []
+
+    def prepare(frame_name: str) -> _FailingCacheSaves:
+        """
+        Prepare one frame's cache folder and its fault.
+
+        Args:
+            frame_name: Frame name unique to the calling test.
+
+        Returns:
+            _FailingCacheSaves: The disarmed fault over the frame's cache folder.
+        """
+        configuration = Aether()._ensure_frame(frame_name).frame_configuration
+        assert configuration is not None
+        configuration.with_system_caching_enabled(True)
+        folder = (configuration.resolve_conjure_cache_root_path() / frame_name).resolve()
+        if folder.exists():
+            shutil.rmtree(folder)
+        folders.append(folder)
+        return _FailingCacheSaves(monkeypatch, folder)
+
+    yield prepare
+    for folder in folders:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def _book(frame_name: str) -> Spellbook:
+    """
+    Build a Spellbook in the given frame with one phase-scheduler worker.
+
+    Args:
+        frame_name: The test's frame.
+
+    Returns:
+        Spellbook: An empty Book.
+    """
+    book = Spellbook(aetheric_frame=frame_name)
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    return book
+
+
+def _dynamic_root(frame_name: str) -> Conduit:
+    """
+    Conjure a dynamic root over a Book holding `Settings`, so a spell bound later compiles at its first meld.
+
+    Args:
+        frame_name: The test's frame.
+
+    Returns:
+        Conduit: The root, its conjure-time save already done.
+    """
+    book = _book(frame_name)
+    book.bind(spell=Settings, existence=Existence.unique, permissions="create")
+    return book.conjure(dynamic=True, name="root")
+
+
+@pytest.mark.parametrize("step", _SAVE_FAILURES)
+def test_meld_returns_its_object_when_the_cache_save_fails(
+        cache_frame: Callable[[str], _FailingCacheSaves],
+        step: str,
+) -> None:
+    """
+    The first meld of a spell bound after conjure returns its object although its cache save fails once.
+
+    Contract:
+        `ReportWriter`'s first meld compiles it, stages its plan and saves the bundle, and that save fails once.
+        The meld returns the object it built, and a second meld returns the same `unique` object. On 0.2.8265 the
+        first meld raised the save's PermissionError after building and storing the object (probe case A).
+
+    Args:
+        cache_frame: Prepares the frame's cache folder and its fault.
+        step: Which call of the save fails.
+    """
+    frame_name = f"refused_save_once_{step}"
+    saves = cache_frame(frame_name)
+    root = _dynamic_root(frame_name)
+    root.bind(spell=ReportWriter, existence=Existence.unique, permissions="create")
+    saves.fail(step, times=1)
+
+    first = root.meld(spell=ReportWriter)
+    second = root.meld(spell=ReportWriter)
+
+    assert isinstance(first, ReportWriter)
+    assert second is first
+    assert saves.failures == 1
+
+
+@pytest.mark.parametrize("step", _SAVE_FAILURES)
+def test_melds_keep_returning_while_every_cache_save_fails(
+        cache_frame: Callable[[str], _FailingCacheSaves],
+        step: str,
+) -> None:
+    """
+    While every save fails, a late spell's first meld and warm melds of a spell built before still return.
+
+    Contract:
+        `Settings` is built before the saves start failing; then every save fails. The first meld of `LateReport`,
+        bound after conjure, returns its object, and three melds of `Settings` return the object built before.
+        On 0.2.8265 each of these melds raised: the failed save stays pending and every later meld retries it
+        (probe case B, a read-only frame folder).
+
+    Args:
+        cache_frame: Prepares the frame's cache folder and its fault.
+        step: Which call of the save fails.
+    """
+    frame_name = f"refused_save_always_{step}"
+    saves = cache_frame(frame_name)
+    root = _dynamic_root(frame_name)
+    settings = root.meld(spell=Settings)
+    root.bind(spell=LateReport, existence=Existence.unique, permissions="create")
+    saves.fail(step, times=None)
+
+    report = root.meld(spell=LateReport)
+    warm = [root.meld(spell=Settings) for _ in range(3)]
+
+    assert isinstance(report, LateReport)
+    assert all(melded is settings for melded in warm)
+    assert saves.failures >= 1
+
+
+@pytest.mark.parametrize("step", _SAVE_FAILURES)
+def test_first_melds_after_a_failed_conjure_save_return_their_object(
+        cache_frame: Callable[[str], _FailingCacheSaves],
+        step: str,
+) -> None:
+    """
+    An automatic conjure whose save fails returns its root, and the first melds after it return their object.
+
+    Contract:
+        Every save fails from before conjure. Conjure logs its failed save and returns the root, as it already
+        did; the first two melds of `AutomaticService` return one `unique` object. On 0.2.8265 conjure left the
+        save pending and both melds raised it (probe case C, a read-only cache root).
+
+    Args:
+        cache_frame: Prepares the frame's cache folder and its fault.
+        step: Which call of the save fails.
+    """
+    frame_name = f"refused_conjure_save_{step}"
+    saves = cache_frame(frame_name)
+    book = _book(frame_name)
+    book.bind(spell=AutomaticService, existence=Existence.unique, permissions="create")
+    saves.fail(step, times=None)
+    root = book.conjure(name="root")
+
+    first = root.meld(spell=AutomaticService)
+    second = root.meld(spell=AutomaticService)
+
+    assert isinstance(first, AutomaticService)
+    assert second is first
+    assert saves.failures >= 1
+
+
+def test_managed_lease_survives_a_failed_cache_save(
+        cache_frame: Callable[[str], _FailingCacheSaves],
+) -> None:
+    """
+    A managed meld whose cache save fails returns its lease, and the released object is leased again.
+
+    Contract:
+        `PooledConnection` is limited_quantity with a limit of one and is bound after conjure, so its first
+        leasing meld compiles it and saves the bundle; that save's rename is refused once. The lease comes back
+        holding the pooled object, and once it is released the next managed meld leases that object again. On
+        0.2.8265 the first managed meld raised after taking the pool's only place, and every later one raised
+        ManagedSpellExhaustedError until the root was torn down (probe case D).
+
+    Args:
+        cache_frame: Prepares the frame's cache folder and its fault.
+    """
+    frame_name = "refused_save_managed"
+    saves = cache_frame(frame_name)
+    root = _dynamic_root(frame_name)
+    root.bind(
+        spell=PooledConnection,
+        existence=Existence.managed_spell_quantity,
+        permissions="create",
+        managed_spell_mode=ManagedSpellMode.limited_quantity,
+        managed_spell_limit=1,
+    )
+    saves.fail(_FailingCacheSaves.REPLACE, times=1)
+
+    lease = root.managed_spell_meld(spell=PooledConnection)
+    leased = lease.object
+    lease.release()
+    again = root.managed_spell_meld(spell=PooledConnection)
+    leased_again = again.object
+    again.release()
+
+    assert isinstance(leased, PooledConnection)
+    assert leased_again is leased
+    assert saves.failures == 1
+
+
+def test_spellspace_meld_returns_its_object_when_the_cache_save_fails(
+        cache_frame: Callable[[str], _FailingCacheSaves],
+) -> None:
+    """
+    A spellspace meld returns its object although the cache save it triggers fails once.
+
+    Contract:
+        `SpaceSession` is `unique_per_spell_space` and bound after conjure; its first meld, in a spellspace,
+        compiles it and saves the bundle, and that save's rename is refused once. The meld returns the object and a
+        second meld in the same spellspace returns that object. On 0.2.8265 the spellspace doors raised the save's
+        error as the conduit doors do.
+
+    Args:
+        cache_frame: Prepares the frame's cache folder and its fault.
+    """
+    frame_name = "refused_save_spellspace"
+    saves = cache_frame(frame_name)
+    root = _dynamic_root(frame_name)
+    root.bind(spell=SpaceSession, existence=Existence.unique_per_spell_space, permissions="create")
+    saves.fail(_FailingCacheSaves.REPLACE, times=1)
+
+    with root.enter_spellspace() as space:
+        first = space.meld(spell=SpaceSession)
+        second = space.meld(spell=SpaceSession)
+
+    assert isinstance(first, SpaceSession)
+    assert second is first
+    assert saves.failures == 1
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_resolution_validation.py
@@ -118291,25 +118709,24 @@ def test_conduit_lookup_helpers_handle_missing_spells() -> None:
 END FILE: tests/integration/melder/conduit/test_conduit_integration_guardrails.py
 ================================================================================
 ================================================================================
-BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py
-CONTENT SHA256: 1b34965384ae25cf1e30ef881e762b0f2fdff458d8bda6e99e4a205d2b7e02a9
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py
+CONTENT SHA256: bb526a0d35061a921f62791a2d644d3d4a58720b5cbea6102c05ec29bebac4ca
 SOURCE ENCODING: utf-8
 ================================================================================
 """
-Regression tests: a slotted holder's `many` children are purged and moved with the holder.
+Regression tests: cleaning up a slotted holder runs only the holder's own disposal; its `many` children stay with
+the store that built them.
 
-EPIC-2026-10-14-slotted_lifetime_ownership_fixes, D4 and D5 (proven by the lifetime audit on 0.2.8235; cases t4b, p5):
-    Since 0.2.8235 a holder's disposal-bearing `many` children are registered in the holder's own store, but under
-    their own spell id - in the child spell's `many` bucket - so a store verb keyed by the holder could not reach them:
-    D5 - purging a holder disposed the holder only; its children stayed registered and undisposed until the store
-         ended, one more for every purge-and-meld cycle, and a failing child disposal was never reported;
-    D4 - moving a holder with `transfer_spell_ownership(..., move_creations=True)` carried the holder to the target and
-         left its children in the source store, whose teardown disposed them while the target kept serving the holder.
-    A `many` purge of the child spell, by contrast, reached the children and disposed them under their live holders.
+The owner's decision (EPIC-2026-10-20-reassess_many_child_disposal_ownership, DECISION note of 2026-10-24; chat
+2026-10-24: "it should behave like autofac not mysteriously cleanup transient objects"): a holder's `many` children
+are not the holder's to dispose. Purging, moving or disposing a holder does exactly that to the holder; each child is
+an ordinary entry of its own spell's `many` bucket in the store that built it, which disposes it when it ends - or
+when its spell is purged there. What a holder does with the objects it holds is its own dispose rule's business.
 
-Corrected behaviour asserted here - the owner's rule: a holder's `many` children belong to the holder; purging, moving
-or disposing the holder does the same to its children, holder first. The children are recorded with the holder the
-moment it is published, so a `many` purge of the child spell no longer reaches a child that a live holder owns.
+Removed behaviour (0.2.8238-0.2.8265, `slotted_lifetime_ownership`): a just-published holder adopted the children
+built for it into its disposal record, so purging the holder disposed its children after it and raised their
+failures with its own, an ownership move carried them to the target, and a `many` purge of the child spell skipped
+every child a live holder held.
 """
 
 from collections.abc import Iterator
@@ -118491,35 +118908,59 @@ def _bucket(scope: Any, spell_id: str) -> List[Any]:
     return list(scope._creations._creations.get(spell_id) or [])
 
 
-def test_purge_disposes_the_many_child_of_the_purged_holder_and_nothing_accumulates() -> None:
+def _leaf_errors(group: BaseException) -> List[BaseException]:
     """
-    Purging a holder disposes its `many` child with it, and purge-and-meld cycles leave nothing registered.
+    Return the non-group exceptions inside an exception group, depth first.
 
-    Symptom (0.2.8235, probe case p5): five purge-and-meld cycles of a per-conduit holder closed five holders and none
-    of their children, which all stayed registered in the root's store until its teardown.
+    A root's teardown raises its own group around each store's group, so a disposal failure is a leaf two levels
+    down.
+
+    Args:
+        group: An exception, usually an ExceptionGroup.
+
+    Returns:
+        List[BaseException]: Every leaf exception (the argument itself when it is not a group).
+    """
+    if isinstance(group, BaseExceptionGroup):
+        leaves: List[BaseException] = []
+        for inner in group.exceptions:
+            leaves.extend(_leaf_errors(inner))
+        return leaves
+    return [group]
+
+
+def test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store() -> None:
+    """
+    Purging a holder disposes the holder alone; each purged holder's child stays in its spell's bucket and is
+    disposed once, when the store that built it ends.
+
+    Symptom (0.2.8238-0.2.8265): each purge disposed the holder's child with it.
     """
     book, child_id = _automatic_book()
     holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
     root = book.conjure(name="holder-children-purge")
     holders: List[PerConduitHolder] = []
     try:
-        for _ in range(5):
+        for _ in range(3):
             holder = root.meld(spell_id=holder_id)
             holders.append(holder)
             assert root.purge(spell_id=holder_id) == 1, "a holder purge counts the holder's own entry"
             assert holder.closes == 1
-            assert holder.child.closes == 1, "purging the holder must dispose its many child with it"
-        assert _bucket(root, child_id) == [], "no child of a purged holder may stay registered"
+            assert holder.child.closes == 0, "purging the holder must not dispose the many child it holds"
+        assert _bucket(root, child_id) == [holder.child for holder in holders], (
+            "every child stays an entry of its spell's bucket in the store that built it"
+        )
     finally:
         root.cleanup()
-    assert [holder.child.closes for holder in holders] == [1] * 5, "each child must be disposed exactly once"
+    assert [holder.child.closes for holder in holders] == [1] * 3, "each child is disposed once, at its store's end"
 
 
-def test_single_instance_purge_disposes_the_holder_first_and_then_its_many_child() -> None:
+def test_single_instance_purge_of_a_holder_disposes_only_the_holder() -> None:
     """
-    A single-instance purge of a holder disposes the holder, then its child, and the next meld builds both anew.
+    A single-instance purge of a holder runs the holder's disposal and nothing else; the next meld builds a new
+    holder and a new child, and the root's teardown disposes the two children it built.
 
-    Symptom (0.2.8235): only the holder was closed; its child stayed open in the root's store.
+    Symptom (0.2.8238-0.2.8265): the purge disposed the holder, then its child.
     """
     book, _child_id = _automatic_book()
     holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
@@ -118527,19 +118968,19 @@ def test_single_instance_purge_disposes_the_holder_first_and_then_its_many_child
     try:
         holder = root.meld(spell_id=holder_id)
         assert root.purge(spell=holder, purge_all=False) == 1
-        assert Closable.log == ["PerConduitHolder", "Child"], "the holder is disposed first, then its child"
+        assert Closable.log == ["PerConduitHolder"], "only the holder's own disposal runs"
         again = root.meld(spell_id=holder_id)
         assert again is not holder and again.child is not holder.child
     finally:
         root.cleanup()
-    assert (holder.closes, holder.child.closes) == (1, 1), "the purged holder and its child are disposed exactly once"
+    assert (holder.closes, holder.child.closes) == (1, 1), "the purged holder and its child are disposed once each"
 
 
-def test_purge_of_a_holder_without_disposal_methods_disposes_its_many_child() -> None:
+def test_purge_of_a_holder_without_disposal_methods_disposes_nothing() -> None:
     """
-    A holder that declares no disposal method still takes its disposal-bearing child with it when purged.
+    A holder that declares no disposal method has nothing to run when purged; its child is not its to dispose.
 
-    Symptom (0.2.8235): the purge removed the holder and left its child registered and open.
+    Symptom (0.2.8238-0.2.8265): the purge disposed the holder's child.
     """
     book, child_id = _automatic_book()
     holder_id = _bind(book, PlainHolder, Existence.unique_per_conduit, closable=False)
@@ -118547,18 +118988,18 @@ def test_purge_of_a_holder_without_disposal_methods_disposes_its_many_child() ->
     try:
         holder = root.meld(spell_id=holder_id)
         assert root.purge(spell_id=holder_id) == 1
-        assert holder.child.closes == 1, "purging the holder must dispose its many child"
-        assert _bucket(root, child_id) == [], "the purged holder's child must not stay registered"
+        assert holder.child.closes == 0, "purging the holder must not dispose its many child"
+        assert _bucket(root, child_id) == [holder.child], "the child stays recorded in the store that built it"
     finally:
         root.cleanup()
-    assert holder.child.closes == 1, "the child must be disposed exactly once"
+    assert holder.child.closes == 1, "the child must be disposed exactly once, at its store's end"
 
 
-def test_spellspace_purge_disposes_the_many_child_of_the_spellspace_holder() -> None:
+def test_spellspace_holder_purge_leaves_its_child_for_the_space_exit() -> None:
     """
-    Purging a spellspace holder inside its spellspace disposes the holder's child at once, not at the space's exit.
+    Purging a spellspace holder disposes the holder; the space built the child and disposes it at its exit.
 
-    Symptom (0.2.8235): the child stayed registered in the spellspace and was closed only when the space was released.
+    Symptom (0.2.8238-0.2.8265): the purge disposed the child with the holder.
     """
     book, _child_id = _automatic_book()
     holder_id = _bind(book, SpaceHolder, Existence.unique_per_spell_space)
@@ -118567,20 +119008,22 @@ def test_spellspace_purge_disposes_the_many_child_of_the_spellspace_holder() -> 
         with root.enter_spellspace() as space:
             holder = space.meld(spell_id=holder_id)
             assert space.purge(spell_id=holder_id) == 1
-            assert holder.child.closes == 1, "purging the spellspace holder must dispose its many child"
+            assert (holder.closes, holder.child.closes) == (1, 0), "only the holder's own disposal runs"
             again = space.meld(spell_id=holder_id)
             assert again is not holder
+        assert holder.child.closes == 1, "the space's exit disposes the child it built"
         assert (again.closes, again.child.closes) == (1, 1), "the space's exit disposes the second holder and child"
     finally:
         root.cleanup()
     assert holder.child.closes == 1, "the purged holder's child must be disposed exactly once"
 
 
-def test_owner_purge_of_a_unique_holder_disposes_its_many_child() -> None:
+def test_owner_purge_of_a_unique_holder_leaves_its_many_child_open() -> None:
     """
-    The owning root's purge of a `unique` holder disposes the holder's child too.
+    The owning root's purge of a `unique` holder disposes the holder; the child stays recorded in the root, which
+    built it, until the root ends.
 
-    Symptom (0.2.8235): the holder was closed and its child stayed in the owner's store until teardown.
+    Symptom (0.2.8238-0.2.8265): the holder's purge disposed its child too.
     """
     book, child_id = _automatic_book()
     holder_id = _bind(book, UniqueHolder, Existence.unique)
@@ -118588,41 +119031,42 @@ def test_owner_purge_of_a_unique_holder_disposes_its_many_child() -> None:
     try:
         holder = root.meld(spell_id=holder_id)
         assert root.purge(spell_id=holder_id) == 1
-        assert (holder.closes, holder.child.closes) == (1, 1), "the holder and its child are disposed together"
-        assert _bucket(root, child_id) == []
+        assert (holder.closes, holder.child.closes) == (1, 0), "only the holder's own disposal runs"
+        assert _bucket(root, child_id) == [holder.child]
     finally:
         root.cleanup()
     assert holder.child.closes == 1, "the child must be disposed exactly once"
 
 
-def test_purge_raises_a_failing_child_disposal_after_retiring_the_holder() -> None:
+def test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge() -> None:
     """
-    A child whose disposal fails is reported by the holder's purge, after the holder has been retired.
+    A child whose disposal fails is not touched by its holder's purge; the failure is raised when the store that
+    built the child ends.
 
-    Symptom (0.2.8235): the purge returned without disposing the child, so its failure surfaced only at teardown.
+    Symptom (0.2.8238-0.2.8265): the holder's purge disposed the child and raised its failure.
     """
     book, _child_id = _automatic_book(child=FailingChild)
     holder_id = _bind(book, FailingChildHolder, Existence.unique_per_conduit)
     root = book.conjure(name="holder-children-failing-purge")
     try:
         holder = root.meld(spell_id=holder_id)
+        assert root.purge(spell_id=holder_id) == 1, "the holder's purge raises nothing: its own disposal succeeds"
+        assert (holder.closes, holder.child.closes) == (1, 0)
         with pytest.raises(ExceptionGroup) as raised:
-            root.purge(spell_id=holder_id)
-        failures = raised.value.exceptions
-        assert len(failures) == 1 and str(failures[0].__cause__) == "child close failed"
-        assert (holder.closes, holder.child.closes) == (1, 1), "every disposal method ran once"
-        assert root.meld(spell_id=holder_id) is not holder, "the holder was retired before the failure was raised"
-    finally:
-        with pytest.raises(ExceptionGroup):
             root.cleanup()
-    assert holder.child.closes == 1, "the purged holder's child must be disposed exactly once"
+        failures = _leaf_errors(raised.value)
+        assert len(failures) == 1 and str(failures[0].__cause__) == "child close failed"
+    finally:
+        root.cleanup()
+    assert holder.child.closes == 1, "the child must be disposed exactly once"
 
 
-def test_many_purge_of_the_child_spell_leaves_a_live_holders_child_open() -> None:
+def test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded() -> None:
     """
-    A `many` purge of the child spell retires the spell's own objects, not the child a live holder owns.
+    A `many` purge of the child spell retires every child the store recorded, the one a live holder holds
+    included: the child is not the holder's, and the holder keeps a reference the application owns.
 
-    Symptom (0.2.8235): the purge counted the holder's child and closed it while the holder kept handing it out.
+    Symptom (0.2.8238-0.2.8265): the purge skipped the child a live holder held.
     """
     book, child_id = _automatic_book()
     holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
@@ -118630,21 +119074,20 @@ def test_many_purge_of_the_child_spell_leaves_a_live_holders_child_open() -> Non
     try:
         holder = root.meld(spell_id=holder_id)
         free = root.meld(spell_id=child_id)
-        assert root.purge(spell_id=child_id) == 1, "only the free-standing child is the many spell's own entry"
-        assert free.closes == 1
-        assert holder.child.closes == 0, "a many purge disposed the child of a live holder"
-        assert root.meld(spell_id=holder_id) is holder
+        assert root.purge(spell_id=child_id) == 2, "the bucket holds the holder's child and the free one"
+        assert (free.closes, holder.child.closes) == (1, 1)
+        assert root.meld(spell_id=holder_id) is holder, "the holder itself is untouched"
     finally:
         root.cleanup()
     assert (holder.closes, holder.child.closes, free.closes) == (1, 1, 1), "each object is disposed exactly once"
 
 
-def test_transfer_move_carries_the_holders_many_child_to_the_target() -> None:
+def test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it() -> None:
     """
-    Moving a holder with `move_creations=True` moves its `many` child with it; the source's teardown leaves it open.
+    Moving a holder with `move_creations=True` moves the holder; its child stays in the source store, which built
+    it and disposes it when it ends, while the target serves the holder and disposes only the holder.
 
-    Symptom (0.2.8235, probe case t4b): the holder moved and its child stayed in the source store; the source's
-    teardown closed the child while the target kept serving the same holder.
+    Symptom (0.2.8238-0.2.8265): the move carried the child to the target with the holder.
     """
     frame = "holder-children-move"
     source_book = Spellbook(aetheric_frame=frame, configuration=_dynamic_configuration(frame))
@@ -118657,12 +119100,11 @@ def test_transfer_move_carries_the_holders_many_child_to_the_target() -> None:
         child = holder.child
         source.transfer_spell_ownership(spell=holder_id, target_conduit=target, move_creations=True)
         assert target.meld(spell_id=holder_id) is holder, "precondition: the target serves the moved holder"
-        left_in_source = _bucket(source, child_id)
+        assert child in _bucket(source, child_id), "the child stays in the store that built it"
         source.cleanup()
-        assert child.closes == 0, "the source's teardown disposed the child of a holder the target still serves"
-        assert child not in left_in_source, "the moved holder's child stayed in the source store"
+        assert (holder.closes, child.closes) == (0, 1), "the source's teardown disposes the child it built"
         target.cleanup()
-        assert (holder.closes, child.closes) == (1, 1), "the target's teardown disposes the holder and its child"
+        assert (holder.closes, child.closes) == (1, 1), "the target's teardown disposes only the holder"
     finally:
         source.cleanup()
         target.cleanup()
@@ -118671,8 +119113,9 @@ def test_transfer_move_carries_the_holders_many_child_to_the_target() -> None:
 
 def test_control_transfer_move_with_dependencies_disposes_the_child_once_at_the_target() -> None:
     """
-    Control (passes on 0.2.8235 too, probe case t4): moving the holder with its dependencies moves the child's spell
-    as well; the source's teardown leaves the child open and the target's disposes holder and child once each.
+    Control (green before and after the change): moving the holder with its dependencies moves the child's spell,
+    and its bucket, as well; the source's teardown leaves the child open and the target's disposes holder and child
+    once each.
     """
     frame = "holder-children-move-deps"
     source_book = Spellbook(aetheric_frame=frame, configuration=_dynamic_configuration(frame))
@@ -118698,8 +119141,8 @@ def test_control_transfer_move_with_dependencies_disposes_the_child_once_at_the_
 
 def test_control_teardown_disposes_a_holder_before_its_many_child() -> None:
     """
-    Control (passes on 0.2.8235 too): a root's teardown disposes a holder before the child it holds, so a holder's
-    own disposal can still use its child.
+    Control (green before and after the change): within one store, teardown runs newest first, and a holder is
+    published after the child built for it, so a holder's own disposal can still use its child.
     """
     book, _child_id = _automatic_book()
     holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
@@ -118711,7 +119154,7 @@ def test_control_teardown_disposes_a_holder_before_its_many_child() -> None:
     assert Closable.log == ["PerConduitHolder", "Child"], "the holder is disposed first, then its child"
     assert (holder.closes, holder.child.closes) == (1, 1)
 ================================================================================
-END FILE: tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py
+END FILE: tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_lifecycle.py
@@ -121869,32 +122312,25 @@ def test_a_parked_unique_version_moved_and_notched_in_stores_its_object_in_the_t
 END FILE: tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py
 ================================================================================
 ================================================================================
-BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py
-CONTENT SHA256: 6923fef81bb80514424cff2bdd66c0f8560274e399b6ea4da474bdfdd95d751c
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py
+CONTENT SHA256: 973ad47b5f90d8a9c657d1f4e9136ed362a4d483416368036cf888c12cde67ec
 SOURCE ENCODING: utf-8
 ================================================================================
 """
-Regression tests (dynamic routes): a disposal-bearing `many` child is disposed with the holder it was built for.
+Regression tests (dynamic routes): a `many` dependency belongs to the root that built it, not to its holder's owner.
 
-The defect (TASK-2026-10-14-prove_many_child_registration_bug, measured on 0.2.8234):
-    The site plan registers a slotted holder's `many` child in the meld's innermost scope - the store of the
-    conduit that melds - instead of the store the holder is published to. In a dynamic world two more routes
-    reach it, both across normal roots:
-        - a borrowing root melds a `unique` holder contracted from its owner root: the holder lives in the
-          owner's store, the child in the borrower's, so tearing the borrower down closes the child of a holder
-          the owner keeps returning;
-        - a non-leader cluster member melds a `unique_per_conduit_cluster` holder: the holder lives in the elected
-          leader's store (since 0.2.8237 the cluster's own team store), the child in the member's, so tearing the
-          member down closes it the same way.
-    The automatic-world routes are covered by
-    `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py`.
+The owner's decision (EPIC-2026-10-20-reassess_many_child_disposal_ownership, DECISION note of 2026-10-24): a
+disposal-bearing `many` dependency built for a slotted holder is recorded in, and disposed by, the meld's innermost
+scope - here the store of the root that melds - exactly as a `many` root is. Two dynamic routes build a holder in one
+store and its child through another root:
+    - a borrowing root melds a `unique` holder contracted from its owner root: the holder lives in the owner's store;
+      the borrower built the child, records it and disposes it at its teardown;
+    - a non-leader cluster member melds a `unique_per_conduit_cluster` holder: the holder lives in the cluster's team
+      store; the member built the child, records it and disposes it at its teardown.
 
-Corrected behaviour asserted here - the owner's rule (EPIC-2026-10-14-many_child_follows_holder, Decision Log
-2026-10-14): a holder's `many` child belongs to whatever owns the holder. The child is recorded in the owner's
-(or the leader's) store, not the store of the root that melded it; tearing that root down does not dispose the
-child while the holder lives; the child is disposed exactly once, when the holder's own store is.
-
-Both tests fail on 0.2.8234 by design and pass once a child follows its holder.
+Removed behaviour (0.2.8235-0.2.8265): the child was recorded with the holder - in the owner's store, in the
+cluster's team store - and disposed only when that store ended. The automatic-world routes are covered by
+`tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py`.
 """
 
 from collections.abc import Iterator
@@ -121904,7 +122340,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.creations.creations import Creations, HolderDisposalEntry
+from melder.aether.conduit.creations.creations import Creations
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -121978,33 +122414,27 @@ def _dynamic_configuration(frame: str) -> SpellbookConfiguration:
     return configuration
 
 
-def _adopted(store: Creations, holder_id: str) -> List[Any]:
+def _bucket(store: Creations, child_id: str) -> List[Any]:
     """
-    Return the children one store records with a holder, in build order.
-
-    Since 0.2.8238 a holder's `many` children leave their spell's bucket once the holder is published and live in
-    the holder's disposal record (`HolderDisposalEntry`).
+    Return a copy of one store's live `many` bucket for Child's spell id (empty when it keeps none).
 
     Args:
-        store: The creations store that holds the holder.
-        holder_id: The holder's spell id.
+        store: A creations store.
+        child_id: Child's spell id.
 
     Returns:
-        List[Any]: The adopted children; empty when the store keeps no record for the holder.
+        List[Any]: Every Child the store recorded.
     """
-    record = store._disposable_creations.get(holder_id)
-    if not isinstance(record, HolderDisposalEntry):
-        return []
-    return [child for child, _methods in record.children]
+    return list(store._creations.get(child_id) or [])
 
 
-def test_borrower_teardown_disposes_the_many_child_of_a_contracted_unique_it_first_melded() -> None:
+def test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique() -> None:
     """
-    A borrowing root's teardown must not dispose the `many` child of a contracted `unique` holder.
+    A borrowing root that first melds a contracted `unique` holder builds the holder's `many` child, so the borrower
+    records the child and its teardown disposes it, once, while the owner keeps serving the holder.
 
-    Symptom (0.2.8234): the borrower melds the holder first through its contract; the holder is published in the
-    owner's store and its child recorded in the borrower's. Tearing the borrower down closes the child while the
-    owner keeps returning the same holder. Corrected: the child is closed once, at the owner's teardown.
+    Symptom (0.2.8235-0.2.8265): the owner recorded the child with its unique holder, so the borrower's teardown left
+    it open and the owner closed it at its own teardown.
     """
     configuration = _dynamic_configuration("default")
     owner_book = Spellbook(configuration=configuration)
@@ -122021,32 +122451,30 @@ def test_borrower_teardown_disposes_the_many_child_of_a_contracted_unique_it_fir
             assert borrower.add_spell_to_contract(spell_id=holder_id, conduit=owner, permissions="create")
         assert borrower.validate_contracts_and_define()
         first = borrower.meld(spell_id=holder_id)
-        assert _adopted(owner._creations, holder_id) == [first.child], (
-            "the owner root must record the child of the unique holder it owns"
+        assert first.child in _bucket(borrower._creations, child_id), (
+            "the borrowing root built the child and must record it"
         )
-        assert first.child not in list(borrower._creations._creations.get(child_id) or []), (
-            "the borrowing root must not record the child"
+        assert first.child not in _bucket(owner._creations, child_id), "the owner root must not record the child"
+        assert owner._creations._disposable_creations.get(holder_id) is None, (
+            "the owner must not tie the child to its holder"
         )
         borrower.cleanup()
         assert owner.meld(spell_id=holder_id) is first, "precondition: the holder outlives the borrower"
-        assert first.child.closes == 0, (
-            "the borrower's teardown disposed the many child of a unique holder its owner still hands out"
-        )
+        assert first.child.closes == 1, "the borrower's teardown must dispose the many child it built"
     finally:
         borrower.cleanup()
         owner.cleanup()
-    assert first.child.closes == 1, "the child must be disposed exactly once, with its holder"
+    assert first.child.closes == 1, "the child must be disposed exactly once"
 
 
-def test_member_teardown_disposes_the_many_child_of_a_cluster_holder_it_first_melded() -> None:
+def test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder() -> None:
     """
-    A non-leader cluster member's teardown must not dispose the `many` child of the cluster's holder.
+    A non-leader cluster member that first melds the cluster's holder builds the holder's `many` child, so the
+    member records the child and its teardown disposes it, once; neither the leader's teardown nor the cluster's
+    deletion disposes it again.
 
-    Symptom (0.2.8234): the member melds the cluster holder first; the holder is published in the elected
-    leader's store and its child recorded in the member's. Tearing the member down closes the child while the
-    leader keeps returning the same holder. Corrected (0.2.8235): the child is recorded with the holder's owner.
-    Since 0.2.8237 that owner is the cluster (its team store, not the leader conduit's store), so neither the
-    member's nor the leader's teardown disposes the child; deleting the cluster does, once.
+    Symptom (0.2.8235-0.2.8265): the child was recorded with the holder - in the leader's store, from 0.2.8237 the
+    cluster's team store - so the member's teardown left it open and the cluster's deletion closed it.
     """
     frame = "many-child-cluster"
     provider_book = Spellbook(aetheric_frame=frame, configuration=_dynamic_configuration(frame))
@@ -122070,29 +122498,23 @@ def test_member_teardown_disposes_the_many_child_of_a_cluster_holder_it_first_me
         cloud.get_cluster("many_child").elect_leader(provider.id)
         first = member.meld(spell_id=holder_id)
         team_store = cloud.get_cluster("many_child")._team_store
-        assert _adopted(team_store, holder_id) == [first.child], (
-            "the cluster's team store must record the child of the cluster holder it stores"
-        )
-        assert first.child not in list(member._creations._creations.get(child_id) or []), (
-            "the member root must not record the child"
-        )
-        assert first.child not in list(provider._creations._creations.get(child_id) or []), (
-            "the leader conduit's own store must not record the child"
+        assert first.child in _bucket(member._creations, child_id), "the member built the child and must record it"
+        assert first.child not in _bucket(team_store, child_id), "the cluster's team store must not record the child"
+        assert team_store._disposable_creations.get(holder_id) is None, (
+            "the team store must not tie the child to the holder"
         )
         member.cleanup()
         assert provider.meld(spell_id=holder_id) is first, "precondition: the holder outlives the member"
-        assert first.child.closes == 0, (
-            "the member's teardown disposed the many child of a cluster holder the leader still hands out"
-        )
+        assert first.child.closes == 1, "the member's teardown must dispose the many child it built"
         provider.cleanup()
-        assert first.child.closes == 0, "the leader's teardown disposed a child the cluster owns"
         cloud.delete_cluster("many_child")
+        assert first.child.closes == 1, "neither the leader's teardown nor the cluster's deletion disposes it again"
     finally:
         member.cleanup()
         provider.cleanup()
-    assert first.child.closes == 1, "the child must be disposed exactly once, with the cluster that owns its holder"
+    assert first.child.closes == 1, "the child must be disposed exactly once"
 ================================================================================
-END FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py
+END FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
@@ -174109,7 +174531,7 @@ END FILE: tests/unit/github_workflows/test_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_python_runtime_matrix.py
-CONTENT SHA256: 13a34ff466ecdc148248309bcbb7cea02085e8ae181559618264b6aa0d9a23dd
+CONTENT SHA256: 39d9e5faf4a8a694e919723daef072aa8b447e9ea765a19e18dde067216e648a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove manifest-driven Python selection and complete version-aware coverage report handling."""
@@ -174359,6 +174781,124 @@ def test_repository_speed_manifest_is_tested_and_builds_dependency_injector_from
         root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY, floor)}
     assert speed.python in tested
     assert speed.build_from_source == ("dependency-injector",)
+
+
+def test_repository_speed_manifest_pins_every_runtime_dependency(runtime_matrix: ModuleType) -> None:
+    """The speed jobs import Melder from the checkout (PYTHONPATH=src), so their manifest pins its runtime dependencies.
+
+    runtime_pins refuses a declared dependency that the manifest leaves out.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    speed = runtime_matrix.speed_manifest(root / runtime_matrix.RuntimeMatrixPolicy.SPEED_DIRECTORY,
+                                          runtime_matrix.supported_floor())
+    declared = runtime_matrix.declared_dependencies()
+    pinned = runtime_matrix.runtime_pins(speed, declared)
+    assert {runtime_matrix.canonical_name(pin.split("==")[0]) for pin in pinned} == set(declared)
+
+
+def test_repository_manifests_pin_exactly_declared_dependencies_at_the_declared_version(
+        runtime_matrix: ModuleType,
+) -> None:
+    """A dependency pyproject.toml declares as name==version is pinned at that version in every manifest.
+
+    A different pin would test, and probe, another version than a user's install resolves; the probes' pip check
+    would refuse it in CI. A declared range is left to that pip check.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    exact = {}
+    for requirement in project.get("dependencies", []):
+        match = re.fullmatch(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*==\s*([^;,\s]+)\s*", requirement)
+        if match is not None:
+            exact[runtime_matrix.canonical_name(match[1])] = match[2]
+    floor = runtime_matrix.supported_floor()
+    manifests = [*runtime_matrix.load_manifests(root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY, floor),
+                 runtime_matrix.speed_manifest(root / runtime_matrix.RuntimeMatrixPolicy.SPEED_DIRECTORY, floor)]
+    for manifest in manifests:
+        for pin in runtime_matrix.runtime_pins(manifest, tuple(exact)):
+            name, version = pin.split(";", 1)[0].strip().split("==", 1)
+            assert version == exact[runtime_matrix.canonical_name(name)], (manifest.python, pin)
+
+
+def test_declared_dependencies_name_each_distribution_once_in_order(runtime_matrix: ModuleType,
+                                                                   tmp_path: pathlib.Path) -> None:
+    """Only each requirement's distribution name counts, PEP 503-normalized and kept once."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text('[project]\ndependencies = ["pip==26.2.2", "Log_Xide>=1.0; python_version >= \'3.14\'", '
+                       '"PIP"]\n', encoding="utf-8")
+    assert runtime_matrix.declared_dependencies(project) == ("pip", "log-xide")
+
+
+def test_declared_dependencies_are_empty_when_melder_declares_none(runtime_matrix: ModuleType,
+                                                                  tmp_path: pathlib.Path) -> None:
+    """A project without [project.dependencies] declares nothing, so a probe installs the wheel alone."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text('[project]\nname = "melder"\n', encoding="utf-8")
+    assert runtime_matrix.declared_dependencies(project) == ()
+
+
+@pytest.mark.parametrize("dependencies", ['"pip==26.2.2"', "[1]", '["==26.2.2"]'])
+def test_malformed_declared_dependencies_are_refused(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                    dependencies: str) -> None:
+    """A dependency list that is not a list of named requirements is refused rather than read as empty."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text(f"[project]\ndependencies = {dependencies}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="project.dependencies"):
+        runtime_matrix.declared_dependencies(project)
+
+
+def test_runtime_pins_select_the_declared_pins_in_manifest_order(runtime_matrix: ModuleType,
+                                                                tmp_path: pathlib.Path) -> None:
+    """The declared pins come out as the manifest writes them, markers included; the test group stays out."""
+    manifest = runtime_matrix.load_manifest(write_manifest(tmp_path, "3.14.7", (
+        "pytest==9.1.1", "pip==26.2.2", "Log_Xide==1.2; sys_platform == 'win32'")))
+    assert runtime_matrix.runtime_pins(manifest, ("log-xide", "pip")) == (
+        "pip==26.2.2", "Log_Xide==1.2; sys_platform == 'win32'")
+    assert runtime_matrix.runtime_pins(manifest, ()) == ()
+
+
+def test_runtime_pins_refuse_a_declared_dependency_the_manifest_leaves_out(runtime_matrix: ModuleType,
+                                                                          tmp_path: pathlib.Path) -> None:
+    """A probe would otherwise install the wheel without that dependency; the message names manifest and name."""
+    manifest = runtime_matrix.load_manifest(write_manifest(tmp_path, "3.14.7", ("pytest==9.1.1",)))
+    with pytest.raises(ValueError, match=r"3\.14\.7\.toml does not pin .*\['pip'\]"):
+        runtime_matrix.runtime_pins(manifest, ("pip",))
+
+
+def test_release_manifest_loads_only_an_exact_release_that_has_a_manifest(runtime_matrix: ModuleType,
+                                                                         tmp_path: pathlib.Path) -> None:
+    """A probe on a release without a manifest is refused by name; an inexact release is refused before lookup."""
+    write_manifest(tmp_path, "3.14.7")
+    assert runtime_matrix.release_manifest(tmp_path, "3.14.7").python == "3.14.7"
+    with pytest.raises(ValueError, match="no manifest"):
+        runtime_matrix.release_manifest(tmp_path, "3.14.8")
+    with pytest.raises(ValueError, match="exact stable"):
+        runtime_matrix.release_manifest(tmp_path, "3.14")
+
+
+def test_runtime_requirements_write_only_one_manifest_runtime_pins(runtime_matrix: ModuleType,
+                                                                   tmp_path: pathlib.Path,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """The operation writes the declared dependencies' pins, one per line, for an install with --no-deps."""
+    path = write_manifest(tmp_path / "tests", "3.14.7", ("pip==26.2.2", "pytest==9.1.1"))
+    monkeypatch.setattr(runtime_matrix, "declared_dependencies", lambda: ("pip",))
+    output = tmp_path / "reports" / "runtime.txt"
+    assert runtime_matrix.main(["runtime-requirements", "--manifest", str(path), "--output", str(output)]) == 0
+    assert output.read_text(encoding="utf-8") == "pip==26.2.2\n"
+
+
+def test_runtime_requirements_default_to_the_running_release_manifest(runtime_matrix: ModuleType,
+                                                                      tmp_path: pathlib.Path,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without --manifest the running interpreter's release names the test manifest, as in a probe job."""
+    monkeypatch.setattr(runtime_matrix.platform, "python_version", lambda: "3.14.7")
+    output = tmp_path / "runtime.txt"
+    assert runtime_matrix.main(["runtime-requirements", "--output", str(output)]) == 0
+    root = pathlib.Path(__file__).resolve().parents[3]
+    expected = runtime_matrix.runtime_pins(
+        runtime_matrix.load_manifest(root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY / "3.14.7.toml"),
+        runtime_matrix.declared_dependencies())
+    assert output.read_text(encoding="utf-8") == "".join(f"{pin}\n" for pin in expected)
 
 
 @pytest.mark.parametrize(("constraint", "expected"), [(">=3.14", (3, 14, 0)), (">=3.15.1", (3, 15, 1))])
@@ -175052,7 +175592,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 379d734d354a20f3305ff7be870cae3cec117d225eee8213a080d6357a90a432
+CONTENT SHA256: ad19e57adf8f791b69a951dfbc23ae960c38672cdba102f888903ec2930e89df
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -175441,7 +175981,7 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
         assert upload["with"]["directory"] == "selected-coverage"
         assert upload["with"]["fail_ci_if_error"] == "true"
         assert upload["with"].get("use_oidc", "false") == "false"
-        assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
+        assert "override_branch" not in upload["with"]
     selection = job["steps"][-3]
     assert selection["uses"].startswith("actions/upload-artifact@")
     assert selection["with"]["name"] == "selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}"
@@ -175467,7 +176007,7 @@ def test_codecov_upload_retries_with_the_pypi_uploader_only_after_a_failed_first
     assert {key: value for key, value in fallback["with"].items() if key != "use_pypi"} == first["with"]
 
 
-@pytest.mark.parametrize("name", ["ci.yml", "python-publish.yml"])
+@pytest.mark.parametrize("name", ["ci.yml"])
 def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
     """Nested reporting receives its own token without inheriting package upload credentials."""
     caller = workflow(name)["jobs"]["tests"]
@@ -175508,14 +176048,17 @@ def test_codecov_does_not_create_extra_required_coverage_statuses() -> None:
 
 
 def test_publication_repeats_validation_and_checks_prod_last() -> None:
-    """A green historical PR cannot replace fresh release validation or the last head check."""
+    """Publication rechecks and rebuilds the exact candidate tree and checks prod last, without rerunning tests.
+
+    Full CI and the release candidate already ran the runtime matrix on that tree, and release-gate refuses any
+    other tree (check_candidate_run.py), so final publication calls no test-runtime.yml (owner, 2026-10-24).
+    """
     document = workflow("python-publish.yml")
     assert set(document["on"]) == {"release", "workflow_dispatch"}
     assert document["concurrency"] == {"group": "pypi-publication", "cancel-in-progress": "false"}
     jobs = document["jobs"]
-    assert jobs["tests"]["uses"] == "./.github/workflows/test-runtime.yml"
-    assert jobs["tests"]["needs"] == "release-gate"
-    required = {"release-gate", "hygiene", "source-assets", "repo-assets", "tests"}
+    assert all(job.get("uses") != "./.github/workflows/test-runtime.yml" for job in jobs.values())
+    required = {"release-gate", "hygiene", "source-assets", "repo-assets"}
     assert set(jobs["release-build"]["needs"]) == required
     publisher = jobs["pypi-publish"]
     assert set(publisher["needs"]) == required | {"release-build"}
@@ -196719,359 +197262,6 @@ def test_clear_all_uses_the_same_reverse_order() -> None:
     assert log == ["second", "first"]
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_reverse_order_regression.py
-================================================================================
-================================================================================
-BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_holder_children.py
-CONTENT SHA256: b9f92e3081ef70170742c91f339fd2a99da4879629ee2c068885ee6b3233d1cb
-SOURCE ENCODING: utf-8
-================================================================================
-"""
-Unit tests of holder-owned many children (EPIC-2026-10-14-slotted_lifetime_ownership_fixes, 0.2.8238).
-
-Scope:
-    `Creations.adopt_children` - the verb an emitted miss calls right after it publishes a slotted holder - and the
-    `HolderDisposalEntry` it writes: the holder, its own disposal list (possibly empty) and the disposal-bearing
-    `many` children it adopted, each with its spell's list. Every reader of that record is exercised through the
-    store surface: whole-store cleanup and reusable clear, whole-target and single-object purge, a `many` purge of
-    the child spell, and extract/restore (the rows an ownership transfer moves).
-"""
-
-from threading import RLock
-from typing import List
-
-import pytest
-
-from melder.aether.conduit.creations.creations import Creations, HolderDisposalEntry, ManyDisposalBucket
-from melder.aether.spellbook.existence.existence import Existence
-
-
-class _Probe:
-    """Disposal probe that records its label in a shared log each time Melder runs its `close`."""
-
-    def __init__(self, label: str, log: List[str]) -> None:
-        """
-        Keep the label and the shared log.
-
-        Args:
-            label: Name written to the log on every close.
-            log: The test's shared, ordered disposal log.
-        """
-        self.label = label
-        self.log = log
-
-    def close(self) -> None:
-        """Record one disposal."""
-        self.log.append(self.label)
-
-
-class _Raising(_Probe):
-    """Probe whose `close` records the call and then raises a ValueError carrying its label."""
-
-    def close(self) -> None:
-        """Record one disposal, then fail."""
-        super().close()
-        raise ValueError(self.label)
-
-
-class _Spell:
-    """Spell stand-in for purge: an id, an Existence and the build lock a `unique` purge takes."""
-
-    def __init__(self, spell_id: str, existence: Existence) -> None:
-        """
-        Keep the id and the Existence.
-
-        Args:
-            spell_id: The spell id the store keys the target by.
-            existence: The target's Existence.
-        """
-        self.spell_id = spell_id
-        self.existence = existence
-        self._lock = RLock()
-
-
-@pytest.fixture
-def store() -> Creations:
-    """A fresh store per test."""
-    return Creations(owner_conduit_id="conduit-1", id="conduit-1")
-
-
-@pytest.fixture
-def log() -> List[str]:
-    """The test's shared disposal log."""
-    return []
-
-
-@pytest.fixture
-def child_methods() -> List[str]:
-    """The child Spell's own method list: one object for every registration of the child key."""
-    return ["close"]
-
-
-@pytest.fixture
-def holder_methods() -> List[str]:
-    """The holder Spell's own method list."""
-    return ["close"]
-
-
-def _publish(store: Creations, holder: object, methods: List[str]) -> None:
-    """
-    Publish a holder the way an emitted miss does: through `add_creation` when it declares disposal methods.
-
-    Args:
-        store: The holder's store.
-        holder: The holder object.
-        methods: Its disposal methods; an empty list publishes without disposal metadata.
-    """
-    if methods:
-        store.add_creation("holder", holder, has_disposal_methods=True, disposal_methods=methods)
-    else:
-        store.add_creation("holder", holder)
-
-
-def test_adoption_moves_the_child_from_its_bucket_into_the_holders_record(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """The child leaves its spell's bucket (dropped when empty) and joins the holder's record with its own list."""
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, holder_methods)
-
-    store.adopt_children("holder", holder, (("child", child),))
-
-    assert "child" not in store._creations and "child" not in store._disposable_creations
-    record = store._disposable_creations["holder"]
-    assert isinstance(record, HolderDisposalEntry)
-    assert record.item is holder and record.methods is holder_methods
-    assert record.children == [(child, child_methods)] and record.children[0][1] is child_methods
-    assert store.get_creation("holder") is holder
-
-
-def test_a_holder_without_disposal_methods_gets_a_record_for_its_children(
-        store: Creations, log: List[str], child_methods: List[str]) -> None:
-    """A holder published without disposal metadata gets a record with no methods of its own."""
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, [])
-    assert "holder" not in store._disposable_creations
-
-    store.adopt_children("holder", holder, (("child", child),))
-
-    record = store._disposable_creations["holder"]
-    assert isinstance(record, HolderDisposalEntry)
-    assert record.methods == [] and record.children == [(child, child_methods)]
-    store.cleanup()
-    assert log == ["child"], "the holder runs no method; its child is still disposed"
-
-
-def test_adoption_takes_only_the_identical_child_and_keeps_the_rest_of_the_bucket(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """Free children registered before and after the holder's child stay in the bucket, which the record aliases."""
-    early, late = _Probe("early", log), _Probe("late", log)
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", early, child_methods)
-    store.register_many("child", child, child_methods)
-    store.register_many("child", late, child_methods)
-    _publish(store, holder, holder_methods)
-
-    store.adopt_children("holder", holder, (("child", child),))
-
-    assert store._creations["child"] == [early, late]
-    bucket_record = store._disposable_creations["child"]
-    assert isinstance(bucket_record, ManyDisposalBucket) and bucket_record.entries is store._creations["child"]
-    assert store._disposable_creations["holder"].children == [(child, child_methods)]
-
-
-def test_a_child_that_is_no_longer_in_its_bucket_is_skipped(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """A purged child and a child its bucket never held are skipped; with no child found the tuple stays."""
-    purged = _Probe("purged", log)
-    other = _Probe("other", log)
-    never = _Probe("never", log)
-    holder = _Probe("holder", log)
-    store.register_many("purged", purged, child_methods)
-    assert store.purge(_Spell("purged", Existence.many)) == 1
-    store.register_many("other", other, child_methods)
-    _publish(store, holder, holder_methods)
-
-    store.adopt_children("holder", holder, (("purged", purged), ("other", never)))
-
-    assert store._disposable_creations["holder"] == (holder, holder_methods)
-    assert store._creations["other"] == [other]
-    assert log == ["purged"]
-
-
-def test_adoption_does_nothing_after_a_whole_store_clear_or_cleanup(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """A clear that swapped the registries after publication, or a cleanup, leaves nothing to adopt and no error."""
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, holder_methods)
-    store.clear_all()
-    assert log == ["holder", "child"]
-
-    store.adopt_children("holder", holder, (("child", child),))
-
-    assert store._creations == {} and store._disposable_creations == {}
-    store.cleanup()
-    store.adopt_children("holder", holder, (("child", child),))
-    assert log == ["holder", "child"]
-
-
-def test_whole_store_disposal_runs_the_holder_then_its_children_newest_first_in_creation_order(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """The record keeps the holder's position: later entries first, then the holder, its children, earlier entries."""
-    early = _Probe("early", log)
-    store.add_creation("early", early, has_disposal_methods=True, disposal_methods=["close"])
-    first, second = _Probe("first", log), _Probe("second", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", first, child_methods)
-    store.register_many("child", second, child_methods)
-    _publish(store, holder, holder_methods)
-    store.adopt_children("holder", holder, (("child", first), ("child", second)))
-    late = _Probe("late", log)
-    store.add_creation("late", late, has_disposal_methods=True, disposal_methods=["close"])
-
-    store.cleanup()
-
-    assert log == ["late", "holder", "second", "first", "early"]
-
-
-def test_clear_all_aggregates_holder_and_child_failures_and_stays_reusable(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """Every method runs; each failure is one chained error, holder first; the store takes new entries after."""
-    child = _Raising("child", log)
-    holder = _Raising("holder", log)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, holder_methods)
-    store.adopt_children("holder", holder, (("child", child),))
-
-    with pytest.raises(ExceptionGroup) as raised:
-        store.clear_all()
-
-    assert log == ["holder", "child"]
-    assert [str(error.__cause__) for error in raised.value.exceptions] == ["holder", "child"]
-    store.add_creation("holder", _Probe("again", log))
-    assert store.get_creation("holder") is not holder
-
-
-@pytest.mark.parametrize("existence", [Existence.unique, Existence.unique_per_conduit])
-def test_purge_of_the_holder_disposes_it_and_then_its_children_and_counts_one(
-        existence: Existence, store: Creations, log: List[str], child_methods: List[str],
-        holder_methods: List[str]) -> None:
-    """A whole-target purge detaches the record with the holder; the count is the holder's own entry."""
-    first, second = _Probe("first", log), _Probe("second", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", first, child_methods)
-    store.register_many("child", second, child_methods)
-    _publish(store, holder, holder_methods)
-    store.adopt_children("holder", holder, (("child", first), ("child", second)))
-
-    assert store.purge(_Spell("holder", existence)) == 1
-
-    assert log == ["holder", "second", "first"]
-    assert store._creations == {} and store._disposable_creations == {}
-
-
-def test_single_object_purge_of_the_holder_takes_its_children(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """Purging the holder by reference disposes it and its child; another reference purges nothing."""
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, holder_methods)
-    store.adopt_children("holder", holder, (("child", child),))
-    spell = _Spell("holder", Existence.unique_per_conduit)
-
-    assert store.purge(spell, purge_all=False, creation=object()) == 0
-    assert store.purge(spell, purge_all=False, creation=holder) == 1
-
-    assert log == ["holder", "child"]
-
-
-def test_a_many_purge_of_the_child_spell_leaves_adopted_children_alone(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """Only the free child is the many spell's own entry; the holder's child stays in the holder's record."""
-    free = _Probe("free", log)
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", free, child_methods)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, holder_methods)
-    store.adopt_children("holder", holder, (("child", child),))
-
-    assert store.purge(_Spell("child", Existence.many)) == 1
-
-    assert log == ["free"]
-    assert store._disposable_creations["holder"].children == [(child, child_methods)]
-
-
-def test_extract_carries_the_children_with_the_holder_and_restore_rebuilds_its_record(
-        store: Creations, log: List[str], child_methods: List[str], holder_methods: List[str]) -> None:
-    """The holder's row lists its children; a restore elsewhere rebuilds the record that disposes all of them."""
-    first, second = _Probe("first", log), _Probe("second", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", first, child_methods)
-    store.register_many("child", second, child_methods)
-    _publish(store, holder, holder_methods)
-    store.adopt_children("holder", holder, (("child", first), ("child", second)))
-
-    rows = store.extract_spell_creations("holder")
-
-    assert rows == [{
-        "scope": "unique",
-        "disposable": True,
-        "stored": holder,
-        "disposal_methods": holder_methods,
-        "children": [
-            {"stored": first, "disposal_methods": child_methods},
-            {"stored": second, "disposal_methods": child_methods},
-        ],
-    }]
-    assert rows[0]["disposal_methods"] is holder_methods
-    assert store._creations == {} and store._disposable_creations == {}
-    target = Creations(owner_conduit_id="conduit-2", id="conduit-2")
-    target.restore_spell_creations("holder", rows)
-    record = target._disposable_creations["holder"]
-    assert isinstance(record, HolderDisposalEntry)
-    assert record.item is holder and record.methods is holder_methods
-    assert record.children == [(first, child_methods), (second, child_methods)]
-    store.cleanup()
-    assert log == []
-    target.cleanup()
-    assert log == ["holder", "second", "first"]
-
-
-def test_extract_of_a_holder_without_methods_is_disposable_with_an_empty_list(
-        store: Creations, log: List[str], child_methods: List[str]) -> None:
-    """The row of a holder that runs no method of its own still carries its child, so the move takes it."""
-    child = _Probe("child", log)
-    holder = _Probe("holder", log)
-    store.register_many("child", child, child_methods)
-    _publish(store, holder, [])
-    store.adopt_children("holder", holder, (("child", child),))
-
-    rows = store.extract_spell_creations("holder")
-
-    assert rows[0]["disposable"] is True and rows[0]["disposal_methods"] == []
-    assert rows[0]["children"] == [{"stored": child, "disposal_methods": child_methods}]
-
-
-def test_a_row_without_children_restores_the_plain_tuple(
-        store: Creations, log: List[str], holder_methods: List[str]) -> None:
-    """Control: rows that carry no children restore exactly as before 0.2.8238."""
-    holder = _Probe("holder", log)
-    _publish(store, holder, holder_methods)
-    rows = store.extract_spell_creations("holder")
-    assert "children" not in rows[0]
-
-    store.restore_spell_creations("holder", rows)
-
-    assert store._disposable_creations["holder"] == (holder, holder_methods)
-================================================================================
-END FILE: tests/unit/melder/aether/conduit/creations/test_creations_holder_children.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_managed_quantities.py
@@ -305396,7 +305586,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py
-CONTENT SHA256: 9c279941fec9834273e272d29ef71b077b5c578eddb7515e6129c65c40a1936b
+CONTENT SHA256: 2e831cbf53f1c6361136b149625dd30ab0d18c8465b08e475444499750063eca
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -305482,7 +305672,6 @@ class RecordingStore:
         self._events: List[Event] = events
         self._creations: Dict[str, Any] = {}
         self._slot_guards: Dict[str, RecordingLock] = {}
-        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> RecordingLock:
         """Return one recording lock per slot, created on first use."""
@@ -305497,11 +305686,6 @@ class RecordingStore:
     def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
         """Record one disposal-bearing many registration (the hot verb emitted plans call)."""
         self._events.append(("register_many", key))
-
-    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
-        """Record one adoption an emitted miss made right after publishing its holder (0.2.8238)."""
-        self._events.append(("adopt_children", holder_key))
-        self.adoptions.append((holder_key, holder, children))
 
 
 class ClusterFacade:
@@ -305755,10 +305939,11 @@ def test_door_held_disposal_bearing_root_still_registers_through_add_creation() 
     assert world.conduit_store._creations["root"] is result
 
 
-def test_door_held_root_adopts_its_many_child_after_publishing_without_a_guard() -> None:
+def test_door_held_root_registers_its_many_child_in_the_innermost_scope_without_a_guard() -> None:
     """
-    The door-held root's miss takes no guard, and its disposal-bearing many child is registered before the root is
-    built and adopted right after the root is published (slotted_lifetime_ownership, 0.2.8238).
+    The door-held root's miss takes no guard and registers its disposal-bearing many child in the meld's innermost
+    scope - the spellspace store when there is one, else the conduit store - before the root is built; nothing ties
+    the child to the root (the owner's decision, 2026-10-24; from 0.2.8238 to 0.2.8265 the miss adopted it).
     """
     events: List[Event] = []
     store = RecordingStore(events)
@@ -305776,18 +305961,22 @@ def test_door_held_root_adopts_its_many_child_after_publishing_without_a_guard()
     )
     graph.cleanup()
     assert "with " not in source.split(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(")[0]
+    assert "adopt_children" not in source
     exec(compile(source, "<test>", "exec"), namespace)
     plan = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
 
     result = plan(SimpleNamespace(_conduit_creations=store, _spellspace_creations=None))
 
-    assert events == [
-        ("build", "d"), ("register_many", "d"), ("build", "root"), ("add_creation", "root"),
-        ("adopt_children", "root"),
-    ]
-    built_child = next(value for value in list(result.args) + list(result.kwargs.values()) if value.name == "d")
-    assert store.adoptions == [("root", result, (("d", built_child),))]
+    assert events == [("build", "d"), ("register_many", "d"), ("build", "root"), ("add_creation", "root")]
+    assert store._creations["root"] is result
 
+    conduit_events: List[Event] = []
+    space_events: List[Event] = []
+    conduit_store, space_store = RecordingStore(conduit_events), RecordingStore(space_events)
+    again = plan(SimpleNamespace(_conduit_creations=conduit_store, _spellspace_creations=space_store))
+    assert space_events == [("register_many", "d")], "under a spellspace the child registers in the spellspace"
+    assert conduit_events == [("add_creation", "root")], "the root's store records only the root"
+    assert conduit_store._creations["root"] is again
 
 def test_eligible_routes_are_exactly_the_per_scope_ones() -> None:
     """Only the two per-scope routes, each with its own existence, are door-held; the map is the whole rule."""
@@ -305807,7 +305996,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_pla
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py
-CONTENT SHA256: 14bfce9dddebc5c352b6bb0342dbcd0d31d9da2e24dc73877f244d5a7897b9a2
+CONTENT SHA256: 8ebc7e22a23092896e6ae9a35085992ff694b52d91c056379a9ac62fa063d1fa
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit contracts for key-set plan lowering and the override runtime (override design S3a)."""
@@ -305852,7 +306041,6 @@ class FakeStore:
         self._creations: Dict[str, Any] = {}
         self._slot_guards: Dict[str, threading.RLock] = {}
         self.disposal_adds: List[Tuple[str, Any]] = []
-        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> threading.RLock:
         """Return one RLock per slot."""
@@ -305872,10 +306060,6 @@ class FakeStore:
     def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
         """Record one disposal-bearing many instance registered through the hot verb (2026-10-01)."""
         self.disposal_adds.append((key, item))
-
-    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
-        """Record one adoption an emitted miss made right after publishing its holder (0.2.8238)."""
-        self.adoptions.append((holder_key, holder, children))
 
 
 def _factory(name: str, built: Counter) -> Callable[..., Any]:
@@ -306425,15 +306609,14 @@ def test_generic_step_inside_a_miss_reads_inner_and_outer_values() -> None:
     assert built == Counter({"y": 1, "z": 1, "x": 1, "s": 1, "root": 2})
 
 
-def test_disposal_bearing_many_inside_a_miss_registers_in_the_store_its_holder_publishes_to() -> None:
+def test_disposal_bearing_many_inside_a_miss_registers_in_the_melds_innermost_scope() -> None:
     """
-    A disposal-bearing many built inside S's miss is recorded in S's store, never in a spellspace.
+    A disposal-bearing many built inside S's miss is recorded in the meld's innermost scope - the spellspace store
+    under a SpellSpace meld, else the conduit store - exactly as a many root is, and nothing ties it to S.
 
-    S is `unique_per_conduit`, so the child belongs to the conduit store S is published to, even when the plan
-    runs under a SpellSpace meld (many_child_follows_holder, 2026-10-14). Until 0.2.8235 the child went to the
-    meld's innermost scope - the spellspace store here - whose exit disposed it while S kept it. Since 0.2.8238 S's
-    miss also adopts the child into S's disposal record right after publishing S, once per publication: a warm meld
-    adopts nothing.
+    S is `unique_per_conduit`, published to the conduit store. The owner's decision (2026-10-24): a `many` belongs
+    to the scope that built it. From 0.2.8235 to 0.2.8265 the child went to S's store instead and, from 0.2.8238,
+    S's miss adopted it into S's disposal record.
     """
     built: Counter = Counter()
     spells = {
@@ -306455,15 +306638,11 @@ def test_disposal_bearing_many_inside_a_miss_registers_in_the_store_its_holder_p
     first = plan(first_meld, {})
     plan(first_meld, {})
     second = plan(SimpleNamespace(_spellspace_creations=space_store, _conduit_creations=second_store), {})
-    assert first_store.disposal_adds == [("d", first.args[0].args[0])]
-    assert second_store.disposal_adds == [("d", second.args[0].args[0])]
-    assert space_store.disposal_adds == []
-    held_first, held_second = first.args[0], second.args[0]
-    assert first_store.adoptions == [("s", held_first, (("d", held_first.args[0]),))]
-    assert second_store.adoptions == [("s", held_second, (("d", held_second.args[0]),))]
-    assert space_store.adoptions == []
+    assert first_store.disposal_adds == [("d", first.args[0].args[0])], "without a spellspace the conduit is innermost"
+    assert space_store.disposal_adds == [("d", second.args[0].args[0])], "the spellspace is the innermost scope"
+    assert second_store.disposal_adds == [], "S's own store records nothing for S's child"
+    assert second_store._creations["s"] is second.args[0], "S itself is published to the conduit store"
     assert built == Counter({"d": 2, "s": 2, "root": 3})
-
 
 def test_conflict_guard_accepts_identity_and_equal_scalars_only() -> None:
     """E1: same object or equal plain scalars pass; anything else raises the wrapped error."""
@@ -307213,12 +307392,12 @@ def test_per_conduit_site_read_is_unchanged_by_the_owner_store_constant() -> Non
     assert "c1" not in namespace
 
 
-def _adoption_world() -> Tuple[Counter, Tuple[SitePlanStep, ...], Dict[str, Any]]:
+def _miss_children_world() -> Tuple[Counter, Tuple[SitePlanStep, ...], Dict[str, Any]]:
     """
     Root(s: S(a: D1, b: N, c: D2, t: T), limit=1) with S and T `unique_per_conduit`, D1 and D2 disposal-bearing.
 
     Step indexes: D1 0, N 1, D2 2, T 3, S 4, root 5. N is a `many` without disposal methods and T a shared site
-    nested in S's miss; neither is adopted.
+    nested in S's miss that builds no child; neither registers anywhere.
     """
     built: Counter = Counter()
     shared = Existence.unique_per_conduit
@@ -307253,29 +307432,32 @@ def _function_source(source: str, name: str) -> str:
 
 
 @pytest.mark.parametrize("keys", [(), ("limit",)], ids=["normal-key-set", "override-key-set"])
-def test_a_miss_adopts_exactly_the_disposal_bearing_children_it_registered(keys: Tuple[str, ...]) -> None:
+def test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope(keys: Tuple[str, ...]) -> None:
     """
-    S's miss adopts D1 and D2 - in step order, after publishing S and before returning it - and nothing else: N has
-    no disposal methods, T adopts nothing of its own, and the plan body never adopts (0.2.8238). An override key set
-    that supplies none of S's parameters emits the same adoption.
+    S's miss selects the meld's innermost scope once, before its children, and registers D1 and D2 through it; N has
+    no disposal methods and T's miss builds no child, so T selects nothing. No emitted function adopts children or
+    registers a child in a holder's store (the owner's decision, 2026-10-24). An override key set that supplies none
+    of S's parameters emits the same miss.
     """
-    _built, steps, topologies = _adoption_world()
+    _built, steps, topologies = _miss_children_world()
     source, _namespace = _shared_source(steps, topologies, keys)
 
-    adoption_lines = [line.strip() for line in source.splitlines() if "adopt_children" in line]
-    assert adoption_lines == ["c4.adopt_children(sid4, v4, ((sid0, v0), (sid2, v2)))"]
+    assert "adopt_children" not in source
     miss = _function_source(source, "_miss4")
-    assert miss.index("c4._creations[sid4] = v4") < miss.index("c4.adopt_children(") < miss.index("return v4")
-    assert "adopt_children" not in _function_source(source, "_miss3")
-    assert "adopt_children" not in _function_source(source, SitePlanLowering.PLAN_FUNCTION_NAME)
+    assert miss.count("many_store = meld._spellspace_creations") == 1
+    registrations = [line.strip() for line in miss.splitlines() if "register_many" in line]
+    assert registrations == ["many_store.register_many(sid0, v0, dm0)", "many_store.register_many(sid2, v2, dm2)"]
+    assert miss.index("many_store = meld._spellspace_creations") < miss.index("many_store.register_many(")
+    assert "many_store" not in _function_source(source, "_miss3")
+    assert "many_store" not in _function_source(source, SitePlanLowering.PLAN_FUNCTION_NAME)
 
 
-def test_a_miss_hands_its_built_children_to_the_store_once_per_publication() -> None:
-    """Run the plan: the store receives S and its two disposal-bearing children once; a warm meld adopts nothing."""
-    built, steps, topologies = _adoption_world()
+def test_a_miss_registers_its_built_children_in_the_innermost_scope_once_per_build() -> None:
+    """Run the plan: the innermost scope receives S's two disposal-bearing children once; a warm meld adds none."""
+    built, steps, topologies = _miss_children_world()
     plan = _compile_plan(steps, topologies, ("root", 0))
     store = FakeStore()
-    meld = SimpleNamespace(_conduit_creations=store)
+    meld = SimpleNamespace(_spellspace_creations=None, _conduit_creations=store)
 
     first = plan(meld, {})
     plan(meld, {})
@@ -307283,14 +307465,14 @@ def test_a_miss_hands_its_built_children_to_the_store_once_per_publication() -> 
     held = first.args[0]
     values = list(held.args) + list(held.kwargs.values())
     children = {value.name: value for value in values}
-    assert store.adoptions == [("s", held, (("d1", children["d1"]), ("d2", children["d2"])))]
+    assert store.disposal_adds == [("d1", children["d1"]), ("d2", children["d2"])]
     assert built == Counter({"d1": 1, "n": 1, "d2": 1, "t": 1, "s": 1, "root": 2})
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py
-CONTENT SHA256: 5256cca8ef39c99d0a9a0881995fb44aef44f4c316730eafe2b6d8ea03ec277d
+CONTENT SHA256: 5e079727373140305c75dd3866fd85bbf985da5e542415d71fcf98d662035520
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit contracts for the managed site of key-set plans (managed_spell_quantity S5, 2026-10-15).
@@ -307341,7 +307523,6 @@ class Store:
         self._slot_guards: Dict[str, threading.RLock] = {}
         self._managed_quantities: Dict[str, ManagedSpellQuantity] = {}
         self.registered: List[Tuple[str, Any]] = []
-        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> threading.RLock:
         """Return one RLock per slot."""
@@ -307355,10 +307536,6 @@ class Store:
     def register_many(self, key: str, item: Any, disposal_methods: List[str]) -> None:
         """Record one disposal-bearing many instance."""
         self.registered.append((key, item))
-
-    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
-        """Record one adoption an emitted shared miss made."""
-        self.adoptions.append((holder_key, holder, children))
 
     def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
         """Return the pool held under one spell_id, as `Creations.get_managed_quantity` does."""
@@ -341984,7 +342161,7 @@ END FILE: tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_cache_runtime_verification.py
-CONTENT SHA256: ea793be8bcb15592466c3d05697b5997a94963ffa95657e8387c4d207979180c
+CONTENT SHA256: 1ffadbfcb403a2253d8f4ac6e0eacf0d3bd290efa2dacda980ac0416e9abdc78
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -342001,6 +342178,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
     StructuralSnapshot,
 )
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
@@ -342012,6 +342190,8 @@ class _StubCachingSystem:
         self._payloads: Dict[str, Any] = dict(payloads or {})
         self.emit_calls = 0
         self.fail_emit = False
+        # A save the operating system refuses: `CachingSystem.emit()` returns False instead of raising.
+        self.refuse_emit = False
         # Mirror the envelope's world stamp: "" until a staging records one.
         self.world_stamp = ""
 
@@ -342037,10 +342217,12 @@ class _StubCachingSystem:
         self.world_stamp = world_stamp
         return True
 
-    def emit(self) -> None:
+    def emit(self) -> bool:
+        """Mirror `CachingSystem.emit()`: True when written, False when the save is refused."""
         self.emit_calls += 1
         if self.fail_emit:
             raise RuntimeError("emit failed")
+        return not self.refuse_emit
 
 
 class _RecordingSpell:
@@ -342296,6 +342478,58 @@ def test_emit_cache_file_if_required_restores_emit_required_on_failure() -> None
     assert spellbook._cache_emit_required is True
 
 
+def test_emit_cache_file_if_required_returns_false_and_keeps_the_flag_cleared_when_the_save_is_refused() -> None:
+    """
+    A save the operating system refuses returns False and leaves the emit-required flag cleared.
+
+    Contract (TASK-2026-10-24-cache_file_write_failure_fails_meld, 0.2.8266):
+        `CachingSystem.emit()` reports a refused save as False; the Book passes it on and does not restore the
+        flag, so the meld that triggered the save returns its object and no later meld retries it. Until 0.2.8266
+        the refusal raised out of the meld and the flag came back set.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+
+    result = Spellbook._emit_cache_file_if_required(spellbook)
+
+    assert result is False
+    assert caching_system.emit_calls == 1
+    assert spellbook._cache_emit_required is False
+
+
+def test_emit_cache_file_if_required_does_not_retry_a_refused_save_until_cache_is_staged_again() -> None:
+    """
+    After a refused save the next operation boundary does not save again until new cache is staged.
+
+    Contract:
+        No retry storm: a lasting refusal (a read-only folder) costs one save per staging, not one per meld.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    Spellbook._emit_cache_file_if_required(spellbook)
+
+    second = Spellbook._emit_cache_file_if_required(spellbook)
+    spellbook._cache_emit_required = True
+    caching_system.refuse_emit = False
+    after_new_staging = Spellbook._emit_cache_file_if_required(spellbook)
+
+    assert second is False
+    assert after_new_staging is True
+    assert caching_system.emit_calls == 2
+
+
 @pytest.mark.parametrize(
     ("caching_enabled", "emit_result", "expected_emit_calls"),
     [
@@ -342490,6 +342724,65 @@ def test_emit_spell_cache_file_raises_for_foreign_spellbook() -> None:
         Spellbook._emit_cache_file(spellbook, spell)
 
 
+def test_emit_spell_cache_file_returns_true_when_the_save_is_written() -> None:
+    """Verify the explicit file emit reports a written save as True."""
+    caching_system = _StubCachingSystem()
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    spell = _RecordingSpell()
+    spell._spellbook = spellbook
+
+    assert Spellbook._emit_cache_file(spellbook, spell) is True
+    assert caching_system.emit_calls == 1
+
+
+def test_emit_spell_cache_file_returns_false_when_the_save_is_refused() -> None:
+    """
+    The explicit file emit reports a refused save as False instead of raising (D2, 0.2.8266).
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    spell = _RecordingSpell()
+    spell._spellbook = spellbook
+
+    assert Spellbook._emit_cache_file(spellbook, spell) is False
+    assert caching_system.emit_calls == 1
+    assert spellbook._cache_emit_required is False
+
+
+def test_spell_emit_cache_file_returns_false_when_the_book_save_is_refused() -> None:
+    """
+    `Spell.emit_cache_file()`, the public explicit save, returns False for a refused save (D2, 0.2.8266).
+
+    Contract:
+        The Spell delegates to its owning Spellbook and returns what the Book returned; until 0.2.8266 a save the
+        operating system refused raised its OSError out of this call.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    spell = SimpleNamespace(check_cleaned=lambda: None, _caching_enabled=True, _spellbook=spellbook)
+    spellbook._emit_cache_file = lambda requesting_spell: Spellbook._emit_cache_file(spellbook, requesting_spell)
+
+    assert Spell.emit_cache_file(spell) is False
+    assert caching_system.emit_calls == 1
+
+
 def test_emit_conduit_cache_file_at_conjure_end_noops_when_disabled() -> None:
     """Verify conjure-end emit does nothing when frame caching is disabled."""
     spellbook = _make_spellbook_stub(live_spell_ids=(), caching_enabled=False)
@@ -342547,6 +342840,34 @@ def test_emit_conduit_cache_file_at_conjure_end_swallows_emit_failure() -> None:
     )
 
     assert spellbook._cache_emit_required is True
+
+
+def test_emit_conduit_cache_file_at_conjure_end_leaves_the_flag_cleared_when_the_save_is_refused() -> None:
+    """
+    A refused end-of-conjure save is no error: conjure logs nothing itself and the flag stays cleared.
+
+    Contract (0.2.8266):
+        The cache utility logs the refusal and returns False, so conjure's own error log stays silent and the first
+        meld does not retry the save; the staged payloads are saved at the next staging.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    errors: list[tuple[Any, ...]] = []
+    spellbook._logger = SimpleNamespace(error=lambda *args, **kwargs: errors.append(args))
+    spellbook._cache_emit_required = True
+
+    SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
+        spellbook=spellbook,
+    )
+
+    assert caching_system.emit_calls == 1
+    assert spellbook._cache_emit_required is False
+    assert errors == []
 
 
 @pytest.mark.parametrize(
@@ -370297,6 +370618,499 @@ def test_caching_system_accepts_current_bundle_without_world_stamp_as_unstamped(
         caching_system.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/utilities/test_caching_system.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/utilities/test_caching_system_refused_save.py
+CONTENT SHA256: 5a59fa24b5d3112f5c100cdbb8d299ee32e368aaf697cf8cd8906a4b85bf00af
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Regression tests: a refused creation-cache save is reported, not raised, and leaves nothing behind.
+
+The defect (TASK-2026-10-24-cache_file_write_failure_fails_meld; the owner's Windows run, chat 2026-10-24):
+    `CachingSystem.emit()` writes the envelope to `<conduit>.meldercache.tmp` and renames it onto
+    `<conduit>.meldercache` with `Path.replace`. When the rename is refused - Windows' [WinError 5] while another
+    handle holds the bundle - the temp file stays beside the bundle: the owner's cache folder held
+    `melderops.meldercache.tmp` after his failure, and the ticket's probe left one on 0.2.8265 (case A).
+
+What these tests assert:
+    The first test, written before the fix and red on 0.2.8265: after a save whose rename is refused every time,
+    the frame folder holds the bundle and nothing else, and the bundle saved before still loads with exactly what it
+    held (emit's atomic replace: a refused save never touches the bundle). It does not assert how `emit()` reports
+    the refusal. The others pin the fix (0.2.8266, the owner's D1-D4): `emit()` returns True for a written save and
+    False for a refused one, never raising OSError; a refused save keeps its payloads for the next save; the
+    Windows-only rename retry (RETRY_REFUSED_RENAME, set explicitly here so every platform runs both ways) tries
+    REPLACE_ATTEMPTS times; the first refused save of a bundle logs one WARNING; each writer saves through its own
+    temp file; a refused temp write or folder leaves nothing; a temp file that cannot be removed is logged. The
+    meld doors' side is
+    `tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py`.
+
+The refusal is injected at `os.replace`, which `Path.replace` calls, for `.meldercache` destinations under the test's
+own cache root only, so it behaves alike on every platform CI runs.
+"""
+
+import contextlib
+import errno
+import logging
+import os
+import threading
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any, Optional
+
+import pytest
+
+from melder.utilities.caching_system.caching_system import CachingSystem
+
+
+class _RefusedRenames:
+    """
+    Refuses renames onto a `.meldercache` bundle under one folder, as Windows refuses a bundle in use.
+
+    Contract:
+        Wraps `os.replace` (which `Path.replace` calls) through `monkeypatch`, which restores it after the test. A
+        rename whose destination is a `.meldercache` file under `folder` raises PermissionError (errno EACCES;
+        Windows reports [WinError 5]) - every such rename, or only the first `times`; every other rename passes
+        through unchanged. `refusals` counts the refusals and `sources` records the source of every rename onto a
+        bundle under the folder, refused or not.
+    """
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch, folder: Path, times: Optional[int] = None) -> None:
+        """
+        Install the wrapper.
+
+        Args:
+            monkeypatch: The test's monkeypatch fixture; it restores `os.replace` at teardown.
+            folder: Resolved cache root; only renames onto `.meldercache` files under it are refused.
+            times: How many renames to refuse before allowing the rest; None refuses every one.
+        """
+        self.refusals: int = 0
+        self.sources: list[str] = []
+        real_replace: Callable[..., None] = os.replace
+
+        def replace(source: Any, target: Any, *args: Any, **kwargs: Any) -> None:
+            """Refuse a rename onto a bundle under the folder while refusals remain; pass any other through."""
+            destination = Path(os.fspath(target)).resolve()
+            if ".meldercache" in destination.name and destination.is_relative_to(folder):
+                self.sources.append(os.fspath(source))
+            if (".meldercache" in destination.name and destination.is_relative_to(folder)
+                    and (times is None or self.refusals < times)):
+                self.refusals += 1
+                raise PermissionError(
+                    errno.EACCES,
+                    "Access is denied (injected; Windows reports [WinError 5])",
+                    os.fspath(source),
+                    None,
+                    os.fspath(target),
+                )
+            real_replace(source, target, *args, **kwargs)
+
+        monkeypatch.setattr(os, "replace", replace)
+
+
+def _make_cache_utility(cache_root_path: Path) -> CachingSystem:
+    """
+    Build one cache utility over the test's cache root.
+
+    Args:
+        cache_root_path: The test's isolated cache root.
+
+    Returns:
+        CachingSystem: A utility for frame "frame-a", conduit "root".
+    """
+    return CachingSystem(
+        frame_name="frame-a",
+        conduit_name="root",
+        cache_root_path=cache_root_path,
+        logger=logging.getLogger("caching-system-refused-save-test"),
+    )
+
+
+def test_refused_save_leaves_no_temp_file_behind(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    A save whose rename is refused leaves no temp file, and the bundle saved before it still loads unchanged.
+
+    Contract:
+        One payload is saved; a second is staged and saved while every rename onto the bundle is refused. The
+        frame folder then holds the bundle and nothing else, and a fresh utility reads the first payload and not
+        the second. On 0.2.8265 `root.meldercache.tmp` stayed in the folder.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores `os.replace` after the test.
+    """
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "saved"})
+        caching_system.emit()
+        caching_system.upsert_spell_payload("b" * 64, {"resolve_route_key": "refused"})
+        renames = _RefusedRenames(monkeypatch, tmp_path.resolve())
+        # Whether a refused save raises is the fix's choice; this test pins only what the save leaves on disk.
+        with contextlib.suppress(OSError):
+            caching_system.emit()
+        bundle_path = caching_system.bundle_path
+        left_in_folder = sorted(path.name for path in bundle_path.parent.iterdir())
+    finally:
+        caching_system.cleanup()
+
+    assert renames.refusals >= 1
+    assert left_in_folder == [bundle_path.name]
+    reloaded = _make_cache_utility(tmp_path)
+    try:
+        assert reloaded.get_spell_payload("a" * 64) == {"resolve_route_key": "saved"}
+        assert reloaded.get_spell_payload("b" * 64) is None
+    finally:
+        reloaded.cleanup()
+
+
+def _refuse_temp_writes(monkeypatch: pytest.MonkeyPatch, folder: Path) -> None:
+    """
+    Refuse every write of a `.tmp` file under `folder`, as a read-only or full folder refuses it.
+
+    Args:
+        monkeypatch: Restores `Path.write_bytes` after the test.
+        folder: Resolved cache root; only temp files under it are refused.
+    """
+    real_write_bytes: Callable[..., int] = Path.write_bytes
+
+    def write_bytes(path: Path, data: Any) -> int:
+        """Refuse a temp-file write under the folder; pass any other through."""
+        if path.name.endswith(".tmp") and path.resolve().is_relative_to(folder):
+            raise PermissionError(errno.EACCES, "Permission denied (injected)", os.fspath(path))
+        return real_write_bytes(path, data)
+
+    monkeypatch.setattr(Path, "write_bytes", write_bytes)
+
+
+def _bundle_folder_listing(caching_system: CachingSystem) -> list[str]:
+    """
+    Return the sorted names in the bundle's frame folder, or [] when the folder does not exist.
+
+    Args:
+        caching_system: The utility whose frame folder to list.
+
+    Returns:
+        list[str]: Sorted file names.
+    """
+    folder = caching_system.bundle_path.parent
+    if not folder.exists():
+        return []
+    return sorted(path.name for path in folder.iterdir())
+
+
+def test_save_returns_true_and_leaves_only_the_bundle(tmp_path: Path) -> None:
+    """
+    A save that is not refused returns True and leaves the bundle alone in its folder.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+    """
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "saved"})
+        saved = caching_system.emit()
+        bundle_name = caching_system.bundle_path.name
+        listing = _bundle_folder_listing(caching_system)
+    finally:
+        caching_system.cleanup()
+
+    assert saved is True
+    assert listing == [bundle_name]
+
+
+def test_refused_save_returns_false_and_the_next_save_writes_what_it_kept(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A refused save returns False and keeps its payloads; the next save writes them with any staged since.
+
+    Contract (0.2.8266): `emit()` reports the refusal instead of raising, and the in-memory cache it could not
+    write stays staged, so a later save loses nothing.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename and the retry switch.
+    """
+    monkeypatch.setattr(CachingSystem, "RETRY_REFUSED_RENAME", False)
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "kept"})
+        renames = _RefusedRenames(monkeypatch, tmp_path.resolve(), times=1)
+        refused = caching_system.emit()
+        caching_system.upsert_spell_payload("b" * 64, {"resolve_route_key": "later"})
+        saved = caching_system.emit()
+    finally:
+        caching_system.cleanup()
+
+    assert renames.refusals == 1
+    assert refused is False
+    assert saved is True
+    reloaded = _make_cache_utility(tmp_path)
+    try:
+        assert reloaded.get_spell_payload("a" * 64) == {"resolve_route_key": "kept"}
+        assert reloaded.get_spell_payload("b" * 64) == {"resolve_route_key": "later"}
+    finally:
+        reloaded.cleanup()
+
+
+def test_refused_rename_is_retried_until_allowed_when_retry_is_on(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    With the Windows retry on, a rename refused twice and then allowed saves the bundle.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename, the retry switch and the delay.
+    """
+    monkeypatch.setattr(CachingSystem, "RETRY_REFUSED_RENAME", True)
+    monkeypatch.setattr(CachingSystem, "REPLACE_RETRY_DELAY_SECONDS", 0.0)
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "retried"})
+        renames = _RefusedRenames(monkeypatch, tmp_path.resolve(), times=2)
+        saved = caching_system.emit()
+        listing = _bundle_folder_listing(caching_system)
+        bundle_name = caching_system.bundle_path.name
+    finally:
+        caching_system.cleanup()
+
+    assert saved is True
+    assert renames.refusals == 2
+    assert len(renames.sources) == 3
+    assert listing == [bundle_name]
+
+
+def test_refused_rename_is_not_retried_when_retry_is_off(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    With the retry off (every platform but Windows), the first refused rename makes the save refused.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename and the retry switch.
+    """
+    monkeypatch.setattr(CachingSystem, "RETRY_REFUSED_RENAME", False)
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "refused"})
+        renames = _RefusedRenames(monkeypatch, tmp_path.resolve())
+        saved = caching_system.emit()
+    finally:
+        caching_system.cleanup()
+
+    assert saved is False
+    assert renames.refusals == 1
+
+
+def test_lasting_refusal_with_retry_on_gives_up_after_the_attempt_budget(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    With the retry on, a rename refused on every attempt is tried REPLACE_ATTEMPTS times, then the save is refused.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename, the retry switch and the delay.
+    """
+    monkeypatch.setattr(CachingSystem, "RETRY_REFUSED_RENAME", True)
+    monkeypatch.setattr(CachingSystem, "REPLACE_RETRY_DELAY_SECONDS", 0.0)
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "refused"})
+        renames = _RefusedRenames(monkeypatch, tmp_path.resolve())
+        saved = caching_system.emit()
+        listing = _bundle_folder_listing(caching_system)
+    finally:
+        caching_system.cleanup()
+
+    assert saved is False
+    assert renames.refusals == CachingSystem.REPLACE_ATTEMPTS
+    assert listing == []
+
+
+def test_only_the_first_refused_save_of_a_bundle_logs_a_warning(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+) -> None:
+    """
+    The first refused save of a bundle logs one WARNING naming the bundle and the remedy; later ones log below it.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename and the retry switch.
+        caplog: Captures the cache utility's log records.
+    """
+    monkeypatch.setattr(CachingSystem, "RETRY_REFUSED_RENAME", False)
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "refused"})
+        _RefusedRenames(monkeypatch, tmp_path.resolve())
+        first = caching_system.emit()
+        second = caching_system.emit()
+        bundle_path = caching_system.bundle_path
+    finally:
+        caching_system.cleanup()
+
+    warnings = [
+        record for record in caplog.records
+        if record.name == "caching-system-refused-save-test" and record.levelno == logging.WARNING
+    ]
+    assert first is False
+    assert second is False
+    assert len(warnings) == 1
+    assert str(bundle_path) in warnings[0].getMessage()
+    assert "with_system_caching_enabled(False)" in warnings[0].getMessage()
+
+
+def test_each_writer_saves_through_its_own_temp_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    The temp file carries the process id and the thread id, so two threads (or processes) never share one.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename.
+    """
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "saved"})
+        renames = _RefusedRenames(monkeypatch, tmp_path.resolve(), times=0)
+        caching_system.emit()
+        other_thread = threading.Thread(target=caching_system.emit)
+        other_thread.start()
+        other_thread.join()
+        bundle_name = caching_system.bundle_path.name
+        listing = _bundle_folder_listing(caching_system)
+    finally:
+        caching_system.cleanup()
+
+    this_thread_name = f"{bundle_name}.{os.getpid()}.{threading.get_ident()}.tmp"
+    other_thread_name = Path(renames.sources[1]).name
+    assert renames.refusals == 0
+    assert Path(renames.sources[0]).name == this_thread_name
+    assert other_thread_name != this_thread_name
+    assert other_thread_name.startswith(f"{bundle_name}.{os.getpid()}.")
+    assert other_thread_name.endswith(".tmp")
+    assert listing == [bundle_name]
+
+
+def test_refused_temp_write_returns_false_and_leaves_the_bundle_as_it_was(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A temp write the folder refuses makes the save refused; the bundle saved before stays as it was.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores `Path.write_bytes`.
+    """
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "saved"})
+        saved = caching_system.emit()
+        caching_system.upsert_spell_payload("b" * 64, {"resolve_route_key": "refused"})
+        _refuse_temp_writes(monkeypatch, tmp_path.resolve())
+        refused = caching_system.emit()
+        bundle_name = caching_system.bundle_path.name
+        listing = _bundle_folder_listing(caching_system)
+    finally:
+        caching_system.cleanup()
+
+    assert saved is True
+    assert refused is False
+    assert listing == [bundle_name]
+    reloaded = _make_cache_utility(tmp_path)
+    try:
+        assert reloaded.get_spell_payload("a" * 64) == {"resolve_route_key": "saved"}
+        assert reloaded.get_spell_payload("b" * 64) is None
+    finally:
+        reloaded.cleanup()
+
+
+def test_refused_cache_folder_returns_false_and_creates_nothing(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A frame folder that cannot be created makes the save refused, and no file is written.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores `Path.mkdir`.
+    """
+    folder = tmp_path.resolve()
+    real_mkdir: Callable[..., None] = Path.mkdir
+
+    def mkdir(path: Path, *args: Any, **kwargs: Any) -> None:
+        """Refuse creating a folder under the cache root; pass any other through."""
+        if path.resolve().is_relative_to(folder):
+            raise PermissionError(errno.EACCES, "Permission denied (injected)", os.fspath(path))
+        real_mkdir(path, *args, **kwargs)
+
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "refused"})
+        monkeypatch.setattr(Path, "mkdir", mkdir)
+        refused = caching_system.emit()
+        frame_folder = caching_system.bundle_path.parent
+    finally:
+        caching_system.cleanup()
+
+    assert refused is False
+    assert not frame_folder.exists()
+
+
+def test_temp_file_that_cannot_be_removed_is_logged_not_raised(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+) -> None:
+    """
+    A refused save whose temp file cannot be removed still returns False and logs the leftover file.
+
+    Args:
+        tmp_path: The test's isolated cache root.
+        monkeypatch: Restores the patched rename, `Path.unlink` and the retry switch.
+        caplog: Captures the cache utility's log records.
+    """
+    monkeypatch.setattr(CachingSystem, "RETRY_REFUSED_RENAME", False)
+    folder = tmp_path.resolve()
+    real_unlink: Callable[..., None] = Path.unlink
+
+    def unlink(path: Path, missing_ok: bool = False) -> None:
+        """Refuse removing a temp file under the cache root; pass any other through."""
+        if path.name.endswith(".tmp") and path.resolve().is_relative_to(folder):
+            raise PermissionError(errno.EACCES, "Permission denied (injected)", os.fspath(path))
+        real_unlink(path, missing_ok=missing_ok)
+
+    caching_system = _make_cache_utility(tmp_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"resolve_route_key": "refused"})
+        _RefusedRenames(monkeypatch, folder)
+        monkeypatch.setattr(Path, "unlink", unlink)
+        refused = caching_system.emit()
+        temp_name = f"{caching_system.bundle_path.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+        listing = _bundle_folder_listing(caching_system)
+    finally:
+        caching_system.cleanup()
+
+    leftover_messages = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.WARNING and "Could not remove the temp cache file" in record.getMessage()
+    ]
+    assert refused is False
+    assert listing == [temp_name]
+    assert len(leftover_messages) == 1
+    assert temp_name in leftover_messages[0]
+================================================================================
+END FILE: tests/unit/melder/utilities/test_caching_system_refused_save.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/test_protocol_crafter.py

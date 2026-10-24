@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 902c86c8e2b6d3721606f9055d0118fd4b3dc11ec2751ee52d28fbe88db84845
+SOURCE FINGERPRINT: 7b35107668ee8bf82a0702fd365d7b2ed04fe2117c9f8dc532d62aa60ef80332
 FILE COUNT: 585
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: ba41b2b7a30a68942c459d80a04f1130768dee4788ebc8b4afc296687289af2c
+CONTENT SHA256: fb7fbfbd7be2f9eeadc496cdc5b51e37ed6f8b20e02492d0e2fe086264e70956
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8265"
+__version__ = "0.2.8266"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -44024,7 +44024,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 7cfae3cd4b07d97ac10b97d22076366ff18b13711a7e9b130df80bacb66ab400
+CONTENT SHA256: dcff699810f9d5a557a0a23b7c769b56d2bdffac561cfbb55f8a00cbac4d8eb0
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -48351,10 +48351,12 @@ class Conduit(Cleanable):
                 store holds for every member of the spell's index move into the
                 target's store with the spell. A `unique` stays one object:
                 whatever already holds it keeps the instance the target now
-                serves, and the `many` children recorded with a moved holder
-                move with it. A moved entry replaces whatever the target's store
-                already holds under that spell id; the replaced instances are
-                not disposed.
+                serves. The `many` objects a moved holder was built with do not
+                move: they stay recorded in the store that built them, which
+                disposes them when it ends (the owner's decision, 2026-10-24;
+                from 0.2.8238 to 0.2.8265 they moved with the holder). A moved
+                entry replaces whatever the target's store already holds under
+                that spell id; the replaced instances are not disposed.
                 False: nothing moves. The active member's instances are taken
                 out of this conduit's store and kept only until the transfer
                 has finished (for its rollback); they are neither moved nor
@@ -59096,7 +59098,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/policies/policies.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
-CONTENT SHA256: 7b58a3933b6dccc1cb6a2e5f620647efaaa15fbc89655c50f284916a5270a66c
+CONTENT SHA256: c2c3fe835b2821e2c4cdfded2cdac43364456f2637b916528e6b89a8f584c60d
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -60662,8 +60664,10 @@ class TransferOfOwnership(Cleanable):
         0.2.8239). Instead of leaving the existing instances behind and having
         the new owner build its own, it extracts the index members' creation payload
         from the source and restores that payload into the target conduit's
-        `Creations` store, so a `unique` stays one object and a holder's row
-        carries the `many` children recorded with it (0.2.8238). The restore
+        `Creations` store, so a `unique` stays one object. A holder's row
+        carries the holder alone: the `many` objects it was built with stay
+        recorded in the store that built them (the owner's decision,
+        2026-10-24; from 0.2.8238 to 0.2.8265 the row carried them). The restore
         replaces whatever the target store already holds under a member id;
         the replaced instances are not disposed. This applies only to
         conduit-owned creation state; spellspace-local request objects are
@@ -61778,7 +61782,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: e030e3c34c2ae9323ec8ec26256e2cb4ceb3323062f027d4c0bafb61970a9275
+CONTENT SHA256: f09244c389015e64f400f0d44dbb8fa8a4885832cb51cfb18dff09e4ff69e31e
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -61835,69 +61839,8 @@ class ManyDisposalBucket:
         self.methods = methods
 
 
-class HolderDisposalEntry:
-    """
-    Cleanup-only record of one slotted holder and the `many` children built for it.
-
-    Purpose:
-        Keep a holder's disposal-bearing `many` children with the holder
-        (slotted_lifetime_ownership, 0.2.8238). Since 0.2.8235 an emitted miss
-        registers each child in the holder's store before it builds the
-        holder; once the holder is published, the miss moves those children
-        out of their spells' `many` buckets into this record
-        (`Creations.adopt_children`). Every store verb keyed by the holder -
-        purge, extract/restore for an ownership transfer, whole-store disposal
-        - then reaches the children with the holder, through one dict read.
-
-    Contract:
-        - `item` is the holder: the object `_creations` holds under the
-          holder's spell id.
-        - `methods` is the holder Spell's established ordered disposal list,
-          retained by reference. It is empty when the holder declares no
-          disposal method; the record then exists for the holder's children.
-        - `children` lists `(child, child_methods)` pairs in build order;
-          `child_methods` is the child Spell's own list, the object its
-          `ManyDisposalBucket` carried, retained by reference.
-        - A child is in exactly one place: its spell's `many` bucket or one
-          holder record, never both.
-        - Disposal runs the holder's methods, then each child's, newest child
-          first, so a holder whose own disposal uses a child still finds it
-          open (`Creations._dispose_holder_entry`).
-        - Every field is borrowed. The owning `Creations` store detaches the
-          record (cleanup, clear, purge, extract) and disposes from it; the
-          record owns nothing and needs no cleanup.
-
-    AGENT_ACCESS: internal
-    """
-
-    __slots__ = ("item", "methods", "children")
-
-    def __init__(
-            self,
-            item: object,
-            methods: List[str],
-            children: List[Tuple[object, List[str]]],
-    ) -> None:
-        """
-        Bind the holder, its disposal list and its adopted children.
-
-        Args:
-            item: The holder object (borrowed).
-            methods: The holder Spell's ordered disposal method names (borrowed;
-                an empty list when the holder declares none).
-            children: `(child, child_methods)` pairs in build order. The list
-                object itself is kept.
-
-        Returns:
-            None.
-        """
-        self.item = item
-        self.methods = methods
-        self.children = children
-
-
 StoredDisposalEntry = Tuple[object, List[str]]
-StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket, HolderDisposalEntry]
+StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket]
 
 
 class Creations(Cleanable):
@@ -61926,11 +61869,13 @@ class Creations(Cleanable):
             bucket, a tuple and a second append per creation). A many key
             therefore carries one disposal declaration: every entry of the
             key is disposal-bearing or none is.
-          - a slotted holder that adopted `many` children (0.2.8238):
-            `spell_id -> HolderDisposalEntry` (the holder, its methods -
-            possibly none - and its children with theirs) in place of the
-            tuple. Adopted children leave their spell's bucket, so a `many`
-            key holds only objects that no holder owns.
+          - A slotted holder's disposal value is its own `(object, methods)`
+            tuple, like any unique: nothing records the `many` objects it was
+            built with against it. They stay in their spells' buckets in the
+            store that recorded them - the meld's innermost scope - and are
+            disposed when that store ends (the owner's decision, 2026-10-24;
+            from 0.2.8238 to 0.2.8265 a holder record took them in and
+            disposed them with the holder).
         - Managed pools (2026-10-15, managed_spell_quantity): a root store keeps one
           `ManagedSpellQuantity` per `Existence.managed_spell_quantity` version it
           owns in `_managed_quantities[spell_id]`, a map of its own: `_creations`
@@ -61961,11 +61906,10 @@ class Creations(Cleanable):
 
         - `_lock` (the store lock) is a LEAF lock over the two registries. It
           is held only for dict reads and writes: publish of disposal-bearing
-          entries, many append, child adoption, purge detach, extract/restore
-          and whole-store swap. It is never held while acquiring another lock
-          and never around user code. (A publish without disposal methods is
-          one atomic dict store under the caller's build lock; see
-          `add_creation`.)
+          entries, many append, purge detach, extract/restore and whole-store
+          swap. It is never held while acquiring another lock and never
+          around user code. (A publish without disposal methods is one atomic
+          dict store under the caller's build lock; see `add_creation`.)
         - `slot_guard(spell_id)` returns one `RLock` per slot - a spell id
           whose Existence promises at most one object in this store. Generated
           doors and plan steps hold it across recheck -> construct -> publish,
@@ -61995,8 +61939,6 @@ class Creations(Cleanable):
         within a `many` bucket. Resolution registers a dependency before the
         dependent that holds it, so forward teardown would dispose the
         dependency while a dependent's own disposal method may still need it.
-        For the same reason a holder's record disposes the holder before the
-        children it adopted, newest child first (0.2.8238).
         This covers ordering within ONE scope; ordering between scopes is the
         conduit cleanup cascade's job.
 
@@ -62319,10 +62261,10 @@ class Creations(Cleanable):
         Contract:
             - Singleton metadata delegates to `_attempt_cleanup`.
             - Many buckets delegate to `_dispose_many_creations`.
-            - Holder records delegate to `_dispose_holder_entry`: the holder,
-              then its adopted children newest-first (0.2.8238). The three-way
-              dispatch is inline, as `_dispose_entry` spells it out, so a scope
-              exit pays no extra call per record.
+            - The two-way dispatch is inline, as `_dispose_entry` spells it
+              out, so a scope exit pays no extra call per record. A slotted
+              holder is an ordinary tuple: its disposal runs only its own
+              methods (the owner's decision, 2026-10-24).
             - Collected failures never prevent trying the next selected object;
               every failing method of every object contributes one error.
             - The caller owns registry detachment and final reference release.
@@ -62354,42 +62296,8 @@ class Creations(Cleanable):
         for value in reversed(disposable_registry.values()):
             if isinstance(value, tuple):
                 errors.extend(self._attempt_cleanup(value))
-            elif isinstance(value, ManyDisposalBucket):
-                errors.extend(self._dispose_many_creations(value))
             else:
-                errors.extend(self._dispose_holder_entry(value))
-        return errors
-
-    def _dispose_holder_entry(self, entry: HolderDisposalEntry) -> List[Exception]:
-        """
-        Dispose one detached holder record: the holder, then its adopted children.
-
-        Purpose:
-            Give every retirement keyed by a holder - whole-store disposal and
-            purge - one way to take the holder's `many` children with it
-            (0.2.8238).
-
-        Contract:
-            - Runs the holder's declared methods first (none when its list is
-              empty), then each child's methods, newest child first, so a holder
-              whose own disposal uses a child still finds it open.
-            - Every method of every object runs even after one fails; each
-              failure is one chained `RuntimeError` from `_attempt_cleanup`.
-            - Does not mutate the record or its borrowed lists and takes no
-              lock: the caller detached the record and released its locks.
-
-        Args:
-            entry:
-                The detached `HolderDisposalEntry`.
-
-        Returns:
-            List[Exception]:
-                Disposal failures in attempt order; empty when every method
-                succeeded.
-        """
-        errors = self._attempt_cleanup((entry.item, entry.methods))
-        for child, methods in reversed(entry.children):
-            errors.extend(self._attempt_cleanup((child, methods)))
+                errors.extend(self._dispose_many_creations(value))
         return errors
 
     def _dispose_entry(self, value: StoredDisposalValue) -> List[Exception]:
@@ -62397,16 +62305,16 @@ class Creations(Cleanable):
         Dispose one detached disposal-registry value, whatever its shape.
 
         Purpose:
-            One dispatch over the three record shapes `_disposable_creations`
-            holds, for retirements of one record such as purge (0.2.8238).
+            One dispatch over the two record shapes `_disposable_creations`
+            holds, for retirements of one record such as purge (0.2.8238; two
+            shapes again since the holder record was removed, 2026-10-24).
             Whole-store disposal runs the same dispatch inline in its loop.
 
         Contract:
-            - An `(object, methods)` tuple goes to `_attempt_cleanup`.
+            - An `(object, methods)` tuple goes to `_attempt_cleanup`: one
+              object, a slotted holder included, runs only its own methods.
             - A `ManyDisposalBucket` goes to `_dispose_many_creations` (newest
               object first).
-            - A `HolderDisposalEntry` goes to `_dispose_holder_entry` (the
-              holder, then its children newest-first).
             - Takes no lock; the caller detached the value first.
 
         Args:
@@ -62419,9 +62327,7 @@ class Creations(Cleanable):
         """
         if isinstance(value, tuple):
             return self._attempt_cleanup(value)
-        if isinstance(value, ManyDisposalBucket):
-            return self._dispose_many_creations(value)
-        return self._dispose_holder_entry(value)
+        return self._dispose_many_creations(value)
 
     def slot_guard(self, spell_id: str) -> RLock:
         """
@@ -62801,92 +62707,6 @@ class Creations(Cleanable):
             )
         bucket.append(item)
 
-    def adopt_children(
-            self,
-            holder_key: str,
-            holder: object,
-            children: Tuple[Tuple[str, object], ...],
-    ) -> None:
-        """
-        Record a just-published holder's `many` children with the holder.
-
-        Purpose:
-            Make a slotted holder own the disposal-bearing `many` children built
-            for it (slotted_lifetime_ownership, 0.2.8238). An emitted miss builds
-            and registers each child in this store (`register_many`, before the
-            holder's build lock), then builds and publishes the holder; right
-            after publication, under the holder's build lock, it calls this verb,
-            which moves the children out of their spells' `many` buckets into
-            the holder's disposal record. Purge, extract/restore and whole-store
-            disposal of the holder then take the children with it.
-
-        Contract:
-            - Cold path only: one call per holder publication.
-            - Does nothing when this store was cleaned, or when the slot no
-              longer holds `holder` (a whole-store clear swapped the registries
-              after publication, and the children went with that generation).
-            - Each `(child_key, child)` is removed by identity from the key's
-              live bucket, scanning from the end - the child was appended
-              moments ago, so the scan normally stops at once. The key's method
-              list is taken from its `ManyDisposalBucket`. A bucket left empty
-              is dropped with its record, so a later registration of that key
-              starts again at the end of the registry. A child no longer in its
-              bucket (a concurrent `many` purge retired it) is skipped.
-            - The holder's disposal value becomes a `HolderDisposalEntry`: a
-              `(holder, methods)` tuple is replaced in place, keeping its
-              registry position; a holder published without disposal methods
-              gets a new record with `methods=[]`. With no child found, nothing
-              changes.
-            - Children registered without disposal methods are never passed in:
-              no store tracks them.
-
-        Args:
-            holder_key:
-                The holder's spell id (its slot in this store).
-            holder:
-                The holder object just published under `holder_key`.
-            children:
-                `(child_spell_id, child)` pairs in build order - exactly the
-                disposal-bearing `many` children the miss registered here.
-
-        Returns:
-            None.
-
-        Threading:
-            The caller holds the holder's build lock (its slot guard, or
-            `Spell._lock` for `unique`); this verb takes the store lock as a
-            leaf, as every registration does, so no lock-order edge is added.
-            No user code runs under it.
-        """
-        with self._lock:
-            if self._cleaned or self._creations.get(holder_key) is not holder:
-                return
-            adopted: List[Tuple[object, List[str]]] = []
-            for child_key, child in children:
-                record = self._disposable_creations.get(child_key)
-                if record is None:
-                    continue
-                bucket = record.entries
-                for index in range(len(bucket) - 1, -1, -1):
-                    if bucket[index] is child:
-                        del bucket[index]
-                        break
-                else:
-                    continue
-                adopted.append((child, record.methods))
-                if not bucket:
-                    del self._creations[child_key]
-                    del self._disposable_creations[child_key]
-            if not adopted:
-                return
-            current = self._disposable_creations.get(holder_key)
-            if current is None:
-                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, [], adopted)
-            elif isinstance(current, HolderDisposalEntry):
-                current.children.extend(adopted)
-            else:
-                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, current[1], adopted)
-
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
         Return one scoped live object by spell id.
@@ -63119,11 +62939,13 @@ class Creations(Cleanable):
             - Disposal uses the recorded methods without rematching or copying
               the Spell-owned method-name list. Many entries run newest-first;
               each object's methods run in their established order.
-            - A holder's record is detached with the holder, so the `many`
-              children it adopted are disposed after it, newest first (0.2.8238);
-              the count stays the target's own entries. A `many` target's bucket
-              holds only children that no holder adopted, so purging a child
-              spell never disposes a child its live holder still uses.
+            - Purging a holder disposes only the holder, with its own methods:
+              the `many` objects it was built with stay in their spells' buckets
+              in the store that recorded them, and a `many` purge of their spell
+              counts and disposes every one of them, a live holder's included
+              (the owner's decision, 2026-10-24; from 0.2.8238 to 0.2.8265 a
+              holder's purge disposed its children and a `many` purge skipped
+              them).
             - Every declared method runs even after one fails; each failure is
               collected and other selected objects are still attempted, matching
               cleanup.
@@ -63334,12 +63156,10 @@ class Creations(Cleanable):
               wrapper object.
             - Retains each established method-list reference in the returned
               rows; this in-memory handoff is not a serialization boundary.
-            - A holder's row carries the children it adopted (0.2.8238):
-              `children` lists `{"stored", "disposal_methods"}` rows in build
-              order, and a holder without disposal methods of its own is
-              `disposable` with an empty `disposal_methods` list, so a restore
-              (an ownership transfer's move or its rollback) takes the children
-              wherever the holder goes.
+            - A holder's row is an ordinary unique row: the `many` objects it
+              was built with are not in it and stay where they were recorded
+              when the holder moves (the owner's decision, 2026-10-24; from
+              0.2.8238 to 0.2.8265 a holder's row carried its adopted children).
             - A managed spell's pool travels as one row (2026-10-15):
               `{"scope": "managed", "disposable": False, "stored": pool}` - the
               same `ManagedSpellQuantity` object with its idle objects, count and
@@ -63381,7 +63201,7 @@ class Creations(Cleanable):
                 stored_value = self._creations.pop(spell_id)
                 disposable_entry = (
                     self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, (tuple, HolderDisposalEntry))
+                    if isinstance(disposable_value, tuple)
                     else None
                 )
                 entry = {
@@ -63389,13 +63209,7 @@ class Creations(Cleanable):
                     "disposable": disposable_entry is not None,
                     "stored": stored_value,
                 }
-                if isinstance(disposable_entry, HolderDisposalEntry):
-                    entry["disposal_methods"] = disposable_entry.methods
-                    entry["children"] = [
-                        {"stored": child, "disposal_methods": methods}
-                        for child, methods in disposable_entry.children
-                    ]
-                elif disposable_entry is not None:
+                if disposable_entry is not None:
                     entry["disposal_methods"] = disposable_entry[1]
                 extracted.append(entry)
 
@@ -63423,9 +63237,6 @@ class Creations(Cleanable):
               does not clone or rehydrate them.
             - Retains the extracted disposal lists directly, without copying
               their contents or reapplying binding policy.
-            - A unique row with `children` rebuilds the holder's
-              `HolderDisposalEntry` (0.2.8238); rows without it restore exactly
-              as before.
             - A `managed` row installs its pool under the spell id (2026-10-15).
               A different pool already there - the empty one an ownership
               transfer's flip composed at the target's stamp - is replaced and
@@ -63479,14 +63290,7 @@ class Creations(Cleanable):
                             f"Cannot restore unique creation for spell '{spell_id}' into non-singleton slot."
                         )
                     self._creations[spell_id] = stored_value
-                    children = entry.get("children")
-                    if children is not None:
-                        self._disposable_creations[spell_id] = HolderDisposalEntry(
-                            stored_value,
-                            disposal_methods if disposal_methods is not None else [],
-                            [(child["stored"], child["disposal_methods"]) for child in children],
-                        )
-                    elif is_disposable:
+                    if is_disposable:
                         self._disposable_creations[spell_id] = (
                             stored_value,
                             disposal_methods if disposal_methods is not None else [],
@@ -80526,7 +80330,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f
+CONTENT SHA256: b953163118b8794cc5e1912717fa47a966389e5eccff9c3d4b202afbb750a11a
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -81720,17 +81524,25 @@ class Spell(Cleanable):
         Emit the Spellbook-owned cache file for this spell's current cache state.
 
         Purpose:
-            Provide one spell-facing entrypoint for forcing the current
+            Provide one spell-facing entrypoint for saving the current
             Spellbook-owned in-memory cache state to disk.
 
         Contract:
             - Returns early when spell-level cache policy is disabled.
-            - Delegates the real file emit to the owning Spellbook.
+            - Delegates the real file emit to the owning Spellbook, which
+              writes only when cache was staged since its last save.
             - Requires the spell to still have a live owning Spellbook.
+            - A save the operating system refuses (a read-only cache folder,
+              a full disk, or on Windows a bundle another handle holds open)
+              does not raise: the Spellbook's cache utility logs it, the
+              staged cache stays in memory for the next save, and this call
+              returns False.
 
         Returns:
             bool:
-                True when the Spellbook cache file was emitted, otherwise False.
+                True when the Spellbook cache file was written; False when
+                caching is off, nothing was staged since the last save, or the
+                save was refused.
 
         Raises:
             RuntimeError:
@@ -90058,7 +89870,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
-CONTENT SHA256: 4b775d05bc98464307fef0f5408216175fdec10d9787fcbf94148c7b51a3a372
+CONTENT SHA256: 1c241e4b14ee9ad200ff7ad54eac544493c959e28b3b1fcaad085902580fb7e3
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import FunctionType, MethodType
@@ -90961,30 +90773,26 @@ class SitePlanEmission(Cleanable):
           common to all its consumers; a shared site with a winning override is
           pinned to top level so its P2 refusal and build are exactly today's.
           Within a context steps keep the family's providers-first order.
-        - Child registration (many_child_follows_holder, 2026-10-14): a
-          disposal-bearing many step registers in the store that owns its
-          context. At the top level that is the meld's innermost scope
-          (`many_store`: the spellspace store, else the conduit store), where a
-          many root registers too. Inside `_miss{i}` it is `c{i}`, the store
-          shared site i publishes to - the spell owner's for `unique`, the
-          conduit's for `unique_per_conduit`, the spellspace's for
-          `unique_per_spell_space`, the lineage root's, the cluster's team
-          store (0.2.8237) - so a holder's `many` children belong to whatever
-          owns the holder and are disposed with that store, never by a narrower
-          scope that happened to meld the holder first. Until 0.2.8235 a miss
-          registered them in the innermost scope, whose end disposed a child
-          its holder still used.
-        - Child adoption (slotted_lifetime_ownership, 0.2.8238): right after a
-          miss publishes its site, still under the site's build lock, it calls
-          `c{i}.adopt_children(sid{i}, v{i}, ((sidN, vN), ...))` for exactly
-          the children it registered, which moves them from their spells'
-          `many` buckets into the holder's disposal record. Purge, an ownership
-          transfer's move and disposal of the holder then take them with it. A
-          lost cold race, a pinned-override refusal or a raising holder
-          constructor never reaches the call: those children stay in their
-          bucket and are disposed with the store. Only misses with
-          disposal-bearing children gain the line; every `_site_plan_executor`
-          body is unchanged.
+        - Child registration (the owner's decision, 2026-10-24): every
+          disposal-bearing many step registers through `many_store`, the meld's
+          innermost scope (the spellspace store, else the conduit store), where
+          a many root registers too - at the top level and inside a shared
+          site's `_miss{i}` alike. A function that registers one emits the store
+          selection itself (`_many_store_prologue`): the plan at its top, a miss
+          after its unresolved-input check. A `many` belongs to the scope that
+          built it: nothing records it with the holder it was passed to, so
+          cleaning up a holder - its purge or its store's end - runs only the
+          holder's own disposal methods, and the scope that built a child
+          disposes it when that scope ends, even while the holder lives on; what
+          the holder does with the child is its own dispose rule's business (the
+          owner: "it should behave like autofac not mysteriously cleanup
+          transient objects"). A lost cold race's children are recorded in the
+          loser's innermost scope like any `many`. From 0.2.8235 to 0.2.8265 a
+          miss registered its children in `c{i}`, the store its holder publishes
+          to, and from 0.2.8238 moved them into the holder's disposal record
+          after publishing it; both are removed, and a miss registers its
+          children as it did through 0.2.8234. Every `_site_plan_executor` body
+          is unchanged by either change.
         - Normal mode (S2b-2, 2026-09-26) drops `ov` from the plan and from
           every miss signature and call; nothing else changes.
         - Unresolved inputs (S4a, 2026-09-26): a context (the plan top, or a
@@ -91608,15 +91416,15 @@ class SitePlanEmission(Cleanable):
         Emit the steps placed in one context (top level or one miss body) into `lines`.
 
         Contract:
-            A disposal-bearing many step registers in the store that owns the
-            context (see "Child registration" in the class contract): the
-            top level (`context` None) registers through `many_store`, which the
-            plan prologue points at the meld's innermost scope; shared site i's
-            miss registers through `c{i}`, the store that site publishes to.
-            Inside leasing managed site i's miss it is appended to `kids{i}`
-            instead, to be adopted with the object (managed_spell_quantity S5).
-            A leasing site is emitted by its consumer's lease group, not where
-            it is placed; only a leasing root leases here.
+            A disposal-bearing many step registers through `many_store`, the
+            meld's innermost scope, in whatever context it is placed (see "Child
+            registration" in the class contract): the caller emits the store
+            selection when this returns True - the plan at its top, a shared
+            site's miss after its unresolved-input check. Inside leasing managed
+            site i's miss it is appended to `kids{i}` instead, to be adopted with
+            the object (managed_spell_quantity S5), so a leasing context never
+            reads `many_store`. A leasing site is emitted by its consumer's lease
+            group, not where it is placed; only a leasing root leases here.
 
         Args:
             context: None for the plan's top level, else the shared or leasing
@@ -91625,11 +91433,11 @@ class SitePlanEmission(Cleanable):
             lines: Target line list, appended in place.
 
         Returns:
-            bool: True when a disposal-bearing many step at the top level reads
-            `many_store` (the caller then emits the prologue); always False
-            for a miss, whose children use its `c{i}` parameter or `kids{i}`.
+            bool: True when a disposal-bearing many step placed in this context
+            registers through `many_store` (the caller then emits the store
+            selection ahead of these lines); always False for a leasing miss,
+            whose children go to `kids{i}`.
         """
-        store = "many_store" if context is None else f"c{context}"
         kids_name = self._kids_name(context) if context is not None and self._leasing[context] else None
         uses_many_store = False
         for index in self._children.get(context, []):
@@ -91639,7 +91447,7 @@ class SitePlanEmission(Cleanable):
             elif self._leasing[index]:
                 if index == self._root_index:
                     self._emit_root_lease(index, indent, lines)
-            elif self._emit_many(index, step, indent, lines, store, kids_name) and context is None:
+            elif self._emit_many(index, step, indent, lines, kids_name):
                 uses_many_store = True
         return uses_many_store
 
@@ -91649,35 +91457,32 @@ class SitePlanEmission(Cleanable):
             step: SitePlanStep,
             indent: str,
             lines: List[str],
-            store: str,
             kids_name: Optional[str] = None,
     ) -> bool:
         """
-        Emit one many (or fresh managed) step: construction, then its disposal registration in `store`.
+        Emit one many (or fresh managed) step: construction, then its registration in the innermost scope.
 
         Contract:
             A step without disposal methods is constructed and not recorded
             anywhere. A disposal-bearing step is recorded through
-            `<store>.register_many(sidN, vN, dmN)` right after construction,
-            before any build lock of the context is taken - or, inside a leasing
-            managed miss, appended as `(vN, dmN)` to `kids_name`. A fresh
-            managed step (a winning key on its own parameters) is recorded
-            nowhere: it is the caller's object. The construction runs inside
-            the step's lease group when it reads leasing managed sites
-            (managed_spell_quantity S5).
+            `many_store.register_many(sidN, vN, dmN)` - the meld's innermost
+            scope, in whatever context the step is placed - right after
+            construction, before any build lock of the context is taken; or,
+            inside a leasing managed miss, appended as `(vN, dmN)` to
+            `kids_name`. A fresh managed step (a winning key on its own
+            parameters) is recorded nowhere: it is the caller's object. The
+            construction runs inside the step's lease group when it reads
+            leasing managed sites (managed_spell_quantity S5).
 
         Args:
             index: Kept step index.
             step: The step.
             indent: Indentation of the emitted lines.
             lines: Target line list, appended in place.
-            store: The store expression the registration targets - `many_store`
-                (the meld's innermost scope) at the top level, `c{i}` inside
-                shared site i's miss (the store the holder belongs to).
             kids_name: `kids{i}` inside leasing managed site i's miss, else None.
 
         Returns:
-            bool: True when the step registers in `store`.
+            bool: True when the step registers through `many_store`.
         """
         self._emit_leased_region(index, indent, lines, self._construct_region(index, step))
         if self._fresh[index] or not step.spell.has_disposal_methods:
@@ -91690,7 +91495,7 @@ class SitePlanEmission(Cleanable):
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
         # `register_many` (2026-10-01): the positional hot verb; the key's
         # disposal list is recorded once by the store, not carried per entry.
-        lines.append(f"{indent}{store}.register_many({sid_name}, v{index}, {disposal_name})")
+        lines.append(f"{indent}many_store.register_many({sid_name}, v{index}, {disposal_name})")
         return True
 
     @staticmethod
@@ -91759,16 +91564,14 @@ class SitePlanEmission(Cleanable):
             The calling door holds this same slot guard for the whole call (see
             the class contract), so nothing else changes: the recheck still
             follows the children, and publication is the same statement.
-            Children (many_child_follows_holder, 2026-10-14): the disposal-bearing
-            many steps placed in the miss register in `c{index}`, the store this
-            site publishes to, so they live and die with the holder's owner; the
-            miss therefore needs no innermost-scope prologue. A losing thread in
-            a cold race has registered its children there too, and they stay
-            until that store is disposed.
-            Adoption (0.2.8238): after publication, inside the guard and the
-            miss branch, `c{index}.adopt_children(...)` hands exactly those
-            registered children to the holder's disposal record (see the class
-            contract); a miss without disposal-bearing children emits no call.
+            Children (the owner's decision, 2026-10-24): the disposal-bearing
+            many steps placed in the miss register through `many_store`, the
+            meld's innermost scope, as at the plan top, so the miss emits the
+            store selection after its unresolved-input check and before its
+            children. They belong to the scope that built them, never to the
+            holder (see "Child registration" in the class contract): nothing
+            follows the publication, and a losing thread in a cold race leaves
+            its children recorded in its own innermost scope.
             Leases (managed_spell_quantity S5): when this site reads leasing
             managed sites they are leased after its children and before the
             guard, and the guard block runs inside the lease group's `try`. It
@@ -91781,12 +91584,12 @@ class SitePlanEmission(Cleanable):
         store = f"c{index}"
         supplied = self._supplied_names(step)
         children: List[str] = []
-        self._emit_context(index, "    ", children)
+        uses_many_store = self._emit_context(index, "    ", children)
         guarded = not (index == self._root_index and self._root_guard_held_by_door)
         leases = self._leases_by_consumer.get(index, ())
 
         def guard_region(region_indent: str, target: List[str]) -> None:
-            # Guard, recheck (P2 when pinned), construction, publication, adoption.
+            # Guard, recheck (P2 when pinned), construction, publication.
             body_indent = region_indent + "    " if guarded else region_indent
             inner_indent = body_indent + "    "
             inner: List[str] = []
@@ -91799,16 +91602,6 @@ class SitePlanEmission(Cleanable):
                 )
             else:
                 inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
-            adopted = [
-                child for child in self._children.get(index, [])
-                if self._is_plain_many(child) and self._steps[child].spell.has_disposal_methods
-            ]
-            if adopted:
-                # The children `_emit_many` registered in this store move into the
-                # holder's disposal record once it is published (0.2.8238).
-                pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
-                trailing = "," if len(adopted) == 1 else ""
-                inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
             if leases:
                 # Return from inside: falling out of the block means another meld
                 # published this site first (a lost cold race).
@@ -91825,6 +91618,8 @@ class SitePlanEmission(Cleanable):
                 target.append(f"{body_indent}return v{index}")
 
         body: List[str] = self._unresolved_check_lines(index, "    ")
+        if uses_many_store:
+            body.extend(self._many_store_prologue("    "))
         body.extend(children)
         if self._emit_leased_region(index, "    ", body, guard_region):
             body.append(f"    _return_unused_leases({self._lease_pairs(leases)})")
@@ -92033,12 +91828,13 @@ class SitePlanEmission(Cleanable):
     @staticmethod
     def _many_store_prologue(indent: str) -> List[str]:
         """
-        Return the innermost-scope store selection for the plan's top-level disposal-bearing many steps.
+        Return the innermost-scope store selection for disposal-bearing many steps.
 
         Contract:
-            Emitted once at the top of the plan body when a top-level many step
-            registers. A miss never emits it: its children register in its own
-            `c{i}` (see `_emit_context`).
+            Emitted once in each function that registers a disposal-bearing many
+            step: at the top of the plan body, and in a shared site's miss after
+            its unresolved-input check (see `_emit_context`). A leasing managed
+            miss never emits it: its children go to `kids{i}`.
         """
         return [
             f"{indent}many_store = meld._spellspace_creations",
@@ -92822,7 +92618,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
-CONTENT SHA256: 217ef8231cb6f547796499c0d356543b470cfc40ef6dacb77b6a3741e5122e7d
+CONTENT SHA256: c7f4848753006cd3700919c3471af09541bcf74938f989e987606e1dd24f4748
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -93993,12 +93789,14 @@ def rows_feed_many_into_non_many_step(
         Decide whether the singleton warm-tail specializer can express a graph.
         Its body is straight-line: it emits every non-captured step, in order,
         on every warm call. A `many` step whose consumer is a shared (slotted)
-        step would therefore be built on every call even when that consumer is
-        captured or already stored, and recorded in the meld's innermost scope
-        rather than with the holder's owner. The site plan builds such a child
-        only inside its holder's first build and records it with the holder's
-        owner (many_child_follows_holder, 2026-10-14), so these graphs keep the
-        plain door.
+        step would therefore be built - and, when it declares disposal methods,
+        recorded in the meld's innermost scope - on every warm call, even when
+        that consumer is captured or already stored and never receives it. The
+        site plan builds such a child only inside its holder's first build, so
+        these graphs keep the plain door (2026-10-14). Both doors record the
+        child in the meld's innermost scope (the owner's decision, 2026-10-24,
+        removed holder ownership of `many` children); the decline is about the
+        unused builds alone.
 
     Contract:
         - Pure function of manifest row data; no live spells consulted.
@@ -95829,7 +95627,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
-CONTENT SHA256: 7729190a4249870ed49edb88e60634a20f49f22500efe77c0743923a6ac0e009
+CONTENT SHA256: 3ab657435eaac0ac0d56effaf6950b90d596c2a586f345c7ca2fdcbac5037fc6
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -96423,11 +96221,12 @@ def _install_specializing_door(
           returns `plain_instance_door` unchanged when no `unique` step
           exists.
         - Graphs in which a `many` step feeds a non-`many` step never install
-          the wrapper either (many_child_follows_holder, 2026-10-14): the
-          straight-line specialized body would build a holder's `many`
-          children on every warm call and record them in the meld's innermost
-          scope, while the plain door's site plan builds them only in the
-          holder's first build and records them with the holder's owner.
+          the wrapper either (2026-10-14): the straight-line specialized body
+          would build a holder's `many` children on every warm call, each
+          recorded in the meld's innermost scope when it declares disposal
+          methods, while the plain door's site plan builds them only in the
+          holder's first build. Both doors record such a child in the meld's
+          innermost scope (the owner's decision, 2026-10-24).
         - The wrapper's steady state is self-erasing: once a final door is
           resolved (specialized or declined-to-plain), every wrapper call
           re-publishes the final door(s) into the CURRENT published context
@@ -96462,8 +96261,8 @@ def _install_specializing_door(
         return plain_instance_door
     if rows_feed_many_into_non_many_step(rows):
         # A holder's `many` children must be built only in the holder's first
-        # build and recorded with the holder's owner; a straight-line body
-        # cannot do that, so the plain door (site plan) keeps serving.
+        # build; a straight-line body would build them on every warm call, so
+        # the plain door (site plan) keeps serving.
         return plain_instance_door
     if rows_contain_managed_step(rows):
         # A managed step is leased through the site plan (pop, reserve-first
@@ -135389,7 +135188,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 88968c6b0297ac3feddd21b413d52cccca91709ae93cedc1f6ba5f630949aea9
+CONTENT SHA256: 66e4f3428dedfc1059f2c6a92d2d54469b87e5b621d47d7b73956f64ae8628e5
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -136547,13 +136346,24 @@ class Spellbook(Cleanable):
 
         Contract:
             - Returns early when no new cache was staged since the last emit.
-            - Emits at most once per staged operation window.
-            - Restores the emit-required flag when file emission fails so a
-              later caller can retry.
+            - Emits at most once per staged operation window: the flag is
+              cleared under the Book lock before the save.
+            - A save the operating system refuses is not an error (the bundle
+              is an accelerator): `CachingSystem.emit()` logs it and returns
+              False, the flag stays cleared - no meld retries the save or
+              waits on it - and the payloads stay staged in memory, so the
+              next staging or conjure saves them. Every meld door calls this
+              after building its object, so a refused save never fails a
+              meld.
+            - Any other exception from the save restores the emit-required
+              flag, so a later caller can retry, and propagates: it would be
+              a Melder defect, not an I/O refusal.
 
         Returns:
             bool:
-                True when a cache file emit occurred, otherwise False.
+                True when the cache file was written; False when nothing was
+                staged since the last save or the operating system refused the
+                save.
         """
         # Lock-free fast path: this runs on every meld, and the flag is False
         # for all but the one meld that follows fresh cache staging. A stale
@@ -136566,8 +136376,7 @@ class Spellbook(Cleanable):
                 return False
             self._cache_emit_required = False
         try:
-            self._get_or_create_caching_system().emit()
-            return True
+            return self._get_or_create_caching_system().emit()
         except Exception:
             with self._lock:
                 self._cache_emit_required = True
@@ -136586,7 +136395,11 @@ class Spellbook(Cleanable):
         Contract:
             - Returns early when the spell cache policy bit is disabled.
             - Requires the spell to belong to this Spellbook.
-            - Emits the current `CachingSystem` in-memory state to disk.
+            - Saves the current `CachingSystem` in-memory state through
+              `_emit_cache_file_if_required`, so it writes only when cache was
+              staged since the last save, and a save the operating system
+              refuses returns False (logged by the cache utility) instead of
+              raising.
 
         Args:
             spell:
@@ -136594,7 +136407,13 @@ class Spellbook(Cleanable):
 
         Returns:
             bool:
-                True when the cache file was emitted, otherwise False.
+                True when the cache file was written; False when caching is
+                off for the spell, nothing was staged since the last save, or
+                the save was refused.
+
+        Raises:
+            RuntimeError:
+                If the spell does not belong to this Spellbook.
         """
         if not spell._caching_enabled:
             return False
@@ -265183,13 +265002,15 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: bdcaa48c320c164960d8321bdf96315186084f1c629e0cbd4c0b6d62593d67cb
+CONTENT SHA256: dd8fb4f01094b483a4544a1ecdf5bc29d3d7c5883fe0c8026c643e3d2285bf26
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
 import marshal
+import os
 import sys
 import threading
+import time
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, ClassVar, KeysView, Mapping, Optional, Union
@@ -265252,7 +265073,16 @@ class CachingSystem(Cleanable):
           `get_spell_payload(...)` returns a FRESH decode per call (caller
           mutations are never persisted); `remove_spell_payload(...)` mutates
           only the in-memory dict.
-        - `emit()` writes the current in-memory dict to disk.
+        - `emit()` writes the current in-memory dict to disk and returns True,
+          or returns False when the operating system refuses the save (a
+          read-only folder, a full disk, or on Windows a rename onto a bundle
+          another handle holds open). A save is best-effort, like the bundle
+          itself: a refused save is logged (WARNING the first time for this
+          bundle, DEBUG after), removes its own temp file, never touches the
+          bundle on disk and keeps every staged payload in memory for the
+          next save; it never raises OSError. Each writer saves through its
+          own temp file, `<conduit>.meldercache.<pid>.<thread id>.tmp`, so two
+          processes sharing a frame and conduit name never share one.
         - The persisted cache format is one `marshal`-serialized top-level
           dict: `version`, `melder_version`, `python`, `frame_name`, `conduit_name`,
           `spell_payloads` (spell_id -> nested payload bytes) and, since
@@ -265288,9 +265118,16 @@ class CachingSystem(Cleanable):
         - Uses one instance `RLock` to serialize load, mutation, and emit work.
         - Does not rely on OS-level file locks as the primary coordination
           mechanism inside one process.
+        - On Windows (`RETRY_REFUSED_RENAME`) a rename refused with
+          PermissionError is retried under that lock, up to
+          `REPLACE_ATTEMPTS` attempts with a short growing sleep (about
+          100 ms in all), so this instance's other calls may wait that long.
 
     Lifecycle / Cleanup:
         - Owns the in-memory cache dictionary and logger wrapper.
+        - Remembers whether a refused save was already logged
+          (`_refused_save_logged`); cleanup deletes it with the other owned
+          slots.
         - Does not automatically delete cache files during cleanup.
 
     AGENT_ACCESS: internal
@@ -265430,6 +265267,15 @@ class CachingSystem(Cleanable):
     # `upsert_structural_payload`). Executor payloads keep the default format.
     STRUCTURAL_MARSHAL_VERSION: ClassVar[int] = 2
     BUNDLE_SUFFIX: ClassVar[str] = ".meldercache"
+    # Windows refuses a rename onto a file another handle holds open without
+    # FILE_SHARE_DELETE - an on-access scanner or an indexer reading the bundle
+    # just written - with PermissionError [WinError 5]; such a holder usually
+    # lets go within milliseconds, so the save retries the rename there. POSIX
+    # renames never refuse for sharing, so elsewhere a refusal (a read-only
+    # folder) is final at once. Class-level so a test can set them.
+    RETRY_REFUSED_RENAME: ClassVar[bool] = sys.platform == "win32"
+    REPLACE_ATTEMPTS: ClassVar[int] = 5
+    REPLACE_RETRY_DELAY_SECONDS: ClassVar[float] = 0.01
 
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -265439,6 +265285,7 @@ class CachingSystem(Cleanable):
         "_cache_root_path",
         "_bundle_path",
         "_cache_data",
+        "_refused_save_logged",
         "_logger",
     ]
 
@@ -265469,6 +265316,8 @@ class CachingSystem(Cleanable):
               `<cache_root>/<frame_name>/<conduit_name>.meldercache` and LOADS the
               cache from disk during construction; a corrupt or version-
               mismatched bundle is treated as a cold cache, not an error.
+            - Starts with no refused save logged, so the first refused save of
+              this bundle logs at WARNING.
 
         Returns:
             None.
@@ -265484,6 +265333,9 @@ class CachingSystem(Cleanable):
             / frame_name
             / f"{conduit_name}{self.BUNDLE_SUFFIX}"
         )
+        # Set by the first refused save so later ones log at DEBUG: one WARNING
+        # per bundle, however long a refusal (a read-only folder) lasts.
+        self._refused_save_logged: bool = False
         if isinstance(logger, SafeLogger):
             self._logger = logger
         elif logger is not None:
@@ -265665,6 +265517,7 @@ class CachingSystem(Cleanable):
 
             del self._cache_data
             del self._bundle_path
+            del self._refused_save_logged
             del self._cache_root_path
             del self._conduit_name
             del self._frame_name
@@ -265913,20 +265766,49 @@ class CachingSystem(Cleanable):
         self.remove_spell_payload(spell_id)
         return True
 
-    def emit(self) -> None:
+    def emit(self) -> bool:
         """
-        Write the current in-memory cache dict to disk.
+        Write the current in-memory cache dict to disk, best-effort.
+
+        Purpose:
+            Persist the bundle so a later conjure can skip compilation. The
+            bundle is an accelerator - a missing or unreadable one only makes
+            the cache cold - so a save the operating system refuses is
+            reported, never raised: no meld, conjure or explicit save fails
+            because a cache file could not be written.
 
         Contract:
-            - Serializes under the instance lock and persists atomically (temp
-              file then `replace`), so a crash mid-write never leaves a torn
-              bundle. Creates the frame folder if absent.
+            - Serializes under the instance lock and persists atomically: the
+              envelope goes to this writer's temp file
+              (`<conduit>.meldercache.<pid>.<thread id>.tmp`), which is then
+              renamed onto the bundle, so a crash or a refusal mid-write never
+              leaves a torn bundle. Creates the frame folder if absent.
+            - On Windows a rename refused with PermissionError is retried
+              (`RETRY_REFUSED_RENAME`, `REPLACE_ATTEMPTS`,
+              `REPLACE_RETRY_DELAY_SECONDS`); a refusal that outlasts the
+              retries, and any OSError of the folder, the temp write or the
+              rename, makes the save refused.
+            - A refused save removes its own temp file, leaves the bundle on
+              disk as it was, keeps every staged payload in memory for the
+              next save and logs the refusal: WARNING with the bundle path,
+              the error and the remedies the first time for this bundle,
+              DEBUG after.
+
+        Threading / Concurrency:
+            - Holds the instance lock for the whole save, retries included.
 
         Returns:
-            None.
+            bool:
+                True when the bundle was written; False when the operating
+                system refused the save.
+
+        Raises:
+            Exception:
+                Any non-OSError exception of the serialization or the write
+                propagates unchanged; none is expected.
         """
         with self._lock:
-            self._write_current_cache_to_disk_locked()
+            return self._write_current_cache_to_disk_locked()
 
     def _build_empty_cache_data(self) -> dict[str, Any]:
         """
@@ -266070,18 +265952,28 @@ class CachingSystem(Cleanable):
             "world_stamp": world_stamp,
         }
 
-    def _write_current_cache_to_disk_locked(self) -> None:
+    def _write_current_cache_to_disk_locked(self) -> bool:
         """
         Persist the current cache dict to disk.
 
         Contract:
             - Caller must already hold the instance lock.
-            - Writes to a temp file and atomically replaces the final file.
+            - Writes this writer's temp file and atomically replaces the final
+              file with it (`_replace_bundle_locked`); only that rename changes
+              the bundle on disk.
             - Persists the release stamped when this envelope was created or
               accepted; never assigns a new release to retained old payloads.
+            - Replaces `_cache_data` with the written envelope only after the
+              rename. An OSError of the folder, the temp write or the rename
+              removes the temp file this save started
+              (`_discard_temp_bundle_locked`), logs the refusal
+              (`_log_refused_save_locked`) and leaves `_cache_data`, with every
+              staged payload, as it was.
 
         Returns:
-            None.
+            bool:
+                True when the bundle was written; False when the operating
+                system refused the save.
         """
         cache_data = {
             "version": self._cache_data["version"],
@@ -266096,14 +265988,145 @@ class CachingSystem(Cleanable):
             "world_stamp": self._cache_data["world_stamp"],
         }
         serialized_cache_data = marshal.dumps(cache_data)
-        bundle_path = self._bundle_path
-        bundle_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_bundle_path = bundle_path.with_suffix(
-            self.BUNDLE_SUFFIX + ".tmp"
-        )
-        temp_bundle_path.write_bytes(serialized_cache_data)
-        temp_bundle_path.replace(bundle_path)
+        temp_bundle_path = self._temp_bundle_path()
+        # Set just before the temp write, so a refusal of the folder never
+        # tries to remove a temp file this save did not start.
+        temp_started = False
+        try:
+            self._bundle_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_started = True
+            temp_bundle_path.write_bytes(serialized_cache_data)
+            self._replace_bundle_locked(temp_bundle_path)
+        except OSError as error:
+            if temp_started:
+                self._discard_temp_bundle_locked(temp_bundle_path)
+            self._log_refused_save_locked(error)
+            return False
         self._cache_data = cache_data
+        return True
+
+    def _temp_bundle_path(self) -> Path:
+        """
+        Return the temp file this writer saves through, beside the bundle.
+
+        Contract:
+            - `<bundle name>.<pid>.<thread id>.tmp` in the bundle's folder:
+              unique per process and thread, so two processes saving one
+              bundle (a frame and conduit name shared in one install) never
+              write into one temp file, and a refused save removes only its
+              own.
+
+        Returns:
+            Path:
+                This writer's temp-file path.
+        """
+        bundle_path = self._bundle_path
+        return bundle_path.with_name(
+            f"{bundle_path.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+        )
+
+    def _replace_bundle_locked(self, temp_bundle_path: Path) -> None:
+        """
+        Rename this writer's temp file onto the bundle, retrying a sharing refusal on Windows.
+
+        Purpose:
+            Windows refuses a rename onto a file another handle holds open
+            without FILE_SHARE_DELETE (an on-access scanner, an indexer, a
+            reader in another process) with PermissionError [WinError 5], and
+            that holder usually lets go within milliseconds.
+
+        Contract:
+            - Caller must already hold the instance lock.
+            - Always attempts the rename once. While `RETRY_REFUSED_RENAME` is
+              True (Windows), a PermissionError is retried up to
+              `REPLACE_ATTEMPTS` attempts in all, sleeping
+              `REPLACE_RETRY_DELAY_SECONDS` times the attempt number between
+              them; while it is False (every other platform) the first refusal
+              is final.
+            - Any other OSError is final at once.
+
+        Args:
+            temp_bundle_path:
+                This writer's temp file, already written.
+
+        Returns:
+            None.
+
+        Raises:
+            PermissionError:
+                The rename was refused on its last attempt.
+            OSError:
+                Any other rename failure, on its first attempt.
+        """
+        attempt = 1
+        while True:
+            try:
+                temp_bundle_path.replace(self._bundle_path)
+                return
+            except PermissionError:
+                if not self.RETRY_REFUSED_RENAME or attempt >= self.REPLACE_ATTEMPTS:
+                    raise
+            time.sleep(self.REPLACE_RETRY_DELAY_SECONDS * attempt)
+            attempt += 1
+
+    def _discard_temp_bundle_locked(self, temp_bundle_path: Path) -> None:
+        """
+        Remove this writer's temp file after a refused save.
+
+        Contract:
+            - Caller must already hold the instance lock.
+            - A temp file already gone is fine (`missing_ok=True`).
+            - An OSError while removing it (on Windows the holder that refused
+              the rename may hold the temp file too) is logged at WARNING with
+              the leftover path and never raised: the file holds nothing the
+              cache needs, and the next save writes a fresh one.
+
+        Args:
+            temp_bundle_path:
+                This writer's temp file.
+
+        Returns:
+            None.
+        """
+        try:
+            temp_bundle_path.unlink(missing_ok=True)
+        except OSError as error:
+            self._logger.warning(
+                f"Could not remove the temp cache file '{temp_bundle_path}' after a refused save: "
+                f"{error}. It holds nothing the cache needs and can be deleted.",
+                "_discard_temp_bundle_locked",
+            )
+
+    def _log_refused_save_locked(self, error: OSError) -> None:
+        """
+        Log one refused save: WARNING the first time for this bundle, DEBUG after.
+
+        Contract:
+            - Caller must already hold the instance lock, which serializes
+              `_refused_save_logged`.
+            - The message names the bundle and the error, says that melds are
+              not affected and that the cache stays in memory for the next
+              save, and gives the remedies.
+
+        Args:
+            error:
+                The OSError that refused the save.
+
+        Returns:
+            None.
+        """
+        message = (
+            f"Could not save the creation-cache bundle '{self._bundle_path}': {error}. "
+            "Melds are not affected and the cache stays in memory for the next save. "
+            "To persist it, make the cache folder writable (on Windows, also exclude it from "
+            "real-time scanning), or turn caching off for the frame with "
+            "with_system_caching_enabled(False)."
+        )
+        if self._refused_save_logged:
+            self._logger.debug(message, "emit")
+            return
+        self._refused_save_logged = True
+        self._logger.warning(message + " Later refused saves of this bundle log at DEBUG.", "emit")
 ================================================================================
 END FILE: src/melder/utilities/caching_system/caching_system.py
 ================================================================================
