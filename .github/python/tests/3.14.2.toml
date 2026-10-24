@@ -4,6 +4,8 @@
 python = "3.14.2"
 freethreaded = true
 dependencies = [
+    # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
+    "pip==26.2.2",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",

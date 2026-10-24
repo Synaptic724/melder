@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-20T10:01:10Z |
-| line_count | 4239 |
+| generated_at | 2026-10-24T19:37:22Z |
+| line_count | 4244 |
 | line_ending | lf |
-| content_sha256 | `4e8aade4123b3f986f65302e717395af062d48e10e2b32ed1bfdf5afa605d10c` |
+| content_sha256 | `84357e58cd090869dc7eff822b0f325e4ce38566fdab7d22ece026b194b62e84` |
 | sections | 70 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -96,4 +96,4 @@ which you did.
 | 3725-3747 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
 | 3748-3886 | 2 | Information Sources |
 | 3887-3896 | 2 | Open Questions |
-| 3897-4239 | 2 | Context / Handoff Summary |
+| 3897-4244 | 2 | Context / Handoff Summary |

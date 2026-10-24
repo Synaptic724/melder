@@ -1,2 +1,0 @@
-melder_private | unit_top | rc=0 | secs=41 | 145 passed in 41.18s
-melder_private | unit_top | rc=0 | secs=49 | 145 passed in 49.48s

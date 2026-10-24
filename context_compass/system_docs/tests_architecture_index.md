@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-19T23:20:35Z |
-| line_count | 1085 |
+| generated_at | 2026-10-24T19:37:22Z |
+| line_count | 1093 |
 | line_ending | lf |
-| content_sha256 | `cb42fcd4e289444b2e363a310e20109e157856a66b3579b6a42b78c41bd39ac0` |
+| content_sha256 | `57788225a0d83a721e0b90fe804bb6602f27f5eda3875ad02f6d7a37c8502ab3` |
 | sections | 32 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -34,28 +34,28 @@ which you did.
 | 111-122 | 2 | DO NOT ASSUME / Unknowns Gate |
 | 123-151 | 2 | Unknowns |
 | 152-168 | 2 | System Context (C4) |
-| 169-249 | 2 | System Boundary and External Interfaces |
-| 232-249 | 3 | System Boundary and External Interfaces > CI/CD Pipeline |
-| 250-296 | 2 | Architecture Summary (C4) |
-| 297-328 | 2 | Entrypoints and Runtime Guardrails |
-| 329-352 | 2 | Boot and Configuration Sequence |
-| 353-417 | 2 | Data Flows and Sequences |
-| 354-362 | 3 | Data Flows and Sequences > Flow: Standard Pytest Run |
-| 363-374 | 3 | Data Flows and Sequences > Flow: CI Runtime Qualification |
-| 375-385 | 3 | Data Flows and Sequences > Flow: Singleton Reset And Re-Boot |
-| 386-397 | 3 | Data Flows and Sequences > Flow: Concurrent-Writer Stand-In |
-| 398-403 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
-| 404-417 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
-| 418-448 | 2 | Operational Invariants |
-| 449-482 | 2 | Source Coverage and Evidence |
-| 483-505 | 2 | Core Responsibilities |
-| 506-526 | 2 | C3 Components Overview |
-| 527-565 | 2 | C2 Subcomponents Overview |
-| 566-573 | 2 | Open Questions |
-| 574-619 | 2 | Failure Modes and Error Paths |
-| 620-820 | 2 | C1 Code Map (Core Only) |
-| 821-876 | 2 | Diagrams |
-| 822-848 | 3 | Diagrams > ASCII Diagram (C4) |
-| 849-876 | 3 | Diagrams > Mermaid Diagram (C4) |
-| 877-919 | 2 | Information Sources |
-| 920-1085 | 2 | Context / Handoff Summary |
+| 169-250 | 2 | System Boundary and External Interfaces |
+| 232-250 | 3 | System Boundary and External Interfaces > CI/CD Pipeline |
+| 251-297 | 2 | Architecture Summary (C4) |
+| 298-329 | 2 | Entrypoints and Runtime Guardrails |
+| 330-353 | 2 | Boot and Configuration Sequence |
+| 354-418 | 2 | Data Flows and Sequences |
+| 355-363 | 3 | Data Flows and Sequences > Flow: Standard Pytest Run |
+| 364-375 | 3 | Data Flows and Sequences > Flow: CI Runtime Qualification |
+| 376-386 | 3 | Data Flows and Sequences > Flow: Singleton Reset And Re-Boot |
+| 387-398 | 3 | Data Flows and Sequences > Flow: Concurrent-Writer Stand-In |
+| 399-404 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
+| 405-418 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
+| 419-449 | 2 | Operational Invariants |
+| 450-483 | 2 | Source Coverage and Evidence |
+| 484-506 | 2 | Core Responsibilities |
+| 507-527 | 2 | C3 Components Overview |
+| 528-566 | 2 | C2 Subcomponents Overview |
+| 567-574 | 2 | Open Questions |
+| 575-620 | 2 | Failure Modes and Error Paths |
+| 621-821 | 2 | C1 Code Map (Core Only) |
+| 822-877 | 2 | Diagrams |
+| 823-849 | 3 | Diagrams > ASCII Diagram (C4) |
+| 850-877 | 3 | Diagrams > Mermaid Diagram (C4) |
+| 878-920 | 2 | Information Sources |
+| 921-1093 | 2 | Context / Handoff Summary |

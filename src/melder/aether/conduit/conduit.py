@@ -4322,10 +4322,12 @@ class Conduit(Cleanable):
                 store holds for every member of the spell's index move into the
                 target's store with the spell. A `unique` stays one object:
                 whatever already holds it keeps the instance the target now
-                serves, and the `many` children recorded with a moved holder
-                move with it. A moved entry replaces whatever the target's store
-                already holds under that spell id; the replaced instances are
-                not disposed.
+                serves. The `many` objects a moved holder was built with do not
+                move: they stay recorded in the store that built them, which
+                disposes them when it ends (the owner's decision, 2026-10-24;
+                from 0.2.8238 to 0.2.8265 they moved with the holder). A moved
+                entry replaces whatever the target's store already holds under
+                that spell id; the replaced instances are not disposed.
                 False: nothing moves. The active member's instances are taken
                 out of this conduit's store and kept only until the transfer
                 has finished (for its rollback); they are neither moved nor

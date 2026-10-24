@@ -1153,13 +1153,24 @@ class Spellbook(Cleanable):
 
         Contract:
             - Returns early when no new cache was staged since the last emit.
-            - Emits at most once per staged operation window.
-            - Restores the emit-required flag when file emission fails so a
-              later caller can retry.
+            - Emits at most once per staged operation window: the flag is
+              cleared under the Book lock before the save.
+            - A save the operating system refuses is not an error (the bundle
+              is an accelerator): `CachingSystem.emit()` logs it and returns
+              False, the flag stays cleared - no meld retries the save or
+              waits on it - and the payloads stay staged in memory, so the
+              next staging or conjure saves them. Every meld door calls this
+              after building its object, so a refused save never fails a
+              meld.
+            - Any other exception from the save restores the emit-required
+              flag, so a later caller can retry, and propagates: it would be
+              a Melder defect, not an I/O refusal.
 
         Returns:
             bool:
-                True when a cache file emit occurred, otherwise False.
+                True when the cache file was written; False when nothing was
+                staged since the last save or the operating system refused the
+                save.
         """
         # Lock-free fast path: this runs on every meld, and the flag is False
         # for all but the one meld that follows fresh cache staging. A stale
@@ -1172,8 +1183,7 @@ class Spellbook(Cleanable):
                 return False
             self._cache_emit_required = False
         try:
-            self._get_or_create_caching_system().emit()
-            return True
+            return self._get_or_create_caching_system().emit()
         except Exception:
             with self._lock:
                 self._cache_emit_required = True
@@ -1192,7 +1202,11 @@ class Spellbook(Cleanable):
         Contract:
             - Returns early when the spell cache policy bit is disabled.
             - Requires the spell to belong to this Spellbook.
-            - Emits the current `CachingSystem` in-memory state to disk.
+            - Saves the current `CachingSystem` in-memory state through
+              `_emit_cache_file_if_required`, so it writes only when cache was
+              staged since the last save, and a save the operating system
+              refuses returns False (logged by the cache utility) instead of
+              raising.
 
         Args:
             spell:
@@ -1200,7 +1214,13 @@ class Spellbook(Cleanable):
 
         Returns:
             bool:
-                True when the cache file was emitted, otherwise False.
+                True when the cache file was written; False when caching is
+                off for the spell, nothing was staged since the last save, or
+                the save was refused.
+
+        Raises:
+            RuntimeError:
+                If the spell does not belong to this Spellbook.
         """
         if not spell._caching_enabled:
             return False

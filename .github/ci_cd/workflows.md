@@ -34,7 +34,7 @@ same pull request cancels the older run. Ordinary pushes do not run it.
 | `release_candidate` PR into `prod` | no | no | no |
 | Manual run on a permanent branch | yes | yes, except on `dev` | no |
 
-Every route with `runtime` set runs the whole matrix: every manifest release on every runner (27 cells today). The
+Every route with `runtime` set runs the whole matrix: every manifest release on every runner (36 cells today). The
 owner ruled out a smaller matrix for any route, pull requests into `dev` included (2026-10-05).
 
 `merge-ready` runs even when a job before it failed (`if: always()`). `ci_policy.py merge-ready` recomputes the
@@ -82,7 +82,7 @@ Publication runs are serialized.
 | Job | What it does |
 | --- | --- |
 | `release-gate` (Require current prod HEAD) | The event, the checkout and the current `prod` head (and the live release tag) are one commit (`ci_policy.py release-head`), and that commit's candidate passed TestPyPI qualification (`check_candidate_run.py`). |
-| `hygiene`, `source-assets`, `repo-assets`, `tests` | The full checks again, fresh. |
+| `hygiene`, `source-assets`, `repo-assets` | Hygiene and both asset checks again, fresh. The runtime tests do not run again: full CI and the release candidate tested this exact tree, and `release-gate` refuses any other (owner, 2026-10-24). |
 | `release-build` | Builds and verifies the distributions and compares the release tag with the package version (`build-distributions.yml`). |
 | `pypi-publish` (Publish to PyPI) | In the `pypi` environment: refuses a failed-jobs re-run, because publication never reuses an earlier attempt's build (use **Re-run all jobs**), then rechecks the files, the candidate and the release head immediately before uploading with `PYPI_API_TOKEN`. |
 

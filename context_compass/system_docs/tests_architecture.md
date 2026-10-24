@@ -178,10 +178,10 @@ CI entrypoint (verified 2026-09-26 against the files named):
   raises before AND after the run unless the process is Python 3.14+ built
   free-threaded with the GIL off. `tests/experimentation/` is therefore collected by
   a local `pytest` (it sits under `testpaths`) and never by CI.
-- Matrix (re-verified 2026-10-05): `.github/scripts/python_runtime_matrix.py` builds
+- Matrix (re-verified 2026-10-24): `.github/scripts/python_runtime_matrix.py` builds
   it from the test manifests in `.github/python/tests/` - one TOML file per exact
   Python release holding the release, `freethreaded = true` and that release's exact
-  test-dependency pins - for ubuntu-24.04 (x64), windows-latest (x64) and macos-latest
+  pins (Melder's runtime dependency and the test group) - for ubuntu-24.04 (x64), windows-latest (x64) and macos-latest
   (arm64), with no network lookup. The floor release from `requires-python` must have
   a manifest and none may sit below it. Each cell installs exactly its manifest's pins
   plus Melder from the checkout (`uv pip install --no-deps`, no resolver, no lockfile)
@@ -238,7 +238,8 @@ connect and how to extend them; read it before changing CI. Branch and release p
   the one required status, `CI / merge-ready`; `.github/workflows/speed-tests.yml` runs the three speed tests
   beside it on dev-to-preprod pull requests and blocks nothing; `.github/workflows/release-candidate.yml`
   uploads a candidate to TestPyPI and probes the installed wheel on every manifest release;
-  `.github/workflows/python-publish.yml` requalifies a published release from scratch and uploads it to PyPI.
+  `.github/workflows/python-publish.yml` rechecks a published candidate's exact tree and rebuilds it for PyPI;
+  since 2026-10-24 it does not run the runtime tests again (full CI and the release candidate tested that tree).
 - Every other workflow is reusable and proves one thing: `test-runtime.yml` (the three tiers on every manifest
   release and runner, then coverage), the two asset checks, `docs.yml`, `build-distributions.yml`,
   `verify-source-qualification.yml` and the three speed tests.
@@ -789,9 +790,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `.github/workflows/test-runtime.yml`
   start_line: 1
-  end_line: 178
-  loc: 178
-  verified_at: 2026-10-05T11:36:52Z
+  end_line: 175
+  loc: 175
+  verified_at: 2026-10-24T19:37:10Z
 - path: `.github/scripts/run_runtime_tests.py`
   start_line: 1
   end_line: 54
@@ -918,6 +919,13 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-24 Python 3.14.9, 3.15.0 and 3.15.1 cells; publication without a test rerun (no notch; CI and
+documentation only): the test manifests add three releases (36 cells) and pin Melder's runtime dependency (pip)
+beside the test group, the 3.15 pair building PyYAML from its sdist; `python-publish.yml` no longer runs the
+runtime tests again, so the CI/CD bullet says what it checks and the matrix bullet what a manifest pins. The C1
+extent of `test-runtime.yml` is remeasured (175: its release-event coverage override went with that run). No
+tier, conftest, declared marker or shared support module changes.
 
 2026-10-19 cluster admission (0.2.8265): the operational invariants identify the deterministic thread
 coordination used by the cluster race checks and the separate callback observers. The test component

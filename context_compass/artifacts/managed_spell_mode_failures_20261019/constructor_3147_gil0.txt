@@ -1,3 +1,0 @@
-Failed to find real location of C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.7+freethreaded-windows-x86_64-none\python.exe
-....                                                                     [100%]
-4 passed in 0.82s

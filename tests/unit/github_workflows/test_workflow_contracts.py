@@ -384,7 +384,7 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
         assert upload["with"]["directory"] == "selected-coverage"
         assert upload["with"]["fail_ci_if_error"] == "true"
         assert upload["with"].get("use_oidc", "false") == "false"
-        assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
+        assert "override_branch" not in upload["with"]
     selection = job["steps"][-3]
     assert selection["uses"].startswith("actions/upload-artifact@")
     assert selection["with"]["name"] == "selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}"
@@ -410,7 +410,7 @@ def test_codecov_upload_retries_with_the_pypi_uploader_only_after_a_failed_first
     assert {key: value for key, value in fallback["with"].items() if key != "use_pypi"} == first["with"]
 
 
-@pytest.mark.parametrize("name", ["ci.yml", "python-publish.yml"])
+@pytest.mark.parametrize("name", ["ci.yml"])
 def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
     """Nested reporting receives its own token without inheriting package upload credentials."""
     caller = workflow(name)["jobs"]["tests"]
@@ -451,14 +451,17 @@ def test_codecov_does_not_create_extra_required_coverage_statuses() -> None:
 
 
 def test_publication_repeats_validation_and_checks_prod_last() -> None:
-    """A green historical PR cannot replace fresh release validation or the last head check."""
+    """Publication rechecks and rebuilds the exact candidate tree and checks prod last, without rerunning tests.
+
+    Full CI and the release candidate already ran the runtime matrix on that tree, and release-gate refuses any
+    other tree (check_candidate_run.py), so final publication calls no test-runtime.yml (owner, 2026-10-24).
+    """
     document = workflow("python-publish.yml")
     assert set(document["on"]) == {"release", "workflow_dispatch"}
     assert document["concurrency"] == {"group": "pypi-publication", "cancel-in-progress": "false"}
     jobs = document["jobs"]
-    assert jobs["tests"]["uses"] == "./.github/workflows/test-runtime.yml"
-    assert jobs["tests"]["needs"] == "release-gate"
-    required = {"release-gate", "hygiene", "source-assets", "repo-assets", "tests"}
+    assert all(job.get("uses") != "./.github/workflows/test-runtime.yml" for job in jobs.values())
+    required = {"release-gate", "hygiene", "source-assets", "repo-assets"}
     assert set(jobs["release-build"]["needs"]) == required
     publisher = jobs["pypi-publish"]
     assert set(publisher["needs"]) == required | {"release-build"}

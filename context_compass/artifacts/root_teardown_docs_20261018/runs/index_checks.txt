@@ -1,2 +1,0 @@
-OK: src_architecture_index.md is current (62 sections over 5418 lines)
-OK: src_components_index.md is current (155 sections over 12324 lines)

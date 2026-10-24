@@ -38,7 +38,7 @@ push to release_candidate, or a manual run there  -->  release-candidate.yml
   -> install (every test-manifest release on Linux, Windows and macOS) -> package-ready
 
 published release, or a manual run on prod  -->  python-publish.yml
-  release-gate -> hygiene, source-assets, repo-assets, tests -> release-build -> pypi-publish
+  release-gate -> hygiene, source-assets, repo-assets -> release-build -> pypi-publish
 ```
 
 Workflows only orchestrate. The decisions (routes, required results, Python matrices, installs, package checks)

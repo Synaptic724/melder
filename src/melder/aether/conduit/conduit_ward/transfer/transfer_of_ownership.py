@@ -1561,8 +1561,10 @@ class TransferOfOwnership(Cleanable):
         0.2.8239). Instead of leaving the existing instances behind and having
         the new owner build its own, it extracts the index members' creation payload
         from the source and restores that payload into the target conduit's
-        `Creations` store, so a `unique` stays one object and a holder's row
-        carries the `many` children recorded with it (0.2.8238). The restore
+        `Creations` store, so a `unique` stays one object. A holder's row
+        carries the holder alone: the `many` objects it was built with stay
+        recorded in the store that built them (the owner's decision,
+        2026-10-24; from 0.2.8238 to 0.2.8265 the row carried them). The restore
         replaces whatever the target store already holds under a member id;
         the replaced instances are not disposed. This applies only to
         conduit-owned creation state; spellspace-local request objects are

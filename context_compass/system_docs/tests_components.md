@@ -2080,7 +2080,7 @@ Key Files (C1):
 
 ### Flow: CI Runtime Qualification
 1. the workflow sets `PYTHON_GIL: "0"` and runs `run_runtime_tests.py` with
-   `--report` and `--coverage-report` (`.github/workflows/test-runtime.yml:70-73`).
+   `--report` and `--coverage-report` (`.github/workflows/test-runtime.yml:76-79`).
 2. `main` parses its arguments, imports pytest and calls
    `require_free_threading(sys.version_info, Py_GIL_DISABLED, sys._is_gil_enabled())`,
    which raises `RuntimeError` unless the process is 3.14+, free-threaded and
@@ -2946,9 +2946,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `.github/workflows/test-runtime.yml`
   start_line: 1
-  end_line: 178
-  loc: 178
-  verified_at: 2026-10-06T00:22:33Z
+  end_line: 175
+  loc: 175
+  verified_at: 2026-10-24T19:37:10Z
 - path: `tests/unit/github_workflows/conftest.py`
   start_line: 1
   end_line: 73
@@ -3131,9 +3131,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-06T11:24:15Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 940
-  loc: 940
-  verified_at: 2026-10-06T11:24:15Z
+  end_line: 943
+  loc: 943
+  verified_at: 2026-10-24T19:37:10Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
   end_line: 434
@@ -3895,6 +3895,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-24 Python 3.15 cells and publication without a test rerun (no notch; CI and documentation only): the C1
+extents of `test-runtime.yml` (175) and `test_workflow_contracts.py` (943; the publication contract now asserts
+no runtime test run and no Codecov branch override) are remeasured, and the CI qualification flow's citation
+into `test-runtime.yml` points at the run step again (76-79; it read 70-73).
 
 2026-10-19 FrameLink cleanup guard (test-only): the Aether/Nexus/Rift unit entry and a focused call flow
 describe the deterministic acquisition-boundary stand-in. It completes a real cleanup before the outer

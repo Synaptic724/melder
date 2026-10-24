@@ -68,7 +68,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-dependencies = []
+dependencies = [
+    "pip==26.2.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/Synaptic724/melder"

@@ -8,9 +8,9 @@ CI never chooses a Python release by itself. Every interpreter it sets up is one
 | The three speed tests | The one speed release, free-threaded, on three x64 runners | `.github/python/speed/<release>.toml`, read by `python_runtime_matrix.py speed` |
 | Every other job (policy, assets, docs, builds, publication, the speed tests' manifest jobs) | The helper release, written as `python-version: "3.14.7"` | The workflow file; the release must have a test manifest |
 
-Nothing is looked up on the network and nothing follows the newest patch, so a new Python release, 3.15 included,
-runs only after someone adds its manifest. `test_workflow_contracts.py` refuses any `setup-python` step that asks
-for `check-latest`, a version file, a pre-release, a second helper release, or a release with no test manifest.
+Nothing is looked up on the network and nothing follows the newest patch, so a new Python release runs only after
+someone adds its manifest. `test_workflow_contracts.py` refuses any `setup-python` step that asks for
+`check-latest`, a version file, a pre-release, a second helper release, or a release with no test manifest.
 
 ## The manifest format
 
@@ -21,6 +21,8 @@ A manifest is a TOML file named after its exact release:
 python = "3.14.0"
 freethreaded = true
 dependencies = [
+    # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
+    "pip==26.2.2",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -37,9 +39,12 @@ dependencies = [
 - `freethreaded` must be `true`: Melder CI qualifies free-threaded builds only.
 - `dependencies` is the whole install: exact `name==version` pins, one per distribution, each optionally followed
   by `; marker`. Installs skip dependency resolution, so a pinned package's own dependencies must be pinned too.
-  The test manifests hold the `test` group's closure from `uv.lock`.
-- `build_from_source` (optional) lists pinned distributions that pip must build from their sdist because no
-  usable wheel exists. The speed manifest uses it for dependency-injector.
+  The test manifests hold Melder's runtime dependency (pip) and the `test` group's closure from `uv.lock`.
+- `build_from_source` (optional) lists pinned distributions built from their sdist because no usable wheel
+  exists: dependency-injector in the speed manifest, PyYAML in the 3.15 test manifests. The speed install
+  passes each to pip as `--no-binary`; a test cell's `uv pip install` builds any pin that has no wheel for
+  its release, so in a test manifest the list records which pins are built. Their build tools (setuptools
+  and Cython for PyYAML) are fetched into that isolated build only.
 
 `load_manifest` refuses anything else: another or a non-final release, `freethreaded = false`, a range or a
 missing pin, a pin repeated, an unknown key, a source build that is not pinned. The tests folder must contain the
@@ -74,12 +79,14 @@ below).
 
 1. Copy the newest test manifest to `.github/python/tests/3.14.9.toml` and set `python = "3.14.9"`.
 2. Make sure every pin installs on that release as a free-threaded wheel (a `cp314t` wheel or a pure-Python one);
-   change the pins that do not, in this manifest only.
+   change the pins that do not, in this manifest only. A pin that has no such wheel in any version may stay
+   if its sdist builds on all three runners: list it in `build_from_source`, as the 3.15 manifests do for PyYAML.
 3. Run the workflow tests ([validating.md](validating.md)). The runtime matrix and the release candidate's probes
    each gain three jobs; nothing else changes.
 
-A new minor (3.15) works the same way. Expect to adjust pins: libraries publish free-threaded wheels for a new
-minor on their own schedule.
+A new minor works the same way. Expect to adjust pins: libraries publish free-threaded wheels for a new minor on
+their own schedule. 3.15 arrived before PyYAML published a `cp315t` wheel, so its manifests build PyYAML from
+source; when a release with that wheel appears, pin it there and drop `build_from_source`.
 
 ### Retire releases or raise the floor
 

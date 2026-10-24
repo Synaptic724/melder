@@ -1,3 +1,0 @@
-Audited 313 content pages: 0 errors, 303 warnings.
-Use --json for all page metadata and individual issues.
-check_seo exit=0

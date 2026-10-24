@@ -589,11 +589,12 @@ def _install_specializing_door(
           returns `plain_instance_door` unchanged when no `unique` step
           exists.
         - Graphs in which a `many` step feeds a non-`many` step never install
-          the wrapper either (many_child_follows_holder, 2026-10-14): the
-          straight-line specialized body would build a holder's `many`
-          children on every warm call and record them in the meld's innermost
-          scope, while the plain door's site plan builds them only in the
-          holder's first build and records them with the holder's owner.
+          the wrapper either (2026-10-14): the straight-line specialized body
+          would build a holder's `many` children on every warm call, each
+          recorded in the meld's innermost scope when it declares disposal
+          methods, while the plain door's site plan builds them only in the
+          holder's first build. Both doors record such a child in the meld's
+          innermost scope (the owner's decision, 2026-10-24).
         - The wrapper's steady state is self-erasing: once a final door is
           resolved (specialized or declined-to-plain), every wrapper call
           re-publishes the final door(s) into the CURRENT published context
@@ -628,8 +629,8 @@ def _install_specializing_door(
         return plain_instance_door
     if rows_feed_many_into_non_many_step(rows):
         # A holder's `many` children must be built only in the holder's first
-        # build and recorded with the holder's owner; a straight-line body
-        # cannot do that, so the plain door (site plan) keeps serving.
+        # build; a straight-line body would build them on every warm call, so
+        # the plain door (site plan) keeps serving.
         return plain_instance_door
     if rows_contain_managed_step(rows):
         # A managed step is leased through the site plan (pop, reserve-first

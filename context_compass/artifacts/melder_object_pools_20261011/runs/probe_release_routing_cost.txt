@@ -1,3 +1,0 @@
-python 3.14.7 gil_enabled=False cpus=2
-threads=1: baseline=14.2ns (+0.0), mixin_field=45.0ns (+30.8), class_map=43.3ns (+29.2), identity_map=89.8ns (+75.6)
-threads=2: baseline=14.2ns (+0.0), mixin_field=66.0ns (+51.8), class_map=76.3ns (+62.1), identity_map=234.2ns (+220.0)

@@ -1,0 +1,1753 @@
+# Red run on 0.2.8265 (unchanged src), -X gil=0, 2026-10-24T20:28:18Z
+# Python: Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]; pytest 9.1.1; tree: a /tmp mirror of the checkout's src, tests and pyproject.toml
+# Command: python -X gil=0 -m pytest -q -p no:cacheprovider -rf <the six files below>
+#   tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py
+#   tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py
+#   tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py
+#   tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py
+#   tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py
+#   tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py
+FFFFFFFFFFFFFFFFFFF.....FFFFFFFFFF...................F.................. [ 46%]
+....F.........FFF..............F........................................ [ 92%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-through-lesser] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder'>
+existence = <Existence.unique: 1>
+route = <function _first_meld_through_lesser at 0x41fffdb4380>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffe37ac90>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffe37ac90> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x41ffe379c10>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder'>
+existence = <Existence.unique: 1>
+route = <function _first_meld_in_root_spellspace at 0x41fffdb4500>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa75150>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa75150> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x41fffa749d0>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-lesser-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder'>
+existence = <Existence.unique: 1>
+route = <function _first_meld_in_lesser_spellspace at 0x41fffdb4680>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa74890>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa74890> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x41fffa75c90>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder'>
+existence = <Existence.unique_per_conduit: 2>
+route = <function _first_meld_in_root_spellspace at 0x41fffdb4500>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa76cd0>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa76cd0> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder object at 0x41ffe37ab10>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder'>
+existence = <Existence.unique_per_conduit: 2>
+route = <function _first_meld_in_lesser_spellspace at 0x41fffdb4680>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa78490>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa78490> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder object at 0x41fffa785d0>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-through-lesser] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder'>
+existence = <Existence.unique_per_conduit_lineage: 5>
+route = <function _first_meld_through_lesser at 0x41fffdb4380>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa74b10>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa74b10> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder object at 0x41ffe379d90>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder'>
+existence = <Existence.unique_per_conduit_lineage: 5>
+route = <function _first_meld_in_root_spellspace at 0x41fffdb4500>
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_through_lesser, id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, _first_meld_in_root_spellspace, id="unique-in-root-spellspace"),
+            pytest.param(
+                UniqueHolder, Existence.unique, _first_meld_in_lesser_spellspace, id="unique-in-lesser-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_root_spellspace,
+                id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                _first_meld_in_lesser_spellspace,
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_through_lesser,
+                id="lineage-through-lesser",
+            ),
+            pytest.param(
+                LineageHolder,
+                Existence.unique_per_conduit_lineage,
+                _first_meld_in_root_spellspace,
+                id="lineage-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it(
+            holder: type,
+            existence: Existence,
+            route: Any,
+    ) -> None:
+        """
+        The scope that first melded a longer-lived holder built its `many` child, so that scope's end disposes the
+        child, once, while the holder's owner keeps serving the holder; the owner's end does not dispose it again.
+    
+        Symptom (0.2.8235-0.2.8265): after the route's scope ended the child was still open - recorded with the holder -
+        and the holder's owner closed it at its own end, Melder disposing a transient because of the holder it was
+        passed to.
+        """
+        book, _child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            first, again, lesser = route(root, holder_id)
+            assert again is first, "precondition: the holder outlives the scope that first melded it"
+>           assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E           AssertionError: the scope that built the many child must dispose it when it ends
+E           assert 0 == 1
+E            +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa72810>.closes
+E            +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa72810> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder object at 0x41fffa77e50>.child
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-through-lesser] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder'>
+existence = <Existence.unique: 1>, route_kind = 'lesser'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+>               assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+E               AssertionError: the melding lesser must record the child it built
+E               assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa76410> in []
+E                +  where [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41ffee0f570>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:330: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder'>
+existence = <Existence.unique: 1>, route_kind = 'root_spellspace'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+                assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
+                if owner_store is not melding_store:
+                    assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
+                lesser.cleanup()
+            else:
+                conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
+                with conduit.enter_spellspace() as space:
+                    child = space.meld(spell_id=holder_id).child
+                    if existence is Existence.unique_per_spell_space:
+                        owner_store = space._creations
+                    elif owned_by_root:
+                        owner_store = root._creations
+                    else:
+                        owner_store = conduit._creations
+                    melding_store = space._creations
+>                   assert child in _bucket(melding_store, child_id), (
+                        "the melding spellspace must record the child it built"
+                    )
+E                   AssertionError: the melding spellspace must record the child it built
+E                   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x42000599b10> in []
+E                    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x41ffee0f030>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-lesser-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder'>
+existence = <Existence.unique: 1>, route_kind = 'lesser_spellspace'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+                assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
+                if owner_store is not melding_store:
+                    assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
+                lesser.cleanup()
+            else:
+                conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
+                with conduit.enter_spellspace() as space:
+                    child = space.meld(spell_id=holder_id).child
+                    if existence is Existence.unique_per_spell_space:
+                        owner_store = space._creations
+                    elif owned_by_root:
+                        owner_store = root._creations
+                    else:
+                        owner_store = conduit._creations
+                    melding_store = space._creations
+>                   assert child in _bucket(melding_store, child_id), (
+                        "the melding spellspace must record the child it built"
+                    )
+E                   AssertionError: the melding spellspace must record the child it built
+E                   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x42000598f10> in []
+E                    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x41ffee0f650>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder'>
+existence = <Existence.unique_per_conduit: 2>, route_kind = 'root_spellspace'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+                assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
+                if owner_store is not melding_store:
+                    assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
+                lesser.cleanup()
+            else:
+                conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
+                with conduit.enter_spellspace() as space:
+                    child = space.meld(spell_id=holder_id).child
+                    if existence is Existence.unique_per_spell_space:
+                        owner_store = space._creations
+                    elif owned_by_root:
+                        owner_store = root._creations
+                    else:
+                        owner_store = conduit._creations
+                    melding_store = space._creations
+>                   assert child in _bucket(melding_store, child_id), (
+                        "the melding spellspace must record the child it built"
+                    )
+E                   AssertionError: the melding spellspace must record the child it built
+E                   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x42000598210> in []
+E                    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x41ffee0f960>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-lesser-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder'>
+existence = <Existence.unique_per_conduit: 2>, route_kind = 'lesser_spellspace'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+                assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
+                if owner_store is not melding_store:
+                    assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
+                lesser.cleanup()
+            else:
+                conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
+                with conduit.enter_spellspace() as space:
+                    child = space.meld(spell_id=holder_id).child
+                    if existence is Existence.unique_per_spell_space:
+                        owner_store = space._creations
+                    elif owned_by_root:
+                        owner_store = root._creations
+                    else:
+                        owner_store = conduit._creations
+                    melding_store = space._creations
+>                   assert child in _bucket(melding_store, child_id), (
+                        "the melding spellspace must record the child it built"
+                    )
+E                   AssertionError: the melding spellspace must record the child it built
+E                   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x42000599610> in []
+E                    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x41ffee0cef0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-at-lesser] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder'>
+existence = <Existence.unique_per_conduit: 2>, route_kind = 'lesser'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+>               assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+E               AssertionError: the melding lesser must record the child it built
+E               assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc7a4ed0> in []
+E                +  where [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41ffee0ef50>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:330: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-through-lesser] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder'>
+existence = <Existence.unique_per_conduit_lineage: 5>, route_kind = 'lesser'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+>               assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+E               AssertionError: the melding lesser must record the child it built
+E               assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc7a4530> in []
+E                +  where [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41ffee0e150>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:330: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder'>
+existence = <Existence.unique_per_conduit_lineage: 5>
+route_kind = 'root_spellspace'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+                assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
+                if owner_store is not melding_store:
+                    assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
+                lesser.cleanup()
+            else:
+                conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
+                with conduit.enter_spellspace() as space:
+                    child = space.meld(spell_id=holder_id).child
+                    if existence is Existence.unique_per_spell_space:
+                        owner_store = space._creations
+                    elif owned_by_root:
+                        owner_store = root._creations
+                    else:
+                        owner_store = conduit._creations
+                    melding_store = space._creations
+>                   assert child in _bucket(melding_store, child_id), (
+                        "the melding spellspace must record the child it built"
+                    )
+E                   AssertionError: the melding spellspace must record the child it built
+E                   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc7a5bf0> in []
+E                    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x41ffee0fdc0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: AssertionError
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[spellspace-holder-in-root-spellspace] _
+
+holder = <class 'test_conduit_component_many_child_belongs_to_the_scope_that_built_it.SpellSpaceHolder'>
+existence = <Existence.unique_per_spell_space: 6>
+route_kind = 'root_spellspace'
+
+    @pytest.mark.parametrize(
+        ("holder", "existence", "route_kind"),
+        [
+            pytest.param(UniqueHolder, Existence.unique, "lesser", id="unique-through-lesser"),
+            pytest.param(UniqueHolder, Existence.unique, "root_spellspace", id="unique-in-root-spellspace"),
+            pytest.param(UniqueHolder, Existence.unique, "lesser_spellspace", id="unique-in-lesser-spellspace"),
+            pytest.param(
+                PerConduitHolder, Existence.unique_per_conduit, "root_spellspace", id="per-conduit-in-root-spellspace",
+            ),
+            pytest.param(
+                PerConduitHolder,
+                Existence.unique_per_conduit,
+                "lesser_spellspace",
+                id="per-conduit-in-lesser-spellspace",
+            ),
+            pytest.param(PerConduitHolder, Existence.unique_per_conduit, "lesser", id="per-conduit-at-lesser"),
+            pytest.param(LineageHolder, Existence.unique_per_conduit_lineage, "lesser", id="lineage-through-lesser"),
+            pytest.param(
+                LineageHolder, Existence.unique_per_conduit_lineage, "root_spellspace", id="lineage-in-root-spellspace",
+            ),
+            pytest.param(
+                SpellSpaceHolder,
+                Existence.unique_per_spell_space,
+                "root_spellspace",
+                id="spellspace-holder-in-root-spellspace",
+            ),
+        ],
+    )
+    def test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder(
+            holder: type,
+            existence: Existence,
+            route_kind: str,
+    ) -> None:
+        """
+        The first build of a holder records its `many` child in the store of the scope that melded it - the
+        spellspace, else the melding conduit - and the store that owns the holder keeps no record of the child.
+    
+        Owners of the holder: the root for `unique` and lineage; the conduit a per-conduit holder is cached in; the
+        spellspace for a spellspace holder. Symptom (0.2.8235-0.2.8265): the child was recorded in the owner's store and,
+        from 0.2.8238, inside the holder's own disposal record, out of its spell's bucket.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=holder, existence=existence, permissions="create")
+        root = book.conjure(name="many_child_root")
+        owned_by_root = existence in (Existence.unique, Existence.unique_per_conduit_lineage)
+        try:
+            if route_kind == "lesser":
+                lesser = root.create_lesser_conduit()
+                child = lesser.meld(spell_id=holder_id).child
+                owner_store = root._creations if owned_by_root else lesser._creations
+                melding_store = lesser._creations
+                assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+                assert _holder_disposal_record(owner_store, holder_id) is None, (
+                    "the holder's owner must not tie the child to the holder"
+                )
+                if owner_store is not melding_store:
+                    assert child not in _bucket(owner_store, child_id), "the holder's owner must not record the child"
+                lesser.cleanup()
+            else:
+                conduit = root if route_kind == "root_spellspace" else root.create_lesser_conduit()
+                with conduit.enter_spellspace() as space:
+                    child = space.meld(spell_id=holder_id).child
+                    if existence is Existence.unique_per_spell_space:
+                        owner_store = space._creations
+                    elif owned_by_root:
+                        owner_store = root._creations
+                    else:
+                        owner_store = conduit._creations
+                    melding_store = space._creations
+>                   assert child in _bucket(melding_store, child_id), (
+                        "the melding spellspace must record the child it built"
+                    )
+E                   AssertionError: the melding spellspace must record the child it built
+E                   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc657210> in []
+E                    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x41ffee0fd50>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: AssertionError
+_ test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer _
+
+    def test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer() -> None:
+        """
+        A per-conduit consumer melded in a lesser builds its `unique` holder (published in the root) and the holder's
+        `many` child; the lesser built the child, so the lesser records it and its pool return disposes it.
+    
+        Symptom (0.2.8235-0.2.8265): the root recorded the child with its unique holder, so the lesser's pool return left
+        it open and the root closed it at teardown.
+        """
+        book, child_id = _book()
+        holder_id = book.bind(spell=UniqueHolder, existence=Existence.unique, permissions="create")
+        consumer_id = book.bind(spell=PerConduitConsumer, existence=Existence.unique_per_conduit, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            lesser = root.create_lesser_conduit()
+            held = lesser.meld(spell_id=consumer_id).holder
+>           assert held.child in _bucket(lesser._creations, child_id), "the lesser built the child and records it"
+E           AssertionError: the lesser built the child and records it
+E           assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc655710> in []
+E            +  where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc655710> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x41fffa79610>.child
+E            +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cc0f0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+E            +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cc0f0> = <Conduit name=None id=01M5QSHWM7CVC8QJ8W92KAZ32N>._creations
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:378: AssertionError
+_ test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique __
+
+    def test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique() -> None:
+        """
+        An override meld through a lesser first builds a `unique` holder with the supplied Extra and a new Child; the
+        lesser's key-set plan built the child, so the lesser records it and its pool return disposes it.
+    
+        Symptom (0.2.8235-0.2.8265): the root recorded the child with its unique holder and closed it at teardown.
+        """
+        book, child_id = _book()
+        book.bind(spell=Extra, existence=Existence.many, permissions="create")
+        holder_id = book.bind(spell=OverrideHolder, existence=Existence.unique, permissions="create")
+        root = book.conjure(name="many_child_root")
+        supplied = Extra()
+        try:
+            lesser = root.create_lesser_conduit()
+            first = lesser.meld(spell_id=holder_id, override={"extra": supplied})
+            assert first.extra is supplied, "precondition: the override supplied the Extra"
+>           assert first.child in _bucket(lesser._creations, child_id), "the lesser built the child and records it"
+E           AssertionError: the lesser built the child and records it
+E           assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc658650> in []
+E            +  where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc658650> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.OverrideHolder object at 0x41ffe378890>.child
+E            +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cee70>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+E            +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cee70> = <Conduit name=None id=01M5QSHWMJCEBXM0GE0EH1S2YA>._creations
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:405: AssertionError
+_ test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it _
+
+    def test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it() -> None:
+        """
+        With the opt-in singleton specializer on, warm melds of a `many` root over a captured `unique` holder build no
+        further child (the specializer still declines a graph that feeds a `many` step into a holder); the one child is
+        recorded by the scope that built it - the root - and disposed once, when the root ends.
+    
+        Symptom (0.2.8235-0.2.8265): the child was recorded with the holder, out of its spell's bucket.
+        """
+        book, child_id = _book(specialize=True)
+        holder_id = book.bind(spell=UniqueHolder, existence=Existence.unique, permissions="create")
+        root_id = book.bind(spell=ManyRoot, existence=Existence.many, permissions="create")
+        root = book.conjure(name="many_child_root")
+        try:
+            melded = [root.meld(spell_id=root_id) for _ in range(6)]
+            with root.enter_spellspace() as space:
+                melded.append(space.meld(spell_id=root_id))
+            held = melded[0].holder
+            assert all(each.holder is held for each in melded), "precondition: every meld reuses the one unique holder"
+            assert Child.built == 1, "warm melds built a many child the captured unique holder does not need"
+>           assert _bucket(root._creations, child_id) == [held.child], "the root, which built the child, records it once"
+E           AssertionError: the root, which built the child, records it once
+E           assert [] == [<test_condui...x41ffc6584d0>]
+E             
+E             Right contains one more item: <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffc6584d0>
+E             Use -v to get more diff
+
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:434: AssertionError
+_ test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique _
+
+    def test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique() -> None:
+        """
+        A borrowing root that first melds a contracted `unique` holder builds the holder's `many` child, so the borrower
+        records the child and its teardown disposes it, once, while the owner keeps serving the holder.
+    
+        Symptom (0.2.8235-0.2.8265): the owner recorded the child with its unique holder, so the borrower's teardown left
+        it open and the owner closed it at its own teardown.
+        """
+        configuration = _dynamic_configuration("default")
+        owner_book = Spellbook(configuration=configuration)
+        child_id = owner_book.bind(
+            spell=Child, existence=Existence.many, permissions="create", disposal_method_names=["close"],
+        )
+        holder_id = owner_book.bind(spell=ContractedHolder, existence=Existence.unique, permissions="create")
+        borrower_book = Spellbook(configuration=configuration)
+        owner = owner_book.conjure(dynamic=True, name="many_child_owner")
+        borrower = borrower_book.conjure(dynamic=True, name="many_child_borrower")
+        try:
+            owner.link(borrower)
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                assert borrower.add_spell_to_contract(spell_id=holder_id, conduit=owner, permissions="create")
+            assert borrower.validate_contracts_and_define()
+            first = borrower.meld(spell_id=holder_id)
+>           assert first.child in _bucket(borrower._creations, child_id), (
+                "the borrowing root built the child and must record it"
+            )
+E           AssertionError: the borrowing root built the child and must record it
+E           assert <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffe37a990> in []
+E            +  where <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41ffe37a990> = <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.ContractedHolder object at 0x41ffe378590>.child
+E            +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cc010>, 'db4adc5a7d705dd3cb8340394cb847e952f0d48d9d107e10e7bb48b245345b2f')
+E            +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cc010> = <Conduit name=many_child_borrower id=01M5QSHWP8B881H208B1WQC4RY>._creations
+
+tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py:136: AssertionError
+__ test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder __
+
+    def test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder() -> None:
+        """
+        A non-leader cluster member that first melds the cluster's holder builds the holder's `many` child, so the
+        member records the child and its teardown disposes it, once; neither the leader's teardown nor the cluster's
+        deletion disposes it again.
+    
+        Symptom (0.2.8235-0.2.8265): the child was recorded with the holder - in the leader's store, from 0.2.8237 the
+        cluster's team store - so the member's teardown left it open and the cluster's deletion closed it.
+        """
+        frame = "many-child-cluster"
+        provider_book = Spellbook(aetheric_frame=frame, configuration=_dynamic_configuration(frame))
+        child_id = provider_book.bind(
+            spell=Child, existence=Existence.many, permissions="create", disposal_method_names=["close"],
+        )
+        holder_id = provider_book.bind(
+            spell=ClusterHolder, existence=Existence.unique_per_conduit_cluster, permissions="create",
+        )
+        provider = provider_book.conjure(dynamic=True, name="many_child_provider")
+        member_book = Spellbook(aetheric_frame=frame)
+        member = member_book.conjure(dynamic=True, name="many_child_member")
+        try:
+            provider.link(member)
+            cloud = Spellbook._aether.get_conduit_cloud(frame)
+            cloud.create_cluster("many_child")
+            for root in (provider, member):
+                cloud.add_conduit_to_cluster(root, "many_child")
+            for root in (provider, member):
+                cloud.refresh_cluster_shares_for_conduit(root)
+            cloud.get_cluster("many_child").elect_leader(provider.id)
+            first = member.meld(spell_id=holder_id)
+            team_store = cloud.get_cluster("many_child")._team_store
+>           assert first.child in _bucket(member._creations, child_id), "the member built the child and must record it"
+E           AssertionError: the member built the child and must record it
+E           assert <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa7a010> in []
+E            +  where <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x41fffa7a010> = <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.ClusterHolder object at 0x41ffe378410>.child
+E            +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cf880>, 'db4adc5a7d705dd3cb8340394cb847e952f0d48d9d107e10e7bb48b245345b2f')
+E            +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x41fff8cf880> = <Conduit name=many_child_member id=01M5QSHWPNGDQSYMPFAMQCK4CV>._creations
+
+tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py:183: AssertionError
+_ test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store _
+
+    def test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store() -> None:
+        """
+        Purging a holder disposes the holder alone; each purged holder's child stays in its spell's bucket and is
+        disposed once, when the store that built it ends.
+    
+        Symptom (0.2.8238-0.2.8265): each purge disposed the holder's child with it.
+        """
+        book, child_id = _automatic_book()
+        holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
+        root = book.conjure(name="holder-children-purge")
+        holders: List[PerConduitHolder] = []
+        try:
+            for _ in range(3):
+                holder = root.meld(spell_id=holder_id)
+                holders.append(holder)
+                assert root.purge(spell_id=holder_id) == 1, "a holder purge counts the holder's own entry"
+                assert holder.closes == 1
+>               assert holder.child.closes == 0, "purging the holder must not dispose the many child it holds"
+E               AssertionError: purging the holder must not dispose the many child it holds
+E               assert 1 == 0
+E                +  where 1 = <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x41ffe37b590>.closes
+E                +    where <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x41ffe37b590> = <test_conduit_integration_holder_cleanup_leaves_its_many_children.PerConduitHolder object at 0x41ffe37b710>.child
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:213: AssertionError
+_______ test_single_instance_purge_of_a_holder_disposes_only_the_holder ________
+
+    def test_single_instance_purge_of_a_holder_disposes_only_the_holder() -> None:
+        """
+        A single-instance purge of a holder runs the holder's disposal and nothing else; the next meld builds a new
+        holder and a new child, and the root's teardown disposes the two children it built.
+    
+        Symptom (0.2.8238-0.2.8265): the purge disposed the holder, then its child.
+        """
+        book, _child_id = _automatic_book()
+        holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
+        root = book.conjure(name="holder-children-single-purge")
+        try:
+            holder = root.meld(spell_id=holder_id)
+            assert root.purge(spell=holder, purge_all=False) == 1
+>           assert Closable.log == ["PerConduitHolder"], "only the holder's own disposal runs"
+E           AssertionError: only the holder's own disposal runs
+E           assert ['PerConduitHolder', 'Child'] == ['PerConduitHolder']
+E             
+E             Left contains one more item: 'Child'
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:235: AssertionError
+_______ test_purge_of_a_holder_without_disposal_methods_disposes_nothing _______
+
+    def test_purge_of_a_holder_without_disposal_methods_disposes_nothing() -> None:
+        """
+        A holder that declares no disposal method has nothing to run when purged; its child is not its to dispose.
+    
+        Symptom (0.2.8238-0.2.8265): the purge disposed the holder's child.
+        """
+        book, child_id = _automatic_book()
+        holder_id = _bind(book, PlainHolder, Existence.unique_per_conduit, closable=False)
+        root = book.conjure(name="holder-children-plain-purge")
+        try:
+            holder = root.meld(spell_id=holder_id)
+            assert root.purge(spell_id=holder_id) == 1
+>           assert holder.child.closes == 0, "purging the holder must not dispose its many child"
+E           AssertionError: purging the holder must not dispose its many child
+E           assert 1 == 0
+E            +  where 1 = <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x41fffa79750>.closes
+E            +    where <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x41fffa79750> = <test_conduit_integration_holder_cleanup_leaves_its_many_children.PlainHolder object at 0x41ffe37b890>.child
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:255: AssertionError
+_______ test_spellspace_holder_purge_leaves_its_child_for_the_space_exit _______
+
+    def test_spellspace_holder_purge_leaves_its_child_for_the_space_exit() -> None:
+        """
+        Purging a spellspace holder disposes the holder; the space built the child and disposes it at its exit.
+    
+        Symptom (0.2.8238-0.2.8265): the purge disposed the child with the holder.
+        """
+        book, _child_id = _automatic_book()
+        holder_id = _bind(book, SpaceHolder, Existence.unique_per_spell_space)
+        root = book.conjure(name="holder-children-space-purge")
+        try:
+            with root.enter_spellspace() as space:
+                holder = space.meld(spell_id=holder_id)
+                assert space.purge(spell_id=holder_id) == 1
+>               assert (holder.closes, holder.child.closes) == (1, 0), "only the holder's own disposal runs"
+E               AssertionError: only the holder's own disposal runs
+E               assert (1, 1) == (1, 0)
+E                 
+E                 At index 1 diff: 1 != 0
+E                 Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:275: AssertionError
+________ test_owner_purge_of_a_unique_holder_leaves_its_many_child_open ________
+
+    def test_owner_purge_of_a_unique_holder_leaves_its_many_child_open() -> None:
+        """
+        The owning root's purge of a `unique` holder disposes the holder; the child stays recorded in the root, which
+        built it, until the root ends.
+    
+        Symptom (0.2.8238-0.2.8265): the holder's purge disposed its child too.
+        """
+        book, child_id = _automatic_book()
+        holder_id = _bind(book, UniqueHolder, Existence.unique)
+        root = book.conjure(name="holder-children-unique-purge")
+        try:
+            holder = root.meld(spell_id=holder_id)
+            assert root.purge(spell_id=holder_id) == 1
+>           assert (holder.closes, holder.child.closes) == (1, 0), "only the holder's own disposal runs"
+E           AssertionError: only the holder's own disposal runs
+E           assert (1, 1) == (1, 0)
+E             
+E             At index 1 diff: 1 != 0
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:298: AssertionError
+_ test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge _
+  + Exception Group Traceback (most recent call last):
+  |   File "/tmp/cc_res/mirror/tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py", line 317, in test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge
+  |     assert root.purge(spell_id=holder_id) == 1, "the holder's purge raises nothing: its own disposal succeeds"
+  |            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  |   File "/tmp/cc_res/mirror/src/melder/aether/conduit/conduit.py", line 5286, in purge
+  |     return self._meld.purge(
+  |            ~~~~~~~~~~~~~~~~^
+  |         internal_spell,
+  |         ^^^^^^^^^^^^^^^
+  |     ...<3 lines>...
+  |         purge_all=purge_all,
+  |         ^^^^^^^^^^^^^^^^^^^^
+  |     )
+  |     ^
+  |   File "/tmp/cc_res/mirror/src/melder/aether/conduit/meld/conduit_meld.py", line 205, in purge
+  |     return creations.purge(
+  |            ~~~~~~~~~~~~~~~^
+  |         target_spell,
+  |         ^^^^^^^^^^^^^
+  |         purge_all=purge_all,
+  |         ^^^^^^^^^^^^^^^^^^^^
+  |         creation=spell if not purge_all else None,
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     )
+  |     ^
+  |   File "/tmp/cc_res/mirror/src/melder/aether/conduit/creations/creations.py", line 1421, in purge
+  |     raise ExceptionGroup("Errors occurred during creations purge", errors)
+  | ExceptionGroup: Errors occurred during creations purge (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/tmp/cc_res/mirror/src/melder/aether/conduit/creations/creations.py", line 438, in _attempt_cleanup
+    |     method()
+    |     ~~~~~~^^
+    |   File "/tmp/cc_res/mirror/tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py", line 66, in close
+    |     raise RuntimeError("child close failed")
+    | RuntimeError: child close failed
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | RuntimeError: Failed to dispose object <test_conduit_integration_holder_cleanup_leaves_its_many_children.FailingChild object at 0x41ffe37bd10> using method 'close': child close failed
+    +------------------------------------
+__ test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded __
+
+    def test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded() -> None:
+        """
+        A `many` purge of the child spell retires every child the store recorded, the one a live holder holds
+        included: the child is not the holder's, and the holder keeps a reference the application owns.
+    
+        Symptom (0.2.8238-0.2.8265): the purge skipped the child a live holder held.
+        """
+        book, child_id = _automatic_book()
+        holder_id = _bind(book, PerConduitHolder, Existence.unique_per_conduit)
+        root = book.conjure(name="holder-children-many-purge")
+        try:
+            holder = root.meld(spell_id=holder_id)
+            free = root.meld(spell_id=child_id)
+>           assert root.purge(spell_id=child_id) == 2, "the bucket holds the holder's child and the free one"
+E           AssertionError: the bucket holds the holder's child and the free one
+E           assert 1 == 2
+E            +  where 1 = purge(spell_id='dc0a8b06708df7d019044d889b1f2d5bee36cd2b81b6fbcad564537c7ffda934')
+E            +    where purge = <Conduit name=holder-children-many-purge id=01M5QSHWS1PWCN094805WKFJ1T>.purge
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:341: AssertionError
+_ test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it __
+
+    def test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it() -> None:
+        """
+        Moving a holder with `move_creations=True` moves the holder; its child stays in the source store, which built
+        it and disposes it when it ends, while the target serves the holder and disposes only the holder.
+    
+        Symptom (0.2.8238-0.2.8265): the move carried the child to the target with the holder.
+        """
+        frame = "holder-children-move"
+        source_book = Spellbook(aetheric_frame=frame, configuration=_dynamic_configuration(frame))
+        child_id = _bind(source_book, Child, Existence.many)
+        holder_id = _bind(source_book, UniqueHolder, Existence.unique)
+        source = source_book.conjure(dynamic=True, name="holder-children-move-source")
+        target = Spellbook(aetheric_frame=frame).conjure(dynamic=True, name="holder-children-move-target")
+        try:
+            holder = source.meld(spell_id=holder_id)
+            child = holder.child
+            source.transfer_spell_ownership(spell=holder_id, target_conduit=target, move_creations=True)
+            assert target.meld(spell_id=holder_id) is holder, "precondition: the target serves the moved holder"
+>           assert child in _bucket(source, child_id), "the child stays in the store that built it"
+E           AssertionError: the child stays in the store that built it
+E           assert <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x41fffa799d0> in []
+E            +  where [] = _bucket(<Conduit name=holder-children-move-source id=01M5QSHWSDW8QDFNQSADHTXRHD>, 'dc0a8b06708df7d019044d889b1f2d5bee36cd2b81b6fbcad564537c7ffda934')
+
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:367: AssertionError
+_ test_disposal_bearing_many_inside_a_miss_registers_in_the_melds_innermost_scope _
+
+    def test_disposal_bearing_many_inside_a_miss_registers_in_the_melds_innermost_scope() -> None:
+        """
+        A disposal-bearing many built inside S's miss is recorded in the meld's innermost scope - the spellspace store
+        under a SpellSpace meld, else the conduit store - exactly as a many root is, and nothing ties it to S.
+    
+        S is `unique_per_conduit`, published to the conduit store. The owner's decision (2026-10-24): a `many` belongs
+        to the scope that built it. From 0.2.8235 to 0.2.8265 the child went to S's store instead and, from 0.2.8238,
+        S's miss adopted it into S's disposal record.
+        """
+        built: Counter = Counter()
+        spells = {
+            "d": _spell("d", built, disposal=("close",)), "s": _spell("s", built, Existence.unique_per_conduit),
+            "root": _spell("root", built),
+        }
+        steps = (
+            _step(("d", 2), spells["d"]),
+            _step(("s", None), spells["s"], ("d", (("d", 2),))),
+            _step(("root", 0), spells["root"], ("s", (("s", None),))),
+        )
+        topologies = {
+            "root": SpellLocalTopology("root", (_socket("root", "s", 0),)),
+            "s": SpellLocalTopology("s", (_socket("s", "d", 0),)),
+        }
+        plan = _compile_plan(steps, topologies, ("root", 0))
+        first_store, second_store, space_store = FakeStore(), FakeStore(), FakeStore()
+        first_meld = SimpleNamespace(_spellspace_creations=None, _conduit_creations=first_store)
+>       first = plan(first_meld, {})
+                ^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:637: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<test>:21: in _site_plan_executor
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+meld = namespace(_spellspace_creations=None, _conduit_creations=<test_site_plan_lowering.FakeStore object at 0x41fff41a5d0>)
+ov = {}, c1 = <test_site_plan_lowering.FakeStore object at 0x41fff41a5d0>
+
+>   ???
+E   AttributeError: 'FakeStore' object has no attribute 'adopt_children'
+
+<test>:15: AttributeError
+_______ test_registration_passes_each_spells_live_ordered_disposal_list ________
+
+    def test_registration_passes_each_spells_live_ordered_disposal_list() -> None:
+        """A many dependency and a shared site both register with their Spell's own list object, order intact."""
+        built: Counter = Counter()
+        spells = {
+            "d": _spell("d", built, disposal=("stop", "flush", "close")),
+            "s": _spell("s", built, Existence.unique_per_conduit, disposal=("close", "stop")),
+            "root": _spell("root", built),
+        }
+        steps = (
+            _step(("d", 2), spells["d"]),
+            _step(("s", None), spells["s"], ("d", (("d", 2),))),
+            _step(("root", 0), spells["root"], ("s", (("s", None),))),
+        )
+        topologies = {
+            "root": SpellLocalTopology("root", (_socket("root", "s", 0),)),
+            "s": SpellLocalTopology("s", (_socket("s", "d", 0),)),
+        }
+        plan = _compile_plan(steps, topologies, ("root", 0))
+        store = _DisposalRecordingStore()
+>       plan(SimpleNamespace(_spellspace_creations=None, _conduit_creations=store), {})
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:1162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<test>:21: in _site_plan_executor
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+meld = namespace(_spellspace_creations=None, _conduit_creations=<test_site_plan_lowering._DisposalRecordingStore object at 0x41ffe37c790>)
+ov = {}
+c1 = <test_site_plan_lowering._DisposalRecordingStore object at 0x41ffe37c790>
+
+>   ???
+E   AttributeError: '_DisposalRecordingStore' object has no attribute 'adopt_children'
+
+<test>:15: AttributeError
+_ test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope[normal-key-set] _
+
+keys = ()
+
+    @pytest.mark.parametrize("keys", [(), ("limit",)], ids=["normal-key-set", "override-key-set"])
+    def test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope(keys: Tuple[str, ...]) -> None:
+        """
+        S's miss selects the meld's innermost scope once, before its children, and registers D1 and D2 through it; N has
+        no disposal methods and T's miss builds no child, so T selects nothing. No emitted function adopts children or
+        registers a child in a holder's store (the owner's decision, 2026-10-24). An override key set that supplies none
+        of S's parameters emits the same miss.
+        """
+        _built, steps, topologies = _miss_children_world()
+        source, _namespace = _shared_source(steps, topologies, keys)
+    
+>       assert "adopt_children" not in source
+E       AssertionError: assert 'adopt_children' not in 'def _miss3(... return v5\n'
+E         
+E         'adopt_children' is contained here:
+E                  c4.adopt_children(sid4, v4, ((sid0, v0), (sid2, v2)))
+E         ?           ++++++++++++++
+E                   return v4
+E           def _site_plan_executor(meld, ov):
+E               c4 = meld._conduit_creations...
+E         
+E         ...Full output truncated (8 lines hidden), use '-vv' to show
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:1444: AssertionError
+_ test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope[override-key-set] _
+
+keys = ('limit',)
+
+    @pytest.mark.parametrize("keys", [(), ("limit",)], ids=["normal-key-set", "override-key-set"])
+    def test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope(keys: Tuple[str, ...]) -> None:
+        """
+        S's miss selects the meld's innermost scope once, before its children, and registers D1 and D2 through it; N has
+        no disposal methods and T's miss builds no child, so T selects nothing. No emitted function adopts children or
+        registers a child in a holder's store (the owner's decision, 2026-10-24). An override key set that supplies none
+        of S's parameters emits the same miss.
+        """
+        _built, steps, topologies = _miss_children_world()
+        source, _namespace = _shared_source(steps, topologies, keys)
+    
+>       assert "adopt_children" not in source
+E       AssertionError: assert 'adopt_children' not in 'def _miss3(... return v5\n'
+E         
+E         'adopt_children' is contained here:
+E                  c4.adopt_children(sid4, v4, ((sid0, v0), (sid2, v2)))
+E         ?           ++++++++++++++
+E                   return v4
+E           def _site_plan_executor(meld, ov):
+E               c4 = meld._conduit_creations...
+E         
+E         ...Full output truncated (8 lines hidden), use '-vv' to show
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:1444: AssertionError
+_ test_a_miss_registers_its_built_children_in_the_innermost_scope_once_per_build _
+
+    def test_a_miss_registers_its_built_children_in_the_innermost_scope_once_per_build() -> None:
+        """Run the plan: the innermost scope receives S's two disposal-bearing children once; a warm meld adds none."""
+        built, steps, topologies = _miss_children_world()
+        plan = _compile_plan(steps, topologies, ("root", 0))
+        store = FakeStore()
+        meld = SimpleNamespace(_spellspace_creations=None, _conduit_creations=store)
+    
+>       first = plan(meld, {})
+                ^^^^^^^^^^^^^^
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:1461: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<test>:44: in _site_plan_executor
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+meld = namespace(_spellspace_creations=None, _conduit_creations=<test_site_plan_lowering.FakeStore object at 0x41fff414870>)
+ov = {}, c4 = <test_site_plan_lowering.FakeStore object at 0x41fff414870>
+
+>   ???
+E   AttributeError: 'FakeStore' object has no attribute 'adopt_children'
+
+<test>:38: AttributeError
+_ test_door_held_root_registers_its_many_child_in_the_innermost_scope_without_a_guard _
+
+    def test_door_held_root_registers_its_many_child_in_the_innermost_scope_without_a_guard() -> None:
+        """
+        The door-held root's miss takes no guard and registers its disposal-bearing many child in the meld's innermost
+        scope - the spellspace store when there is one, else the conduit store - before the root is built; nothing ties
+        the child to the root (the owner's decision, 2026-10-24; from 0.2.8238 to 0.2.8265 the miss adopted it).
+        """
+        events: List[Event] = []
+        store = RecordingStore(events)
+        child = logging_spell("d", events, Existence.many, disposal=("close",))
+        root = logging_spell("root", events, Existence.unique_per_conduit, disposal=("close",))
+        steps = (plan_step(("d", 1), child), plan_step(("root", None), root, ("d", (("d", 1),))))
+        topologies = {"root": SpellLocalTopology("root", (socket("root", "d", 0),))}
+        graph = SitePlanLowering.build_site_graph(
+            root_spell_id="root", root_instance_key=("root", None), steps=steps, topology_for=topologies.get,
+        )
+        source, namespace, _ = SitePlanLowering.emit(
+            steps=steps, site_graph=graph, resolution=OverrideKeyResolver.resolve(graph, ()),
+            root_instance_key=("root", None), root_spell_id="root", root_spell_name="root", arity=0,
+            normal_mode=True, door_route_key="unique_per_conduit",
+        )
+        graph.cleanup()
+        assert "with " not in source.split(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(")[0]
+>       assert "adopt_children" not in source
+E       AssertionError: assert 'adopt_children' not in 'def _miss1(... return v1\n'
+E         
+E         'adopt_children' is contained here:
+E                  c1.adopt_children(sid1, v1, ((sid0, v0),))
+E         ?           ++++++++++++++
+E               return v1
+E           def _site_plan_executor(meld):
+E               c1 = meld._conduit_creations...
+E         
+E         ...Full output truncated (4 lines hidden), use '-vv' to show
+
+tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py:373: AssertionError
+=========================== short test summary info ============================
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-at-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[spellspace-holder-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py::test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py::test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_single_instance_purge_of_a_holder_disposes_only_the_holder
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_purge_of_a_holder_without_disposal_methods_disposes_nothing
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_spellspace_holder_purge_leaves_its_child_for_the_space_exit
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_owner_purge_of_a_unique_holder_leaves_its_many_child_open
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_disposal_bearing_many_inside_a_miss_registers_in_the_melds_innermost_scope
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_registration_passes_each_spells_live_ordered_disposal_list
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope[normal-key-set]
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_a_miss_registers_its_disposal_bearing_children_through_the_innermost_scope[override-key-set]
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py::test_a_miss_registers_its_built_children_in_the_innermost_scope_once_per_build
+FAILED tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py::test_door_held_root_registers_its_many_child_in_the_innermost_scope_without_a_guard
+35 failed, 121 passed in 1.33s

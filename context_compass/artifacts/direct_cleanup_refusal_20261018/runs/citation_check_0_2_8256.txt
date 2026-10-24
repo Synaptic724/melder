@@ -1,3 +1,0 @@
-MISSING src_components.md 11611 spellbook.py:7233-7244
-MISSING src_components.md 11612 transfer_of_ownership.py:953
-problems: 2 (MISSING rows are bare file names in handoff history, not citations)

@@ -1297,6 +1297,45 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T18:15:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: expert_1's three NOTICEs (2026-10-19T22:26:52Z, 23:09:08Z, 23:45:54Z) consumed at re-onboarding: it landed
+    0.2.8264 (Spell imports ManagedSpellMode at runtime, so the owner's 51 failures on Python 3.14.1-3.14.3 pass -
+    the NameError melder_1 had not written up yet) and 0.2.8265 (concurrent cluster adds admit one caller).
+    __version__ is 0.2.8265; the next src landing here notches above it.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-19_fix_managed_spell_mode_test_failures_task.md:1-6
+  - context_compass/tickets/tasks/completed/2026-10-19_fix_cluster_duplicate_add_concurrency_task.md:1-6
+  - src/melder/__version__.py:12-12
+  IMPACT: The 3.14.1-3.14.3 NameError needs no ticket from melder_1; S2 and S5 notch above 0.2.8265.
+  NEXT: The owner's cleanup of the boards, mailbox and artifacts; then S2 and S5 on his word.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T19:10:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: HYPOTHESIS
+  CLAIM: `Creations.register_many` still assumes "A spell id hashes its resolved disposal names, so one key cannot
+    carry two declarations"; since 0.2.8257 disposal names are a binding-manifest field, not part of the spell_id.
+    The verb appends to an existing bucket whose `ManyDisposalBucket` keeps the list of its FIRST registration, and
+    a removed definition's `many` objects stay in their store by ruling. So a `many` spell rebound after
+    `cleanup_spell` with a different non-empty disposal list (same class, same spell_id) and melded into a store that
+    still holds the old objects would have its new objects disposed with the old methods, never its own. Unproven.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:889-960
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1583-1632
+  - context_compass/system_docs/src_architecture.md:1348-1352
+  - context_compass/system_docs/src_architecture.md:1970-1973
+  IMPACT: If it reproduces, a store records the wrong disposal declaration for a rebound `many` spell (structure
+    recorded wrong); it touches the records the many-child disposal change will edit.
+  NEXT: A probe (rebind with another disposal list, meld into the same root, tear down) with the GIL off and on;
+    a story here if it reproduces.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded

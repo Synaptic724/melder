@@ -19,6 +19,7 @@
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Monthly downloads](https://api.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 [![Lifetime downloads](https://api.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
+[![GitHub stars](https://img.shields.io/github/stars/Synaptic724/melder)](https://github.com/Synaptic724/melder)
 
 [![CI](https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg)](https://github.com/Synaptic724/melder/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg)](https://codecov.io/gh/Synaptic724/melder)
@@ -44,6 +45,49 @@ pip install melder
 
 Working from a clone? Use the repository's `uv.lock` and
 [locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
+
+**On this page:** [First program](#-hello-melder) · [Basics](#part-i--the-basics)
+· [Managed pools](#-managed-spell-quantities) · [Agent rooms](#-give-an-agent-a-room-not-your-process)
+· [Checkpoints](#-checkpoint-the-world-rebuild-it-cold) · [Documentation](#documentation)
+
+Complete examples below run independently in a fresh Python process. Blocks marked
+**Excerpt** assume the classes or setup named in their prerequisites; do not paste
+separate examples into one long-running interpreter. Use a free-threaded Python
+3.14+ build for the concurrency examples.
+
+## 🟢 Hello, Melder
+<sub>**Beginner.** A complete first program, including cleanup.</sub>
+
+Prerequisites: install Melder, save this as `hello.py`, then run `python hello.py`.
+
+```python
+import melder as md
+
+
+class Greeter:
+    """A plain class — no base class, no metaclass, no decorator."""
+
+    def greet(self) -> str:
+        return "hello from a melded instance"
+
+
+book = md.Spellbook()
+book.bind(spell=Greeter, existence="unique")
+
+with book.conjure() as conduit:
+    greeter: Greeter = conduit.meld("Greeter")
+    print(greeter.greet())
+    assert conduit.meld("Greeter") is greeter   # `unique` → same instance
+# Leaving the block cleans the root conduit and its owned Spellbook.
+```
+
+Expected output: `hello from a melded instance`. The assertion checks reuse;
+the block exit ends the scope. Your classes stay plain Python. Everything lives
+on `md.*` — a deep import path is not needed for this workflow.
+
+Pass the Python class or callable to `bind`; resolve it by its quoted registered
+name with `meld("Greeter")`. The tutorials use this name-based lookup throughout.
+Keep opaque machine identities explicit with `meld(spell_id=...)`.
 
 ---
 
@@ -71,12 +115,14 @@ Three verbs. That's the entire mental model.
 
 ```
 bind  →  register what exists          (classes, functions, instances)
-conjure  →  compile + validate the graph   (once — cycles and gaps fail here)
+conjure  →  compile + validate the graph   (once — check cycles and ambiguity)
 meld  →  resolve instances             (as often as you like)
 ```
 
-Validation happens at `conjure()`, not at first use. A cycle, a missing
-provider, an ambiguous binding — you find out at startup, not at 3am.
+`conjure()` checks the registered graph, including cycles and ambiguous providers.
+A typed parameter with no registered provider can remain a caller-supplied input:
+the constructing `meld()` must supply it through `override`, or it raises
+`UnresolvedInputError`. Dynamic changes can also require validation at a later meld.
 
 ### Who it's for
 
@@ -90,9 +136,9 @@ install. If you've been threading a database handle through five function
 signatures, this is the fix.
 
 **🟢 You want your wiring checked before you ship it**
-`conjure()` compiles and validates the entire graph up front. Cycles, missing
-providers, ambiguous resolutions — all surface at startup with a specific error,
-not at 3am on the one code path nobody exercised.
+`conjure()` compiles and validates the registered graph up front. Cycles and
+ambiguous providers surface at startup with a specific error. Inputs deliberately
+left for the caller are checked when a meld needs to construct their consumer.
 
 **🟡 You're building a web service and want honest request scoping**
 Per-request scopes that actually end, per-connection lifetimes, and cleanup that
@@ -293,7 +339,8 @@ The folders above contain runnable scripts, verified together by the
   [What Melder is](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/01_overview/what_melder_is.md),
   then scan the
   [engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md).
-- **Building an application:** enter [Part I](#part-i--the-basics), then work through
+- **Building an application:** try [Hello, Melder](#-hello-melder), continue into
+  [Part I](#part-i--the-basics), then work through
   the [`01_beginner/` examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner).
 - **Building runtime or agent infrastructure:** enter [Part II](#part-ii--the-ceiling),
   then continue into the [`04_expert/` examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert).
@@ -312,39 +359,11 @@ past that point is optional capability that stays dormant until you turn it on.
 
 <sub>🟢 Beginner → 🟡 Intermediate → 🟠 Advanced</sub>
 
-## 🟢 Hello, Melder
-<sub>**Beginner.** The whole runtime in four lines.</sub>
-
-```python
-import melder as md
-
-
-class Greeter:
-    """A plain class — no base class, no metaclass, no decorator."""
-
-    def greet(self) -> str:
-        return "hello from a melded instance"
-
-
-book = md.Spellbook()
-book.bind(spell=Greeter, existence="unique")
-conduit = book.conjure()
-
-greeter = conduit.meld("Greeter")
-print(greeter.greet())
-
-assert conduit.meld("Greeter") is greeter   # `unique` → same instance
-```
-
-Your classes stay plain Python. Everything lives on `md.*` — if you ever need a
-deep import path, that's a bug in our public surface, not a pattern to copy.
-
-Pass the Python class or callable to `bind`; resolve it by its quoted registered
-name with `meld("Greeter")`. The tutorials use this name-based lookup throughout.
-Keep opaque machine identities explicit with `meld(spell_id=...)`.
-
 ## 🟢 The Rhythm
 <sub>**Beginner.** Three verbs, one order.</sub>
+
+**Excerpt.** `Config` and `Server` are your application classes. Start with a
+fresh book, register both, and conjure once; the final line returns a `Server`.
 
 ```python
 book = md.Spellbook()
@@ -360,10 +379,11 @@ conduit = book.conjure()
 server = conduit.meld("Server")
 ```
 
-**`conjure()` is where the work happens.** Requirements extraction, graph
-construction, cycle detection, and runtime compilation all run there. A cycle, a
-missing provider, an ambiguous resolution — it raises *there*, not at 3am when
-the code path finally executes.
+**`conjure()` prepares the registered graph.** Requirements extraction, graph
+construction, cycle detection, and runtime compilation run there. Cycles and
+ambiguous providers refuse startup. A typed parameter with no provider can be
+supplied at `meld(override={...})`; omitting it when construction needs it raises
+`UnresolvedInputError`. Ordinary Python parameter defaults remain defaults.
 
 > **One book, one conjure.** A Spellbook produces exactly one conduit, ever.
 > More scopes? `create_lesser_conduit()`. Another root? Another book.
@@ -376,6 +396,10 @@ One rule governs all resolution:
 > **Every spell lives at exactly one address: `(frame_key, binding_key)`**
 > — `frame_key` is the `spellframe` if given, else the spell's name;
 > `binding_key` is the `binding_name` if given, else the default slot.
+
+**Excerpt.** Define both store classes and bind them before conjuring the conduit.
+The lookup returns the `PostgresStore` registered as `primary`; the other binding
+does not change which store that address selects.
 
 ```python
 book.bind(spell=PostgresStore, existence="unique", binding_name="primary")
@@ -404,6 +428,10 @@ repo = conduit.meld(spellframe="storage", binding_name="users")
 api  = conduit.meld(spellframe="web",     binding_name="users")
 ```
 
+This is an **excerpt**: define `UsersRepo` and `UsersApi`, bind them before
+conjure, then resolve each full address. The result is a repository and an API
+object in separate categories, even though both bindings are named `users`.
+
 Same `binding_name`, two categories, **two distinct addresses** — names never
 collide across spellframes. A string frame is only a label: it groups, it is
 addressable, and it never makes its members providers of anything. A `Protocol`
@@ -431,19 +459,41 @@ every spell of the class, every implementer of the Protocol, or — for a string
 category or type of that name.
 
 ```python
+import melder as md
+
+
+class Database:
+    """A small stand-in for a database; this example performs no I/O."""
+
+    def query(self) -> str:
+        return "42 rows"
+
+
 class ReportService:
     def __init__(self, database: Database) -> None:   # ← injected
         self.database = database
 
+    def run(self) -> str:
+        return "report over " + self.database.query()
+
+
+book = md.Spellbook()
 book.bind(spell=Database, existence="unique")
 book.bind(spell=ReportService, existence="unique")
-conduit = book.conjure()
 
-report = conduit.meld("ReportService")
+with book.conjure() as conduit:
+    report: ReportService = conduit.meld("ReportService")
+    assert isinstance(report.database, Database)
+    print(report.run())
 ```
+
+This complete example prints `report over 42 rows`: melding the consumer first
+constructs its registered dependency and injects it into the constructor.
 
 When an annotation isn't specific enough — two implementations of one shape, or
 a named binding — declare the target with `SpellMap` as the parameter default:
+
+**Excerpt.** `PrimaryStore` must already be defined and registered in this book.
 
 ```python
 class Consumer:
@@ -454,13 +504,20 @@ class Consumer:
 `SpellMap` takes the full address: a concrete spell, a `spellframe`, a
 `binding_name`, or a combination. It obeys an **exactly-one law** — a target
 that matches zero spells or several fails at `conjure()`, not at runtime.
-When a plain annotation has several providers (two classes that share a name,
-two bindings of one class), `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
+When a single Protocol-annotated parameter has several registered implementations,
+`conjure()` refuses with an `AMBIGUOUS_PROVIDER`
 report that lists every candidate's address and the fix — a `SpellMap`
 default, a meld `override`, or one provider — never a guess.
+Registering the same class twice is instead refused as a duplicate spell identity
+at registration; another binding name does not make it a different spell.
 
 Ask for a list and get every implementation — the plugin pattern in one
 annotation:
+
+**Excerpt.** Define the `Handler` Protocol and both implementing classes first;
+bind the dispatcher as well before conjuring. The complete
+[collection-injection lesson](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/17_collection_di.py)
+includes those definitions and prints `['email', 'sms']` from its injected handlers.
 
 ```python
 class Dispatcher:
@@ -471,6 +528,7 @@ book.bind(spell=EmailHandler, existence="unique",
           spellframe=Handler, binding_name="email")
 book.bind(spell=SmsHandler, existence="unique",
           spellframe=Handler, binding_name="sms")
+book.bind(spell=Dispatcher, existence="unique")
 ```
 
 ## 🟢 Seven Lifetimes, Not Three
@@ -501,6 +559,10 @@ For the intermediate leasing and release example, see
 ## 🟢 Teardown Is Part of Registration
 <sub>**Beginner.** Cleanup without ceremony.</sub>
 
+**Excerpt.** Define the connection and worker classes with their cleanup methods
+first. Registration declares how to dispose them; `meld()` creates the instances
+whose matched methods run when the conduit ends.
+
 Declare your teardown **vocabulary** — the method names that mean "clean
 yourself up" in this system — and Melder calls them on the way down. No base
 class, no protocol, no context-manager ceremony:
@@ -520,7 +582,8 @@ book.bind(
 )
 
 conduit = book.conjure()
-...
+connection = conduit.meld("PooledConnection")
+worker = conduit.meld("BackgroundWorker")
 conduit.cleanup()     # calls each creation's matched methods in their declared order
 ```
 
@@ -550,12 +613,29 @@ that raises, or the root's teardown.
 <sub>**Beginner.** Child scopes, no configuration.</sub>
 
 ```python
-root = book.conjure()
-child = root.create_lesser_conduit()
+import melder as md
 
-assert root.meld("Config") is child.meld("Config")      # shared
-assert root.meld("Session") is not child.meld("Session") # per-scope
+
+class Config:
+    """Shared configuration for this example."""
+
+
+class Session:
+    """State scoped to one conduit."""
+
+
+book = md.Spellbook()
+book.bind(spell=Config, existence="unique")
+book.bind(spell=Session, existence="unique_per_conduit")
+
+with book.conjure() as root:
+    with root.enter_lesser_conduit() as child:
+        assert root.meld("Config") is child.meld("Config")       # shared
+        assert root.meld("Session") is not child.meld("Session") # per-scope
 ```
+
+Expected outcome: both assertions pass, with no printed output. The child scope
+ends first, then the root; a child does not create another book or another root.
 
 ## 🟡 Managed Spell Quantities
 <sub>**Intermediate.** Lease, reset, and reuse objects across requests.</sub>
@@ -569,6 +649,12 @@ block raises.
 
 This complete example combines the intermediate lessons on reset methods,
 leases, and request-scoped injection:
+
+1. Bind the buffer pool and a job that receives a buffer through injection.
+2. Meld the job inside a request scope and write report data into its buffer.
+3. End the request: `finish()` releases the buffer and `reset()` clears it.
+4. Lease that buffer again and check that it is the same object, now empty.
+5. End the root: the idle buffer's `close()` method runs.
 
 ```python
 import melder as md
@@ -616,7 +702,7 @@ def main() -> None:
             spell=ReportBuffer,
             existence="managed_spell_quantity",
             managed_spell_mode="limited_quantity",
-            managed_spell_limit=2,                  # at most two alive: idle + leased
+            managed_spell_limit=1,                  # one alive: idle or leased
             managed_spell_reset_methods=["reset"],  # every return, before reuse
             disposal_method_names=["close"],        # only when the pool destroys one
         )
@@ -644,6 +730,10 @@ if __name__ == "__main__":
     main()
 ```
 
+Expected outcome: the assertions pass and nothing is printed. The retained
+`previous` reference is only a diagnostic for identity and teardown; application
+code must stop using a buffer after releasing its lease.
+
 Choose the mode at bind:
 
 | `managed_spell_mode` | What `managed_spell_limit` caps | When nothing is idle |
@@ -651,6 +741,46 @@ Choose the mode at bind:
 | `elastic` (default) | Idle objects kept, 256 by default | Builds another; trims extras on return as demand falls |
 | `limited_quantity` | All objects alive, idle plus leased; required | Builds below the limit, otherwise raises `md.ManagedSpellExhaustedError` |
 | `queue` | All objects alive, idle plus leased; required | Builds below the limit, otherwise waits up to the required `managed_spell_timeout_seconds`, then raises `md.ManagedSpellExhaustedError` |
+
+**Queue and limited quantity share the same allocation and reuse rules.** Both
+start empty, build on demand below the limit, and reuse returned idle objects.
+They differ when nothing is idle and every place is occupied: `limited_quantity`
+refuses that attempt without waiting for capacity; `queue` waits on the calling
+thread for an object or a free place. It does not start a background worker.
+
+For `queue`, `managed_spell_timeout_seconds` is required and must be finite and
+greater than zero. It is rejected for `limited_quantity` and `elastic`. The
+deadline is taken once; wakeups do not restart it. It bounds the capacity wait,
+not the time a constructor or the rest of the meld takes.
+
+To choose queue instead of the registration above, use this alternative **before
+conjure in a fresh run**; do not bind `ReportBuffer` twice:
+
+```python
+book.bind(
+    spell=ReportBuffer,
+    existence="managed_spell_quantity",
+    managed_spell_mode="queue",
+    managed_spell_limit=1,
+    managed_spell_timeout_seconds=2.0,
+    managed_spell_reset_methods=["reset"],
+    disposal_method_names=["close"],
+)
+```
+
+With capacity **1**, suppose caller A holds the only buffer and caller B asks for
+another while A can still release it:
+
+| Event | `limited_quantity` | `queue` with a 2-second wait |
+|:---|:---|:---|
+| B asks while A holds the buffer | B gets `ManagedSpellExhaustedError` | B waits; no second buffer is constructed |
+| A releases before the deadline | B must explicitly retry | B can receive the same buffer, after its reset |
+| A never releases | B has already failed | B gets `ManagedSpellExhaustedError` when its deadline expires |
+
+A thread holding the only buffer cannot release it later in the same sequential
+flow while its second meld is waiting: that queue attempt times out. Waiting is
+useful when another holder can make progress. Queue does not promise FIFO caller
+ordering, and an exhausted attempt never takes an existing holder's object away.
 
 Reset methods run in the declared order on every return. Disposal methods run
 when the pool destroys an object: an elastic trim, a reset that raises, or root
@@ -727,6 +857,12 @@ separate parts of your system need to share.</sub>
 By default a world is **static** — bind, conjure, resolve. Turn on dynamic mode
 and conduits gain the ability to connect to each other at runtime.
 
+**Prerequisites for the excerpts below:** use a fresh process; create
+`owner_book` and `borrower_book`, define `SharedDirectory`, and capture its
+`spell_id` from `owner_book.bind(...)` before conjuring. The complete
+[dynamic-linking lesson](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py)
+includes all of that setup and prints the provider's `found` result.
+
 The mode is decided **once, by the first conjure**, and then inherited:
 
 ```python
@@ -752,6 +888,9 @@ borrower.add_spell_to_contract(            # ← the BORROWER asks
 shared = borrower.meld("SharedDirectory")   # resolves the owner's spell
 ```
 
+Expected outcome: the borrower resolves the registered provider after linking
+and pulling its spell into the contract. The link alone does not grant it.
+
 **Sharing is a pull, never a push.** The conduit that wants the spell asks for
 it, and names the owner. An owner cannot force its objects into someone else's
 scope — so nothing arrives in your conduit that you didn't request.
@@ -759,6 +898,12 @@ scope — so nothing arrives in your conduit that you didn't request.
 ## 🟡 Late Binding with `SpellContract`
 <sub>**Intermediate.** Wire whole subsystems together without either side
 importing the other.</sub>
+
+**Excerpt.** Define the `ConfigContract` Protocol, register its provider in
+`platform_book`, and bind the consumer in `services_book` first. `config_id` and
+`service_id` below are the IDs returned by those registrations. Run the complete
+[late-binding lesson](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/02_intermediate/36_late_binding_with_spellcontract.py)
+for the definitions and full sequence.
 
 A `SpellContract` is a **hole you leave on purpose**. The class declares the
 *shape* it needs; the provider arrives later, across a link:
@@ -790,6 +935,9 @@ services.add_spell_to_contract(                                  # 4. consumer p
 )
 service = services.meld(spell_id=service_id)                    # 5. meld completes the binding
 ```
+
+Expected outcome: `service.config` is the contracted provider object. The saved
+lesson's equivalent store example prints `region-ok`; these excerpts do not print.
 
 Assemble the chain edge by edge, in dependency order. `services` can then feed
 `workflows` with the identical five steps one level up — the finished product of
@@ -912,8 +1060,12 @@ Most frameworks make an agent guess from source. Melder hands it the map.
 **Rift** — a workspace over a running frame — and the room decides how much
 authority the occupant has.
 
+**Excerpt.** This assumes an activated `nexus` and an appropriate
+`rift_configuration`. The complete codegen example below shows the activation,
+room type, application frame and registration explicitly.
+
 ```python
-rift = nexus.create_rift(rift_name="alpha")
+rift = nexus.create_rift(configuration=rift_configuration, rift_name="alpha")
 conduit = rift.create_nexus_frame(frame_name="ops")   # rooted, live
 ```
 
@@ -931,45 +1083,73 @@ where authority starts escalating.
 
 ### The agent's seat
 
-Open a room over a live frame, and it comes with a workbench attached:
+This complete example needs a fresh process with Melder installed. It first
+creates an observable dynamic application frame and binds a service, then
+activates Nexus and explicitly chooses a `codegen` room. Nexus's default room
+type is `static`, which does not expose `execute_codegen`.
+
+The **workstation** keeps a callable target. A service instance is not callable
+merely because it has methods, so bind `service.run` in the methods store. The
+example invokes it once through the workstation and once through generated code.
 
 ```python
-rift = nexus.create_rift(rift_name="alpha")
-root = rift.create_nexus_frame(frame_name="ops")   # a real, rooted conduit
-rift.create_frame_link("ops")
+import melder as md
 
-space       = rift.space              # the room
-viewer      = space.frame_viewer      # read the live graph
-workstation = space.workstation       # a bench to put objects on
-command     = space.command_system    # the room's verbs
+
+class ReportService:
+    """A service whose run method is exposed through the room's workstation."""
+
+    def run(self) -> str:
+        return "report ready"
+
+
+def main() -> None:
+    """Create a codegen room, call a bound method, then end its owned scopes."""
+    frame_name = "readme-agent"
+    configuration = md.SpellbookConfiguration(frame_name).with_defaults().finalize()
+    book = md.Spellbook(aetheric_frame=frame_name, configuration=configuration)
+    book.configure_aether_frame(
+        system_state="dynamic", disposal=None, disposal_method_names=None,
+        rift_enabled=True, ai_native=True,
+    )
+    book.bind(spell=ReportService, existence="unique", permissions="create")
+
+    with book.conjure(name="agent-root") as root:
+        nexus = md.Nexus()
+        system_configuration = nexus.create_configuration()
+        system_configuration.with_rift_creation_enabled(True)
+        system_configuration.with_allowed_target_frame_names([frame_name])
+        nexus.activate(system_configuration)
+        rift_configuration = nexus.create_rift_configuration().with_space_type("codegen")
+        rift = nexus.create_rift(configuration=rift_configuration, rift_name="alpha")
+        try:
+            rift.mark_active()
+            rift.create_frame_link(frame_name)
+            workstation = rift.space.workstation
+            command = rift.space.command_system
+
+            service: ReportService = root.meld("ReportService")
+            workstation.bind_method("report", service.run, weak_ref=False)
+            workstation.set_target("report", store="methods")
+            print(workstation.call_target())
+
+            outcome = command.execute_codegen("result = target()\n", frame_name=frame_name)
+            assert outcome["accepted"] is True, outcome
+            assert outcome["result"] == "report ready"
+            print(outcome["result"])
+        finally:
+            rift.cleanup()
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-The **workstation** is where an agent keeps what it's working on — bind a live
-object to a name, make it the active target, then operate on it:
-
-```python
-service = root.meld("ReportService")
-
-workstation.bind_object("svc", service)   # park a LIVE object on the bench
-workstation.set_target("svc")             # make it the active target
-workstation.call_target()                 # ...and drive it
-```
-
-Then the agent writes Python against that world. The generated code runs in a
-namespace you compiled — these five names and nothing else:
-
-```python
-code = """
-# viewer / workstation / target / command / codegen — the whole namespace
-
-frames  = viewer.list_nexus_frame_names()   # read the live world
-current = target                            # the bench's active object
-result  = {"frames": frames, "kind": type(current).__name__}
-"""
-
-outcome = command.execute_codegen(code, frame_name="ops")
-# every fragment is VALIDATED before it runs; a rejected one never executes
-```
+Expected output: `report ready` twice. The second call is validated before
+execution; its public result payload reports `accepted` and the generated
+`result`. The room can expose `viewer`, `workstation`, `target`, `command` and
+`codegen` alongside its configured Python execution environment. Here `target`
+is the selected bound method, not the service instance.
 
 The agent inspects the running system, works on real objects, and writes code
 against them — without ever holding a reference to your process.
@@ -1067,12 +1247,62 @@ it's here, and why an agent gets to touch a live system at all.
 `Crystallizer` records a **digital twin** of your configured system — structure,
 never live instances:
 
+**Prerequisites:** activate recording before the application bindings you want
+to capture. With recording active, create finalized book configurations and a
+dynamic frame before binding. The complete
+[checkpoint-and-restore lesson](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py)
+shows those application-building steps and verifies that restored objects start
+with fresh application state.
+
+**Excerpt — recording and saving:** place the configured application-building
+steps between activation and `create_checkpoint`. The assertions distinguish
+the in-memory ledger from the durable local cache. This needs write and read
+access to `<melder package>/__melder_cache__/__crystallizer_cache__/`; the cache
+is under the Melder package, not the caller's working directory.
+
+Local caching needs no external persistence manager or separate enable switch:
+activate the recorder, then explicitly flush. This demonstration starts a new
+named profile so it does not mix a new recording chain with cached history from
+another run. Keep the printed profile name for the cold-process bootstrap below.
+
 ```python
+from uuid import uuid4
+
+import melder as md
+
+crystallizer = md.Crystallizer()
+configuration = md.CrystallizerConfigurationBuilder().with_defaults().activate()
+crystallizer.activate(configuration)
+profile_name = "readme-" + uuid4().hex
+crystallizer.create_profile(profile_name, activate=True)
+print("profile:", profile_name)
+
+# Build the configured dynamic application and its bindings here, while recording.
 checkpoint_id = crystallizer.create_checkpoint(description="pre-migration")
+assert checkpoint_id in crystallizer.list_checkpoint_ids()  # in this process's ledger
 
 crystallizer.describe_profile()               # what's recorded right now
 crystallizer.describe_checkpoint(checkpoint_id)
+
+flushed = crystallizer.flush_checkpoint(checkpoint_id)
+assert checkpoint_id in flushed
+assert checkpoint_id in crystallizer.list_cached_checkpoint_ids()  # bytes on disk
 ```
+
+Expected outcome: a new profile name is printed, the checkpoint ID is recorded
+immediately, and it is cached after the flush. `create_checkpoint()` alone does
+not write the checkpoint to disk;
+`flush_checkpoint()` stores it in the local cache and uses external storage when
+configured. An application object's current fields are not serialized by either
+step. External upload failures are lenient by default, so a returned ID is not
+proof that a remote store received it. Before replaying into a live process,
+retire original runtime claims that would collide with the restored structure.
+
+To continue an existing profile, reload its cached history into the ledger first
+(the bootstrap does this). A fresh empty ledger restarts checkpoint numbering;
+flushing it into an already-full cache for that profile can immediately evict
+the new checkpoint under the retention rule. Cache retention is bounded per
+profile by `max_persistence_crystals` (100 by default).
 
 Restore replays that world **through public verbs only** — the same `bind`,
 `conjure`, `link` calls you would have written. Which means:
@@ -1090,16 +1320,24 @@ A checkpoint you can't boot from is a diary. `CrystallizerBootstrap` is the
 other half: **one fluent chain that brings an entire world back on a cold
 process.**
 
+This cold-process **excerpt** assumes your `upload`, `download` and `list_ids`
+handlers are defined, `profile_name` is the name printed by the saving process,
+and the saved application's classes remain importable.
+The external manager is optional; omit that configuration for local-cache-only
+recovery. Run the
+[cold-runtime lesson](https://github.com/Synaptic724/melder/blob/prod/UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py)
+to see flushing, teardown and reload as separate steps.
+
 ```python
 report = (
-    CrystallizerBootstrap()
+    md.CrystallizerBootstrap()
     .with_external_persistence_manager(          # optional: your own DB
-        ExternalPersistenceManagerConfiguration()
+        md.ExternalPersistenceManagerConfiguration()
         .with_upload_handler(upload)
         .with_download_handler(download)
         .with_list_handler(list_ids)
     )
-    .with_profile("default")
+    .with_profile(profile_name)
     .bootstrap()
 )
 
@@ -1108,6 +1346,10 @@ report["remote_reload"]          # what was pulled back from your store
 report["restored_checkpoint_id"] # which world it booted
 report["restore_report"]         # per-stage build counts + shortfalls
 ```
+
+Expected outcome: `activated` is true. A process with no saved history starts
+an empty world and reports `restored_checkpoint_id` as `None`; otherwise the
+report identifies the restored checkpoint and any replay shortfalls.
 
 That single chain does the whole cold start: activate → attach your storage →
 reload the local cache → pull from remote and re-flush it locally → verify the

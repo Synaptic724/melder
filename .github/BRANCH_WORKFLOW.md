@@ -20,7 +20,7 @@ which checks must run; the final gate independently verifies that selection.
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
 | Manual `CI` on a permanent branch | Yes | Full checks; distributions on every branch except dev |
 | Ordinary branch push | No source CI | RC pushes retain their dedicated package workflow |
-| Final publication | Yes | Fresh package validation and final tag/prod checks |
+| Final publication | No | Hygiene, asset checks, a fresh package build and final tag/prod checks; the exact tree already passed the full matrix and the release candidate |
 
 The checks enforce these contracts:
 
@@ -150,14 +150,13 @@ counts within the same OS and account for hosted hardware variation.
 CI runs only the Python releases the repository names. Each one has a manifest: a TOML file named after
 the exact release, holding `python` (that release), `freethreaded = true` and `dependencies`, the exact
 `name==version` pins installed with it (a pin may carry a `; marker`, as colorama does for Windows).
-Nothing is looked up on the network, so a new Python release, 3.15 included, runs only after a manifest
-adds it.
+Nothing is looked up on the network, so a new Python release runs only after a manifest adds it.
 
 - `.github/python/tests/` holds one manifest per release the runtime tests cover: today 3.14.0 through
-  3.14.8. A user's other dependencies can hold them on an older patch, and `>=3.14` claims that patch
-  too, so each release is its own matrix entry. The floor release from `project.requires-python`
-  (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor is refused: raising the
-  floor means deleting the retired manifests in the same change.
+  3.14.9, 3.15.0 and 3.15.1. A user's other dependencies can hold them on an older patch, and `>=3.14`
+  claims that patch too, so each release is its own matrix entry. The floor release from
+  `project.requires-python` (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor
+  is refused: raising the floor means deleting the retired manifests in the same change.
 - `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7)
   and the benchmark libraries' pins. Its `build_from_source` list names pins built from their source
   distribution because no free-threaded wheel exists (dependency-injector); everything else installs as
@@ -170,6 +169,9 @@ test manifest; a contract test refuses a manifest that leaves one out.
 
 Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
 manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
+A pin with no free-threaded wheel for a release (PyYAML on 3.15) is listed in that manifest's
+`build_from_source`, and uv builds it from its sdist; the build's own tools (setuptools, Cython) stay in
+that isolated build.
 Release-candidate installation probes run the same releases. Runtime tests and RC probes use
 `freethreaded: true`. The test driver verifies free-threading support and GIL-off state before and after
 pytest; the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
@@ -190,8 +192,9 @@ Tests, coverage and installed-package reports include OS, exact Python version a
 
 Distribution building still produces one wheel/sdist pair, on free-threaded Python 3.14.7; the full
 compatibility matrix belongs to runtime tests and RC installed-package checks. Existing full-test stages
-stay unchanged. Historical source proof refers to its recorded full-CI run, while final publication
-tests every release named by the test manifests afresh.
+stay unchanged. Historical source proof refers to its recorded full-CI run; final publication does
+not run the tests again, because it publishes only the tree that run and the release candidate
+qualified (see Final publication checks).
 
 ## Coverage reporting and README badges
 
@@ -229,16 +232,15 @@ One-time setup:
 
 This is a repository Actions secret, not an environment secret or variable. No new GitHub
 environment or id-token permission is needed. Do not reuse either PyPI token or store the token
-in the checkout. CI and final publication explicitly pass only CODECOV_TOKEN to the reusable
-workflow; only its credential check and Codecov upload steps receive it.
+in the checkout. CI explicitly passes only CODECOV_TOKEN to the reusable workflow; only its
+credential check and Codecov upload steps receive it.
 If the token is absent, a setup warning is emitted and reporting is skipped. Fork PRs retain
 their test/coverage artifacts but skip credentialed uploads.
 
-The README coverage badge tracks prod. It shows no percentage until the first prod report is
-processed. Normal final-release tests populate it; the release tag is attributed to prod only
-after the existing release gate verifies that tag against current prod HEAD. To seed the badge
-without publishing a package, run Actions -> Runtime tests -> Run workflow on prod after these
-files reach that branch. Do not run Publish Python Package merely to refresh coverage.
+The README coverage badge tracks prod. It shows no percentage until a prod report is processed.
+Final publication does not run the tests, so prod receives a report only from a manual run: after
+a release reaches prod, run Actions -> Runtime tests -> Run workflow on prod to refresh the badge.
+Publish Python Package uploads no coverage.
 
 The CI badge uses GitHub's default-branch/latest-run behavior, not a hardcoded passing label.
 Reference: https://github.com/codecov/codecov-action#usage
@@ -426,7 +428,8 @@ workflow on prod, starts a fresh qualification chain:
    For release events, also require the live remote tag to resolve to that commit.
    Verify the prod merge's candidate parent has the same tree and successful
    TestPyPI qualification for its exact SHA. Direct/squashed prod commits refuse.
-2. Rerun hygiene, both asset checkers, and the complete runtime matrix.
+2. Rerun hygiene and both asset checkers. The runtime matrix does not run again: step 1 admits only
+   the tree that full CI and the release candidate already tested (owner, 2026-10-24).
 3. Build and inspect the wheel/sdist and smoke-test an isolated wheel install.
 4. Enter the pypi environment and download this run attempt's verified artifacts.
 5. Recheck distribution identity and candidate qualification, then the live release tag,
@@ -434,7 +437,7 @@ workflow on prod, starts a fresh qualification chain:
    tags use their peeled target; missing or moved tags refuse publication.
 
 Earlier dev/preprod success does not replace these checks. A prod movement during
-testing or environment approval refuses publication. GitHub prerelease events do
+the checks or environment approval refuses publication. GitHub prerelease events do
 not trigger final publication. All publication runs share a serialization group.
 Only the upload job uses the pypi environment and its PYPI_API_TOKEN secret.
 Production builds and validates fresh final distributions; it does not relabel

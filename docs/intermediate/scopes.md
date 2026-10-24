@@ -147,7 +147,9 @@ already held by application objects are not rewritten. An externally supplied
 object remains referenced by its registration, so purging its store entry does
 not unbind it or turn it into a factory.
 
-A `many` dependency with configured disposal that was built for a longer-lived
-object belongs to that object: purging the object disposes the dependency too,
-right after the object. Purging the dependency's own binding removes only the
-instances that no object holds.
+A `many` dependency with configured disposal belongs to the conduit or spell
+space that built it, not to the object it was passed to. Purging that object
+runs only the object's own disposal methods; closing what it holds is up to
+them. The dependency stays in the store that built it: that scope's end disposes
+it, and purging the dependency's own binding there removes every instance the
+store holds, including one a live object still uses.
