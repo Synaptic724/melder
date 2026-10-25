@@ -25,7 +25,9 @@ Every change below ends the same way: run the workflow tests, update this folder
 - `PYTHON_GIL=0` goes on the steps that run Melder, never on a whole job: Python's setup on macOS runs a
   certificate installer that cannot start with the GIL disabled.
 - Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else, and the
-  publication tokens live in the `pypitest` and `pypi` environments, each used by one job.
+  PyPI token lives in the `pypi` environment, used by one job. TestPyPI publication has no secret: the
+  release candidate's `publish` job authenticates by Trusted Publishing and is the only job in any workflow that
+  holds `id-token: write`; a third-party action in a job that holds it is pinned to a full commit SHA.
 - Artifact names carry `${{ github.run_id }}-${{ github.run_attempt }}`, so a rerun never picks up another
   attempt's files by accident. A job that downloads a build made earlier in the same run names it from the build
   job's output (`needs.<build>.outputs.artifact-name`), never from its own attempt, because a failed-jobs re-run
@@ -51,6 +53,23 @@ workflow, as `speed-tests.yml` does for the speed tests.
 
 `package-ready` requires exactly `CIPolicy.CANDIDATE_JOBS`; a new release-candidate stage goes into its `needs`
 and that list together. A publication job that must finish before the upload goes into `pypi-publish`'s `needs`.
+
+## Change the provenance tool
+
+The provenance check verifies with the toolchain the publishing action signs with, so the three move together
+in one change:
+
+1. Pin `pypa/gh-action-pypi-publish` in `release-candidate.yml` to the new release's full commit SHA (with the
+   tag in a comment) and update the pinned SHA in `test_workflow_contracts.py`.
+2. Regenerate `.github/provenance/requirements.txt` with the command in its header: `pypi-attestations` at the
+   version that release's `requirements/runtime.txt` pins, with that file as constraints, so sigstore and the
+   rest take the action's versions (hashes for every pin, wheels only, the helper release on Linux x64).
+3. Record the new control: save PyPI's Integrity API answer for the `pypi-attestations` wheel the lock installs
+   as `.github/provenance/known_good_provenance.json`, byte for byte, and update `ProvenanceControl` in
+   `testpypi_provenance.py` (name, sha256, signer, claims). A control whose wheel the lock does not install is
+   refused before anything runs.
+4. Build the tool environment from the lock in a scratch folder and run the verifier on the controls; the genuine
+   one must verify and both tampered copies must be refused. Then run the workflow tests.
 
 ## Add or change a route
 

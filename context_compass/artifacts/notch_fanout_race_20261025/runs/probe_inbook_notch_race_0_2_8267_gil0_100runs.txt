@@ -1,0 +1,108 @@
+command: python -X gil=0 probe_inbook_notch_race.py <tree> 100 (tree=/tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree at git 9f240166f)
+python: 3.14.7 gil_enabled=False
+ran_at: 2026-10-25T00:42:28Z
+tree=/tmp/m0_mq/inv8267 runs=100 gil_enabled=False
+run   1: {'d1': 2542, 'd2': 10} unexpected=0 final=d1 2.16s
+run   2: {'d1': 796, 'd2': 11} unexpected=0 final=d1 2.04s
+run   3: {'d1': 363, 'd2': 11} unexpected=0 final=d1 1.94s
+run   4: {'d1': 16, 'd2': 10} unexpected=0 final=d1 2.04s
+run   5: {'d1': 505, 'd2': 11} unexpected=0 final=d1 2.04s
+run   6: {'d1': 29185, 'd2': 10} unexpected=0 final=d1 1.45s
+run   7: {'d1': 307, 'd2': 10} unexpected=0 final=d1 2.04s
+run   8: {'d1': 184, 'd2': 10} unexpected=0 final=d1 2.03s
+run   9: {'d1': 161, 'd2': 10} unexpected=0 final=d1 2.04s
+run  10: {'d1': 35, 'd2': 11} unexpected=0 final=d1 2.03s
+run  11: {'d1': 10, 'd2': 2} unexpected=0 final=d1 0.43s
+run  12: {'d1': 5873, 'd2': 9} unexpected=0 final=d1 1.14s
+run  13: {'d1': 24, 'd2': 10} unexpected=0 final=d1 2.03s
+run  14: {'d1': 216, 'd2': 10} unexpected=0 final=d1 2.03s
+run  15: {'d1': 2510, 'd2': 11} unexpected=0 final=d1 2.03s
+run  16: {'d1': 1556, 'd2': 4} unexpected=0 final=d1 0.83s
+run  17: {'d1': 2468, 'd2': 13} unexpected=0 final=d1 2.04s
+run  18: {'d1': 11453, 'd2': 10} unexpected=0 final=d1 1.95s
+run  19: {'d1': 195, 'd2': 10} unexpected=0 final=d1 2.03s
+run  20: {'d1': 273, 'd2': 7} unexpected=0 final=d1 1.33s
+run  21: {'d1': 2010, 'd2': 8} unexpected=0 final=d1 1.74s
+run  22: {'d1': 36732, 'd2': 10} unexpected=0 final=d1 2.09s
+run  23: {'d1': 11, 'd2': 5} unexpected=0 final=d1 0.92s
+run  24: {'d1': 65, 'd2': 10} unexpected=0 final=d1 2.03s
+run  25: {'d1': 103, 'd2': 10} unexpected=0 final=d1 2.03s
+run  26: {'d1': 108, 'd2': 9} unexpected=0 final=d1 1.83s
+run  27: {'d1': 99, 'd2': 11} unexpected=0 final=d1 2.03s
+run  28: {'d1': 2050, 'd2': 8} unexpected=0 final=d1 1.64s
+run  29: {'d1': 3182, 'd2': 10} unexpected=0 final=d1 2.04s
+run  30: {'d1': 551, 'd2': 11} unexpected=0 final=d1 1.93s
+run  31: {'d1': 2351, 'd2': 10} unexpected=0 final=d1 2.04s
+run  32: {'d1': 425, 'd2': 10} unexpected=0 final=d1 2.03s
+run  33: {'d1': 335, 'd2': 10} unexpected=0 final=d1 2.03s
+run  34: {'d1': 386, 'd2': 11} unexpected=0 final=d1 2.03s
+run  35: {'d1': 204, 'd2': 10} unexpected=0 final=d1 1.43s
+run  36: {'d1': 65, 'd2': 10} unexpected=0 final=d1 2.03s
+run  37: {'d1': 2279, 'd2': 12} unexpected=0 final=d1 1.94s
+run  38: {'d1': 235, 'd2': 13} unexpected=0 final=d1 1.93s
+run  39: {'d1': 128, 'd2': 10} unexpected=0 final=d1 2.03s
+run  40: {'d1': 375, 'd2': 10} unexpected=0 final=d1 2.03s
+run  41: {'d1': 17, 'd2': 10} unexpected=0 final=d1 2.03s
+run  42: {'d1': 7867, 'd2': 11} unexpected=0 final=d1 1.94s
+run  43: {'d1': 17, 'd2': 10} unexpected=0 final=d1 2.03s
+run  44: {'d1': 269, 'd2': 6} unexpected=0 final=d1 1.23s
+run  45: {'d1': 391, 'd2': 12} unexpected=0 final=d1 2.03s
+run  46: {'d1': 19, 'd2': 12} unexpected=0 final=d1 2.04s
+run  47: {'d1': 766, 'd2': 10} unexpected=0 final=d1 2.03s
+run  48: {'d1': 508, 'd2': 11} unexpected=0 final=d1 1.94s
+run  49: {'d1': 14, 'd2': 8} unexpected=0 final=d1 1.53s
+run  50: {'d1': 273, 'd2': 10} unexpected=0 final=d1 2.03s
+run  51: {'d1': 340, 'd2': 12} unexpected=0 final=d1 2.03s
+run  52: {'d1': 319, 'd2': 9} unexpected=0 final=d1 1.84s
+run  53: {'d1': 8} unexpected=0 final=d1 0.13s
+run  54: {'d1': 166, 'd2': 7} unexpected=0 final=d1 1.44s
+run  55: {'d1': 799, 'd2': 10} unexpected=0 final=d1 2.04s
+run  56: {'d1': 118, 'd2': 11} unexpected=0 final=d1 2.03s
+run  57: {'d1': 866, 'd2': 8} unexpected=0 final=d1 1.33s
+run  58: {'d1': 43244} unexpected=0 final=d1 0.08s
+run  59: {'d1': 29951, 'd2': 10} unexpected=0 final=d1 2.07s
+run  60: {'d1': 728, 'd2': 10} unexpected=0 final=d1 1.93s
+run  61: {'d1': 13, 'd2': 5} unexpected=0 final=d1 0.83s
+run  62: {'d1': 257, 'd2': 11} unexpected=0 final=d1 2.03s
+run  63: {'d1': 18, 'd2': 11} unexpected=0 final=d1 2.04s
+run  64: {'d1': 642, 'd2': 10} unexpected=0 final=d1 2.04s
+run  65: {'d1': 376, 'd2': 11} unexpected=0 final=d1 1.93s
+run  66: {'d1': 8690, 'd2': 12} unexpected=0 final=d1 1.95s
+run  67: {'d1': 77, 'd2': 13} unexpected=0 final=d1 2.04s
+run  68: {'d1': 500, 'd2': 13} unexpected=0 final=d1 2.04s
+run  69: {'d1': 1441, 'd2': 10} unexpected=0 final=d1 2.04s
+run  70: {'d1': 460, 'd2': 14} unexpected=0 final=d1 1.93s
+run  71: {'d1': 90, 'd2': 10} unexpected=0 final=d1 2.03s
+run  72: {'d1': 146, 'd2': 8} unexpected=0 final=d1 1.83s
+run  73: {'d1': 742, 'd2': 2} unexpected=0 final=d1 0.53s
+run  74: {'d1': 1276, 'd2': 8} unexpected=0 final=d1 1.53s
+run  75: {'d1': 1752, 'd2': 12} unexpected=0 final=d1 2.04s
+run  76: {'d1': 921, 'd2': 10} unexpected=0 final=d1 2.03s
+run  77: {'d1': 617, 'd2': 8} unexpected=0 final=d1 1.73s
+run  78: {'d1': 2629, 'd2': 1} unexpected=0 final=d1 0.23s
+run  79: {'d1': 1237, 'd2': 10} unexpected=0 final=d1 2.04s
+run  80: {'d1': 36937, 'd2': 12} unexpected=0 final=d1 1.99s
+run  81: {'d1': 152, 'd2': 10} unexpected=0 final=d1 2.03s
+run  82: {'d1': 17, 'd2': 10} unexpected=0 final=d1 2.03s
+run  83: {'d1': 732, 'd2': 12} unexpected=0 final=d1 1.94s
+run  84: {'d1': 486, 'd2': 10} unexpected=0 final=d1 1.94s
+run  85: {'d1': 15, 'd2': 9} unexpected=0 final=d1 1.34s
+run  86: {'d1': 39123, 'd2': 3} unexpected=0 final=d1 0.30s
+run  87: {'d1': 987, 'd2': 10} unexpected=0 final=d1 1.73s
+run  88: {'d1': 17, 'd2': 13} unexpected=0 final=d1 2.03s
+run  89: {'d1': 1553, 'd2': 10} unexpected=0 final=d1 1.94s
+run  90: {'d1': 2705, 'd2': 9} unexpected=0 final=d1 1.94s
+run  91: {'d1': 16, 'd2': 9} unexpected=0 final=d1 1.63s
+run  92: {'d1': 37395} unexpected=0 final=d1 0.18s
+run  93: {'d1': 44765, 'd2': 1} unexpected=0 final=d1 0.18s
+run  94: {'d1': 42303} unexpected=0 final=d1 0.18s
+run  95: {'d1': 46317} unexpected=0 final=d1 0.09s
+run  96: {'d1': 44998} unexpected=0 final=d1 0.18s
+run  97: {'d1': 39040, 'd2': 3} unexpected=0 final=d1 0.28s
+run  98: {'d1': 42596} unexpected=0 final=d1 0.18s
+run  99: {'d1': 21173, 'd2': 4} unexpected=0 final=d1 0.36s
+run 100: {'d1': 42015} unexpected=0 final=d1 0.18s
+runs with an unexpected exception: 0 of 100
+melds: {'d1': 662272, 'd2': 869}
+first meld after the race: {'d1': 100}
+exit: 0

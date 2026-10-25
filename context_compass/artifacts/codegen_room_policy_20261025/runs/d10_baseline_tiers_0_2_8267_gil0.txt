@@ -1,0 +1,28 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx <35 codegen/ACL unit files in tests/unit/melder/aether> tests/integration/melder/aether (cwd: /tmp/m0_mq/d10_base, a copy of the 0.2.8267 working tree before the D-10 edit)
+ran_at: 2026-10-25T01:38:12Z
+........................................................................ [ 19%]
+........................................................................ [ 23%]
+........................................................................ [ 28%]
+........................................................................ [ 33%]
+........................................................................ [ 38%]
+........................................................................ [ 42%]
+........................................................................ [ 47%]
+........................................................................ [ 52%]
+........................................................................ [ 57%]
+........................................................................ [ 62%]
+........................................................................ [ 66%]
+........................................................................ [ 71%]
+........................................................................ [ 76%]
+........................................................................ [ 81%]
+........................................................................ [ 85%]
+..............xxxxx..................................................... [ 90%]
+........................................................................ [ 95%]
+.....................................................................    [100%]
+=========================== short test summary info ============================
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_safe_profile_refuses_writing_files - OPEN: no codegen profile denies the open builtin - the runtime __builtins__ is the full builtins dict minus the profile's deny list, and no validator strategy inspects open or non-dunder method calls - so agent code in a safe room writes any file the process can write, although the safe profile documents that it denies writes. Core-protection review, Note 10. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-socket] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-importlib] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[precision-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+1504 passed, 5 xfailed in 19.02s
+exit: 0

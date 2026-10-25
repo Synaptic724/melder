@@ -1,8 +1,0 @@
-tree | int_conduit | rc=1 | secs=4 | 3 failed, 285 passed in 3.91s
-tree | unit_aether | rc=0 | secs=17 | 4214 passed in 16.13s
-tree | int_conduit | rc=0 | secs=4 | 288 passed in 3.54s
-tree | comp_aether | rc=1 | secs=15 | 1 failed, 1351 passed, 1 xfailed in 14.74s
-tree | comp_aether | rc=0 | secs=15 | 1352 passed, 1 xfailed in 15.00s
-tree | int_aether | rc=0 | secs=20 | 785 passed, 5 xfailed in 19.05s
-tree | comp_cryst | rc=0 | secs=1 | 110 passed in 0.44s
-tree | int_cryst | rc=0 | secs=67 | 273 passed, 3 xfailed in 66.69s (0:01:06)

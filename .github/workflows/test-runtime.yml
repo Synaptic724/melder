@@ -163,8 +163,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: selected-coverage
           fail_ci_if_error: true
-          # Final-release tags have already been verified against current prod.
-          override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}
       - name: Upload coverage to Codecov with the PyPI uploader
         # Runs only after the first attempt failed, for example when cli.codecov.io cannot be reached.
         # PyPI carries the same Codecov uploader; this attempt skips the signed-download check.
@@ -174,5 +172,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: selected-coverage
           fail_ci_if_error: true
-          override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}
           use_pypi: true

@@ -1,31 +1,31 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/__version__.py",
-  "source_sha256": "ba41b2b7a30a68942c459d80a04f1130768dee4788ebc8b4afc296687289af2c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.__version__": {
-      "id": "melder.__version__",
-      "label": "__version__",
-      "kind": "module",
-      "file": "src/melder/__version__.py",
-      "lineno": 1,
-      "role": "Top-level version metadata module.",
-      "responsibilities": [
-        "stores the canonical package version string"
-      ],
-      "owns_state": [
-        "__version__"
-      ],
-      "phases": [
-        "runtime"
-      ],
-      "semantics_authored_against": ""
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": null
+ "schema_version": 1,
+ "source": "src/melder/__version__.py",
+ "source_sha256": "dd59467ef6c7d952701a7b01503b2637722f96b102a1c04625f357518d824fad",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__version__": {
+   "id": "melder.__version__",
+   "label": "__version__",
+   "kind": "module",
+   "file": "src/melder/__version__.py",
+   "lineno": 1,
+   "role": "Top-level version metadata module.",
+   "responsibilities": [
+    "stores the canonical package version string"
+   ],
+   "owns_state": [
+    "__version__"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
 }

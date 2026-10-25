@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "bdcaa48c320c164960d8321bdf96315186084f1c629e0cbd4c0b6d62593d67cb",
+ "source_sha256": "dd8fb4f01094b483a4544a1ecdf5bc29d3d7c5883fe0c8026c643e3d2285bf26",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -26,7 +26,7 @@
    "label": "CachingSystem",
    "kind": "class",
    "file": "src/melder/utilities/caching_system/caching_system.py",
-   "lineno": 16,
+   "lineno": 18,
    "bases": [
     "Cleanable"
    ],
@@ -53,11 +53,11 @@
     "world_stamp"
    ],
    "shape": {
-    "method_count": 24,
+    "method_count": 28,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8c205ebc2353bea11530922948ad31b98ab0cb6168e838915cfe1dd2d8de2362",
+   "span_sha256": "277befe396687cecf1bc247afb18fa72d41d980335181a2ac48527ea04f22409",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -72,7 +72,8 @@
     "cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)",
     "cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)",
     "cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone",
-    "cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)"
+    "cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)",
+    "saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)"
    ],
    "owns_state": [
     "_id",
@@ -82,6 +83,7 @@
     "_cache_root_path",
     "_bundle_path",
     "_cache_data",
+    "_refused_save_logged",
     "_logger"
    ],
    "phases": [
@@ -89,7 +91,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "8c205ebc2353bea11530922948ad31b98ab0cb6168e838915cfe1dd2d8de2362"
+   "semantics_authored_against": "277befe396687cecf1bc247afb18fa72d41d980335181a2ac48527ea04f22409"
   }
  },
  "edges_out": [
@@ -124,8 +126,10 @@
  "imports": {
   "logging": "logging",
   "marshal": "marshal",
+  "os": "os",
   "sys": "sys",
   "threading": "threading",
+  "time": "time",
   "Path": "pathlib.Path",
   "MappingProxyType": "types.MappingProxyType",
   "Any": "typing.Any",

@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-20T10:00:15Z
+- Updated: 2026-10-25T00:34:42Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -365,8 +365,8 @@ Protects:
   object, internal classes stay unbindable, the version and build-asset stamps
   agree (see `### Subcomponent: Package Root Unit Cluster`)
 - the release gates in the CI scripts: fail-closed routing, candidate and source
-  identity, distribution contents, the free-threaded runtime gate (see
-  `### Subcomponent: Repository Tooling Unit Cluster`)
+  identity, distribution contents, the free-threaded runtime gate and the
+  candidate's provenance (see `### Subcomponent: Repository Tooling Unit Cluster`)
 - race fixes, as deterministic stand-ins for the concurrent writer (see
   `### Flow: Concurrent-Writer Stand-In`)
 - managed spells (0.2.8241-0.2.8246, 0.2.8254): the member and its Phase 6 rank, the bind options with their
@@ -424,7 +424,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 515 `test_*.py` modules among 518 `.py` files (recounted 2026-10-19)
+- the densest tier: 516 `test_*.py` modules among 519 `.py` files (recounted 2026-10-25)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -463,7 +463,7 @@ Key Files (C1):
 - The 3 test_*.py modules in tests/unit/melder/build_assets/ and the 9 package-root
   modules directly under tests/unit/melder/ are cited in their C2 clusters.
 - `tests/unit/github_workflows/conftest.py`
-- The repository-tooling trees carry 10 `test_*.py` modules (github_workflows 8,
+- The repository-tooling trees carry 11 `test_*.py` modules (github_workflows 9,
   llm_support 1, architecture_and_design 1), cited in their C2 cluster.
 
 ### Component: Component Test Suite
@@ -1286,14 +1286,15 @@ Protects:
   and honouring cancellation; the phase 2-5 codegen IR shape and deterministic
   signature hashing; the validation-strategy registry and Phase-6 validity gating
 - key-set plan lowering (`test_site_plan_lowering.py`): demand, placement, guard
-  order, call shape, unresolved inputs, and the store a miss's `many` children register in (the holder's,
-  0.2.8235)
+  order, call shape, unresolved inputs, and the store a miss's `many` children register in (the meld's
+  innermost scope, as at the plan top, with no adoption line; 0.2.8267)
 - copied pool reads (`test_compiler_pool_snapshot_reads.py`): Phases 3, 5 and 6 and
   the Phase-8 walk survive a pool that grows while iterated, and Phase 5 skips an
   entry with no registered state (see `### Flow: Concurrent-Writer Stand-In`)
 - the door-held root (0.2.73): the normal plan of a `unique_per_conduit` or
   spellspace root does not take the slot guard its route door already holds;
-  every other site and plan keeps its guard (`test_site_plan_door_held_root.py`)
+  every other site and plan keeps its guard, and the root's miss registers its `many` child in the
+  innermost scope (0.2.8267) (`test_site_plan_door_held_root.py`)
 - canonical address collisions (2026-09-28): same-name entries at distinct addresses remain valid;
   case/default aliases and different display names at one address still collide, with identical
   results through fresh and pass-cached validation (`test_duplicate_spell_name_strategy.py`).
@@ -1444,6 +1445,20 @@ Protects:
   to an older green run, bounded waits and API reads, immutable uploads
 - distribution contents (wheel and sdist members, versions, the PEP 561 marker) and
   reproducible sdist normalization; workflow wiring checked on parsed YAML
+- Melder's runtime-dependency pins: every test manifest and the speed manifest pin
+  each `[project.dependencies]` name (at its version when it is declared exact), and
+  both installed-package probes install the wheel beside the running release's pins
+  and run `pip check` before the smoke test
+- the release candidate's provenance gate (2026-10-24): the TestPyPI upload by Trusted
+  Publishing through the publish action pinned to its commit, `id-token: write` held by that job
+  alone in all the workflows and no secret in its steps; `RC / provenance` between the upload and every
+  install probe; its five layers - a provenance on TestPyPI (a late 404 retried, a redirect
+  refused), the publisher record, Sigstore through the pinned verifier, the signing certificate
+  read claim by claim from its DER (Fulcio's .8-.24 exact, this run and publish attempt for a
+  file this run uploaded, the legacy .1-.6 agreeing with their successors) and the statement's
+  file and sha256 - and the tool, installed from an exact hashed lock, proven every run on a
+  recorded genuine attestation and two tampered copies of it; and every `.github/scripts/`
+  module importing the standard library only, with its two named exceptions
 - the LLM bundle builder's deterministic build/check lifecycle and explicit
   opt-in for untracked files; the architecture-docs tool's manifest, link, anchor
   and render-hash checks
@@ -1452,6 +1467,7 @@ Key Files (C1):
 - `tests/unit/github_workflows/test_ci_policy.py`
 - `tests/unit/github_workflows/test_workflow_contracts.py`
 - `tests/unit/github_workflows/test_candidate_publication.py`
+- `tests/unit/github_workflows/test_candidate_provenance.py`
 - `tests/unit/github_workflows/test_source_qualification.py`
 - `tests/unit/github_workflows/test_python_runtime_matrix.py`
 - `tests/unit/github_workflows/test_distributions.py`
@@ -1485,10 +1501,12 @@ Protects:
 - elastic kernel pools (0.2.8234): a repeat burst of 30 lessers or 30 nested managed spellspaces reuses every
   shell, a burst past 256 keeps 256, the root pool decays to 20 after the settle time with catch-up (fake clock
   through `_time_func`) and stretches again, and prewarming keeps 40 of each
-- holder-owned many children (0.2.8235): a slotted holder's disposal-bearing `many` child is recorded in the store
-  that owns the holder and disposed exactly once, when that owner ends - not when the lesser or spellspace that
-  first melded the holder ends (`unique`, `unique_per_conduit`, lineage; nested and override routes); controls
-  for holders built where they live; the opt-in singleton specializer builds one child, not one per warm meld
+- a `many` belongs to the scope that built it (0.2.8267;
+  `test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py`): a slotted holder's disposal-bearing
+  `many` child is recorded in the store of the lesser or spellspace that first melded the holder and disposed exactly
+  once, when that scope ends, while the holder's owner keeps serving the holder (`unique`, `unique_per_conduit`,
+  lineage; nested and override routes); controls for holders built where they live; the opt-in singleton
+  specializer builds one child, recorded by the scope that built it
 - managed spells through real melds (0.2.8245; `test_conduit_component_managed_spell_quantity.py`): a released
   object is the next meld's; every door of the spell leases from one pool; a `many` holder takes a lease per
   meld and a stored `unique` holder keeps its own; limited_quantity refuses until a release, and a queue meld
@@ -1518,7 +1536,7 @@ Key Files (C1):
 - `tests/component/melder/aether/test_aether_spell_id_regime_property_component.py` (regime in force, 2026-09-30)
 - `tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py` (2026-09-30)
 - `tests/component/melder/aether/conduit/test_kernel_pool_elastic_retention.py` (elastic pools, 2026-10-12)
-- `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py` (2026-10-14)
+- `tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py` (2026-10-24)
 - `tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py` (2026-10-15)
 - `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
 
@@ -1895,15 +1913,20 @@ Protects:
   ExceptionGroup (0.2.8203)
 - door-held first builds (0.2.73): concurrent first melds of one root, on one
   conduit or in one shared SpellSpace, construct it and its dependency once
-- holder-owned many children (0.2.8235): a borrowed `unique` holder first melded by its borrower and a cluster
-  holder first melded by a member keep their disposal-bearing `many` child open until the holder's owner ends
+- a `many` belongs to the scope that built it (0.2.8267;
+  `test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py`): a borrower that first melds a
+  contracted `unique` and a cluster member that first melds a cluster holder dispose the `many` child they built
+  when they tear down, once, while the holder lives on with its owner
 - cluster lifetimes (0.2.8236-0.2.8237): a torn-down member or leader leaves its cluster (unelect and elect work,
   the cluster stays deletable, a failed transactional leave still drops it), an explicit leave unshares the leaver's
   roots from every member, the cluster's object survives a leader change and is disposed once by deletion or frame
   teardown, a failing disposal is raised after the deletion, and only the elected leader purges it
-- holder records (0.2.8238): purging a holder disposes its `many` child after it (also for a holder without disposal
-  methods, in a spellspace and by the owner of a `unique`), nothing accumulates over purge-and-meld cycles, a `many`
-  purge of the child's spell leaves a live holder's child open, and an ownership move carries the child
+- holder cleanup (0.2.8267; `test_conduit_integration_holder_cleanup_leaves_its_many_children.py`): purging a holder -
+  whole or one instance, with or without disposal methods, in a spellspace and by the owner of a `unique` - runs only
+  the holder's own methods and leaves its `many` child to the store that built it, which disposes it once at its end
+  and raises a failing child's disposal there; a `many` purge of the child's spell disposes every child its store
+  recorded; an ownership move leaves the child in the store that built it (with `include_dependencies` it moves with
+  its spell and is disposed once, at the target); teardown disposes a holder before its `many` child
 - transfer default (0.2.8239): a default transfer keeps a `unique` as one object and moves a tracked `many` object;
   `move_creations=False` builds a new instance on the target
 - managed pools (0.2.8243-0.2.8246; `test_conduit_integration_managed_quantity_pool.py`): conjure, a dynamic
@@ -1956,9 +1979,9 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
 - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
 - `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
-- `tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py` (2026-10-14)
+- `tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py` (2026-10-24)
 - `tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py` (2026-10-14)
-- `tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py` (2026-10-14)
+- `tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py` (2026-10-24)
 - `tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py` (2026-10-15)
 - `tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py` (2026-10-15)
 - `tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py` (2026-10-15)
@@ -2080,7 +2103,7 @@ Key Files (C1):
 
 ### Flow: CI Runtime Qualification
 1. the workflow sets `PYTHON_GIL: "0"` and runs `run_runtime_tests.py` with
-   `--report` and `--coverage-report` (`.github/workflows/test-runtime.yml:70-73`).
+   `--report` and `--coverage-report` (`.github/workflows/test-runtime.yml:76-79`).
 2. `main` parses its arguments, imports pytest and calls
    `require_free_threading(sys.version_info, Py_GIL_DISABLED, sys._is_gil_enabled())`,
    which raises `RuntimeError` unless the process is 3.14+, free-threaded and
@@ -2091,6 +2114,31 @@ Key Files (C1):
 4. `require_free_threading` runs again on the same process, then `main` returns
    pytest's exit code unchanged.
    EVIDENCE: .github/scripts/run_runtime_tests.py:10-50
+
+### Flow: Candidate Provenance Check End To End
+1. `CandidateRun(provenance, monkeypatch, tmp_path)` replaces every boundary of
+   `verify_candidate`: `package_version` (0.2.8300), `verified_files` (`build_files()`: a wheel
+   and an sdist), `fetch_provenance` (answers from `documents`), `tool_environment` (a path;
+   nothing is built), `subprocess.run` (plays the verifier: reads the request, keeps the bytes
+   each entry names, answers from `outcomes`, which refuse the two tampered controls) and
+   `git_output`; the fetch, the tool and the verifier stand-ins record what crossed them.
+2. `serve(wheel_claims, sdist_claims)` makes TestPyPI hold one attestation per built file:
+   `Signer.provenance` around a certificate `Signer.certificate` writes element by element
+   (`Der`) with the claims a release-candidate run in `pypitest` signs with.
+3. `verify_candidate(dist, report, rerun_environment())` runs as a failed-jobs re-run (attempt 2
+   of a run whose attempt 1 uploaded only the wheel): the run's variables and the upload record
+   are read, the recorded control is checked, then each file's provenance (publisher record,
+   statement, certificate claims), then one verifier process on all five entries (three
+   controls, two candidates), then the report is written.
+4. `test_every_candidate_file_is_checked_in_all_five_layers` asserts the entries' order, the
+   wheel's exact run invocation (attempt 1) beside the sdist's patterns, that every stored
+   provenance is the bytes TestPyPI answered, one tool environment and the report field by
+   field. The refusal tests assert what never happened: no tool, no verifier request and no
+   report when a standard-library layer refuses first
+   (`test_a_wrong_signer_is_refused_before_the_tool_is_built`), and no fetch when the lock no
+   longer installs the control (`test_the_controls_are_checked_before_testpypi_is_asked`).
+   EVIDENCE: tests/unit/github_workflows/test_candidate_provenance.py:937-1097
+   EVIDENCE: .github/scripts/testpypi_provenance.py:721-757
 
 ### Flow: Concurrent-Writer Stand-In
 1. the regression builds a real Spellbook, binds `PoolConfig`, `PoolRepository` and
@@ -2167,12 +2215,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 282 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
+above - 283 paths (recounted 2026-10-25) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 862 test modules of the
+builders - not every `test_*.py` module beneath it. The 865 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -2729,11 +2777,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 183
   loc: 183
   verified_at: 2026-10-14T18:24:30Z
-- path: `tests/component/melder/aether/conduit/test_conduit_component_many_child_disposed_with_its_holder.py`
+- path: `tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py`
   start_line: 1
-  end_line: 535
-  loc: 535
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 511
+  loc: 511
+  verified_at: 2026-10-24T22:04:25Z
 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
   start_line: 1
   end_line: 135
@@ -2926,9 +2974,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py`
   start_line: 1
-  end_line: 1475
-  loc: 1475
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 1468
+  loc: 1468
+  verified_at: 2026-10-24T22:04:25Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py`
   start_line: 1
   end_line: 476
@@ -2946,14 +2994,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `.github/workflows/test-runtime.yml`
   start_line: 1
-  end_line: 178
-  loc: 178
-  verified_at: 2026-10-06T00:22:33Z
+  end_line: 175
+  loc: 175
+  verified_at: 2026-10-24T19:37:10Z
 - path: `tests/unit/github_workflows/conftest.py`
   start_line: 1
-  end_line: 73
-  loc: 73
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 79
+  loc: 79
+  verified_at: 2026-10-25T00:34:42Z
 - path: `tests/experiments/cprofile_testing/profile_harness.py`
   start_line: 1
   end_line: 176
@@ -3128,17 +3176,23 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   start_line: 1
   end_line: 604
   loc: 604
-  verified_at: 2026-10-06T11:24:15Z
+  verified_at: 2026-10-25T00:34:42Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 940
-  loc: 940
-  verified_at: 2026-10-06T11:24:15Z
+  end_line: 1048
+  loc: 1048
+  verified_at: 2026-10-25T00:34:42Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
-  end_line: 434
-  loc: 434
-  verified_at: 2026-10-06T10:40:31Z
+  end_line: 565
+  loc: 565
+  verified_at: 2026-10-25T00:34:42Z
+- path: `tests/unit/github_workflows/test_candidate_provenance.py`
+  start_line: 1
+  end_line: 1169
+  loc: 1169
+  verified_at: 2026-10-25T00:34:42Z
+  note: the candidate provenance check's five layers on a recorded attestation and on certificates built byte by byte.
 - path: `tests/unit/github_workflows/test_source_qualification.py`
   start_line: 1
   end_line: 412
@@ -3146,9 +3200,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-06T11:24:15Z
 - path: `tests/unit/github_workflows/test_python_runtime_matrix.py`
   start_line: 1
-  end_line: 421
-  loc: 421
-  verified_at: 2026-10-06T00:22:33Z
+  end_line: 539
+  loc: 539
+  verified_at: 2026-10-24T21:52:32Z
 - path: `tests/unit/github_workflows/test_distributions.py`
   start_line: 1
   end_line: 185
@@ -3332,29 +3386,29 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
 
 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py`
   start_line: 1
-  end_line: 403
-  loc: 403
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 402
+  loc: 402
+  verified_at: 2026-10-24T22:04:25Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
   start_line: 1
   end_line: 324
   loc: 324
   verified_at: 2026-09-26T22:15:16Z
-- path: `tests/integration/melder/conduit/test_conduit_integration_many_child_disposed_with_its_holder.py`
+- path: `tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py`
   start_line: 1
-  end_line: 218
-  loc: 218
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 197
+  loc: 197
+  verified_at: 2026-10-24T22:04:25Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_cluster_member_lifetime.py`
   start_line: 1
   end_line: 352
   loc: 352
   verified_at: 2026-10-14T23:59:35Z
-- path: `tests/integration/melder/conduit/test_conduit_integration_holder_children_lifetime.py`
+- path: `tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py`
   start_line: 1
-  end_line: 415
-  loc: 415
-  verified_at: 2026-10-14T23:59:35Z
+  end_line: 440
+  loc: 440
+  verified_at: 2026-10-24T22:04:25Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py`
   start_line: 1
   end_line: 1797
@@ -3476,9 +3530,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: SpellIndex's cleanup-safe selected-version probe (0.2.8244).
 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py`
   start_line: 1
-  end_line: 883
-  loc: 883
-  verified_at: 2026-10-16T11:13:43Z
+  end_line: 878
+  loc: 878
+  verified_at: 2026-10-24T22:04:25Z
   note: the plans' managed site: lease, miss, returns, recorded children, overrides (0.2.8245); the missing-pool
     text (0.2.8248).
 - path: `tests/unit/melder/spellbook/spell_compiler/test_managed_dispense_seams.py`
@@ -3756,6 +3810,9 @@ graph TD
 - `.github/scripts/run_runtime_tests.py`
 - `.github/workflows/test-runtime.yml`
 - `tests/unit/github_workflows/conftest.py`
+- `tests/unit/github_workflows/test_candidate_provenance.py`
+- `.github/scripts/testpypi_provenance.py`
+- `.github/workflows/release-candidate.yml`
 - `tests/unit/melder/aether/conduit/conftest.py`
 - `tests/unit/melder/test_system_document_view.py`
 - `tests/unit/melder/test_melder_registration_guard.py`
@@ -3883,6 +3940,9 @@ graph TD
 - `tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py`
 - `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py`
 - `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py`
+- `tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py`
+- `tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py`
 
 ## Open Questions
 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a
@@ -3895,6 +3955,51 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-25 the candidate's provenance (no notch; CI, tests and documentation only;
+STORY-2026-10-24-testpypi_trusted_publishing_and_provenance): the Repository Tooling Unit Cluster gains
+`test_candidate_provenance.py` (163 tests: the strict DER reader and the signing certificate's claims, on PyPI's
+recorded attestation of the pypi-attestations wheel and on certificates built byte by byte; every claim, the legacy
+ones included; the run's identity and the publish job's upload record; the Integrity API's retries, redirect and
+404 refusal; the publisher record and the statement; the hashed lock, the controls and the verifier process; the
+whole check end to end with its report; the command line; the expected publisher read from the workflow; the
+verifier read as source) and protects the TestPyPI Trusted Publishing posture, `RC / provenance` and the
+standard-library rule for `.github/scripts/`; a call flow describes the end-to-end harness. The core map adds the
+module and remeasures `conftest.py` (79), `test_workflow_contracts.py` (1048), `test_candidate_publication.py`
+(565) and `test_ci_policy.py` (604, unchanged); the key-file union is 283 paths. Counts are recounted from disk
+(unit 519 `.py`, 516 of them `test_*.py`; component 172, 170; integration 186, 179; 865 test modules in the three
+tiers): this lane adds one unit module, and the count also takes in
+`test_conduit_integration_windows_held_cache_bundle.py`, which no cluster lists yet.
+
+2026-10-24 a `many` belongs to the scope that built it (0.2.8267;
+STORY-2026-10-24-remove_many_child_holder_ownership): the Aether Component Cluster swaps
+`test_conduit_component_many_child_disposed_with_its_holder.py` for
+`test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py` (24 tests: on every route the scope that
+melded a holder records its `many` child and disposes it once when it ends, controls, the specializer), and the
+Conduit Integration Cluster swaps `test_conduit_integration_many_child_disposed_with_its_holder.py` and
+`test_conduit_integration_holder_children_lifetime.py` for
+`test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py` (2 tests: a borrower and a cluster
+member) and `test_conduit_integration_holder_cleanup_leaves_its_many_children.py` (10 tests: purge, transfer, the
+child spell's purge, a failing child, teardown order); the unit `test_creations_holder_children.py` (thirteen
+record cases) is deleted with the record, and the Spellbook Compiler Unit Cluster's lowering and door-held entries
+say a miss registers its children in the innermost scope. The six changed or new modules are remeasured in the
+core map; the key-file union stays 282 paths (three swapped one for one). Counts are recounted from disk (unit 518
+`.py`, 515 of them `test_*.py`; component 172, 170; integration 185, 178; 863 test modules in the three tiers): this
+lane removes one module net, and the count also takes in the two 0.2.8266 regression modules
+(`test_conduit_component_refused_cache_save_does_not_fail_meld.py`, `test_caching_system_refused_save.py`), which no
+cluster lists yet.
+
+2026-10-24 Melder's runtime-dependency pins in CI (no notch; CI and documentation only): the Repository Tooling
+Unit Cluster also protects those pins - every test manifest and the speed manifest pin each declared name, and
+both installed-package probes install the wheel beside the running release's pins and run `pip check` - and the
+C1 extents of `test_workflow_contracts.py` (954), `test_candidate_publication.py` (530) and
+`test_python_runtime_matrix.py` (539) are remeasured. The module inventory is unchanged: the tests extend
+existing files.
+
+2026-10-24 Python 3.15 cells and publication without a test rerun (no notch; CI and documentation only): the C1
+extents of `test-runtime.yml` (175) and `test_workflow_contracts.py` (943; the publication contract now asserts
+no runtime test run and no Codecov branch override) are remeasured, and the CI qualification flow's citation
+into `test-runtime.yml` points at the run step again (76-79; it read 70-73).
 
 2026-10-19 FrameLink cleanup guard (test-only): the Aether/Nexus/Rift unit entry and a focused call flow
 describe the deterministic acquisition-boundary stand-in. It completes a real cleanup before the outer

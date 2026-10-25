@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="1.831" timestamp="2026-10-19T17:19:30.043274-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.aether.test_aether_integration_cluster_transactions_concurrency" name="test_concurrent_adds_of_same_conduit_admit_exactly_one[forced-same-cluster]" time="0.050"><failure message="assert 0 == (8 - 1)&#10; +  where 0 = len([])">tests\integration\melder\aether\test_aether_integration_cluster_transactions_concurrency.py:416: in test_concurrent_adds_of_same_conduit_admit_exactly_one
-    assert len(errors) == worker_count - 1
-E   assert 0 == (8 - 1)
-E    +  where 0 = len([])</failure></testcase><testcase classname="tests.integration.melder.aether.test_aether_integration_cluster_transactions_concurrency" name="test_concurrent_adds_of_same_conduit_admit_exactly_one[forced-two-clusters]" time="0.025"><failure message="AssertionError: assert 2 == 1&#10; +  where 2 = len(['cluster-a', 'cluster-b'])">tests\integration\melder\aether\test_aether_integration_cluster_transactions_concurrency.py:409: in test_concurrent_adds_of_same_conduit_admit_exactly_one
-    assert len(winners) == 1
-E   AssertionError: assert 2 == 1
-E    +  where 2 = len(['cluster-a', 'cluster-b'])</failure></testcase></testsuite></testsuites>

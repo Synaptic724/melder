@@ -12,6 +12,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
     StructuralSnapshot,
 )
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
@@ -23,6 +24,8 @@ class _StubCachingSystem:
         self._payloads: Dict[str, Any] = dict(payloads or {})
         self.emit_calls = 0
         self.fail_emit = False
+        # A save the operating system refuses: `CachingSystem.emit()` returns False instead of raising.
+        self.refuse_emit = False
         # Mirror the envelope's world stamp: "" until a staging records one.
         self.world_stamp = ""
 
@@ -48,10 +51,12 @@ class _StubCachingSystem:
         self.world_stamp = world_stamp
         return True
 
-    def emit(self) -> None:
+    def emit(self) -> bool:
+        """Mirror `CachingSystem.emit()`: True when written, False when the save is refused."""
         self.emit_calls += 1
         if self.fail_emit:
             raise RuntimeError("emit failed")
+        return not self.refuse_emit
 
 
 class _RecordingSpell:
@@ -307,6 +312,58 @@ def test_emit_cache_file_if_required_restores_emit_required_on_failure() -> None
     assert spellbook._cache_emit_required is True
 
 
+def test_emit_cache_file_if_required_returns_false_and_keeps_the_flag_cleared_when_the_save_is_refused() -> None:
+    """
+    A save the operating system refuses returns False and leaves the emit-required flag cleared.
+
+    Contract (TASK-2026-10-24-cache_file_write_failure_fails_meld, 0.2.8266):
+        `CachingSystem.emit()` reports a refused save as False; the Book passes it on and does not restore the
+        flag, so the meld that triggered the save returns its object and no later meld retries it. Until 0.2.8266
+        the refusal raised out of the meld and the flag came back set.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+
+    result = Spellbook._emit_cache_file_if_required(spellbook)
+
+    assert result is False
+    assert caching_system.emit_calls == 1
+    assert spellbook._cache_emit_required is False
+
+
+def test_emit_cache_file_if_required_does_not_retry_a_refused_save_until_cache_is_staged_again() -> None:
+    """
+    After a refused save the next operation boundary does not save again until new cache is staged.
+
+    Contract:
+        No retry storm: a lasting refusal (a read-only folder) costs one save per staging, not one per meld.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    Spellbook._emit_cache_file_if_required(spellbook)
+
+    second = Spellbook._emit_cache_file_if_required(spellbook)
+    spellbook._cache_emit_required = True
+    caching_system.refuse_emit = False
+    after_new_staging = Spellbook._emit_cache_file_if_required(spellbook)
+
+    assert second is False
+    assert after_new_staging is True
+    assert caching_system.emit_calls == 2
+
+
 @pytest.mark.parametrize(
     ("caching_enabled", "emit_result", "expected_emit_calls"),
     [
@@ -501,6 +558,65 @@ def test_emit_spell_cache_file_raises_for_foreign_spellbook() -> None:
         Spellbook._emit_cache_file(spellbook, spell)
 
 
+def test_emit_spell_cache_file_returns_true_when_the_save_is_written() -> None:
+    """Verify the explicit file emit reports a written save as True."""
+    caching_system = _StubCachingSystem()
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    spell = _RecordingSpell()
+    spell._spellbook = spellbook
+
+    assert Spellbook._emit_cache_file(spellbook, spell) is True
+    assert caching_system.emit_calls == 1
+
+
+def test_emit_spell_cache_file_returns_false_when_the_save_is_refused() -> None:
+    """
+    The explicit file emit reports a refused save as False instead of raising (D2, 0.2.8266).
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    spell = _RecordingSpell()
+    spell._spellbook = spellbook
+
+    assert Spellbook._emit_cache_file(spellbook, spell) is False
+    assert caching_system.emit_calls == 1
+    assert spellbook._cache_emit_required is False
+
+
+def test_spell_emit_cache_file_returns_false_when_the_book_save_is_refused() -> None:
+    """
+    `Spell.emit_cache_file()`, the public explicit save, returns False for a refused save (D2, 0.2.8266).
+
+    Contract:
+        The Spell delegates to its owning Spellbook and returns what the Book returned; until 0.2.8266 a save the
+        operating system refused raised its OSError out of this call.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spellbook._cache_emit_required = True
+    spell = SimpleNamespace(check_cleaned=lambda: None, _caching_enabled=True, _spellbook=spellbook)
+    spellbook._emit_cache_file = lambda requesting_spell: Spellbook._emit_cache_file(spellbook, requesting_spell)
+
+    assert Spell.emit_cache_file(spell) is False
+    assert caching_system.emit_calls == 1
+
+
 def test_emit_conduit_cache_file_at_conjure_end_noops_when_disabled() -> None:
     """Verify conjure-end emit does nothing when frame caching is disabled."""
     spellbook = _make_spellbook_stub(live_spell_ids=(), caching_enabled=False)
@@ -558,6 +674,34 @@ def test_emit_conduit_cache_file_at_conjure_end_swallows_emit_failure() -> None:
     )
 
     assert spellbook._cache_emit_required is True
+
+
+def test_emit_conduit_cache_file_at_conjure_end_leaves_the_flag_cleared_when_the_save_is_refused() -> None:
+    """
+    A refused end-of-conjure save is no error: conjure logs nothing itself and the flag stays cleared.
+
+    Contract (0.2.8266):
+        The cache utility logs the refusal and returns False, so conjure's own error log stays silent and the first
+        meld does not retry the save; the staged payloads are saved at the next staging.
+    """
+    caching_system = _StubCachingSystem()
+    caching_system.refuse_emit = True
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    errors: list[tuple[Any, ...]] = []
+    spellbook._logger = SimpleNamespace(error=lambda *args, **kwargs: errors.append(args))
+    spellbook._cache_emit_required = True
+
+    SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
+        spellbook=spellbook,
+    )
+
+    assert caching_system.emit_calls == 1
+    assert spellbook._cache_emit_required is False
+    assert errors == []
 
 
 @pytest.mark.parametrize(

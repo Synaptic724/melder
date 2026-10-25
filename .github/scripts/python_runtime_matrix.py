@@ -3,6 +3,8 @@
 Every Python release CI runs is named by a manifest: one per release under .github/python/tests/ for the
 runtime tests (and the release candidate's install probes), exactly one under .github/python/speed/ for the
 speed tests. Nothing is looked up on the network, so a new Python release runs only after a manifest adds it.
+The installed-package probes install the built wheel with the pins of Melder's runtime dependencies from the test
+manifest of the release they run.
 """
 
 import argparse
@@ -242,6 +244,90 @@ def requirements_text(manifest: PythonManifest) -> str:
     return "\n".join(manifest.dependencies) + "\n"
 
 
+def declared_dependencies(project: Optional[pathlib.Path] = None) -> tuple[str, ...]:
+    """Name the distributions Melder declares in [project.dependencies], without importing Melder.
+
+    Only each requirement's distribution name is kept: the version CI installs comes from a manifest's pin, never
+    from the requirement itself, so a test cell and an installed-package probe install exactly what that release's
+    manifest pins.
+
+    Args:
+        project: The pyproject.toml to read; the repository's own when omitted.
+
+    Returns:
+        Each declared distribution's PEP 503 name once, in declaration order; empty when Melder declares none.
+
+    Raises:
+        ValueError: When [project.dependencies] is not a list of requirement strings, or an entry does not begin
+            with a distribution name.
+    """
+    path = project if project is not None else pathlib.Path(__file__).resolve().parents[2] / "pyproject.toml"
+    with path.open("rb") as stream:
+        document = tomllib.load(stream)
+    requirements = object_value(document.get("project"), "project").get("dependencies", [])
+    if not isinstance(requirements, list) or not all(isinstance(entry, str) for entry in requirements):
+        raise ValueError("project.dependencies in pyproject.toml must be a list of requirement strings.")
+    names: list[str] = []
+    for requirement in requirements:
+        match = re.match(r"\s*([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)", requirement)
+        if match is None:
+            raise ValueError(f"project.dependencies lists {requirement!r}, which does not begin with a "
+                             "distribution name.")
+        name = canonical_name(match[1])
+        if name not in names:
+            names.append(name)
+    return tuple(names)
+
+
+def runtime_pins(manifest: PythonManifest, declared: Sequence[str]) -> tuple[str, ...]:
+    """Select a manifest's pins of Melder's declared runtime dependencies, in manifest order.
+
+    The installed-package probes install the built wheel without dependency resolution, so they install these pins
+    beside it: the versions that release's test cells run with. Only the declared distributions are selected; a
+    dependency of one of them is not, and the probes' pip check then names it as missing.
+
+    Args:
+        manifest: A validated test manifest.
+        declared: Canonical distribution names, as declared_dependencies returns them.
+
+    Returns:
+        The selected pins exactly as the manifest writes them, markers included; empty when nothing is declared.
+
+    Raises:
+        ValueError: When a declared distribution has no pin in the manifest; the message names the manifest and
+            every missing distribution.
+    """
+    names = [canonical_name(pin.split("==", 1)[0]) for pin in manifest.dependencies]
+    missing = [name for name in declared if name not in names]
+    if missing:
+        raise ValueError(f"Python manifest {manifest.python}.toml does not pin Melder's runtime dependencies "
+                         f"{missing}; pin each, with its own dependencies, in every test manifest.")
+    selected = set(declared)
+    return tuple(pin for pin, name in zip(manifest.dependencies, names) if name in selected)
+
+
+def release_manifest(directory: pathlib.Path, release: str) -> PythonManifest:
+    """Load the manifest named after one exact release, such as the running interpreter's.
+
+    Args:
+        directory: The manifest folder, normally .github/python/tests/.
+        release: An exact final release, as platform.python_version() reports it.
+
+    Returns:
+        The validated manifest of that release.
+
+    Raises:
+        ValueError: When the release is not an exact final release, has no manifest in the folder (CI runs only
+            the releases a manifest names), or as load_manifest.
+    """
+    stable_version(release)
+    path = directory / f"{release}.toml"
+    if not path.is_file():
+        raise ValueError(f"Python {release} has no manifest in {directory}; CI runs only the releases a manifest "
+                         "names.")
+    return load_manifest(path)
+
+
 def speed_install_command(manifest: PythonManifest, requirements: pathlib.Path,
                           report: pathlib.Path) -> list[str]:
     """Return the pip command that installs exactly one speed manifest into the running interpreter.
@@ -381,11 +467,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     speed-install installs the speed manifest's pins into the running interpreter, which must be that
     manifest's free-threaded release, keeps the evidence under --results and returns pip's exit status.
     requirements writes one manifest's pins to --output for an install without dependency resolution.
-    coverage verifies and stages this run's reports against CI_PYTHON_MATRIX. Every failure raises;
+    runtime-requirements writes only the pins of Melder's declared runtime dependencies to --output, from
+    --manifest or, by default, the running interpreter's test manifest: what an installed-package probe installs
+    beside the wheel. coverage verifies and stages this run's reports against CI_PYTHON_MATRIX. Every failure raises;
     nothing falls back to a default release.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("discover", "speed", "speed-install", "requirements", "coverage"))
+    parser.add_argument("operation", choices=("discover", "speed", "speed-install", "requirements",
+                                              "runtime-requirements", "coverage"))
     parser.add_argument("--manifests", type=pathlib.Path)
     parser.add_argument("--manifest", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path, default=pathlib.Path("reports/requirements.txt"))
@@ -424,6 +513,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(requirements_text(manifest), encoding="utf-8")
         print(f"Wrote {len(manifest.dependencies)} pins for Python {manifest.python} to {args.output}.")
+    elif args.operation == "runtime-requirements":
+        manifest = (load_manifest(args.manifest) if args.manifest is not None
+                    else release_manifest(root / RuntimeMatrixPolicy.TESTS_DIRECTORY, platform.python_version()))
+        if manifest.release < floor:
+            raise ValueError(f"Python {manifest.python} sits below the supported floor; its manifest cannot run.")
+        pins = runtime_pins(manifest, declared_dependencies())
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text("".join(f"{pin}\n" for pin in pins), encoding="utf-8")
+        print(f"Wrote {len(pins)} runtime-dependency pins for Python {manifest.python} to {args.output}.")
     else:
         matrix = validate_matrix(json.loads(os.environ["CI_PYTHON_MATRIX"]), floor)
         reports = require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])

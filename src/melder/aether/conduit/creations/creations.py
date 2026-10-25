@@ -52,69 +52,8 @@ class ManyDisposalBucket:
         self.methods = methods
 
 
-class HolderDisposalEntry:
-    """
-    Cleanup-only record of one slotted holder and the `many` children built for it.
-
-    Purpose:
-        Keep a holder's disposal-bearing `many` children with the holder
-        (slotted_lifetime_ownership, 0.2.8238). Since 0.2.8235 an emitted miss
-        registers each child in the holder's store before it builds the
-        holder; once the holder is published, the miss moves those children
-        out of their spells' `many` buckets into this record
-        (`Creations.adopt_children`). Every store verb keyed by the holder -
-        purge, extract/restore for an ownership transfer, whole-store disposal
-        - then reaches the children with the holder, through one dict read.
-
-    Contract:
-        - `item` is the holder: the object `_creations` holds under the
-          holder's spell id.
-        - `methods` is the holder Spell's established ordered disposal list,
-          retained by reference. It is empty when the holder declares no
-          disposal method; the record then exists for the holder's children.
-        - `children` lists `(child, child_methods)` pairs in build order;
-          `child_methods` is the child Spell's own list, the object its
-          `ManyDisposalBucket` carried, retained by reference.
-        - A child is in exactly one place: its spell's `many` bucket or one
-          holder record, never both.
-        - Disposal runs the holder's methods, then each child's, newest child
-          first, so a holder whose own disposal uses a child still finds it
-          open (`Creations._dispose_holder_entry`).
-        - Every field is borrowed. The owning `Creations` store detaches the
-          record (cleanup, clear, purge, extract) and disposes from it; the
-          record owns nothing and needs no cleanup.
-
-    AGENT_ACCESS: internal
-    """
-
-    __slots__ = ("item", "methods", "children")
-
-    def __init__(
-            self,
-            item: object,
-            methods: List[str],
-            children: List[Tuple[object, List[str]]],
-    ) -> None:
-        """
-        Bind the holder, its disposal list and its adopted children.
-
-        Args:
-            item: The holder object (borrowed).
-            methods: The holder Spell's ordered disposal method names (borrowed;
-                an empty list when the holder declares none).
-            children: `(child, child_methods)` pairs in build order. The list
-                object itself is kept.
-
-        Returns:
-            None.
-        """
-        self.item = item
-        self.methods = methods
-        self.children = children
-
-
 StoredDisposalEntry = Tuple[object, List[str]]
-StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket, HolderDisposalEntry]
+StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket]
 
 
 class Creations(Cleanable):
@@ -143,11 +82,13 @@ class Creations(Cleanable):
             bucket, a tuple and a second append per creation). A many key
             therefore carries one disposal declaration: every entry of the
             key is disposal-bearing or none is.
-          - a slotted holder that adopted `many` children (0.2.8238):
-            `spell_id -> HolderDisposalEntry` (the holder, its methods -
-            possibly none - and its children with theirs) in place of the
-            tuple. Adopted children leave their spell's bucket, so a `many`
-            key holds only objects that no holder owns.
+          - A slotted holder's disposal value is its own `(object, methods)`
+            tuple, like any unique: nothing records the `many` objects it was
+            built with against it. They stay in their spells' buckets in the
+            store that recorded them - the meld's innermost scope - and are
+            disposed when that store ends (the owner's decision, 2026-10-24;
+            from 0.2.8238 to 0.2.8265 a holder record took them in and
+            disposed them with the holder).
         - Managed pools (2026-10-15, managed_spell_quantity): a root store keeps one
           `ManagedSpellQuantity` per `Existence.managed_spell_quantity` version it
           owns in `_managed_quantities[spell_id]`, a map of its own: `_creations`
@@ -178,11 +119,10 @@ class Creations(Cleanable):
 
         - `_lock` (the store lock) is a LEAF lock over the two registries. It
           is held only for dict reads and writes: publish of disposal-bearing
-          entries, many append, child adoption, purge detach, extract/restore
-          and whole-store swap. It is never held while acquiring another lock
-          and never around user code. (A publish without disposal methods is
-          one atomic dict store under the caller's build lock; see
-          `add_creation`.)
+          entries, many append, purge detach, extract/restore and whole-store
+          swap. It is never held while acquiring another lock and never
+          around user code. (A publish without disposal methods is one atomic
+          dict store under the caller's build lock; see `add_creation`.)
         - `slot_guard(spell_id)` returns one `RLock` per slot - a spell id
           whose Existence promises at most one object in this store. Generated
           doors and plan steps hold it across recheck -> construct -> publish,
@@ -212,8 +152,6 @@ class Creations(Cleanable):
         within a `many` bucket. Resolution registers a dependency before the
         dependent that holds it, so forward teardown would dispose the
         dependency while a dependent's own disposal method may still need it.
-        For the same reason a holder's record disposes the holder before the
-        children it adopted, newest child first (0.2.8238).
         This covers ordering within ONE scope; ordering between scopes is the
         conduit cleanup cascade's job.
 
@@ -536,10 +474,10 @@ class Creations(Cleanable):
         Contract:
             - Singleton metadata delegates to `_attempt_cleanup`.
             - Many buckets delegate to `_dispose_many_creations`.
-            - Holder records delegate to `_dispose_holder_entry`: the holder,
-              then its adopted children newest-first (0.2.8238). The three-way
-              dispatch is inline, as `_dispose_entry` spells it out, so a scope
-              exit pays no extra call per record.
+            - The two-way dispatch is inline, as `_dispose_entry` spells it
+              out, so a scope exit pays no extra call per record. A slotted
+              holder is an ordinary tuple: its disposal runs only its own
+              methods (the owner's decision, 2026-10-24).
             - Collected failures never prevent trying the next selected object;
               every failing method of every object contributes one error.
             - The caller owns registry detachment and final reference release.
@@ -571,42 +509,8 @@ class Creations(Cleanable):
         for value in reversed(disposable_registry.values()):
             if isinstance(value, tuple):
                 errors.extend(self._attempt_cleanup(value))
-            elif isinstance(value, ManyDisposalBucket):
-                errors.extend(self._dispose_many_creations(value))
             else:
-                errors.extend(self._dispose_holder_entry(value))
-        return errors
-
-    def _dispose_holder_entry(self, entry: HolderDisposalEntry) -> List[Exception]:
-        """
-        Dispose one detached holder record: the holder, then its adopted children.
-
-        Purpose:
-            Give every retirement keyed by a holder - whole-store disposal and
-            purge - one way to take the holder's `many` children with it
-            (0.2.8238).
-
-        Contract:
-            - Runs the holder's declared methods first (none when its list is
-              empty), then each child's methods, newest child first, so a holder
-              whose own disposal uses a child still finds it open.
-            - Every method of every object runs even after one fails; each
-              failure is one chained `RuntimeError` from `_attempt_cleanup`.
-            - Does not mutate the record or its borrowed lists and takes no
-              lock: the caller detached the record and released its locks.
-
-        Args:
-            entry:
-                The detached `HolderDisposalEntry`.
-
-        Returns:
-            List[Exception]:
-                Disposal failures in attempt order; empty when every method
-                succeeded.
-        """
-        errors = self._attempt_cleanup((entry.item, entry.methods))
-        for child, methods in reversed(entry.children):
-            errors.extend(self._attempt_cleanup((child, methods)))
+                errors.extend(self._dispose_many_creations(value))
         return errors
 
     def _dispose_entry(self, value: StoredDisposalValue) -> List[Exception]:
@@ -614,16 +518,16 @@ class Creations(Cleanable):
         Dispose one detached disposal-registry value, whatever its shape.
 
         Purpose:
-            One dispatch over the three record shapes `_disposable_creations`
-            holds, for retirements of one record such as purge (0.2.8238).
+            One dispatch over the two record shapes `_disposable_creations`
+            holds, for retirements of one record such as purge (0.2.8238; two
+            shapes again since the holder record was removed, 2026-10-24).
             Whole-store disposal runs the same dispatch inline in its loop.
 
         Contract:
-            - An `(object, methods)` tuple goes to `_attempt_cleanup`.
+            - An `(object, methods)` tuple goes to `_attempt_cleanup`: one
+              object, a slotted holder included, runs only its own methods.
             - A `ManyDisposalBucket` goes to `_dispose_many_creations` (newest
               object first).
-            - A `HolderDisposalEntry` goes to `_dispose_holder_entry` (the
-              holder, then its children newest-first).
             - Takes no lock; the caller detached the value first.
 
         Args:
@@ -636,9 +540,7 @@ class Creations(Cleanable):
         """
         if isinstance(value, tuple):
             return self._attempt_cleanup(value)
-        if isinstance(value, ManyDisposalBucket):
-            return self._dispose_many_creations(value)
-        return self._dispose_holder_entry(value)
+        return self._dispose_many_creations(value)
 
     def slot_guard(self, spell_id: str) -> RLock:
         """
@@ -1018,92 +920,6 @@ class Creations(Cleanable):
             )
         bucket.append(item)
 
-    def adopt_children(
-            self,
-            holder_key: str,
-            holder: object,
-            children: Tuple[Tuple[str, object], ...],
-    ) -> None:
-        """
-        Record a just-published holder's `many` children with the holder.
-
-        Purpose:
-            Make a slotted holder own the disposal-bearing `many` children built
-            for it (slotted_lifetime_ownership, 0.2.8238). An emitted miss builds
-            and registers each child in this store (`register_many`, before the
-            holder's build lock), then builds and publishes the holder; right
-            after publication, under the holder's build lock, it calls this verb,
-            which moves the children out of their spells' `many` buckets into
-            the holder's disposal record. Purge, extract/restore and whole-store
-            disposal of the holder then take the children with it.
-
-        Contract:
-            - Cold path only: one call per holder publication.
-            - Does nothing when this store was cleaned, or when the slot no
-              longer holds `holder` (a whole-store clear swapped the registries
-              after publication, and the children went with that generation).
-            - Each `(child_key, child)` is removed by identity from the key's
-              live bucket, scanning from the end - the child was appended
-              moments ago, so the scan normally stops at once. The key's method
-              list is taken from its `ManyDisposalBucket`. A bucket left empty
-              is dropped with its record, so a later registration of that key
-              starts again at the end of the registry. A child no longer in its
-              bucket (a concurrent `many` purge retired it) is skipped.
-            - The holder's disposal value becomes a `HolderDisposalEntry`: a
-              `(holder, methods)` tuple is replaced in place, keeping its
-              registry position; a holder published without disposal methods
-              gets a new record with `methods=[]`. With no child found, nothing
-              changes.
-            - Children registered without disposal methods are never passed in:
-              no store tracks them.
-
-        Args:
-            holder_key:
-                The holder's spell id (its slot in this store).
-            holder:
-                The holder object just published under `holder_key`.
-            children:
-                `(child_spell_id, child)` pairs in build order - exactly the
-                disposal-bearing `many` children the miss registered here.
-
-        Returns:
-            None.
-
-        Threading:
-            The caller holds the holder's build lock (its slot guard, or
-            `Spell._lock` for `unique`); this verb takes the store lock as a
-            leaf, as every registration does, so no lock-order edge is added.
-            No user code runs under it.
-        """
-        with self._lock:
-            if self._cleaned or self._creations.get(holder_key) is not holder:
-                return
-            adopted: List[Tuple[object, List[str]]] = []
-            for child_key, child in children:
-                record = self._disposable_creations.get(child_key)
-                if record is None:
-                    continue
-                bucket = record.entries
-                for index in range(len(bucket) - 1, -1, -1):
-                    if bucket[index] is child:
-                        del bucket[index]
-                        break
-                else:
-                    continue
-                adopted.append((child, record.methods))
-                if not bucket:
-                    del self._creations[child_key]
-                    del self._disposable_creations[child_key]
-            if not adopted:
-                return
-            current = self._disposable_creations.get(holder_key)
-            if current is None:
-                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, [], adopted)
-            elif isinstance(current, HolderDisposalEntry):
-                current.children.extend(adopted)
-            else:
-                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, current[1], adopted)
-
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
         Return one scoped live object by spell id.
@@ -1336,11 +1152,13 @@ class Creations(Cleanable):
             - Disposal uses the recorded methods without rematching or copying
               the Spell-owned method-name list. Many entries run newest-first;
               each object's methods run in their established order.
-            - A holder's record is detached with the holder, so the `many`
-              children it adopted are disposed after it, newest first (0.2.8238);
-              the count stays the target's own entries. A `many` target's bucket
-              holds only children that no holder adopted, so purging a child
-              spell never disposes a child its live holder still uses.
+            - Purging a holder disposes only the holder, with its own methods:
+              the `many` objects it was built with stay in their spells' buckets
+              in the store that recorded them, and a `many` purge of their spell
+              counts and disposes every one of them, a live holder's included
+              (the owner's decision, 2026-10-24; from 0.2.8238 to 0.2.8265 a
+              holder's purge disposed its children and a `many` purge skipped
+              them).
             - Every declared method runs even after one fails; each failure is
               collected and other selected objects are still attempted, matching
               cleanup.
@@ -1551,12 +1369,10 @@ class Creations(Cleanable):
               wrapper object.
             - Retains each established method-list reference in the returned
               rows; this in-memory handoff is not a serialization boundary.
-            - A holder's row carries the children it adopted (0.2.8238):
-              `children` lists `{"stored", "disposal_methods"}` rows in build
-              order, and a holder without disposal methods of its own is
-              `disposable` with an empty `disposal_methods` list, so a restore
-              (an ownership transfer's move or its rollback) takes the children
-              wherever the holder goes.
+            - A holder's row is an ordinary unique row: the `many` objects it
+              was built with are not in it and stay where they were recorded
+              when the holder moves (the owner's decision, 2026-10-24; from
+              0.2.8238 to 0.2.8265 a holder's row carried its adopted children).
             - A managed spell's pool travels as one row (2026-10-15):
               `{"scope": "managed", "disposable": False, "stored": pool}` - the
               same `ManagedSpellQuantity` object with its idle objects, count and
@@ -1598,7 +1414,7 @@ class Creations(Cleanable):
                 stored_value = self._creations.pop(spell_id)
                 disposable_entry = (
                     self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, (tuple, HolderDisposalEntry))
+                    if isinstance(disposable_value, tuple)
                     else None
                 )
                 entry = {
@@ -1606,13 +1422,7 @@ class Creations(Cleanable):
                     "disposable": disposable_entry is not None,
                     "stored": stored_value,
                 }
-                if isinstance(disposable_entry, HolderDisposalEntry):
-                    entry["disposal_methods"] = disposable_entry.methods
-                    entry["children"] = [
-                        {"stored": child, "disposal_methods": methods}
-                        for child, methods in disposable_entry.children
-                    ]
-                elif disposable_entry is not None:
+                if disposable_entry is not None:
                     entry["disposal_methods"] = disposable_entry[1]
                 extracted.append(entry)
 
@@ -1640,9 +1450,6 @@ class Creations(Cleanable):
               does not clone or rehydrate them.
             - Retains the extracted disposal lists directly, without copying
               their contents or reapplying binding policy.
-            - A unique row with `children` rebuilds the holder's
-              `HolderDisposalEntry` (0.2.8238); rows without it restore exactly
-              as before.
             - A `managed` row installs its pool under the spell id (2026-10-15).
               A different pool already there - the empty one an ownership
               transfer's flip composed at the target's stamp - is replaced and
@@ -1696,14 +1503,7 @@ class Creations(Cleanable):
                             f"Cannot restore unique creation for spell '{spell_id}' into non-singleton slot."
                         )
                     self._creations[spell_id] = stored_value
-                    children = entry.get("children")
-                    if children is not None:
-                        self._disposable_creations[spell_id] = HolderDisposalEntry(
-                            stored_value,
-                            disposal_methods if disposal_methods is not None else [],
-                            [(child["stored"], child["disposal_methods"]) for child in children],
-                        )
-                    elif is_disposable:
+                    if is_disposable:
                         self._disposable_creations[spell_id] = (
                             stored_value,
                             disposal_methods if disposal_methods is not None else [],

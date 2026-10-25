@@ -1,8 +1,0 @@
-2026-10-18T22:44:53Z
-STALE  src   source fingerprint moved
-STALE  tests source fingerprint moved
-STALE  other source fingerprint moved
-
-Regenerate locally with:
-    python llm_support/_builder.py
-llm check exit=1

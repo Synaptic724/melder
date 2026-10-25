@@ -1,2 +1,0 @@
-PYTHON_GIL=0 repeated module runs: passed 25, failed 0 (2026-10-14T18:22:23Z)
-PYTHON_GIL=1 repeated module runs: passed 25, failed 0 (2026-10-14T18:23:37Z)

@@ -1,0 +1,20 @@
+MelderOps conjure cache, read by melder_0 at 2026-10-24T18:25:58Z (the VM's view of the Windows folder; times UTC)
+root: priv_commandops/.venv314/Lib/site-packages/melder/__melder_cache__/__conjure_cache__
+
+frame folder c8pg_d339c5b10fe4:
+  2026-10-23T11:07:49.736993400Z      246 B  spectrum_toolbox.meldercache
+  2026-10-23T11:07:49.752566500Z     5581 B  spectrum_actions.meldercache
+  2026-10-23T11:07:49.776728400Z     1903 B  spectrum_operatives.meldercache
+  2026-10-23T11:07:49.797258000Z     1806 B  spectrum_activities.meldercache
+  2026-10-23T11:07:49.817316000Z     1878 B  spectrum_missions.meldercache
+  2026-10-23T11:07:49.846379400Z     3232 B  spectrum_operative_pools.meldercache
+  2026-10-23T11:07:49.872043000Z     3801 B  spectrum_spectre.meldercache
+  2026-10-23T11:07:49.891096000Z     3681 B  spectrum_strategies.meldercache
+  2026-10-23T11:07:49.900625700Z      247 B  spectrum_services.meldercache
+  2026-10-23T11:07:49.934700700Z    34402 B  melderops.meldercache
+  2026-10-23T11:07:49.935700500Z    36143 B  melderops.meldercache.tmp
+
+frame folders: 63 (55 named c8pg_<12 hex>, one per benchmark trial)
+files: 674, 5859185 B in all
+temp files left behind: 1
+  c8pg_d339c5b10fe4/melderops.meldercache.tmp

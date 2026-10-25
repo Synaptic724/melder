@@ -1,2 +1,0 @@
-Site valid: 313 pages, 39253 local links; sources match.
-check_site exit=0

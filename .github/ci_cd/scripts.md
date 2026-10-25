@@ -5,16 +5,19 @@ them right after setting up Python and before installing anything. A workflow ru
 `python .github/scripts/<name>.py <operation>`, which puts `.github/scripts` on `sys.path`; that is how they
 import each other (for example `from ci_policy import object_value`). A refusal prints the reason and exits
 non-zero; nothing falls back to a default. Tests load each script by path through
-`tests/unit/github_workflows/conftest.py`.
+`tests/unit/github_workflows/conftest.py`. `test_ci_scripts_use_only_the_standard_library` refuses any other
+import, with two exceptions that run inside the environment they test: `run_runtime_tests.py` (pytest) and
+`smoke_wheel.py` (the installed melder).
 
 | Script | Operations or options | Called by | Tested in |
 | --- | --- | --- | --- |
 | `ci_policy.py` | `branch`, `speed-route`, `merge-ready`, `hygiene`, `release-head`, `candidate-head`, `candidate-ready` | `ci.yml`, `speed-tests.yml`, `release-candidate.yml`, `python-publish.yml` | `test_ci_policy.py` |
-| `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, the three speed tests | `test_python_runtime_matrix.py` |
+| `python_runtime_matrix.py` | `discover`, `speed`, `speed-install`, `requirements`, `runtime-requirements`, `coverage` | `test-runtime.yml`, `release-candidate.yml`, `build-distributions.yml`, the three speed tests; `testpypi_candidate.py` imports its runtime-pin functions | `test_python_runtime_matrix.py` |
 | `run_runtime_tests.py` | `--report`, `--coverage-report` | `test-runtime.yml` | `test_ci_policy.py` |
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
 | `check_candidate_run.py` | `--wait-seconds` | `ci.yml`, `python-publish.yml` | `test_candidate_publication.py` |
 | `testpypi_candidate.py` | `prepare-upload`, `probe-install` | `release-candidate.yml` | `test_candidate_publication.py` |
+| `testpypi_provenance.py` | `verify` | `release-candidate.yml` | `test_candidate_provenance.py` |
 | `verify_distributions.py` | `--directory`, `--release-tag` | `build-distributions.yml`, `python-publish.yml` | `test_distributions.py` |
 | `normalize_sdist.py` | `--directory` | `build-distributions.yml` | `test_sdist_normalization.py` |
 | `smoke_wheel.py` | `--expected-version` | `build-distributions.yml`, `testpypi_candidate.py probe-install` | the distribution contract in `test_workflow_contracts.py` |
@@ -40,7 +43,10 @@ remote, so a branch or tag that moved during a run is refused. The script also p
 
 Everything about which Python CI runs; see [python_versions.md](python_versions.md). Its `coverage` operation,
 used before the Codecov upload, requires a report for every matrix cell of this run, taking each cell's newest
-attempt.
+attempt. Its `runtime-requirements` operation writes the pins of Melder's declared runtime dependencies
+(`[project.dependencies]`) from the running release's test manifest, or `--manifest`, for the wheel probe;
+`testpypi_candidate.py` calls the same functions (`declared_dependencies`, `release_manifest`, `runtime_pins`).
+A declared dependency the manifest leaves unpinned is refused.
 
 ### `run_runtime_tests.py`
 
@@ -68,9 +74,40 @@ that is still in progress.
 `prepare-upload` verifies the built files and compares them with TestPyPI: identical files already there are
 accepted, missing ones are staged for upload, and different ones are refused (choose a new version). Its release
 lookup retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times, ten seconds apart; only a
-404 means nothing is uploaded yet.
-`probe-install` downloads the exact wheel from TestPyPI by its hash, installs it alone into a fresh environment
-and runs `smoke_wheel.py` against the expected version.
+404 means nothing is uploaded yet. It writes two step outputs: `upload-required` and `uploaded`, the JSON list of
+the staged files, which the provenance job reads as the files this publish attempt signed.
+`probe-install` downloads the exact wheel from TestPyPI by its hash and Melder's runtime dependencies from PyPI at
+the running release's test-manifest pins (isolated, wheels only, no dependencies), installs them together into a
+fresh environment with `--no-deps --no-index`, runs `pip check` and then `smoke_wheel.py` against the expected
+version.
+
+### `testpypi_provenance.py`
+
+`verify` runs in `RC / provenance`, after the upload and before any probe installs a file. For every built file
+(verified again first) it reads the provenance TestPyPI's Integrity API holds
+(`https://test.pypi.org/integrity/melder/<version>/<file>/provenance`, retrying a 404 and the outage answers six
+times, ten seconds apart, and refusing a redirect) and checks it in five layers:
+
+1. a provenance exists;
+2. its one bundle's publisher record is this repository's `release-candidate.yml` in `pypitest`;
+3. Sigstore verifies its one attestation on the production trust root (certificate chain to Fulcio,
+   transparency-log entry, signature);
+4. the signing certificate names the expected signer claim by claim: its one subject alternative name is the
+   workflow on `release_candidate`, and every Fulcio claim from issuer to token subject matches - repository and
+   owner with their numeric ids, workflow and commit, GitHub-hosted runner, public visibility, the `pypitest`
+   environment and, for a file this run uploaded, this run's id, publish attempt and event (a file TestPyPI already
+   had may come from another run of the workflow at this commit);
+5. the attested statement names exactly the file and its sha256 with PyPI's publish predicate.
+
+The script checks layers 1, 2, 4 and 5 itself, reading the certificate's extensions from its DER with the
+standard library. It then builds a fresh environment from `.github/provenance/requirements.txt` (pip isolated,
+`--require-hashes --no-deps --only-binary=:all:`, then `pip check`) and runs
+`.github/provenance/verify_attestations.py` in it, which checks layers 3 and 4 with pypi-attestations and
+sigstore, the versions `pypa/gh-action-pypi-publish` signs with. The same run first proves the tool: the recorded
+genuine attestation `.github/provenance/known_good_provenance.json` must verify, and two tampered copies of it (another
+digest, another signer) must be refused, or no verdict counts. The expected identity lives in one class,
+`ProvenancePolicy`; every refusal names the file, the claim, what was expected and what was found. The report
+`reports/provenance.json` is written only after every check passed.
 
 ### `verify_distributions.py`, `normalize_sdist.py` and `smoke_wheel.py`
 
@@ -84,6 +121,14 @@ agree, and a small bind, conjure and meld scenario must work with the GIL off.
 ## Other files in `.github`
 
 - `BRANCH_WORKFLOW.md`: branch, release and publication policy for people and agents.
+- `provenance/`: the provenance check's tool, used only by `testpypi_provenance.py`.
+  `.github/provenance/verify_attestations.py` is the verifier, the one script under `.github/` that imports
+  packages outside the standard library, so it never runs on a bare interpreter.
+  `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it.
+  `.github/provenance/known_good_provenance.json` is the recorded control: PyPI's provenance of the
+  pypi-attestations wheel the lock installs. Moving the tool is one change: the publishing action's pin in
+  `release-candidate.yml`, the lock at the versions that action signs with, and the control re-recorded for the
+  new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
 - `python/`: the Python release manifests ([python_versions.md](python_versions.md)).
 - `rulesets/`: `dev.json`, `preprod.json`, `release_candidate.json` and `prod.json` are the branch protection
   payloads. Each requires a pull request and the `CI / merge-ready` status from the GitHub Actions app (ID 15368)

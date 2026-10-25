@@ -1166,12 +1166,14 @@ def rows_feed_many_into_non_many_step(
         Decide whether the singleton warm-tail specializer can express a graph.
         Its body is straight-line: it emits every non-captured step, in order,
         on every warm call. A `many` step whose consumer is a shared (slotted)
-        step would therefore be built on every call even when that consumer is
-        captured or already stored, and recorded in the meld's innermost scope
-        rather than with the holder's owner. The site plan builds such a child
-        only inside its holder's first build and records it with the holder's
-        owner (many_child_follows_holder, 2026-10-14), so these graphs keep the
-        plain door.
+        step would therefore be built - and, when it declares disposal methods,
+        recorded in the meld's innermost scope - on every warm call, even when
+        that consumer is captured or already stored and never receives it. The
+        site plan builds such a child only inside its holder's first build, so
+        these graphs keep the plain door (2026-10-14). Both doors record the
+        child in the meld's innermost scope (the owner's decision, 2026-10-24,
+        removed holder ownership of `many` children); the decline is about the
+        unused builds alone.
 
     Contract:
         - Pure function of manifest row data; no live spells consulted.

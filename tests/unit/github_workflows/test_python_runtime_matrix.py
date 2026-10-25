@@ -247,6 +247,124 @@ def test_repository_speed_manifest_is_tested_and_builds_dependency_injector_from
     assert speed.build_from_source == ("dependency-injector",)
 
 
+def test_repository_speed_manifest_pins_every_runtime_dependency(runtime_matrix: ModuleType) -> None:
+    """The speed jobs import Melder from the checkout (PYTHONPATH=src), so their manifest pins its runtime dependencies.
+
+    runtime_pins refuses a declared dependency that the manifest leaves out.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    speed = runtime_matrix.speed_manifest(root / runtime_matrix.RuntimeMatrixPolicy.SPEED_DIRECTORY,
+                                          runtime_matrix.supported_floor())
+    declared = runtime_matrix.declared_dependencies()
+    pinned = runtime_matrix.runtime_pins(speed, declared)
+    assert {runtime_matrix.canonical_name(pin.split("==")[0]) for pin in pinned} == set(declared)
+
+
+def test_repository_manifests_pin_exactly_declared_dependencies_at_the_declared_version(
+        runtime_matrix: ModuleType,
+) -> None:
+    """A dependency pyproject.toml declares as name==version is pinned at that version in every manifest.
+
+    A different pin would test, and probe, another version than a user's install resolves; the probes' pip check
+    would refuse it in CI. A declared range is left to that pip check.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    exact: dict[str, str] = {}
+    for requirement in project.get("dependencies", []):
+        match = re.fullmatch(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*==\s*([^;,\s]+)\s*", requirement)
+        if match is not None:
+            exact[runtime_matrix.canonical_name(match[1])] = match[2]
+    floor = runtime_matrix.supported_floor()
+    manifests = [*runtime_matrix.load_manifests(root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY, floor),
+                 runtime_matrix.speed_manifest(root / runtime_matrix.RuntimeMatrixPolicy.SPEED_DIRECTORY, floor)]
+    for manifest in manifests:
+        for pin in runtime_matrix.runtime_pins(manifest, tuple(exact)):
+            name, version = pin.split(";", 1)[0].strip().split("==", 1)
+            assert version == exact[runtime_matrix.canonical_name(name)], (manifest.python, pin)
+
+
+def test_declared_dependencies_name_each_distribution_once_in_order(runtime_matrix: ModuleType,
+                                                                   tmp_path: pathlib.Path) -> None:
+    """Only each requirement's distribution name counts, PEP 503-normalized and kept once."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text('[project]\ndependencies = ["pip==26.2.2", "Log_Xide>=1.0; python_version >= \'3.14\'", '
+                       '"PIP"]\n', encoding="utf-8")
+    assert runtime_matrix.declared_dependencies(project) == ("pip", "log-xide")
+
+
+def test_declared_dependencies_are_empty_when_melder_declares_none(runtime_matrix: ModuleType,
+                                                                  tmp_path: pathlib.Path) -> None:
+    """A project without [project.dependencies] declares nothing, so a probe installs the wheel alone."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text('[project]\nname = "melder"\n', encoding="utf-8")
+    assert runtime_matrix.declared_dependencies(project) == ()
+
+
+@pytest.mark.parametrize("dependencies", ['"pip==26.2.2"', "[1]", '["==26.2.2"]'])
+def test_malformed_declared_dependencies_are_refused(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                    dependencies: str) -> None:
+    """A dependency list that is not a list of named requirements is refused rather than read as empty."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text(f"[project]\ndependencies = {dependencies}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="project.dependencies"):
+        runtime_matrix.declared_dependencies(project)
+
+
+def test_runtime_pins_select_the_declared_pins_in_manifest_order(runtime_matrix: ModuleType,
+                                                                tmp_path: pathlib.Path) -> None:
+    """The declared pins come out as the manifest writes them, markers included; the test group stays out."""
+    manifest = runtime_matrix.load_manifest(write_manifest(tmp_path, "3.14.7", (
+        "pytest==9.1.1", "pip==26.2.2", "Log_Xide==1.2; sys_platform == 'win32'")))
+    assert runtime_matrix.runtime_pins(manifest, ("log-xide", "pip")) == (
+        "pip==26.2.2", "Log_Xide==1.2; sys_platform == 'win32'")
+    assert runtime_matrix.runtime_pins(manifest, ()) == ()
+
+
+def test_runtime_pins_refuse_a_declared_dependency_the_manifest_leaves_out(runtime_matrix: ModuleType,
+                                                                          tmp_path: pathlib.Path) -> None:
+    """A probe would otherwise install the wheel without that dependency; the message names manifest and name."""
+    manifest = runtime_matrix.load_manifest(write_manifest(tmp_path, "3.14.7", ("pytest==9.1.1",)))
+    with pytest.raises(ValueError, match=r"3\.14\.7\.toml does not pin .*\['pip'\]"):
+        runtime_matrix.runtime_pins(manifest, ("pip",))
+
+
+def test_release_manifest_loads_only_an_exact_release_that_has_a_manifest(runtime_matrix: ModuleType,
+                                                                         tmp_path: pathlib.Path) -> None:
+    """A probe on a release without a manifest is refused by name; an inexact release is refused before lookup."""
+    write_manifest(tmp_path, "3.14.7")
+    assert runtime_matrix.release_manifest(tmp_path, "3.14.7").python == "3.14.7"
+    with pytest.raises(ValueError, match="no manifest"):
+        runtime_matrix.release_manifest(tmp_path, "3.14.8")
+    with pytest.raises(ValueError, match="exact stable"):
+        runtime_matrix.release_manifest(tmp_path, "3.14")
+
+
+def test_runtime_requirements_write_only_one_manifest_runtime_pins(runtime_matrix: ModuleType,
+                                                                   tmp_path: pathlib.Path,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """The operation writes the declared dependencies' pins, one per line, for an install with --no-deps."""
+    path = write_manifest(tmp_path / "tests", "3.14.7", ("pip==26.2.2", "pytest==9.1.1"))
+    monkeypatch.setattr(runtime_matrix, "declared_dependencies", lambda: ("pip",))
+    output = tmp_path / "reports" / "runtime.txt"
+    assert runtime_matrix.main(["runtime-requirements", "--manifest", str(path), "--output", str(output)]) == 0
+    assert output.read_text(encoding="utf-8") == "pip==26.2.2\n"
+
+
+def test_runtime_requirements_default_to_the_running_release_manifest(runtime_matrix: ModuleType,
+                                                                      tmp_path: pathlib.Path,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without --manifest the running interpreter's release names the test manifest, as in a probe job."""
+    monkeypatch.setattr(runtime_matrix.platform, "python_version", lambda: "3.14.7")
+    output = tmp_path / "runtime.txt"
+    assert runtime_matrix.main(["runtime-requirements", "--output", str(output)]) == 0
+    root = pathlib.Path(__file__).resolve().parents[3]
+    expected = runtime_matrix.runtime_pins(
+        runtime_matrix.load_manifest(root / runtime_matrix.RuntimeMatrixPolicy.TESTS_DIRECTORY / "3.14.7.toml"),
+        runtime_matrix.declared_dependencies())
+    assert output.read_text(encoding="utf-8") == "".join(f"{pin}\n" for pin in expected)
+
+
 @pytest.mark.parametrize(("constraint", "expected"), [(">=3.14", (3, 14, 0)), (">=3.15.1", (3, 15, 1))])
 def test_floor_comes_from_package_metadata(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
                                           constraint: str, expected: tuple[int, int, int]) -> None:

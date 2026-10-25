@@ -1,0 +1,4 @@
+# melder_0 2026-10-24: tests/unit/github_workflows/test_python_runtime_matrix.py on a /tmp copy of the working tree at 0.2.8266 (melder_2's CI set in), python -X gil=0
+Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]
+...............................................................          [100%]
+63 passed in 0.29s
