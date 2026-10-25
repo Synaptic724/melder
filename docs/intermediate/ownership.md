@@ -16,9 +16,10 @@ lookup does not create a second root for an existing book.
 `transfer_spell_ownership(...)` moves stewardship to the target conduit and returns
 a report. By default (`move_creations=True`, since 0.2.8239) the objects the old
 owner's creations hold for the spell move with it: a `unique` stays one object,
-served by the new owner and disposed when the new owner is cleaned up, and moved
-objects bring the `many` dependencies with configured disposal that were built
-for them. With `move_creations=False` those objects leave the old owner's
+served by the new owner and disposed when the new owner is cleaned up. The
+`many` dependencies a moved object was built with do not move: they belong to
+the conduit or spell space that built them and are disposed when it ends. With
+`move_creations=False` those objects leave the old owner's
 creations without being moved or disposed, and the new owner builds its own. A
 transfer disposes nothing. The saved lesson requests `move_creations=True`,
 inspects the report, and resolves from the new home. Read that report when

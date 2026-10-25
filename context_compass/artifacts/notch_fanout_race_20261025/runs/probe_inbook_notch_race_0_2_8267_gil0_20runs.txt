@@ -1,0 +1,28 @@
+command: python -X gil=0 probe_inbook_notch_race.py <tree> 20 (tree=/tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree at git 9f240166f)
+python: 3.14.7 gil_enabled=False
+ran_at: 2026-10-25T00:40:08Z
+tree=/tmp/m0_mq/inv8267 runs=20 gil_enabled=False
+run   1: {'d1': 2715, 'd2': 10} unexpected=0 final=d1 2.10s
+run   2: {'d1': 651, 'd2': 11} unexpected=0 final=d1 2.03s
+run   3: {'d1': 268, 'd2': 8} unexpected=0 final=d1 1.63s
+run   4: {'d1': 50963, 'd2': 12} unexpected=0 final=d1 2.09s
+run   5: {'d1': 273, 'd2': 10} unexpected=0 final=d1 2.03s
+run   6: {'d1': 351, 'd2': 11} unexpected=0 final=d1 2.03s
+run   7: {'d1': 670, 'd2': 10} unexpected=0 final=d1 2.03s
+run   8: {'d1': 29840, 'd2': 10} unexpected=0 final=d1 2.06s
+run   9: {'d1': 17, 'd2': 11} unexpected=0 final=d1 2.03s
+run  10: {'d1': 340, 'd2': 5} unexpected=0 final=d1 0.42s
+run  11: {'d1': 1105, 'd2': 10} unexpected=0 final=d1 2.03s
+run  12: {'d1': 191, 'd2': 4} unexpected=0 final=d1 0.93s
+run  13: {'d1': 1955, 'd2': 3} unexpected=0 final=d1 0.22s
+run  14: {'d1': 625, 'd2': 10} unexpected=0 final=d1 1.93s
+run  15: {'d1': 1885, 'd2': 12} unexpected=0 final=d1 2.03s
+run  16: {'d1': 2727, 'd2': 10} unexpected=0 final=d1 2.03s
+run  17: {'d1': 288, 'd2': 10} unexpected=0 final=d1 2.03s
+run  18: {'d1': 232, 'd2': 5} unexpected=0 final=d1 1.02s
+run  19: {'d1': 1176, 'd2': 3} unexpected=0 final=d1 0.73s
+run  20: {'d1': 49167, 'd2': 4} unexpected=0 final=d1 0.88s
+runs with an unexpected exception: 0 of 20
+melds: {'d1': 145439, 'd2': 169}
+first meld after the race: {'d1': 20}
+exit: 0

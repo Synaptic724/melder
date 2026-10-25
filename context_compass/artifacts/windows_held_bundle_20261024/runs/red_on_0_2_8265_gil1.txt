@@ -1,0 +1,30 @@
+# melder_0 2026-10-24T22:46:53Z: tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py (as of this task) under scripts/windows_emulation_harness.py, on the /tmp copy of the tree at 0.2.8265 (before the fix), PYTHONPATH=<copy>/src:<scripts> python -X gil=1 -m pytest -p windows_emulation_harness -p no:cacheprovider -v -s --tb=line
+3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ] GIL enabled: True
+/tmp/m0_mq/base8265/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+============================= test session starts ==============================
+collecting ... collected 4 items
+
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_windows_refuses_a_rename_onto_a_file_held_open FAILED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_waits_out_a_hold_that_ends_while_it_retries FAILED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_outlasted_by_a_hold_returns_false_and_keeps_the_bundle FAILED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_meld_returns_its_object_while_windows_refuses_its_cache_save FAILED
+
+=================================== FAILURES ===================================
+E   AttributeError: type object 'CachingSystem' has no attribute 'REPLACE_ATTEMPTS'
+/tmp/m0_mq/base8265/tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py:379: AttributeError: type object 'CachingSystem' has no attribute 'REPLACE_ATTEMPTS'
+E   PermissionError: [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_waits_out_a_hold_tha0/frame-a/root.meldercache.tmp' -> '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_waits_out_a_hold_tha0/frame-a/root.meldercache'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/artifacts/windows_held_bundle_20261024/scripts/windows_emulation_harness.py:104: PermissionError: [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_waits_out_a_hold_tha0/frame-a/root.meldercache.tmp' -> '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_waits_out_a_hold_tha0/frame-a/root.meldercache'
+E   PermissionError: [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache.tmp' -> '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/artifacts/windows_held_bundle_20261024/scripts/windows_emulation_harness.py:104: PermissionError: [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache.tmp' -> '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-34/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache'
+E   PermissionError: [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/base8265/src/melder/__melder_cache__/__conjure_cache__/windows_held_bundle_meld/root.meldercache.tmp' -> '/tmp/m0_mq/base8265/src/melder/__melder_cache__/__conjure_cache__/windows_held_bundle_meld/root.meldercache'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/mnt/melder_private/context_compass/artifacts/windows_held_bundle_20261024/scripts/windows_emulation_harness.py:104: PermissionError: [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/base8265/src/melder/__melder_cache__/__conjure_cache__/windows_held_bundle_meld/root.meldercache.tmp' -> '/tmp/m0_mq/base8265/src/melder/__melder_cache__/__conjure_cache__/windows_held_bundle_meld/root.meldercache'
+windows emulation: 4 renames refused; RETRY_REFUSED_RENAME=True, platform at run time linux
+=========================== short test summary info ============================
+FAILED tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_windows_refuses_a_rename_onto_a_file_held_open
+FAILED tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_waits_out_a_hold_that_ends_while_it_retries
+FAILED tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_outlasted_by_a_hold_returns_false_and_keeps_the_bundle
+FAILED tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_meld_returns_its_object_while_windows_refuses_its_cache_save
+============================== 4 failed in 0.13s ===============================

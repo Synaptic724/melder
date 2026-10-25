@@ -13,8 +13,8 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8265"
-NODE_COUNT = 1231
+BUILT_FOR_VERSION = "0.2.8267"
+NODE_COUNT = 1230
 EDGE_COUNT = 1419
 WHY_COUNT = 959
 RELATIONS = ('binds_into', 'borrows', 'creates', 'delegates_to', 'holds', 'implements', 'owns', 'owns_lifecycle_of', 'specializes', 'used_by', 'uses', 'validates')
@@ -264,8 +264,7 @@ NODES = {
     'melder.aether.conduit.creations.conduit_creations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'conduit_creations', 'module', 1, False),
     'melder.aether.conduit.creations.conduit_creations.ConduitCreations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'ConduitCreations', 'class', 8, False),
     'melder.aether.conduit.creations.creations': ('src/melder/aether/conduit/creations/creations.py', 'creations', 'module', 1, False),
-    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 120, False),
-    'melder.aether.conduit.creations.creations.HolderDisposalEntry': ('src/melder/aether/conduit/creations/creations.py', 'HolderDisposalEntry', 'class', 55, False),
+    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 59, False),
     'melder.aether.conduit.creations.creations.ManyDisposalBucket': ('src/melder/aether/conduit/creations/creations.py', 'ManyDisposalBucket', 'class', 12, False),
     'melder.aether.conduit.creations.managed_spell_lease': ('src/melder/aether/conduit/creations/managed_spell_lease.py', 'managed_spell_lease', 'module', 1, False),
     'melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease': ('src/melder/aether/conduit/creations/managed_spell_lease.py', 'ManagedSpellLease', 'class', 11, False),
@@ -1156,7 +1155,7 @@ NODES = {
     'melder.utilities.caching_system.asset_cache': ('src/melder/utilities/caching_system/asset_cache.py', 'asset_cache', 'module', 1, False),
     'melder.utilities.caching_system.asset_cache.AssetCachePolicy': ('src/melder/utilities/caching_system/asset_cache.py', 'AssetCachePolicy', 'class', 85, False),
     'melder.utilities.caching_system.caching_system': ('src/melder/utilities/caching_system/caching_system.py', 'caching_system', 'module', 1, False),
-    'melder.utilities.caching_system.caching_system.CachingSystem': ('src/melder/utilities/caching_system/caching_system.py', 'CachingSystem', 'class', 16, False),
+    'melder.utilities.caching_system.caching_system.CachingSystem': ('src/melder/utilities/caching_system/caching_system.py', 'CachingSystem', 'class', 18, False),
     'melder.utilities.custom_exceptions.dead_reference_error': ('src/melder/utilities/custom_exceptions/dead_reference_error.py', 'dead_reference_error', 'module', 1, False),
     'melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError': ('src/melder/utilities/custom_exceptions/dead_reference_error.py', 'DeadReferenceError', 'class', 4, False),
     'melder.utilities.custom_exceptions.empty_error': ('src/melder/utilities/custom_exceptions/empty_error.py', 'empty_error', 'module', 1, False),

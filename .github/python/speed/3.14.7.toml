@@ -4,6 +4,8 @@
 python = "3.14.7"
 freethreaded = true
 dependencies = [
+    # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is what the benchmarks run.
+    "pip==26.2.2",
     "dependency-injector==4.49.1",
     "dishka==1.10.1",
     "pytest==9.1.1",

@@ -1,8 +1,0 @@
-A locked warm path: cycle median 591 ns (min 579) single thread; 840 ns per cycle amortized over 4 threads; {'mode': 'elastic', 'count': 4, 'idle': 4, 'out': 0, 'dead_pending': 0}
-   limited(3) under 8 threads: peak count 1, exhausted 0, {'mode': 'limited_quantity', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}
-B lock-free warm path: cycle median 485 ns (min 461) single thread; 724 ns per cycle amortized over 4 threads; {'mode': 'elastic', 'count': 4, 'idle': 4, 'out': 0, 'dead_pending': 0}
-   limited(3) under 8 threads: peak count 1, exhausted 0, {'mode': 'limited_quantity', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}
-A locked warm path: cycle median 604 ns (min 586) single thread; 876 ns per cycle amortized over 4 threads; {'mode': 'elastic', 'count': 4, 'idle': 4, 'out': 0, 'dead_pending': 0}
-   limited(3) under 8 threads: peak count 1, exhausted 0, {'mode': 'limited_quantity', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}
-B lock-free warm path: cycle median 474 ns (min 463) single thread; 730 ns per cycle amortized over 4 threads; {'mode': 'elastic', 'count': 4, 'idle': 4, 'out': 0, 'dead_pending': 0}
-   limited(3) under 8 threads: peak count 1, exhausted 0, {'mode': 'limited_quantity', 'count': 1, 'idle': 1, 'out': 0, 'dead_pending': 0}

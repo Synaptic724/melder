@@ -1,0 +1,30 @@
+command: python -X gil=0 probe_rule2_race_rate.py <tree> 20 (tree=/tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree at git 9f240166f)
+python: 3.14.7 gil_enabled=False
+ran_at: 2026-10-25T00:24:02Z
+tree=/tmp/m0_mq/inv8267 runs=20 gil_enabled=False
+run  1: {'A': 993, 'refused': 2} unexpected=1 final=A 0.14s
+run  2: {'A': 410} unexpected=0 final=A 0.03s
+run  3: {'A': 402, 'refused': 3} unexpected=2 final=A 0.03s
+run  4: {'A': 323} unexpected=2 final=A 0.02s
+run  5: {'A': 329, 'refused': 2} unexpected=0 final=A 0.03s
+run  6: {'A': 947, 'refused': 1} unexpected=1 final=A 0.03s
+run  7: {'A': 424, 'refused': 1} unexpected=1 final=A 0.03s
+run  8: {'A': 283, 'refused': 2} unexpected=0 final=A 0.03s
+run  9: {'A': 331, 'refused': 2} unexpected=1 final=A 0.03s
+run 10: {'A': 444, 'refused': 2} unexpected=0 final=A 0.03s
+run 11: {'A': 320, 'refused': 1} unexpected=0 final=A 0.02s
+run 12: {'A': 339, 'refused': 4} unexpected=1 final=A 0.03s
+run 13: {'A': 419, 'refused': 3} unexpected=0 final=A 0.03s
+run 14: {'A': 440, 'refused': 3} unexpected=1 final=A 0.03s
+run 15: {'A': 320, 'refused': 8} unexpected=0 final=A 0.03s
+run 16: {'A': 315, 'refused': 1} unexpected=0 final=A 0.03s
+run 17: {'A': 393, 'refused': 1} unexpected=4 final=A 0.02s
+run 18: {'A': 289, 'refused': 1} unexpected=4 final=A 0.03s
+run 19: {'A': 363, 'refused': 3} unexpected=0 final=A 0.02s
+run 20: {'A': 345} unexpected=0 final=A 0.03s
+runs with an unexpected exception: 10 of 20
+  12 x AttributeError: 'SpellContract' object has no attribute 'ping'
+  6 x RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> process
+melds: {'A': 8429, 'refused': 40}
+first meld after the race: {'A': 20}
+exit: 0

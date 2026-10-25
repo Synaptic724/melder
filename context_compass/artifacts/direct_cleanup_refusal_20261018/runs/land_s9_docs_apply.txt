@@ -1,5 +1,0 @@
-src_components.md: 9 replacements, 12102 lines
-src_architecture.md: 7 replacements, 5156 lines
-tests_components.md: 12 replacements, 3894 lines
-tests_architecture.md: 4 replacements, 1011 lines
-applied at 2026-10-18T16:37:15Z

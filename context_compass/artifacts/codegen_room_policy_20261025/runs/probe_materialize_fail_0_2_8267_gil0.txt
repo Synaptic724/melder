@@ -1,0 +1,7 @@
+command: python -X gil=0 probe_materialize_fail.py (cwd: /tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree; PYTHONPATH=<copy>/src:<copy>)
+python: 3.14.7 gil_enabled=False
+ran_at: 2026-10-25T00:18:33Z
+materialize raised: ZeroDivisionError
+csv still in sys.modules: False | original restored: False
+after cleanup of a successful replacement: json in sys.modules: False | original restored: False
+exit: 0

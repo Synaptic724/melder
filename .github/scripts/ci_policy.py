@@ -18,7 +18,8 @@ class CIPolicy:
     PROMOTIONS: Mapping[str, str] = {
         "preprod": "dev", "release_candidate": "preprod", "prod": "release_candidate",
     }
-    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
+    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "provenance",
+                                       "install")
     FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
     # The speed tests are not CI jobs: speed-tests.yml runs them beside CI and nothing waits for them.
     REQUIRED_JOBS: tuple[str, ...] = ("branch-policy", "hygiene", *FULL_JOBS, "source-qualification")
@@ -196,9 +197,9 @@ def case_collisions(paths: Sequence[str]) -> list[list[str]]:
 
 
 def require_candidate_success(results: Mapping[str, object]) -> None:
-    """Require every candidate stage to succeed, including the complete install matrix."""
+    """Require every candidate stage to succeed: the provenance check and the complete install matrix included."""
     if set(results) != set(CIPolicy.CANDIDATE_JOBS):
-        raise ValueError("Incomplete candidate dependency evidence; all five stages are required.")
+        raise ValueError("Incomplete candidate dependency evidence; all six stages are required.")
     failures = [name for name in CIPolicy.CANDIDATE_JOBS
                 if object_value(results[name], f"needs.{name}").get("result") != "success"]
     if failures:

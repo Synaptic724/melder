@@ -1,0 +1,24 @@
+# melder_0 2026-10-24T22:46:06Z: tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py under scripts/windows_emulation_harness.py, on a /tmp copy of the working tree at 0.2.8267, PYTHONPATH=<copy>/src:<scripts> python -X gil=1 -m pytest -p windows_emulation_harness -p no:cacheprovider -v -s
+3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ] GIL enabled: True
+/tmp/m0_mq/winheld/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+============================= test session starts ==============================
+collecting ... collected 4 items
+
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_windows_refuses_a_rename_onto_a_file_held_open 
+[held-bundle] premise: Python 3.14.7 on linux. A rename onto the held file raised PermissionError (Windows code None): [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-32/test_windows_refuses_a_rename_0/source.bin' -> '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-32/test_windows_refuses_a_rename_0/target.bin'. After the close it was allowed on try 1. Save retry: True, 5 attempts, 0.01 s step.
+PASSED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_waits_out_a_hold_that_ends_while_it_retries 
+[held-bundle] short hold: the save returned True after 2 refused renames (Windows codes [None, None]) and 1 done, in 0.031 s; folder: ['root.meldercache'].
+PASSED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_outlasted_by_a_hold_returns_false_and_keeps_the_bundle 
+[held-bundle] long hold: the save returned False after 5 refused renames (Windows codes [None, None, None, None, None]) in 0.101 s; folder during the hold: ['root.meldercache']; after it the save returned True (0 more refused, 1 done). WARNING: ["Could not save the creation-cache bundle '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-32/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache': [Errno 13] Access is denied (emulated: the destination is open in this process): '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-32/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache.26.125769647204160.tmp' -> '/tmp/m0_mq/tmp/pytest-of-rcw-01ea5tnfq1nyfhrsj4wka11q/pytest-32/test_save_outlasted_by_a_hold_0/frame-a/root.meldercache'. Melds are not affected and the cache stays in memory for the next save. To persist it, make the cache folder writable (on Windows, also exclude it from real-time scanning), or turn caching off for the frame with with_system_caching_enabled(False). Later refused saves of this bundle log at DEBUG."]
+PASSED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_meld_returns_its_object_while_windows_refuses_its_cache_save 
+[held-bundle] meld: the first meld of a late spell returned HeldBundleReport in 0.104 s while its save was refused 5 times (Windows codes [None, None, None, None, None]); the second meld returned the same object: True. After the hold the next late spell's meld saved the bundle (1 done, 0 more refused); the bundle holds 3 plans; folder: ['root.meldercache'].
+PASSED
+
+windows emulation: 13 renames refused; RETRY_REFUSED_RENAME=True, platform at run time linux
+============================== 4 passed in 0.36s ===============================

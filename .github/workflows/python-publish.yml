@@ -1,7 +1,8 @@
 name: Publish Python Package
 
-# Release events must reach this workflow on the default branch. Earlier PR CI
-# never substitutes for this fresh release-time test/build qualification.
+# Release events must reach this workflow on the default branch. The runtime tests do
+# not run again here: full CI and the release candidate tested this exact tree, and
+# release-gate refuses any other. Hygiene, both asset checks and the build run fresh.
 on:
   release:
     types: [published]
@@ -59,17 +60,8 @@ jobs:
     needs: release-gate
     uses: ./.github/workflows/build-repo-assets.yml
 
-  tests:
-    needs: release-gate
-    permissions:
-      contents: read
-      actions: read
-    uses: ./.github/workflows/test-runtime.yml
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   release-build:
-    needs: [release-gate, hygiene, source-assets, repo-assets, tests]
+    needs: [release-gate, hygiene, source-assets, repo-assets]
     uses: ./.github/workflows/build-distributions.yml
     with:
       artifact-name: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
@@ -77,7 +69,7 @@ jobs:
 
   pypi-publish:
     name: Publish to PyPI
-    needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
+    needs: [release-gate, hygiene, source-assets, repo-assets, release-build]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -120,7 +112,7 @@ jobs:
         run: python .github/scripts/check_candidate_run.py
       - name: Final tag and prod check immediately before publication
         # This runs AFTER environment approval and fails if the release tag or
-        # prod moved while tests, builds, or a human approval were pending.
+        # prod moved while checks, builds, or a human approval were pending.
         run: python .github/scripts/ci_policy.py release-head
       - name: Publish freshly verified distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

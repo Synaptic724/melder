@@ -1,0 +1,217 @@
+command: python -X gil=0 diag_race_kinds.py <tree> 400 150 (tree=/tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree at git 9f240166f)
+python: 3.14.7 gil_enabled=False
+ran_at: 2026-10-25T00:24:21Z
+tree=/tmp/m0_mq/inv8267 gil_enabled=False max_runs=400 budget=150.0s
+--- first AttributeError:  (run 4) ---
+     8.261 ms MainThread deactivate   A
+     8.270 ms MainThread reactivate   B
+     8.274 ms MainThread notched      B
+     8.578 ms MainThread deactivate   B
+     8.638 ms MainThread reactivate   A
+     8.645 ms MainThread notched      A
+     8.950 ms MainThread deactivate   A
+     8.958 ms MainThread reactivate   B
+     8.970 ms MainThread notched      B
+     9.101 ms MainThread deactivate   B
+     9.108 ms MainThread reactivate   A
+     9.112 ms MainThread notched      A
+     9.298 ms meld1      pass-done    Consumer plan=True
+     9.321 ms meld1      ctx-built    Consumer
+     9.532 ms meld1      meld-raised  AttributeError: 
+  message: 'SpellContract' object has no attribute 'ping'
+Traceback (most recent call last):
+  File "context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/m0_mq/inv8267/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 202, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SpellContract' object has no attribute 'ping'
+
+--- first RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer  (run 7) ---
+     8.989 ms MainThread reactivate   B
+     8.993 ms MainThread notched      B
+     9.111 ms MainThread deactivate   B
+     9.117 ms MainThread reactivate   A
+     9.120 ms MainThread notched      A
+     9.246 ms MainThread deactivate   A
+     9.259 ms MainThread reactivate   B
+     9.263 ms MainThread notched      B
+     9.374 ms MainThread deactivate   B
+     9.385 ms MainThread reactivate   A
+     9.388 ms MainThread notched      A
+     9.450 ms meld0      pass-done    Consumer plan=False
+     9.526 ms meld0      meld-refused SVE
+     9.672 ms meld1      ctx-raised   Consumer RuntimeError
+     9.686 ms meld1      meld-raised  RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer 
+  message: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+Traceback (most recent call last):
+  File "context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/m0_mq/inv8267/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 202, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/conduit.py", line 5074, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/conduit_meld.py", line 611, in meld
+    instance = self._execute_admitted(
+        target_spell,
+    ...<2 lines>...
+        False,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/meld.py", line 933, in _execute_admitted
+    creation_context = spell._get_or_build_creation_context()
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell.py", line 1150, in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/creation_context/creation_context_factory.py", line 361, in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+        spell,
+    ...<2 lines>...
+        creation_gate_index_id=index_id,
+    )
+  File "context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 89, in wrapped_build
+    result = ORIGINAL_BUILD(spell, **kwargs)
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/creation_context/creation_context_builder.py", line 121, in build
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+
+--- first RuntimeError: No-overrides codegen step schema references unknown spell_id  (run 12) ---
+     7.329 ms MainThread deactivate   B
+     7.336 ms MainThread reactivate   A
+     7.341 ms MainThread notched      A
+     7.476 ms MainThread deactivate   A
+     7.599 ms MainThread reactivate   B
+     7.637 ms MainThread notched      B
+     7.833 ms MainThread deactivate   B
+     7.842 ms MainThread reactivate   A
+     7.847 ms MainThread notched      A
+     8.149 ms MainThread deactivate   A
+     8.158 ms MainThread reactivate   B
+     8.163 ms MainThread notched      B
+     8.204 ms meld2      pass-done    Consumer plan=True
+     8.222 ms meld2      ctx-built    Consumer
+     8.257 ms meld1      meld-raised  RuntimeError: No-overrides codegen step schema references unknown spell_id 
+  message: No-overrides codegen step schema references unknown spell_id '<A>'.
+^^^^^^^^^^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/conduit.py", line 5074, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/conduit_meld.py", line 611, in meld
+    instance = self._execute_admitted(
+        target_spell,
+    ...<2 lines>...
+        False,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/meld.py", line 939, in _execute_admitted
+    return creation_context._no_overrides_instance_executor(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 178, in _cold_no_overrides_instance_door
+    hydrated = _hydrate_once()
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 152, in _hydrate_once
+    hydrated = hydrate_many_only_creation_executors(
+        manifest=manifest,
+        spell=spell,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 223, in hydrate_many_only_creation_executors
+    site_plan_runtime = _build_site_plan_runtime(
+        no_overrides_payload=no_overrides_payload,
+        spell=spell,
+        spell_lookup=spell_lookup,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 302, in _build_site_plan_runtime
+    rows = _hydrate_steps_from_rows(
+        steps_rows=no_overrides_payload["steps_rows"],
+        spell_lookup=spell_lookup,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py", line 155, in _hydrate_steps_from_rows
+    raise RuntimeError(
+        f"No-overrides codegen step schema references unknown spell_id '{spell_id}'."
+    )
+RuntimeError: No-overrides codegen step schema references unknown spell_id '653dae8e61a840b02c2377c1d43ec6a76008785819a774e5e3ca3c71d4cd482f'.
+
+--- first RuntimeError: many_only manifest references unknown spell_id  (run 12) ---
+     8.158 ms MainThread reactivate   B
+     8.163 ms MainThread notched      B
+     8.204 ms meld2      pass-done    Consumer plan=True
+     8.222 ms meld2      ctx-built    Consumer
+     8.257 ms meld1      meld-raised  RuntimeError: No-overrides codegen step schema references unknown spell_id 
+     8.296 ms MainThread deactivate   B
+     8.304 ms MainThread reactivate   A
+     8.308 ms MainThread notched      A
+     8.417 ms MainThread deactivate   A
+     8.425 ms MainThread reactivate   B
+     8.429 ms MainThread notched      B
+     8.540 ms MainThread deactivate   B
+     8.566 ms MainThread reactivate   A
+     8.571 ms MainThread notched      A
+     8.578 ms meld3      meld-raised  RuntimeError: many_only manifest references unknown spell_id 
+  message: many_only manifest references unknown spell_id '<B>'.
+aceback (most recent call last):
+  File "context_compass/artifacts/meld_contract_scan_20261015/diag_race_kinds.py", line 122, in loop
+    world.meld_ping()
+    ~~~~~~~~~~~~~~~^^
+  File "/tmp/m0_mq/inv8267/tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py", line 202, in meld_ping
+    return self.borrower.meld(spell=Consumer).service.ping()
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/conduit.py", line 5074, in meld
+    return meld_component.meld(
+           ~~~~~~~~~~~~~~~~~~~^
+        internal_spell,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        spell_override=override,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/conduit_meld.py", line 611, in meld
+    instance = self._execute_admitted(
+        target_spell,
+    ...<2 lines>...
+        False,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/conduit/meld/meld.py", line 939, in _execute_admitted
+    return creation_context._no_overrides_instance_executor(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 178, in _cold_no_overrides_instance_door
+    hydrated = _hydrate_once()
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 152, in _hydrate_once
+    hydrated = hydrate_many_only_creation_executors(
+        manifest=manifest,
+        spell=spell,
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 217, in hydrate_many_only_creation_executors
+    spell_lookup = _resolve_spell_lookup(
+        spell=spell,
+        step_spell_ids=no_overrides_payload["step_spell_ids"],
+    )
+  File "/tmp/m0_mq/inv8267/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py", line 338, in _resolve_spell_lookup
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: many_only manifest references unknown spell_id '45d35a3631f9c2b6783f650ac9949d5292a481356a64ce1257989b8773962edd'.
+
+runs=400 runs_with_unexpected=200 seconds=12.8
+  265 x AttributeError: 
+  75 x RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer 
+  11 x RuntimeError: many_only manifest references unknown spell_id 
+  1 x RuntimeError: No-overrides codegen step schema references unknown spell_id 
+exit: 0

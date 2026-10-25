@@ -1,4 +1,0 @@
-Failed to find real location of C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.7+freethreaded-windows-x86_64-none\python.exe
-WROTE  _agent_documentation agent_documentation_manifest.py (470 entries, v0.2.8264)
-WROTE  _bind_guard          bind_guard_manifest.py (630 entries, v0.2.8264)
-WROTE  _system_documents    system_documents_manifest.py (4 entries, v0.2.8264)

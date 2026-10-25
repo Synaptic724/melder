@@ -1,8 +1,0 @@
-cand_r4p | unit_sb | rc=1 | secs=5 | 3 failed, 2340 passed in 4.91s
-cand_r4p | unit_aether_conduit | rc=0 | secs=9 | 1205 passed in 8.00s
-cand_r4p | comp_sb | rc=0 | secs=18 | 799 passed in 17.35s
-cand_r4p | comp_aether_conduit | rc=0 | secs=10 | 763 passed in 9.15s
-cand_r4p | int_sb | rc=0 | secs=7 | 613 passed, 2 skipped, 2 xpassed in 7.29s
-cand_r4p | int_aether_conduit | rc=0 | secs=8 | 110 passed in 7.27s
-cand_r4p | int_conduit | rc=0 | secs=5 | 275 passed in 4.98s
-cand_r4p | int_cryst | rc=0 | secs=71 | 273 passed, 3 xfailed in 70.46s (0:01:10)

@@ -41,6 +41,10 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | A speed test's inline step fails with "No module named 'benchmarks'" | The step imports `benchmarks` before putting the checkout on `sys.path`; add `sys.path.insert(0, str(Path.cwd()))` above the import ([extending.md](extending.md)). |
 | `source-qualification` refused | No full CI run tested this exact tree. Run CI by hand on the branch (BRANCH_WORKFLOW.md, "Reusing full qualification"). |
 | `RC / publish-to-TestPyPI`: HTTP 503 or another 5xx from TestPyPI after six tries | TestPyPI is down. When it answers again, use **Re-run failed jobs**; the run's build is reused. |
+| `RC / publish-to-TestPyPI`: `invalid-publisher` | TestPyPI's Trusted Publisher and the job's OIDC claims disagree. Check the publisher's four values against BRANCH_WORKFLOW.md (owner `Synaptic724`, repository `melder`, workflow `release-candidate.yml`, environment `pypitest`), then **Re-run failed jobs**. |
+| `RC / provenance`: "TestPyPI holds no provenance for <file>" | The file was uploaded without Trusted Publishing (by a token, before this check existed), or its attestation was not accepted. Choose a new candidate version so this workflow uploads every file with an attestation. |
+| `RC / provenance`: "... does not name the expected signer" or "is not the expected Trusted Publisher" | The message lists each claim with what was expected and what was found. A changed workflow, environment, branch or repository changes the identity; `ProvenancePolicy` in `testpypi_provenance.py` holds the expected one. |
+| `RC / provenance`: "The pinned tool refused the recorded genuine attestation" | The verifier could not verify in that environment (most often Sigstore's trust root could not be fetched). **Re-run failed jobs**; if it persists, check the lock and the control ([extending.md](extending.md), "Change the provenance tool"). |
 | An RC job: "Artifact not found for name: candidate-dists-<run>-<n>" | A failed-jobs re-run of a run that started before the build reported its artifact (2026-10-06); use **Re-run all jobs**. |
 | `Publish to PyPI`: "Use Re-run all jobs: this attempt did not build the distributions" | A failed-jobs re-run of the upload; publication never reuses an earlier attempt's build. Use **Re-run all jobs**. |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
@@ -48,7 +52,8 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 
 Artifacts worth opening: `runtime-results-*` (JUnit) and `coverage-*` for each test cell,
 `runtime-python-matrix-*` (the releases a run tested), the speed tests' results folders (logs, `install.log`,
-`environment.json`), `source-qualification-*`, and the release candidate's `candidate-*` reports.
+`environment.json`), `source-qualification-*`, and the release candidate's `candidate-*` reports, among them
+`candidate-provenance-*`, which records each file's verified signer, run and trigger.
 
 ## Environment notes for agents
 

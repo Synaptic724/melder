@@ -1189,17 +1189,25 @@ class Spell(Cleanable):
         Emit the Spellbook-owned cache file for this spell's current cache state.
 
         Purpose:
-            Provide one spell-facing entrypoint for forcing the current
+            Provide one spell-facing entrypoint for saving the current
             Spellbook-owned in-memory cache state to disk.
 
         Contract:
             - Returns early when spell-level cache policy is disabled.
-            - Delegates the real file emit to the owning Spellbook.
+            - Delegates the real file emit to the owning Spellbook, which
+              writes only when cache was staged since its last save.
             - Requires the spell to still have a live owning Spellbook.
+            - A save the operating system refuses (a read-only cache folder,
+              a full disk, or on Windows a bundle another handle holds open)
+              does not raise: the Spellbook's cache utility logs it, the
+              staged cache stays in memory for the next save, and this call
+              returns False.
 
         Returns:
             bool:
-                True when the Spellbook cache file was emitted, otherwise False.
+                True when the Spellbook cache file was written; False when
+                caching is off, nothing was staged since the last save, or the
+                save was refused.
 
         Raises:
             RuntimeError:
