@@ -1,79 +1,80 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
- "source_sha256": "dbaa1ffc54d6d4ff0d185951d8a786d15e3918801bddfc4014761ea224fbfc13",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy",
-   "label": "notch_transaction_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Scope plan for the active-spell repoint - the SpellIndex flow that freezes runtime work.",
-   "semantics_authored_against": "dbaa1ffc54d6d4ff0d185951d8a786d15e3918801bddfc4014761ea224fbfc13"
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
+  "source_sha256": "c60a53f4ccc1c68b98f54389d493dff677ae39b2d2a1bd62404d82cb8649d2b0",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy",
+      "label": "notch_transaction_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Scope plan for the active-spell repoint - the SpellIndex flow that freezes runtime work.",
+      "semantics_authored_against": "dbaa1ffc54d6d4ff0d185951d8a786d15e3918801bddfc4014761ea224fbfc13"
+    },
+    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
+      "label": "NotchTransactionStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
+      "lineno": 22,
+      "bases": [
+        "TransactionStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "build_start_plan",
+        "on_end",
+        "on_start"
+      ],
+      "shape": {
+        "method_count": 5,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "452e134cff043cd5107b10e2474fa50a7243dfbff0a2eaceb417ecb5f845b8cd",
+      "include": true,
+      "role": "Intra-index active-spell repoint - the one SpellIndex flow that needs a real runtime freeze, not just structural isolation.",
+      "responsibilities": [
+        "seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces",
+        "drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort",
+        "repoint the SpellIndex to a different active, resolvable spell",
+        "adds the acting conduit's linked_root_conduit_ids to the conduits it seals EXCLUSIVE and quiesces, so every lineage the borrower fan-out moves is parked while it runs (design 2, 0.2.8275)"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "452e134cff043cd5107b10e2474fa50a7243dfbff0a2eaceb417ecb5f845b8cd"
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
-   "label": "NotchTransactionStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
-   "lineno": 22,
-   "bases": [
-    "TransactionStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "build_start_plan",
-    "on_end",
-    "on_start"
-   ],
-   "shape": {
-    "method_count": 5,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "fd358120816856d9275b8470532ba37d7310bf3e82daf1cacb823dc5f8ceeac5",
-   "include": true,
-   "role": "Intra-index active-spell repoint - the one SpellIndex flow that needs a real runtime freeze, not just structural isolation.",
-   "responsibilities": [
-    "seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces",
-    "drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort",
-    "repoint the SpellIndex to a different active, resolvable spell"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "fd358120816856d9275b8470532ba37d7310bf3e82daf1cacb823dc5f8ceeac5"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
+      "to_label": "TransactionStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Set": "typing.Set",
+    "Tuple": "typing.Tuple",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
+    "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy",
+    "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
+    "label": "NotchTransactionStrategy"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
-   "to_label": "TransactionStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Set": "typing.Set",
-  "Tuple": "typing.Tuple",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
-  "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy",
-  "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
-  "label": "NotchTransactionStrategy"
- }
 }

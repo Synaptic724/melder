@@ -100,15 +100,6 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T08:37:18Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-25T08:38:33Z)
-- NEW MESSAGE for melder_2 (from melder_1, 2026-10-25T08:40:52Z)
-- NEW MESSAGE for melder_2 (from melder_1, 2026-10-25T10:48:01Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-25T10:52:15Z)
-- NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T11:01:25Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-10-25T12:11:19Z)
-- NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T12:21:27Z)
-- NEW MESSAGE for melder_2 (from melder_1, 2026-10-25T12:22:05Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -118,10 +109,8 @@ Message alert rules
 | correctness_defects | in_progress | handoff | claude | melder_1 | none | S2 landed at 0.2.8273 and is turned in; the stuck consumer is its own epic (row dependency_watchers_epic); S5, S11 and the recorded-world finding wait for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T12:26:46Z | REQUIRED |
 | many_child_ownership_epic | in_progress | handoff | claude | melder_1 | none | Ask the owner whether to close the epic on his removal decision. | The owner's removal decision recorded and carried out at 0.2.8267; the epic closed on his word. | The owner closes the epic or redirects. | tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md | 2026-10-24T22:06:33Z | HELPFUL |
 | pypi_provenance_epic | blocked | handoff | claude | melder_2 | S3's promotion with its RC run, the owner's PyPI publisher (D2) and the first attested final release, and S6's keep-or-drop | At the first final release that carries S3, read Release / provenance first; then the owner retires PYPI_API_TOKEN (S4). | Every Melder file on TestPyPI and PyPI carries verified PEP 740 provenance, both upload tokens retired, S6 decided. | The owner shares the hosted runs and accepts the epic, or redirects. | tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md | 2026-10-25T08:27:53Z | REQUIRED |
-| notch_fanout_race | ready | handoff | claude | melder_0 | none | Design 2 is planned in the task's PLAN note; the owner schedules the implementation (no work until then: low usage budget) | Design 2 decided and planned: the borrower fan-out inside the notch's frozen window, with the reversal on a fan-out error | The owner schedules the implementation, or redirects. | tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md | 2026-10-25T12:11:19Z | REQUIRED |
 | dependency_watchers_epic | ready | discovery | claude | melder_1 | none | S1 - the watcher and announcer matrix (the probe-and-purge lane landed at 0.2.8269). | Why a waiting consumer misses its provider, mapped for every watcher and announcer; then the fixes on the owner's word. | S1's matrix and the fix options are on the epic for the owner, or he redirects. | tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md | 2026-10-25T08:22:32Z | REQUIRED |
-| creations_store_slots | in_progress | implementation | claude | melder_3 | none | The tests pair, then the patch folder to completed, the notch above 0.2.8273, the release note, closure and the rebuild last. | A Creations store files each binding's objects in its own slot on one shelf per spell_id: S1-S9 of the store probe fixed, purge and the probes cover every binding, warm melds unchanged, landed with tests, docs, notch, release note and rebuild. | The story turned in with its tests green the GIL off and on, warm melds unchanged and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-25_creations_store_slots_by_binding_story.md | 2026-10-25T13:16:28Z | REQUIRED |
-| index_binding_risks_epic | ready | discovery | claude | melder_1 | none | The owner's go for GAP-1 (fresh checkpoints deleted by retention): a two-world probe and the fix options. | What can break around one binding per index - GAP-1 first - investigated and decided on the owner's word. | Every label has a verdict on the epic, or the owner redirects. | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | 2026-10-25T13:04:26Z | REQUIRED |
+| index_binding_risks_epic | ready | discovery | claude | melder_1 | none | Parked on the owner's word (2026-10-25): every open label documented; investigations wait for his go, GAP-1 first. | What can break around one binding per index - GAP-1 first - investigated and decided on the owner's word. | Every label has a verdict on the epic, or the owner redirects. | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | 2026-10-25T14:58:20Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -138,19 +127,10 @@ Message alert rules
   SWITCH_TRIGGER: The owner shares the hosted runs and accepts the epic, or redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md
-- WORK_ITEM: notch_fanout_race
-  SWITCH_TRIGGER: The owner schedules the implementation, or redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-25_notch_fanout_inflight_melds_epic.md
-    - tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md
 - WORK_ITEM: dependency_watchers_epic
   SWITCH_TRIGGER: S1's matrix and the fix options are on the epic for the owner, or he redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md
-- WORK_ITEM: creations_store_slots
-  SWITCH_TRIGGER: The story turned in with its tests green the GIL off and on, warm melds unchanged and the rebuild checked, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/stories/2026-10-25_creations_store_slots_by_binding_story.md
 - WORK_ITEM: index_binding_risks_epic
   SWITCH_TRIGGER: Every label has a verdict on the epic, or the owner redirects.
   RESUME_HIERARCHY:
@@ -161,9 +141,6 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| testpypi_provenance | done | melder_2 | tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md | TestPyPI by Trusted Publishing with attestations; RC / provenance checks every file in five layers before install; no notch; hosted Not run; rebuild after closure. | 2026-10-25T00:39:21Z |
-| src_components_to_spec | done | melder_3 | tickets/stories/completed/2026-10-24_src_components_to_spec_story.md | src_components to its spec: 12,642 -> 11,874 lines, history out, stale claims fixed, the MR inventory folded, core = the C3 Key Files union; rubric 84.5 (B); rebuild after closure. | 2026-10-25T01:12:33Z |
-| src_architecture_to_spec_epic | done | melder_3 | tickets/epics/completed/2026-10-24_src_architecture_to_spec_epic.md | Both documents at their specs: src_architecture 5,739 -> 4,784 lines (81, B), src_components 12,642 -> 11,874 (84.5, B); assets and bundles rebuilt at v0.2.8267, both `--check` OK. | 2026-10-25T01:34:36Z |
 | creations_many_disposal_docstrings | done | melder_3 | tickets/tasks/completed/2026-10-25_creations_many_disposal_docstrings_task.md | Notched 0.2.8268: the creations.py `many` disposal docstrings state the store since 0.2.8257; src_components, both code maps and the graph follow; two rebind outcomes to the owner (S3); rebuild after closure. | 2026-10-25T02:36:15Z |
 | pypi_provenance_release | done | melder_2 | tickets/stories/completed/2026-10-25_pypi_trusted_publishing_and_provenance_story.md | PyPI by Trusted Publishing with attestations; Release / provenance checks every released file after the upload; no upload token in any workflow; the users' check documented; no notch; hosted Not run; rebuild after closure. | 2026-10-25T03:20:31Z |
 | probe_purge_every_version | done | melder_1 | tickets/stories/completed/2026-10-25_probe_and_purge_reach_every_version_story.md | Notched 0.2.8269: purge and the live-creation probes reach any version by its spell_id, active or parked, owned or borrowed; purge refuses a unique version with no owner store; rebuild after closure. | 2026-10-25T08:22:32Z |
@@ -173,6 +150,9 @@ Message alert rules
 | codegen_materialize_d20 | done | melder_0 | tickets/tasks/completed/2026-10-10_refuse_materializing_over_live_modules_task.md | Notched 0.2.8272: materialize_codegen refuses loaded, core, stdlib and installed names under every profile; `materialize_modules` rules narrow; room builtins; failed materializes leave sys.modules as found; rebuild after closure. | 2026-10-25T12:11:19Z |
 | codegen_room_policy_epic | done | melder_0 | tickets/epics/completed/2026-10-25_codegen_room_policy_defects_epic.md | D-10, D-11 and D-20 closed at 0.2.8270-0.2.8272 on the owner's decisions; each Breaking change in the running note. | 2026-10-25T12:11:19Z |
 | notch_signature_s2 | done | melder_1 | tickets/stories/completed/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md | Notched 0.2.8273: every version of a SpellIndex is bound the way its first version was; staging and moves refuse another binding, a notch a held address; records below 5.0.0 refused; rebuild after closure. | 2026-10-25T12:26:46Z |
+| creations_store_slots | done | melder_3 | tickets/stories/completed/2026-10-25_creations_store_slots_by_binding_story.md | Notched 0.2.8274: a Creations store files each binding's objects in its own slot (`Spell.store_key`) on one shelf per spell_id; S1-S9 fixed, purge and the probes cover every binding, cache generation 25; the asset and bundle rebuild not run, on the owner's word. | 2026-10-25T14:05:41Z |
+| notch_fanout_race | done | melder_0 | tickets/tasks/completed/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md | Notched 0.2.8275: a lender's notch moves its borrowers inside its frozen window (borrowers sealed and frozen), a failed fan-out undoes it; race 0 of 20; xfail deleted; rebuild after closure. | 2026-10-25T14:24:32Z |
+| notch_fanout_epic | done | melder_0 | tickets/epics/completed/2026-10-25_notch_fanout_inflight_melds_epic.md | The borrower-meld-vs-notch race closed at 0.2.8275 (design 2). | 2026-10-25T14:24:32Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

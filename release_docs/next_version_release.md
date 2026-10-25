@@ -1,4 +1,4 @@
-# Melder 0.2.8273
+# Melder 0.2.8275
 
 **Unreleased**
 
@@ -346,6 +346,104 @@ registered in the calling Spellbook, so a retry was refused as a duplicate spell
 What stays the same: every signature; versions bound the way their index is stage, notch, move and meld as before;
 a meld by spell_id, purge and the live-creation probes answer as before.
 
+## A class bound again under another binding no longer meets the old binding's objects
+
+A spell_id is the SHA256 of a class's code (since 0.2.8257), so `cleanup_spell` followed by a `bind` of the same
+class under another existence or other disposal names keeps the spell_id, and `cleanup_spell` leaves the removed
+binding's objects alive in the stores that hold them. Through 0.2.8273 a store filed objects by spell_id, so the new
+binding met what the old one left:
+
+- a `many` bound again with other disposal names had its new objects disposed with the old binding's methods;
+- a `unique` or `unique_per_conduit` bound again as a `many` with disposal methods failed its next meld with
+  `AttributeError: '<Type>' object has no attribute 'append'` after building the object, which was lost - or, for a
+  class with its own `append`, called that method on the old object;
+- a `many` bound again as a `unique` or `unique_per_conduit` returned the old binding's Python list as the object;
+- a `unique` bound again with other disposal names returned the old binding's object, and the new binding's methods
+  never ran on it;
+- `purge` after such a rebind raised `TypeError: object of type '<Type>' has no len()`, or returned 1 while it
+  disposed every object of a list;
+- `has_live_creation` and `describe_live_creation_status` counted what the store held as if the asking binding had
+  filed it.
+
+A store now files each binding's objects apart, under the spell's store key - the new read-only `Spell.store_key`,
+`<spell_id>:<binding_hash>` - and keeps one shelf per spell_id with the keys filed under it:
+
+```python
+import melder as md
+
+
+class Session:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def close(self) -> None:
+        self.calls.append("close")
+
+    def shutdown(self) -> None:
+        self.calls.append("shutdown")
+
+
+book = md.Spellbook()
+first_id = book.bind(spell=Session, existence="unique", disposal_method_names=["close"])
+root = book.conjure(dynamic=True)
+first = root.meld(spell_id=first_id)
+
+root.cleanup_spell(spell=root.get_spell_by_spell_id(first_id))   # its object stays alive in the root's store
+second_id = root.bind(spell=Session, existence="unique", disposal_method_names=["shutdown"])
+assert second_id == first_id                                      # one class, one spell_id
+second = root.meld(spell_id=second_id)
+
+assert second is not first                       # the meld returned the first object before
+assert root.has_live_creation(spell=second_id)
+assert root.purge(spell_id=second_id) == 2       # every binding's object, each with its own methods
+assert first.calls == ["close"] and second.calls == ["shutdown"]
+```
+
+**Breaking change:** a class bound again under another binding - another existence, other disposal names, any other
+binding field - starts with an empty slot: its first meld builds a new object where it returned the old binding's
+object or list, and each object is disposed with its own binding's methods. The old binding's objects stay until
+their store ends or a purge of the spell retires them. Until the new binding builds, `has_live_creation` answers
+True for the old object while `meld_existing_spell` raises `ValueError: Spell '<spell_id>' is not live.`
+
+`purge` and the live-creation probes act on every binding of the spell: a purge, by spell_id or by any other
+selector, retires everything filed under the spell_id in the store the door selects, counts every object and
+disposes each with its own methods; `has_live_creation` and `describe_live_creation_status` count every binding's
+objects; and an ownership transfer moves every binding's objects.
+
+**Breaking change:** an existing object (an instance you bind) bound again under another binding while its first
+registration is still alive is filed under both bindings and disposed with each binding's list when the store ends;
+the second registration failed with a logged `ValueError: Key <spell_id> already exists in creations.` and only the
+first list ran. The creation cache moves to generation 25, so a cache bundle written before loads cold once.
+
+What stays the same: every signature, with `Spell.store_key` added; how a spell_id and a binding hash are computed;
+a class bound again the same way meets its slot and the object in it, as since 0.2.8219; managed pools stay one per
+spell_id; which store a door selects and who may purge it; the order of a store's teardown; warm melds, measured
+within their run-to-run spread; and saved records.
+
+## A meld racing a lender's notch gets a version, never a broken object
+
+When one conduit lends a spell to others and you notch it (`notch_spell`), Melder moves every borrower to the new
+version. Through 0.2.8274 it moved them after the notch had already let new melds in again, and the notch's freeze did
+not cover the borrowers at all. So on a free-threaded build a borrower's meld running at that moment could come back
+with an object built against no provider - it failed only when you used it - or raise an internal error ("many_only
+manifest references unknown spell_id", "Cannot build CreationContext before spell_codegen_creation exists.", "Spell
+creation context was not published").
+
+Now the notch freezes the borrowers along with the lender and moves them before it lets anything through. A borrower
+meld that arrives during a notch waits for it and builds the outgoing or the incoming version, never a mix. In the
+race measurement (four meld threads against 20 notches) 10 of 20 runs ended a thread with one of those failures at
+0.2.8267; now none do, with the GIL off or on.
+
+Two smaller behaviour changes come with it:
+
+- If moving the borrowers fails, the whole notch is undone: the lender's index stays on the outgoing version and so
+  do the borrowers, and the error is raised. Before, the notch stood and the error was raised with the borrowers part
+  moved.
+- While a lender notches, links, binds and transfers on its borrowers wait for it, as they already did on the lender.
+  A notch is short - it moves each borrower's active copy - so the wait is too.
+
+What stays the same: every signature, notches inside one Spellbook, warm melds, and everything cached or recorded.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
@@ -369,13 +467,10 @@ a meld by spell_id, purge and the live-creation probes answer as before.
   that kept a slotted object's `many` children with it (0.2.8238), left.
 - The internal `Creations` store's docstrings (`ManyDisposalBucket`, `add_many_creations`, `register_many`) no
   longer say that a spell_id covers a `many` spell's disposal names - it has not since 0.2.8257, when the spell_id
-  became the SHA256 of the object's code - and say what the store does after `cleanup_spell` and a new `bind` of the
-  same class while a scope still holds the objects of the removed binding: bound again as a `many` with other
-  disposal names, the new objects join the removed binding's disposal record and are disposed with its names; bound
-  again as a `many` after a `unique` or `unique_per_conduit` binding, the next meld in that scope raises
-  `AttributeError` and returns nothing. Both are known and not fixed here; behaviour is unchanged. The packaged
-  system documents (`melder.__components__`, `melder.__architecture__`) and the packaged graph say the same, and
-  the code-map extent and line citations of `creations.py` are remeasured.
+  became the SHA256 of the object's code. What a store does after `cleanup_spell` and a new `bind` of the same class
+  while a scope still holds the removed binding's objects is in the section on a class bound again under another
+  binding. The packaged system documents (`melder.__components__`, `melder.__architecture__`) and the packaged graph
+  say the same, and the code-map extent and line citations of `creations.py` are remeasured.
 - Releases on PyPI, and release candidates on TestPyPI, are published by Trusted Publishing: each upload
   authenticates with its workflow's own short-lived identity, with no stored API token, and uploads a PEP 740
   attestation for each file. After each upload the workflow checks every uploaded file's provenance on its
@@ -416,4 +511,13 @@ a meld by spell_id, purge and the live-creation probes answer as before.
   agent operations guide (`agents/MELDER_AGENT_OPERATIONS.md`) say how to bind a version so a notch can swap it in,
   and six expert UX examples bind their versions that way. The code-map extents of the changed files are
   remeasured, and line citations into `spellbook.py`, `conduit.py` and `bind.py` remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8273.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  a store's slots by binding - `Spell.store_key`, the shelf per spell_id, the internal `Creations.register_slot` and
+  `count_spell_creations`, purge, the probes and extract and restore over the shelf, and creation-cache generation
+  25 - and the packaged test documents describe the new tests and the suite's rule for reading a store; the code-map
+  extents of the changed files are remeasured.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  the notch moving its borrowers inside its frozen window and undoing itself when that fails; the packaged test documents
+  describe the new tests and the race test's removed xfail. The code-map extents of `conduit.py`, `spellbook.py`,
+  `conduit_ward.py` and the notch transaction strategy are remeasured.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8275.

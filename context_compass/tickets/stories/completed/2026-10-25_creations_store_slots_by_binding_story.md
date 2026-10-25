@@ -2,16 +2,25 @@
 
 # Story: creations_store_slots_by_binding - a store files each binding's objects apart, one shelf per spell_id
 
+- Completed: 2026-10-25T14:05:13Z
+- Summary: a Creations store files each binding's objects in its own slot - `Spell.store_key`,
+  `<spell_id>:<binding_hash>` - on one shelf per spell_id: S1-S9 of the store probe are fixed, a class bound again
+  the same way meets its slot, purge and the live probes cover every binding, a transfer moves every binding's
+  objects, warm melds are within the run-to-run spread and the creation cache is generation 25. Notched 0.2.8274;
+  release-note section "A class bound again under another binding no longer meets the old binding's objects". The
+  red tests are green and the three tiers ran green, the GIL off and on. The asset and bundle rebuild: Not run, on
+  the owner's word (chat, 07:57 MDT).
+
 ## Metadata
 - Story ID: STORY-2026-10-25-creations_store_slots_by_binding
 - Epic: none (standalone; it lands S3's store requirement - STORY-2026-10-18-revalidate_on_binding_change, parked)
-- Status: in_progress
+- Status: done
 - Owner: Mark (owner)
 - Agent Name: melder_3
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-25T10:32:16Z
-- Updated: 2026-10-25T13:16:28Z
+- Updated: 2026-10-25T14:05:13Z
 
 ## User Narrative
 As an agent that binds a class again under another binding while objects of the first binding are alive in a store,
@@ -79,10 +88,14 @@ was removed (2026-10-14).
   old existence in another store stays there and ends with that store).
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: the owner's go in chat (2026-10-25 04:00 MDT) for the shelf/slot design; this story opens with
-  the board row, and TASK-2026-10-25-rebind_while_old_objects_are_alive_tests closes into it.
+- from_state: in_progress (implementation)
+- to_state: done
+- transition_reason: the EXIT_GATE is met but for its last item, the rebuild with both checks, which the owner
+  waived (chat 2026-10-25 07:57 MDT: "you don't need to rebuild just call it after 4 and we're good"): S1-S9
+  fixed and pinned by tests the GIL off and on, the same-binding slot kept, purge and the probes over every binding,
+  a transfer of every binding, warm melds within the spread, the three tiers green both GIL modes, the docs merged,
+  the notch (0.2.8274), the release-note entry and this closure. Opened for implementation on the owner's go (chat
+  2026-10-25 04:00 MDT; the Decision Log).
 
 ## Dependencies / Related Work
 - TASK-2026-10-25-rebind_while_old_objects_are_alive_tests (its module and probes; closed into this story)
@@ -97,10 +110,11 @@ was removed (2026-10-14).
 - [x] `Spell.store_key`; Creations' shelves, purge, probes, extract/restore; every emitter and reader.
 - [x] conduit.py `_register_to_creations` on melder_1's OK; the tests that read a store by spell_id.
 - [x] Unit, component and integration suites the GIL off and on; the warm-meld benchmark before and after.
-- [ ] src_architecture, src_components, the graph, the tests pair; the patch merged; notch; release note.
-- [ ] Closure, board sync; the rebuild last with both checks.
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
+- [x] src_architecture, src_components, the graph, the tests pair.
+- [x] The patch folder to completed; notch; release note.
+- [x] Closure, board sync; the rebuild with both checks waived by the owner (07:57 MDT): Not run.
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
 
 ## Acceptance Criteria
 - S1: a `many` rebound close->shutdown - the first object closed with close, the second with shutdown, at the root's
@@ -134,10 +148,10 @@ was removed (2026-10-14).
 - A key format clash with opaque test keys: a key without ':' is its own shelf.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
-- [ ] No src edit before the patch docs are linked and the mapping note is written.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No src edit before the patch docs are linked and the mapping note is written.
 
 ## Open Questions
 - none open; Fix B (teardown order per object) waits for the owner's word.
@@ -145,6 +159,8 @@ was removed (2026-10-14).
 ## Decision Log
 - 2026-10-25 04:00 MDT: the owner's go for the shelf/slot design (chat); a different binding starts an empty slot,
   the same binding keeps its slot; purge and the probes cover the shelf.
+- 2026-10-25 07:57 MDT: the owner waived this lane's final asset and bundle rebuild (chat: "you don't need to
+  rebuild just call it after 4 and we're good"); the story closes without it.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -152,7 +168,8 @@ this does not make independent review mandatory for every ticket.
 
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/creations_store_slots_by_binding_2026_10_25/ (the patch docs, each with its index):
+  - system_docs/patches/completed/creations_store_slots_by_binding_2026_10_25/ (the patch docs, each with its
+    index; moved from patches/active/ at closure):
     - architecture_patch.md
     - component_patch_binding_pipeline.md
     - component_patch_creations_and_spellspace.md
@@ -162,7 +179,8 @@ this does not make independent review mandatory for every ticket.
     - component_patch_conduit_runtime.md
     - code_description_patch_creations_and_spellspace.md
   - artifacts/rebind_live_store_tests_20261025/ (the task's probes and runs; rerun at the fix)
-  - artifacts/creations_store_slots_20261025/ (this story's red, green, suite and benchmark runs)
+  - artifacts/creations_store_slots_20261025/ (this story's red, green, suite and benchmark runs; deleted at
+    closure, its files in the owner's commit af169b072)
 - DISPOSITION: promote_to_documentation (the patch); retain_as_reference (the probes); delete_on_close (the runs)
 - CLEANUP_TRIGGER: the story's closure
 
@@ -494,10 +512,111 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T13:34:11Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The tests pair carries the change, with the token (2 in tests_architecture, 14 in tests_components).
+    tests_architecture (1168 -> 1185 lines): the strict-xfail entry is out of Failure Modes (the rebind module's two
+    defect tests pass and their markers came off), a new operational invariant says a test reads a store by the
+    binding's store key and counts a spell over its shelf - 28 modules that read a store or stub a spell name the
+    key (unit 11, component 8, integration 6, experimentation 3, by a search for the new names; this corrects the
+    12:19:51Z note's breakdown, which said 27) - the inventory is recounted from disk (unit 525/522, component
+    176/174, integration 189/182; 878 test modules), and a handoff entry. tests_components (4677 -> 4769): the
+    rebind entry states the fixed contract; the new modules are catalogued - the store-slot component module (9
+    tests, 14 cases) in the Aether Component Cluster, test_creations_store_slots.py (11 tests, 13 cases) in the
+    Aether/Nexus/Rift Unit Cluster, test_spell_store_key.py (4) and test_store_key_emission.py (4) in the two
+    Spellbook unit clusters - each with a Protects bullet and a key file; the suites' Protects and tree counts (unit
+    aether 209, spellbook 165, utilities 55, which read 54; component aether 81; integration aether 51); the core
+    map adds four records and re-stamps ten, the key-file union is 296 (computed from the catalogs); sources and a
+    handoff entry. Checks: both indexes regenerated and --check OK; the content-preservation diff against the 12:21Z
+    baselines loses only the replaced lines (the strict-xfail entry, the old counts, the old rebind text, the
+    re-stamped values); the doc's citation recipe reports one stale range, tests/_codegen_system_support.py (248,
+    254 on disk), not this lane's file and left as it is; key-file existence and the portability grep are clean. The
+    quality rubric's scope is creation, recomposition or review, so this incremental pass records no score.
+  EVIDENCE:
+  - context_compass/system_docs/tests_architecture.md:468-479
+  - context_compass/system_docs/tests_components.md:1622-1641
+  - context_compass/system_docs/tests_components.md:4267-4283
+  - tests/component/melder/aether/conduit/test_conduit_component_store_slots_by_binding.py:1-381
+  - tests/unit/melder/aether/conduit/creations/test_creations_store_slots.py:1-237
+  IMPACT: every system document now carries the change; the notch can replace the token in all five and the graph.
+  NEXT: move the patch folder to completed, then notch 0.2.8274 and replace the token.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T14:03:47Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Mailbox consumed: M0-238 (melder_0, 14:01:20Z). melder_0's notch fan-out task (design 2, on the owner's go)
+    takes conduit.py (Conduit.notch_spell and a new inverse fan-out helper), spellbook.py (an `after_switch`
+    parameter on Spellbook._notch_spell) and conduit_ward.py (the comment on `_emit_index_notch`), appends tests to
+    test_conduit_integration_notch_revalidation.py, and takes the system docs, their indexes and the graph once
+    this lane says they are free. None of those regions is mid-edit here: this lane edits no src now, and M3-25
+    (13:42:06Z, not yet consumed by melder_0) already says the docs and the graph are free. No reply was asked.
+  EVIDENCE: context_compass/tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:1-16
+  IMPACT: melder_0's lane can take the system docs and the files above; this lane's closure touches none of them.
+  NEXT: the closure.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T14:05:13Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Turned in at 0.2.8274. The notch was read at landing (`__version__` read 0.2.8273, S2's) and taken as
+    0.2.8274, and the version token was replaced in all 64 places it stood (src_architecture 12, src_components 27,
+    tests_architecture 2, tests_components 14, the graph's descriptors 9): none remains; the four indexes were
+    regenerated and pass --check; src_graph was re-extracted (only the __version__ descriptor's hash moved) and
+    reassembled - 28,248 lines, 593 ranges verified, its index proof current. The running note's header reads
+    0.2.8274, and its section "A class bound again under another binding no longer meets the old binding's objects"
+    gives S1-S9, an example (run again at closure, the GIL off and on: "example OK 0.2.8274"), two Breaking changes
+    (a rebind under another binding starts empty, with the has_live_creation / meld_existing_spell gap; an existing
+    object filed under both keys; generation 25), what purge, the probes and a transfer do, and what stays the same;
+    the 0.2.8268 docstring bullet points at it, and a Packaging bullet and the rebuild line name 0.2.8274. The patch
+    folder is in system_docs/patches/completed/ (16 files). NOTICEs M3-25, M3-26 and M3-27 (13:42:06Z) told
+    melder_0, melder_1 and melder_2 the number, that the docs and the graph are free, that the extractor rewrote as
+    1-space JSON the nine descriptors the walker's --accept had written with 2 spaces (content unchanged), the
+    0.2.8269 handoff repair, and that tests_components' record of tests/_codegen_system_support.py is stale (248;
+    254 on disk), not this lane's file. This story's runs folder, artifacts/creations_store_slots_20261025/
+    (delete_on_close), is deleted: the 11:13:56Z and 12:19:51Z notes summarize its runs and the owner's commit
+    af169b072 holds its files; it never had an active row on the artifact board, so its cleared row is its first.
+    The asset and bundle rebuild and its two --check runs: Not run - the owner waived them (chat, 07:57 MDT), so
+    the packaged assets and the LLM bundles are not rebuilt for 0.2.8274 until the next lane's rebuild or the
+    release cut.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-3
+  - release_docs/next_version_release.md:349-422
+  - release_docs/next_version_release.md:444-449
+  - context_compass/system_docs/patches/completed/creations_store_slots_by_binding_2026_10_25/architecture_patch.md:1-140
+  IMPACT: every exit-gate item is met but the rebuild, which the owner waived; the story closes.
+  NEXT: close the story, sync the attention and artifact boards, and note S3.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T14:55:40Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The rebuild this story skipped on the owner's word is covered: melder_0 took 0.2.8275 for its notch
+    fan-out task (M0-241, consumed) and rebuilt after its closure. Run read-only from the repository root on 3.14,
+    at 2026-10-25T14:55:40Z: the asset runner's --check prints OK for _agent_documentation, _bind_guard and
+    _system_documents (v0.2.8275, key match), and the LLM bundle builder's --check --include-untracked prints OK
+    for src, tests and other (fingerprint and output proofs match).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/tickets/tasks/completed/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:1-12
+  IMPACT: no rebuild is owed for 0.2.8274; the packaged assets and the bundles carry this story's change.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -509,13 +628,14 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 Scope: a Creations store files each binding's objects in its own slot on one shelf per spell_id (the owner's go,
-2026-10-25 04:00 MDT), ending S1-S9 while purge and the probes keep covering the spell. State: in_progress,
-melder_3. Done: the design and the store probe; the patch docs and the mapping (11:00:58Z); the red tests
-(11:13:56Z); the change, every tier green the GIL off and on, warm melds within the run-to-run spread (12:19:51Z);
-src_architecture, src_components and the graph, with the version token (2026-10-25T13:16:28Z). Remaining, in order:
-the tests pair (re-stamp the parked-before-conjure record), the patch folder moved to completed, the notch above
-0.2.8273 and the token replaced, the release-note section, the NOTICEs, closure and board sync, the asset and bundle
-rebuild last. Failed or unrun: none. Next: tests_architecture.
+2026-10-25 04:00 MDT), ending S1-S9 while purge and the probes keep covering the spell. State: done,
+2026-10-25T14:05:13Z, melder_3. Done: the design and the store probe; the patch docs and the mapping (11:00:58Z); the
+red tests (11:13:56Z); the change, every tier green the GIL off and on, warm melds within the run-to-run spread
+(12:19:51Z); src_architecture, src_components and the graph (13:16:28Z); the tests pair (13:34:11Z); the notch
+0.2.8274, the release-note section, the patch folder in completed, the NOTICEs and this closure. Not run: the asset
+and bundle rebuild and its two --check runs, waived by the owner (07:57 MDT); the next lane's rebuild or the release
+cut covers 0.2.8274. Open elsewhere: STORY-2026-10-18-revalidate_on_binding_change (S3, backlog) keeps the
+binding-change verb and the revalidation marks; Fix B (teardown order per object) waits for the owner. Next: none.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

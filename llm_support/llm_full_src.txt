@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 3dbef9866949c34d80ebabdd4c0373289d853e8ade0c5b7ee773c9e0bbd8233c
+SOURCE FINGERPRINT: 4a9c58188864aecc6d3b733e52f8e932ae04b3a616004d20185f40634ad0a88a
 FILE COUNT: 585
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: f447831efb1f3966449f8de9475991bfd84d5ca4d5736b3f34b9791eb9089ff4
+CONTENT SHA256: 46491a935536065c5d3ebb9f6d4e9f5a9af666730853340f2b4254864a9fcbf7
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8273"
+__version__ = "0.2.8275"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -19156,7 +19156,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transa
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py
-CONTENT SHA256: bc9c2b58b5a4e8caf073fe3407b85d8be0b3da057b2dfadb5f3c6a2324dec98d
+CONTENT SHA256: f204bf8d45212d6dd5500ea71f2a96927a3503780b3b5c07f3ea09ef215050bf
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
@@ -19331,6 +19331,13 @@ class NotchTransactionStrategy(TransactionStrategy):
             conduit_ids.update(
                 devops_information_registry.list_providers_for_borrower(acting_conduit_id)
             )
+        # Design 2 (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): the
+        # lineage roots of the acting conduit's ward links - the peers its borrower fan-out
+        # walks - join the seal and the freeze, so every lineage the fan-out moves is parked
+        # while it runs (the registry's borrower list missed an index-link borrower, 2026-10-25).
+        for linked_root_id in metadata.get("linked_root_conduit_ids", ()):
+            if isinstance(linked_root_id, str) and linked_root_id:
+                conduit_ids.add(linked_root_id)
         binding_key = cls._resolve_binding_key(metadata=metadata)
 
         scope_keys, scope_claims = cls._seal_scope_keys(
@@ -44104,7 +44111,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: d0c89e905bb3a61a7fd8834afec14c7a62b4eab1f243fbfb0891391150b1205e
+CONTENT SHA256: b0e3638380902fb0aafb938140f2209149fd1ebca3fb21784947d68fa7ad7a16
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -49911,6 +49918,15 @@ class Conduit(Cleanable):
             "conduit_lineage_gate_ops": (
                 self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
             ),
+            # Design 2: the lineage roots of the peers the borrower fan-out walks join the
+            # notch's seal and freeze, so each of them is parked while it is moved.
+            "linked_root_conduit_ids": tuple(sorted(
+                {
+                    peer._root_conduit_id
+                    for peer in (self._conduit_ward._get_links() if self._conduit_ward is not None else ())
+                    if peer is not None and peer is not self
+                }
+            )),
         }
         # The index's current active member is the outgoing spell. The conduit
         # admits the notch (it owns the change-control envelope); the owning
@@ -49924,20 +49940,15 @@ class Conduit(Cleanable):
             transaction_type=ChangeTransactionType.NOTCH,
             metadata=metadata,
         )
-        try:
-            # Check the target again under the notch seal: an index operation that ran
-            # between the check above and admission may have moved it, and none can run
-            # from here to the switch.
-            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
-            # A version that fails its structural check raises here with the switch already
-            # undone by the Spellbook; the transaction then ends as failed and no borrower is
-            # touched (2026-10-19).
-            result = self._spellbook._notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
-        except Exception:
-            mediator.end_transaction(expected_type="notch", success=False)
-            raise
-        mediator.end_transaction(expected_type="notch", success=True)
-        if outgoing_id is not None and outgoing_id != spell.spell_id:
+        # Design 2 (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): the
+        # borrower fan-out runs INSIDE the transaction window, as `_notch_spell`'s after-switch
+        # hook, while every linked lineage's CreationGate is parked - a borrower meld cannot run
+        # between the park and the reactivation. A fan-out error undoes the whole notch: the
+        # Spellbook reverts its switch, then `_undo_borrower_fan_out` moves the borrowers back.
+        fan_out_started = [False]
+
+        def _fan_out_to_borrowers() -> None:
+            fan_out_started[0] = True
             self._deactivate_borrowed_spell(outgoing_id)
             # Outgoing first, so no peer holds two active copies under one key. A version
             # grant parked by an earlier notch away comes back here (D3, 2026-10-16); the
@@ -49946,6 +49957,30 @@ class Conduit(Cleanable):
             # Index-link receivers follow the index's selected spell: move their subscription head
             # to the new active member (park old, activate new) via the ward.
             self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
+
+        fan_out = outgoing_id is not None and outgoing_id != spell.spell_id
+        try:
+            # Check the target again under the notch seal: an index operation that ran
+            # between the check above and admission may have moved it, and none can run
+            # from here to the switch.
+            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
+            # A version that fails its structural check, or a borrower fan-out that fails, raises
+            # here with the switch already undone by the Spellbook; the transaction then ends as
+            # failed (2026-10-19; design 2).
+            result = self._spellbook._notch_spell(
+                spell_index=spell_index,
+                spell=spell,
+                change_reason=change_reason,
+                after_switch=_fan_out_to_borrowers if fan_out else None,
+            )
+        except Exception:
+            try:
+                if fan_out_started[0]:
+                    self._undo_borrower_fan_out(spell_index, outgoing_id, spell.spell_id)
+            finally:
+                mediator.end_transaction(expected_type="notch", success=False)
+            raise
+        mediator.end_transaction(expected_type="notch", success=True)
         return result
 
     def _resolve_notch_target(
@@ -50457,6 +50492,36 @@ class Conduit(Cleanable):
         # do not keep a subscription to a dead index. Its member already left every contract, so no member id.
         if destroyed_index_id is not None:
             ward._emit_index_destroy(destroyed_index_id, ())
+
+    def _undo_borrower_fan_out(self, spell_index: SpellIndex, outgoing_id: str, incoming_id: str) -> None:
+        """
+        Move this lender's borrowers back to the outgoing version after a failed notch (design 2).
+
+        Contract:
+            - Runs inside the notch's transaction window, after `Spellbook._notch_spell` has reverted
+              the lender's switch: the ward emission back to the outgoing version first (it reads the
+              lender's active member, now the outgoing one), then every peer's incoming member
+              deactivated and outgoing member reactivated - both no-ops on a peer already in that state.
+            - An error here is a Melder bug: RuntimeError naming the index, chained to its cause.
+
+        Args:
+            spell_index: The notched index.
+            outgoing_id: The version the notch moved away from (restored).
+            incoming_id: The version the failed notch moved to.
+
+        Returns:
+            None.
+        """
+        try:
+            self._conduit_ward._emit_index_notch(spell_index, incoming_id, outgoing_id)
+            self._deactivate_borrowed_spell(incoming_id)
+            self._activate_borrowed_spell(outgoing_id)
+        except Exception as error:
+            raise RuntimeError(
+                f"notch_spell could not move the borrowers of index {spell_index.id} back to spell_id "
+                f"{outgoing_id} after a failed borrower fan-out: {error}. Borrowers may hold the refused "
+                "version. This is a Melder bug; please report it with this message."
+            ) from error
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """
@@ -53864,7 +53929,7 @@ END FILE: src/melder/aether/conduit/conduit_state/conduit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
-CONTENT SHA256: 71b5c1e3674d29a6e2f011ba063c89771b94ec0e66404a2dfdc12349181f41f0
+CONTENT SHA256: 59e5b9ce535185bcd2bddb2550d9daaa5454542785a62056076995bdcb21f1f8
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -56228,8 +56293,9 @@ class ConduitWard(Cleanable):
         index_id = index.id
         owner_conduit_id = self._conduit._id
         record_affected_contracts = []
-        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
-        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        # Under this ward's lock: link and sever write _contracts under it. A notch runs this emission inside its own
+        # transaction window (design 2: its seal and freeze cover these peers); the lock still orders it against link
+        # and sever on any path the mediator does not (cross_object_lock_gaps, 0.2.8231).
         with self._lock:
             for contract in self._contracts.values():
                 index_detail = (
@@ -136079,7 +136145,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 09fbe477287c475fad53132e5b0b4e39b7dd56e1e264b275637284d67cac5f44
+CONTENT SHA256: a3a953b7069fbde2cddc71ff0db85a883fd8d0796e051d594e4658efe6a36b36
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -140116,6 +140182,7 @@ class Spellbook(Cleanable):
             spell_index: SpellIndex,
             spell: Spell,
             change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+            after_switch: Optional[Callable[[], None]] = None,
     ) -> Spell:
         """
         Internal -- called by the owning Conduit (Conduit.notch_spell is the public surface).
@@ -140148,6 +140215,9 @@ class Spellbook(Cleanable):
             - A version that passes, or needs no check, is journaled to the
               research record and returned; the commit's structural validator
               then finds its Phase-4 result and skips it.
+            - `after_switch` (design 2, TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout):
+              the owning conduit's borrower fan-out, run after the structural check inside the same guarded
+              section, so a fan-out error takes the same reversal and the notch is undone as a whole.
             - A version that fails is refused: `_revert_refused_notch` puts the
               before-state back and resets the refused version's Phase 1-4
               artifacts, nothing is journaled, and the error is raised before the
@@ -140218,6 +140288,10 @@ class Spellbook(Cleanable):
         # ran at the NOTCH commit, after the switch, and nothing undid it).
         try:
             self._check_notched_version(spell)
+            # Design 2: the borrower fan-out runs here, inside the held window and before the
+            # promotion is journaled, so an error from it undoes the switch like a failed check.
+            if after_switch is not None:
+                after_switch()
         except Exception as error:
             # A failing check undoes the switch. A validation verdict is raised as the
             # refusal, built first because its report renders from the Phase-4 result

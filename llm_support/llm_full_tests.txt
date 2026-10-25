@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 8b3188d5a3a7d5757e66618739529a51bed4e738fb95ea285cf95be4249f427e
+SOURCE FINGERPRINT: ef20599536caffb021b490c1582375443931d3010d08790716532c0505ac75af
 FILE COUNT: 1160
 
 ================================================================================
@@ -125470,7 +125470,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_b
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
-CONTENT SHA256: 5fdcf7e4e44a5cc1a115170dc2886fbcaa3257ce37c44a59b73a56fa453c497f
+CONTENT SHA256: df4acfc8b4f4d1821ca47f80c8e71f4f34d2286d97911776c6d7c0ddebc04aa0
 SOURCE ENCODING: utf-8
 ================================================================================
 """Integration regressions for contract_recheck_on_notch_2026_10_16: rule 2 and D2 (melder_1, 2026-10-16).
@@ -126105,18 +126105,6 @@ def test_x1_a_dependency_notch_in_the_lending_book_reaches_the_borrowers_depende
         lender.cleanup()
 
 
-@pytest.mark.xfail(
-    strict=False,
-    raises=AssertionError,
-    reason=(
-        "OPEN, intermittent with the GIL off: a meld in flight while the lender's notch parks or reactivates the "
-        "borrower's contracted copy can be built with the raw SpellContract default (AttributeError when it is "
-        "used) or raise an internal RuntimeError ('many_only manifest references unknown spell_id', 'Cannot build "
-        "CreationContext ...'), because the notch's fan-out runs after its transaction ends. It predates rule 2 at "
-        "the same rate. TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout. NOT STRICT: the race "
-        "passes in most runs; whoever closes that task deletes this marker."
-    ),
-)
 def test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end_on_the_last_version() -> None:
     """
     Melds of the consumer on four threads race 20 notches between A and B (GIL off on 3.14t): each meld returns
@@ -126153,6 +126141,114 @@ def test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end
     try:
         assert unexpected == []
         assert world.meld_ping() == "A"
+    finally:
+        world.cleanup()
+
+
+class _BoundDuringFanOut:
+    """A spell a borrower binds while a lender's notch fans out (design 2's lock guard)."""
+
+    def ping(self) -> str:
+        """Answer "bound"."""
+        return "bound"
+
+
+def _hook_lender_fan_out(monkeypatch: pytest.MonkeyPatch, world: _Lent, during: Any) -> None:
+    """Run `during()` once, inside the lender's first `_activate_borrowed_spell`, then the real fan-out step."""
+    original = Conduit._activate_borrowed_spell
+    fired = threading.Event()
+
+    def _wrapped(self: Conduit, spell_id: str) -> None:
+        if self is world.lender and not fired.is_set():
+            fired.set()
+            during()
+        original(self, spell_id)
+
+    monkeypatch.setattr(Conduit, "_activate_borrowed_spell", _wrapped)
+
+
+def test_a_borrower_meld_issued_during_a_lenders_notch_fan_out_waits_and_gets_the_new_version(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Design 2 (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): a lender's notch moves its borrowers
+    while their creation gates are still parked, so a borrower meld issued during that fan-out waits for the notch to
+    end and builds the version it selected; it never runs between the park and the reactivation.
+    """
+    world = _lend("fanout_park", ImplA)
+    seen: List[str] = []
+    threads: List[threading.Thread] = []
+
+    def _meld_now() -> None:
+        meld = threading.Thread(target=lambda: seen.append(world.meld_ping()))
+        meld.start()
+        meld.join(0.5)
+        seen.append("parked" if meld.is_alive() else "ran")
+        threads.append(meld)
+
+    try:
+        assert world.meld_ping() == "A"
+        _hook_lender_fan_out(monkeypatch, world, _meld_now)
+        world.notch_to(ImplB)
+        for thread in threads:
+            thread.join(10)
+        assert seen == ["parked", "B"]
+    finally:
+        world.cleanup()
+
+
+def test_a_fan_out_error_during_a_lenders_notch_undoes_the_whole_notch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    The owner's choice for design 2: when moving the borrowers fails, the notch is undone - the lender's index is back
+    on the outgoing version, the borrower still melds it, and the error propagates.
+    """
+    from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
+
+    world = _lend("fanout_undo", ImplA)
+    original = ConduitWard._emit_index_notch
+
+    def _failing_forward(self: ConduitWard, index: SpellIndex, old_spell_id: Any, new_spell_id: str) -> None:
+        if new_spell_id != world.provider_id:
+            raise RuntimeError("fan-out boom")
+        original(self, index, old_spell_id, new_spell_id)
+
+    try:
+        assert world.meld_ping() == "A"
+        monkeypatch.setattr(ConduitWard, "_emit_index_notch", _failing_forward)
+        with pytest.raises(RuntimeError, match="fan-out boom"):
+            world.notch_to(ImplB)
+        assert world.index.selected_spell_id == world.provider_id
+        assert world.meld_ping() == "A"
+    finally:
+        world.cleanup()
+
+
+def test_a_borrower_bind_during_a_lenders_notch_fan_out_finishes_after_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Design 2's lock guard: a borrower-side bind issued while the lender's notch fans out (holding its seal and taking
+    the borrower Book's lock) neither deadlocks the notch nor fails; it completes, and the borrower follows the notch.
+    """
+    world = _lend("fanout_bind", ImplA)
+    bound: List[str] = []
+    threads: List[threading.Thread] = []
+
+    def _bind_now() -> None:
+        bind = threading.Thread(target=lambda: bound.append(
+            world.borrower_book.bind(spell=_BoundDuringFanOut, existence=Existence.many, permissions="create")
+        ))
+        bind.start()
+        bind.join(0.3)
+        threads.append(bind)
+
+    try:
+        assert world.meld_ping() == "A"
+        _hook_lender_fan_out(monkeypatch, world, _bind_now)
+        world.notch_to(ImplB)
+        for thread in threads:
+            thread.join(30)
+        assert not any(thread.is_alive() for thread in threads)
+        assert len(bound) == 1
+        assert world.meld_ping() == "B"
     finally:
         world.cleanup()
 ================================================================================
@@ -223681,7 +223777,7 @@ END FILE: tests/unit/melder/aether/conduit/test_conduit_link_mediator_admission_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/test_conduit_notch_target.py
-CONTENT SHA256: eaa8fda7124eb6302a20e7ddd8af29f816ff6b5db222e486a17d47d001a19775
+CONTENT SHA256: a8b30748fcfe62c6a939a3ef6ccbb0f9acb5ad6b29091a10275d49a1068fb0f2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -223694,7 +223790,7 @@ and whether the seam ran. The post-window fan-out is patched where a notch succe
 """
 from types import SimpleNamespace
 from typing import Dict, Iterator
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -223732,7 +223828,8 @@ class _Lineage:
         )
         self.owned: Dict[str, SimpleNamespace] = {"v1": self.v1, "v2": self.v2, "y2": self.y2}
         spellbook_stub._get_owned_spell = MagicMock(side_effect=self.owned.get)
-        spellbook_stub._notch_spell = MagicMock(side_effect=lambda **kwargs: kwargs["spell"])
+        # Like the real Book (design 2), run the conduit's borrower fan-out hook after the switch.
+        spellbook_stub._notch_spell = MagicMock(side_effect=self._notch_and_fan_out)
         conduit._conduit_ward = MagicMock()
         self.mediator: MagicMock = spellbook_stub._transaction_mediator
 
@@ -223742,6 +223839,14 @@ class _Lineage:
         self.mediator.end_transaction.assert_not_called()
         self.book._notch_spell.assert_not_called()
 
+
+    @staticmethod
+    def _notch_and_fan_out(**kwargs: object) -> object:
+        """Return the notched spell after running the `after_switch` hook the conduit passes (design 2)."""
+        after_switch = kwargs.get("after_switch")
+        if callable(after_switch):
+            after_switch()
+        return kwargs["spell"]
 
 @pytest.fixture()
 def lineage(spellbook_stub: MagicMock, conduit_dynamic_normal: Conduit) -> Iterator[_Lineage]:
@@ -223770,6 +223875,7 @@ def test_notch_by_spell_id_resolves_the_owned_version_and_notches_it(lineage: _L
         spell_index=lineage.index,
         spell=lineage.v2,
         change_reason=SpellStateChangeReason.selected_different_spell,
+        after_switch=ANY,
     )
     assert result is lineage.v2
     metadata = lineage.mediator.start_transaction.call_args.kwargs["metadata"]
@@ -223801,6 +223907,7 @@ def test_notch_by_spell_passes_an_owned_member_through_unchanged(lineage: _Linea
         spell_index=lineage.index,
         spell=lineage.v2,
         change_reason=SpellStateChangeReason.selected_different_spell,
+        after_switch=ANY,
     )
     assert result is lineage.v2
 

@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-25
+- Updated: 2026-10-25T14:22:13Z
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -465,6 +465,18 @@ The most important recent integration addition is the dedicated
   - tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:469-547
   - tests/integration/melder/crystallizer/test_ordered_disposal_replay.py:34-46
   - tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:173-179
+- A test reads a Creations store by the binding's store key (0.2.8274): a store files each binding's objects
+  under `Spell.store_key` (`<spell_id>:<binding_hash>`) and keeps one shelf per spell_id, so a test that inspects a
+  slot reads it under the spell's store key (`find_spell_by_spell_id(spell_id).store_key`), one that counts a
+  spell's objects counts them over its shelf (`Creations.count_spell_creations(spell_id)` or the live-creation
+  probes), and a stub spell carries a `store_key` beside its `spell_id`; a stub key without ':' is its own shelf.
+  A read under the bare spell_id finds nothing. Measured 2026-10-25: 28 modules that read a store or stub a spell
+  name the store key (unit 11, component 8, integration 6, experimentation 3), beside the four that test it.
+  EVIDENCE:
+  - tests/component/melder/aether/conduit/test_conduit_component_creations.py:347-354
+  - tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py:224-232
+  - tests/unit/melder/aether/conduit/meld/test_meld.py:328-330
+  - tests/unit/melder/aether/conduit/creations/test_creations_store_slots.py:180-186
 
 ## Source Coverage and Evidence
 Direct evidence used in this pass:
@@ -492,15 +504,13 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 522 `.py` files, 519 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 175 `.py` files, 173 of them `test_*.py` (143, 81)
-- `integration/`: 188 `.py` files, 181 of them `test_*.py` (149, 88)
+- `unit/`: 525 `.py` files, 522 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `component/`: 176 `.py` files, 174 of them `test_*.py` (143, 81)
+- `integration/`: 189 `.py` files, 182 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded), less five untracked modules of
-lanes still in progress - four unit and component modules of STORY-2026-10-25-creations_store_slots_by_binding
-and `test_codegen_materialize_boundary_integration.py` - which their landings count; the three tiers' 873
-`test_*.py` modules are the count `tests_components` states.
+Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded), every module on disk counted;
+the three tiers' 878 `test_*.py` modules are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -631,21 +641,11 @@ and `test_codegen_materialize_boundary_integration.py` - which their landings co
   pool's file names it "a worker hung") instead of stalling the CI cell; the queue pools there also give every
   waiting lease a deadline of its own.
   EVIDENCE: tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity_multithreaded.py:94-124
-- KNOWN RACE HELD AS XFAIL (integration conduit, 0.2.8250): the meld-vs-notch race test in
-  `test_conduit_integration_notch_revalidation.py` carries `xfail(strict=False, raises=AssertionError)` naming
-  TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout. On a free-threaded run a meld in flight can
-  meet the borrower's contracted copy parked by a notch, and the test xfails (2 of 5 GIL-off runs on
-  2026-10-16); otherwise, and with the GIL on (5 of 5), it xpasses. Neither result fails the cell, any other
-  exception still fails the test, and whoever closes that task deletes the marker.
-  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:633-682
-- KNOWN GAPS HELD AS STRICT XFAIL (component conduit, 2026-10-25): the two defect tests in
-  `test_conduit_component_rebind_while_old_objects_are_alive.py` carry `xfail(strict=True, raises=AssertionError)`
-  naming STORY-2026-10-18-revalidate_on_binding_change - a `many` rebound under other disposal names has its new
-  objects disposed with the removed definition's list, and a held `unique` or `unique_per_conduit` rebound as `many`
-  fails its next meld with AttributeError. Both reproduce on every run, the GIL off and on, so they report XFAIL;
-  the cell fails when one XPASSes (the gap closed) or raises anything but AssertionError, and whoever closes S3
-  deletes the markers. `--runxfail` shows the values observed.
-  EVIDENCE: tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py:166-264
+- KNOWN RACE CLOSED (integration conduit, 0.2.8275): the meld-vs-notch race test in
+  `test_conduit_integration_notch_revalidation.py` held `xfail(strict=False)` naming
+  TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout from 0.2.8250; design 2
+  closed the race and the marker is deleted. The test passed 40 of 40 GIL-off runs at the fix.
+  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:633-660
 
 ## C1 Code Map (Core Only)
 Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
@@ -951,10 +951,25 @@ graph TD
 - `tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py`
 - `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
 - `tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_creations.py`
+- `tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py`
+- `tests/unit/melder/aether/conduit/meld/test_meld.py`
+- `tests/unit/melder/aether/conduit/creations/test_creations_store_slots.py`
 - `.gitignore`
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-25 a store files each binding's objects apart (0.2.8274;
+STORY-2026-10-25-creations_store_slots_by_binding, on the owner's go): a new operational invariant says a test
+reads a Creations store by the binding's store key and counts a spell over its shelf - the 28 modules that read a
+store or stub a spell name the key now - and the strict-xfail entry under Failure Modes and Error Paths is gone:
+the two defect tests of `test_conduit_component_rebind_while_old_objects_are_alive.py` pass, so their markers came
+off, this lane landing the store requirement of STORY-2026-10-18-revalidate_on_binding_change (its binding-change
+verb stays parked). The inventory is recounted (unit 525 `.py`, 522 of them `test_*.py`; component 176, 174;
+integration 189, 182; 878 test modules in the three tiers): this lane adds three unit modules and one component
+module, catalogued in `tests_components`, and the count takes in D-20's integration module, landed at 0.2.8272.
+No tier, conftest, declared marker or shared support module changes, and no extent in this map moves.
 
 2026-10-25 every version of a SpellIndex is bound the way its first version was (0.2.8273): a new operational
 invariant says the suite stages every version at its index's binding - 36 modules across the three tiers were

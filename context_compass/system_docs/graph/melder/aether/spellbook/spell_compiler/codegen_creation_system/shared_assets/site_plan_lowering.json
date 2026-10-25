@@ -1,382 +1,382 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
-  "source_sha256": "541777c9412ed2a24539dd0aef75af8956e8412b6dd53f0b7258a2c7bff1fa69",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering",
-      "label": "site_plan_lowering",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Shared lowering that turns a root's steps and one key set into a compiled construction plan.",
-      "responsibilities": [
-        "hosts SitePlanStep, SitePlanRuntimeHelpers, SitePlanLowering and SitePlanEmission"
-      ],
-      "phases": [
-        "runtime"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
-      "label": "SitePlanStep",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
-      "lineno": 41,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "from_generalized_row",
-        "from_many_only_row",
-        "masked"
-      ],
-      "shape": {
-        "method_count": 5,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "72c82d55f93c8a898c4604d9fd098030b1d801ffb21fca55b308a3585159e697",
-      "include": true,
-      "role": "Family-neutral view of one no-overrides construction step, read by the lowering and the generic construct helpers.",
-      "responsibilities": [
-        "normalizes many_only and generalized step rows into one shape",
-        "returns a masked copy without the supplied parameters' dependency and contract operands",
-        "serves as a plan_step for the no-overrides generic helpers"
-      ],
-      "owns_state": [
-        "instance_key",
-        "existence",
-        "dependency_resolution_order",
-        "collection_param_names",
-        "uses_positional_override",
-        "contract_positional_override",
-        "has_contract_payload",
-        "use_spell_lock_hint"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ],
-      "semantics_authored_against": "72c82d55f93c8a898c4604d9fd098030b1d801ffb21fca55b308a3585159e697"
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
-      "label": "SitePlanRuntimeHelpers",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
-      "lineno": 266,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "conflict_guard",
-        "construct_with_supplied_values",
-        "raise_existing_override",
-        "raise_missing_managed_pool",
-        "raise_unresolved_input",
-        "return_leases",
-        "return_unused_leases"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": false,
-        "trivial": false
-      },
-      "span_sha256": "91b92a04fe4a2509dd3e18a42c02fd027ca1d3d2e425bb3cd7fab79a69c94bf3",
-      "include": true,
-      "role": "Cold-path helpers emitted plans call: generic construction with supplied values, the plans' refusals and the managed lease returns.",
-      "responsibilities": [
-        "constructs a masked step with supplied values applied last",
-        "raises the P2 error for a supplied value on a stored shared instance",
-        "raises UnresolvedInputError before a site with unsupplied unresolved inputs is built",
-        "refuses equal-rank keys that supply different values (E1)",
-        "return_leases(error, leases): puts back every lease a plan took for a holder that was never built, each failing put-back added as a note on the propagating error (0.2.8245)",
-        "return_unused_leases(leases): puts back the leases of a shared holder whose cold race another meld won, every pair attempted, failures raised as one ExceptionGroup (0.2.8245)",
-        "raise_missing_managed_pool(spell): the named MeldExecutionError of a managed site whose pool cannot be read - its owner root torn down, or its owner store holding no pool for the version (0.2.8245); since 0.2.8248 conjure stamps the versions staged before it, so the message no longer names that cause or the 'stage the version after conjure' remedy"
-      ],
-      "phases": [
-        "runtime"
-      ],
-      "semantics_authored_against": "91b92a04fe4a2509dd3e18a42c02fd027ca1d3d2e425bb3cd7fab79a69c94bf3"
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "label": "SitePlanLowering",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
-      "lineno": 574,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build_site_graph",
-        "demanded_instance_keys",
-        "emit",
-        "positional_run"
-      ],
-      "shape": {
-        "method_count": 4,
-        "has_bases": false,
-        "trivial": false
-      },
-      "span_sha256": "3ce6e27c1510f0226c628335b64f9e500979d21d04499e6c64c7a094903db35b",
-      "include": true,
-      "role": "Builds the site graph from steps, computes a key set's demand and emits one plan's source.",
-      "responsibilities": [
-        "builds the site graph from steps and live topologies through the processor strategy's builder",
-        "walks demand from the root, skipping parameters with a winning key",
-        "emits the normal (meld) plan for the empty key set and (meld, ov) plans otherwise",
-        "decides where operands may go positionally (positional_run)",
-        "passes a door route key to normal-mode emission only and refuses one for key-set plans",
-        "lowers a managed_spell_quantity step as a per-path site leased from its pool, leasing or fresh (see SitePlanEmission); the warm lease takes no lock and the miss only the pool's leaf lock (0.2.8245)"
-      ],
-      "phases": [
-        "runtime"
-      ],
-      "semantics_authored_against": "3ce6e27c1510f0226c628335b64f9e500979d21d04499e6c64c7a094903db35b"
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "label": "SitePlanEmission",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
-      "lineno": 861,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "render"
-      ],
-      "shape": {
-        "method_count": 35,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb",
-      "include": true,
-      "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
-      "responsibilities": [
-        "places many sites with their consumer and shared sites at their consumers' common context",
-        "emits hit reads with out-of-line misses that build children before taking the build guard",
-        "chooses a direct call or generic construction per step and builds call arguments",
-        "emits conflict guards and unresolved-input refusals at context tops",
-        "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)",
-        "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands",
-        "binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter",
-        "registers every disposal-bearing many site through many_store, the meld's innermost scope (the spellspace store, else the conduit store), at the top level and inside a shared site's miss alike (0.2.8267): a function that registers one emits the store selection (_many_store_prologue) - the plan at its top, a miss after its unresolved-input check - so a slotted holder's many children belong to the scope that built them, never to the holder's owner (0.2.8235-0.2.8265 registered them in the holder's store and, from 0.2.8238, recorded them with the holder); warm _site_plan_executor bodies are unchanged",
-        "emits managed sites (0.2.8245): a leasing site (no winning key on its own parameters) has its own miss and exactly one consumer, and its lease - an inline pop of a plan-constant pool on an automatic owner, else a per-creation pool read whose miss raises the named missing-pool error - is emitted in its consumer's lease group; the miss checks unresolved inputs, reserves, builds the children and the object inside a try whose handler abandons, then adopts the disposal-bearing many children; a fresh site (a winning key on its own parameters) is built like a many step and never pooled",
-        "puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)",
-        "binds each slotted and many site's sid{i} to its Spell's store key (<spell_id>:<binding_hash>) and publishes a no-disposal slotted miss through c{i}.register_slot(sid{i}, v{i}), so a plan reads, guards and files only its own binding's slot; a leasing managed site's sid{i} stays the spell id for its pool read (<<SLOTSV>>)"
-      ],
-      "owns_state": [
-        "_lines",
-        "_miss_lines",
-        "_masked",
-        "_direct",
-        "_shared",
-        "_home",
-        "_children",
-        "_miss_value_params",
-        "_root_index",
-        "_context_params",
-        "_root_guard_held_by_door",
-        "_index_by_key",
-        "_leasing",
-        "_fresh",
-        "_has_miss",
-        "_leases_by_consumer"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ],
-      "semantics_authored_against": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+ "source_sha256": "541777c9412ed2a24539dd0aef75af8956e8412b6dd53f0b7258a2c7bff1fa69",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering",
+   "label": "site_plan_lowering",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Shared lowering that turns a root's steps and one key set into a compiled construction plan.",
+   "responsibilities": [
+    "hosts SitePlanStep, SitePlanRuntimeHelpers, SitePlanLowering and SitePlanEmission"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
-      "to_label": "SitePlanStep",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
-      "to_label": "MeldExecutionError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
-      "to_label": "ExceptionGroup",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to_label": "SpellInjectionAnalysis",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to_label": "SitePlanEmission",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to_label": "SpellInjectionInstanceSpec",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to_label": "SpellInjectionParamSource",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "FunctionType": "types.FunctionType",
-    "MethodType": "types.MethodType",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "ClassVar": "typing.ClassVar",
-    "Dict": "typing.Dict",
-    "FrozenSet": "typing.FrozenSet",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-    "SpellInjectionAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
-    "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
-    "SpellInjectionParamSource": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource",
-    "SiteInstanceKey": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SiteInstanceKey",
-    "SpellSiteGraphAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
-    "SpellSiteParam": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam",
-    "SpellSiteGraphProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
-    "_build_kwargs_no_overrides": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._build_kwargs_no_overrides",
-    "_construct_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._construct_spell_instance",
-    "_raise_meld_construction_error": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._raise_meld_construction_error",
-    "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-    "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "ManagedSpellQuantity": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "OverrideKeyResolution": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution",
-    "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+   "label": "SitePlanStep",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+   "lineno": 41,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "from_generalized_row",
+    "from_many_only_row",
+    "masked"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "72c82d55f93c8a898c4604d9fd098030b1d801ffb21fca55b308a3585159e697",
+   "include": true,
+   "role": "Family-neutral view of one no-overrides construction step, read by the lowering and the generic construct helpers.",
+   "responsibilities": [
+    "normalizes many_only and generalized step rows into one shape",
+    "returns a masked copy without the supplied parameters' dependency and contract operands",
+    "serves as a plan_step for the no-overrides generic helpers"
+   ],
+   "owns_state": [
+    "instance_key",
+    "existence",
+    "dependency_resolution_order",
+    "collection_param_names",
+    "uses_positional_override",
+    "contract_positional_override",
+    "has_contract_payload",
+    "use_spell_lock_hint"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "72c82d55f93c8a898c4604d9fd098030b1d801ffb21fca55b308a3585159e697"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
-      "relation": "uses",
-      "why": "build_site_graph turns steps into temporary injection specs and calls the processor's builder, so fresh and cache-hit plans read one structure.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "relation": "owns_lifecycle_of",
-      "why": "emit creates one emission per plan and cleans it after render; the namespace and masked steps go to the caller.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
-      "relation": "uses",
-      "why": "Binds the helpers into every plan namespace for generic construction and the plans' refusals.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
-      "relation": "borrows",
-      "why": "Reads sites, parameter rows and socket kinds for placement, operands and unresolved-input checks.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
-      "to": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
-      "relation": "uses",
-      "why": "The lease returns put leased objects back through the pool's put_back.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
-      "to": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
-      "relation": "uses",
-      "why": "An automatic owner's leasing site binds the pool and its _idle.pop as plan constants.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
+   "label": "SitePlanRuntimeHelpers",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+   "lineno": 266,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "conflict_guard",
+    "construct_with_supplied_values",
+    "raise_existing_override",
+    "raise_missing_managed_pool",
+    "raise_unresolved_input",
+    "return_leases",
+    "return_unused_leases"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "91b92a04fe4a2509dd3e18a42c02fd027ca1d3d2e425bb3cd7fab79a69c94bf3",
+   "include": true,
+   "role": "Cold-path helpers emitted plans call: generic construction with supplied values, the plans' refusals and the managed lease returns.",
+   "responsibilities": [
+    "constructs a masked step with supplied values applied last",
+    "raises the P2 error for a supplied value on a stored shared instance",
+    "raises UnresolvedInputError before a site with unsupplied unresolved inputs is built",
+    "refuses equal-rank keys that supply different values (E1)",
+    "return_leases(error, leases): puts back every lease a plan took for a holder that was never built, each failing put-back added as a note on the propagating error (0.2.8245)",
+    "return_unused_leases(leases): puts back the leases of a shared holder whose cold race another meld won, every pair attempted, failures raised as one ExceptionGroup (0.2.8245)",
+    "raise_missing_managed_pool(spell): the named MeldExecutionError of a managed site whose pool cannot be read - its owner root torn down, or its owner store holding no pool for the version (0.2.8245); since 0.2.8248 conjure stamps the versions staged before it, so the message no longer names that cause or the 'stage the version after conjure' remedy"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "91b92a04fe4a2509dd3e18a42c02fd027ca1d3d2e425bb3cd7fab79a69c94bf3"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "label": "SitePlanLowering",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+   "lineno": 574,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build_site_graph",
+    "demanded_instance_keys",
+    "emit",
+    "positional_run"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "3ce6e27c1510f0226c628335b64f9e500979d21d04499e6c64c7a094903db35b",
+   "include": true,
+   "role": "Builds the site graph from steps, computes a key set's demand and emits one plan's source.",
+   "responsibilities": [
+    "builds the site graph from steps and live topologies through the processor strategy's builder",
+    "walks demand from the root, skipping parameters with a winning key",
+    "emits the normal (meld) plan for the empty key set and (meld, ov) plans otherwise",
+    "decides where operands may go positionally (positional_run)",
+    "passes a door route key to normal-mode emission only and refuses one for key-set plans",
+    "lowers a managed_spell_quantity step as a per-path site leased from its pool, leasing or fresh (see SitePlanEmission); the warm lease takes no lock and the miss only the pool's leaf lock (0.2.8245)"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "3ce6e27c1510f0226c628335b64f9e500979d21d04499e6c64c7a094903db35b"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "label": "SitePlanEmission",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
+   "lineno": 861,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "render"
+   ],
+   "shape": {
+    "method_count": 35,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb",
+   "include": true,
+   "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
+   "responsibilities": [
+    "places many sites with their consumer and shared sites at their consumers' common context",
+    "emits hit reads with out-of-line misses that build children before taking the build guard",
+    "chooses a direct call or generic construction per step and builds call arguments",
+    "emits conflict guards and unresolved-input refusals at context tops",
+    "leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)",
+    "emits a dict literal of exactly the dependency values a generic construction reads, where it runs (lazy instance_results, 2026-10-03): no dict at the plan top, no per-step stores, no dict parameter on misses; _place passes a generic member's providers into its miss like a direct member's operands",
+    "binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter",
+    "registers every disposal-bearing many site through many_store, the meld's innermost scope (the spellspace store, else the conduit store), at the top level and inside a shared site's miss alike (0.2.8267): a function that registers one emits the store selection (_many_store_prologue) - the plan at its top, a miss after its unresolved-input check - so a slotted holder's many children belong to the scope that built them, never to the holder's owner (0.2.8235-0.2.8265 registered them in the holder's store and, from 0.2.8238, recorded them with the holder); warm _site_plan_executor bodies are unchanged",
+    "emits managed sites (0.2.8245): a leasing site (no winning key on its own parameters) has its own miss and exactly one consumer, and its lease - an inline pop of a plan-constant pool on an automatic owner, else a per-creation pool read whose miss raises the named missing-pool error - is emitted in its consumer's lease group; the miss checks unresolved inputs, reserves, builds the children and the object inside a try whose handler abandons, then adopts the disposal-bearing many children; a fresh site (a winning key on its own parameters) is built like a many step and never pooled",
+    "puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)",
+    "binds each slotted and many site's sid{i} to its Spell's store key (<spell_id>:<binding_hash>) and publishes a no-disposal slotted miss through c{i}.register_slot(sid{i}, v{i}), so a plan reads, guards and files only its own binding's slot; a leasing managed site's sid{i} stays the spell id for its pool read (0.2.8274)"
+   ],
+   "owns_state": [
+    "_lines",
+    "_miss_lines",
+    "_masked",
+    "_direct",
+    "_shared",
+    "_home",
+    "_children",
+    "_miss_value_params",
+    "_root_index",
+    "_context_params",
+    "_root_guard_held_by_door",
+    "_index_by_key",
+    "_leasing",
+    "_fresh",
+    "_has_miss",
+    "_leases_by_consumer"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+   "to_label": "SitePlanStep",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
+   "to_label": "MeldExecutionError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
+   "to_label": "ExceptionGroup",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to_label": "SpellInjectionAnalysis",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to_label": "SitePlanEmission",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to_label": "SpellInjectionInstanceSpec",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to_label": "SpellInjectionParamSource",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FunctionType": "types.FunctionType",
+  "MethodType": "types.MethodType",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "FrozenSet": "typing.FrozenSet",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "SpellInjectionAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
+  "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
+  "SpellInjectionParamSource": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource",
+  "SiteInstanceKey": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SiteInstanceKey",
+  "SpellSiteGraphAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+  "SpellSiteParam": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam",
+  "SpellSiteGraphProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+  "_build_kwargs_no_overrides": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._build_kwargs_no_overrides",
+  "_construct_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._construct_spell_instance",
+  "_raise_meld_construction_error": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._raise_meld_construction_error",
+  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "ManagedSpellQuantity": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "OverrideKeyResolution": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution",
+  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "relation": "uses",
+   "why": "build_site_graph turns steps into temporary injection specs and calls the processor's builder, so fresh and cache-hit plans read one structure.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "relation": "owns_lifecycle_of",
+   "why": "emit creates one emission per plan and cleans it after render; the namespace and masked steps go to the caller.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
+   "relation": "uses",
+   "why": "Binds the helpers into every plan namespace for generic construction and the plans' refusals.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "relation": "borrows",
+   "why": "Reads sites, parameter rows and socket kinds for placement, operands and unresolved-input checks.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers",
+   "to": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "relation": "uses",
+   "why": "The lease returns put leased objects back through the pool's put_back.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission",
+   "to": "melder.aether.conduit.creations.managed_spell_quantity.ManagedSpellQuantity",
+   "relation": "uses",
+   "why": "An automatic owner's leasing site binds the pool and its _idle.pop as plan constants.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

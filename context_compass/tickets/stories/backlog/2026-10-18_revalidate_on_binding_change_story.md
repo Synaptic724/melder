@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-18T11:45:58Z
-- Updated: 2026-10-19T12:35:35Z
+- Updated: 2026-10-25T14:06:38Z
 
 ## User Narrative
 As an agent changing how a spell is kept - its lifetime, teardown, address or capability - I want Melder to
@@ -193,6 +193,30 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T14:06:38Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: This story's store requirement landed at 0.2.8274 in STORY-2026-10-25-creations_store_slots_by_binding (the
+    owner's go in chat, 2026-10-25 04:00 MDT, for its shelf/slot design): a Creations store files a spell's
+    objects, disposal record and build guard under `Spell.store_key`, `<spell_id>:<binding_hash>`, on one shelf per
+    spell_id. So the store's entry follows the binding - keyed by the whole binding hash, every binding-manifest
+    field, not only the existence and disposal names this story names: a class bound again the same way meets its
+    slot, bound again another way it starts with an empty slot, and the removed definition's objects stay alive in
+    their slot and are disposed with their own methods when their store ends or a purge retires them. The risk in
+    the FACT note of 2026-10-18T16:24:12Z is closed: a rebind under another slotted existence no longer meets the
+    removed definition's object. Managed pools stay keyed by spell_id, so the pool rebind stands. Still this
+    story's: the revalidation marks on a re-registration under another binding, and the binding-change verb.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-25_creations_store_slots_by_binding_story.md:1-12
+  - src/melder/aether/spellbook/spell.py:618-622
+  - src/melder/aether/conduit/creations/creations.py:638-691
+  IMPACT: when this story is taken up, its store requirement is done; its component patch covers the marks and the
+    verb only.
+  NEXT: the owner's word; then the component patch for the marks and the verb.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -212,6 +236,8 @@ this does not make independent review mandatory for every ticket.
   S1 (0.2.8257) and S2 (0.2.8258) landed.
 - Next: the owner's word; then the component patch (which binding fields revalidate and which only rebind).
 - Holder: melder_1 since 2026-10-19, from melder_0 on the owner's word (DECISION note of 2026-10-19T12:35:35Z).
+- Landed elsewhere: its store requirement, at 0.2.8274 (STORY-2026-10-25-creations_store_slots_by_binding;
+  the FACT note of 2026-10-25T14:06:38Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

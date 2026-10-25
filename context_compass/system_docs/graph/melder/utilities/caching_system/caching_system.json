@@ -1,205 +1,205 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/caching_system/caching_system.py",
-  "source_sha256": "007de2f51874a464581b9066b933a0dddbdcc65e7094373d5aa10f24cf092eb8",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.caching_system.caching_system": {
-      "id": "melder.utilities.caching_system.caching_system",
-      "label": "caching_system",
-      "kind": "module",
-      "file": "src/melder/utilities/caching_system/caching_system.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Conduit-scoped cache file persistence owned by the runtime.",
-      "responsibilities": [
-        "own cache-file lifecycle so a user never registers one"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.utilities.caching_system.caching_system.CachingSystem": {
-      "id": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "label": "CachingSystem",
-      "kind": "class",
-      "file": "src/melder/utilities/caching_system/caching_system.py",
-      "lineno": 18,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "bundle_path",
-        "cached_spell_ids",
-        "cached_structural_spell_ids",
-        "cleanup",
-        "conduit_name",
-        "emit",
-        "get_spell_payload",
-        "get_structural_payload",
-        "has_spell_payload",
-        "has_structural_payload",
-        "remove_spell_payload",
-        "remove_structural_payload",
-        "set_world_stamp",
-        "spell_payloads",
-        "structural_payloads",
-        "transfer_spell_payload_to",
-        "upsert_spell_payload",
-        "upsert_structural_payload",
-        "world_stamp"
-      ],
-      "shape": {
-        "method_count": 28,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a",
-      "role": "Conduit-scoped cache persistence utility.",
-      "responsibilities": [
-        "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
-        "loads, normalizes, mutates, and emits marshal-backed spell payload bundles",
-        "supports spell-payload transfer and persistence for the spellbook/runtime cache lane",
-        "requires exact Melder release, cache generation and interpreter compatibility before exposing persisted payloads",
-        "preserves the accepted release stamp through normalization and subsequent emission",
-        "cache generation 11 retires executors emitted before the unresolved-input failure path",
-        "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world",
-        "cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes",
-        "carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit",
-        "cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)",
-        "cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)",
-        "cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone",
-        "cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)",
-        "saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)",
-        "cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)",
-        "cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)"
-      ],
-      "owns_state": [
-        "_id",
-        "_lock",
-        "_frame_name",
-        "_conduit_name",
-        "_cache_root_path",
-        "_bundle_path",
-        "_cache_data",
-        "_refused_save_logged",
-        "_logger"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "semantics_authored_against": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a"
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/caching_system/caching_system.py",
+ "source_sha256": "007de2f51874a464581b9066b933a0dddbdcc65e7094373d5aa10f24cf092eb8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.caching_system.caching_system": {
+   "id": "melder.utilities.caching_system.caching_system",
+   "label": "caching_system",
+   "kind": "module",
+   "file": "src/melder/utilities/caching_system/caching_system.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Conduit-scoped cache file persistence owned by the runtime.",
+   "responsibilities": [
+    "own cache-file lifecycle so a user never registers one"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to_label": "MappingProxyType",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "logging": "logging",
-    "marshal": "marshal",
-    "os": "os",
-    "sys": "sys",
-    "threading": "threading",
-    "time": "time",
-    "Path": "pathlib.Path",
-    "MappingProxyType": "types.MappingProxyType",
-    "Any": "typing.Any",
-    "ClassVar": "typing.ClassVar",
-    "KeysView": "typing.KeysView",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "Union": "typing.Union",
-    "__version__": "melder.__version__.__version__",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-    "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
-    "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger"
+  "melder.utilities.caching_system.caching_system.CachingSystem": {
+   "id": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "label": "CachingSystem",
+   "kind": "class",
+   "file": "src/melder/utilities/caching_system/caching_system.py",
+   "lineno": 18,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "bundle_path",
+    "cached_spell_ids",
+    "cached_structural_spell_ids",
+    "cleanup",
+    "conduit_name",
+    "emit",
+    "get_spell_payload",
+    "get_structural_payload",
+    "has_spell_payload",
+    "has_structural_payload",
+    "remove_spell_payload",
+    "remove_structural_payload",
+    "set_world_stamp",
+    "spell_payloads",
+    "structural_payloads",
+    "transfer_spell_payload_to",
+    "upsert_spell_payload",
+    "upsert_structural_payload",
+    "world_stamp"
+   ],
+   "shape": {
+    "method_count": 28,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a",
+   "role": "Conduit-scoped cache persistence utility.",
+   "responsibilities": [
+    "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
+    "loads, normalizes, mutates, and emits marshal-backed spell payload bundles",
+    "supports spell-payload transfer and persistence for the spellbook/runtime cache lane",
+    "requires exact Melder release, cache generation and interpreter compatibility before exposing persisted payloads",
+    "preserves the accepted release stamp through normalization and subsequent emission",
+    "cache generation 11 retires executors emitted before the unresolved-input failure path",
+    "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world",
+    "cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes",
+    "carries the executor-tier world stamp in the envelope (generation 19): set_world_stamp records it after staging and reports a change; a loaded bundle without the field is unstamped and never admits a full hit",
+    "cache generation 20 retires bundles whose phase 3-4 rows were captured under the name matcher (annotation matching by kind, 0.2.8222)",
+    "cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)",
+    "cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone",
+    "cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)",
+    "saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)",
+    "cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)",
+    "cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)"
+   ],
+   "owns_state": [
+    "_id",
+    "_lock",
+    "_frame_name",
+    "_conduit_name",
+    "_cache_root_path",
+    "_bundle_path",
+    "_cache_data",
+    "_refused_save_logged",
+    "_logger"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to_label": "MappingProxyType",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.utilities.caching_system.caching_system",
-    "class": "melder.utilities.caching_system.caching_system.CachingSystem",
-    "label": "CachingSystem"
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "CachingSystem inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to": "melder.utilities.helpers.id_builder.IDBuilder",
-      "relation": "uses",
-      "why": "CachingSystem uses IDBuilder for its stable runtime identity.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "relation": "uses",
-      "why": "CachingSystem uses InitHelpers to resolve its logger surface when an explicit SafeLogger is not supplied.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-      "to": "melder.utilities.logger.safe_logger.SafeLogger",
-      "relation": "uses",
-      "why": "CachingSystem stores and cleans a SafeLogger wrapper for cache lifecycle reporting.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "logging": "logging",
+  "marshal": "marshal",
+  "os": "os",
+  "sys": "sys",
+  "threading": "threading",
+  "time": "time",
+  "Path": "pathlib.Path",
+  "MappingProxyType": "types.MappingProxyType",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "KeysView": "typing.KeysView",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Union": "typing.Union",
+  "__version__": "melder.__version__.__version__",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
+  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.caching_system.caching_system",
+  "class": "melder.utilities.caching_system.caching_system.CachingSystem",
+  "label": "CachingSystem"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "CachingSystem inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to": "melder.utilities.helpers.id_builder.IDBuilder",
+   "relation": "uses",
+   "why": "CachingSystem uses IDBuilder for its stable runtime identity.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "relation": "uses",
+   "why": "CachingSystem uses InitHelpers to resolve its logger surface when an explicit SafeLogger is not supplied.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
+   "to": "melder.utilities.logger.safe_logger.SafeLogger",
+   "relation": "uses",
+   "why": "CachingSystem stores and cleans a SafeLogger wrapper for cache lifecycle reporting.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

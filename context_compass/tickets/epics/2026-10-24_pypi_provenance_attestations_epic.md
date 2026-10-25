@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T22:21:35Z
-- Updated: 2026-10-25T08:31:42Z
+- Updated: 2026-10-25T15:04:54Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: integrity of the published package (the owner's request, chat 2026-10-24, 16:16 MDT)
 
@@ -593,6 +593,26 @@ this does not make independent review mandatory for every ticket.
   NEXT: Record the owner's S6 answer; read the first final release's Publish to PyPI and Release / provenance.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T15:04:54Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Eleven NOTICEs taken in, none asking an ACK and none touching this epic's open work. Notches since 0.2.8269:
+    melder_0 took 0.2.8270 (D-10), 0.2.8271 (D-11), 0.2.8272 (D-20) and 0.2.8275 (the notch fan-out race), melder_1
+    0.2.8273 (S2 of the correctness epic), melder_3 0.2.8274 (the creations store slots); this epic lands no src and
+    notches none. Custody to respect if S6 or a fix reopens a shared file: melder_1 holds README.md, two docs pages
+    and the UX/agent guides for S2 (M1-68, M1-71); the system documents are free again (M3-27, M0-240). The two
+    root benchmark files the owner asked about (big_before.jsonl, big_after.jsonl: his native runs for
+    TASK-2026-10-12-make_kernel_pools_elastic, read by nothing) he deleted himself in d8938890b.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - context_compass/tickets/tasks/completed/2026-10-12_make_kernel_pools_elastic_task.md:440-446
+  IMPACT: Nothing in this epic is blocked by another lane; it waits only on the owner's PyPI steps and S6.
+  NEXT: Report the epic's state to the owner; read the first final release's Publish to PyPI and Release /
+    provenance when he shares it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

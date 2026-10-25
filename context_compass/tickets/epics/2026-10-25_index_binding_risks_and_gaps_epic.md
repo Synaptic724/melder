@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-25T12:47:21Z
-- Updated: 2026-10-25T13:04:26Z
+- Updated: 2026-10-25T14:58:20Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness - structure that is wrong or stuck (the owner, 2026-10-14)
 
@@ -28,40 +28,68 @@ the naming items and the rule's own consequences are not gaps. What is left can 
 failure. Each label says how it is known: MEASURED (run with public calls), READ (read in source, not run), NOT RUN,
 or CROSS-REF (owned by another ticket). Labels keep their first numbers so the notes still read.
 
-Open:
-- GAP-1 (p1, MEASURED): checkpoint retention can delete a new world's checkpoints as soon as they are written.
-  `enforce_cache_retention` keeps a profile folder's highest `checkpoint_number`s (100 files in these runs), but the
-  number starts again at 1 in every new world, so a folder holding earlier worlds' checkpoints with higher numbers
-  deletes the new ones and `list_cached_checkpoint_ids` stops listing them. The device's `default` folder holds 100
-  numbered 3 and 4 - 96 of them records 5.0.0 refuses to read, which the sort still keeps over live ones. Expert
-  examples 02, 09, 24 and 27 (checkpoints numbered 1 and 2) fail with that folder copied in and pass without it;
-  twenty runs of their own fill the folder and still pass. Not caused by S2; found at its landing. Next: a probe of
-  two worlds sharing a profile, then the fix options (an age key that is not a per-world counter; a record the
-  reader refuses counted as dead weight).
-- GAP-5 (p3, READ): Book teardown releases its frame claims by key (`_cleanup_components` calls
-  `release_lookup(key)` for each address it routes), the one release not by spell_id; S2's plan item (d), a
-  hardening, was not done. Under one binding per index no path should leave a key whose claim another spell holds -
-  unverified. Next: a probe of teardown after splits, moves and transfers; then release by spell_id.
-- GAP-6 (p3, READ): three writers of the address maps sit outside S2's checks: a borrower's
-  `_reactivate_contracted_spell` writes its lender's address back unconditionally, `_restore_binding_key` puts a
-  refused notch's claim back with the unconditional `update_lookup`, and the ownership-transfer flip moves the
-  route. Each should be safe under the rule; none is measured. Next: one probe per writer.
-- GAP-10 (p3, MEASURED): four UX checks fail on 0.2.8273, as on 0.2.8256, and nobody owns them: beginner 39 (an
-  assertion at its line 33); example 37's header lacks 'VERIFY:'; test_probe_two_visible_spells_may_not_share_a_name
-  (its refusal does not raise); test_probe_upgrade_to_normal_keeps_creations_and_registers (KeyError at frame
-  'payload'). Next: one look each - a stale check or a real regression.
-- GAP-11 (p3, NOT RUN): the docs build has not run on S2's doc edits (the governed-change guide, the glossary, the
-  README and the agent operations guide): sphinx is not on the device VM; docs/tests passed 39, and 5 need sphinx or
-  files outside the checkout. Next: build the docs where sphinx runs.
+Open, each with what it is, where it lives (lines on 0.2.8275), how to reproduce it, why it matters and the next
+step:
+- GAP-1 (p1, MEASURED on 0.2.8273 and 0.2.8275): checkpoint retention can delete a new world's checkpoints as soon
+  as they are written. `enforce_cache_retention` keeps a profile folder's highest `checkpoint_number`s (100 files in
+  these runs), but the number starts again at 1 in every new world, so a folder holding earlier worlds' checkpoints
+  with higher numbers deletes the new ones and `list_cached_checkpoint_ids` stops listing them. The device's
+  `default` folder holds 100 numbered 3 and 4 - 96 of them records 5.0.0 refuses to read, which the sort still keeps
+  over live ones. Expert examples 02, 09, 24 and 27 (checkpoints numbered 1 and 2) fail with that folder copied in
+  and pass without it; twenty runs of their own fill the folder and still pass. Not caused by S2; found at its
+  landing.
+  Where: src/melder/crystallizer/asset_management/crystallizer_cache.py:177-264 (`enforce_cache_retention`); its sort
+  key `_creation_order` (229-252) reads `checkpoint_number` with no record-version check.
+  Reproduce: artifacts/index_binding_risks_20261025/scripts/gap1_checkpoint_retention.sh, read-only on the repository
+  (artifacts/index_binding_risks_20261025/runs/gap1_checkpoint_retention_0_2_8275.txt).
+  Why it matters: a profile folder shared by worlds - earlier runs, other programs, tests - loses new checkpoints
+  with no error, and a restore that needs them fails later.
+  Next: a probe of two worlds writing one profile, then the fix options (an age key that is not a per-world
+  counter; a record the reader refuses counted as dead weight).
+- GAP-5 (p3, READ): Book teardown releases its frame claims by key, the one release not by spell_id; S2's plan item
+  (d), a hardening, was not done.
+  Where: src/melder/aether/spellbook/spellbook.py:472-479, inside `_cleanup_components` (407-559).
+  Reproduce: none yet - read, not run.
+  Why it matters: if any path leaves a key routed in a Book while another spell holds that key's claim, the Book's
+  teardown frees an address it does not own.
+  Next: a probe of teardown after splits, index moves and transfers; then release by spell_id.
+- GAP-6 (p3, READ): four writers of the address maps sit outside S2's checks and set an address with no
+  compare-and-set.
+  Where: src/melder/aether/spellbook/spellbook.py:1796-1868 (`_reactivate_contracted_spell`, a borrower writing its
+  lender's address back, line 1862); src/melder/aether/spellbook/spellbook.py:4674-4710 (`_restore_binding_key`, a
+  refused notch putting a claim back with `update_lookup`, line 4710);
+  src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1429-1553 (`_flip_registry_and_spellbooks`,
+  the route moved at 1502 and 1510) and :982-1048 (`_rollback_spellbook_move`).
+  Reproduce: none yet - read, not run.
+  Why it matters: one binding per index should make each write land on the index's own address; nothing proves it.
+  Next: one probe per writer.
+- GAP-10 (p3, MEASURED on 0.2.8273 and 0.2.8275): four UX checks fail, as they did on 0.2.8256, and nobody owns
+  them: test_beginner_example_runs_green[39_agent_inventory_pattern] (an assertion at its line 33);
+  test_example_declares_its_surface[37_review_agent_bindings] (its header lacks 'VERIFY:');
+  test_probe_two_visible_spells_may_not_share_a_name (the refusal it expects does not raise);
+  test_probe_upgrade_to_normal_keeps_creations_and_registers (KeyError at frame 'payload').
+  Where: UX_and_AIX_experiences/pytest_examples.
+  Reproduce: pytest UX_and_AIX_experiences/pytest_examples on a copy with no crystallizer cache folder
+  (artifacts/index_binding_risks_20261025/runs/ux_examples_0_2_8275_gil0.txt).
+  Why it matters: a suite that is always red hides the next failure.
+  Next: one look each - a stale check or a real regression.
+- GAP-11 (p3, NOT RUN): the docs build has not run on S2's doc edits - the governed-change guide, the glossary, the
+  README and the agent operations guide; sphinx is not on the device VM, and docs/tests passed 39 with 5 needing
+  sphinx or files outside the checkout.
+  Where: docs/expert/governed-change.md, docs/reference/glossary.md.
+  Reproduce: the docs build where sphinx is installed.
+  Why it matters: a broken page or cross-reference shows only when the docs are published.
+  Next: build the docs where sphinx runs.
 
 Tracked in their own tickets:
-- GAP-7 (p3, CROSS-REF): the notch seam parks the outgoing version before it checks a target that is not parked -
-  TASK-2026-10-16-notch_seam_checks_incoming_before_parking (backlog).
-- GAP-8 (p2, CROSS-REF): the meld-vs-notch race held as a non-strict xfail -
-  TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout (melder_0's notch_fanout_race lane).
-- GAP-9 (p3, CROSS-REF): a changed binding hash does not revalidate the spell and its dependents -
-  STORY-2026-10-18-revalidate_on_binding_change (backlog); its store half is
-  STORY-2026-10-25-creations_store_slots_by_binding (melder_3, in progress).
+- GAP-7 (p3, CROSS-REF, open): the notch seam parks the outgoing version before it checks a target that is not
+  parked - TASK-2026-10-16-notch_seam_checks_incoming_before_parking (backlog, draft).
+- GAP-8 (p2, CROSS-REF, FIXED at 0.2.8275): the meld-vs-notch race -
+  TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout, landed by melder_0 (a lender's notch moves its
+  ward-link borrowers inside its window, a failed fan-out undoes the notch, the race test's xfail deleted; M0-239).
+- GAP-9 (p3, CROSS-REF, open): a changed binding hash does not revalidate the spell and its dependents -
+  STORY-2026-10-18-revalidate_on_binding_change (backlog, draft); its store half,
+  STORY-2026-10-25-creations_store_slots_by_binding, landed at 0.2.8274 (melder_3; M3-26).
 - The stuck class-annotated consumer (a notch back does not revive it):
   EPIC-2026-10-25-dependency_watchers_listen_for_names.
 
@@ -119,7 +147,7 @@ unrun.
 
 ## Dependencies / External References
 - tickets/tasks/backlog/2026-10-16_notch_seam_checks_incoming_before_parking_task.md (GAP-7)
-- tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md (GAP-8)
+- tickets/tasks/completed/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md (GAP-8, fixed)
 - tickets/stories/backlog/2026-10-18_revalidate_on_binding_change_story.md (GAP-9)
 - tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md (GAP-3's stuck half)
 
@@ -134,7 +162,8 @@ unrun.
 - [ ] Task: GAP-1 first - its two-world probe and a DECISION_REQUEST with the fix options.
 - [ ] Task: GAP-5 and GAP-6 - one probe per writer.
 - [ ] Task: GAP-10 and GAP-11 - the four failing UX checks and the docs build.
-- [ ] Task: GAP-7 to GAP-9 - their verdicts recorded from their own tickets.
+- [ ] Task: GAP-7 and GAP-9 - their verdicts recorded from their own tickets.
+- [x] Task: GAP-8 - fixed at 0.2.8275 by its own task (M0-239).
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
 ## Acceptance Criteria (Epic Done)
@@ -171,7 +200,9 @@ this does not make independent review mandatory for every ticket.
 - ARTIFACT_PATHS:
   - artifacts/index_binding_risks_20261025/scripts/gap1_checkpoint_retention.sh (GAP-1's measurement)
   - artifacts/index_binding_risks_20261025/runs/gap1_checkpoint_retention_0_2_8273.txt
+  - artifacts/index_binding_risks_20261025/runs/gap1_checkpoint_retention_0_2_8275.txt
   - artifacts/index_binding_risks_20261025/runs/ux_examples_0_2_8273_gil0.txt (GAP-10)
+  - artifacts/index_binding_risks_20261025/runs/ux_examples_0_2_8275_gil0.txt
   - artifacts/index_binding_risks_20261025/runs/graph_walker_report_0_2_8273.txt (GAP-12)
   - artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8273.txt (GAP-2 to GAP-4)
   - artifacts/correctness_defects_20261017/scripts/run_with_alias.py (GAP-13)
@@ -275,6 +306,26 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T14:58:20Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Every open label is documented on 0.2.8275, on the owner's word (chat 2026-10-25: "put those into the epic
+    and ensure they are documented and we'll stop there"): what it is, where it lives with current lines, how to
+    reproduce it, why it matters and the next step. GAP-1 and GAP-10 were measured again on 0.2.8275, unchanged;
+    GAP-6 gains a fourth writer found in this pass, the rollback of a failed transfer (`_rollback_spellbook_move`).
+    GAP-8 is fixed: melder_0 landed its task at 0.2.8275 (M0-239). GAP-9's store half landed at 0.2.8274 (melder_3,
+    M3-26); its revalidation story stays in the backlog. Messages M3-26, M0-238 and M0-239 consumed. The epic is
+    parked: no investigation starts before the owner's go.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md:31-94
+  - context_compass/artifacts/index_binding_risks_20261025/runs/gap1_checkpoint_retention_0_2_8275.txt:1-27
+  - context_compass/artifacts/index_binding_risks_20261025/runs/ux_examples_0_2_8275_gil0.txt:1-14
+  IMPACT: Anyone can pick up a label from the epic alone.
+  NEXT: The owner's go; GAP-1 first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -289,12 +340,12 @@ this does not make independent review mandatory for every ticket.
   continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
 ## Context / Handoff Summary
-- Scope: what can break around one binding per SpellIndex - GAP-1, GAP-5, GAP-6, GAP-10 and GAP-11 open; GAP-7
-  to GAP-9 in their own tickets. Filed 2026-10-25T12:47:21Z on the owner's ask; cut to this on his word
-  (2026-10-25T13:04:26Z).
-- State: ready, melder_1; nothing fixed. Measured: GAP-1 (fresh checkpoints deleted by retention) and GAP-10; read
-  only: GAP-5, GAP-6; not run: GAP-11.
-- Next: (1) the owner's go for GAP-1; (2) its two-world probe and fix options; (3) the rest one at a time.
+- Scope: what can break around one binding per SpellIndex - GAP-1, GAP-5, GAP-6, GAP-10 and GAP-11 open, each
+  documented with where, how to reproduce, why and next; GAP-7 and GAP-9 open in their own tickets, GAP-8 fixed at
+  0.2.8275. Filed 2026-10-25T12:47:21Z on the owner's ask, cut on his word, documented 2026-10-25T14:58:20Z.
+- State: ready, melder_1, parked on the owner's word ("we'll stop there"): nothing fixed here. Measured on 0.2.8275:
+  GAP-1 and GAP-10; read only: GAP-5, GAP-6; not run: GAP-11.
+- Next: (1) the owner's go; (2) GAP-1's two-world probe and fix options; (3) the rest one at a time.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

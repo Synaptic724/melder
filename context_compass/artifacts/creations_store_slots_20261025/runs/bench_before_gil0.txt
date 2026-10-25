@@ -1,7 +1,0 @@
-melder 0.2.8271 from /tmp/m3d/src_before/melder/__init__.py; python 3.14.8; gil=False; calls=20000 repeats=9
-unique_warm      min    175.2 ns  median    178.1 ns
-upc_warm         min    180.5 ns  median    182.6 ns
-many_disposal    min    303.4 ns  median    336.1 ns
-plan_shared      min    275.7 ns  median    281.2 ns
-space_cycle      min    770.6 ns  median    776.0 ns
-unique_by_class  min    172.3 ns  median    175.4 ns

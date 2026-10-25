@@ -1,14 +1,19 @@
 # Epic: A borrower meld in flight during a lender's notch ends in a version or a clean refusal
 
+
+- Completed: 2026-10-25T14:24:32Z
+- Summary: The in-flight borrower meld racing a lender's notch is closed (design 2, 0.2.8275): the fan-out runs inside the
+  notch's frozen window with the borrowers sealed and frozen, and a failed fan-out undoes the notch. Its only
+  child task closed with red-then-green tests, patch docs before src and notes per finding.
 ## Metadata
 - Epic ID: EPIC-2026-10-25-notch_fanout_inflight_melds
-- Status: in_progress
+- Status: done
 - Owner: Mark
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-25T00:16:54Z
-- Updated: 2026-10-25T00:48:34Z
+- Updated: 2026-10-25T14:24:32Z
 - Target Window: set by the owner once the design decision is made
 - Related Program/Initiative: rule 2 of the owner's 2026-10-15 direction
   (TASK-2026-10-16-recheck_contract_consumers_when_provider_changes, completed, 0.2.8250), which filed this
@@ -100,15 +105,15 @@ against no provider or an internal RuntimeError.
 ## Milestones (Track Progress)
 - [x] Milestone 1: re-measured - both probes, the race test and the in-Book probe run on 0.2.8267 (task Notes).
 - [x] Milestone 2: decided - the owner chooses the design (this epic's Notes).
-- [ ] Milestone 3: fixed - the task lands with its patch docs, tests, measurements, notch and rebuild.
+- [x] Milestone 3: fixed - the task lands with its patch docs, tests, measurements, notch and rebuild.
 
 ## Stories (Required to Complete)
 - none: the race is one deliverable and stays a task (Tasks).
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout - re-measure, read the fan-out and
+- [x] Task: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout - re-measure, read the fan-out and
       the gates, cost the designs, then the fix.
-- [ ] Task: Verify Ticket Microcycle enforcement on the task.
+- [x] Task: Verify Ticket Microcycle enforcement on the task.
 
 ## Acceptance Criteria (Epic Done)
 - The child task closed with its exit gate met, or closed on the owner's word.
@@ -122,10 +127,10 @@ against no provider or an internal RuntimeError.
 - A race probe is statistical: a rate over too few runs hides a regression; the exit gate asks for 100 runs.
 
 ## Applicable Anti-Patterns
-- [ ] No epic-state transition without task-level evidence.
-- [ ] No closure while a child task is incomplete or unaccepted.
-- [ ] No program claims without source evidence from task notes.
-- [ ] No src/ edit before the owner's answer and the patch docs.
+- [x] No epic-state transition without task-level evidence.
+- [x] No closure while a child task is incomplete or unaccepted.
+- [x] No program claims without source evidence from task notes.
+- [x] No src/ edit before the owner's answer and the patch docs.
 
 ## Validation / Test Approach
 - probe_rule2_race_rate.py <tree> 20 and diag_race_kinds.py <tree> 400 140 from rule 2's evidence folder, and the
@@ -224,9 +229,9 @@ this does not make independent review mandatory for every ticket.
   SCORE_0_TO_10: 8
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.

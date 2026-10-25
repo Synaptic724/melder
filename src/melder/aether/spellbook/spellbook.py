@@ -4032,6 +4032,7 @@ class Spellbook(Cleanable):
             spell_index: SpellIndex,
             spell: Spell,
             change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+            after_switch: Optional[Callable[[], None]] = None,
     ) -> Spell:
         """
         Internal -- called by the owning Conduit (Conduit.notch_spell is the public surface).
@@ -4064,6 +4065,9 @@ class Spellbook(Cleanable):
             - A version that passes, or needs no check, is journaled to the
               research record and returned; the commit's structural validator
               then finds its Phase-4 result and skips it.
+            - `after_switch` (design 2, TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout):
+              the owning conduit's borrower fan-out, run after the structural check inside the same guarded
+              section, so a fan-out error takes the same reversal and the notch is undone as a whole.
             - A version that fails is refused: `_revert_refused_notch` puts the
               before-state back and resets the refused version's Phase 1-4
               artifacts, nothing is journaled, and the error is raised before the
@@ -4134,6 +4138,10 @@ class Spellbook(Cleanable):
         # ran at the NOTCH commit, after the switch, and nothing undid it).
         try:
             self._check_notched_version(spell)
+            # Design 2: the borrower fan-out runs here, inside the held window and before the
+            # promotion is journaled, so an error from it undoes the switch like a failed check.
+            if after_switch is not None:
+                after_switch()
         except Exception as error:
             # A failing check undoes the switch. A validation verdict is raised as the
             # refusal, built first because its report renders from the Phase-4 result

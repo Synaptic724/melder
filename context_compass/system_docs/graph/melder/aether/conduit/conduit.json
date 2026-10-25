@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "src/melder/aether/conduit/conduit.py",
-  "source_sha256": "d0c89e905bb3a61a7fd8834afec14c7a62b4eab1f243fbfb0891391150b1205e",
+  "source_sha256": "b0e3638380902fb0aafb938140f2209149fd1ebca3fb21784947d68fa7ad7a16",
   "generator": "tools/system_documents/python/extract_graph.py",
   "nodes": {
     "melder.aether.conduit.conduit": {
@@ -116,11 +116,11 @@
         "validate_resolution"
       ],
       "shape": {
-        "method_count": 140,
+        "method_count": 141,
         "has_bases": true,
         "trivial": false
       },
-      "span_sha256": "e1352857fb8a640f677dd02689e11dcb2f689195a94269b8fba2c3d0c568775d",
+      "span_sha256": "69fe7be08b72b8fb3e5f4aa1f111a0f2f6e2be277ffe7362e9d9d791be954988",
       "role": "Runtime execution scope for spell resolution.",
       "responsibilities": [
         "hosts meld execution",
@@ -154,7 +154,8 @@
         "after a notch's transaction, between the deactivate fan-out and the index emission, has every linked peer make its parked copy of the incoming version active again, so a version grant is active exactly while its version is (_activate_borrowed_spell, 0.2.8250)",
         "answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version",
         "takes a version out of every contract of its Book's root conduit before the Book disposes it: hands the root ward's _emit_spell_disposed to Spellbook._dispose_spell as release_contracts, from the root or a lesser of its lineage, and emits an index destroy with no member id when the index went too; the Spellbook's own cleanup_spell comes here once conjured (cleanup_spell, 0.2.8261)",
-        "files an existing-object spell's object in its store under the spell's store key (_register_to_creations), the key emitted plans read it by, so it is filed once; one bound again under another binding while its first filing is alive is filed under both keys and disposed with each binding's list when the store ends (<<SLOTSV>>)"
+        "files an existing-object spell's object in its store under the spell's store key (_register_to_creations), the key emitted plans read it by, so it is filed once; one bound again under another binding while its first filing is alive is filed under both keys and disposed with each binding's list when the store ends (0.2.8274)",
+        "runs a notch's borrower fan-out inside the notch's transaction window, as Spellbook._notch_spell's after-switch hook, with its ward links' lineages sealed and frozen (linked_root_conduit_ids); on a failed fan-out moves the borrowers back after the Book's reversal (_undo_borrower_fan_out) so a notch stands whole or not at all (design 2, 0.2.8275)"
       ],
       "owns_state": [
         "_meld",
@@ -171,7 +172,7 @@
         "runtime",
         "cleanup"
       ],
-      "semantics_authored_against": "e1352857fb8a640f677dd02689e11dcb2f689195a94269b8fba2c3d0c568775d"
+      "semantics_authored_against": "69fe7be08b72b8fb3e5f4aa1f111a0f2f6e2be277ffe7362e9d9d791be954988"
     }
   },
   "edges_out": [

@@ -5802,6 +5802,15 @@ class Conduit(Cleanable):
             "conduit_lineage_gate_ops": (
                 self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
             ),
+            # Design 2: the lineage roots of the peers the borrower fan-out walks join the
+            # notch's seal and freeze, so each of them is parked while it is moved.
+            "linked_root_conduit_ids": tuple(sorted(
+                {
+                    peer._root_conduit_id
+                    for peer in (self._conduit_ward._get_links() if self._conduit_ward is not None else ())
+                    if peer is not None and peer is not self
+                }
+            )),
         }
         # The index's current active member is the outgoing spell. The conduit
         # admits the notch (it owns the change-control envelope); the owning
@@ -5815,20 +5824,15 @@ class Conduit(Cleanable):
             transaction_type=ChangeTransactionType.NOTCH,
             metadata=metadata,
         )
-        try:
-            # Check the target again under the notch seal: an index operation that ran
-            # between the check above and admission may have moved it, and none can run
-            # from here to the switch.
-            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
-            # A version that fails its structural check raises here with the switch already
-            # undone by the Spellbook; the transaction then ends as failed and no borrower is
-            # touched (2026-10-19).
-            result = self._spellbook._notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
-        except Exception:
-            mediator.end_transaction(expected_type="notch", success=False)
-            raise
-        mediator.end_transaction(expected_type="notch", success=True)
-        if outgoing_id is not None and outgoing_id != spell.spell_id:
+        # Design 2 (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): the
+        # borrower fan-out runs INSIDE the transaction window, as `_notch_spell`'s after-switch
+        # hook, while every linked lineage's CreationGate is parked - a borrower meld cannot run
+        # between the park and the reactivation. A fan-out error undoes the whole notch: the
+        # Spellbook reverts its switch, then `_undo_borrower_fan_out` moves the borrowers back.
+        fan_out_started = [False]
+
+        def _fan_out_to_borrowers() -> None:
+            fan_out_started[0] = True
             self._deactivate_borrowed_spell(outgoing_id)
             # Outgoing first, so no peer holds two active copies under one key. A version
             # grant parked by an earlier notch away comes back here (D3, 2026-10-16); the
@@ -5837,6 +5841,30 @@ class Conduit(Cleanable):
             # Index-link receivers follow the index's selected spell: move their subscription head
             # to the new active member (park old, activate new) via the ward.
             self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
+
+        fan_out = outgoing_id is not None and outgoing_id != spell.spell_id
+        try:
+            # Check the target again under the notch seal: an index operation that ran
+            # between the check above and admission may have moved it, and none can run
+            # from here to the switch.
+            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
+            # A version that fails its structural check, or a borrower fan-out that fails, raises
+            # here with the switch already undone by the Spellbook; the transaction then ends as
+            # failed (2026-10-19; design 2).
+            result = self._spellbook._notch_spell(
+                spell_index=spell_index,
+                spell=spell,
+                change_reason=change_reason,
+                after_switch=_fan_out_to_borrowers if fan_out else None,
+            )
+        except Exception:
+            try:
+                if fan_out_started[0]:
+                    self._undo_borrower_fan_out(spell_index, outgoing_id, spell.spell_id)
+            finally:
+                mediator.end_transaction(expected_type="notch", success=False)
+            raise
+        mediator.end_transaction(expected_type="notch", success=True)
         return result
 
     def _resolve_notch_target(
@@ -6348,6 +6376,36 @@ class Conduit(Cleanable):
         # do not keep a subscription to a dead index. Its member already left every contract, so no member id.
         if destroyed_index_id is not None:
             ward._emit_index_destroy(destroyed_index_id, ())
+
+    def _undo_borrower_fan_out(self, spell_index: SpellIndex, outgoing_id: str, incoming_id: str) -> None:
+        """
+        Move this lender's borrowers back to the outgoing version after a failed notch (design 2).
+
+        Contract:
+            - Runs inside the notch's transaction window, after `Spellbook._notch_spell` has reverted
+              the lender's switch: the ward emission back to the outgoing version first (it reads the
+              lender's active member, now the outgoing one), then every peer's incoming member
+              deactivated and outgoing member reactivated - both no-ops on a peer already in that state.
+            - An error here is a Melder bug: RuntimeError naming the index, chained to its cause.
+
+        Args:
+            spell_index: The notched index.
+            outgoing_id: The version the notch moved away from (restored).
+            incoming_id: The version the failed notch moved to.
+
+        Returns:
+            None.
+        """
+        try:
+            self._conduit_ward._emit_index_notch(spell_index, incoming_id, outgoing_id)
+            self._deactivate_borrowed_spell(incoming_id)
+            self._activate_borrowed_spell(outgoing_id)
+        except Exception as error:
+            raise RuntimeError(
+                f"notch_spell could not move the borrowers of index {spell_index.id} back to spell_id "
+                f"{outgoing_id} after a failed borrower fan-out: {error}. Borrowers may hold the refused "
+                "version. This is a Melder bug; please report it with this message."
+            ) from error
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """

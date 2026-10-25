@@ -460,15 +460,41 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-25T15:05:55Z
+  AUTHOR: melder_3
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The two rebind probes rerun at their fix, on 0.2.8275 (CPython 3.14.8 free-threaded, the GIL off and on,
+    identical but for the GIL-on warning): the gap is closed - STORY-2026-10-25-creations_store_slots_by_binding
+    files each binding's objects in its own slot (0.2.8274). probe_rebind_many_disposal: R1 and R3 (a `many` rebound
+    close -> shutdown, at a root and in a lesser) dispose the second product with shutdown and the first with close
+    (both with close on 0.2.8267); R2, R4 and R5 answer as before. probe_rebind_existence_to_many: R6a and R6b
+    (unique_per_conduit and unique rebound as `many`) build a new object, raise nothing and dispose both objects
+    with close (both raised AttributeError "'Svc' object has no attribute 'append'" on 0.2.8267). The probes read
+    the store's internal maps by spell_id, so their record, bucket and slot-type lines read None and NoneType now
+    that the store files by store key; the disposal events and the meld outcome are the behaviour.
+  EVIDENCE:
+  - context_compass/artifacts/creations_many_disposal_20261025/runs/probe_rebind_many_disposal_0_2_8275_gil0.txt:1-21
+  - context_compass/artifacts/creations_many_disposal_20261025/runs/probe_rebind_many_disposal_0_2_8275_gil1.txt:1-25
+  - context_compass/artifacts/creations_many_disposal_20261025/runs/probe_rebind_existence_to_many_0_2_8275_gil0.txt:1-7
+  - context_compass/artifacts/creations_many_disposal_20261025/runs/probe_rebind_existence_to_many_0_2_8275_gil1.txt:1-11
+  - context_compass/artifacts/creations_many_disposal_20261025/runs/probe_rebind_many_disposal_gil0.txt:1-21
+  - context_compass/artifacts/creations_many_disposal_20261025/runs/probe_rebind_existence_to_many_gil0.txt:1-9
+  IMPACT: the artifact row's rerun is done; the probes stay as the before/after evidence until the owner says to
+    delete them.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Scope: the creations.py docstrings that said a spell id hashes its disposal names, corrected to the contract the
 code has (no behaviour change), and the documents that follow them. State: done (2026-10-25T02:35:56Z), melder_3;
 notched 0.2.8268, release-note section "Packaging and documentation". Evidence: tests 423 passed, 1 skipped, the GIL
 off and on (the MEASURE of 2026-10-25T02:05:35Z); documents and graph gates green (the MEASURE of
-2026-10-25T02:31:46Z). Open for the owner: the two measured rebind outcomes (the MEASURE of 2026-10-25T01:58:21Z) -
-fix them through S3 of EPIC-2026-10-18-spell_identity_is_the_code (parked) or a narrower change; the probes are
-retained for the rerun. Next: none in this lane - the rebuild ran with both `--check`s OK (the MEASURE of
-2026-10-25T02:39:05Z).
+2026-10-25T02:31:46Z). The two measured rebind outcomes (the MEASURE of 2026-10-25T01:58:21Z) are fixed at 0.2.8274
+by STORY-2026-10-25-creations_store_slots_by_binding; the probes, rerun at 0.2.8275 (the MEASURE of
+2026-10-25T15:05:55Z), are retained as the before/after evidence, to delete on the owner's word. Next: none in this
+lane - the rebuild ran with both `--check`s OK (the MEASURE of 2026-10-25T02:39:05Z).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28241
-CONTENT_SHA256 = '806685724e1660de612a8b511d30ca02d143e3515bb062e2922bd6af73e4590d'
+LINE_COUNT = 28251
+CONTENT_SHA256 = '27540dca0c370467cd8f2ac228a8fd0d1568b26f35bdec0c6c1d7f639b460007'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `e89f46a9e9bfe467a055327933312ff0d1ee24989563d0a4a31bced3c417a958`
+- source_sha256: `d971abdd11eb1861758982f496705d2764335c0aaf719fe79c17ab6723e97f01`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `7cfbe787c12c4581e4190ceb65a154b38db07b20cee90e1c9ce8dae9bb01a29d`
+- source_sha256: `80998ba1c658dbc2d34e7eb65801b9ca3b765f438d43d3051053f827591b3fb7`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `0fe259529dc6d817f120d4d19bb893b585527a964c49d4a45df5c694a8ba5b43`
+- source_sha256: `5338d1520967365040d0968945ad5fc62be6ffe25f1f233479d8169ca6225da9`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `96c790f090a653adffde523f784101494d23c901e61188dcca89474c405f3d85`
+- source_sha256: `1eaac217b7e04cf0ff9d0efdad4617e3e8c5b296e3c6082259ca944eab76c9a5`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `e49a618a3f7d62e2843335584d239a8f04b42e054b313d9a85f9a7cce885146c`
+- source_sha256: `5e828871602c3065c6ebeef97d768da6d9dbf775ad97dbc568ffa97967e2c314`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `27cb8c69b6171efd0085414d6b6f8755a202eafeeb2b22c5917606f888cb29c6`
+- source_sha256: `ab90d48096f8ec7140503b0a2f444c86504e5708f89685db69966332eeb65338`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `c3dca0f77e09ca5fd351bf9c899b3ff4c46f3ae74118bea29c6d4d0484057418`
+- source_sha256: `042d3f6839f7db7ee626b7ef693f14807d9458c83f3e1cd0e69f01bded63a97f`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `3c0a56ebd14b3bf1ca3b82c948da6ec75a40300f48be231c2466656e6f03830e`
+- source_sha256: `91275f9a41a12eea5ddd6ad78e3df4d749663097170918dcc72c6e9f175a9597`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `7a856860ee7371cb52b7a9e45d41ec0192183ae83991b7a9e9351718ac2aff90`
+- source_sha256: `67c4a81683b4fe39917ca69dff1fa2f8af160e640fddc3d5a44e1c06745b87bf`
 - nodes: 1
 
 ### Nodes
@@ -1725,7 +1725,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py
 
-- source_sha256: `dbaa1ffc54d6d4ff0d185951d8a786d15e3918801bddfc4014761ea224fbfc13`
+- source_sha256: `c60a53f4ccc1c68b98f54389d493dff677ae39b2d2a1bd62404d82cb8649d2b0`
 - nodes: 2
 
 ### Nodes
@@ -1746,6 +1746,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces
   - drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort
   - repoint the SpellIndex to a different active, resolvable spell
+  - adds the acting conduit's linked_root_conduit_ids to the conduits it seals EXCLUSIVE and quiesces, so every lineage the borrower fan-out moves is parked while it runs (design 2, 0.2.8275)
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -4453,7 +4454,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `d0c89e905bb3a61a7fd8834afec14c7a62b4eab1f243fbfb0891391150b1205e`
+- source_sha256: `b0e3638380902fb0aafb938140f2209149fd1ebca3fb21784947d68fa7ad7a16`
 - nodes: 2
 
 ### Nodes
@@ -4507,6 +4508,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - after a notch's transaction, between the deactivate fan-out and the index emission, has every linked peer make its parked copy of the incoming version active again, so a version grant is active exactly while its version is (_activate_borrowed_spell, 0.2.8250)
   - answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version
   - takes a version out of every contract of its Book's root conduit before the Book disposes it: hands the root ward's _emit_spell_disposed to Spellbook._dispose_spell as release_contracts, from the root or a lesser of its lineage, and emits an index destroy with no member id when the index went too; the Spellbook's own cleanup_spell comes here once conjured (cleanup_spell, 0.2.8261)
+  - files an existing-object spell's object in its store under the spell's store key (_register_to_creations), the key emitted plans read it by, so it is filed once; one bound again under another binding while its first filing is alive is filed under both keys and disposed with each binding's list when the store ends (0.2.8274)
+  - runs a notch's borrower fan-out inside the notch's transaction window, as Spellbook._notch_spell's after-switch hook, with its ward links' lineages sealed and frozen (linked_root_conduit_ids); on a failed fan-out moves the borrowers back after the Book's reversal (_undo_borrower_fan_out) so a notch stands whole or not at all (design 2, 0.2.8275)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+67 more)
@@ -4720,7 +4723,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `71b5c1e3674d29a6e2f011ba063c89771b94ec0e66404a2dfdc12349181f41f0`
+- source_sha256: `59e5b9ce535185bcd2bddb2550d9daaa5454542785a62056076995bdcb21f1f8`
 - nodes: 2
 
 ### Nodes
@@ -5141,6 +5144,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - refuse use while no leader is elected
   - never clean the store it points at
   - records the elected leader's id as the purge authority for the team store, whose owner id is the cluster's (0.2.8237)
+  - delegates get_creation and add_creation to the bound team store by the binding's store key (0.2.8274)
 - phases: `runtime`, `cleanup`
 - public methods: `add_creation`, `bind`, `cleanup`, `get_creation`, `is_active`, `leader_conduit_id`, `resolved_store`, `unbind`
 
@@ -5228,7 +5232,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Cleanup record of one disposal-bearing many key: the key's live bucket, aliased, plus the Spell's disposal list recorded once.
 - responsibilities:
   - entries IS the key's live bucket (the same list object the registry holds), never a copy, so one append serves both views
-  - methods is the Spell-owned disposal list retained by reference at the key's first registration in the store and never matched, reordered or cleared by it; every later registration of the key appends under it, including a definition bound again under other disposal names after cleanup_spell (since 0.2.8257 the spell id covers no disposal name)
+  - methods is the Spell-owned disposal list retained by reference at the key's first registration in the store and never matched, reordered or cleared by it; every later registration of the key appends under it, and the key is a store key, which covers the disposal names and the existence, so a definition bound again another way after cleanup_spell files under another key and record (0.2.8274; from 0.2.8257 to 0.2.8273 the key was the spell id, which covers no disposal name, and such a definition appended under the removed list)
   - read by the disposal walk, purge, extract and restore in place of the former per-entry (object, methods) tuples; every entry of a key is disposal-bearing or none is, so sparse disposal metadata is impossible
 - owns_state: `entries`, `methods`
 - phases: `runtime`, `cleanup`
@@ -5238,21 +5242,23 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.creations.creations.Creations`
 - defined at: `src/melder/aether/conduit/creations/creations.py:70`
 - extends: `Cleanable`
-- role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a slotted holder's included, and a ManyDisposalBucket per disposal-bearing many key.
+- role: Generic scoped live-object registry keyed by store key, one slot per binding of a spell id, with disposal metadata kept beside it - a (object, methods) tuple per unique key, a slotted holder's included, and a ManyDisposalBucket per disposal-bearing many key - and a shelf per spell id indexing its slots.
 - responsibilities:
+  - files every slot, disposal record and build guard under a store key (Spell.store_key, <spell_id>:<binding_hash>), so two bindings of one class never share a slot, record or shape; managed pools stay keyed by spell id (0.2.8274)
+  - keeps a shelf per spell id - _shelves, the store keys filed under it in first-filing order, and _slot_shapes, each key's shape - noted under the store lock before a key's first value (_note_slot) and kept across clears, deleted at cleanup; count_spell_creations counts every binding's objects for the live probes, extract and restore move the whole shelf with each row's key, and register_slot is the no-disposal slotted publish of emitted plans (0.2.8274)
   - stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once
-  - register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append, the slot's shape unchecked; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a registration that is disposal-bearing where the key's entries are not, or the reverse; neither verb compares method lists
+  - register_many(store_key, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append, the slot's shape unchecked; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a registration that is disposal-bearing where the key's entries are not, or the reverse; neither verb compares method lists
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes every declared method in list order even after one fails; collects one RuntimeError per failing method, chained from the raised exception, and never lets one failing object strand the rest
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
   - owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock
   - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build
-  - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
+  - purges every slot on the selected spell id's shelf, or one supplied creation from the slot that holds it, under the asking definition's build lock then the store lock, counting each slot by its recorded shape and disposing each with its own record through the shared helpers; no scope discovery or authorization
   - keeps a slotted holder an ordinary unique entry (0.2.8267): its disposal and its purge run only its own methods, and the many objects built for it stay in their spells' buckets in the store that recorded them - the meld's innermost scope - so a many purge or live-creation probe of a child's spell counts every child that store holds; the holder record of 0.2.8238-0.2.8265 is removed
   - keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent) and, when a definition bound again under the same spell_id meets the pool its earlier definition left, hands it the new Spell after releasing the store lock (ManagedSpellQuantity._rebind_spell takes the new settings, 0.2.8254), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)
   - cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)
   - registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)
-- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`
+- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`, `_slot_shapes`, `_shelves`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `count_spell_creations`, `discard_managed_quantity`, `ensure_managed_quantity`, `extract_spell_creations`, `get_creation`, `get_managed_quantity`, `id`, `owner_conduit_id` (+7 more)
 
@@ -5486,7 +5492,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - routes conduit-local unique_per_conduit and many storage through ConduitCreations
   - rejects spellspace-request spells on the conduit entry path
-  - provides reuse-only and live-creation status probes over the store each lifetime uses through this door: the conduit store for many and unique_per_conduit, the Spell owner's store for unique, the lineage root for unique_per_conduit_lineage and the elected leader for unique_per_conduit_cluster
+  - provides reuse-only and live-creation status probes over the store each lifetime uses through this door: the conduit store for many and unique_per_conduit, the Spell owner's store for unique, the lineage root for unique_per_conduit_lineage and the elected leader for unique_per_conduit_cluster; the probes count every binding's objects on the spell id's shelf there (Creations.count_spell_creations) and meld_existing_spell reads the asking binding's slot by its store key, raising "not live" while only a removed binding's object is there (0.2.8274)
   - authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
@@ -5916,7 +5922,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - routes unique_per_spell_space storage through spellspace-local Creations, which also hold the disposal-bearing many objects melded through this door (the innermost scope)
   - routes conduit-owned lifetimes through owner-conduit ConduitCreations
-  - reports live-creation status from the store each lifetime uses through this door: many and unique_per_spell_space from spellspace-local Creations, unique_per_conduit from the owner conduit's, unique, lineage and cluster from their shared stores
+  - reports live-creation status from the store each lifetime uses through this door: many and unique_per_spell_space from spellspace-local Creations, unique_per_conduit from the owner conduit's, unique, lineage and cluster from their shared stores; it counts every binding's objects on the spell id's shelf (Creations.count_spell_creations), and meld_existing_spell reads the asking binding's slot by its store key (0.2.8274)
   - restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
@@ -6642,6 +6648,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains a managed binding's normalized options read-only per version (managed_spell_mode, limit, timeout, reset methods; None, None, None and () on other existences) and, when an owner stamp carries a store, ensures the version's pool there (_add_owned_conduit -> Creations.ensure_managed_quantity, 0.2.8242-0.2.8243)
   - a direct cleanup of the active version of an index that also holds parked versions raises the Book's refusal and leaves the spell as it was (Spellbook.cleanup_and_remove_spell, 0.2.8256)
   - saves its Book's cache on request (emit_cache_file -> bool): False when caching is off, nothing was staged since the last save or the operating system refused the save, which no longer raises (0.2.8266)
+  - carries its store key, store_key = <spell_id>:<binding_hash>, built right after the binding manifest and kept after cleanup: the key every Creations store files this version's objects, disposal record and build guard under, so two bindings of one class never share a slot and a class bound again the same way files where it did (0.2.8274)
 - owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`, `_managed_spell_mode`, `_managed_spell_limit`, `_managed_spell_timeout_seconds`, `_managed_spell_reset_methods`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `binding_hash`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation` (+17 more)
@@ -8406,6 +8413,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - registers every disposal-bearing many site through many_store, the meld's innermost scope (the spellspace store, else the conduit store), at the top level and inside a shared site's miss alike (0.2.8267): a function that registers one emits the store selection (_many_store_prologue) - the plan at its top, a miss after its unresolved-input check - so a slotted holder's many children belong to the scope that built them, never to the holder's owner (0.2.8235-0.2.8265 registered them in the holder's store and, from 0.2.8238, recorded them with the holder); warm _site_plan_executor bodies are unchanged
   - emits managed sites (0.2.8245): a leasing site (no winning key on its own parameters) has its own miss and exactly one consumer, and its lease - an inline pop of a plan-constant pool on an automatic owner, else a per-creation pool read whose miss raises the named missing-pool error - is emitted in its consumer's lease group; the miss checks unresolved inputs, reserves, builds the children and the object inside a try whose handler abandons, then adopts the disposal-bearing many children; a fresh site (a winning key on its own parameters) is built like a many step and never pooled
   - puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)
+  - binds each slotted and many site's sid{i} to its Spell's store key (<spell_id>:<binding_hash>) and publishes a no-disposal slotted miss through c{i}.register_slot(sid{i}, v{i}), so a plan reads, guards and files only its own binding's slot; a leasing managed site's sid{i} stays the spell id for its pool read (0.2.8274)
 - owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`, `_leasing`, `_fresh`, `_has_miss`, `_leases_by_consumer`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`
@@ -15856,7 +15864,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `09fbe477287c475fad53132e5b0b4e39b7dd56e1e264b275637284d67cac5f44`
+- source_sha256: `a3a953b7069fbde2cddc71ff0db85a883fd8d0796e051d594e4658efe6a36b36`
 - nodes: 2
 
 ### Nodes
@@ -15908,6 +15916,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)
   - answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)
   - keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)
+  - runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -26193,6 +26202,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)
   - saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)
   - cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)
+  - cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_refused_save_logged`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)

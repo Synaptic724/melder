@@ -1,16 +1,27 @@
 # Task: order_inflight_borrower_melds_against_notch_fanout - a borrower meld in flight during a lender's notch must end in a version or a clean refusal
 
+- Completed: 2026-10-25T14:24:32Z
+- Summary: A borrower meld racing a lender's notch now gets the outgoing or the incoming version (design 2, on the owner's
+  go). The notch's borrower fan-out runs inside its transaction window as Spellbook._notch_spell's after-switch
+  hook, and the lender's ward-link lineages join the seal and the freeze (the registry's borrower list had missed
+  them, so no borrower was ever frozen). A fan-out error undoes the whole notch (the owner's "1"): the Book's
+  refused-notch reversal, then _undo_borrower_fan_out. The race test's non-strict xfail is deleted (40 of 40 GIL-
+  off runs); probe_rule2_race_rate: 0 of 20 runs with an unexpected exception GIL off and on (10 of 20 GIL off at
+  0.2.8267). Three new cases pin the park, the undo and a borrower bind racing the fan-out. Notched 0.2.8275;
+  release-note section "A meld racing a lender's notch gets a version, never a broken object". Tiers green GIL off
+  and on on Linux; Windows tiers and hosted CI Not run. Rebuild last, after the closure.
+
 ## Metadata
 - Task ID: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout
 - Story: none; parent EPIC-2026-10-25-notch_fanout_inflight_melds (split off
   TASK-2026-10-16-recheck_contract_consumers_when_provider_changes by the owner's decision of 2026-10-16)
-- Status: ready
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T15:54:20Z
-- Updated: 2026-10-25T13:02:02Z
+- Updated: 2026-10-25T14:24:32Z
 
 ## Objective
 A meld of a borrower's spell that is in flight while the lender's `notch_spell` parks and reactivates the borrower's
@@ -62,6 +73,14 @@ notch and the rebuild.
 - transition_reason: design 2 decided and planned (PLAN note); the owner holds implementation until he schedules
   it (chat 2026-10-25T12:08Z: "just design it but don't do any work on the notch_fanout race").
 
+- from_state: ready
+- to_state: in_progress
+- transition_reason: the owner's go (chat 2026-10-25T13:56Z): "sure thats fine go ahead 1 sounds fine ... go do it".
+
+- from_state: in_progress
+- to_state: done
+- transition_reason: landed and validated on the owner's go (chat 2026-10-25T13:56Z); notched 0.2.8275. Rebuild last.
+
 ## Steps / Checklist
 - [x] Re-run probe_rule2_race_rate.py and diag_race_kinds.py on 0.2.8267
       (EPIC-2026-10-25-notch_fanout_inflight_melds), GIL off and on; add an in-Book probe (a dependent melded on
@@ -70,13 +89,13 @@ notch and the rebuild.
       the notch transaction's seal and gate freeze (`NotchTransactionStrategy`), the creation gates a borrower meld
       holds, `Meld._execute_admitted`, the hydrators' `_resolve_spell_lookup` and Phase 8's
       `_allow_missing_contract_providers`; record why the emissions run after the transaction (0.2.8231).
-- [ ] Write the design options with their cost and risk (refuse at the three sites, or order the fan-out under the
+- [x] Write the design options with their cost and risk (refuse at the three sites, or order the fan-out under the
       borrowers' frozen gates), as patch docs; the owner decides.
-- [ ] Build, remove the race test's xfail marker, add the site tests, measure, docs, notch, rebuild.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Build, remove the race test's xfail marker, add the site tests, measure, docs, notch, rebuild.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
+- [x] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence
       before dependent work; no forced body copy.
 
 ## Deliverables
@@ -103,21 +122,21 @@ notch and the rebuild.
   emissions that 0.2.8231 placed after the transaction on purpose. Measure both; the warm meld must not pay.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without delegated acceptance or reserved-owner disposition and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -133,6 +152,7 @@ this does not make independent review mandatory for every ticket.
   - artifacts/meld_contract_scan_20261015/runs/probe_rule2_race_rate_after_gil0.txt
   - artifacts/meld_contract_scan_20261015/runs/probe_rule2_race_rate_before_gil1.txt
   - artifacts/meld_contract_scan_20261015/runs/probe_rule2_race_rate_after_gil1.txt
+  - system_docs/patches/completed/notch_fanout_inside_window_2026_10_25/
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: decided at closure (the files stay in rule 2's evidence folder)
 
@@ -479,6 +499,94 @@ this does not make independent review mandatory for every ticket.
   NEXT: The owner schedules the implementation (any agent); it starts with the lock audit and the patch docs.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T13:24:45Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Design 2's lock audit (plan step 3), read-only on 0.2.8273 at the owner's ask (chat 2026-10-25T13:21Z, "go
+    investigate the notch fanout race"). The window is unchanged by S2: notch_spell still ends the transaction
+    (success=True) and only then runs the three fan-out calls. Audit: (a) a dynamic Conduit.meld calls
+    `creation_gate.admit_ticket()` at entry, before Meld runs or any Book lock is taken, so a top-level meld never
+    parks at the frozen gate holding a Book lock; (b) after on_start's drain no meld on the sealed lineages holds a
+    gate ticket; a nested meld during the drain already ends in the drain's 30 s timeout today, before the domain
+    effect, so design 2 does not change it; (c) none of the 16 start_transaction call sites (conduit.py,
+    conduit_cluster.py, spellbook.py) is inside a lock block, and ClaimTable.acquire forbids waiting while holding
+    another plane lock and always times out with blocking evidence, so even a violating borrower thread would
+    release its Book lock at its claim timeout - a refusal, not a hang; (d) the ward emission's order (ward ->
+    contract -> borrower Book) is the order sever already takes inside its own transaction. Verdict: no lock blocks
+    design 2. Residual: the scan is lexical; the implementation pins it with a GIL-off test of borrower melds and a
+    borrower bind racing a notch. Still open for the owner: confirm the fan-out-error reversal (step 2).
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:5807-5842
+  - src/melder/aether/conduit/conduit.py:5069-5080
+  - src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:184-232
+  - src/melder/aether/aetheric_mediator/claim_table.py:426-462
+  IMPACT: Design 2 is implementable as planned; only the error-path choice and the schedule remain.
+  NEXT: The owner confirms the reversal and schedules the implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T14:01:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner confirmed plan step 2 (chat 2026-10-25T13:56Z, "1 sounds fine"): a borrower fan-out error inside the
+    window undoes the whole notch. Mechanism, from today's read: the fan-out runs as an `after_switch` hook inside
+    Spellbook._notch_spell's guarded section (after `_check_notched_version`), so a hook error takes the existing
+    `_revert_refused_notch` with the before-state that method captured; Conduit.notch_spell then runs the inverse
+    fan-out (the ward emission back to the outgoing version, then the peers' incoming deactivated and outgoing
+    reactivated - `_inactivate_contract_spell` and `_activate_contract_spell` are no-ops on a peer already in that
+    state) and ends the transaction failed. The Book reversal runs first because the ward emission reads the
+    lender's active member. _notch_spell holds no Book lock at the hook, so the fan-out's lock order is today's.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4029-4160
+  - src/melder/aether/spellbook/spellbook.py:4504-4547
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2362
+  IMPACT: The design is complete; patch docs next.
+  NEXT: Patch docs, then red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T14:01:58Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Patch docs written and linked (entry gate). Consumption mapping:
+    - architecture_patch 'Migration' 1 / component_patch_spellbook_core -> `after_switch` in _notch_spell -> test: a fan-out
+      error undoes the notch.
+    - architecture_patch 'Migration' 2 / component_patch_conduit_notch / code_description 'Control flow' -> notch_spell hook,
+      `_undo_borrower_fan_out`, transaction end after -> tests: a borrower meld during the fan-out parks until the notch
+      ends; a borrower bind during the fan-out finishes after it; the race test and probe show none of the four kinds.
+  EVIDENCE:
+  - system_docs/patches/completed/notch_fanout_inside_window_2026_10_25/architecture_patch.md:1-60
+  IMPACT: Implementation may start.
+  NEXT: Red tests on a /tmp copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T14:24:32Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: RED (tests in, source unchanged): the park case ran its meld during the fan-out - and that meld raised the
+    race's SpellbookValidationError - and the undo case left the lender on B. A first fix with the fan-out inside
+    the window still let the meld run: a probe of the plan showed the freeze footprint held only the lender
+    (list_borrowers_for_provider returned nothing for the index-link borrower), so the lender's ward-link lineage
+    roots now join the plan. GREEN: the notch-revalidation module 18 passed + the racing test xpassing, GIL off and
+    on; marker deleted; racing test 40/40 GIL off; probe_rule2_race_rate 0 of 20 runs with an unexpected exception
+    GIL off and on (melds park instead of refusing: 0 refused, was 40). Tiers: unit, component and integration
+    (aether, conduit, spellbook, crystallizer, mutation_research, multithreading, live_sim) pass GIL off and on;
+    three unit notch-target tests needed their Book stub to run the new hook. Environmental: two build_assets tests
+    (copy without system_docs) and the asset-version stamp (assets wait for this rebuild).
+  EVIDENCE:
+  - artifacts/notch_fanout_race_20261025/runs/probe_rule2_race_rate_design2_gil0.txt
+  - artifacts/notch_fanout_race_20261025/runs/probe_rule2_race_rate_design2_gil1.txt
+  - tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+  IMPACT: The acceptance criteria are met on Linux.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Scheduled 2026-10-25 under EPIC-2026-10-25-notch_fanout_inflight_melds (the owner's ask); in_progress, melder_0
