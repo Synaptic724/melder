@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-19
+- Updated: 2026-10-25
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -237,7 +237,8 @@ connect and how to extend them; read it before changing CI. Branch and release p
 - Four workflows start runs. `.github/workflows/ci.yml` qualifies pull requests and manual runs and reports
   the one required status, `CI / merge-ready`; `.github/workflows/speed-tests.yml` runs the three speed tests
   beside it on dev-to-preprod pull requests and blocks nothing; `.github/workflows/release-candidate.yml`
-  uploads a candidate to TestPyPI and probes the installed wheel on every manifest release;
+  uploads a candidate to TestPyPI and probes the installed wheel on every manifest release - since 2026-10-24
+  by Trusted Publishing, with every uploaded file's provenance verified before the probes;
   `.github/workflows/python-publish.yml` rechecks a published candidate's exact tree and rebuilds it for PyPI;
   since 2026-10-24 it does not run the runtime tests again (full CI and the release candidate tested that tree).
 - Every other workflow is reusable and proves one thing: `test-runtime.yml` (the three tiers on every manifest
@@ -245,8 +246,10 @@ connect and how to extend them; read it before changing CI. Branch and release p
   `verify-source-qualification.yml` and the three speed tests.
 - The decisions live in standard-library scripts in `.github/scripts/`, tested in
   `tests/unit/github_workflows/`: `ci_policy.py` routes a pull request to the jobs it requires and checks their
-  results, and `python_runtime_matrix.py` turns the manifests in `.github/python/` into matrices and installs.
-  `test_workflow_contracts.py` also fails when a workflow, script or ruleset is missing from the guide.
+  results, `python_runtime_matrix.py` turns the manifests in `.github/python/` into matrices and installs, and
+  `testpypi_provenance.py` checks a candidate's provenance, running the one tool that needs packages in its own
+  hash-pinned environment from `.github/provenance/`. `test_workflow_contracts.py` also fails when a workflow,
+  script or ruleset is missing from the guide, and when a script there imports outside the standard library.
 
 ## Architecture Summary (C4)
 The test system is a pytest-driven mirror of the runtime’s architectural
@@ -342,7 +345,7 @@ The most important recent integration addition is the dedicated
    `tests/unit/melder/aether/conduit/conftest.py` (445 lines, the largest by an
    order of magnitude, providing `fresh_singletons`, `configuration_automatic`,
    `configuration_dynamic` and the spellbook/aether/dev-ops stubs), and
-   `tests/unit/github_workflows/conftest.py` (73 lines), which prepends
+   `tests/unit/github_workflows/conftest.py` (79 lines), which prepends
    `.github/scripts` to `sys.path` per test and loads each CI script by path, so
    those tests create no runtime package and never boot Melder.
    That asymmetry is the shape of the harness: conduit tests need a rebuilt
@@ -473,12 +476,12 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 518 `.py` files, 515 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `unit/`: 519 `.py` files, 516 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
 - `component/`: 172 `.py` files, 170 of them `test_*.py` (143, 81)
-- `integration/`: 185 `.py` files, 178 of them `test_*.py` (149, 88)
+- `integration/`: 186 `.py` files, 179 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-24 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 863 `test_*.py`
+Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 865 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -800,9 +803,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/github_workflows/conftest.py`
   start_line: 1
-  end_line: 73
-  loc: 73
-  verified_at: 2026-09-26T21:51:55Z
+  end_line: 79
+  loc: 79
+  verified_at: 2026-10-25T00:35:19Z
 - path: `tests/integration/melder/live_sim/conftest.py`
   start_line: 1
   end_line: 28
@@ -901,6 +904,8 @@ graph TD
 - `.github/workflows/test-runtime.yml`
 - `.github/scripts/run_runtime_tests.py`
 - `.github/scripts/python_runtime_matrix.py`
+- `.github/scripts/testpypi_provenance.py`
+- `.github/workflows/release-candidate.yml`
 - `.github/python/tests/3.14.0.toml`
 - `.github/ci_cd/README.md`
 - `tests/unit/github_workflows/conftest.py`
@@ -919,6 +924,14 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-25 the candidate's provenance (no notch; CI, tests and documentation only): the release candidate uploads
+to TestPyPI by Trusted Publishing and `RC / provenance` verifies every uploaded file's attestation before the
+probes, so the CI/CD bullets say so and name the provenance script and the contract test's standard-library rule;
+the github_workflows conftest gains a loader fixture, so its extent is remeasured (79) in the boot sequence and the
+core map; the inventory is recounted (unit 519 `.py`, 516 of them `test_*.py`; integration 186, 179; 865 test
+modules in the three tiers) - this lane adds one unit module, catalogued in `tests_components`, and the count also
+takes in another lane's integration module. No tier, declared marker or shared support module changes.
 
 2026-10-24 a `many` belongs to the scope that built it (0.2.8267): the inventory is recounted from disk (unit 518
 `.py`, 515 of them `test_*.py`; component 172, 170; integration 185, 178; 863 test modules in the three tiers) - the

@@ -577,7 +577,7 @@ this does not make independent review mandatory for every ticket.
   SCORE_0_TO_10: 8
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
+- [x] Work walkthrough shared with user (melder_1's chat report to the owner, 2026-10-24 after the rebuild)
 - [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
 

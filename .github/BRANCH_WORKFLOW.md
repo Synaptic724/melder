@@ -342,7 +342,7 @@ or tag is required. Manual dispatch must select the same branch.
 | Boundary | Work performed |
 | --- | --- |
 | `preprod -> release_candidate` PR | Verify the previously qualified preprod tree. |
-| Merge lands on `release_candidate` | Recheck source proof, build, upload to TestPyPI, and run installed-package probes. |
+| Merge lands on `release_candidate` | Recheck source proof, build, upload to TestPyPI by Trusted Publishing, verify each file's provenance, and run installed-package probes. |
 | `release_candidate -> prod` PR | Verify exact-source RC success in the final merge-ready check. |
 
 TestPyPI publication belongs to the RC stage. The prod promotion check does not
@@ -354,7 +354,8 @@ authentic pending run. Completed failure, wrong identity, missing evidence and A
 errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
 jobs. Elapsed time never substitutes for successful exact-source qualification.
 
-The workflow reuses the package builder, uploads to TestPyPI, then checks a
+The workflow reuses the package builder, uploads to TestPyPI, verifies every uploaded file's provenance
+(`RC / provenance`, below), then checks a
 fresh installation on every no-GIL OS/release cell built from the test manifests. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
@@ -363,34 +364,48 @@ match this run's built wheel. Melder's runtime dependencies come from PyPI at th
 pins and install beside it with `--no-deps --no-index`; `pip check` must pass before the probe runs. No
 editable installation or repository conftest is used.
 
-Configure the TestPyPI upload credential as follows:
+TestPyPI uploads by Trusted Publishing, with no stored credential (owner, 2026-10-24). Add the
+publisher before this workflow reaches `release_candidate`: on TestPyPI, the `melder` project ->
+Manage -> Publishing -> add a GitHub publisher with exactly these values.
 
 | Field | Value |
 | --- | --- |
-| Project | `melder` |
-| GitHub repository | `Synaptic724/melder` |
-| Workflow filename | `release-candidate.yml` |
-| GitHub environment | `pypitest` |
-| Environment secret name | `melder_api_token` |
-| Token issuer | `test.pypi.org` |
+| Owner | `Synaptic724` |
+| Repository name | `melder` |
+| Workflow name | `release-candidate.yml` |
+| Environment name | `pypitest` |
 
 Create `pypitest` under repository Settings -> Environments and allow deployments
-only from the branch `release_candidate`. Add the generated TestPyPI token under
-Environment secrets with the name `melder_api_token`; do not put credentials in
-Variables or repository files. Select the melder project scope when available.
-Creating the first project with token authentication may require an account-scoped
-TestPyPI token; replace it with a project-scoped token once the project exists.
+only from the branch `release_candidate`. It holds no secret. The upload job alone
+requests a short-lived OIDC token (`id-token: write`); TestPyPI exchanges it for an
+upload credential when the token's claims match the publisher above, and
+`pypa/gh-action-pypi-publish`, pinned to its commit, signs each uploaded file with
+Sigstore and uploads its PEP 740 attestation. A failed-jobs re-run of the upload
+asks for a fresh token. Once a run has published this way, the old
+`melder_api_token` environment secret can be deleted and its token revoked on
+TestPyPI: no workflow reads it. Production continues using its independent pypi
+environment and PYPI_API_TOKEN credential.
 
-This workflow uses explicit API-token authentication (`user: __token__`) and disables
-OIDC-only attestations. Only its upload job references the secret. A missing secret
-fails with a clear message rather than falling back to OIDC. A token issued by the
-production pypi.org service cannot authenticate to TestPyPI. Production continues
-using its independent pypi environment and PYPI_API_TOKEN credential.
+An `invalid-publisher` error from the upload means the publisher's values and the
+job's claims disagree; an earlier OIDC attempt failed that way, so compare all four
+values before the first run. That first run needs a version TestPyPI has never
+seen: files uploaded by a token carry no attestation, and the provenance check
+refuses them.
 
-The initial OIDC run failed with `invalid-publisher`; the owner subsequently chose
-token authentication. Adding the secret alone does not change that old workflow.
-Commit/promote this updated YAML into release_candidate to use token authentication.
-Wait for package-ready to succeed, then rerun any prod PR check that already failed
+`RC / provenance` runs after the upload and before any probe installs a file. For
+every built file it reads the provenance TestPyPI holds and requires: a provenance
+exists; its publisher is this workflow in `pypitest`; Sigstore verifies the
+attestation on the production trust root; the signing certificate names this
+repository and its owner (with their numeric ids), the workflow on
+`release_candidate`, this commit, a GitHub-hosted runner, public visibility and the
+`pypitest` environment, and, for a file this run uploaded, this run and attempt;
+and the attested statement names exactly the file and its sha256. The verifier is
+the publishing action's own signing toolchain, installed from a hash-pinned lock,
+and it must first verify a recorded genuine attestation and refuse two tampered
+copies of it, so a tool that cannot check fails the run instead of passing it.
+
+Commit and promote this workflow into release_candidate to switch. Wait for
+package-ready to succeed, then rerun any prod PR check that already failed
 while qualification was missing. The prod error includes the inspected RC run URL and status.
 
 The package version comes from `src/melder/__version__.py`; CI does not rewrite
@@ -410,19 +425,23 @@ cannot turn an rc1 wheel into a final wheel.
 TestPyPI filenames are immutable. A changed package requires a new version.
 An identical retry is verified by filename, size, and hash; a partial upload
 stages only missing files after checking the existing ones. Different remote
-bytes fail rather than being hidden by `skip-existing`. After a failed upload or
-install, **Re-run failed jobs** reuses this run's verified build: the build job
-reports the artifact it made, and the upload job verifies the files again first.
-**Re-run all jobs** builds fresh. The TestPyPI release lookup retries HTTP 429
-and 5xx answers, timeouts and failed connections up to six times, ten seconds
-apart. Download retries are bounded for index propagation; failed consumer tests
-are not retried or ignored.
+bytes fail rather than being hidden by `skip-existing`. After a failed upload,
+provenance check or install, **Re-run failed jobs** reuses this run's verified build:
+the build job reports the artifact it made, and the upload job verifies the files
+again first. A re-run that does not repeat the upload keeps its record of which
+files it uploaded in which attempt, so the provenance check still expects that
+attempt's signature. **Re-run all jobs** builds fresh. The TestPyPI release lookup
+retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times,
+ten seconds apart, and the provenance lookup also retries a 404, which TestPyPI can
+answer just after an upload. Download retries are bounded for index propagation;
+failed consumer tests are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, source proof, build,
-upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
+upload, the provenance check and every selected OS/version probe succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
-source commit/tree, version, run/attempt, and both distribution hashes.
+source commit/tree, version, run/attempt, and both distribution hashes; the
+provenance report adds each file's verified signer, run and trigger.
 
 ## Final publication checks
 

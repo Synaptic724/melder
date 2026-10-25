@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p3
 - Created: 2026-10-24T21:32:03Z
-- Updated: 2026-10-24T21:32:03Z
+- Updated: 2026-10-24T23:03:28Z
 
 ## Objective
 Find what refused the rename of `melderops.meldercache` with PermissionError [WinError 5] in the owner's MelderOps
@@ -121,16 +121,36 @@ this does not make independent review mandatory for every ticket.
     this verification, and its Note 4 records the evidence (two writes of one bundle 1 ms apart, inside one
     configure, in a frame unique to the trial; the orphaned temp file beside the bundle).
   EVIDENCE:
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:276-302
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:304-322
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:277-303
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:305-323
   IMPACT: Without it the retry budget (about 100 ms) is a guess against the holder's hold time.
   NEXT: The owner's rerun (Steps).
   REREAD: REQUIRED
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-24T23:03:28Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Measured on the owner's machine (TASK-2026-10-24-windows_held_cache_bundle_test, its Note 5): a handle that
+    Python's open() holds - it does not share delete access - makes Windows refuse a rename onto the bundle with
+    [WinError 5], the code of the MelderOps failure, on every attempt while it is held; the 0.2.8266 retry waits
+    out a hold that ends within it (2 refusals, 0.033 s), and a longer one leaves the save refused with one
+    WARNING while the meld returns its object. Any holder without FILE_SHARE_DELETE explains the failure; which
+    process held melderops.meldercache is still unmeasured.
+  EVIDENCE:
+  - context_compass/artifacts/windows_held_bundle_20261024/runs/windows_owner_gil0.txt:1-27
+  - tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py:1-594
+  IMPACT: The HYPOTHESIS's mechanism is confirmed; the Steps only have to name the holder and its hold time
+    against the budget of about 100 ms.
+  NEXT: The owner's MelderOps rerun (Steps).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Draft, parked: the owner's rerun on Windows to name the holder behind WinError 5 (Objective); the fix makes the
-refusal harmless either way. Evidence: the FACT note above and Notes 4-5 of the fix ticket.
+refusal harmless either way, and a Windows-only test measured the mechanism (the second FACT note). Evidence: the
+FACT notes above and Notes 4-5 of the fix ticket.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

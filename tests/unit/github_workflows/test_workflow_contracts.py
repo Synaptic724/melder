@@ -4,6 +4,7 @@ import ast
 import pathlib
 import json
 import re
+import sys
 from types import ModuleType, SimpleNamespace
 from typing import cast
 
@@ -636,29 +637,28 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     assert jobs["source-qualification"]["needs"] == "authorize"
     assert jobs["source-qualification"]["uses"] == "./.github/workflows/verify-source-qualification.yml"
     assert publisher["environment"]["name"] == "pypitest"
-    assert publisher["permissions"] == {"contents": "read"}
+    # Trusted Publishing (EPIC-2026-10-24-pypi_provenance_attestations): the job's OIDC token is its only TestPyPI
+    # credential and signs each uploaded file's attestation, so the upload names no user, password or secret.
+    assert publisher["permissions"] == {"contents": "read", "id-token": "write"}
     upload = next(step for step in publisher["steps"]
                   if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
-    assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
-    assert upload["with"]["packages-dir"] == "upload/"
-    assert upload["with"]["user"] == "__token__"
-    assert upload["with"]["password"] == "${{ secrets.melder_api_token }}"
-    assert upload["with"]["attestations"] == "false"
-    assert "skip-existing" not in upload["with"]
+    assert upload["uses"] == "pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"
+    assert upload["with"] == {"repository-url": "https://test.pypi.org/legacy/", "packages-dir": "upload/",
+                              "attestations": "true", "print-hash": "true"}
     assert upload["if"] == "steps.upload.outputs.upload-required == 'true'"
-    credential_check = next(step for step in publisher["steps"]
-                            if step.get("env", {}).get("TESTPYPI_API_TOKEN"))
-    assert credential_check["env"]["TESTPYPI_API_TOKEN"] == "${{ secrets.melder_api_token }}"
-    assert credential_check["if"] == upload["if"]
-    assert 'if [ -z "$TESTPYPI_API_TOKEN" ]' in credential_check["run"]
-    assert "exit 1" in credential_check["run"]
-    assert publisher["steps"].index(credential_check) < publisher["steps"].index(upload)
+    prepare = next(step for step in publisher["steps"] if step.get("id") == "upload")
+    assert prepare["run"] == "python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json"
+    assert publisher["steps"].index(prepare) < publisher["steps"].index(upload)
+    assert not [step for step in publisher["steps"] if "secrets." in json.dumps(step)]
+    # The provenance job reads which files this attempt staged and which attempt signed them.
+    assert publisher["outputs"] == {"uploaded": "${{ steps.upload.outputs.uploaded }}",
+                                    "attempt": "${{ github.run_attempt }}"}
     for name, job in jobs.items():
         if name != "publish":
             assert "environment" not in job
             assert job.get("permissions", {}).get("id-token") != "write"
     install = jobs["install"]
-    assert set(install["needs"]) == {"authorize", "build", "publish"}
+    assert set(install["needs"]) == {"authorize", "build", "publish", "provenance"}
     assert install["strategy"]["matrix"] == "${{ fromJSON(needs.authorize.outputs.matrix) }}"
     setup = next(step for step in install["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
     assert setup["with"]["python-version"] == "${{ matrix.python }}"
@@ -670,10 +670,10 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
-    # Each attempt that builds names a fresh artifact; publish and install download the one the build job
-    # reports, so a failed-jobs re-run of either uses the run's verified build instead of a missing name.
+    # Each attempt that builds names a fresh artifact; publish, provenance and install download the one the build
+    # job reports, so a failed-jobs re-run of any of them uses the run's verified build instead of a missing name.
     assert jobs["build"]["with"]["artifact-name"] == "candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}"
-    for job in (publisher, install):
+    for job in (publisher, jobs["provenance"], install):
         assert "build" in job["needs"]
         download = next(step for step in job["steps"]
                         if step.get("uses", "").startswith("actions/download-artifact@"))
@@ -683,6 +683,94 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
     assert ready["steps"][-2]["run"] == "python .github/scripts/ci_policy.py candidate-ready"
     assert ready["steps"][-1]["run"] == "python .github/scripts/ci_policy.py candidate-head"
+
+
+def test_candidate_provenance_is_verified_before_any_probe_installs(policy: ModuleType) -> None:
+    """RC / provenance checks each built file's TestPyPI attestation after the upload and before the install matrix.
+
+    It runs on the helper release with no OIDC token and no environment, reads the publish job's report of what it
+    staged and which attempt signed it, keeps its evidence, and both install and package-ready wait for it.
+    """
+    jobs = workflow("release-candidate.yml")["jobs"]
+    job = jobs["provenance"]
+    assert job["name"] == "RC / provenance"
+    assert set(job["needs"]) == {"build", "publish"}
+    assert job["runs-on"] == "ubuntu-24.04" and "timeout-minutes" in job
+    for key in ("if", "continue-on-error", "environment", "permissions", "strategy"):
+        assert key not in job, key
+    steps = job["steps"]
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    verify = next(step for step in steps if "testpypi_provenance.py" in step.get("run", ""))
+    assert verify["run"] == "python .github/scripts/testpypi_provenance.py verify --report reports/provenance.json"
+    assert verify["env"] == {"CANDIDATE_UPLOADED": "${{ needs.publish.outputs.uploaded }}",
+                             "CANDIDATE_PUBLISH_ATTEMPT": "${{ needs.publish.outputs.attempt }}"}
+    assert "if" not in verify and "continue-on-error" not in verify
+    retained = steps[-1]
+    assert retained["uses"].startswith("actions/upload-artifact@")
+    assert retained["with"]["name"] == "candidate-provenance-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["path"] == "reports/provenance.json"
+    assert retained["with"]["if-no-files-found"] == "error"
+    assert steps.index(download) < steps.index(verify) < len(steps) - 1
+    assert "provenance" in jobs["install"]["needs"] and "provenance" in policy.CIPolicy.CANDIDATE_JOBS
+    assert set(jobs["package-ready"]["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
+
+
+def test_only_the_candidate_upload_can_request_an_oidc_token() -> None:
+    """id-token: write lets a job mint a credential and sign as this repository; only the TestPyPI upload holds it.
+
+    No workflow grants it at the top level, and none names the retired TestPyPI token any more: Trusted
+    Publishing replaced it.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    holders: list[tuple[str, str]] = []
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        assert "melder_api_token" not in path.read_text(encoding="utf-8"), path.name
+        document = workflow(path.name)
+        top = document.get("permissions", {})
+        assert isinstance(top, dict) and top.get("id-token") != "write", path.name
+        for name, job in document["jobs"].items():
+            permissions = job.get("permissions", {})
+            assert isinstance(permissions, dict), (path.name, name)
+            if permissions.get("id-token") == "write":
+                holders.append((path.name, name))
+    assert holders == [("release-candidate.yml", "publish")]
+
+
+def test_jobs_that_hold_an_oidc_token_pin_third_party_actions_to_a_commit() -> None:
+    """A job that can sign as this repository runs no third-party action by a tag or branch that someone could move."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    checked: list[str] = []
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        for name, job in workflow(path.name)["jobs"].items():
+            if job.get("permissions", {}).get("id-token") != "write":
+                continue
+            for step in job.get("steps", []):
+                uses = step.get("uses", "")
+                if uses and not uses.startswith(("actions/", "./")):
+                    assert re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}", uses), (path.name, name, uses)
+                    checked.append(uses)
+    assert checked == ["pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"]
+
+
+def test_ci_scripts_use_only_the_standard_library() -> None:
+    """Workflows run .github/scripts/ right after setting up Python, so no script there imports an installed package.
+
+    The two exceptions run inside the environment they test: run_runtime_tests.py drives pytest in a test cell and
+    smoke_wheel.py imports the installed melder. The provenance verifier needs sigstore, so it lives in
+    .github/provenance/ and runs only inside its own pinned environment.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    scripts = sorted((root / ".github/scripts").glob("*.py"))
+    siblings = {path.stem for path in scripts}
+    allowed = {"run_runtime_tests.py": {"pytest"}, "smoke_wheel.py": {"melder"}}
+    for path in scripts:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        assert not [node for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.level], path.name
+        modules = {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import)
+                   for alias in node.names}
+        modules |= {node.module.split(".")[0] for node in ast.walk(tree)
+                    if isinstance(node, ast.ImportFrom) and node.module is not None}
+        assert modules - set(sys.stdlib_module_names) - siblings == allowed.get(path.name, set()), path.name
 
 
 def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
@@ -929,16 +1017,22 @@ def test_shallow_thread_scaling_parser_accepts_the_lines_the_benchmark_prints() 
 
 
 def test_ci_guide_names_every_workflow_script_and_ruleset() -> None:
-    """The agent CI guide in .github/ci_cd/ covers every CI file, so a new one cannot arrive undocumented.
+    """The agent CI guide in .github/ci_cd/ covers every CI file, the provenance tool's included.
 
     Agents learn from that folder what each workflow, script and ruleset is for and how to extend it (owner,
-    2026-10-05). A file counts as covered when its name appears in backticks on one of the guide's pages.
+    2026-10-05). A workflow, script or ruleset counts as covered when its name appears in backticks on one of the
+    guide's pages; a file of the provenance tool when its path from the repository root does, since names like
+    `requirements.txt` appear in the guide for other files too.
     """
     root = pathlib.Path(__file__).resolve().parents[3]
     guide = "\n".join(page.read_text(encoding="utf-8") for page in sorted((root / ".github/ci_cd").glob("*.md")))
     files = [*sorted((root / ".github/workflows").glob("*.yml")), *sorted((root / ".github/scripts").glob("*.py")),
              *sorted((root / ".github/rulesets").glob("*.json"))]
     missing = [path.name for path in files if f"`{path.name}`" not in guide]
+    tool = [f".github/provenance/{path.name}" for path in sorted((root / ".github/provenance").iterdir())
+            if path.is_file()]
+    assert tool, "the provenance tool's folder holds no file"
+    missing += [path for path in tool if f"`{path}`" not in guide]
     assert not missing, f"Describe these in .github/ci_cd/: {missing}"
 
 

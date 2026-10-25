@@ -137,10 +137,10 @@ this does not make independent review mandatory for every ticket.
     and 4 there carry the source evidence: the root is a fragment under the package root, and the failing
     configure wrote one bundle twice within 1 ms.
   EVIDENCE:
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:256-274
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:276-302
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:400-429
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:693-711
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:257-275
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:277-303
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:401-430
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:694-712
   IMPACT: Neither is a correctness fix since 0.2.8266; both cut disk writes and site-packages growth.
   NEXT: The owner's calls in the ENTRY_GATE.
   REREAD: REQUIRED

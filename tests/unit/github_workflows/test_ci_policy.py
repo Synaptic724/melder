@@ -133,10 +133,10 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
         policy.require_success(results, False)
 
 
-@pytest.mark.parametrize("job", ["authorize", "source-qualification", "build", "publish", "install"])
+@pytest.mark.parametrize("job", ["authorize", "source-qualification", "build", "publish", "provenance", "install"])
 @pytest.mark.parametrize("result", ["failure", "cancelled", "skipped", "neutral", None])
 def test_candidate_requires_all_upload_and_install_stages(policy: ModuleType, job: str, result: object) -> None:
-    """Neither a skipped publisher nor one failing platform can yield package-ready success."""
+    """Neither a skipped publisher, an unverified provenance nor one failing platform yields package-ready."""
     results = {name: {"result": "success"} for name in policy.CIPolicy.CANDIDATE_JOBS}
     policy.require_candidate_success(results)
     results[job] = {"result": result}

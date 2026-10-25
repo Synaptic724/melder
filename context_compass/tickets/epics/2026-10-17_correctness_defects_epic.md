@@ -1336,6 +1336,110 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-24T23:11:17Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The three open stories still reproduce on 0.2.8267 (3.14.7t; the GIL off and on give the same results).
+    S2: C5 - after a notch across keys the parked English keeps the ('greeter', 'greeter') claim, so a meld by
+    that address raises KeyError and another bind of it is refused naming English; C7 - French notched active in
+    its minted index takes that claim while English is active, and a meld by it raises DUPLICATE_SPELL_NAME; T4 -
+    the claim outlives the Book. S5: R2 - the restore reports complete with a staged_member_anchor_index_not_rebuilt
+    shortfall and drops French; G2 - the graft of the minted index makes French active. S11: H3 and H4 - after the
+    notch back a borrower's consumer melded first is refused, and stays refused after the lender's own meld. The
+    controls (C1-C4, C6, R1, R3, G1, G3, G4, H1, H2) behave as recorded. T5 is stale since 0.2.8257: it binds one
+    managed class twice, which the one-object rule refuses. Probes: scratch copies with the 0.2.8253 lookup rename.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:67-95
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:119-134
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:144-149
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:166-171
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:221-248
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:251-495
+  IMPACT: Nothing landed since 0.2.8263 fixed any of the three; their reproducers and acceptance stand as written.
+  NEXT: The owner's word on S2, S5 and S11 (discussed in chat 2026-10-24); no test or src edit before it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T23:31:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rechecked on the owner's ask (chat 2026-10-24, "check all these things again"): the three open stories are
+    still faulty on 0.2.8267 (src unchanged since the 23:09Z run), now also through public calls only, one case per
+    process, the GIL off and on. S2: after a notch from English ('greeter') to Spanish ('spanish') another Book's bind
+    of 'greeter' is refused naming English, and still after the lender's root is torn down (C5, T4). C7 needs a
+    version compiled before: French notched to and back, split into its own index and notched active there goes
+    through, and every meld at that address - by address, and English's and French's by spell_id - raises
+    SpellbookValidationError; a French never compiled is refused by the 0.2.8262 check and English stays served (the
+    S2 story's note). S5, across two processes: the restore reports complete with the shortfall and no French, and
+    the graft brings French back active. S11: H3 and H4 unchanged. The artifact probes re-run at 23:29Z gave the same
+    results as at 23:09Z (ids masked).
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:6-35
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:37-57
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:71-122
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:221-248
+  IMPACT: The three stories stand as written; melder_1's C7 example to the owner (a French never compiled) was wrong
+    and is corrected in chat.
+  NEXT: The owner's word on S2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T23:31:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Side finding while rechecking S5: a recorded world whose frame is settled dynamic by `conjure(dynamic=True)`
+    after its binds restores with no spells under a "complete" report. Bind records a spell crystal only while the
+    Crystallizer is active and the frame posture is dynamic; before that conjure the posture is unsettled, the
+    conjure guard checks only that the configuration was finalized before the first bind, and nothing records those
+    binds afterwards (the conjure-tail sweep was retired on 2026-07-05). Measured across two processes, the GIL off
+    and on: plain calls (B) - the checkpoint holds no spell_crystal or spell_index payload and the restore builds the
+    frame, the Book and the conduit with no spell and no shortfall; `configure_aether_frame(system_state='dynamic')`
+    before the first bind (C) restores English. No open or completed ticket covers it.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:6452-6476
+  - src/melder/aether/spellbook/spellbook.py:7573-7616
+  - src/melder/aether/spellbook/spellbook.py:7661-7724
+  - context_compass/artifacts/correctness_defects_20261017/probes/diag_restore_isolate.py:1-62
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:59-69
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:124-134
+  IMPACT: Structure recorded wrong under a report that reads as success; S5's reproducers make the frame dynamic
+    before the first bind so their records hold the binds.
+  NEXT: The owner's word on filing it as a story here (refuse such a conjure in a recorded world, or record the binds
+    when it settles the frame - his call).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T23:31:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-36 consumed (melder_2, 2026-10-24T23:21:55Z): its lane STORY-2026-10-24-testpypi_trusted_publishing_and_
+    provenance edits .github/, tests/unit/github_workflows and system_docs/tests_components.md, takes no src, notch
+    or release-note entry and rebuilds at its turn-in; melder_1 holds none of those files.
+  EVIDENCE: context_compass/tickets/stories/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md:1-223
+  IMPACT: The regression tests of S2, S5 and S11 go into tests_components.md, so that docs step waits for melder_2's
+    turn-in or its hand-over of the file.
+  NEXT: Ask melder_2 for tests_components.md when an S-story reaches its docs step.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T00:57:13Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-40 consumed (melder_2, 2026-10-25T00:40:40Z): STORY-2026-10-24-testpypi_trusted_publishing_and_
+    provenance is turned in with no src and no notch; it updated tests_components and tests_architecture and their
+    indexes, and its asset and bundle rebuild follows. The next notch is still 0.2.8268, above 0.2.8267.
+  EVIDENCE: context_compass/tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md:1-435
+  IMPACT: tests_components.md is no longer held by that lane, so an S-story's docs step needs no hand-over; it
+    waits only for melder_2's rebuild to finish.
+  NEXT: S2's research on the story; its fix notches 0.2.8268 unless another lane lands first.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded

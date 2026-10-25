@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-20T10:00:15Z
+- Updated: 2026-10-25T00:34:42Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -365,8 +365,8 @@ Protects:
   object, internal classes stay unbindable, the version and build-asset stamps
   agree (see `### Subcomponent: Package Root Unit Cluster`)
 - the release gates in the CI scripts: fail-closed routing, candidate and source
-  identity, distribution contents, the free-threaded runtime gate (see
-  `### Subcomponent: Repository Tooling Unit Cluster`)
+  identity, distribution contents, the free-threaded runtime gate and the
+  candidate's provenance (see `### Subcomponent: Repository Tooling Unit Cluster`)
 - race fixes, as deterministic stand-ins for the concurrent writer (see
   `### Flow: Concurrent-Writer Stand-In`)
 - managed spells (0.2.8241-0.2.8246, 0.2.8254): the member and its Phase 6 rank, the bind options with their
@@ -424,7 +424,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 515 `test_*.py` modules among 518 `.py` files (recounted 2026-10-19)
+- the densest tier: 516 `test_*.py` modules among 519 `.py` files (recounted 2026-10-25)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -463,7 +463,7 @@ Key Files (C1):
 - The 3 test_*.py modules in tests/unit/melder/build_assets/ and the 9 package-root
   modules directly under tests/unit/melder/ are cited in their C2 clusters.
 - `tests/unit/github_workflows/conftest.py`
-- The repository-tooling trees carry 10 `test_*.py` modules (github_workflows 8,
+- The repository-tooling trees carry 11 `test_*.py` modules (github_workflows 9,
   llm_support 1, architecture_and_design 1), cited in their C2 cluster.
 
 ### Component: Component Test Suite
@@ -1449,6 +1449,16 @@ Protects:
   each `[project.dependencies]` name (at its version when it is declared exact), and
   both installed-package probes install the wheel beside the running release's pins
   and run `pip check` before the smoke test
+- the release candidate's provenance gate (2026-10-24): the TestPyPI upload by Trusted
+  Publishing through the publish action pinned to its commit, `id-token: write` held by that job
+  alone in all the workflows and no secret in its steps; `RC / provenance` between the upload and every
+  install probe; its five layers - a provenance on TestPyPI (a late 404 retried, a redirect
+  refused), the publisher record, Sigstore through the pinned verifier, the signing certificate
+  read claim by claim from its DER (Fulcio's .8-.24 exact, this run and publish attempt for a
+  file this run uploaded, the legacy .1-.6 agreeing with their successors) and the statement's
+  file and sha256 - and the tool, installed from an exact hashed lock, proven every run on a
+  recorded genuine attestation and two tampered copies of it; and every `.github/scripts/`
+  module importing the standard library only, with its two named exceptions
 - the LLM bundle builder's deterministic build/check lifecycle and explicit
   opt-in for untracked files; the architecture-docs tool's manifest, link, anchor
   and render-hash checks
@@ -1457,6 +1467,7 @@ Key Files (C1):
 - `tests/unit/github_workflows/test_ci_policy.py`
 - `tests/unit/github_workflows/test_workflow_contracts.py`
 - `tests/unit/github_workflows/test_candidate_publication.py`
+- `tests/unit/github_workflows/test_candidate_provenance.py`
 - `tests/unit/github_workflows/test_source_qualification.py`
 - `tests/unit/github_workflows/test_python_runtime_matrix.py`
 - `tests/unit/github_workflows/test_distributions.py`
@@ -2104,6 +2115,31 @@ Key Files (C1):
    pytest's exit code unchanged.
    EVIDENCE: .github/scripts/run_runtime_tests.py:10-50
 
+### Flow: Candidate Provenance Check End To End
+1. `CandidateRun(provenance, monkeypatch, tmp_path)` replaces every boundary of
+   `verify_candidate`: `package_version` (0.2.8300), `verified_files` (`build_files()`: a wheel
+   and an sdist), `fetch_provenance` (answers from `documents`), `tool_environment` (a path;
+   nothing is built), `subprocess.run` (plays the verifier: reads the request, keeps the bytes
+   each entry names, answers from `outcomes`, which refuse the two tampered controls) and
+   `git_output`; the fetch, the tool and the verifier stand-ins record what crossed them.
+2. `serve(wheel_claims, sdist_claims)` makes TestPyPI hold one attestation per built file:
+   `Signer.provenance` around a certificate `Signer.certificate` writes element by element
+   (`Der`) with the claims a release-candidate run in `pypitest` signs with.
+3. `verify_candidate(dist, report, rerun_environment())` runs as a failed-jobs re-run (attempt 2
+   of a run whose attempt 1 uploaded only the wheel): the run's variables and the upload record
+   are read, the recorded control is checked, then each file's provenance (publisher record,
+   statement, certificate claims), then one verifier process on all five entries (three
+   controls, two candidates), then the report is written.
+4. `test_every_candidate_file_is_checked_in_all_five_layers` asserts the entries' order, the
+   wheel's exact run invocation (attempt 1) beside the sdist's patterns, that every stored
+   provenance is the bytes TestPyPI answered, one tool environment and the report field by
+   field. The refusal tests assert what never happened: no tool, no verifier request and no
+   report when a standard-library layer refuses first
+   (`test_a_wrong_signer_is_refused_before_the_tool_is_built`), and no fetch when the lock no
+   longer installs the control (`test_the_controls_are_checked_before_testpypi_is_asked`).
+   EVIDENCE: tests/unit/github_workflows/test_candidate_provenance.py:937-1097
+   EVIDENCE: .github/scripts/testpypi_provenance.py:721-757
+
 ### Flow: Concurrent-Writer Stand-In
 1. the regression builds a real Spellbook, binds `PoolConfig`, `PoolRepository` and
    `PoolService`, and conjures, so every compiler pass has a real graph.
@@ -2179,12 +2215,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 282 paths (recounted 2026-10-19) - and nothing else. Change a component's key files and this set
+above - 283 paths (recounted 2026-10-25) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 863 test modules of the
+builders - not every `test_*.py` module beneath it. The 865 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -2963,9 +2999,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-24T19:37:10Z
 - path: `tests/unit/github_workflows/conftest.py`
   start_line: 1
-  end_line: 73
-  loc: 73
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 79
+  loc: 79
+  verified_at: 2026-10-25T00:34:42Z
 - path: `tests/experiments/cprofile_testing/profile_harness.py`
   start_line: 1
   end_line: 176
@@ -3140,17 +3176,23 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   start_line: 1
   end_line: 604
   loc: 604
-  verified_at: 2026-10-06T11:24:15Z
+  verified_at: 2026-10-25T00:34:42Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 954
-  loc: 954
-  verified_at: 2026-10-24T21:52:32Z
+  end_line: 1048
+  loc: 1048
+  verified_at: 2026-10-25T00:34:42Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
-  end_line: 530
-  loc: 530
-  verified_at: 2026-10-24T21:52:32Z
+  end_line: 565
+  loc: 565
+  verified_at: 2026-10-25T00:34:42Z
+- path: `tests/unit/github_workflows/test_candidate_provenance.py`
+  start_line: 1
+  end_line: 1169
+  loc: 1169
+  verified_at: 2026-10-25T00:34:42Z
+  note: the candidate provenance check's five layers on a recorded attestation and on certificates built byte by byte.
 - path: `tests/unit/github_workflows/test_source_qualification.py`
   start_line: 1
   end_line: 412
@@ -3768,6 +3810,9 @@ graph TD
 - `.github/scripts/run_runtime_tests.py`
 - `.github/workflows/test-runtime.yml`
 - `tests/unit/github_workflows/conftest.py`
+- `tests/unit/github_workflows/test_candidate_provenance.py`
+- `.github/scripts/testpypi_provenance.py`
+- `.github/workflows/release-candidate.yml`
 - `tests/unit/melder/aether/conduit/conftest.py`
 - `tests/unit/melder/test_system_document_view.py`
 - `tests/unit/melder/test_melder_registration_guard.py`
@@ -3910,6 +3955,21 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-25 the candidate's provenance (no notch; CI, tests and documentation only;
+STORY-2026-10-24-testpypi_trusted_publishing_and_provenance): the Repository Tooling Unit Cluster gains
+`test_candidate_provenance.py` (163 tests: the strict DER reader and the signing certificate's claims, on PyPI's
+recorded attestation of the pypi-attestations wheel and on certificates built byte by byte; every claim, the legacy
+ones included; the run's identity and the publish job's upload record; the Integrity API's retries, redirect and
+404 refusal; the publisher record and the statement; the hashed lock, the controls and the verifier process; the
+whole check end to end with its report; the command line; the expected publisher read from the workflow; the
+verifier read as source) and protects the TestPyPI Trusted Publishing posture, `RC / provenance` and the
+standard-library rule for `.github/scripts/`; a call flow describes the end-to-end harness. The core map adds the
+module and remeasures `conftest.py` (79), `test_workflow_contracts.py` (1048), `test_candidate_publication.py`
+(565) and `test_ci_policy.py` (604, unchanged); the key-file union is 283 paths. Counts are recounted from disk
+(unit 519 `.py`, 516 of them `test_*.py`; component 172, 170; integration 186, 179; 865 test modules in the three
+tiers): this lane adds one unit module, and the count also takes in
+`test_conduit_integration_windows_held_cache_bundle.py`, which no cluster lists yet.
 
 2026-10-24 a `many` belongs to the scope that built it (0.2.8267;
 STORY-2026-10-24-remove_many_child_holder_ownership): the Aether Component Cluster swaps

@@ -6,7 +6,7 @@ CI never chooses a Python release by itself. Every interpreter it sets up is one
 | --- | --- | --- |
 | Runtime test cells (`test-runtime.yml`) and the release candidate's install probes (`release-candidate.yml`) | Every release that has a test manifest, free-threaded, on Linux x64, Windows x64 and macOS arm64 | `.github/python/tests/<release>.toml`, read by `python_runtime_matrix.py discover` |
 | The three speed tests | The one speed release, free-threaded, on three x64 runners | `.github/python/speed/<release>.toml`, read by `python_runtime_matrix.py speed` |
-| Every other job (policy, assets, docs, builds, publication, the speed tests' manifest jobs) | The helper release, written as `python-version: "3.14.7"` | The workflow file; the release must have a test manifest |
+| Every other job (policy, assets, docs, builds, publication, the provenance check, the speed tests' manifest jobs) | The helper release, written as `python-version: "3.14.7"` | The workflow file; the release must have a test manifest |
 
 Nothing is looked up on the network and nothing follows the newest patch, so a new Python release runs only after
 someone adds its manifest. `test_workflow_contracts.py` refuses any `setup-python` step that asks for
@@ -89,6 +89,11 @@ from PyPI (`pip download --no-deps --only-binary=:all:`), installs them together
 `pip install --no-deps --no-index`, runs `pip check` and then `smoke_wheel.py`. `pip check` is what proves the
 pinned set satisfies the wheel's own requirements.
 
+The provenance check (`testpypi_provenance.py verify`, on the helper release) installs nothing from a test
+manifest. It builds its own environment from `.github/provenance/requirements.txt`, the hashed closure of the
+publishing action's signing tools, with `pip install --isolated --no-deps --only-binary=:all: --require-hashes`
+and then `pip check`. That lock is resolved for the helper release on Linux x64.
+
 ## Recipes
 
 ### Add a Python release (for example 3.14.9)
@@ -141,4 +146,6 @@ benchmark numbers compare only between runs on the same manifest.
 ### Change the helper release
 
 Replace every `python-version: "3.14.7"` in `.github/workflows/` (including the speed tests' `'3.14.7'`) with the
-new release in one change; it must have a test manifest. The contract test refuses a mix.
+new release in one change; it must have a test manifest. The contract test refuses a mix. A new minor also needs
+the provenance tool's lock regenerated for it (the command is in the header of
+`.github/provenance/requirements.txt`).

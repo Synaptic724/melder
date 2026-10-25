@@ -9,7 +9,7 @@
 - Agent Role: UNKNOWN
 - Priority: p3
 - Created: 2026-10-24T21:32:03Z
-- Updated: 2026-10-24T21:32:03Z
+- Updated: 2026-10-25T00:48:34Z
 
 ## Objective
 The test system documents (tests_architecture, tests_components) describe the tests the best-effort cache save
@@ -23,7 +23,11 @@ landed on 2026-10-24 (M2-31):
   name, a refused temp write or folder, a temp file that cannot be removed;
 - six new cases in tests/unit/melder/spellbook/test_cache_runtime_verification.py: the Book's save seam (the flag
   left cleared, no retry until cache is staged again), the explicit save (True when written, False when refused,
-  through `Spell.emit_cache_file()` too) and the conjure-end save.
+  through `Spell.emit_cache_file()` too) and the conjure-end save;
+- tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py - four Windows-only
+  integration tests (TASK-2026-10-24-windows_held_cache_bundle_test, after 0.2.8267; skipped elsewhere): the save
+  against a rename Windows itself refuses while the bundle is held open - the premise, a hold that ends within the
+  retries, one that outlasts them, and a meld through a refused save.
 
 ## Ticket Contract
 - ENTRY_GATE: the owner schedules it; an active board row; both tests documents re-read after the lanes that edit
@@ -37,7 +41,7 @@ landed on 2026-10-24 (M2-31):
   a section the instructions do not provide.
 
 ## Scope Boundaries
-- In scope: the three files' entries in both tests documents.
+- In scope: the four files' entries in both tests documents.
 - Out of scope: changing the tests; the src documents, which carry the fix since 0.2.8266.
 
 ## State Transition Event
@@ -48,7 +52,7 @@ landed on 2026-10-24 (M2-31):
 
 ## Steps / Checklist
 - [ ] The owner schedules it; a board row; both tests documents and their instructions re-read.
-- [ ] Slice the sections holding the neighbouring cache and meld-door tests; write the three entries.
+- [ ] Slice the sections holding the neighbouring cache and meld-door tests; write the four entries.
 - [ ] Both indexes regenerated, --check, the content-preservation diff; the rebuild last.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -57,7 +61,7 @@ landed on 2026-10-24 (M2-31):
       before dependent work; no forced body copy.
 
 ## Deliverables
-- The three entries in tests_components, and in tests_architecture where its sections call for them.
+- The four entries in tests_components, and in tests_architecture where its sections call for them.
 
 ## Files / Paths Impacted
 - context_compass/system_docs/tests_architecture.md and its index
@@ -134,16 +138,65 @@ this does not make independent review mandatory for every ticket.
   - tests/unit/melder/spellbook/test_cache_runtime_verification.py:315-364
   - tests/unit/melder/spellbook/test_cache_runtime_verification.py:561-617
   - tests/unit/melder/spellbook/test_cache_runtime_verification.py:679-704
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:713-731
-  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:886-906
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:714-732
+  - context_compass/tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md:887-907
   IMPACT: The test maps miss three files of a landed fix until this task runs.
   NEXT: The owner schedules it.
   REREAD: REQUIRED
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-24T22:24:45Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-55 (melder_1's NOTICE, 2026-10-24T22:16:36Z, consumed here): at 0.2.8267 the tests maps count the two
+    0.2.8266 regression modules (test_conduit_component_refused_cache_save_does_not_fail_meld.py,
+    test_caching_system_refused_save.py) among their 863 modules, and no tests_components cluster lists them
+    yet; melder_1's handoff entry names them. Cataloguing them is this draft's work, and the Windows-only file of
+    TASK-2026-10-24-windows_held_cache_bundle_test joins the list when it lands.
+  EVIDENCE: context_compass/system_docs/tests_components.md:3914-3931
+  IMPACT: The entries go into the clusters the tests documents name; the module counts there are already right.
+  NEXT: The owner schedules it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T23:03:28Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The Windows-only file landed (untracked until the owner commits it): four integration tests, skipped off
+    Windows and passing on the owner's machine, the GIL off and on; melder_1's rebuild took it into the LLM
+    bundles' tests corpus (M1-59). It is the Objective's fourth entry. With it the integration tier holds one
+    `test_*.py` module more than the tests documents' last recount (178 among 185 `.py` files; 863 in the three
+    tiers), so the counts are recounted at pickup.
+  EVIDENCE:
+  - tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py:1-594
+  - context_compass/system_docs/tests_components.md:616-617
+  - context_compass/system_docs/tests_architecture.md:481-482
+  IMPACT: The draft's scope grows by one file and the two documents' module counts by one.
+  NEXT: The owner schedules it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T00:48:34Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-39 (melder_2's NOTICE, 2026-10-25T00:40:40Z; also recorded in
+    EPIC-2026-10-25-codegen_room_policy_defects): after melder_2's recount of the tests maps at its turn-in,
+    test_conduit_integration_windows_held_cache_bundle.py is in no tests_components cluster yet (melder_2's
+    2026-10-25 handoff entry names it). Cataloguing it is this draft's work, with the two 0.2.8266 modules
+    M1-55 named; tests_components.md is free now that melder_2 has turned in.
+  EVIDENCE: context_compass/tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md:1-8
+  IMPACT: The draft's scope is confirmed by the latest recount; recount the tiers at pickup.
+  NEXT: The owner schedules it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
-Draft, parked: the entries for the three refused-save test files of 0.2.8266 (Objective). Waits for the owner's
-scheduling and for the shared tests documents to be free. Evidence: the FACT note above and the fix ticket.
+Draft, parked: the entries for the three refused-save test files of 0.2.8266 and the Windows-only test file that
+followed (Objective). Waits for the owner's scheduling and for the shared tests documents to be free. Evidence: the
+FACT notes above and the fix ticket.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

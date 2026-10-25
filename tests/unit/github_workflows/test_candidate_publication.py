@@ -374,10 +374,45 @@ def test_prepare_upload_copies_only_absent_verified_files(candidate: ModuleType,
     monkeypatch.setattr(candidate, "git_output", lambda arguments: "a" * 40)
     upload = tmp_path / "upload"
     report = tmp_path / "report.json"
-    assert candidate.prepare_upload(dist, upload, report) is True
+    assert candidate.prepare_upload(dist, upload, report) == ["melder.tar.gz"]
     assert [path.name for path in upload.iterdir()] == ["melder.tar.gz"]
     assert (upload / "melder.tar.gz").read_bytes() == b"source"
     assert json.loads(report.read_text())["files"] == files
+    assert json.loads(report.read_text())["status"] == "upload-needed"
+
+
+def test_prepare_upload_stages_nothing_when_testpypi_has_every_file(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """A retry after a complete upload stages nothing, so the publish step is skipped and nothing is re-signed."""
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "melder.whl").write_bytes(b"wheel")
+    files = {path.name: candidate.file_identity(path) for path in dist.iterdir()}
+    monkeypatch.setattr(candidate, "package_version", lambda: "0.2.4")
+    monkeypatch.setattr(candidate, "verified_files", lambda *args: files)
+    monkeypatch.setattr(candidate, "remote_files", lambda version: dict(files))
+    monkeypatch.setattr(candidate, "git_output", lambda arguments: "a" * 40)
+    report = tmp_path / "report.json"
+    assert candidate.prepare_upload(dist, tmp_path / "upload", report) == []
+    assert list((tmp_path / "upload").iterdir()) == []
+    assert json.loads(report.read_text())["status"] == "identical-upload-present"
+
+
+@pytest.mark.parametrize(("staged", "outputs"), [
+    (["melder-0.2.4-py3-none-any.whl", "melder-0.2.4.tar.gz"],
+     'upload-required=true\nuploaded=["melder-0.2.4-py3-none-any.whl", "melder-0.2.4.tar.gz"]\n'),
+    ([], "upload-required=false\nuploaded=[]\n"),
+])
+def test_prepare_upload_reports_what_it_staged_to_the_workflow(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                              monkeypatch: pytest.MonkeyPatch, staged: list[str],
+                                                              outputs: str) -> None:
+    """The publish job gates its upload on upload-required and hands the staged names to the provenance job."""
+    output = tmp_path / "github-output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setattr(candidate, "prepare_upload", lambda directory, upload, report: staged)
+    assert candidate.main(["prepare-upload", "--report", str(tmp_path / "upload.json")]) == 0
+    assert output.read_text(encoding="utf-8") == outputs
+    assert json.loads(outputs.splitlines()[1].removeprefix("uploaded=")) == staged
 
 
 def test_index_download_pins_version_hash_and_uses_no_fallback(candidate: ModuleType, tmp_path: pathlib.Path,

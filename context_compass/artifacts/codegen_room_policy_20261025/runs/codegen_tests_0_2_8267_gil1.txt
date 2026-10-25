@@ -1,0 +1,46 @@
+command: python -X gil=1 -m pytest -p no:cacheprovider -rxXs -v tests/integration/melder/aether/test_codegen_core_boundary_integration.py tests/unit/melder/aether/test_codegen_materialize_verb.py (cwd: /tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree)
+ran_at: 2026-10-25T00:18:56Z
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- ~/.venv314t/bin/python
+rootdir: /tmp/m0_mq/inv8267
+configfile: pyproject.toml
+collecting ... collected 21 items
+
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_importing_melder_is_refused_unless_the_profile_is_full_access[safe-None-False-Import statements are not allowed] PASSED [  4%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_importing_melder_is_refused_unless_the_profile_is_full_access[hybrid-None-False-Import root 'melder' is not allowed] PASSED [  9%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_importing_melder_is_refused_unless_the_profile_is_full_access[hybrid-precision-False-Import root 'melder' is not allowed] PASSED [ 14%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_importing_melder_is_refused_unless_the_profile_is_full_access[permissive-None-False-Import root 'melder' is not allowed] PASSED [ 19%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_importing_melder_is_refused_unless_the_profile_is_full_access[full_access-None-True-None] PASSED [ 23%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_import_statements_of_its_denied_roots[subprocess] PASSED [ 28%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_import_statements_of_its_denied_roots[socket] PASSED [ 33%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_import_statements_of_its_denied_roots[importlib] PASSED [ 38%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_import_statements_of_its_denied_roots[ctypes] PASSED [ 42%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_import_statements_of_its_denied_roots[asyncio] PASSED [ 47%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_import_statements_of_its_denied_roots[builtins] PASSED [ 52%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_safe_profile_refuses_writing_files XFAIL [ 57%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-subprocess] XFAIL [ 61%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-socket] XFAIL [ 66%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-importlib] XFAIL [ 71%]
+tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[precision-subprocess] XFAIL [ 76%]
+tests/unit/melder/aether/test_codegen_materialize_verb.py::test_accepted_source_materializes_into_a_live_module PASSED [ 80%]
+tests/unit/melder/aether/test_codegen_materialize_verb.py::test_rejected_validation_refuses_without_registry_mutation PASSED [ 85%]
+tests/unit/melder/aether/test_codegen_materialize_verb.py::test_exec_failure_tears_the_module_back_down PASSED [ 90%]
+tests/unit/melder/aether/test_codegen_materialize_verb.py::test_illegal_module_names_refuse_with_value_error PASSED [ 95%]
+tests/unit/melder/aether/test_codegen_materialize_verb.py::test_verb_is_advertised PASSED [100%]
+
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/m0_mq/inv8267/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_safe_profile_refuses_writing_files - OPEN: no codegen profile denies the open builtin - the runtime __builtins__ is the full builtins dict minus the profile's deny list, and no validator strategy inspects open or non-dunder method calls - so agent code in a safe room writes any file the process can write, although the safe profile documents that it denies writes. Core-protection review, Note 10. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-socket] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-importlib] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[precision-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+=================== 16 passed, 5 xfailed, 1 warning in 0.83s ===================
+exit: 0

@@ -1,0 +1,27 @@
+# melder_0 2026-10-24: the owner's run on his Windows machine, as he pasted it in chat 2026-10-24 (the banner padding
+# and trailing spaces trimmed): .venv_new, CPython 3.14.7 free-threaded with melder editable from the working tree's
+# src (0.2.8267 then); the GIL off, the build's default.
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> cd C:\Users\Mark\PycharmProjects\melder_private
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .\.venv_new\Scripts\python.exe -m pytest tests\integration\melder\conduit\test_conduit_integration_windows_held_cache_bundle.py -v -s
+============================= test session starts ==============================
+platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Mark\PycharmProjects\melder_private
+configfile: pyproject.toml
+plugins: cov-7.1.0, mock-3.15.1, rerunfailures-16.6.1, timeout-2.4.0, xdist-3.8.0
+collected 4 items
+
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_windows_refuses_a_rename_onto_a_file_held_open
+[held-bundle] premise: Python 3.14.7 on win32. A rename onto the held file raised PermissionError (Windows code 5): [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark\\pytest-348\\test_windows_refuses_a_rename_0\\source.bin' -> 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark\\pytest-348\\test_windows_refuses_a_rename_0\\target.bin'. After the close it was allowed on try 1. Save retry: True, 5 attempts, 0.01 s step.
+PASSED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_waits_out_a_hold_that_ends_while_it_retries
+[held-bundle] short hold: the save returned True after 2 refused renames (Windows codes [5, 5]) and 1 done, in 0.033 s; folder: ['root.meldercache'].
+PASSED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_save_outlasted_by_a_hold_returns_false_and_keeps_the_bundle
+[held-bundle] long hold: the save returned False after 5 refused renames (Windows codes [5, 5, 5, 5, 5]) in 0.104 s; folder during the hold: ['root.meldercache']; after it the save returned True (0 more refused, 1 done). WARNING: ["Could not save the creation-cache bundle 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark\\pytest-348\\test_save_outlasted_by_a_hold_0\\frame-a\\root.meldercache': [WinError 5] Access is denied: 'C:\\\\Users\\\\Mark\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-Mark\\\\pytest-348\\\\test_save_outlasted_by_a_hold_0\\\\frame-a\\\\root.meldercache.31280.35272.tmp' -> 'C:\\\\Users\\\\Mark\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-Mark\\\\pytest-348\\\\test_save_outlasted_by_a_hold_0\\\\frame-a\\\\root.meldercache'. Melds are not affected and the cache stays in memory for the next save. To persist it, make the cache folder writable (on Windows, also exclude it from real-time scanning), or turn caching off for the frame with with_system_caching_enabled(False). Later refused saves of this bundle log at DEBUG."]
+PASSED
+tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py::test_meld_returns_its_object_while_windows_refuses_its_cache_save
+[held-bundle] meld: the first meld of a late spell returned HeldBundleReport in 0.106 s while its save was refused 5 times (Windows codes [5, 5, 5, 5, 5]); the second meld returned the same object: True. After the hold the next late spell's meld saved the bundle (1 done, 0 more refused); the bundle holds 3 plans; folder: ['root.meldercache'].
+PASSED
+
+============================== 4 passed in 6.00s ===============================

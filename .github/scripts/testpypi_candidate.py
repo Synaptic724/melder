@@ -158,8 +158,13 @@ def write_report(path: pathlib.Path, version: str, files: Mapping[str, FileIdent
     path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
 
-def prepare_upload(directory: pathlib.Path, upload_directory: pathlib.Path, report: pathlib.Path) -> bool:
-    """Stage only absent, verified distributions; never conceal conflicting files with skip-existing."""
+def prepare_upload(directory: pathlib.Path, upload_directory: pathlib.Path, report: pathlib.Path) -> list[str]:
+    """Stage only absent, verified distributions; never conceal conflicting files with skip-existing.
+
+    Returns:
+        The names of the files staged for upload, sorted; empty when TestPyPI already holds every built file
+        with the same bytes. The provenance check reads them as the files this publish attempt signed.
+    """
     version = package_version()
     files = verified_files(directory, version)
     missing = missing_files(files, remote_files(version))
@@ -169,7 +174,7 @@ def prepare_upload(directory: pathlib.Path, upload_directory: pathlib.Path, repo
     for name in missing:
         shutil.copyfile(directory / name, upload_directory / name)
     write_report(report, version, files, "upload-needed" if missing else "identical-upload-present")
-    return bool(missing)
+    return missing
 
 
 def download_wheel(directory: pathlib.Path, version: str, name: str, identity: FileIdentity) -> pathlib.Path:
@@ -282,9 +287,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--report", type=pathlib.Path, required=True)
     args = parser.parse_args(argv)
     if args.operation == "prepare-upload":
-        required = prepare_upload(args.directory, args.upload_directory, args.report)
+        staged = prepare_upload(args.directory, args.upload_directory, args.report)
         with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-            output.write(f"upload-required={str(required).lower()}\n")
+            output.write(f"upload-required={str(bool(staged)).lower()}\n")
+            output.write(f"uploaded={json.dumps(staged)}\n")
     else:
         probe_install(args.directory, args.report)
     print(f"OK: {args.operation}; report={args.report}")

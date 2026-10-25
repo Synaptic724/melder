@@ -100,15 +100,22 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
+- NEW MESSAGE for melder_0 (from melder_3, 2026-10-25T01:13:45Z)
+- NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T01:13:45Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| correctness_defects | in_progress | handoff | claude | melder_1 | none | S1, S8 and S3 are turned in and the pass is rebuilt for 0.2.8263; S2 and S5 follow on the owner's word; S11 waits for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-19T14:25:39Z | REQUIRED |
-| src_architecture_to_spec | in_progress | discovery | claude | melder_3 | none | On melder_1's turn-in NOTICE: E0 baseline, rerun the dry run (script ready, clean), apply, re-index, gates, rebuild if last. | src_architecture to its spec, about 1,000 lines lighter, component detail in src_components, both rebuilt. | Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md | 2026-10-24T21:46:32Z | REQUIRED |
+| correctness_defects | in_progress | handoff | claude | melder_1 | none | S2's research is on its story for the owner's three calls (row notch_signature_s2); S5 and S11 wait for the owner, as does filing the recorded-world side finding. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T01:26:18Z | REQUIRED |
+| notch_signature_s2 | in_progress | handoff | claude | melder_1 | none | The owner's three calls on (A) (the story's DECISION_REQUEST note); then the Requirements rewritten and patch docs. | The owner's option (A) researched: each signature check mapped, what (A) keeps, changes or removes, and a fix plan for his review. | The research is on the story and the owner has reviewed it, or he redirects. | tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md | 2026-10-25T01:26:18Z | REQUIRED |
 | many_child_ownership_epic | in_progress | handoff | claude | melder_1 | none | Ask the owner whether to close the epic on his removal decision. | The owner's removal decision recorded and carried out at 0.2.8267; the epic closed on his word. | The owner closes the epic or redirects. | tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md | 2026-10-24T22:06:33Z | HELPFUL |
+| pypi_provenance_epic | in_progress | handoff | claude | melder_2 | the owner's TestPyPI publisher and first hosted RC run | The owner adds the TestPyPI Trusted Publisher, commits and promotes, and runs the RC on a fresh candidate version; S3 on his word. | Every Melder upload to TestPyPI and PyPI carries verified provenance; S1+S2 turned in 2026-10-25. | The owner shares the first RC run and gives the word for S3, or redirects. | tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md | 2026-10-25T00:39:21Z | REQUIRED |
+| codegen_open_file_d10 | blocked | handoff | claude | melder_0 | melder_0 blocked by the session content filter | The owner assigns the implementation (go given 2026-10-25). | D-10 re-measured on 0.2.8267, its mechanism read and the posture question (D2) put to the owner. | The owner answers the posture question, or redirects. | tickets/tasks/2026-10-10_deny_file_access_under_safe_codegen_task.md | 2026-10-25T01:29:39Z | REQUIRED |
+| codegen_dynamic_import_d11 | blocked | handoff | claude | melder_0 | melder_0 blocked by the session content filter | The owner assigns the implementation (go given 2026-10-25). | D-11 re-measured on 0.2.8267, its mechanism read and options A and B costed for the owner. | The owner chooses A, B or both, or redirects. | tickets/tasks/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md | 2026-10-25T01:29:39Z | REQUIRED |
+| codegen_materialize_d20 | blocked | handoff | claude | melder_0 | melder_0 blocked by the session content filter | The owner assigns the implementation (go given 2026-10-25). | D-20 re-measured on 0.2.8267, its mechanism read and the namespace and builtins questions put to the owner. | The owner answers both questions, or redirects. | tickets/tasks/2026-10-10_refuse_materializing_over_live_modules_task.md | 2026-10-25T01:29:39Z | REQUIRED |
+| notch_fanout_race | in_progress | handoff | claude | melder_0 | none | The owner chooses the design: 2, the fan-out inside the frozen window (recommended), or 1, refuse at the four sites. | The race re-measured on 0.2.8267 and in one Book, its mechanism read and the two designs costed for the owner. | The owner chooses the design, or redirects. | tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md | 2026-10-25T00:48:34Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -117,32 +124,57 @@ Message alert rules
   SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
-- WORK_ITEM: src_architecture_to_spec
-  SWITCH_TRIGGER: Story 1 turned in with its gates passed and the rebuild checked, or the owner redirects.
+- WORK_ITEM: notch_signature_s2
+  SWITCH_TRIGGER: The research is on the story and the owner has reviewed it, or he redirects.
   RESUME_HIERARCHY:
-    - tickets/epics/2026-10-24_src_architecture_to_spec_epic.md
-    - tickets/stories/2026-10-24_src_architecture_trim_to_spec_story.md
+    - tickets/epics/2026-10-17_correctness_defects_epic.md
+    - tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md
 - WORK_ITEM: many_child_ownership_epic
   SWITCH_TRIGGER: The owner closes the epic or redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md
+- WORK_ITEM: pypi_provenance_epic
+  SWITCH_TRIGGER: The owner shares the first RC run and gives the word for S3, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md
+- WORK_ITEM: codegen_open_file_d10
+  SWITCH_TRIGGER: The owner answers the posture question, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md
+    - tickets/tasks/2026-10-10_deny_file_access_under_safe_codegen_task.md
+- WORK_ITEM: codegen_dynamic_import_d11
+  SWITCH_TRIGGER: The owner chooses A, B or both, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md
+    - tickets/tasks/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md
+- WORK_ITEM: codegen_materialize_d20
+  SWITCH_TRIGGER: The owner answers both questions, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md
+    - tickets/tasks/2026-10-10_refuse_materializing_over_live_modules_task.md
+- WORK_ITEM: notch_fanout_race
+  SWITCH_TRIGGER: The owner chooses the design, or redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-25_notch_fanout_inflight_melds_epic.md
+    - tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| public_readme_review | done | expert_1 | tickets/tasks/completed/2026-10-20_review_public_readme_clarity_task.md | Closed unfinished on the owner's word in the 2026-10-24 cleanup. | 2026-10-24T18:28:20Z |
-| gauntlet_runtime_speed | done | melder_2 | tickets/tasks/completed/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | Closed unfinished on the owner's word in the 2026-10-24 cleanup. | 2026-10-24T18:28:20Z |
-| defect_hunting_spellbook | done | muse_0 | tickets/tasks/completed/2026-09-27_spellbook_sweep_task.md | Closed unfinished on the owner's word in the 2026-10-24 cleanup. | 2026-10-24T18:28:20Z |
-| defect_hunting_fixes_1 | done | muse_0 | tickets/tasks/completed/2026-09-27_sweep_fixes_batch_1_task.md | Closed unfinished on the owner's word in the 2026-10-24 cleanup. | 2026-10-24T18:28:20Z |
-| board_cleanup | done | melder_1 | tickets/tasks/completed/2026-10-24_strip_old_board_and_artifact_state_task.md | Boards stripped to live state; 26 old tickets closed, old artifacts and patch docs deleted (owner). | 2026-10-24T18:35:08Z |
 | ci_python_315 | done | melder_2 | tickets/tasks/completed/2026-10-24_ci_python_315_and_release_test_rerun_task.md | 3.14.9/3.15.0/3.15.1 cells and no publication test rerun, in the owner's checkout; commit and bundle rebuild follow the concurrent landings. | 2026-10-24T20:35:02Z |
 | cache_write_failure | done | melder_0 | tickets/tasks/completed/2026-10-24_cache_file_write_failure_fails_meld_task.md | Notched 0.2.8266: a cache save the OS refuses no longer fails a meld; three follow-ups in backlog; rebuild after closure. | 2026-10-24T21:32:03Z |
 | cache_temp_file | done | melder_2 | tickets/tasks/completed/2026-10-04_per_process_conjure_cache_temp_file_task.md | Superseded by 0.2.8266's per-writer temp file; closed on the owner's word (ci_lane_loose_ends). | 2026-10-24T21:57:09Z |
 | shared_gauntlet_config_order | done | melder_2 | tickets/tasks/completed/2026-09-22_shared_gauntlet_configuration_order_followup_task.md | Obsolete since f1cd22a22; the lane-parity guard passes with the GIL off and on; closed on the owner's word. | 2026-10-24T21:57:09Z |
 | ci_lane_loose_ends | done | melder_2 | tickets/tasks/completed/2026-10-24_ci_lane_loose_ends_task.md | Melder says it depends on pip; pip pinned in the speed manifest, docs lock and both probes (pip check); two backlog tickets closed; rebuild at melder_1's landing. | 2026-10-24T21:59:15Z |
 | many_child_ownership_removal | done | melder_1 | tickets/stories/completed/2026-10-24_remove_many_child_holder_ownership_story.md | Notched 0.2.8267: a `many` belongs to the scope that built it, the holder record removed; rebuild after closure; the epic waits for the owner. | 2026-10-24T22:06:33Z |
+| src_architecture_to_spec | done | melder_3 | tickets/stories/completed/2026-10-24_src_architecture_trim_to_spec_story.md | src_architecture to its spec: 5,739 -> 4,784 lines, the 17 sections in order, no tooling paths; component mechanics and the MR inventory in src_components; rebuild after closure. | 2026-10-24T22:39:52Z |
+| release_note_0_2_8265_cut | done | melder_1 | tickets/tasks/completed/2026-10-24_cut_release_note_0_2_8265_task.md | release_docs/0.2.8265.md holds the 0.2.8265 notes as released; the running note keeps 0.2.8266-0.2.8267; rebuild after closure. | 2026-10-24T22:53:33Z |
+| windows_held_bundle_test | done | melder_0 | tickets/tasks/completed/2026-10-24_windows_held_cache_bundle_test_task.md | Windows-only test of the 0.2.8266 cache save: 4 passed on the owner's machine, the GIL off and on, [WinError 5] on every refusal; tests only. | 2026-10-24T23:03:28Z |
+| testpypi_provenance | done | melder_2 | tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md | TestPyPI by Trusted Publishing with attestations; RC / provenance checks every file in five layers before install; no notch; hosted Not run; rebuild after closure. | 2026-10-25T00:39:21Z |
+| src_components_to_spec | done | melder_3 | tickets/stories/completed/2026-10-24_src_components_to_spec_story.md | src_components to its spec: 12,642 -> 11,874 lines, history out, stale claims fixed, the MR inventory folded, core = the C3 Key Files union; rubric 84.5 (B); rebuild after closure. | 2026-10-25T01:12:33Z |
+| src_architecture_to_spec_epic | done | melder_3 | tickets/epics/completed/2026-10-24_src_architecture_to_spec_epic.md | Both documents at their specs: src_architecture 5,739 -> 4,784 lines (81, B), src_components 12,642 -> 11,874 (84.5, B); assets and bundles rebuilt at v0.2.8267, both `--check` OK. | 2026-10-25T01:34:36Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

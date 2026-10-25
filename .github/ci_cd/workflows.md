@@ -66,13 +66,15 @@ midway.
 | `authorize` (RC / authorize) | Refuses a stale or moved head (`ci_policy.py candidate-head`), builds the release matrix from the test manifests (`python_runtime_matrix.py discover`) and keeps it as an artifact. |
 | `source-qualification` | Reuses the full CI evidence for this tree (`verify-source-qualification.yml`). |
 | `build` | Builds and verifies the wheel and sdist (`build-distributions.yml`). |
-| `publish` (RC / publish-to-TestPyPI) | In the `pypitest` environment: compares the files with what TestPyPI already has, retrying a TestPyPI outage up to six times, and stages only the missing ones (`testpypi_candidate.py prepare-upload`), requires the `melder_api_token` secret, checks the head again and uploads. |
-| `install` (RC / installed-package / ...) | For every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash and Melder's runtime dependencies from PyPI at that release's test-manifest pins, installs them together into a fresh environment with no resolver, checks the set with `pip check` and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
-| `package-ready` (RC / package-ready) | Requires all five stages to have succeeded and the head to be unchanged (`ci_policy.py candidate-ready`, `candidate-head`). |
+| `publish` (RC / publish-to-TestPyPI) | In the `pypitest` environment: compares the files with what TestPyPI already has, retrying a TestPyPI outage up to six times, and stages only the missing ones (`testpypi_candidate.py prepare-upload`), checks the head again and uploads them by Trusted Publishing with a PEP 740 attestation each (`pypa/gh-action-pypi-publish`, pinned to its commit). It is the only job that holds `id-token: write`, uses no secret, and reports the files it staged and its run attempt as outputs. |
+| `provenance` (RC / provenance) | On the helper release, for every built file: reads its provenance from TestPyPI's Integrity API and checks it in five layers - a provenance exists; its publisher is this workflow in `pypitest`; Sigstore verifies the attestation; the signing certificate names this repository, workflow, commit, environment and run claim by claim; the statement names the file's sha256 (`testpypi_provenance.py verify`). The pinned verifier first verifies a recorded genuine attestation and refuses two tampered copies. Keeps `candidate-provenance-<run>-<attempt>`. |
+| `install` (RC / installed-package / ...) | After `provenance`, for every test-manifest release on Linux, Windows and macOS: downloads the exact uploaded wheel by its hash and Melder's runtime dependencies from PyPI at that release's test-manifest pins, installs them together into a fresh environment with no resolver, checks the set with `pip check` and runs `smoke_wheel.py` (`testpypi_candidate.py probe-install`). |
+| `package-ready` (RC / package-ready) | Requires all six stages to have succeeded and the head to be unchanged (`ci_policy.py candidate-ready`, `candidate-head`). |
 
-`publish` and `install` download the build that `build` reports (`needs.build.outputs.artifact-name`), so **Re-run
-failed jobs** after a TestPyPI outage or a failed probe reuses this run's verified build; **Re-run all jobs** builds
-a fresh one.
+`publish`, `provenance` and `install` download the build that `build` reports (`needs.build.outputs.artifact-name`),
+so **Re-run failed jobs** after a TestPyPI outage, a provenance lookup that ran out of retries or a failed probe
+reuses this run's verified build; **Re-run all jobs** builds a fresh one. A re-run that skips `publish` keeps its
+outputs, so the provenance check still expects the attempt that uploaded.
 
 ### `python-publish.yml`: PyPI publication
 

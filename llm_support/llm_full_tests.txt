@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 9b19c310a9acdc48fe476f83e6028b08b1b10667705208430cc62e1cbd5c00a4
-FILE COUNT: 1145
+SOURCE FINGERPRINT: b4a2e6118fc663e386e59e83d036e089be398c0d59c529a7afbb0ff5cb32aba7
+FILE COUNT: 1147
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -128955,6 +128955,608 @@ def test_transfer_without_move_creations_builds_a_new_instance_on_the_target() -
 END FILE: tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py
+CONTENT SHA256: 199ed38fc04520d95599e33db705a4c03caacd4852c88572f4fb70fbfceba87e
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Windows-only integration tests: the creation-cache save against a rename Windows itself refuses.
+
+Why these exist (TASK-2026-10-24-windows_held_cache_bundle_test; the owner's ask, chat 2026-10-24: "dude add it to my
+machine and see what happens I can run whatever commands you want"):
+    0.2.8266 (TASK-2026-10-24-cache_file_write_failure_fails_meld) made a creation-cache save that the operating
+    system refuses a reported failure instead of a raised one: the owner's MelderOps run had failed a meld with
+    PermissionError [WinError 5] when Windows refused the rename of the save's temp file onto a bundle another handle
+    held open. On Windows the save also retries such a refusal (`CachingSystem.RETRY_REFUSED_RENAME`:
+    `REPLACE_ATTEMPTS` attempts, sleeping `REPLACE_RETRY_DELAY_SECONDS` times the attempt number between them, about
+    100 ms in all). The fix's own tests inject the refusal at `os.replace`, because Linux never refuses a rename for
+    sharing. These tests inject nothing: they hold the bundle open with Python's `open()`, which on Windows shares
+    read and write access but not delete access, so Windows itself refuses a rename onto it.
+
+What they assert (each prints what it saw; run pytest with `-s` to see it):
+    1. The premise: a rename onto a file held open raises PermissionError, and succeeds once the handle is closed.
+    2. A hold that ends while the save retries: the save returns True and the bundle holds the new payload.
+    3. A hold that outlasts the retries: the save returns False after exactly `REPLACE_ATTEMPTS` refused renames,
+       the bundle is byte-for-byte as it was, no temp file is left and one WARNING is logged; once the hold ends,
+       the next save writes everything the refused one kept.
+    4. A meld whose save Windows refuses: a spell bound after conjure is first melded while its root's bundle is
+       held. The meld returns its object although its save is refused `REPLACE_ATTEMPTS` times, a second meld
+       returns the same object and saves nothing, and after the hold the first meld of another late spell saves
+       the bundle with both plans.
+
+How:
+    `_HeldFile` holds a file open. `_RenameSpy` wraps `os.replace` (which `Path.replace` calls): it passes every
+    rename through to the real call and records each one onto the bundle - refused, with the operating system's
+    PermissionError re-raised unchanged, or done. It refuses nothing itself. Test 2 ends its hold from the spy after
+    the second refusal, so where the hold ends does not depend on timing. An on-access scanner can only add
+    refusals; the tests that let a save finish allow for that and print every count.
+
+Off Windows the file is skipped. The ticket's artifacts keep a pytest plugin that runs it on Linux by emulating the
+refusal (a rename onto a file the process holds open raises PermissionError) with the retry turned on.
+"""
+
+import logging
+import os
+import shutil
+import sys
+import time
+from collections.abc import Callable, Iterator
+from pathlib import Path
+from typing import IO, Any, List, Optional
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from melder.utilities.caching_system.caching_system import CachingSystem
+
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="Windows only: it needs Windows to refuse a rename onto a file held open.",
+    ),
+]
+
+
+class HeldBundleSettings:
+    """`unique`, bound before conjure, so the conjure-time save writes the bundle the meld test then holds."""
+
+
+class HeldBundleReport:
+    """`unique`, bound after conjure; its first meld compiles it, stages its plan and saves while the bundle is held."""
+
+
+class AfterHoldReport:
+    """`unique`, bound after the hold ends; its first meld saves the bundle with its plan and the one kept before."""
+
+
+class _HeldFile:
+    """
+    Holds one file open for reading, as an on-access scanner or another reader holds a bundle on Windows.
+
+    Contract:
+        - `hold()` opens the file with Python's `open()` in binary read mode. On Windows that handle shares read and
+          write access but not delete access, so Windows refuses a rename onto the file while it is open; elsewhere
+          the handle refuses nothing.
+        - `release()` closes the handle; it is idempotent, so a test may end the hold early (from a spy) and again
+          in its `finally`.
+
+    Threading:
+        Not thread-safe; each test holds and releases on one thread.
+    """
+
+    def __init__(self, path: Path) -> None:
+        """
+        Remember the file; nothing is opened yet.
+
+        Args:
+            path: The file to hold.
+        """
+        self._path: Path = path
+        self._handle: Optional[IO[bytes]] = None
+
+    def hold(self) -> None:
+        """
+        Open the file for reading and keep the handle.
+
+        Raises:
+            RuntimeError: This object already holds the file.
+            OSError: The file cannot be opened.
+        """
+        if self._handle is not None:
+            raise RuntimeError(f"'{self._path}' is already held by this test.")
+        self._handle = self._path.open("rb")
+
+    def release(self) -> None:
+        """
+        Close the handle when the file is held; once released, calling it again does nothing.
+        """
+        if self._handle is None:
+            return
+        self._handle.close()
+        self._handle = None
+
+
+class _RenameSpy:
+    """
+    Records the renames onto one bundle and passes every rename through to the real `os.replace`.
+
+    Contract:
+        - Wraps `os.replace` (which `Path.replace` calls) through `monkeypatch`, which restores it after the test.
+        - A rename whose destination is the bundle goes to the real call. When the real call raises PermissionError
+          the spy appends the error to `refusals`, runs `on_refusal` with the number of refusals so far and re-raises
+          the error unchanged; when it returns, the spy counts it in `successes`. Every other rename passes through
+          unrecorded.
+        - It refuses nothing itself: every refusal it records is the operating system's.
+        - Destinations are compared after `os.path.abspath` and `os.path.normcase`, so case and separators do not
+          matter on Windows.
+
+    Threading:
+        Not thread-safe; each test renames on one thread.
+    """
+
+    def __init__(
+            self,
+            monkeypatch: pytest.MonkeyPatch,
+            bundle_path: Path,
+            on_refusal: Optional[Callable[[int], None]] = None,
+    ) -> None:
+        """
+        Install the wrapper.
+
+        Args:
+            monkeypatch: The test's monkeypatch fixture; it restores `os.replace` at teardown.
+            bundle_path: The bundle whose renames are recorded.
+            on_refusal: Called after each recorded refusal with the refusal count, before the error is re-raised.
+        """
+        self.refusals: List[PermissionError] = []
+        self.successes: int = 0
+        self._bundle_key: str = os.path.normcase(os.path.abspath(os.fspath(bundle_path)))
+        self._on_refusal: Optional[Callable[[int], None]] = on_refusal
+        real_replace: Callable[..., None] = os.replace
+
+        def replace(source: Any, target: Any, *args: Any, **kwargs: Any) -> None:
+            """Pass a rename through to the real call; record it when its destination is the bundle."""
+            if os.path.normcase(os.path.abspath(os.fspath(target))) != self._bundle_key:
+                real_replace(source, target, *args, **kwargs)
+                return
+            try:
+                real_replace(source, target, *args, **kwargs)
+            except PermissionError as error:
+                self.refusals.append(error)
+                if self._on_refusal is not None:
+                    self._on_refusal(len(self.refusals))
+                raise
+            self.successes += 1
+
+        monkeypatch.setattr(os, "replace", replace)
+
+
+def _windows_error_code(error: OSError) -> Optional[int]:
+    """
+    Return the Windows error code an OSError carries, or None off Windows.
+
+    Args:
+        error: The error a rename raised.
+
+    Returns:
+        Optional[int]: `error.winerror` on Windows (5 is ERROR_ACCESS_DENIED, 32 ERROR_SHARING_VIOLATION), else None.
+    """
+    if sys.platform == "win32":
+        return error.winerror
+    return None
+
+
+def _refusal_codes(refusals: List[PermissionError]) -> List[Optional[int]]:
+    """
+    Return the Windows error code of each recorded refusal, in order.
+
+    Args:
+        refusals: The errors a `_RenameSpy` recorded.
+
+    Returns:
+        List[Optional[int]]: One code per refusal (None off Windows).
+    """
+    return [_windows_error_code(error) for error in refusals]
+
+
+def _test_logger() -> logging.Logger:
+    """
+    Return the stdlib logger these tests hand their cache utilities, so a test can pick out its records.
+
+    Returns:
+        logging.Logger: The logger named "windows-held-bundle-test".
+    """
+    return logging.getLogger("windows-held-bundle-test")
+
+
+def _make_cache_utility(cache_root_path: Path) -> CachingSystem:
+    """
+    Build one cache utility over a test's own cache root, logging to the tests' logger.
+
+    Args:
+        cache_root_path: The test's cache root.
+
+    Returns:
+        CachingSystem: A utility for frame "frame-a" and conduit "root"; its bundle is
+            `<cache_root_path>/frame-a/root.meldercache`.
+    """
+    return CachingSystem(
+        frame_name="frame-a",
+        conduit_name="root",
+        cache_root_path=cache_root_path,
+        logger=_test_logger(),
+    )
+
+
+def _folder_listing(folder: Path) -> List[str]:
+    """
+    Return the sorted names in a folder, or [] when it does not exist.
+
+    Args:
+        folder: The folder to list.
+
+    Returns:
+        List[str]: Sorted file names.
+    """
+    if not folder.exists():
+        return []
+    return sorted(path.name for path in folder.iterdir())
+
+
+def _replace_until_allowed(source: Path, target: Path, attempts: int, delay_seconds: float) -> int:
+    """
+    Rename `source` onto `target`, retrying a PermissionError, and return the try that succeeded.
+
+    Contract:
+        Tries up to `attempts` times, sleeping `delay_seconds` between tries; the last try's PermissionError
+        propagates. Used after a hold is released, because an on-access scanner may open a just-written file.
+
+    Args:
+        source: The file to rename.
+        target: The destination it replaces.
+        attempts: Tries in all, at least 1.
+        delay_seconds: Sleep between two tries.
+
+    Returns:
+        int: The 1-based try that succeeded.
+
+    Raises:
+        PermissionError: Every try was refused.
+    """
+    attempt = 1
+    while True:
+        try:
+            os.replace(source, target)
+            return attempt
+        except PermissionError:
+            if attempt >= attempts:
+                raise
+        time.sleep(delay_seconds)
+        attempt += 1
+
+
+def _reset_world() -> None:
+    """Install a fresh Aether (and Nexus) and hand it to Spellbook and Conduit."""
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture
+def fresh_world() -> Iterator[None]:
+    """
+    Give the test a fresh Aether and reset it again afterwards.
+
+    Yields:
+        None.
+    """
+    _reset_world()
+    yield
+    _reset_world()
+
+
+@pytest.fixture
+def cache_frame(fresh_world: None) -> Iterator[Callable[[str], Path]]:
+    """
+    Turn caching on for a frame of the test's own and empty its cache folder.
+
+    Contract:
+        The call takes a frame name unique to its test, ensures the frame, enables caching on its configuration
+        (the default cache root, under the melder package), removes whatever an earlier run left in that frame's
+        cache folder and returns the folder. At teardown each such folder is removed, best-effort: on Windows a
+        scanner may still hold a just-written bundle, and the next run's preparation removes what is left.
+
+    Args:
+        fresh_world: Gives the test a fresh Aether first.
+
+    Yields:
+        Callable[[str], Path]: The preparation call, returning the frame's cache folder.
+    """
+    folders: List[Path] = []
+
+    def prepare(frame_name: str) -> Path:
+        """
+        Prepare one frame's cache folder.
+
+        Args:
+            frame_name: Frame name unique to the calling test.
+
+        Returns:
+            Path: The frame's cache folder, resolved and empty.
+        """
+        configuration = Aether()._ensure_frame(frame_name).frame_configuration
+        assert configuration is not None
+        configuration.with_system_caching_enabled(True)
+        folder = (configuration.resolve_conjure_cache_root_path() / frame_name).resolve()
+        if folder.exists():
+            shutil.rmtree(folder)
+        folders.append(folder)
+        return folder
+
+    yield prepare
+    for folder in folders:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_windows_refuses_a_rename_onto_a_file_held_open(tmp_path: Path) -> None:
+    """
+    The premise: a rename onto a file held open is refused with PermissionError, and allowed once it is closed.
+
+    Contract:
+        `target.bin` is held open with `open(..., "rb")` and `source.bin` is renamed onto it: Windows raises
+        PermissionError ([WinError 5] in the owner's MelderOps failure; [WinError 32] would be a PermissionError
+        too, and the save retries both). Once the handle is closed the rename succeeds and the target holds the
+        source's bytes; it is tried up to 50 times, 20 ms apart, because an on-access scanner may open the
+        just-written files on its own, and the try that succeeded is printed. If the held rename were allowed,
+        `open()` could not cause the refusal the 0.2.8266 retry guards against, and tests 2-4 would fail too.
+
+    Args:
+        tmp_path: The test's own folder.
+    """
+    target = tmp_path / "target.bin"
+    source = tmp_path / "source.bin"
+    target.write_bytes(b"held")
+    source.write_bytes(b"replacement")
+    held = _HeldFile(target)
+    held.hold()
+    try:
+        with pytest.raises(PermissionError) as refused:
+            os.replace(source, target)
+    finally:
+        held.release()
+    allowed_on_try = _replace_until_allowed(source, target, attempts=50, delay_seconds=0.02)
+
+    print(
+        f"\n[held-bundle] premise: Python {sys.version.split()[0]} on {sys.platform}. A rename onto the held file "
+        f"raised PermissionError (Windows code {_windows_error_code(refused.value)}): {refused.value}. After the "
+        f"close it was allowed on try {allowed_on_try}. Save retry: {CachingSystem.RETRY_REFUSED_RENAME}, "
+        f"{CachingSystem.REPLACE_ATTEMPTS} attempts, {CachingSystem.REPLACE_RETRY_DELAY_SECONDS} s step."
+    )
+    assert target.read_bytes() == b"replacement"
+    assert not source.exists()
+
+
+def test_save_waits_out_a_hold_that_ends_while_it_retries(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    A hold that ends after two refused renames: the save retries, writes the bundle and returns True.
+
+    Contract:
+        A first payload is saved, a second staged, and the bundle held open; the spy ends the hold once Windows has
+        refused the rename twice. The save, still inside its `REPLACE_ATTEMPTS` attempts, renames on a later one
+        and returns True; the bundle then holds both payloads and its folder holds it alone (no temp file). A
+        scanner may add refusals: the test needs at least the two the hold causes and fewer than
+        `REPLACE_ATTEMPTS`, and prints the count, the Windows codes and the time the save took.
+
+    Args:
+        tmp_path: The test's cache root.
+        monkeypatch: Restores `os.replace` after the test.
+    """
+    caching_system = _make_cache_utility(tmp_path)
+    bundle_path = caching_system.bundle_path
+    held = _HeldFile(bundle_path)
+
+    def end_the_hold_after_two(refusals: int) -> None:
+        """
+        End the hold once Windows has refused the rename twice.
+
+        Args:
+            refusals: Refusals the spy has recorded so far.
+        """
+        if refusals == 2:
+            held.release()
+
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"plan": "saved before the hold"})
+        saved_before = caching_system.emit()
+        caching_system.upsert_spell_payload("b" * 64, {"plan": "saved through the hold"})
+        held.hold()
+        spy = _RenameSpy(monkeypatch, bundle_path, on_refusal=end_the_hold_after_two)
+        started = time.perf_counter()
+        saved = caching_system.emit()
+        save_seconds = time.perf_counter() - started
+        listing = _folder_listing(bundle_path.parent)
+    finally:
+        held.release()
+        caching_system.cleanup()
+
+    print(
+        f"\n[held-bundle] short hold: the save returned {saved} after {len(spy.refusals)} refused renames "
+        f"(Windows codes {_refusal_codes(spy.refusals)}) and {spy.successes} done, in {save_seconds:.3f} s; "
+        f"folder: {listing}."
+    )
+    assert saved_before is True
+    assert saved is True
+    assert 2 <= len(spy.refusals) < CachingSystem.REPLACE_ATTEMPTS
+    assert spy.successes == 1
+    assert listing == [bundle_path.name]
+    reloaded = _make_cache_utility(tmp_path)
+    try:
+        assert reloaded.get_spell_payload("a" * 64) == {"plan": "saved before the hold"}
+        assert reloaded.get_spell_payload("b" * 64) == {"plan": "saved through the hold"}
+    finally:
+        reloaded.cleanup()
+
+
+def test_save_outlasted_by_a_hold_returns_false_and_keeps_the_bundle(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+) -> None:
+    """
+    A hold that outlasts the retries: the save returns False, the bundle stays as it was, the next save writes all.
+
+    Contract:
+        A first payload is saved, a second staged, and the bundle held open for the whole save. Windows refuses the
+        rename on every one of the `REPLACE_ATTEMPTS` attempts (the spy records exactly that many) and the save
+        returns False: the bundle reads byte for byte as before, its folder holds it alone (the temp file was
+        removed) and one WARNING names it. Once the hold ends, the next save returns True and the bundle holds both
+        payloads, the one the refused save kept included. On 0.2.8265 the refused save raised its PermissionError
+        and left its temp file beside the bundle.
+
+    Args:
+        tmp_path: The test's cache root.
+        monkeypatch: Restores `os.replace` after the test.
+        caplog: Captures the cache utility's log records.
+    """
+    caching_system = _make_cache_utility(tmp_path)
+    bundle_path = caching_system.bundle_path
+    held = _HeldFile(bundle_path)
+    try:
+        caching_system.upsert_spell_payload("a" * 64, {"plan": "saved before the hold"})
+        saved_before = caching_system.emit()
+        bytes_before = bundle_path.read_bytes()
+        caching_system.upsert_spell_payload("b" * 64, {"plan": "kept through the hold"})
+        held.hold()
+        spy = _RenameSpy(monkeypatch, bundle_path)
+        started = time.perf_counter()
+        refused = caching_system.emit()
+        refused_seconds = time.perf_counter() - started
+        refusals_during_hold = list(spy.refusals)
+        bytes_during_hold = bundle_path.read_bytes()
+        listing_during_hold = _folder_listing(bundle_path.parent)
+        held.release()
+        saved_after = caching_system.emit()
+        listing_after = _folder_listing(bundle_path.parent)
+    finally:
+        held.release()
+        caching_system.cleanup()
+
+    warnings = [
+        record.getMessage() for record in caplog.records
+        if record.name == _test_logger().name and record.levelno == logging.WARNING
+    ]
+    print(
+        f"\n[held-bundle] long hold: the save returned {refused} after {len(refusals_during_hold)} refused renames "
+        f"(Windows codes {_refusal_codes(refusals_during_hold)}) in {refused_seconds:.3f} s; folder during the "
+        f"hold: {listing_during_hold}; after it the save returned {saved_after} "
+        f"({len(spy.refusals) - len(refusals_during_hold)} more refused, {spy.successes} done). "
+        f"WARNING: {warnings}"
+    )
+    assert saved_before is True
+    assert refused is False
+    assert len(refusals_during_hold) == CachingSystem.REPLACE_ATTEMPTS
+    assert bytes_during_hold == bytes_before
+    assert listing_during_hold == [bundle_path.name]
+    assert len(warnings) == 1
+    assert str(bundle_path) in warnings[0]
+    assert saved_after is True
+    assert listing_after == [bundle_path.name]
+    reloaded = _make_cache_utility(tmp_path)
+    try:
+        assert reloaded.get_spell_payload("a" * 64) == {"plan": "saved before the hold"}
+        assert reloaded.get_spell_payload("b" * 64) == {"plan": "kept through the hold"}
+    finally:
+        reloaded.cleanup()
+
+
+def test_meld_returns_its_object_while_windows_refuses_its_cache_save(
+        cache_frame: Callable[[str], Path],
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A meld whose cache save Windows refuses returns its object; the plan it staged is saved after the hold.
+
+    Contract:
+        A dynamic root is conjured over `HeldBundleSettings`, and its conjure-time save writes the bundle.
+        `HeldBundleReport` is bound after conjure, so its first meld compiles it, stages its plan and saves the
+        bundle. With the bundle held open, that meld returns its object although Windows refuses the save's rename
+        on all `REPLACE_ATTEMPTS` attempts; the bundle is unchanged and no temp file is left; a second meld returns
+        the same `unique` object and saves nothing (the spy records no further rename). After the hold
+        `AfterHoldReport` is bound and melded: its first meld saves the bundle, which then holds both late spells'
+        plans. On 0.2.8265 the first meld raised the save's PermissionError after building its object, and every
+        later meld of the Book retried the save and raised while the hold lasted - the owner's MelderOps failure.
+
+    Args:
+        cache_frame: Enables caching for the test's frame and empties its cache folder.
+        monkeypatch: Restores `os.replace` after the test.
+    """
+    frame_name = "windows_held_bundle_meld"
+    folder = cache_frame(frame_name)
+    book = Spellbook(aetheric_frame=frame_name)
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book.bind(spell=HeldBundleSettings, existence=Existence.unique, permissions="create")
+    root = book.conjure(dynamic=True, name="root")
+    bundle_path = folder / f"root{CachingSystem.BUNDLE_SUFFIX}"
+    assert bundle_path.exists(), f"Conjure did not save '{bundle_path}', so there is no bundle to hold."
+    report_spell_id = root.bind(spell=HeldBundleReport, existence=Existence.unique, permissions="create")
+    bytes_before = bundle_path.read_bytes()
+    held = _HeldFile(bundle_path)
+    held.hold()
+    try:
+        spy = _RenameSpy(monkeypatch, bundle_path)
+        started = time.perf_counter()
+        first = root.meld(spell=HeldBundleReport)
+        first_meld_seconds = time.perf_counter() - started
+        second = root.meld(spell=HeldBundleReport)
+        refusals_during_hold = list(spy.refusals)
+        successes_during_hold = spy.successes
+        bytes_during_hold = bundle_path.read_bytes()
+        listing_during_hold = _folder_listing(folder)
+    finally:
+        held.release()
+    later_spell_id = root.bind(spell=AfterHoldReport, existence=Existence.unique, permissions="create")
+    later = root.meld(spell=AfterHoldReport)
+    listing_after = _folder_listing(folder)
+    reloaded = CachingSystem(
+        frame_name=frame_name,
+        conduit_name="root",
+        cache_root_path=folder.parent,
+        logger=_test_logger(),
+    )
+    try:
+        cached_spell_ids = set(reloaded.cached_spell_ids)
+    finally:
+        reloaded.cleanup()
+
+    print(
+        f"\n[held-bundle] meld: the first meld of a late spell returned {type(first).__name__} in "
+        f"{first_meld_seconds:.3f} s while its save was refused {len(refusals_during_hold)} times (Windows codes "
+        f"{_refusal_codes(refusals_during_hold)}); the second meld returned the same object: {second is first}. "
+        f"After the hold the next late spell's meld saved the bundle ({spy.successes} done, "
+        f"{len(spy.refusals) - len(refusals_during_hold)} more refused); the bundle holds {len(cached_spell_ids)} "
+        f"plans; folder: {listing_after}."
+    )
+    assert isinstance(first, HeldBundleReport)
+    assert second is first
+    assert len(refusals_during_hold) == CachingSystem.REPLACE_ATTEMPTS
+    assert successes_during_hold == 0
+    assert bytes_during_hold == bytes_before
+    assert listing_during_hold == [bundle_path.name]
+    assert isinstance(later, AfterHoldReport)
+    assert spy.successes == 1
+    assert {report_spell_id, later_spell_id} <= cached_spell_ids
+    assert listing_after == [bundle_path.name]
+================================================================================
+END FILE: tests/integration/melder/conduit/test_conduit_integration_windows_held_cache_bundle.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_ordered_disposal_runtime.py
 CONTENT SHA256: cfbcb4740089938786e16fafa9133f7de02e2abba119ae91d76191ffa69d2390
 SOURCE ENCODING: utf-8
@@ -173065,7 +173667,7 @@ END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/conftest.py
-CONTENT SHA256: c996810bcdd41bf0eae57737717a5636203697a45f4f0cb33e16fa9cf10824ec
+CONTENT SHA256: c39baf7c80f98d7f5c15a76477d0556285e777e1acc69c53def41350636f3e08
 SOURCE ENCODING: utf-8
 ================================================================================
 """Load standalone CI scripts without creating a runtime package or booting Melder."""
@@ -173141,12 +173743,1195 @@ def source_qualification() -> ModuleType:
 def runtime_matrix() -> ModuleType:
     """Provide stable-version discovery with HTTP and filesystem boundaries available to mock."""
     return load_script("python_runtime_matrix")
+
+
+@pytest.fixture
+def provenance() -> ModuleType:
+    """Provide the candidate provenance check with its network, process and environment boundaries to mock."""
+    return load_script("testpypi_provenance")
 ================================================================================
 END FILE: tests/unit/github_workflows/conftest.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_candidate_provenance.py
+CONTENT SHA256: a0c2654dc704f978436c375f14e334b1a7dc3090ef093a22023e93225a02db19
+SOURCE ENCODING: utf-8
+================================================================================
+"""Prove the candidate provenance check's five layers on recorded and synthetic attestations, with no network.
+
+The recorded control is PyPI's real provenance of the pypi-attestations 0.0.30 wheel; the synthetic attestations are
+built here, byte by byte, with the identity this repository's release-candidate run would sign with. Nothing reaches
+TestPyPI, Sigstore or pip: those boundaries are replaced in each test that crosses them.
+"""
+
+import ast
+import base64
+import io
+import json
+import pathlib
+import subprocess
+import urllib.error
+from collections.abc import Callable, Mapping, Sequence
+from types import ModuleType
+from typing import Optional
+
+import pytest
+import yaml
+
+
+class Der:
+    """Encode the DER a Fulcio signing certificate is written in, so a test can build an exact or a broken one."""
+
+    @staticmethod
+    def element(tag: int, content: bytes) -> bytes:
+        """Return one DER element with its minimal definite length."""
+        if len(content) < 0x80:
+            return bytes([tag, len(content)]) + content
+        size = (len(content).bit_length() + 7) // 8
+        return bytes([tag, 0x80 | size]) + len(content).to_bytes(size, "big") + content
+
+    @staticmethod
+    def arcs(dotted: str) -> bytes:
+        """Return the content octets of a dotted OBJECT IDENTIFIER, each arc in minimal base-128."""
+        numbers = [int(arc) for arc in dotted.split(".")]
+        body = bytearray()
+        for value in (40 * numbers[0] + numbers[1], *numbers[2:]):
+            septets = [value & 0x7F]
+            value >>= 7
+            while value:
+                septets.append(0x80 | (value & 0x7F))
+                value >>= 7
+            body.extend(reversed(septets))
+        return bytes(body)
+
+    @classmethod
+    def extension(cls, dotted: str, value: bytes, critical: bool = False) -> bytes:
+        """Return one Extension: its OID, an optional critical flag and its OCTET STRING value."""
+        flag = cls.element(0x01, b"\xff") if critical else b""
+        return cls.element(0x30, cls.element(0x06, cls.arcs(dotted)) + flag + cls.element(0x04, value))
+
+    @classmethod
+    def subject_names(cls, *uris: str) -> bytes:
+        """Return a SubjectAlternativeName extension naming each URI."""
+        return cls.extension("2.5.29.17", cls.element(0x30, b"".join(cls.element(0x86, uri.encode("ascii"))
+                                                                     for uri in uris)))
+
+    @classmethod
+    def claim(cls, dotted: str, text: str) -> bytes:
+        """Return one Fulcio claim as Fulcio writes it: raw text up to .6, a DER UTF8String from .8 on."""
+        value = text.encode("utf-8")
+        return cls.extension(dotted, value if int(dotted.rsplit(".", 1)[1]) <= 6 else cls.element(0x0C, value))
+
+    @classmethod
+    def certificate(cls, extensions: Sequence[bytes], before_extensions: bytes = b"",
+                    extensions_block: Optional[bytes] = None) -> bytes:
+        """Return a certificate whose to-be-signed part holds placeholder fields and these extensions.
+
+        Args:
+            extensions: The Extension elements, in order.
+            before_extensions: Raw elements inserted into the to-be-signed part just before the extensions block.
+            extensions_block: The whole `[3]` element to use instead of the one built from extensions.
+        """
+        algorithm = cls.element(0x30, cls.element(0x06, cls.arcs("1.2.840.10045.4.3.3")))
+        block = extensions_block if extensions_block is not None else cls.element(
+            0xA3, cls.element(0x30, b"".join(extensions)))
+        tbs = (cls.element(0xA0, cls.element(0x02, b"\x02")) + cls.element(0x02, b"\x01\x02") + algorithm
+               + cls.element(0x30, b"") + cls.element(0x30, b"") + cls.element(0x30, b"") + cls.element(0x30, b"")
+               + before_extensions + block)
+        return cls.element(0x30, cls.element(0x30, tbs) + algorithm + cls.element(0x03, b"\x00signature"))
+
+
+class Signer:
+    """The identity this repository's release-candidate run signs with, written out independently of the script."""
+
+    PREFIX = "1.3.6.1.4.1.57264.1."
+    SHA = "a" * 40
+    WORKFLOW_SHA = "b" * 40
+    WORKFLOW = ("https://github.com/Synaptic724/melder/.github/workflows/release-candidate.yml"
+                "@refs/heads/release_candidate")
+    ISSUER = "https://token.actions.githubusercontent.com"
+
+    @classmethod
+    def claims(cls, run: str = "3003", attempt: str = "1", trigger: str = "push") -> dict[str, str]:
+        """Return every claim Fulcio writes for a run of release-candidate.yml in the pypitest environment."""
+        oid = cls.PREFIX
+        return {
+            oid + "1": cls.ISSUER, oid + "2": trigger, oid + "3": cls.SHA, oid + "4": "Release candidate",
+            oid + "5": "Synaptic724/melder", oid + "6": "refs/heads/release_candidate",
+            oid + "8": cls.ISSUER, oid + "9": cls.WORKFLOW, oid + "10": cls.WORKFLOW_SHA, oid + "11": "github-hosted",
+            oid + "12": "https://github.com/Synaptic724/melder", oid + "13": cls.SHA,
+            oid + "14": "refs/heads/release_candidate", oid + "15": "1001",
+            oid + "16": "https://github.com/Synaptic724", oid + "17": "2002", oid + "18": cls.WORKFLOW,
+            oid + "19": cls.WORKFLOW_SHA, oid + "20": trigger,
+            oid + "21": f"https://github.com/Synaptic724/melder/actions/runs/{run}/attempts/{attempt}",
+            oid + "22": "public", oid + "23": "pypitest", oid + "24": "repo:Synaptic724/melder:environment:pypitest",
+        }
+
+    @classmethod
+    def certificate(cls, claims: Mapping[str, str], sans: Sequence[str] = ()) -> bytes:
+        """Return a certificate carrying these claims and subject alternative names (the workflow by default)."""
+        return Der.certificate([Der.subject_names(*(sans or (cls.WORKFLOW,))),
+                                *(Der.claim(oid, value) for oid, value in claims.items())])
+
+    @staticmethod
+    def statement(name: str, sha256: str) -> dict[str, object]:
+        """Return the PyPI publish statement of one file."""
+        return {"_type": "https://in-toto.io/Statement/v1", "subject": [{"name": name, "digest": {"sha256": sha256}}],
+                "predicateType": "https://docs.pypi.org/attestations/publish/v1", "predicate": None}
+
+    @classmethod
+    def provenance(cls, name: str, sha256: str, claims: Mapping[str, str],
+                   publisher: Optional[Mapping[str, str]] = None,
+                   statement: Optional[Mapping[str, object]] = None) -> dict[str, object]:
+        """Return a provenance as TestPyPI's Integrity API answers it, holding one attestation of one file."""
+        attestation = {
+            "version": 1,
+            "verification_material": {
+                "certificate": base64.b64encode(cls.certificate(claims)).decode("ascii"),
+                "transparency_entries": [{"logIndex": "1", "kindVersion": {"kind": "dsse", "version": "0.0.1"}}],
+            },
+            "envelope": {
+                "statement": base64.b64encode(json.dumps(statement or cls.statement(name, sha256)).encode())
+                .decode("ascii"),
+                "signature": base64.b64encode(b"signature").decode("ascii"),
+            },
+        }
+        record = publisher or {"kind": "GitHub", "repository": "Synaptic724/melder",
+                               "workflow": "release-candidate.yml", "environment": "pypitest"}
+        return {"version": 1, "attestation_bundles": [{"publisher": dict(record), "attestations": [attestation]}]}
+
+    @classmethod
+    def environment(cls, **changes: str) -> dict[str, str]:
+        """Return GitHub's default variables for a push run of release-candidate.yml, with any changes applied."""
+        values = {
+            "GITHUB_SERVER_URL": "https://github.com", "GITHUB_REPOSITORY": "Synaptic724/melder",
+            "GITHUB_REF": "refs/heads/release_candidate",
+            "GITHUB_WORKFLOW_REF": cls.WORKFLOW.removeprefix("https://github.com/"),
+            "GITHUB_SHA": cls.SHA, "GITHUB_WORKFLOW_SHA": cls.WORKFLOW_SHA, "GITHUB_REPOSITORY_ID": "1001",
+            "GITHUB_REPOSITORY_OWNER_ID": "2002", "GITHUB_RUN_ID": "3003", "GITHUB_RUN_ATTEMPT": "2",
+            "GITHUB_EVENT_NAME": "push",
+        }
+        values.update(changes)
+        return values
+
+
+def control_document(provenance: ModuleType) -> dict[str, object]:
+    """Read the recorded control provenance as JSON."""
+    directory = provenance.ProvenancePolicy.tool_directory()
+    return json.loads((directory / provenance.ProvenanceControl.FIXTURE).read_bytes())
+
+
+def identity_of(provenance: ModuleType, claims: Mapping[str, str], sans: Sequence[str] = ()) -> dict[str, object]:
+    """Read back what the script sees in a synthetic certificate."""
+    return provenance.certificate_identity(Signer.certificate(claims, sans))
+
+
+def test_der_elements_read_short_and_long_lengths(provenance: ModuleType) -> None:
+    """A short and a long definite length both bound the value exactly."""
+    reader = provenance.DerReader
+    short = Der.element(0x04, b"abc")
+    assert reader.element(short, 0, len(short)) == (0x04, 2, 5)
+    long = Der.element(0x04, b"x" * 300)
+    assert reader.element(long, 0, len(long)) == (0x04, 4, 304)
+    assert reader.children(short + long, 0, len(short) + len(long)) == [(0x04, 2, 5), (0x04, 9, 309)]
+
+
+@pytest.mark.parametrize(("data", "message"), [
+    (b"\x04", "truncated"),
+    (b"\x1f\x01\x00", "multi-byte tag"),
+    (b"\x04\x80", "indefinite or oversized"),
+    (b"\x04\x85" + b"\x00" * 5, "indefinite or oversized"),
+    (b"\x04\x81\x05abcde", "non-minimal length"),
+    (b"\x04\x82\x00\x80" + b"x" * 128, "non-minimal length"),
+    (b"\x04\x05abc", "overruns"),
+])
+def test_der_elements_refuse_every_form_der_forbids(provenance: ModuleType, data: bytes, message: str) -> None:
+    """Truncation, multi-byte tags, indefinite, oversized or padded lengths and overruns are all refused."""
+    with pytest.raises(ValueError, match=message):
+        provenance.DerReader.element(data, 0, len(data))
+
+
+def test_der_children_must_tile_their_parent(provenance: ModuleType) -> None:
+    """An element that runs past its parent's end is refused, not read into the next field."""
+    data = Der.element(0x04, b"ab") + b"\x04\x09cd"
+    with pytest.raises(ValueError, match="overruns"):
+        provenance.DerReader.children(data, 0, len(data))
+
+
+@pytest.mark.parametrize("dotted", ["1.3.6.1.4.1.57264.1.8", "2.5.29.17", "1.3.6.1.4.1.57264.1.24", "2.999.3",
+                                    "0.9.2342.19200300.100.1.1"])
+def test_object_identifiers_decode_to_their_dotted_form(provenance: ModuleType, dotted: str) -> None:
+    """Multi-byte arcs and the joint first arc decode exactly."""
+    assert provenance.DerReader.object_identifier(Der.arcs(dotted)) == dotted
+
+
+@pytest.mark.parametrize("value", [b"", b"\x2b\x86", b"\x2b\x80\x01"])
+def test_malformed_object_identifiers_are_refused(provenance: ModuleType, value: bytes) -> None:
+    """An empty value, an unterminated last arc and a padded arc are refused."""
+    with pytest.raises(ValueError, match="object identifier"):
+        provenance.DerReader.object_identifier(value)
+
+
+def test_the_recorded_control_reads_as_its_real_signer(provenance: ModuleType) -> None:
+    """The reader recovers every claim of a real Fulcio certificate, legacy claims included, and nothing else."""
+    control = provenance.ProvenanceControl
+    attestation = provenance.single_attestation(control_document(provenance), "the control", control.PUBLISHER)
+    identity = provenance.certificate_identity(provenance.certificate_der(attestation, "the control"))
+    assert identity["sans"] == [control.SAN]
+    assert {oid: identity["claims"][oid] for oid in control.CLAIMS} == dict(control.CLAIMS)
+    legacy = {oid: identity["claims"][oid] for oid in identity["claims"] if oid not in control.CLAIMS}
+    assert legacy == {
+        "1.3.6.1.4.1.57264.1.1": "https://token.actions.githubusercontent.com", "1.3.6.1.4.1.57264.1.2": "release",
+        "1.3.6.1.4.1.57264.1.3": control.COMMIT, "1.3.6.1.4.1.57264.1.4": "release",
+        "1.3.6.1.4.1.57264.1.5": "pypi/pypi-attestations", "1.3.6.1.4.1.57264.1.6": "refs/tags/v0.0.30",
+    }
+    provenance.check_identity(identity, control.expected(), "the control")
+    provenance.check_statement(attestation, control.NAME, control.SHA256, "the control")
+
+
+def test_certificate_identity_reads_claims_and_skips_unknown_extensions(provenance: ModuleType) -> None:
+    """Known claims are decoded, a critical flag is allowed, and extensions outside the check are left out."""
+    claims = Signer.claims()
+    der = Der.certificate([Der.extension("2.5.29.15", b"\x03\x02\x07\x80", critical=True),
+                           Der.subject_names(Signer.WORKFLOW),
+                           *(Der.claim(oid, value) for oid, value in claims.items()),
+                           Der.claim("1.3.6.1.4.1.57264.1.99", "future claim")])
+    identity = provenance.certificate_identity(der)
+    assert identity == {"sans": [Signer.WORKFLOW], "claims": claims}
+
+
+@pytest.mark.parametrize(("der", "message"), [
+    (Der.element(0x31, b""), "not one DER certificate"),
+    (Der.element(0x30, Der.element(0x30, b"") + Der.element(0x30, b"")), "not one DER certificate"),
+    (Der.certificate([]) + b"\x00", "not one DER certificate"),
+    (Der.certificate([], extensions_block=Der.element(0xA2, Der.element(0x30, b""))), "no extensions block"),
+    (Der.certificate([], before_extensions=Der.element(0xA3, Der.element(0x30, b""))), "no extensions block"),
+    (Der.certificate([], extensions_block=Der.element(0xA3, Der.element(0x31, b""))), "no extensions block"),
+    (Der.certificate([], extensions_block=Der.element(0xA3, Der.element(0x30, b"") + Der.element(0x30, b""))),
+     "no extensions block"),
+])
+def test_a_certificate_without_one_extensions_block_is_refused(provenance: ModuleType, der: bytes,
+                                                              message: str) -> None:
+    """Anything but one certificate whose to-be-signed part holds exactly one extensions block is refused."""
+    with pytest.raises(ValueError, match=message):
+        provenance.certificate_identity(der)
+
+
+@pytest.mark.parametrize("extension", [
+    Der.element(0x30, Der.element(0x06, Der.arcs("2.5.29.17"))),
+    Der.element(0x30, Der.element(0x06, Der.arcs("2.5.29.17")) + Der.element(0x02, b"\x01")
+                + Der.element(0x04, b"")),
+    Der.element(0x30, Der.element(0x04, b"") + Der.element(0x04, b"")),
+    Der.element(0x31, Der.element(0x06, Der.arcs("2.5.29.17")) + Der.element(0x04, b"")),
+    Der.element(0x30, Der.element(0x06, Der.arcs("2.5.29.17")) + Der.element(0x01, b"\xff")
+                + Der.element(0x01, b"\xff") + Der.element(0x04, b"")),
+])
+def test_a_malformed_extension_is_refused(provenance: ModuleType, extension: bytes) -> None:
+    """An extension that is not SEQUENCE { OID, [BOOLEAN], OCTET STRING } is refused."""
+    with pytest.raises(ValueError, match="malformed extension"):
+        provenance.certificate_identity(Der.certificate([extension]))
+
+
+def test_a_repeated_extension_is_refused(provenance: ModuleType) -> None:
+    """Two copies of one claim cannot both be read; the certificate is refused instead of picking one."""
+    claim = Der.claim(Signer.PREFIX + "12", "https://github.com/Synaptic724/melder")
+    with pytest.raises(ValueError, match="repeats extension"):
+        provenance.certificate_identity(Der.certificate([claim, claim]))
+
+
+@pytest.mark.parametrize("names", [
+    Der.element(0x30, Der.element(0x81, b"someone@example.com")),
+    Der.element(0x30, Der.element(0x86, Signer.WORKFLOW.encode()) + Der.element(0x82, b"example.com")),
+])
+def test_a_subject_name_that_is_not_a_uri_is_refused(provenance: ModuleType, names: bytes) -> None:
+    """A GitHub Actions signer is named by its workflow URI only; an e-mail or DNS name is refused."""
+    with pytest.raises(ValueError, match="not a URI"):
+        provenance.certificate_identity(Der.certificate([Der.extension("2.5.29.17", names)]))
+
+
+def test_malformed_subject_names_are_refused(provenance: ModuleType) -> None:
+    """A SubjectAlternativeName value that is not one SEQUENCE is refused."""
+    value = Der.element(0x30, Der.element(0x86, b"https://x")) + b"\x00"
+    with pytest.raises(ValueError, match="subject alternative names are malformed"):
+        provenance.certificate_identity(Der.certificate([Der.extension("2.5.29.17", value)]))
+
+
+@pytest.mark.parametrize("value", [
+    Der.element(0x13, b"public"),
+    Der.element(0x0C, b"public") + b"\x00",
+    b"public",
+])
+def test_a_text_claim_that_is_not_one_utf8_string_is_refused(provenance: ModuleType, value: bytes) -> None:
+    """From .8 on a claim is exactly one DER UTF8String; another string type or trailing bytes are refused."""
+    extension = Der.extension(Signer.PREFIX + "22", value)
+    with pytest.raises(ValueError):
+        provenance.certificate_identity(Der.certificate([extension]))
+
+
+def expected_for_this_run(provenance: ModuleType, uploaded_here: bool = True, attempt: int = 1) -> dict[str, object]:
+    """Return what the script demands of a candidate file in the push run Signer.environment describes."""
+    return provenance.expected_identity(provenance.run_context(Signer.environment()), uploaded_here, attempt)
+
+
+def test_the_expected_identity_of_an_uploaded_file_is_this_run(provenance: ModuleType) -> None:
+    """A file this run uploaded must name every claim exactly, this run's id and its publish attempt included."""
+    expected = expected_for_this_run(provenance, attempt=1)
+    claims = Signer.claims(run="3003", attempt="1", trigger="push")
+    assert expected == {"san": Signer.WORKFLOW, "patterns": {},
+                        "exact": {oid: value for oid, value in claims.items() if int(oid.rsplit(".", 1)[1]) >= 8}}
+    provenance.check_identity(identity_of(provenance, claims), expected, "melder.whl")
+
+
+def test_an_uploaded_file_signed_by_another_attempt_or_event_is_refused(provenance: ModuleType) -> None:
+    """The run invocation names the attempt that uploaded, and the trigger is this run's event."""
+    expected = expected_for_this_run(provenance, attempt=1)
+    with pytest.raises(ValueError, match="Run Invocation URI"):
+        provenance.check_identity(identity_of(provenance, Signer.claims(attempt="2")), expected, "melder.whl")
+    with pytest.raises(ValueError, match="Build Trigger"):
+        provenance.check_identity(identity_of(provenance, Signer.claims(trigger="workflow_dispatch")), expected,
+                                  "melder.whl")
+
+
+def test_a_file_testpypi_already_had_may_come_from_another_run_at_this_commit(provenance: ModuleType) -> None:
+    """A file uploaded earlier matches any run and attempt of this repository, from either allowed event."""
+    expected = expected_for_this_run(provenance, uploaded_here=False)
+    oid = Signer.PREFIX
+    assert set(expected["patterns"]) == {oid + "20", oid + "21"}
+    assert oid + "20" not in expected["exact"] and oid + "21" not in expected["exact"]
+    for claims in (Signer.claims(run="2002", attempt="3", trigger="workflow_dispatch"), Signer.claims(run="9")):
+        provenance.check_identity(identity_of(provenance, claims), expected, "melder.whl")
+
+
+@pytest.mark.parametrize(("change", "claim"), [
+    ({"1.3.6.1.4.1.57264.1.21": "https://github.com/someone/melder/actions/runs/1/attempts/1"}, "Run Invocation URI"),
+    ({"1.3.6.1.4.1.57264.1.21": "https://github.com/Synaptic724/melder/actions/runs/1/attempts/0"},
+     "Run Invocation URI"),
+    ({"1.3.6.1.4.1.57264.1.20": "pull_request", "1.3.6.1.4.1.57264.1.2": "pull_request"}, "Build Trigger"),
+    ({"1.3.6.1.4.1.57264.1.13": "c" * 40, "1.3.6.1.4.1.57264.1.3": "c" * 40}, "Source Repository Digest"),
+])
+def test_a_file_testpypi_already_had_still_needs_this_repository_and_commit(provenance: ModuleType,
+                                                                           change: dict[str, str],
+                                                                           claim: str) -> None:
+    """The patterns allow another run of this workflow, never another repository, event or commit."""
+    with pytest.raises(ValueError, match=claim):
+        provenance.check_identity(identity_of(provenance, {**Signer.claims(), **change}),
+                                  expected_for_this_run(provenance, uploaded_here=False), "melder.whl")
+
+
+@pytest.mark.parametrize(("arc", "value", "name"), [
+    ("8", "https://accounts.google.com", "Issuer"),
+    ("9", Signer.WORKFLOW.replace("release_candidate", "dev"), "Build Signer URI"),
+    ("10", "c" * 40, "Build Signer Digest"),
+    ("11", "self-hosted", "Runner Environment"),
+    ("12", "https://github.com/Synaptic724/melder-fork", "Source Repository URI"),
+    ("14", "refs/heads/dev", "Source Repository Ref"),
+    ("15", "1002", "Source Repository Identifier"),
+    ("16", "https://github.com/someone", "Source Repository Owner URI"),
+    ("17", "2003", "Source Repository Owner Identifier"),
+    ("18", Signer.WORKFLOW.replace("release-candidate", "ci"), "Build Config URI"),
+    ("19", "c" * 40, "Build Config Digest"),
+    ("22", "private", "Source Repository Visibility At Signing"),
+    ("23", "pypi", "Deployment Environment"),
+    ("24", "repo:Synaptic724/melder:ref:refs/heads/release_candidate", "Token Subject"),
+])
+def test_every_claim_is_checked_on_its_own(provenance: ModuleType, arc: str, value: str, name: str) -> None:
+    """Changing any one claim refuses the file, naming that claim with what was expected and what was found."""
+    claims = {**Signer.claims(), Signer.PREFIX + arc: value}
+    with pytest.raises(ValueError, match=name) as refusal:
+        provenance.check_identity(identity_of(provenance, claims), expected_for_this_run(provenance), "melder.whl")
+    assert repr(value) in str(refusal.value)
+    assert "melder.whl" in str(refusal.value)
+
+
+def test_a_missing_claim_is_refused(provenance: ModuleType) -> None:
+    """A certificate without the Deployment Environment claim does not satisfy it by omission."""
+    claims = {oid: value for oid, value in Signer.claims().items() if oid != Signer.PREFIX + "23"}
+    with pytest.raises(ValueError, match=r"Deployment Environment \(1\.3\.6\.1\.4\.1\.57264\.1\.23\) is None"):
+        provenance.check_identity(identity_of(provenance, claims), expected_for_this_run(provenance), "melder.whl")
+
+
+@pytest.mark.parametrize("sans", [
+    ("https://github.com/Synaptic724/melder/.github/workflows/release-candidate.yml@refs/heads/dev",),
+    (Signer.WORKFLOW, "https://github.com/Synaptic724/melder/.github/workflows/ci.yml@refs/heads/release_candidate"),
+])
+def test_the_certificate_must_name_exactly_the_one_expected_signer(provenance: ModuleType,
+                                                                  sans: tuple[str, ...]) -> None:
+    """Another workflow URI, or a second name beside the right one, is refused."""
+    with pytest.raises(ValueError, match="subject alternative names"):
+        provenance.check_identity(identity_of(provenance, Signer.claims(), sans), expected_for_this_run(provenance),
+                                  "melder.whl")
+
+
+@pytest.mark.parametrize(("arc", "value"), [
+    ("1", "https://accounts.google.com"),
+    ("2", "workflow_dispatch"),
+    ("3", "c" * 40),
+    ("5", "someone/melder"),
+    ("6", "refs/heads/dev"),
+])
+def test_a_deprecated_claim_must_agree_with_its_successor(provenance: ModuleType, arc: str, value: str) -> None:
+    """Fulcio still writes the GitHub-specific claims .1 to .6; one that disagrees with its successor is refused."""
+    claims = {**Signer.claims(), Signer.PREFIX + arc: value}
+    with pytest.raises(ValueError, match=f"deprecated claim 1\\.3\\.6\\.1\\.4\\.1\\.57264\\.1\\.{arc} "):
+        provenance.check_identity(identity_of(provenance, claims), expected_for_this_run(provenance), "melder.whl")
+
+
+def test_every_difference_is_reported_together(provenance: ModuleType) -> None:
+    """One refusal lists every claim that differs, so a reader fixes the publisher in one pass."""
+    claims = {**Signer.claims(), Signer.PREFIX + "11": "self-hosted", Signer.PREFIX + "23": "pypi"}
+    with pytest.raises(ValueError) as refusal:
+        provenance.check_identity(identity_of(provenance, claims, ("https://example.com",)),
+                                  expected_for_this_run(provenance), "melder.whl")
+    message = str(refusal.value)
+    assert "subject alternative names" in message and "Runner Environment" in message
+    assert "Deployment Environment" in message
+
+
+def test_the_run_context_is_read_from_githubs_variables(provenance: ModuleType) -> None:
+    """A push run on release_candidate yields its repository, owner, commits, event, run and attempt."""
+    assert provenance.run_context(Signer.environment()) == {
+        "repository_id": "1001", "owner_id": "2002", "sha": Signer.SHA, "workflow_sha": Signer.WORKFLOW_SHA,
+        "event": "push", "run_id": "3003", "run_attempt": 2,
+    }
+    dispatched = provenance.run_context(Signer.environment(GITHUB_EVENT_NAME="workflow_dispatch",
+                                                           GITHUB_SHA="d" * 64, GITHUB_WORKFLOW_SHA="e" * 64))
+    assert dispatched["event"] == "workflow_dispatch" and dispatched["sha"] == "d" * 64
+
+
+@pytest.mark.parametrize(("name", "value"), [
+    ("GITHUB_SERVER_URL", "https://github.example.com"),
+    ("GITHUB_REPOSITORY", "someone/melder"),
+    ("GITHUB_REF", "refs/heads/dev"),
+    ("GITHUB_WORKFLOW_REF", "Synaptic724/melder/.github/workflows/ci.yml@refs/heads/release_candidate"),
+    ("GITHUB_WORKFLOW_REF", "Synaptic724/melder/.github/workflows/release-candidate.yml@refs/heads/dev"),
+])
+def test_the_check_runs_only_as_this_repositorys_candidate_workflow(provenance: ModuleType, name: str,
+                                                                    value: str) -> None:
+    """Another server, repository, branch or workflow is refused before anything is fetched."""
+    with pytest.raises(ValueError, match=name):
+        provenance.run_context(Signer.environment(**{name: value}))
+
+
+@pytest.mark.parametrize(("name", "value"), [
+    ("GITHUB_SHA", "a" * 39), ("GITHUB_SHA", "A" * 40), ("GITHUB_WORKFLOW_SHA", ""),
+    ("GITHUB_REPOSITORY_ID", "0"), ("GITHUB_REPOSITORY_ID", "01"), ("GITHUB_REPOSITORY_OWNER_ID", "x"),
+    ("GITHUB_RUN_ID", "-1"), ("GITHUB_RUN_ATTEMPT", "0"), ("GITHUB_EVENT_NAME", "pull_request"),
+    ("GITHUB_EVENT_NAME", "push|workflow_dispatch"),
+])
+def test_malformed_run_identifiers_are_refused(provenance: ModuleType, name: str, value: str) -> None:
+    """Short or uppercase SHAs, padded or non-decimal ids and other events are refused."""
+    with pytest.raises(ValueError, match=name):
+        provenance.run_context(Signer.environment(**{name: value}))
+
+
+def test_a_missing_run_variable_is_refused(provenance: ModuleType) -> None:
+    """An absent variable is refused, not read as empty or defaulted."""
+    environment = Signer.environment()
+    del environment["GITHUB_RUN_ID"]
+    with pytest.raises(ValueError, match="GITHUB_RUN_ID"):
+        provenance.run_context(environment)
+
+
+def build_files() -> dict[str, dict[str, object]]:
+    """Return the identities of a candidate's two built files."""
+    return {"melder-0.2.8300-py3-none-any.whl": {"sha256": "1" * 64, "size": 100},
+            "melder-0.2.8300.tar.gz": {"sha256": "2" * 64, "size": 200}}
+
+
+def test_the_upload_record_names_the_files_and_attempt_that_uploaded(provenance: ModuleType) -> None:
+    """The publish job's outputs say which files it staged and in which attempt, possibly an earlier one."""
+    environment = {"CANDIDATE_UPLOADED": '["melder-0.2.8300.tar.gz"]', "CANDIDATE_PUBLISH_ATTEMPT": "1"}
+    assert provenance.upload_record(environment, build_files(), 2) == (frozenset({"melder-0.2.8300.tar.gz"}), 1)
+    nothing = {"CANDIDATE_UPLOADED": "[]", "CANDIDATE_PUBLISH_ATTEMPT": "2"}
+    assert provenance.upload_record(nothing, build_files(), 2) == (frozenset(), 2)
+
+
+@pytest.mark.parametrize("uploaded", [None, "", "not json", '{"melder.whl": 1}', '["a", 1]',
+                                      '["melder-0.2.8300.tar.gz", "melder-0.2.8300.tar.gz"]',
+                                      '["melder-0.2.8299.tar.gz"]'])
+def test_a_malformed_upload_list_is_refused(provenance: ModuleType, uploaded: Optional[str]) -> None:
+    """A missing, non-JSON, non-list, mixed, repeated or foreign file list is refused."""
+    environment = {"CANDIDATE_PUBLISH_ATTEMPT": "1"}
+    if uploaded is not None:
+        environment["CANDIDATE_UPLOADED"] = uploaded
+    with pytest.raises(ValueError, match="CANDIDATE_UPLOADED"):
+        provenance.upload_record(environment, build_files(), 1)
+
+
+@pytest.mark.parametrize("attempt", [None, "", "0", "01", "x", "3"])
+def test_a_malformed_or_future_publish_attempt_is_refused(provenance: ModuleType, attempt: Optional[str]) -> None:
+    """The publish attempt must be an attempt of this run no later than the current one."""
+    environment = {"CANDIDATE_UPLOADED": "[]"}
+    if attempt is not None:
+        environment["CANDIDATE_PUBLISH_ATTEMPT"] = attempt
+    with pytest.raises(ValueError, match="CANDIDATE_PUBLISH_ATTEMPT"):
+        provenance.upload_record(environment, build_files(), 2)
+
+
+class Answer(io.BytesIO):
+    """One urlopen answer: its body and the URL it was finally served from."""
+
+    def __init__(self, body: bytes, url: str) -> None:
+        """Hold the body to read and the URL urllib reports after any redirect."""
+        super().__init__(body)
+        self.url = url
+
+
+def integrity_url(name: str) -> str:
+    """Return the Integrity API address of one candidate file's provenance."""
+    return f"https://test.pypi.org/integrity/melder/0.2.8300/{name}/provenance"
+
+
+def unexpected_pause(seconds: float) -> None:
+    """Fail a test whose answer is definitive and must not be retried."""
+    raise AssertionError("A definitive answer must not be retried.")
+
+
+def test_the_provenance_is_read_from_the_integrity_api_without_credentials(provenance: ModuleType,
+                                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """One request to the file's provenance URL, asking for the Integrity API's JSON, with no credentials."""
+    answers: list[Answer] = []
+    name = "melder-0.2.8300-py3-none-any.whl"
+
+    def answer(request: object, timeout: int) -> Answer:
+        """Check the request at the network boundary and answer it."""
+        assert request.full_url == integrity_url(name)
+        assert request.get_header("Accept") == "application/vnd.pypi.integrity.v1+json"
+        assert request.get_header("Authorization") is None
+        assert timeout == 30
+        answers.append(Answer(b'{"version": 1}', integrity_url(name)))
+        return answers[-1]
+
+    monkeypatch.setattr(provenance.urllib.request, "urlopen", answer)
+    monkeypatch.setattr(provenance.time, "sleep", unexpected_pause)
+    assert provenance.fetch_provenance("0.2.8300", name) == b'{"version": 1}'
+    assert len(answers) == 1 and answers[0].closed
+
+
+def test_a_redirected_provenance_answer_is_refused(provenance: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An answer served from another URL than the file's own is not that file's provenance."""
+    monkeypatch.setattr(provenance.urllib.request, "urlopen",
+                        lambda request, timeout: Answer(b"{}", "https://example.com/provenance"))
+    with pytest.raises(ValueError, match="redirected"):
+        provenance.fetch_provenance("0.2.8300", "melder.whl")
+
+
+def test_a_late_provenance_is_waited_for(provenance: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """TestPyPI may answer 404 just after the upload; the lookup retries and reads the first real answer."""
+    answers: list[object] = [urllib.error.HTTPError(integrity_url("m.whl"), 404, "Not Found", {}, None),
+                             urllib.error.HTTPError(integrity_url("m.whl"), 503, "Unavailable", {}, None),
+                             Answer(b"{}", integrity_url("m.whl"))]
+    pauses: list[float] = []
+
+    def answer(request: object, timeout: int) -> object:
+        """Answer 404, then 503, then the provenance."""
+        reply = answers.pop(0)
+        if isinstance(reply, BaseException):
+            raise reply
+        return reply
+
+    monkeypatch.setattr(provenance.urllib.request, "urlopen", answer)
+    monkeypatch.setattr(provenance.time, "sleep", pauses.append)
+    assert provenance.fetch_provenance("0.2.8300", "m.whl") == b"{}"
+    assert not answers and pauses == [provenance.ProvenancePolicy.RETRY_SECONDS] * 2
+
+
+def test_a_provenance_that_never_appears_is_refused_by_name(provenance: ModuleType,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 404 that outlasts every attempt means the file has no attestation; the refusal says how to recover."""
+    calls: list[int] = []
+    pauses: list[float] = []
+
+    def missing(request: object, timeout: int) -> None:
+        """Answer 404 every time."""
+        calls.append(1)
+        raise urllib.error.HTTPError(integrity_url("m.whl"), 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(provenance.urllib.request, "urlopen", missing)
+    monkeypatch.setattr(provenance.time, "sleep", pauses.append)
+    with pytest.raises(ValueError, match="holds no provenance for m.whl") as refusal:
+        provenance.fetch_provenance("0.2.8300", "m.whl")
+    assert "new candidate version" in str(refusal.value)
+    policy = provenance.ProvenancePolicy
+    assert len(calls) == policy.LOOKUP_ATTEMPTS and pauses == [policy.RETRY_SECONDS] * (policy.LOOKUP_ATTEMPTS - 1)
+
+
+@pytest.mark.parametrize("failure", [
+    urllib.error.HTTPError("https://test.pypi.org/", 503, "Backend is unhealthy", {}, None),
+    urllib.error.URLError("connection refused"),
+    TimeoutError("The read operation timed out"),
+], ids=["503", "connection", "timeout"])
+def test_a_lasting_outage_propagates_after_the_bounded_retries(provenance: ModuleType,
+                                                              monkeypatch: pytest.MonkeyPatch,
+                                                              failure: Exception) -> None:
+    """An outage is retried a bounded number of times and then its own error propagates."""
+    calls: list[int] = []
+
+    def unavailable(request: object, timeout: int) -> None:
+        """Fail the same way every time."""
+        calls.append(1)
+        raise failure
+
+    monkeypatch.setattr(provenance.urllib.request, "urlopen", unavailable)
+    monkeypatch.setattr(provenance.time, "sleep", lambda seconds: None)
+    with pytest.raises(type(failure)):
+        provenance.fetch_provenance("0.2.8300", "m.whl")
+    assert len(calls) == provenance.ProvenancePolicy.LOOKUP_ATTEMPTS
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 410])
+def test_a_definitive_error_is_not_retried(provenance: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                          status: int) -> None:
+    """Any other HTTP status is the answer, raised at once."""
+    def refused(request: object, timeout: int) -> None:
+        """Answer with a definitive error."""
+        raise urllib.error.HTTPError("https://test.pypi.org/", status, "refused", {}, None)
+
+    monkeypatch.setattr(provenance.urllib.request, "urlopen", refused)
+    monkeypatch.setattr(provenance.time, "sleep", unexpected_pause)
+    with pytest.raises(urllib.error.HTTPError):
+        provenance.fetch_provenance("0.2.8300", "m.whl")
+
+
+def publisher_record() -> dict[str, str]:
+    """Return the publisher record TestPyPI keeps for this repository's Trusted Publisher."""
+    return {"kind": "GitHub", "repository": "Synaptic724/melder", "workflow": "release-candidate.yml",
+            "environment": "pypitest"}
+
+
+def test_the_publisher_record_must_be_this_trusted_publisher(provenance: ModuleType) -> None:
+    """Layer 2 accepts this repository's publisher, with extra keys, and names every key that differs."""
+    expected = provenance.ProvenancePolicy.publisher()
+    assert expected == publisher_record()
+    document = Signer.provenance("m.whl", "1" * 64, Signer.claims(),
+                                 publisher={**publisher_record(), "claims": {"sha": Signer.SHA}})
+    assert provenance.single_attestation(document, "m.whl", expected)["version"] == 1
+    wrong = Signer.provenance("m.whl", "1" * 64, Signer.claims(),
+                              publisher={**publisher_record(), "workflow": "ci.yml", "environment": "pypi"})
+    with pytest.raises(ValueError, match="not the expected Trusted Publisher") as refusal:
+        provenance.single_attestation(wrong, "m.whl", expected)
+    assert "workflow is 'ci.yml', expected 'release-candidate.yml'" in str(refusal.value)
+    assert "environment is 'pypi', expected 'pypitest'" in str(refusal.value)
+
+
+def mutated(document: Mapping[str, object], change: str) -> dict[str, object]:
+    """Return a copy of a provenance with one named defect."""
+    copy = json.loads(json.dumps(document))
+    bundle = copy["attestation_bundles"][0]
+    attestation = bundle["attestations"][0]
+    if change == "version":
+        copy["version"] = 2
+    elif change == "two bundles":
+        copy["attestation_bundles"].append(bundle)
+    elif change == "no bundles":
+        copy["attestation_bundles"] = []
+    elif change == "no publisher":
+        del bundle["publisher"]
+    elif change == "two attestations":
+        bundle["attestations"].append(attestation)
+    elif change == "attestation version":
+        attestation["version"] = 0
+    elif change == "no log entry":
+        attestation["verification_material"]["transparency_entries"] = []
+    elif change == "no certificate":
+        attestation["verification_material"]["certificate"] = ""
+    return copy
+
+
+@pytest.mark.parametrize("change", ["version", "two bundles", "no bundles", "no publisher", "two attestations",
+                                    "attestation version", "no log entry", "no certificate"])
+def test_a_provenance_of_any_other_shape_is_refused(provenance: ModuleType, change: str) -> None:
+    """Exactly one bundle, one attestation, version 1, a certificate and a transparency-log entry, or refused."""
+    document = mutated(Signer.provenance("m.whl", "1" * 64, Signer.claims()), change)
+    with pytest.raises(ValueError):
+        provenance.single_attestation(document, "m.whl", provenance.ProvenancePolicy.publisher())
+
+
+@pytest.mark.parametrize("statement", [
+    {**Signer.statement("other.whl", "1" * 64)},
+    {**Signer.statement("m.whl", "2" * 64)},
+    {**Signer.statement("m.whl", "1" * 64), "predicateType": "https://slsa.dev/provenance/v1"},
+    {**Signer.statement("m.whl", "1" * 64), "predicate": {"buildType": "x"}},
+    {**Signer.statement("m.whl", "1" * 64), "_type": "https://in-toto.io/Statement/v0.1"},
+    {**Signer.statement("m.whl", "1" * 64), "subject": [{"name": "m.whl", "digest": {"sha256": "1" * 64}}] * 2},
+    {**Signer.statement("m.whl", "1" * 64), "extra": True},
+    {key: value for key, value in Signer.statement("m.whl", "1" * 64).items() if key != "predicate"},
+])
+def test_the_statement_must_name_exactly_this_file(provenance: ModuleType, statement: dict[str, object]) -> None:
+    """Layer 5: another name, digest, predicate, statement type, a second subject or an extra key is refused."""
+    document = Signer.provenance("m.whl", "1" * 64, Signer.claims(), statement=statement)
+    attestation = provenance.single_attestation(document, "m.whl", provenance.ProvenancePolicy.publisher())
+    with pytest.raises(ValueError, match="The statement of m.whl is"):
+        provenance.check_statement(attestation, "m.whl", "1" * 64, "m.whl")
+
+
+def test_the_statement_of_this_file_is_accepted(provenance: ModuleType) -> None:
+    """The publish statement of this exact file and digest, with no predicate, passes layer 5."""
+    document = Signer.provenance("m.whl", "1" * 64, Signer.claims())
+    attestation = provenance.single_attestation(document, "m.whl", provenance.ProvenancePolicy.publisher())
+    provenance.check_statement(attestation, "m.whl", "1" * 64, "m.whl")
+
+
+@pytest.mark.parametrize(("field", "value"), [("statement", "not base64!"), ("statement", base64.b64encode(b"[")),
+                                              ("signature", "%%%")])
+def test_an_envelope_that_does_not_decode_is_refused(provenance: ModuleType, field: str, value: object) -> None:
+    """A statement or signature that is not strict base64, or a statement that is not JSON, is refused."""
+    document = Signer.provenance("m.whl", "1" * 64, Signer.claims())
+    envelope = document["attestation_bundles"][0]["attestations"][0]["envelope"]
+    envelope[field] = value.decode("ascii") if isinstance(value, bytes) else value
+    attestation = provenance.single_attestation(document, "m.whl", provenance.ProvenancePolicy.publisher())
+    with pytest.raises(ValueError, match="m.whl"):
+        provenance.check_statement(attestation, "m.whl", "1" * 64, "m.whl")
+
+
+def test_the_tool_lock_is_exact_hashed_pins_of_the_signers_versions(provenance: ModuleType) -> None:
+    """The lock pins the publishing action's own pypi-attestations and sigstore, every pin with its hashes."""
+    directory = provenance.ProvenancePolicy.tool_directory()
+    pins = provenance.tool_pins((directory / provenance.ProvenancePolicy.TOOL_LOCK).read_text(encoding="utf-8"))
+    assert pins["pypi-attestations"][0] == "0.0.30" and pins["sigstore"][0] == "4.5.1"
+    assert provenance.ProvenanceControl.SHA256 in pins["pypi-attestations"][1]
+    assert len(pins) == 33 and all(hashes for _, hashes in pins.values())
+
+
+def test_the_lock_reader_follows_continuations_and_comments(provenance: ModuleType) -> None:
+    """Continued lines and comments are read as pip reads them."""
+    lock = ("# header\nalpha==1.0 \\\n    --hash=sha256:" + "a" * 64 + " \\\n    --hash=sha256:" + "b" * 64
+            + "\nBeta_Two==2.0.1 --hash=sha256:" + "c" * 64 + "  # trailing\n")
+    assert provenance.tool_pins(lock) == {"alpha": ("1.0", frozenset({"a" * 64, "b" * 64})),
+                                          "beta_two": ("2.0.1", frozenset({"c" * 64}))}
+
+
+@pytest.mark.parametrize("lock", [
+    "alpha>=1.0 --hash=sha256:" + "a" * 64,
+    "alpha==1.0",
+    "alpha==1.0 --hash=sha256:" + "a" * 63,
+    "alpha==1.0 --hash=md5:" + "a" * 32,
+    "alpha==1.0 --hash=sha256:" + "a" * 64 + "\nAlpha==2.0 --hash=sha256:" + "b" * 64,
+])
+def test_a_lock_that_is_not_hashed_exact_pins_is_refused(provenance: ModuleType, lock: str) -> None:
+    """A range, a missing or malformed hash, or a name pinned twice is refused."""
+    with pytest.raises(ValueError, match="not one hashed exact pin"):
+        provenance.tool_pins(lock)
+
+
+def test_the_controls_are_the_recorded_attestation_and_two_tampered_copies(provenance: ModuleType) -> None:
+    """The genuine control must verify; one copy expects another digest, one another signer."""
+    control = provenance.ProvenanceControl
+    fixture = str(provenance.ProvenancePolicy.tool_directory() / control.FIXTURE)
+    good, digest, signer = provenance.control_entries()
+    assert good == {"id": "control:known-good", "name": control.NAME, "sha256": control.SHA256, "provenance": fixture,
+                    "identity": {"san": control.SAN, "exact": dict(control.CLAIMS), "patterns": {},
+                                 "issuer": "https://token.actions.githubusercontent.com"}}
+    assert digest["id"] == "control:wrong-digest" and digest["sha256"] != control.SHA256
+    assert digest["sha256"][:-1] == control.SHA256[:-1] and digest["identity"] == good["identity"]
+    assert signer["id"] == "control:wrong-signer" and signer["sha256"] == control.SHA256
+    assert signer["identity"]["san"].endswith("@refs/tags/v0.0.29")
+    assert {key: value for key, value in signer["identity"].items() if key != "san"} == {
+        key: value for key, value in good["identity"].items() if key != "san"}
+
+
+def copy_tool_directory(provenance: ModuleType, target: pathlib.Path) -> pathlib.Path:
+    """Copy the verifier's directory so a test can alter its lock or control without touching the checkout."""
+    source = provenance.ProvenancePolicy.tool_directory()
+    target.mkdir()
+    for name in (provenance.ProvenancePolicy.TOOL_LOCK, provenance.ProvenanceControl.FIXTURE,
+                 provenance.ProvenancePolicy.VERIFIER):
+        (target / name).write_bytes((source / name).read_bytes())
+    return target
+
+
+@pytest.mark.parametrize("change", ["version", "hash"])
+def test_a_lock_that_no_longer_installs_the_control_is_refused(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                             monkeypatch: pytest.MonkeyPatch, change: str) -> None:
+    """Moving pypi-attestations without refreshing the control fails before the tool is built."""
+    directory = copy_tool_directory(provenance, tmp_path / "provenance")
+    lock = directory / provenance.ProvenancePolicy.TOOL_LOCK
+    text = lock.read_text(encoding="utf-8")
+    if change == "version":
+        text = text.replace("pypi-attestations==0.0.30", "pypi-attestations==0.0.31")
+    else:
+        text = text.replace(provenance.ProvenanceControl.SHA256, "f" * 64)
+    lock.write_text(text, encoding="utf-8")
+    monkeypatch.setattr(provenance.ProvenancePolicy, "tool_directory", staticmethod(lambda: directory))
+    with pytest.raises(ValueError, match="refresh known_good_provenance.json"):
+        provenance.control_entries()
+
+
+def test_a_control_that_is_not_the_recorded_attestation_is_refused(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """The script's own layers check the control first, so an edited fixture cannot pass as the control."""
+    directory = copy_tool_directory(provenance, tmp_path / "provenance")
+    fixture = directory / provenance.ProvenanceControl.FIXTURE
+    document = json.loads(fixture.read_bytes())
+    document["attestation_bundles"][0]["publisher"]["workflow"] = "other.yml"
+    fixture.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setattr(provenance.ProvenancePolicy, "tool_directory", staticmethod(lambda: directory))
+    with pytest.raises(ValueError, match="not the expected Trusted Publisher"):
+        provenance.control_entries()
+
+
+def test_the_tool_environment_installs_exactly_the_hashed_lock(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """A fresh environment of this interpreter; pip isolated, hashed, wheels only, no deps, then pip check."""
+    environments: list[pathlib.Path] = []
+    commands: list[tuple[list[str], pathlib.Path]] = []
+
+    class Builder:
+        """Model venv's environment builder without creating an interpreter."""
+
+        def __init__(self, with_pip: bool) -> None:
+            """Require the bundled pip the tool is installed with."""
+            assert with_pip
+
+        def create(self, path: pathlib.Path) -> None:
+            """Record where the environment was asked for."""
+            environments.append(path)
+
+    def run(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Record each process and refuse an unchecked one."""
+        assert check
+        commands.append(([str(part) for part in command], cwd))
+
+    monkeypatch.setattr(provenance.venv, "EnvBuilder", Builder)
+    monkeypatch.setattr(provenance.subprocess, "run", run)
+    python = provenance.tool_environment(tmp_path)
+    assert environments == [tmp_path / "tools"]
+    assert python == tmp_path / "tools" / ("Scripts/python.exe" if provenance.os.name == "nt" else "bin/python")
+    lock = str(provenance.ProvenancePolicy.tool_directory() / "requirements.txt")
+    assert commands == [
+        ([str(python), "-m", "pip", "--isolated", "--disable-pip-version-check", "install", "--no-cache-dir",
+          "--no-deps", "--only-binary=:all:", "--require-hashes", "--index-url", "https://pypi.org/simple/",
+          "-r", lock], tmp_path),
+        ([str(python), "-m", "pip", "--isolated", "--disable-pip-version-check", "check"], tmp_path),
+    ]
+
+
+def verifier_answering(outcomes: Mapping[str, Mapping[str, str]], requests: list[dict[str, object]],
+                       extra: Optional[list[dict[str, str]]] = None
+                       ) -> Callable[[list[str], bool, pathlib.Path], None]:
+    """Return a subprocess.run stand-in that plays the verifier: it reads the request and writes these outcomes."""
+    def run(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Check the call, record the request and write one outcome per requested entry."""
+        assert check and command[1] == "-I" and command[2].endswith("verify_attestations.py")
+        request = json.loads(pathlib.Path(command[command.index("--request") + 1]).read_text(encoding="utf-8"))
+        requests.append(request)
+        results = [{"id": entry["id"], **outcomes.get(entry["id"], {"outcome": "verified"})}
+                   for entry in request["entries"]] + (extra or [])
+        pathlib.Path(command[command.index("--result") + 1]).write_text(
+            json.dumps({"format": 1, "results": results}), encoding="utf-8")
+    return run
+
+
+def test_the_verifier_is_run_once_on_every_entry(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """One isolated verifier process gets every entry and answers each exactly once."""
+    requests: list[dict[str, object]] = []
+    monkeypatch.setattr(provenance.subprocess, "run",
+                        verifier_answering({"b": {"outcome": "refused", "reason": "no"}}, requests))
+    entries = [{"id": "a", "name": "a.whl"}, {"id": "b", "name": "b.whl"}]
+    outcomes = provenance.run_verifier(tmp_path / "python", entries, tmp_path)
+    assert requests == [{"format": 1, "entries": entries}]
+    assert outcomes == {"a": {"id": "a", "outcome": "verified"}, "b": {"id": "b", "outcome": "refused", "reason": "no"}}
+
+
+@pytest.mark.parametrize(("outcomes", "extra"), [
+    ({"a": {"outcome": "maybe"}}, None),
+    ({}, [{"id": "a", "outcome": "verified"}]),
+    ({}, [{"id": "c", "outcome": "verified"}]),
+])
+def test_a_verifier_answer_that_is_not_one_verdict_per_entry_is_refused(provenance: ModuleType,
+                                                                       tmp_path: pathlib.Path,
+                                                                       monkeypatch: pytest.MonkeyPatch,
+                                                                       outcomes: dict[str, dict[str, str]],
+                                                                       extra: Optional[list[dict[str, str]]]) -> None:
+    """An unknown verdict, a repeated answer or an answer for an entry never asked about is refused."""
+    monkeypatch.setattr(provenance.subprocess, "run", verifier_answering(outcomes, [], extra))
+    with pytest.raises(ValueError, match="verifier"):
+        provenance.run_verifier(tmp_path / "python", [{"id": "a"}, {"id": "b"}], tmp_path)
+
+
+def test_a_verifier_that_cannot_work_ends_the_check(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """A verifier that exits non-zero (no trust root, a broken request) fails the run instead of judging it."""
+    def broken(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Fail like a verifier that could not load its trust root."""
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(provenance.subprocess, "run", broken)
+    with pytest.raises(subprocess.CalledProcessError):
+        provenance.run_verifier(tmp_path / "python", [{"id": "a"}], tmp_path)
+
+
+def verdicts(changes: Optional[Mapping[str, Mapping[str, str]]] = None) -> dict[str, Mapping[str, str]]:
+    """Return the verdicts of a working tool on the controls and two candidates, with any changes."""
+    values: dict[str, Mapping[str, str]] = {
+        "control:known-good": {"outcome": "verified"},
+        "control:wrong-digest": {"outcome": "refused", "reason": "digest"},
+        "control:wrong-signer": {"outcome": "refused", "reason": "signer"},
+        "candidate:a.whl": {"outcome": "verified"}, "candidate:b.tar.gz": {"outcome": "verified"},
+    }
+    values.update(changes or {})
+    return values
+
+
+def test_working_controls_and_verified_candidates_pass(provenance: ModuleType) -> None:
+    """The tool verified the genuine control, refused both copies and verified every candidate."""
+    provenance.require_outcomes(verdicts(), ["a.whl", "b.tar.gz"])
+
+
+@pytest.mark.parametrize(("changes", "message"), [
+    ({"control:known-good": {"outcome": "refused", "reason": "no trust root"}}, "cannot verify"),
+    ({"control:wrong-digest": {"outcome": "verified"}}, "not checking"),
+    ({"control:wrong-signer": {"outcome": "verified"}}, "not checking"),
+    ({"candidate:b.tar.gz": {"outcome": "refused", "reason": "bad signature"}}, "b.tar.gz: bad signature"),
+])
+def test_a_tool_that_misjudges_a_control_or_a_refused_candidate_fails(provenance: ModuleType,
+                                                                     changes: dict[str, Mapping[str, str]],
+                                                                     message: str) -> None:
+    """A tool that cannot verify, or that accepts a tampered copy, is not trusted; a refused candidate is named."""
+    with pytest.raises(ValueError, match=message):
+        provenance.require_outcomes(verdicts(changes), ["a.whl", "b.tar.gz"])
+
+
+class CandidateRun:
+    """A provenance job with every network and process boundary replaced, recording what crossed each one.
+
+    TestPyPI answers from `documents`; the pinned tool is never built (its environment is a path) and the verifier
+    process reads each request, records the provenance bytes every entry points at and answers from `outcomes`.
+    """
+
+    def __init__(self, provenance: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> None:
+        """Install the replacements on the loaded script for this test only."""
+        self.files = build_files()
+        self.documents: dict[str, bytes] = {}
+        self.fetched: list[str] = []
+        self.tools: list[pathlib.Path] = []
+        self.requests: list[dict[str, object]] = []
+        self.stored: dict[str, bytes] = {}
+        self.outcomes: dict[str, Mapping[str, str]] = {
+            "control:wrong-digest": {"outcome": "refused", "reason": "subject does not match"},
+            "control:wrong-signer": {"outcome": "refused", "reason": "SANs do not match"},
+        }
+        self.report = tmp_path / "reports" / "provenance.json"
+        monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+        monkeypatch.setattr(provenance, "package_version", lambda: "0.2.8300")
+        monkeypatch.setattr(provenance, "verified_files", lambda directory, version: self.files)
+        monkeypatch.setattr(provenance, "fetch_provenance", self.fetch)
+        monkeypatch.setattr(provenance, "tool_environment", self.tool)
+        monkeypatch.setattr(provenance.subprocess, "run", self.verifier)
+        monkeypatch.setattr(provenance, "git_output", lambda arguments: Signer.SHA)
+
+    def fetch(self, version: str, name: str) -> bytes:
+        """Answer one file's provenance as TestPyPI would."""
+        assert version == "0.2.8300"
+        self.fetched.append(name)
+        return self.documents[name]
+
+    def tool(self, root: pathlib.Path) -> pathlib.Path:
+        """Stand in for building the tool environment inside the job's scratch directory."""
+        self.tools.append(root)
+        return root / "tools" / "bin" / "python"
+
+    def verifier(self, command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Play the verifier process: record the request and the files it names, then answer every entry."""
+        request = json.loads(pathlib.Path(command[command.index("--request") + 1]).read_text(encoding="utf-8"))
+        self.requests.append(request)
+        self.stored.update({entry["id"]: pathlib.Path(entry["provenance"]).read_bytes()
+                            for entry in request["entries"]})
+        results = [{"id": entry["id"], **self.outcomes.get(entry["id"], {"outcome": "verified"})}
+                   for entry in request["entries"]]
+        pathlib.Path(command[command.index("--result") + 1]).write_text(json.dumps({"format": 1, "results": results}),
+                                                                         encoding="utf-8")
+
+    def serve(self, wheel: Mapping[str, str], sdist: Mapping[str, str]) -> None:
+        """Make TestPyPI hold an attestation of each built file signed with these claims."""
+        for (name, identity), claims in zip(self.files.items(), (wheel, sdist), strict=True):
+            self.documents[name] = json.dumps(Signer.provenance(name, str(identity["sha256"]), claims)).encode()
+
+
+def rerun_environment() -> dict[str, str]:
+    """Return a failed-jobs re-run (attempt 2) of a run whose first attempt uploaded only the wheel."""
+    return Signer.environment(CANDIDATE_UPLOADED='["melder-0.2.8300-py3-none-any.whl"]', CANDIDATE_PUBLISH_ATTEMPT="1")
+
+
+def test_every_candidate_file_is_checked_in_all_five_layers(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    """The wheel this run uploaded and the sdist an earlier run uploaded both pass, and the report says how."""
+    run = CandidateRun(provenance, monkeypatch, tmp_path)
+    run.serve(Signer.claims(run="3003", attempt="1"),
+              Signer.claims(run="2999", attempt="1", trigger="workflow_dispatch"))
+    provenance.verify_candidate(tmp_path / "dist", run.report, rerun_environment())
+    (request,) = run.requests
+    ids = [entry["id"] for entry in request["entries"]]
+    assert ids == ["control:known-good", "control:wrong-digest", "control:wrong-signer",
+                   "candidate:melder-0.2.8300-py3-none-any.whl", "candidate:melder-0.2.8300.tar.gz"]
+    wheel, sdist = request["entries"][3:]
+    oid = Signer.PREFIX
+    runs = "https://github.com/Synaptic724/melder/actions/runs/"
+    assert wheel["identity"]["exact"][oid + "21"] == runs + "3003/attempts/1"
+    assert wheel["identity"]["exact"][oid + "20"] == "push" and wheel["identity"]["patterns"] == {}
+    assert set(sdist["identity"]["patterns"]) == {oid + "20", oid + "21"}
+    assert {entry["identity"]["issuer"] for entry in (wheel, sdist)} == {Signer.ISSUER}
+    assert wheel["sha256"] == "1" * 64 and sdist["sha256"] == "2" * 64
+    for name in run.files:
+        assert run.stored[f"candidate:{name}"] == run.documents[name]
+    assert run.stored["control:known-good"] == (provenance.ProvenancePolicy.tool_directory()
+                                                / provenance.ProvenanceControl.FIXTURE).read_bytes()
+    assert run.tools == [run.tools[0]] and run.tools[0].parent == tmp_path
+    report = json.loads(run.report.read_text(encoding="utf-8"))
+    assert report == {
+        "status": "provenance-verified", "version": "0.2.8300", "files": run.files,
+        "provenance": {
+            "melder-0.2.8300-py3-none-any.whl": {
+                "uploaded_by_this_run": True, "build_trigger": "push",
+                "run_invocation": "https://github.com/Synaptic724/melder/actions/runs/3003/attempts/1"},
+            "melder-0.2.8300.tar.gz": {
+                "uploaded_by_this_run": False, "build_trigger": "workflow_dispatch",
+                "run_invocation": "https://github.com/Synaptic724/melder/actions/runs/2999/attempts/1"},
+        },
+        "publisher": publisher_record(), "signer": Signer.WORKFLOW,
+        "controls": {"control:known-good": "verified", "control:wrong-digest": "refused",
+                     "control:wrong-signer": "refused"},
+        "repository": "Synaptic724/melder", "commit": Signer.SHA, "run_id": "3003", "run_attempt": "2",
+        "publish_attempt": 1,
+    }
+
+
+@pytest.mark.parametrize(("uploaded", "sdist", "message"), [
+    ('["melder-0.2.8300-py3-none-any.whl", "melder-0.2.8300.tar.gz"]', Signer.claims(run="3003", attempt="2"),
+     "Run Invocation URI"),
+    ('["melder-0.2.8300-py3-none-any.whl"]', {**Signer.claims(run="2999"), "1.3.6.1.4.1.57264.1.15": "1002"},
+     "Source Repository Identifier"),
+])
+def test_a_wrong_signer_is_refused_before_the_tool_is_built(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                           monkeypatch: pytest.MonkeyPatch, uploaded: str,
+                                                           sdist: dict[str, str], message: str) -> None:
+    """The script's own layers refuse first: no tool environment, no verifier process, no report.
+
+    One sdist was uploaded by this run but signed by another attempt; the other came from an earlier run of a
+    repository with another id.
+    """
+    run = CandidateRun(provenance, monkeypatch, tmp_path)
+    run.serve(Signer.claims(run="3003", attempt="1"), sdist)
+    environment = Signer.environment(CANDIDATE_UPLOADED=uploaded, CANDIDATE_PUBLISH_ATTEMPT="1")
+    with pytest.raises(ValueError, match=message):
+        provenance.verify_candidate(tmp_path / "dist", run.report, environment)
+    assert run.tools == [] and run.requests == [] and not run.report.exists()
+
+
+def test_an_unreadable_provenance_is_refused_by_name(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """A provenance answer that is not JSON names the file and stops the check."""
+    run = CandidateRun(provenance, monkeypatch, tmp_path)
+    run.documents = {name: b"<html>maintenance</html>" for name in run.files}
+    with pytest.raises(ValueError, match="provenance of melder-0.2.8300-py3-none-any.whl is not JSON"):
+        provenance.verify_candidate(tmp_path / "dist", run.report, rerun_environment())
+    assert run.tools == [] and not run.report.exists()
+
+
+def test_a_candidate_sigstore_refuses_fails_the_run_without_a_report(provenance: ModuleType,
+                                                                     tmp_path: pathlib.Path,
+                                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every stdlib layer can pass and Sigstore still refuse (a forged certificate); that refusal decides."""
+    run = CandidateRun(provenance, monkeypatch, tmp_path)
+    run.serve(Signer.claims(run="3003", attempt="1"), Signer.claims(run="2999"))
+    run.outcomes["candidate:melder-0.2.8300.tar.gz"] = {"outcome": "refused", "reason": "invalid signature"}
+    with pytest.raises(ValueError, match="melder-0.2.8300.tar.gz: invalid signature"):
+        provenance.verify_candidate(tmp_path / "dist", run.report, rerun_environment())
+    assert len(run.requests) == 1 and not run.report.exists()
+
+
+def test_the_controls_are_checked_before_testpypi_is_asked(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """A lock that no longer installs the control stops the check before any candidate is fetched."""
+    run = CandidateRun(provenance, monkeypatch, tmp_path)
+    directory = copy_tool_directory(provenance, tmp_path / "provenance")
+    lock = directory / provenance.ProvenancePolicy.TOOL_LOCK
+    lock.write_text(lock.read_text(encoding="utf-8").replace("pypi-attestations==0.0.30", "pypi-attestations==0.1.0"),
+                    encoding="utf-8")
+    monkeypatch.setattr(provenance.ProvenancePolicy, "tool_directory", staticmethod(lambda: directory))
+    with pytest.raises(ValueError, match="pypi-attestations==0.1.0"):
+        provenance.verify_candidate(tmp_path / "dist", run.report, rerun_environment())
+    assert run.fetched == [] and run.tools == []
+
+
+def test_the_command_line_verifies_dist_and_names_its_report(provenance: ModuleType, tmp_path: pathlib.Path,
+                                                            monkeypatch: pytest.MonkeyPatch,
+                                                            capsys: pytest.CaptureFixture[str]) -> None:
+    """`verify` checks dist/ with the job's environment and prints where the report is; nothing else is offered."""
+    calls: list[tuple[pathlib.Path, pathlib.Path, Mapping[str, str]]] = []
+    monkeypatch.setattr(provenance, "verify_candidate",
+                        lambda directory, report, environment: calls.append((directory, report, environment)))
+    report = tmp_path / "provenance.json"
+    assert provenance.main(["verify", "--report", str(report)]) == 0
+    assert calls == [(pathlib.Path("dist"), report, provenance.os.environ)]
+    assert capsys.readouterr().out == f"OK: verify; report={report}\n"
+    with pytest.raises(SystemExit):
+        provenance.main(["upload", "--report", str(report)])
+
+
+def test_the_expected_publisher_is_the_job_that_uploads(provenance: ModuleType) -> None:
+    """The identity the check demands is the publish job's own: this workflow, its environment, branch and events."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    policy = provenance.ProvenancePolicy
+    document = yaml.load((root / ".github/workflows" / policy.WORKFLOW).read_text(encoding="utf-8"),
+                         Loader=yaml.BaseLoader)
+    publish = document["jobs"]["publish"]
+    assert publish["environment"]["name"] == policy.ENVIRONMENT
+    assert document["on"]["push"] == {"branches": [policy.REF.removeprefix("refs/heads/")]}
+    assert set(document["on"]) == set(policy.TRIGGERS)
+    upload = next(step for step in publish["steps"] if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
+    assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
+    assert policy.INTEGRITY_ROOT == "https://test.pypi.org/integrity/melder/"
+    assert f'Repository = "https://github.com/{policy.REPOSITORY}"' in (root / "pyproject.toml").read_text(
+        encoding="utf-8")
+    assert policy.workflow_uri() == Signer.WORKFLOW
+
+
+def test_the_pinned_verifier_agrees_with_this_script(provenance: ModuleType) -> None:
+    """The verifier cannot be imported here (its closure is not installed), so its contract is read as source.
+
+    It speaks the request format this script writes, accepts the same predicate, uses sigstore's own policy for
+    every claim sigstore has one for and its own for the two it lacks, and imports the pinned tool.
+    """
+    policy = provenance.ProvenancePolicy
+    tree = ast.parse((policy.tool_directory() / policy.VERIFIER).read_text(encoding="utf-8"))
+    verifier = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "AttestationVerifier")
+    constants: dict[str, ast.expr] = {}
+    for node in verifier.body:
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            constants[node.targets[0].id] = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+            constants[node.target.id] = node.value
+    assert ast.literal_eval(constants["FORMAT"]) == 1
+    assert ast.literal_eval(constants["PUBLISH_PREDICATE"]) == policy.PUBLISH_PREDICATE
+    exact = constants["EXACT_POLICIES"]
+    assert isinstance(exact, ast.Dict)
+    sigstore_claims = [ast.literal_eval(key) for key in exact.keys if key is not None]
+    claim = provenance.FulcioClaim
+    assert sigstore_claims == list(claim.TEXT[:-2])
+    assert set(claim.TEXT) - set(sigstore_claims) == {claim.DEPLOYMENT_ENVIRONMENT, claim.TOKEN_SUBJECT}
+    imported = {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import)
+                for alias in node.names}
+    imported |= {node.module.split(".")[0] for node in ast.walk(tree)
+                 if isinstance(node, ast.ImportFrom) and node.module is not None}
+    assert {"cryptography", "pypi_attestations", "sigstore"} <= imported
+
+
+def test_the_claims_are_fulcios_github_signer_claims(provenance: ModuleType) -> None:
+    """Raw legacy claims .1 to .6, UTF8String claims .8 to .24, each of the latter with a name for refusals."""
+    claim = provenance.FulcioClaim
+    assert claim.RAW == tuple(f"1.3.6.1.4.1.57264.1.{arc}" for arc in range(1, 7))
+    assert claim.TEXT == tuple(f"1.3.6.1.4.1.57264.1.{arc}" for arc in range(8, 25))
+    assert set(claim.NAMES) == set(claim.TEXT)
+    assert claim.describe(claim.TOKEN_SUBJECT) == "Token Subject (1.3.6.1.4.1.57264.1.24)"
+    assert claim.describe("1.3.6.1.4.1.57264.1.99") == "claim (1.3.6.1.4.1.57264.1.99)"
+================================================================================
+END FILE: tests/unit/github_workflows/test_candidate_provenance.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_candidate_publication.py
-CONTENT SHA256: e750973b2dbcee50578c154fb0a6a7ae950bf85d9fd20a8562e9310efb3208a9
+CONTENT SHA256: cff64ef7754437fd33d0e894ffaf0e26c685d6f655f1ba1f6cdb2fbc5a33f2a9
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove exact-source qualification, immutable uploads, and isolated TestPyPI installation."""
@@ -173525,10 +175310,45 @@ def test_prepare_upload_copies_only_absent_verified_files(candidate: ModuleType,
     monkeypatch.setattr(candidate, "git_output", lambda arguments: "a" * 40)
     upload = tmp_path / "upload"
     report = tmp_path / "report.json"
-    assert candidate.prepare_upload(dist, upload, report) is True
+    assert candidate.prepare_upload(dist, upload, report) == ["melder.tar.gz"]
     assert [path.name for path in upload.iterdir()] == ["melder.tar.gz"]
     assert (upload / "melder.tar.gz").read_bytes() == b"source"
     assert json.loads(report.read_text())["files"] == files
+    assert json.loads(report.read_text())["status"] == "upload-needed"
+
+
+def test_prepare_upload_stages_nothing_when_testpypi_has_every_file(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """A retry after a complete upload stages nothing, so the publish step is skipped and nothing is re-signed."""
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "melder.whl").write_bytes(b"wheel")
+    files = {path.name: candidate.file_identity(path) for path in dist.iterdir()}
+    monkeypatch.setattr(candidate, "package_version", lambda: "0.2.4")
+    monkeypatch.setattr(candidate, "verified_files", lambda *args: files)
+    monkeypatch.setattr(candidate, "remote_files", lambda version: dict(files))
+    monkeypatch.setattr(candidate, "git_output", lambda arguments: "a" * 40)
+    report = tmp_path / "report.json"
+    assert candidate.prepare_upload(dist, tmp_path / "upload", report) == []
+    assert list((tmp_path / "upload").iterdir()) == []
+    assert json.loads(report.read_text())["status"] == "identical-upload-present"
+
+
+@pytest.mark.parametrize(("staged", "outputs"), [
+    (["melder-0.2.4-py3-none-any.whl", "melder-0.2.4.tar.gz"],
+     'upload-required=true\nuploaded=["melder-0.2.4-py3-none-any.whl", "melder-0.2.4.tar.gz"]\n'),
+    ([], "upload-required=false\nuploaded=[]\n"),
+])
+def test_prepare_upload_reports_what_it_staged_to_the_workflow(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                              monkeypatch: pytest.MonkeyPatch, staged: list[str],
+                                                              outputs: str) -> None:
+    """The publish job gates its upload on upload-required and hands the staged names to the provenance job."""
+    output = tmp_path / "github-output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setattr(candidate, "prepare_upload", lambda directory, upload, report: staged)
+    assert candidate.main(["prepare-upload", "--report", str(tmp_path / "upload.json")]) == 0
+    assert output.read_text(encoding="utf-8") == outputs
+    assert json.loads(outputs.splitlines()[1].removeprefix("uploaded=")) == staged
 
 
 def test_index_download_pins_version_hash_and_uses_no_fallback(candidate: ModuleType, tmp_path: pathlib.Path,
@@ -173822,7 +175642,7 @@ END FILE: tests/unit/github_workflows/test_checkout_identity.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
-CONTENT SHA256: a0ae74d2d54dc54cd888bf7909758e83b3f22093f688213600fd0a1ac5284a4c
+CONTENT SHA256: 7427058060c580e6bdd50fd8138801cfa45c7bf11148c9947cd4e60480b9fe90
 SOURCE ENCODING: utf-8
 ================================================================================
 """Behavioral regression tests for branch routes, required results, and release authorization."""
@@ -173960,10 +175780,10 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
         policy.require_success(results, False)
 
 
-@pytest.mark.parametrize("job", ["authorize", "source-qualification", "build", "publish", "install"])
+@pytest.mark.parametrize("job", ["authorize", "source-qualification", "build", "publish", "provenance", "install"])
 @pytest.mark.parametrize("result", ["failure", "cancelled", "skipped", "neutral", None])
 def test_candidate_requires_all_upload_and_install_stages(policy: ModuleType, job: str, result: object) -> None:
-    """Neither a skipped publisher nor one failing platform can yield package-ready success."""
+    """Neither a skipped publisher, an unverified provenance nor one failing platform yields package-ready."""
     results = {name: {"result": "success"} for name in policy.CIPolicy.CANDIDATE_JOBS}
     policy.require_candidate_success(results)
     results[job] = {"result": result}
@@ -175688,7 +177508,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: bda62713c70dcdaa6434ec92e32e5478fad10427eaf8ccc78d068847dbf5e7e9
+CONTENT SHA256: 668461de1feb20bea215a10f4c081d4bb587b1263d113c5c0fab6af8edb00b2b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -175697,6 +177517,7 @@ import ast
 import pathlib
 import json
 import re
+import sys
 from types import ModuleType, SimpleNamespace
 from typing import cast
 
@@ -176329,29 +178150,28 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     assert jobs["source-qualification"]["needs"] == "authorize"
     assert jobs["source-qualification"]["uses"] == "./.github/workflows/verify-source-qualification.yml"
     assert publisher["environment"]["name"] == "pypitest"
-    assert publisher["permissions"] == {"contents": "read"}
+    # Trusted Publishing (EPIC-2026-10-24-pypi_provenance_attestations): the job's OIDC token is its only TestPyPI
+    # credential and signs each uploaded file's attestation, so the upload names no user, password or secret.
+    assert publisher["permissions"] == {"contents": "read", "id-token": "write"}
     upload = next(step for step in publisher["steps"]
                   if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
-    assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
-    assert upload["with"]["packages-dir"] == "upload/"
-    assert upload["with"]["user"] == "__token__"
-    assert upload["with"]["password"] == "${{ secrets.melder_api_token }}"
-    assert upload["with"]["attestations"] == "false"
-    assert "skip-existing" not in upload["with"]
+    assert upload["uses"] == "pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"
+    assert upload["with"] == {"repository-url": "https://test.pypi.org/legacy/", "packages-dir": "upload/",
+                              "attestations": "true", "print-hash": "true"}
     assert upload["if"] == "steps.upload.outputs.upload-required == 'true'"
-    credential_check = next(step for step in publisher["steps"]
-                            if step.get("env", {}).get("TESTPYPI_API_TOKEN"))
-    assert credential_check["env"]["TESTPYPI_API_TOKEN"] == "${{ secrets.melder_api_token }}"
-    assert credential_check["if"] == upload["if"]
-    assert 'if [ -z "$TESTPYPI_API_TOKEN" ]' in credential_check["run"]
-    assert "exit 1" in credential_check["run"]
-    assert publisher["steps"].index(credential_check) < publisher["steps"].index(upload)
+    prepare = next(step for step in publisher["steps"] if step.get("id") == "upload")
+    assert prepare["run"] == "python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json"
+    assert publisher["steps"].index(prepare) < publisher["steps"].index(upload)
+    assert not [step for step in publisher["steps"] if "secrets." in json.dumps(step)]
+    # The provenance job reads which files this attempt staged and which attempt signed them.
+    assert publisher["outputs"] == {"uploaded": "${{ steps.upload.outputs.uploaded }}",
+                                    "attempt": "${{ github.run_attempt }}"}
     for name, job in jobs.items():
         if name != "publish":
             assert "environment" not in job
             assert job.get("permissions", {}).get("id-token") != "write"
     install = jobs["install"]
-    assert set(install["needs"]) == {"authorize", "build", "publish"}
+    assert set(install["needs"]) == {"authorize", "build", "publish", "provenance"}
     assert install["strategy"]["matrix"] == "${{ fromJSON(needs.authorize.outputs.matrix) }}"
     setup = next(step for step in install["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
     assert setup["with"]["python-version"] == "${{ matrix.python }}"
@@ -176363,10 +178183,10 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
-    # Each attempt that builds names a fresh artifact; publish and install download the one the build job
-    # reports, so a failed-jobs re-run of either uses the run's verified build instead of a missing name.
+    # Each attempt that builds names a fresh artifact; publish, provenance and install download the one the build
+    # job reports, so a failed-jobs re-run of any of them uses the run's verified build instead of a missing name.
     assert jobs["build"]["with"]["artifact-name"] == "candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}"
-    for job in (publisher, install):
+    for job in (publisher, jobs["provenance"], install):
         assert "build" in job["needs"]
         download = next(step for step in job["steps"]
                         if step.get("uses", "").startswith("actions/download-artifact@"))
@@ -176376,6 +178196,94 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
     assert ready["steps"][-2]["run"] == "python .github/scripts/ci_policy.py candidate-ready"
     assert ready["steps"][-1]["run"] == "python .github/scripts/ci_policy.py candidate-head"
+
+
+def test_candidate_provenance_is_verified_before_any_probe_installs(policy: ModuleType) -> None:
+    """RC / provenance checks each built file's TestPyPI attestation after the upload and before the install matrix.
+
+    It runs on the helper release with no OIDC token and no environment, reads the publish job's report of what it
+    staged and which attempt signed it, keeps its evidence, and both install and package-ready wait for it.
+    """
+    jobs = workflow("release-candidate.yml")["jobs"]
+    job = jobs["provenance"]
+    assert job["name"] == "RC / provenance"
+    assert set(job["needs"]) == {"build", "publish"}
+    assert job["runs-on"] == "ubuntu-24.04" and "timeout-minutes" in job
+    for key in ("if", "continue-on-error", "environment", "permissions", "strategy"):
+        assert key not in job, key
+    steps = job["steps"]
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    verify = next(step for step in steps if "testpypi_provenance.py" in step.get("run", ""))
+    assert verify["run"] == "python .github/scripts/testpypi_provenance.py verify --report reports/provenance.json"
+    assert verify["env"] == {"CANDIDATE_UPLOADED": "${{ needs.publish.outputs.uploaded }}",
+                             "CANDIDATE_PUBLISH_ATTEMPT": "${{ needs.publish.outputs.attempt }}"}
+    assert "if" not in verify and "continue-on-error" not in verify
+    retained = steps[-1]
+    assert retained["uses"].startswith("actions/upload-artifact@")
+    assert retained["with"]["name"] == "candidate-provenance-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["path"] == "reports/provenance.json"
+    assert retained["with"]["if-no-files-found"] == "error"
+    assert steps.index(download) < steps.index(verify) < len(steps) - 1
+    assert "provenance" in jobs["install"]["needs"] and "provenance" in policy.CIPolicy.CANDIDATE_JOBS
+    assert set(jobs["package-ready"]["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
+
+
+def test_only_the_candidate_upload_can_request_an_oidc_token() -> None:
+    """id-token: write lets a job mint a credential and sign as this repository; only the TestPyPI upload holds it.
+
+    No workflow grants it at the top level, and none names the retired TestPyPI token any more: Trusted
+    Publishing replaced it.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    holders: list[tuple[str, str]] = []
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        assert "melder_api_token" not in path.read_text(encoding="utf-8"), path.name
+        document = workflow(path.name)
+        top = document.get("permissions", {})
+        assert isinstance(top, dict) and top.get("id-token") != "write", path.name
+        for name, job in document["jobs"].items():
+            permissions = job.get("permissions", {})
+            assert isinstance(permissions, dict), (path.name, name)
+            if permissions.get("id-token") == "write":
+                holders.append((path.name, name))
+    assert holders == [("release-candidate.yml", "publish")]
+
+
+def test_jobs_that_hold_an_oidc_token_pin_third_party_actions_to_a_commit() -> None:
+    """A job that can sign as this repository runs no third-party action by a tag or branch that someone could move."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    checked: list[str] = []
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        for name, job in workflow(path.name)["jobs"].items():
+            if job.get("permissions", {}).get("id-token") != "write":
+                continue
+            for step in job.get("steps", []):
+                uses = step.get("uses", "")
+                if uses and not uses.startswith(("actions/", "./")):
+                    assert re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}", uses), (path.name, name, uses)
+                    checked.append(uses)
+    assert checked == ["pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"]
+
+
+def test_ci_scripts_use_only_the_standard_library() -> None:
+    """Workflows run .github/scripts/ right after setting up Python, so no script there imports an installed package.
+
+    The two exceptions run inside the environment they test: run_runtime_tests.py drives pytest in a test cell and
+    smoke_wheel.py imports the installed melder. The provenance verifier needs sigstore, so it lives in
+    .github/provenance/ and runs only inside its own pinned environment.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    scripts = sorted((root / ".github/scripts").glob("*.py"))
+    siblings = {path.stem for path in scripts}
+    allowed = {"run_runtime_tests.py": {"pytest"}, "smoke_wheel.py": {"melder"}}
+    for path in scripts:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        assert not [node for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.level], path.name
+        modules = {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import)
+                   for alias in node.names}
+        modules |= {node.module.split(".")[0] for node in ast.walk(tree)
+                    if isinstance(node, ast.ImportFrom) and node.module is not None}
+        assert modules - set(sys.stdlib_module_names) - siblings == allowed.get(path.name, set()), path.name
 
 
 def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
@@ -176622,16 +178530,22 @@ def test_shallow_thread_scaling_parser_accepts_the_lines_the_benchmark_prints() 
 
 
 def test_ci_guide_names_every_workflow_script_and_ruleset() -> None:
-    """The agent CI guide in .github/ci_cd/ covers every CI file, so a new one cannot arrive undocumented.
+    """The agent CI guide in .github/ci_cd/ covers every CI file, the provenance tool's included.
 
     Agents learn from that folder what each workflow, script and ruleset is for and how to extend it (owner,
-    2026-10-05). A file counts as covered when its name appears in backticks on one of the guide's pages.
+    2026-10-05). A workflow, script or ruleset counts as covered when its name appears in backticks on one of the
+    guide's pages; a file of the provenance tool when its path from the repository root does, since names like
+    `requirements.txt` appear in the guide for other files too.
     """
     root = pathlib.Path(__file__).resolve().parents[3]
     guide = "\n".join(page.read_text(encoding="utf-8") for page in sorted((root / ".github/ci_cd").glob("*.md")))
     files = [*sorted((root / ".github/workflows").glob("*.yml")), *sorted((root / ".github/scripts").glob("*.py")),
              *sorted((root / ".github/rulesets").glob("*.json"))]
     missing = [path.name for path in files if f"`{path.name}`" not in guide]
+    tool = [f".github/provenance/{path.name}" for path in sorted((root / ".github/provenance").iterdir())
+            if path.is_file()]
+    assert tool, "the provenance tool's folder holds no file"
+    missing += [path for path in tool if f"`{path}`" not in guide]
     assert not missing, f"Describe these in .github/ci_cd/: {missing}"
 
 

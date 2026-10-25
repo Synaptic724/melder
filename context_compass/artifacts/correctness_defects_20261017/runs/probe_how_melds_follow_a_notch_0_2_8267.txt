@@ -1,0 +1,118 @@
+# Which ways of reaching a spell follow a notch? Melder 0.2.8267, public calls only; probes/probe_how_melds_follow_a_notch.py
+# Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]; run at 2026-10-25T00:15:49Z by melder_1
+
+===== same (-X gil=0)
+case same: English at (Greeter, 'greeter') -> French at (Greeter, 'greeter')
+[before the notch]
+  lender meld(spell_id=<English>)                    -> English ('hello')
+  lender meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld at (Greeter, 'greeter')                -> English ('hello')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> English ('hello')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> English ('hello')
+  borrower meld at (Greeter, 'greeter')              -> English ('hello')
+  borrower consumer injected by Protocol annotation  -> English ('hello')
+  notch to French                                    -> French
+[after the notch]
+  lender meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<French>)                     -> French ('bonjour')
+  lender meld at (Greeter, 'greeter')                -> French ('bonjour')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> French ('bonjour')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> French ('bonjour')
+  borrower meld at (Greeter, 'greeter')              -> French ('bonjour')
+  borrower consumer injected by Protocol annotation  -> French ('bonjour')
+[exit 0]
+
+===== diff (-X gil=0)
+case diff: English at (Greeter, 'greeter') -> Spanish at (Greeter, 'spanish')
+[before the notch]
+  lender meld(spell_id=<English>)                    -> English ('hello')
+  lender meld(spell_id=<Spanish>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 35ae6000b301244b7d88b18cb8600db6b713b6889bdb1709507825f17aa4d48e'
+  lender meld at (Greeter, 'greeter')                -> English ('hello')
+  lender meld at (Greeter, 'spanish')                -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='spanish'."
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('Spanish')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='spanish', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> English ('hello')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> English ('hello')
+  borrower meld at (Greeter, 'greeter')              -> English ('hello')
+  borrower meld at (Greeter, 'spanish')              -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='spanish'."
+  borrower consumer injected by Protocol annotation  -> English ('hello')
+  notch to Spanish                                   -> Spanish
+[after the notch]
+  lender meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<Spanish>)                    -> Spanish ('hola')
+  lender meld at (Greeter, 'greeter')                -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  lender meld at (Greeter, 'spanish')                -> Spanish ('hola')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('Spanish')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='spanish', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> Spanish ('hola')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'ByMap'. SpellMap=<SpellMap spell=None spellframe=<class
+  borrower meld at (Greeter, 'greeter')              -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  borrower meld at (Greeter, 'spanish')              -> Spanish ('hola')
+  borrower consumer injected by Protocol annotation  -> Spanish ('hola')
+[exit 0]
+
+===== same (-X gil=1)
+case same: English at (Greeter, 'greeter') -> French at (Greeter, 'greeter')
+[before the notch]
+  lender meld(spell_id=<English>)                    -> English ('hello')
+  lender meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld at (Greeter, 'greeter')                -> English ('hello')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> English ('hello')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> English ('hello')
+  borrower meld at (Greeter, 'greeter')              -> English ('hello')
+  borrower consumer injected by Protocol annotation  -> English ('hello')
+  notch to French                                    -> French
+[after the notch]
+  lender meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<French>)                     -> French ('bonjour')
+  lender meld at (Greeter, 'greeter')                -> French ('bonjour')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> French ('bonjour')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> French ('bonjour')
+  borrower meld at (Greeter, 'greeter')              -> French ('bonjour')
+  borrower consumer injected by Protocol annotation  -> French ('bonjour')
+[exit 0]
+
+===== diff (-X gil=1)
+case diff: English at (Greeter, 'greeter') -> Spanish at (Greeter, 'spanish')
+[before the notch]
+  lender meld(spell_id=<English>)                    -> English ('hello')
+  lender meld(spell_id=<Spanish>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 35ae6000b301244b7d88b18cb8600db6b713b6889bdb1709507825f17aa4d48e'
+  lender meld at (Greeter, 'greeter')                -> English ('hello')
+  lender meld at (Greeter, 'spanish')                -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='spanish'."
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('Spanish')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='spanish', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> English ('hello')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> English ('hello')
+  borrower meld at (Greeter, 'greeter')              -> English ('hello')
+  borrower meld at (Greeter, 'spanish')              -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='spanish'."
+  borrower consumer injected by Protocol annotation  -> English ('hello')
+  notch to Spanish                                   -> Spanish
+[after the notch]
+  lender meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<Spanish>)                    -> Spanish ('hola')
+  lender meld at (Greeter, 'greeter')                -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  lender meld at (Greeter, 'spanish')                -> Spanish ('hola')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('Spanish')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='spanish', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> Spanish ('hola')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'ByMap'. SpellMap=<SpellMap spell=None spellframe=<class
+  borrower meld at (Greeter, 'greeter')              -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  borrower meld at (Greeter, 'spanish')              -> Spanish ('hola')
+  borrower consumer injected by Protocol annotation  -> Spanish ('hola')
+[exit 0]

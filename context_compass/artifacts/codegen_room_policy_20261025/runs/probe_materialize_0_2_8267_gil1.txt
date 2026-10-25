@@ -1,0 +1,12 @@
+command: python -X gil=1 probe_materialize.py (cwd: /tmp/m0_mq/inv8267, a copy of the 0.2.8267 working tree; PYTHONPATH=<copy>/src:<copy>)
+python: 3.14.7 gil_enabled=True
+ran_at: 2026-10-25T00:18:32Z
+[safe] core module replaced: True | sys.modules is original: False | type: SyntheticModule | import_module returns it: True | parent attribute is it: True
+[safe] new module under melder: True | melder.injected_probe.VALUE: 2
+[safe] stdlib csv replaced: True | sys.modules is original: False
+[safe] installed name pytest shadowed: True | import pytest gives: SyntheticModule
+[hybrid] core module replaced: True | sys.modules is original: False | type: SyntheticModule | import_module returns it: True | parent attribute is it: True
+[hybrid] new module under melder: True | melder.injected_probe.VALUE: 2
+[hybrid] stdlib csv replaced: True | sys.modules is original: False
+[hybrid] installed name pytest shadowed: True | import pytest gives: SyntheticModule
+exit: 0
