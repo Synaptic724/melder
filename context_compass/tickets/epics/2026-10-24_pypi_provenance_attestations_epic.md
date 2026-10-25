@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T22:21:35Z
-- Updated: 2026-10-25T15:04:54Z
+- Updated: 2026-10-25T15:43:10Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: integrity of the published package (the owner's request, chat 2026-10-24, 16:16 MDT)
 
@@ -613,6 +613,27 @@ this does not make independent review mandatory for every ticket.
     provenance when he shares it.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T15:43:10Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner asks whether he must publish once with the new flow before retiring `PYPI_API_TOKEN` (chat
+    2026-10-25 09:41 -0600). The only consumer is python-publish.yml as prod holds it (`password:
+    secrets.PYPI_API_TOKEN`; dev, preprod and release_candidate carry the same old copy at the last fetch, but
+    publication runs only at prod HEAD), and the S3 workflow (1dd4470e7, not yet on prod) cannot use a token at
+    all. Answer given: he may retire it now if no release goes out from prod before S3 reaches it. Waiting keeps
+    only a revert path; the PyPI-only failure left (`invalid-publisher`) is fixed on PyPI and uploads nothing, and
+    the TestPyPI run proved the rest of the mechanism. If he retires it early, S4's PyPI half closes before the
+    first attested release.
+  EVIDENCE:
+  - .github/workflows/python-publish.yml:121-129 (at origin/prod 2d6c75233)
+  - .github/scripts/ci_policy.py:269-305
+  - .github/workflows/python-publish.yml:124-132
+  IMPACT: Retiring the token no longer waits on the first attested release, only on S3 reaching prod first.
+  NEXT: Record the owner's choice; read the first final release's Publish to PyPI and Release / provenance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
