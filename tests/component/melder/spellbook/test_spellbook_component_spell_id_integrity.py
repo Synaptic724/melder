@@ -191,7 +191,9 @@ def test_component_a_parked_spell_still_reserves_its_spell_id() -> None:
         AssertionError: If a parked id can be re-minted by another Spellbook.
     """
     owner = _book("integrity-parked")
-    owner.bind(spell=IntegrityTenantCache, existence="unique")
+    # Every version of an index is bound the way its first version was (2026-10-25), so the head and the staged
+    # version share the string spellframe 'integrity'.
+    owner.bind(spell=IntegrityTenantCache, existence="unique", spellframe="integrity")
     conduit = owner.conjure(dynamic=True, name="integrity-parked-conduit")
 
     spell_index = next(iter(owner.spells.keys()))
@@ -199,11 +201,13 @@ def test_component_a_parked_spell_still_reserves_its_spell_id() -> None:
         spell=IntegrityOtherService,
         spell_index=spell_index,
         existence="unique",
+        spellframe="integrity",
     )
     assert parked_id, "staging did not return a spell_id"
 
-    # A SECOND book now binds the SAME staged class with the SAME parameters,
-    # so it mints the identical fingerprint - which is parked, not active.
+    # A SECOND book now binds the SAME staged class, so it mints the identical
+    # spell_id (a spell_id is the class's code, whatever the bind call says,
+    # since 0.2.8257) - which is parked, not active.
     # REFUSED AT BIND, not at conjure: the parked id is already published to the
     # frame by the owner's conjure above, so the bind-time check sees it. The
     # conjure preflight only catches the pre-conjure window where neither book

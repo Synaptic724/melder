@@ -72,6 +72,8 @@ class FrameACLCodegenBuilder(Cleanable):
     _DEFAULT_IMPORTS_RULE_NAME = "builder_enable_imports"
     _DEFAULT_ALLOW_IMPORT_MODULES_RULE_NAME = "builder_allow_import_modules"
     _DEFAULT_DENY_IMPORT_MODULES_RULE_NAME = "builder_deny_import_modules"
+    _DEFAULT_ALLOW_MATERIALIZE_MODULES_RULE_NAME = "builder_allow_materialize_modules"
+    _DEFAULT_DENY_MATERIALIZE_MODULES_RULE_NAME = "builder_deny_materialize_modules"
     _DEFAULT_ALLOW_BUILTINS_RULE_NAME = "builder_allow_builtin_names"
     _DEFAULT_DENY_BUILTINS_RULE_NAME = "builder_deny_builtin_names"
     _DEFAULT_UNSAFE_REFLECTION_RULE_NAME = "builder_unsafe_reflection"
@@ -366,6 +368,54 @@ class FrameACLCodegenBuilder(Cleanable):
             self.draft_configuration.capability_override_ruleset,
             rule_name=self._DEFAULT_DENY_IMPORT_MODULES_RULE_NAME,
             operation_name="import_modules",
+            effect="deny",
+            condition_key="module_roots",
+            values=module_roots,
+        )
+
+    def allow_materialize_module_roots(
+            self,
+            *module_roots: str,
+    ) -> FrameACLCodegenBuilder:
+        """
+        Merge generation-namespace roots into the active draft (D-20).
+
+        Contract:
+            - With at least one allow rule, `materialize_codegen` admits only names equal to or under these roots
+              (a root may be dotted); with none, any new name that passes the hard refusals materializes.
+
+        Args:
+            *module_roots: Module roots room code may materialize under.
+
+        Returns:
+            FrameACLCodegenBuilder: This builder, for fluent chaining.
+        """
+        return self._merge_condition_values_rule(
+            self.draft_configuration.capability_override_ruleset,
+            rule_name=self._DEFAULT_ALLOW_MATERIALIZE_MODULES_RULE_NAME,
+            operation_name="materialize_modules",
+            effect="allow",
+            condition_key="module_roots",
+            values=module_roots,
+        )
+
+    def deny_materialize_module_roots(
+            self,
+            *module_roots: str,
+    ) -> FrameACLCodegenBuilder:
+        """
+        Merge denied generation roots into the active draft (D-20).
+
+        Args:
+            *module_roots: Module roots room code may not materialize under.
+
+        Returns:
+            FrameACLCodegenBuilder: This builder, for fluent chaining.
+        """
+        return self._merge_condition_values_rule(
+            self.draft_configuration.capability_override_ruleset,
+            rule_name=self._DEFAULT_DENY_MATERIALIZE_MODULES_RULE_NAME,
+            operation_name="materialize_modules",
             effect="deny",
             condition_key="module_roots",
             values=module_roots,

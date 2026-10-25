@@ -1,3 +1,4 @@
+import builtins
 import sys
 from unittest.mock import MagicMock
 
@@ -39,7 +40,10 @@ def _make_command_system(*, accepted: bool) -> CodegenCommandSystem:
     engine = MagicMock()
     validation_result = MagicMock()
     validation_result.accepted = accepted
-    engine.validate_codegen_request.return_value = (MagicMock(), validation_result)
+    transaction_context = MagicMock()
+    transaction_context.projection = None
+    engine.validate_codegen_request.return_value = (transaction_context, validation_result)
+    engine.build_materialize_builtins.return_value = dict(vars(builtins))
     engine.report_validation_result.return_value = {"verdict_marker": accepted}
     command_system = CodegenCommandSystem(
         rift=MagicMock(),
@@ -144,3 +148,40 @@ def test_verb_is_advertised() -> None:
         "materialize_codegen"
         in CodegenCommandSystem._CODEGEN_COMMAND_METHOD_NAMES
     )
+
+
+def test_a_loaded_module_name_is_refused_before_any_publication() -> None:
+    """
+    Contract (D-20, N11): an accepted materialize of a name already in `sys.modules` answers a refusal payload and
+    leaves the loaded module in place; no SyntheticModule is registered.
+    """
+    import json
+
+    command_system = _make_command_system(accepted=True)
+
+    payload = command_system.materialize_codegen(
+        "value = 1\n",
+        module_name="json",
+        frame_name="frame-a",
+    )
+
+    assert payload["materialized"] is False
+    assert "already loaded" in payload["refusal"]
+    assert sys.modules["json"] is json
+    assert "json" not in SyntheticModule._registered_modules_by_name
+
+
+def test_materialized_source_runs_with_the_engines_room_builtins() -> None:
+    """
+    Contract (D-20): the module's `__builtins__` is the mapping the engine builds for the room.
+    """
+    command_system = _make_command_system(accepted=True)
+    room_builtins = command_system._require_codegen_system().build_materialize_builtins.return_value
+
+    command_system.materialize_codegen(
+        "value = 1\n",
+        module_name="codegen_probe_tool",
+        frame_name="frame-a",
+    )
+
+    assert sys.modules["codegen_probe_tool"].__dict__["__builtins__"] is room_builtins

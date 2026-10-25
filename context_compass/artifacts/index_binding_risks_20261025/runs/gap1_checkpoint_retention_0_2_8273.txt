@@ -1,0 +1,27 @@
+# GAP-1: checkpoint retention against a profile folder of earlier worlds; melder version 0.2.8273
+# run at 2026-10-25T12:42:20Z by melder_1 on a /tmp copy (src + UX_and_AIX_experiences), the GIL off
+
+== the device tree's own folder, src/melder/__melder_cache__/__crystallizer_cache__/default (read only)
+  files: 100 | checkpoint_number: {3: 49, 4: 51} | record_version: {'3.0.0': 14, '4.0.0': 4, '4.1.0': 22, '4.2.0': 36, '4.3.0': 20, '5.0.0': 4}
+
+== A: the copy without a crystallizer cache folder - expert examples 02, 09, 24, 27
+4 passed, 34 deselected in 3.01s
+  files: 5 | checkpoint_number: {1: 3, 2: 2} | record_version: {'5.0.0': 5}
+
+== B: the copy with the device folder copied in - the same four examples
+E   AssertionError
+/tmp/cc_res/gap1mirror/UX_and_AIX_experiences/04_expert/02_persistence_mesh_your_code_their_lanes.py:137: AssertionError
+E   AssertionError
+/tmp/cc_res/gap1mirror/UX_and_AIX_experiences/04_expert/09_getting_data_into_your_database.py:150: AssertionError
+E   AssertionError
+/tmp/cc_res/gap1mirror/UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py:153: AssertionError
+E   AssertionError
+/tmp/cc_res/gap1mirror/UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py:141: AssertionError
+4 failed, 34 deselected in 2.36s
+  files: 100 | checkpoint_number: {3: 49, 4: 51} | record_version: {'3.0.0': 14, '4.0.0': 4, '4.1.0': 22, '4.2.0': 36, '4.3.0': 20, '5.0.0': 4}
+
+== C: twenty runs of the four examples from an empty folder (their own checkpoints only)
+  after 20 runs: 4 passed, 34 deselected in 3.77s
+  files: 100 | checkpoint_number: {1: 60, 2: 40} | record_version: {'5.0.0': 100}
+  run 21, at the cap: 4 passed, 34 deselected in 3.74s
+  files: 100 | checkpoint_number: {1: 58, 2: 42} | record_version: {'5.0.0': 100}

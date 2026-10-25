@@ -1153,13 +1153,24 @@ class Spellbook(Cleanable):
 
         Contract:
             - Returns early when no new cache was staged since the last emit.
-            - Emits at most once per staged operation window.
-            - Restores the emit-required flag when file emission fails so a
-              later caller can retry.
+            - Emits at most once per staged operation window: the flag is
+              cleared under the Book lock before the save.
+            - A save the operating system refuses is not an error (the bundle
+              is an accelerator): `CachingSystem.emit()` logs it and returns
+              False, the flag stays cleared - no meld retries the save or
+              waits on it - and the payloads stay staged in memory, so the
+              next staging or conjure saves them. Every meld door calls this
+              after building its object, so a refused save never fails a
+              meld.
+            - Any other exception from the save restores the emit-required
+              flag, so a later caller can retry, and propagates: it would be
+              a Melder defect, not an I/O refusal.
 
         Returns:
             bool:
-                True when a cache file emit occurred, otherwise False.
+                True when the cache file was written; False when nothing was
+                staged since the last save or the operating system refused the
+                save.
         """
         # Lock-free fast path: this runs on every meld, and the flag is False
         # for all but the one meld that follows fresh cache staging. A stale
@@ -1172,8 +1183,7 @@ class Spellbook(Cleanable):
                 return False
             self._cache_emit_required = False
         try:
-            self._get_or_create_caching_system().emit()
-            return True
+            return self._get_or_create_caching_system().emit()
         except Exception:
             with self._lock:
                 self._cache_emit_required = True
@@ -1192,7 +1202,11 @@ class Spellbook(Cleanable):
         Contract:
             - Returns early when the spell cache policy bit is disabled.
             - Requires the spell to belong to this Spellbook.
-            - Emits the current `CachingSystem` in-memory state to disk.
+            - Saves the current `CachingSystem` in-memory state through
+              `_emit_cache_file_if_required`, so it writes only when cache was
+              staged since the last save, and a save the operating system
+              refuses returns False (logged by the cache utility) instead of
+              raising.
 
         Args:
             spell:
@@ -1200,7 +1214,13 @@ class Spellbook(Cleanable):
 
         Returns:
             bool:
-                True when the cache file was emitted, otherwise False.
+                True when the cache file was written; False when caching is
+                off for the spell, nothing was staged since the last save, or
+                the save was refused.
+
+        Raises:
+            RuntimeError:
+                If the spell does not belong to this Spellbook.
         """
         if not spell._caching_enabled:
             return False
@@ -3439,6 +3459,66 @@ class Spellbook(Cleanable):
                 return spell
             return self._inactive_spells.get(spell_id)
 
+    def _find_visible_version(self, spell_id: str) -> Optional[Spell]:
+        """
+        Internal
+
+        Return the version this Book can see under `spell_id` - owned or borrowed, active or parked - or None.
+
+        Purpose:
+            Give the doors that build nothing - purge and the live-creation probes - the exact version a spell_id
+            names, wherever this Book keeps it (STORY-2026-10-25-probe_and_purge_reach_every_version). A spell_id
+            names one version (owner ruling, 2026-10-17): this answers with that version, never with the version
+            its index has active, and a version a notch parked keeps its objects under its own spell_id.
+
+        Contract:
+            - Reads the Book's four id maps once, in this order: `_spells_by_id` (owned, active),
+              `_inactive_spells` (owned, parked), every lender's `_contracted_spells_by_id` (borrowed, active),
+              every lender's `_inactive_contracted_spells` (borrowed, parked). Returns the first Spell found. A
+              spell_id is owned by one Book and a borrower holds one copy of a version, so one map at most
+              holds it.
+            - Returns None when no map holds it: an unknown spell_id, a disposed version, another Book's version
+              this Book does not borrow, or a version between an ownership transfer's flip and its migration.
+            - Pure lookup: creates, registers and mutates nothing.
+
+        Threading:
+            Takes `self._lock` alone and holds it only for the dict reads. Every writer of these maps holds that
+            lock - a notch's park and promotion and their borrowed twins, the index moves, disposal, a transfer -
+            and moves a version from one map to another inside one locked section, so under the lock a version
+            is in exactly one map: a lookup racing a notch to or from the version finds it, where a lock-free
+            read can land between the two steps. The caller holds no other Melder lock when it calls (the Meld's
+            miss path calls before any store, slot or spell lock). The returned Spell is borrowed, not leased.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Args:
+            spell_id: The spell_id of the version - the SHA256 `bind` or `bind_inactive` returned.
+
+        Returns:
+            Optional[Spell]: The version, or None when this Book can see none under `spell_id`.
+
+        Raises:
+            RuntimeError: If the Spellbook has already been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            spell = self._spells_by_id.get(spell_id)
+            if spell is not None:
+                return spell
+            spell = self._inactive_spells.get(spell_id)
+            if spell is not None:
+                return spell
+            for active_copies in self._contracted_spells_by_id.values():
+                spell = active_copies.get(spell_id)
+                if spell is not None:
+                    return spell
+            for parked_copies in self._inactive_contracted_spells.values():
+                spell = parked_copies.get(spell_id)
+                if spell is not None:
+                    return spell
+        return None
+
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
         Internal
@@ -3952,6 +4032,7 @@ class Spellbook(Cleanable):
             spell_index: SpellIndex,
             spell: Spell,
             change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+            after_switch: Optional[Callable[[], None]] = None,
     ) -> Spell:
         """
         Internal -- called by the owning Conduit (Conduit.notch_spell is the public surface).
@@ -3984,6 +4065,9 @@ class Spellbook(Cleanable):
             - A version that passes, or needs no check, is journaled to the
               research record and returned; the commit's structural validator
               then finds its Phase-4 result and skips it.
+            - `after_switch` (design 2, TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout):
+              the owning conduit's borrower fan-out, run after the structural check inside the same guarded
+              section, so a fan-out error takes the same reversal and the notch is undone as a whole.
             - A version that fails is refused: `_revert_refused_notch` puts the
               before-state back and resets the refused version's Phase 1-4
               artifacts, nothing is journaled, and the error is raised before the
@@ -4007,9 +4091,11 @@ class Spellbook(Cleanable):
                 version still active (`_notch_refusal_line`), the validation report
                 follows, and the error is chained from the check's own. Nothing has
                 moved.
-            RuntimeError: If the Spellbook is cleaned or the seam refuses `spell`;
-                or when the reversal of a refused notch fails, a Melder bug whose
-                message names both versions.
+            RuntimeError: If the Spellbook is cleaned or the seam refuses `spell` -
+                among its refusals, an address another spell holds (2026-10-25;
+                raised before anything moves, so no reversal runs); or when the
+                reversal of a refused notch fails, a Melder bug whose message
+                names both versions.
             Exception: Any other error the check raises, as it is, after the
                 reversal has run.
 
@@ -4052,6 +4138,10 @@ class Spellbook(Cleanable):
         # ran at the NOTCH commit, after the switch, and nothing undid it).
         try:
             self._check_notched_version(spell)
+            # Design 2: the borrower fan-out runs here, inside the held window and before the
+            # promotion is journaled, so an error from it undoes the switch like a failed check.
+            if after_switch is not None:
+                after_switch()
         except Exception as error:
             # A failing check undoes the switch. A validation verdict is raised as the
             # refusal, built first because its report renders from the Phase-4 result
@@ -4102,15 +4192,27 @@ class Spellbook(Cleanable):
         is active using the active/inactive park machinery.
 
         Steps (owner side):
+            0. Move the index's address claim, by compare-and-set
+               (`AethericFrame.repoint_lookup`), from the outgoing version - or
+               from no one, on an index with no active version - to `spell`.
+               Every version of the index is bound at the index's address
+               (`SpellIndex.check_admits`), so any other holder is another
+               spell - another index's active version in this Book (a version
+               split off with `remove_from_spell_index` while its source still
+               serves the address) or another Book's spell - and the notch is
+               refused before anything moves (`_refuse_taken_address`;
+               2026-10-25, STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
+               Until then step 4 set the claim after the promotion, whoever held it.
             1. Park the outgoing active spell off the four active owned maps via
                `_deactivate_owned_spell` (existence kept in `_spell_ids`), then
                tear down its creation context to bump the door epoch so the warm
                fast-door cannot serve the stale spell.
             2. Promote `spell` from `_inactive_spells` into the four active maps
                via `_reactivate_owned_spell` (precondition: `spell` is parked --
-               staged by `bind_inactive` or a prior notch).
+               staged by `bind_inactive` or a prior notch). If step 1 or 2 raises,
+               the claim goes back to its holder before the error propagates.
             3. Repoint the index pointer + record the member (`SpellIndex.update`).
-            4. Repoint the framewide binding signature old -> new active id.
+            4. (Gone: the claim moved in step 0.)
             5. Re-register the index so it is structurally gated + dirty; meld-time
                revalidation recompiles lazily on next resolve.
             6. Mark every SpellIndex downstream of this one for revalidation
@@ -4140,28 +4242,52 @@ class Spellbook(Cleanable):
             Spell: `spell`, now the active member.
 
         Raises:
-            RuntimeError: If `spell` is not parked in `_inactive_spells`, or the
-                outgoing spell is not the active owned spell for its id.
+            RuntimeError: If another spell holds the index's address (nothing
+                moved; the message names the holder and the remedy), or
+                `spell` is not parked in `_inactive_spells`, or the outgoing
+                spell is not the active owned spell for its id.
         """
         self.check_cleaned()
         new_id = spell.spell_id
+        key = spell._key
         with self._lock:
             outgoing = self._spells.get(spell_index)
             if outgoing is spell:
                 # Already the active member for this index; notch is idempotent.
                 return spell
-            if outgoing is not None:
-                # Park the outgoing active spell (off the four active maps; keeps
-                # _spell_ids existence), then kill its fast-door so meld(old_id)
-                # cannot serve the stale spell.
-                self._deactivate_owned_spell(outgoing)
-                outgoing._cleanup_creation_context()
-            # Promote the incoming spell from _inactive_spells into the active maps.
-            self._reactivate_owned_spell(spell)
+            # Step 0: the index's address claim moves first, by compare-and-set, from the outgoing version or -
+            # on an index with no active version - from no one. Any other holder is another spell at this
+            # index's address, and the notch is refused before anything moves (2026-10-25,
+            # STORY-2026-10-17-notch_moves_signature_by_incoming_key_only; until then the claim was set after
+            # the promotion, whoever held it).
+            previous_holder = self._aetheric_frame.get_lookup(key)
+            holder = self._aetheric_frame.repoint_lookup(
+                key,
+                new_id,
+                from_spell_id=outgoing.spell_id if outgoing is not None else None,
+            )
+            if holder is not None:
+                self._refuse_taken_address(spell_index=spell_index, spell=spell, holder=holder)
+            try:
+                if outgoing is not None:
+                    # Park the outgoing active spell (off the four active maps; keeps
+                    # _spell_ids existence), then kill its fast-door so meld(old_id)
+                    # cannot serve the stale spell.
+                    self._deactivate_owned_spell(outgoing)
+                    outgoing._cleanup_creation_context()
+                # Promote the incoming spell from _inactive_spells into the active maps.
+                self._reactivate_owned_spell(spell)
+            except Exception:
+                # Compensation, then re-raise: a park or promotion that raises (a target the Conduit's checks
+                # refuse first) gives the claim back to the spell that held it, so that path ends as it did before
+                # the claim moved first (TASK-2026-10-16-notch_seam_checks_incoming_before_parking, backlog).
+                if previous_holder is None:
+                    self._aetheric_frame.release_lookup_by_spell_id(new_id)
+                else:
+                    self._aetheric_frame.repoint_lookup(key, previous_holder, from_spell_id=new_id)
+                raise
             # Index pointer: select the new id and record it as a member.
             spell_index.update(new_id)
-            # Framewide binding signature: repoint old -> new active id.
-            self._aetheric_frame.update_lookup(spell._key, new_id)
             # Membership snapshot AFTER the repoint: the park/promote tails
             # above fire while the index still points at the OLD member, so
             # the one truthful selection snapshot for a notch lives here.
@@ -4246,6 +4372,70 @@ class Spellbook(Cleanable):
                 change_reason=change_reason,
             )
         return spell
+
+    def _refuse_taken_address(self, *, spell_index: SpellIndex, spell: Spell, holder: str) -> None:
+        """
+        Internal
+
+        Refuse a notch whose index's address another spell holds.
+
+        Purpose:
+            `_apply_notch`'s step 0 found the address claim held by a spell
+            other than the index's outgoing version. Every version of an index
+            is bound at the index's address (`SpellIndex.check_admits`), so the
+            holder is another spell: another index's active version in this
+            Book - a version split off with `remove_from_spell_index` while its
+            source index still serves the address - or a spell of another Book
+            of this frame. There is one active spell per address per frame, so
+            the notch is refused (2026-10-25,
+            STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
+
+        Contract:
+            - Called by `_apply_notch` under the Book lock, before anything has
+              moved; reads `_spells_by_id` to tell the two holders apart, logs
+              and raises. Changes nothing.
+            - The message names the index, its binding (the incoming version's,
+              which is the index's), the holder's spell_id and the remedy.
+
+        Args:
+            spell_index (SpellIndex): The index being notched.
+            spell (Spell): The version the notch would make active.
+            holder (str): The spell_id holding the index's address.
+
+        Returns:
+            None. Always raises.
+
+        Raises:
+            RuntimeError: "notch_spell refused: the address of SpellIndex <id>
+                - <its binding> - is held by spell_id '<holder>' ..." - for this
+                Book's other index: move the version back into that index with
+                add_to_spell_index and notch there, or dispose that index's
+                versions first; for another Book's spell: notch once it is
+                disposed, or bind the class as a new spell at another address.
+        """
+        binding = SpellIndex._describe_binding(
+            spellframe=spell.spellframe, spell_name=spell.spell_name, binding_name=spell.binding_name,
+        )
+        held_here = self._spells_by_id.get(holder)
+        if held_here is not None:
+            whose = (
+                f" ('{held_here.spell_name}'), the active version of another index of this Spellbook, so the notch "
+                "did not happen and nothing moved. A version split off with remove_from_spell_index goes active "
+                "only once its address is free: move it back into that index with add_to_spell_index and notch "
+                "there, or dispose that index's versions with cleanup_spell first."
+            )
+        else:
+            whose = (
+                ", an active spell of another Spellbook of this frame, so the notch did not happen and nothing "
+                "moved. There is one active spell per address per frame: notch once that spell is disposed, or "
+                "bind this class as a new spell at another address."
+            )
+        message = (
+            f"notch_spell refused: the address of SpellIndex {spell_index.id} - {binding} - is held by spell_id "
+            f"'{holder}'{whose}"
+        )
+        self._logger.error(message, "_apply_notch")
+        raise RuntimeError(message)
 
     def _check_notched_version(self, spell: Spell) -> None:
         """
@@ -4348,14 +4538,13 @@ class Spellbook(Cleanable):
               `register_local_topology` with `before_topology`): the check's Phase 3
               registered `refused`'s on the lineage, and another Book's resolution
               would otherwise read `restored` as depending on them (a self-dependent
-              `refused` made `restored` depend on `refused` itself). When
-              `refused` is keyed elsewhere, that key's Book lookup and frame claim
-              are then set back to their before-values (`_restore_binding_key`),
-              since the seam repoints only the key it promotes. A key the two share
-              is left as the promotion set it: setting it back would release the
-              claim and the lookup wherever staging `refused` dropped them
-              (STORY-2026-10-17-staged_version_releases_active_signature), and
-              `restored` could not be melded by address.
+              `refused` made `restored` depend on `refused` itself). Every
+              version of an index shares its key (2026-10-25,
+              STORY-2026-10-17-notch_moves_signature_by_incoming_key_only), so the
+              seam run back moves the frame claim and the Book lookup back to
+              `restored` by itself; the branch that set a `refused` keyed
+              elsewhere back to its before-values (`_restore_binding_key`) is
+              gone with the case.
             - With none (an index `remove_from_spell_index` minted):
               `_revert_refused_activation` parks `refused` again and puts the
               selection, the lineage registration, the RiskManager entry and the
@@ -4402,8 +4591,6 @@ class Spellbook(Cleanable):
                 self._spell_system_states.update_dependencies(spell_index, before_dependencies)
                 if before_topology is not None:
                     self._spell_system_states.register_local_topology(spell_index, before_topology)
-                if refused._key != restored._key:
-                    self._restore_binding_key(refused._key, before_lookup, before_claim)
             else:
                 self._revert_refused_activation(
                     spell_index=spell_index, refused=refused, before_selected=before_selected, tracked=tracked,
@@ -4536,6 +4723,9 @@ class Spellbook(Cleanable):
               `target_index.selected_spell_id in self._spell_ids`); you cannot add
               onto a foreign index.
             - The spell must be inactive; notch away from an active spell first.
+            - The spell must be bound the way `target_index`'s versions are
+              (`SpellIndex.check_admits`, 2026-10-25): a version of another
+              binding is refused before anything moves.
             - The spell leaves its current index and joins `target_index` as an
               inactive member. If its old index empties, that index is destroyed.
 
@@ -4549,6 +4739,8 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If the Spellbook is cleaned, the spell is not owned
                 here, or the spell is active.
+            ValueError: If the spell is bound another way than `target_index`'s
+                versions.
         """
         self.check_cleaned()
         # The owning Conduit admits the `add_to_index` transaction; this seam
@@ -4572,9 +4764,13 @@ class Spellbook(Cleanable):
                only add onto an index you own.
             2. Enforce the spell is inactive (active members must be notched away
                first; moving an active member would orphan its active maps).
-            3. Remove the spell id from its source index member set, add it to the
+            3. Enforce the binding: `target_index.check_admits(spell)` - every
+               version of an index is bound the way its first version was
+               (2026-10-25, STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
+               On `bind_inactive`'s fold it passes: that verb checked it first.
+            4. Remove the spell id from its source index member set, add it to the
                target index, and repoint `spell.spell_index`.
-            4. If the source index is now empty, destroy it.
+            5. If the source index is now empty, destroy it.
 
         Args:
             spell: The owned, inactive spell to move.
@@ -4586,6 +4782,8 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If `spell` is not owned by this Spellbook, is active, or
                 `target_index` is not an index this Spellbook owns.
+            ValueError: If `spell` is bound another way than `target_index`'s
+                versions; nothing moves.
         """
         self.check_cleaned()
         if spell._spellbook is not self:
@@ -4621,6 +4819,10 @@ class Spellbook(Cleanable):
                 f"add_to_spell_index: target index {target_index.id} is not owned by this "
                 f"spellbook; you can only add onto an index you own."
             )
+        # Every version of an index is bound the way its first version was (2026-10-25,
+        # STORY-2026-10-17-notch_moves_signature_by_incoming_key_only): another binding is refused before anything
+        # moves.
+        target_index.check_admits(spell, verb="add_to_spell_index")
         binding_key = spell._key
         owner_conduit_id = spell._owner_conduit_id
         with self._lock:
@@ -4781,8 +4983,13 @@ class Spellbook(Cleanable):
                spell actually belongs to `source_index`.
             2. If the spell is the sole member of `source_index`, raise (use
                `cleanup_spell` to dispose it instead).
-            3. Otherwise mint a fresh `SpellIndex` seeded with this spell id, remove
-               the spell from `source_index`, and repoint `spell.spell_index`.
+            3. Otherwise mint a fresh `SpellIndex` for this spell's binding
+               (`SpellIndex.for_binding`, the way Bind builds an index), seeded with
+               its spell id, remove the spell from `source_index`, and repoint
+               `spell.spell_index`. The version keeps its binding - its source
+               index's - so `add_to_spell_index` can move it back, and its index can
+               be notched active once no other spell holds its address (2026-10-25,
+               STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
             4. Register the fresh index in the frame's spell registry the way a
                post-conjure `bind` registers the index it creates: the same guard
                (the Book is conjured) and the same call, under the Book's root
@@ -4849,7 +5056,12 @@ class Spellbook(Cleanable):
                 f"use cleanup_spell to dispose it instead."
             )
         with self._lock:
-            new_index = SpellIndex(initial_id=spell_id)
+            new_index = SpellIndex.for_binding(
+                spell_id,
+                spellframe=spell.spellframe,
+                spell_name=spell.spell_name,
+                binding_name=spell.binding_name,
+            )
             source_index.remove_member(spell_id)
             spell.spell_index = new_index
         # Register the fresh index with the frame the way a post-conjure bind registers the index it creates: the
@@ -5849,9 +6061,19 @@ class Spellbook(Cleanable):
         Contract:
             - Requires an active binding transaction and a dynamic Spellbook
               posture.
-            - `spell_index` must be an index this Spellbook already owns (its
-              selected member id is in `_spell_ids`), enforced by
-              `_apply_add_to_index`.
+            - `spell_index` must be an index this Spellbook owns (its selected
+              member id is in `_spell_ids`) and must admit the version
+              (`SpellIndex.check_admits`): every version of an index is bound
+              the way its first version was - the same kind of spellframe
+              (none, a string category, a Protocol) and the same address
+              (spellframe and binding name, case-insensitive). Stage an edited
+              class with the index's spellframe and binding_name; a renamed
+              class or a new binding name is a new spell (2026-10-25,
+              STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
+              The index's liveness, its ownership, then the binding are checked
+              right after the spell_id collision check, before the hooks and any
+              registration, so a refusal leaves nothing registered and a retry is
+              not refused as a collision.
             - Performs no active-map registration and claims no binding
               signature; the spell stays inactive until notched.
             - Resolves disposal metadata once using the same ordered group
@@ -5895,8 +6117,8 @@ class Spellbook(Cleanable):
                 queue only, required there: how long a lease waits for a release before it raises.
             managed_spell_reset_methods (Optional[Sequence[str]]):
                 Names of zero-argument methods of the class run, in order, on every release.
-                The four managed options must stay None on any other existence; all four are part
-                of a managed spell's id.
+                The four managed options must stay None on any other existence; they are settings
+                of the spell, not part of its spell_id (0.2.8254).
                 A parked managed version keeps its own options.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
@@ -5908,12 +6130,17 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError:
                 If the spell_id collides, the Spellbook is not in a dynamic
-                posture, or `spell_index` is not owned here.
+                posture, `spell_index` is not owned here ("... is not owned by
+                this spellbook ...", raised before anything is registered), or
+                `spell_index` has been cleaned.
             TypeError:
                 If resolvable is not a bool or the target violates Bind admission rules,
                 including a managed option of the wrong type or a managed non-class.
             ValueError:
-                If a managed option is malformed or set on another existence.
+                If a managed option is malformed or set on another existence, or
+                the version is bound another way than `spell_index`'s versions
+                (`SpellIndex.check_admits`: the message names both bindings and
+                the remedy; nothing is registered).
             HookExecutionError:
                 A Book bind callback failed. Activation failure cleans its
                 unpublished allocation; post failure does not undo registration.
@@ -5991,6 +6218,26 @@ class Spellbook(Cleanable):
                         "constructor, class-level value or base class is a new spell_id: stage it with \n"
                         "bind_inactive and notch to it."
                     )
+
+                # The index this version joins must be live, this Book's, and admit the version - bound the way the
+                # index's first version was (2026-10-25, STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
+                # All three are checked here, before the hooks and the registration below, so a refusal leaves
+                # nothing registered (the handler retires the unpublished Spell and its fresh index) and a retry is
+                # not refused as a spell_id collision. Until then another Book's index was refused only by
+                # `_apply_add_to_index`, after the registration, which left the version parked here.
+                spell_index.check_cleaned()
+                if spell_index.selected_spell_id not in self._spell_ids:
+                    self._logger.error(
+                        f"bind_inactive: target index {spell_index.id} is not owned by this spellbook.",
+                        "bind_inactive",
+                        exc_info=True,
+                    )
+                    raise RuntimeError(
+                        f"bind_inactive: target index {spell_index.id} is not owned by this spellbook; stage a "
+                        "version only onto an index this Spellbook owns (call bind_inactive through the conduit of "
+                        "the Spellbook that owns the index)."
+                    )
+                spell_index.check_admits(new_spell, verb="bind_inactive")
 
                 self._add_hooks_to_spell(new_spell, **kwargs)
                 # Inactive pathing: route the registration setters to the inactive
@@ -6222,8 +6469,8 @@ class Spellbook(Cleanable):
                 queue only, required there: how long a lease waits for a release before it raises.
             managed_spell_reset_methods (Optional[Sequence[str]]):
                 Names of zero-argument methods of the class run, in order, on every release.
-                The four managed options must stay None on any other existence; all four are part
-                of a managed spell's id.
+                The four managed options must stay None on any other existence; they are settings
+                of the spell, not part of its spell_id (0.2.8254).
             **kwargs:
                 Optional application-object lifecycle hooks, executed during Meld
                 and separate from add_bind_hooks registration callbacks:

@@ -62,7 +62,9 @@ def reset_aether_singleton_for_race_probe() -> None:
 @contextlib.contextmanager
 def _two_member_index() -> Iterator[tuple]:
     """
-    Dynamic conduit whose index has ACTIVE member A and parked member B.
+    Dynamic conduit whose index has ACTIVE member A and parked member B, both
+    under ('race', 'a'): every version of an index is bound the way its first
+    version was (2026-10-25).
     Yields (book, conduit, id_a, id_b, index, spell_b).
     """
     config = SpellbookConfiguration()
@@ -71,13 +73,13 @@ def _two_member_index() -> Iterator[tuple]:
     book = Spellbook(configuration=config)
     id_a = book.bind(
         spell=_RaceAlpha, existence=Existence.unique,
-        permissions="create", binding_name="a",
+        permissions="create", spellframe="race", binding_name="a",
     )
     conduit = book.conjure(dynamic=True, name="race-root")
     index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_RaceBeta, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="race", binding_name="a",
     )
     spell_b = book._get_owned_spell(id_b)
     try:

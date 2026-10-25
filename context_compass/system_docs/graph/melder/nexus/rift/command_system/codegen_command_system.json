@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/codegen_command_system.py",
- "source_sha256": "1098778744b7a349ac5ad463200e062545e6ecdd7b4f144c2d0b689702dff93d",
+ "source_sha256": "d55f2798c145fd30683b3ac904a27ddb14ede129995ce2fafff748d2ada34500",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.codegen_command_system": {
@@ -19,7 +19,7 @@
    "label": "CodegenCommandSystem",
    "kind": "class",
    "file": "src/melder/nexus/rift/command_system/codegen_command_system.py",
-   "lineno": 25,
+   "lineno": 27,
    "bases": [
     "CommandSystem"
    ],
@@ -79,18 +79,19 @@
     "validate_codegen"
    ],
    "shape": {
-    "method_count": 55,
+    "method_count": 58,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a9318878cd95f09ac584cb99e41b60f9b45ab7d14ae8d7b7deaabcfb24a751e4",
+   "span_sha256": "00741ac4bb509ba6eccc4cb0e0ab3b2cf283b9d1fecad9a01a752d24c11d938e",
    "role": "Codegen-room command facade over the internal engine.",
    "responsibilities": [
     "preserves the selected runtime-helper subset for codegen rooms",
     "delegates validate and execute requests into the attached CodegenSystem",
     "emits full-source codegen room-memory records for top-level codegen actions",
     "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal",
-    "uses lesser-aware authorized named lookup without expanding room capabilities"
+    "uses lesser-aware authorized named lookup without expanding room capabilities",
+    "refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_codegen_system"
@@ -98,7 +99,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "6da3a9748e03b5ae90fce8d83b9e1287d2691a1c6d1375c19e4fcb5716d0f63d"
+   "semantics_authored_against": "00741ac4bb509ba6eccc4cb0e0ab3b2cf283b9d1fecad9a01a752d24c11d938e"
   }
  },
  "edges_out": [
@@ -138,8 +139,11 @@
  "published_aliases": [],
  "imports": {
   "hashlib": "hashlib",
+  "importlib": "importlib",
+  "sys": "sys",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Dict": "typing.Dict",
+  "List": "typing.List",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
@@ -150,7 +154,8 @@
   "Rift": "melder.nexus.rift.rift.Rift",
   "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
   "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation",
-  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule"
+  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
+  "PROTECTED_GENERATION_MODULE_ROOTS": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.PROTECTED_GENERATION_MODULE_ROOTS"
  },
  "collapse_candidate": {
   "module": "melder.nexus.rift.command_system.codegen_command_system",
@@ -185,6 +190,17 @@
    "to": "melder.mutation_research.mutation_research.MutationResearch",
    "relation": "borrows",
    "why": "Codegen rooms expose the full 34-command research family - record reads, organization (typed create_lane), campaign context, nine foresight commands (incl. the crystal-well module dossier / part reads / part diff w/ radius and research_preview), the three synthesis verbs, and the eight composition commands (register/recompose + view/diff/impact/footprint/drift/history) - through a non-constructing peek; ADVERTISED in list_supported_command_methods.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "relation": "uses",
+   "why": "CodegenCommandSystem reads PROTECTED_GENERATION_MODULE_ROOTS for materialize_codegen's name gate.",
    "cardinality": "many_to_one",
    "phase": [
     "runtime"

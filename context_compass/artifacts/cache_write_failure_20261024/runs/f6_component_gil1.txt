@@ -1,0 +1,196 @@
+F6 validation of TASK-2026-10-24-cache_file_write_failure_fails_meld (the cache-save fix), run by melder_0;
+recorded 2026-10-24T20:32:56Z. Tree: /tmp/m0_mq/fix8266 (the working tree's src with the fix, its tests, pyproject.toml and the repository files the tests read). Python 3.14.7 free-threaded build.
+command: python -X gil=1 -m pytest tests/component -p no:cacheprovider -q --tb=short -rfE
+
+........................................................................ [  2%]
+........................................................................ [  5%]
+........................................................................ [  8%]
+.............................FFFFFFFFFFFFFFFFFFF........................ [ 11%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 20%]
+........................................................................ [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 29%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 40%]
+.........................................x.............................. [ 43%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 61%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 78%]
+........................................................................ [ 81%]
+........................................................................ [ 84%]
+........................................................................ [ 87%]
+........................................................................ [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 96%]
+...................................................ss..ss..ss..ss..ss..s [ 99%]
+s..ssss..ss..sss..ss                                                     [100%]
+=================================== FAILURES ===================================
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-through-lesser] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e260c0610>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e260c0610> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x27e260c8a10>.child
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec7590>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec7590> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x27e27ec6cd0>.child
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-lesser-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec71d0>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec71d0> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x27e27ec7810>.child
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec80d0>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec80d0> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder object at 0x27e260c0a90>.child
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec6f50>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec6f50> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.PerConduitHolder object at 0x27e27ec7a90>.child
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-through-lesser] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec8fd0>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec8fd0> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder object at 0x27e260cc190>.child
+_ test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:271: in test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it
+    assert first.child.closes == 1, "the scope that built the many child must dispose it when it ends"
+E   AssertionError: the scope that built the many child must dispose it when it ends
+E   assert 0 == 1
+E    +  where 0 = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec8c10>.closes
+E    +    where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec8c10> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.LineageHolder object at 0x27e27ec8ad0>.child
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-through-lesser] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:330: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+E   AssertionError: the melding lesser must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e27ec9110> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e66eb0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), (
+E   AssertionError: the melding spellspace must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29e46610> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x27e29e67d90>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-lesser-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), (
+E   AssertionError: the melding spellspace must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29e45410> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x27e29e68650>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), (
+E   AssertionError: the melding spellspace must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29e44e10> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x27e29e68880>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-lesser-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), (
+E   AssertionError: the melding spellspace must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29e44010> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x27e29e685e0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-at-lesser] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:330: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+E   AssertionError: the melding lesser must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e247a56b0> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e68180>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-through-lesser] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:330: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), "the melding lesser must record the child it built"
+E   AssertionError: the melding lesser must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e247a69f0> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e688f0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), (
+E   AssertionError: the melding spellspace must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e247a4370> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x27e29e67380>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[spellspace-holder-in-root-spellspace] _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:348: in test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder
+    assert child in _bucket(melding_store, child_id), (
+E   AssertionError: the melding spellspace must record the child it built
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29d18590> in []
+E    +  where [] = _bucket(<melder.aether.conduit.creations.creations.Creations object at 0x27e29e68d50>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+_ test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:378: in test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer
+    assert held.child in _bucket(lesser._creations, child_id), "the lesser built the child and records it"
+E   AssertionError: the lesser built the child and records it
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29d18dd0> in []
+E    +  where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29d18dd0> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.UniqueHolder object at 0x27e27ec9d90>.child
+E    +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e695a0>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+E    +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e695a0> = <Conduit name=None id=01M5QSHX9MV7VCNT2JW53FJTSA>._creations
+_ test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique __
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:405: in test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique
+    assert first.child in _bucket(lesser._creations, child_id), "the lesser built the child and records it"
+E   AssertionError: the lesser built the child and records it
+E   assert <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29d17a50> in []
+E    +  where <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29d17a50> = <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.OverrideHolder object at 0x27e260cc010>.child
+E    +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e68730>, 'c67fd1ffb295676044c12c5f58af7e5258513599185e0125d1f9a695f671be8a')
+E    +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x27e29e68730> = <Conduit name=None id=01M5QSHXA0DHG23F5D1HGWDHEW>._creations
+_ test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it _
+tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py:434: in test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it
+    assert _bucket(root._creations, child_id) == [held.child], "the root, which built the child, records it once"
+E   AssertionError: the root, which built the child, records it once
+E   assert [] == [<test_condui...x27e29d19190>]
+E     
+E     Right contains one more item: <test_conduit_component_many_child_belongs_to_the_scope_that_built_it.Child object at 0x27e29d19190>
+E     Use -v to get more diff
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/m0_mq/fix8266/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-at-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[spellspace-holder-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it
+19 failed, 2425 passed, 23 skipped, 1 xfailed, 1 warning in 30.06s

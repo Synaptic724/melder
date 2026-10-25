@@ -1,477 +1,475 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "88968c6b0297ac3feddd21b413d52cccca91709ae93cedc1f6ba5f630949aea9",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spellbook": {
-   "id": "melder.aether.spellbook.spellbook",
-   "label": "spellbook",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spellbook.py",
-   "lineno": 1,
-   "include": true,
-   "role": "The public binding, validation and conjure surface - the object a user actually holds.",
-   "semantics_authored_against": "e7cebd1e8409bf92df8afb288f51623cdb6f9a9e2149e6dbf201bb9711ebf73a"
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spellbook.py",
+  "source_sha256": "a3a953b7069fbde2cddc71ff0db85a883fd8d0796e051d594e4658efe6a36b36",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spellbook": {
+      "id": "melder.aether.spellbook.spellbook",
+      "label": "spellbook",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spellbook.py",
+      "lineno": 1,
+      "include": true,
+      "role": "The public binding, validation and conjure surface - the object a user actually holds.",
+      "semantics_authored_against": "e7cebd1e8409bf92df8afb288f51623cdb6f9a9e2149e6dbf201bb9711ebf73a"
+    },
+    "melder.aether.spellbook.spellbook.Spellbook": {
+      "id": "melder.aether.spellbook.spellbook.Spellbook",
+      "label": "Spellbook",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spellbook.py",
+      "lineno": 73,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "add_bind_hooks",
+        "begin_transaction",
+        "bind",
+        "bind_inactive",
+        "cleanup",
+        "cleanup_and_remove_spell",
+        "cleanup_spell",
+        "clear_bind_hooks",
+        "conduit",
+        "configure_aether_frame",
+        "conjure",
+        "contracted_spells",
+        "create_new_preset_spellbook",
+        "describe_spells_in_spellbook",
+        "end_transaction",
+        "find_spell_by_spell_id",
+        "find_spell_index",
+        "find_spell_key",
+        "get_configuration",
+        "get_spell_by_index_id",
+        "get_spell_permissions",
+        "id",
+        "inspect_spell",
+        "is_configuration_locked",
+        "mutation_research",
+        "scan",
+        "snapshot_state",
+        "spells",
+        "transaction"
+      ],
+      "shape": {
+        "method_count": 150,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "985884aaf14bdd59c0bba00a6b79bd065fafaabf775dc82c6b56bd18a659ae0f",
+      "role": "Public binding, validation, and conjure surface.",
+      "responsibilities": [
+        "binds and scans spells into local and contracted lookup surfaces",
+        "forwards native resolvable policy through active and inactive binding, into the lineage state at bind and notch (register_index(resolvable=...), 0.2.8247), and exposes it in spell descriptions",
+        "coordinates configuration freeze and frame publication into Aether and Nexus",
+        "conjures and retains exactly one root conduit",
+        "conjures against a prepared existing normal conduit through a separate private route preserving its ID and creation stores",
+        "seeds independent Bind callbacks from ordinary local or frame-owned configuration selection",
+        "coordinates spell lineage state and transaction-sensitive binding changes",
+        "exposes Book-local bind hook add and clear operations through its owned Bind",
+        "dispatches captured post hooks after active or parked publication and before outer transaction completion",
+        "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown",
+        "preserves same-identity name admission during existing-conduit conjure",
+        "records owning Book and frame twins when public frame setup already locked configuration before conjure",
+        "offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent",
+        "caches a creation only when it carries a manifest package (_emit_spell_cache)",
+        "refuses the recorded-world configuration discipline on the predicted conjure mode before settling the frame posture, and re-checks it on the settled mode inside the transaction window",
+        "disposes a spell under the Book lock and reports the index the disposal destroyed (_dispose_spell); a spell already disposed raises RuntimeError (0.2.8231), and a second disposal of a spell while one runs is refused through an id mark kept under the Book lock (0.2.8232)",
+        "answers contracted-spell lookups by key - the active copy by spell_id, a parked copy through its index - before walking (0.2.8231)",
+        "inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)",
+        "re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)",
+        "forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated (0.2.8242); they are the spell's settings, not part of its spell id (0.2.8254), and a parked managed version keeps its own",
+        "parks versions with bind_inactive, refusing before the hooks and any registration an index that is cleaned, owned by another Book (RuntimeError) or bound another way (SpellIndex.check_admits, ValueError; 2026-10-25): one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch",
+        "marks the SpellContract consumers of a changed active contracted copy's key once its Book lock is released - an add, park, reactivation, removal or clear of an active copy; never a parked copy or a change before conjure (_mark_contract_dependents_dirty in the five contracted-map mutators, 0.2.8250)",
+        "passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)",
+        "removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)",
+        "answers a spell_id with exactly the Spell bound under it - one read of _spells_by_id (active), else one of _inactive_spells (parked), else None - with no lock and no index read; the spell an index has active is a lookup by the index (find_spell_by_spell_id, renamed from find_spell_by_id with no alias, 0.2.8253)",
+        "refuses the active member of an index that also holds parked versions in cleanup_and_remove_spell - and so a direct Spell.cleanup() - before anything is unregistered, as _dispose_spell refuses it for cleanup_spell, every message naming the remedies (notch the index to a parked version, dispose the parked versions, or move them out with remove_from_spell_index); a sole member is removed with its index, and Book teardown never meets the check (0.2.8256)",
+        "registers the index remove_from_spell_index mints in the frame's spell registry as a post-conjure bind registers the index it creates (bind's guard and call, under the Book's root conduit), and the root's teardown (_unregister_conduit_spells_from_aether) unregisters the indexes that hold only parked versions with the rest, so the frame's lookups by spell_id find a version moved into an index of its own (0.2.8259)",
+        "retires every parked version at Book teardown with the local teardown cleanup_spell's parked branch runs (_spellbook_cleanup set, then Spell.cleanup()) and then cleans every index only parked versions hold, one remove_from_spell_index minted, after the active loop; each step best-effort and logged (_cleanup_spells, 0.2.8260)",
+        "routes cleanup_spell through its root conduit's cleanup_spell once conjured, and _dispose_spell calls the caller's release_contracts hook with the spell_id after its decision and refusals and before anything is invalidated or disposed, with no Book lock held; a raising hook disposes nothing and the in-flight mark is cleared (0.2.8261)",
+        "refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, its address claim with it, and the lineage's dependencies and topology registered again (_revert_refused_notch; the key it set back for a version at another address went on 2026-10-25, when every version of an index came to share its key) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)",
+        "destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)",
+        "saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)",
+        "answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)",
+        "keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)",
+        "runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)"
+      ],
+      "owns_state": [
+        "_bind",
+        "_spells",
+        "_spells_by_id",
+        "_lookup_spells",
+        "_contracted_spells",
+        "_configuration",
+        "_conduit"
+      ],
+      "phases": [
+        "init",
+        "validation",
+        "runtime",
+        "cleanup"
+      ],
+      "semantics_authored_against": "985884aaf14bdd59c0bba00a6b79bd065fafaabf775dc82c6b56bd18a659ae0f"
+    }
   },
-  "melder.aether.spellbook.spellbook.Spellbook": {
-   "id": "melder.aether.spellbook.spellbook.Spellbook",
-   "label": "Spellbook",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spellbook.py",
-   "lineno": 73,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "add_bind_hooks",
-    "begin_transaction",
-    "bind",
-    "bind_inactive",
-    "cleanup",
-    "cleanup_and_remove_spell",
-    "cleanup_spell",
-    "clear_bind_hooks",
-    "conduit",
-    "configure_aether_frame",
-    "conjure",
-    "contracted_spells",
-    "create_new_preset_spellbook",
-    "describe_spells_in_spellbook",
-    "end_transaction",
-    "find_spell_by_spell_id",
-    "find_spell_index",
-    "find_spell_key",
-    "get_configuration",
-    "get_spell_by_index_id",
-    "get_spell_permissions",
-    "id",
-    "inspect_spell",
-    "is_configuration_locked",
-    "mutation_research",
-    "scan",
-    "snapshot_state",
-    "spells",
-    "transaction"
-   ],
-   "shape": {
-    "method_count": 148,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "767d811c7bc641cecc4ac58de0006df86e25f407976edd9e62afd0bfa3baab58",
-   "role": "Public binding, validation, and conjure surface.",
-   "responsibilities": [
-    "binds and scans spells into local and contracted lookup surfaces",
-    "forwards native resolvable policy through active and inactive binding, into the lineage state at bind and notch (register_index(resolvable=...), 0.2.8247), and exposes it in spell descriptions",
-    "coordinates configuration freeze and frame publication into Aether and Nexus",
-    "conjures and retains exactly one root conduit",
-    "conjures against a prepared existing normal conduit through a separate private route preserving its ID and creation stores",
-    "seeds independent Bind callbacks from ordinary local or frame-owned configuration selection",
-    "coordinates spell lineage state and transaction-sensitive binding changes",
-    "exposes Book-local bind hook add and clear operations through its owned Bind",
-    "dispatches captured post hooks after active or parked publication and before outer transaction completion",
-    "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown",
-    "preserves same-identity name admission during existing-conduit conjure",
-    "records owning Book and frame twins when public frame setup already locked configuration before conjure",
-    "offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent",
-    "caches a creation only when it carries a manifest package (_emit_spell_cache)",
-    "refuses the recorded-world configuration discipline on the predicted conjure mode before settling the frame posture, and re-checks it on the settled mode inside the transaction window",
-    "disposes a spell under the Book lock and reports the index the disposal destroyed (_dispose_spell); a spell already disposed raises RuntimeError (0.2.8231), and a second disposal of a spell while one runs is refused through an id mark kept under the Book lock (0.2.8232)",
-    "answers contracted-spell lookups by key - the active copy by spell_id, a parked copy through its index - before walking (0.2.8231)",
-    "inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)",
-    "re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)",
-    "forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated (0.2.8242); they are the spell's settings, not part of its spell id (0.2.8254), and a parked managed version keeps its own",
-    "parks versions with bind_inactive: one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch",
-    "marks the SpellContract consumers of a changed active contracted copy's key once its Book lock is released - an add, park, reactivation, removal or clear of an active copy; never a parked copy or a change before conjure (_mark_contract_dependents_dirty in the five contracted-map mutators, 0.2.8250)",
-    "passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)",
-    "removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)",
-    "answers a spell_id with exactly the Spell bound under it - one read of _spells_by_id (active), else one of _inactive_spells (parked), else None - with no lock and no index read; the spell an index has active is a lookup by the index (find_spell_by_spell_id, renamed from find_spell_by_id with no alias, 0.2.8253)",
-    "refuses the active member of an index that also holds parked versions in cleanup_and_remove_spell - and so a direct Spell.cleanup() - before anything is unregistered, as _dispose_spell refuses it for cleanup_spell, every message naming the remedies (notch the index to a parked version, dispose the parked versions, or move them out with remove_from_spell_index); a sole member is removed with its index, and Book teardown never meets the check (0.2.8256)",
-    "registers the index remove_from_spell_index mints in the frame's spell registry as a post-conjure bind registers the index it creates (bind's guard and call, under the Book's root conduit), and the root's teardown (_unregister_conduit_spells_from_aether) unregisters the indexes that hold only parked versions with the rest, so the frame's lookups by spell_id find a version moved into an index of its own (0.2.8259)",
-    "retires every parked version at Book teardown with the local teardown cleanup_spell's parked branch runs (_spellbook_cleanup set, then Spell.cleanup()) and then cleans every index only parked versions hold, one remove_from_spell_index minted, after the active loop; each step best-effort and logged (_cleanup_spells, 0.2.8260)",
-    "routes cleanup_spell through its root conduit's cleanup_spell once conjured, and _dispose_spell calls the caller's release_contracts hook with the spell_id after its decision and refusals and before anything is invalidated or disposed, with no Book lock held; a raising hook disposes nothing and the in-flight mark is cleared (0.2.8261)",
-    "refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, the lineage's dependencies and topology registered again, a refused version's own key set back (_revert_refused_notch) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)",
-    "destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)"
-   ],
-   "owns_state": [
-    "_bind",
-    "_spells",
-    "_spells_by_id",
-    "_lookup_spells",
-    "_contracted_spells",
-    "_configuration",
-    "_conduit"
-   ],
-   "phases": [
-    "init",
-    "validation",
-    "runtime",
-    "cleanup"
-   ],
-   "semantics_authored_against": "767d811c7bc641cecc4ac58de0006df86e25f407976edd9e62afd0bfa3baab58"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "Aether",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "Aether",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "Nexus",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "DevopsIdentity",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "Bind",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "MappingProxyType",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "Scan",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "Spellbook",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "CachingSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "SpellbookConfiguration",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "SpellbookCreationSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to_label": "SpellbookValidationError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "threading": "threading",
+    "time": "time",
+    "Generator": "collections.abc.Generator",
+    "Iterable": "collections.abc.Iterable",
+    "Mapping": "collections.abc.Mapping",
+    "Sequence": "collections.abc.Sequence",
+    "contextmanager": "contextlib.contextmanager",
+    "Path": "pathlib.Path",
+    "MappingProxyType": "types.MappingProxyType",
+    "ModuleType": "types.ModuleType",
+    "TracebackType": "types.TracebackType",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "ClassVar": "typing.ClassVar",
+    "Optional": "typing.Optional",
+    "Union": "typing.Union",
+    "Aether": "melder.aether.aether.Aether",
+    "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+    "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+    "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+    "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+    "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+    "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+    "Bind": "melder.aether.spellbook.bind.bind.Bind",
+    "Scan": "melder.aether.spellbook.bind.scan.Scan",
+    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+    "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+    "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellbookCreationSystem": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
+    "Nexus": "melder.nexus.nexus.Nexus",
+    "CachingSystem": "melder.utilities.caching_system.caching_system.CachingSystem",
+    "SpellbookValidationError": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
+    "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
+    "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
+    "TransactionMediator": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
+    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
+    "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+    "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+    "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
+    "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
+    "UnitOfWork": "melder.utilities.synchronization.unit_of_work.UnitOfWork",
+    "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.MANIFEST_METADATA_KEY",
+    "build_manifest_package": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.build_package"
   },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spellbook",
+    "class": "melder.aether.spellbook.spellbook.Spellbook",
+    "label": "Spellbook"
   },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "Nexus",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "DevopsIdentity",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "Bind",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "MappingProxyType",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "Scan",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "Spellbook",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "CachingSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "SpellIndex",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "SpellbookConfiguration",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "SpellbookCreationSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "SpellbookValidationError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "threading": "threading",
-  "time": "time",
-  "Generator": "collections.abc.Generator",
-  "Iterable": "collections.abc.Iterable",
-  "Mapping": "collections.abc.Mapping",
-  "Sequence": "collections.abc.Sequence",
-  "contextmanager": "contextlib.contextmanager",
-  "Path": "pathlib.Path",
-  "MappingProxyType": "types.MappingProxyType",
-  "ModuleType": "types.ModuleType",
-  "TracebackType": "types.TracebackType",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "ClassVar": "typing.ClassVar",
-  "Optional": "typing.Optional",
-  "Union": "typing.Union",
-  "Aether": "melder.aether.aether.Aether",
-  "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-  "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
-  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-  "Bind": "melder.aether.spellbook.bind.bind.Bind",
-  "Scan": "melder.aether.spellbook.bind.scan.Scan",
-  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-  "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellbookCreationSystem": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-  "Nexus": "melder.nexus.nexus.Nexus",
-  "CachingSystem": "melder.utilities.caching_system.caching_system.CachingSystem",
-  "SpellbookValidationError": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
-  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
-  "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-  "TransactionMediator": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
-  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "ManagedSpellMode": "melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode",
-  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-  "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
-  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
-  "UnitOfWork": "melder.utilities.synchronization.unit_of_work.UnitOfWork",
-  "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.MANIFEST_METADATA_KEY",
-  "build_manifest_package": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.build_package"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spellbook",
-  "class": "melder.aether.spellbook.spellbook.Spellbook",
-  "label": "Spellbook"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.aether.Aether",
-   "relation": "uses",
-   "why": "Spellbook uses Aether to ensure frames exist, bind configuration, and register runtime state.",
-   "cardinality": "many_to_one",
-   "phase": [
-    "init",
-    "runtime"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-   "relation": "creates",
-   "why": "Spellbook derives and binds an AethericFrameConfiguration from its Spellbook configuration during conjure.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "runtime"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "borrows",
-   "why": "Spellbook borrows the frame-level SpellSystemStates service from Aether for lineage and validation coordination.",
-   "cardinality": "many_to_one",
-   "phase": [
-    "init",
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.conduit.conduit.Conduit",
-   "relation": "creates",
-   "why": "Ordinary conjure constructs this Book's single root in the frame. The separate private route adopts an existing prepared normal conduit without allocating a second one.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.conduit.conduit.Conduit",
-   "relation": "holds",
-   "why": "Spellbook retains its sole conjured or adopted normal Conduit. Normal Conduit teardown owns Book cleanup; this back-reference does not create a second conduit cleanup owner.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.bind.bind.Bind",
-   "relation": "owns_lifecycle_of",
-   "why": "Spellbook constructs and owns one Bind gateway, seeding immutable callbacks once from selected configuration. Runtime hook add/clear remains local to this Book.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.bind.scan.Scan",
-   "relation": "creates",
-   "why": "Spellbook creates a Scan helper to bind scan-decorated objects from one module.",
-   "cardinality": "one_to_many",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-   "relation": "holds",
-   "why": "Spellbook local and contracted registries are keyed by SpellIndex rather than by mutable current spell id strings.",
-   "cardinality": "one_to_many",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "In local mode Spellbook owns its rich configuration. In frame-wide mode it adopts the canonical frozen frame-owned configuration and skips cleanup of that borrowed object; sharing configuration never shares Book registries.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.configuration.system_state.SystemState",
-   "relation": "uses",
-   "why": "Spellbook reads SystemState from its borrowed AethericFrameConfiguration when enforcing runtime posture decisions; rich SpellbookConfiguration remains a separate policy object.",
-   "cardinality": "many_to_one",
-   "phase": [
-    "init",
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.spell.Spell",
-   "relation": "owns_lifecycle_of",
-   "why": "Spellbook owns the lifecycle of locally registered Spell records and cleans them during Spellbook teardown.",
-   "cardinality": "one_to_many",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "Spellbook owns the spell-level validation system used by SpellCompiler validation passes.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "validation",
-    "cleanup"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "relation": "creates",
-   "why": "Spellbook creates a conjure-only SpellbookCreationSystem helper to orchestrate one root-conduit build.",
-   "cardinality": "one_to_many",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.nexus.nexus.Nexus",
-   "relation": "borrows",
-   "why": "Spellbook keeps a Nexus handle for frame and spell publication when the frame posture is Rift-enabled.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.utilities.caching_system.caching_system.CachingSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "Spellbook owns the optional CachingSystem used for rooted-conduit spell payload persistence.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to": "melder.mutation_research.mutation_research.MutationResearch",
-   "relation": "borrows",
-   "why": "The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).",
-   "cardinality": "many_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  }
- ]
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.aether.Aether",
+      "relation": "uses",
+      "why": "Spellbook uses Aether to ensure frames exist, bind configuration, and register runtime state.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+      "relation": "creates",
+      "why": "Spellbook derives and binds an AethericFrameConfiguration from its Spellbook configuration during conjure.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "relation": "borrows",
+      "why": "Spellbook borrows the frame-level SpellSystemStates service from Aether for lineage and validation coordination.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.conduit.conduit.Conduit",
+      "relation": "creates",
+      "why": "Ordinary conjure constructs this Book's single root in the frame. The separate private route adopts an existing prepared normal conduit without allocating a second one.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.conduit.conduit.Conduit",
+      "relation": "holds",
+      "why": "Spellbook retains its sole conjured or adopted normal Conduit. Normal Conduit teardown owns Book cleanup; this back-reference does not create a second conduit cleanup owner.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.bind.bind.Bind",
+      "relation": "owns_lifecycle_of",
+      "why": "Spellbook constructs and owns one Bind gateway, seeding immutable callbacks once from selected configuration. Runtime hook add/clear remains local to this Book.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.bind.scan.Scan",
+      "relation": "creates",
+      "why": "Spellbook creates a Scan helper to bind scan-decorated objects from one module.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+      "relation": "holds",
+      "why": "Spellbook local and contracted registries are keyed by SpellIndex rather than by mutable current spell id strings.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+      "relation": "owns_lifecycle_of",
+      "why": "In local mode Spellbook owns its rich configuration. In frame-wide mode it adopts the canonical frozen frame-owned configuration and skips cleanup of that borrowed object; sharing configuration never shares Book registries.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.configuration.system_state.SystemState",
+      "relation": "uses",
+      "why": "Spellbook reads SystemState from its borrowed AethericFrameConfiguration when enforcing runtime posture decisions; rich SpellbookConfiguration remains a separate policy object.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.spell.Spell",
+      "relation": "owns_lifecycle_of",
+      "why": "Spellbook owns the lifecycle of locally registered Spell records and cleans them during Spellbook teardown.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+      "relation": "owns_lifecycle_of",
+      "why": "Spellbook owns the spell-level validation system used by SpellCompiler validation passes.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
+      "relation": "creates",
+      "why": "Spellbook creates a conjure-only SpellbookCreationSystem helper to orchestrate one root-conduit build.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.nexus.nexus.Nexus",
+      "relation": "borrows",
+      "why": "Spellbook keeps a Nexus handle for frame and spell publication when the frame posture is Rift-enabled.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.utilities.caching_system.caching_system.CachingSystem",
+      "relation": "owns_lifecycle_of",
+      "why": "Spellbook owns the optional CachingSystem used for rooted-conduit spell payload persistence.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spellbook.Spellbook",
+      "to": "melder.mutation_research.mutation_research.MutationResearch",
+      "relation": "borrows",
+      "why": "The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

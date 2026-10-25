@@ -24,10 +24,21 @@ class ManyDisposalBucket:
         - `entries` IS the live many bucket held in `_creations` - the same
           list object, never a copy - so the live and disposal views cannot
           diverge and a single-object purge needs one removal.
-        - `methods` is the Spell's established ordered disposal list, retained
-          by reference (never matched, reordered or copied), identical for
-          every entry of the key: a spell id hashes its resolved disposal
-          names, so one key carries one declaration.
+        - `methods` is the established ordered disposal list of the Spell
+          whose object first registered the key in this store, retained by
+          reference (never matched, reordered or copied), and every entry of
+          the key is disposed with it. Later registrations append to
+          `entries` and leave `methods` as it is; nothing compares lists.
+        - One list per key holds by construction: the key is a store key
+          (`Spell.store_key`, `<spell_id>:<binding_hash>`), and the binding
+          hash covers the existence and the disposal order, so every
+          registration of a key comes from one binding and carries its list.
+          A class cleaned up (`cleanup_spell`) and bound again under other
+          disposal names keeps its spell_id but files under another key, so
+          its objects get a record of their own while the removed
+          definition's objects stay in theirs, alive in their scope
+          (STORY-2026-10-25-creations_store_slots_by_binding; while stores
+          were keyed by spell_id the new objects joined the old record).
         - Both fields are borrowed. The owning `Creations` store detaches the
           record (cleanup, clear, purge, extract) and disposes from it; the
           record itself owns nothing and needs no cleanup.
@@ -52,69 +63,8 @@ class ManyDisposalBucket:
         self.methods = methods
 
 
-class HolderDisposalEntry:
-    """
-    Cleanup-only record of one slotted holder and the `many` children built for it.
-
-    Purpose:
-        Keep a holder's disposal-bearing `many` children with the holder
-        (slotted_lifetime_ownership, 0.2.8238). Since 0.2.8235 an emitted miss
-        registers each child in the holder's store before it builds the
-        holder; once the holder is published, the miss moves those children
-        out of their spells' `many` buckets into this record
-        (`Creations.adopt_children`). Every store verb keyed by the holder -
-        purge, extract/restore for an ownership transfer, whole-store disposal
-        - then reaches the children with the holder, through one dict read.
-
-    Contract:
-        - `item` is the holder: the object `_creations` holds under the
-          holder's spell id.
-        - `methods` is the holder Spell's established ordered disposal list,
-          retained by reference. It is empty when the holder declares no
-          disposal method; the record then exists for the holder's children.
-        - `children` lists `(child, child_methods)` pairs in build order;
-          `child_methods` is the child Spell's own list, the object its
-          `ManyDisposalBucket` carried, retained by reference.
-        - A child is in exactly one place: its spell's `many` bucket or one
-          holder record, never both.
-        - Disposal runs the holder's methods, then each child's, newest child
-          first, so a holder whose own disposal uses a child still finds it
-          open (`Creations._dispose_holder_entry`).
-        - Every field is borrowed. The owning `Creations` store detaches the
-          record (cleanup, clear, purge, extract) and disposes from it; the
-          record owns nothing and needs no cleanup.
-
-    AGENT_ACCESS: internal
-    """
-
-    __slots__ = ("item", "methods", "children")
-
-    def __init__(
-            self,
-            item: object,
-            methods: List[str],
-            children: List[Tuple[object, List[str]]],
-    ) -> None:
-        """
-        Bind the holder, its disposal list and its adopted children.
-
-        Args:
-            item: The holder object (borrowed).
-            methods: The holder Spell's ordered disposal method names (borrowed;
-                an empty list when the holder declares none).
-            children: `(child, child_methods)` pairs in build order. The list
-                object itself is kept.
-
-        Returns:
-            None.
-        """
-        self.item = item
-        self.methods = methods
-        self.children = children
-
-
 StoredDisposalEntry = Tuple[object, List[str]]
-StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket, HolderDisposalEntry]
+StoredDisposalValue = Union[StoredDisposalEntry, ManyDisposalBucket]
 
 
 class Creations(Cleanable):
@@ -130,12 +80,16 @@ class Creations(Cleanable):
         - `_creations` is the authoritative live-object registry for that scope.
         - `_disposable_creations` is cleanup-only metadata and is never used
           for normal runtime retrieval.
-        - Unique entries use `spell_id -> object`.
-        - Many entries use `spell_id -> list[object]`.
+        - Entries are keyed by store key (`Spell.store_key`,
+          `<spell_id>:<binding_hash>`): one slot per binding of a spell
+          (STORY-2026-10-25-creations_store_slots_by_binding; before, by
+          spell_id, which two bindings of one class share since 0.2.8257).
+        - Unique entries use `key -> object`.
+        - Many entries use `key -> list[object]`.
         - Disposal metadata mirrors only entries that declared disposal
           methods:
-          - unique: `spell_id -> (object, disposal_methods)`
-          - many: `spell_id -> ManyDisposalBucket` whose `entries` IS the
+          - unique: `key -> (object, disposal_methods)`
+          - many: `key -> ManyDisposalBucket` whose `entries` IS the
             live many bucket (the same list object, never a copy) and
             whose `methods` is the Spell-owned list recorded once, at the
             key's first registration (2026-10-01; before, a second list of
@@ -143,11 +97,24 @@ class Creations(Cleanable):
             bucket, a tuple and a second append per creation). A many key
             therefore carries one disposal declaration: every entry of the
             key is disposal-bearing or none is.
-          - a slotted holder that adopted `many` children (0.2.8238):
-            `spell_id -> HolderDisposalEntry` (the holder, its methods -
-            possibly none - and its children with theirs) in place of the
-            tuple. Adopted children leave their spell's bucket, so a `many`
-            key holds only objects that no holder owns.
+          - A slotted holder's disposal value is its own `(object, methods)`
+            tuple, like any unique: nothing records the `many` objects it was
+            built with against it. They stay in their spells' buckets in the
+            store that recorded them - the meld's innermost scope - and are
+            disposed when that store ends (the owner's decision, 2026-10-24;
+            from 0.2.8238 to 0.2.8265 a holder record took them in and
+            disposed them with the holder).
+        - Shelves: `_shelves[spell_id]` lists, in first-filing order, every
+          store key this store has filed under that spell_id, and
+          `_slot_shapes[key]` records whether the slot is a `many` list.
+          Every writer records a key before its first value (`_note_slot`),
+          so every live slot is on its shelf; the index lives as long as the
+          store, like `_slot_guards`, and readers filter it by what
+          `_creations` holds now. A meld reads and writes only its own key;
+          operations on a spell - `purge`, `count_spell_creations`,
+          `extract_spell_creations` and `restore_spell_creations` - walk the
+          shelf and take each slot's shape from the record, never from the
+          spell that asks. A key without ':' is its own shelf.
         - Managed pools (2026-10-15, managed_spell_quantity): a root store keeps one
           `ManagedSpellQuantity` per `Existence.managed_spell_quantity` version it
           owns in `_managed_quantities[spell_id]`, a map of its own: `_creations`
@@ -168,23 +135,26 @@ class Creations(Cleanable):
 
     Owned State:
         `_owner_conduit_id`, a stable `_id`, one store `RLock`, the two
-        registries (`_creations`, `_disposable_creations`), the per-slot
-        build-guard table (`_slot_guards`) and the managed pools
-        (`_managed_quantities`, spell id -> `ManagedSpellQuantity`, 2026-10-15).
+        registries (`_creations`, `_disposable_creations`, by store key), the
+        per-slot build-guard table (`_slot_guards`, by store key), the shelf
+        index (`_shelves`, spell id -> store keys; `_slot_shapes`, store key ->
+        is a `many` list) and the managed pools (`_managed_quantities`, spell
+        id -> `ManagedSpellQuantity`, 2026-10-15).
 
     Threading:
         Two lock roles, and keeping them apart is what makes resolution
         deadlock-free.
 
-        - `_lock` (the store lock) is a LEAF lock over the two registries. It
-          is held only for dict reads and writes: publish of disposal-bearing
-          entries, many append, child adoption, purge detach, extract/restore
-          and whole-store swap. It is never held while acquiring another lock
-          and never around user code. (A publish without disposal methods is
-          one atomic dict store under the caller's build lock; see
-          `add_creation`.)
-        - `slot_guard(spell_id)` returns one `RLock` per slot - a spell id
-          whose Existence promises at most one object in this store. Generated
+        - `_lock` (the store lock) is a LEAF lock over the two registries and
+          the shelf index. It is held only for dict reads and writes: publish
+          of disposal-bearing entries, many append, a key's first filing on
+          its shelf, the spell count, purge detach, extract/restore and
+          whole-store swap. It is never held while acquiring another lock and
+          never around user code. (A publish without disposal methods is one
+          atomic dict store under the caller's build lock; see `add_creation`
+          and `register_slot`.)
+        - `slot_guard(key)` returns one `RLock` per slot - a store key whose
+          Existence promises at most one object in this store. Generated
           doors and plan steps hold it across recheck -> construct -> publish,
           so only builders of the SAME slot wait for each other. `unique`
           spells use `Spell._lock` for the same job, because a unique spell has
@@ -212,8 +182,6 @@ class Creations(Cleanable):
         within a `many` bucket. Resolution registers a dependency before the
         dependent that holds it, so forward teardown would dispose the
         dependency while a dependent's own disposal method may still need it.
-        For the same reason a holder's record disposes the holder before the
-        children it adopted, newest child first (0.2.8238).
         This covers ordering within ONE scope; ordering between scopes is the
         conduit cleanup cascade's job.
 
@@ -259,6 +227,8 @@ class Creations(Cleanable):
         "_disposable_creations",
         "_slot_guards",
         "_managed_quantities",
+        "_slot_shapes",
+        "_shelves",
     ]
 
     def __init__(
@@ -308,8 +278,15 @@ class Creations(Cleanable):
         self._creations: Dict[str, Any] = {}
         self._disposable_creations: Dict[str, Any] = {}
         # One build guard per slot, created on first use and kept for this
-        # store's lifetime (bounded by the number of spell ids built here).
+        # store's lifetime (bounded by the number of store keys built here).
         self._slot_guards: Dict[str, RLock] = {}
+        # The shelf index (STORY-2026-10-25-creations_store_slots_by_binding):
+        # every store key filed here, under its spell id, in first-filing order,
+        # and whether its slot is a `many` list. Written under the store lock at
+        # a key's first filing and kept for this store's lifetime, like the slot
+        # guards (bounded by the store keys filed here).
+        self._slot_shapes: Dict[str, bool] = {}
+        self._shelves: Dict[str, List[str]] = {}
         # One pool per managed spell version this (root) store owns, composed at
         # owner stamping (`ensure_managed_quantity`). Kept apart from `_creations`:
         # a pool is not an object, and no resolution path may read one as such.
@@ -341,7 +318,7 @@ class Creations(Cleanable):
             - Raises `ExceptionGroup` after best-effort disposal attempts; a
               pool's failures join it as their own chained `RuntimeError`s.
             - Drops the live field surface after cleanup so later use fails
-              honestly instead of reading stale state.
+              honestly instead of reading stale state, the shelf index included.
             - Keeps `_lock` as a deliberate post-cleanup tombstone: a build
               that was already in flight (holding only its slot guard) may
               still publish afterwards, and it must be able to take the store
@@ -390,6 +367,8 @@ class Creations(Cleanable):
         del self._disposable_creations
         del self._managed_quantities
         del self._slot_guards
+        del self._slot_shapes
+        del self._shelves
         del self._owner_conduit_id
         del self._id
         # `_lock` is intentionally retained (tombstone): a racing publish takes
@@ -536,10 +515,10 @@ class Creations(Cleanable):
         Contract:
             - Singleton metadata delegates to `_attempt_cleanup`.
             - Many buckets delegate to `_dispose_many_creations`.
-            - Holder records delegate to `_dispose_holder_entry`: the holder,
-              then its adopted children newest-first (0.2.8238). The three-way
-              dispatch is inline, as `_dispose_entry` spells it out, so a scope
-              exit pays no extra call per record.
+            - The two-way dispatch is inline, as `_dispose_entry` spells it
+              out, so a scope exit pays no extra call per record. A slotted
+              holder is an ordinary tuple: its disposal runs only its own
+              methods (the owner's decision, 2026-10-24).
             - Collected failures never prevent trying the next selected object;
               every failing method of every object contributes one error.
             - The caller owns registry detachment and final reference release.
@@ -557,7 +536,8 @@ class Creations(Cleanable):
             No ordering structure is needed to achieve this - `_disposable_creations`
             is a plain dict, dict iteration is insertion-ordered by language
             guarantee, and insertion happens at creation time, so the registry
-            already IS the creation-order record.
+            already IS the creation-order record. It holds one record per store
+            key, so every binding of a spell is disposed with its own methods.
 
             This orders teardown WITHIN one scope only. Ordering BETWEEN scopes
             (lesser conduit before root, narrower existence before broader) is
@@ -571,42 +551,8 @@ class Creations(Cleanable):
         for value in reversed(disposable_registry.values()):
             if isinstance(value, tuple):
                 errors.extend(self._attempt_cleanup(value))
-            elif isinstance(value, ManyDisposalBucket):
-                errors.extend(self._dispose_many_creations(value))
             else:
-                errors.extend(self._dispose_holder_entry(value))
-        return errors
-
-    def _dispose_holder_entry(self, entry: HolderDisposalEntry) -> List[Exception]:
-        """
-        Dispose one detached holder record: the holder, then its adopted children.
-
-        Purpose:
-            Give every retirement keyed by a holder - whole-store disposal and
-            purge - one way to take the holder's `many` children with it
-            (0.2.8238).
-
-        Contract:
-            - Runs the holder's declared methods first (none when its list is
-              empty), then each child's methods, newest child first, so a holder
-              whose own disposal uses a child still finds it open.
-            - Every method of every object runs even after one fails; each
-              failure is one chained `RuntimeError` from `_attempt_cleanup`.
-            - Does not mutate the record or its borrowed lists and takes no
-              lock: the caller detached the record and released its locks.
-
-        Args:
-            entry:
-                The detached `HolderDisposalEntry`.
-
-        Returns:
-            List[Exception]:
-                Disposal failures in attempt order; empty when every method
-                succeeded.
-        """
-        errors = self._attempt_cleanup((entry.item, entry.methods))
-        for child, methods in reversed(entry.children):
-            errors.extend(self._attempt_cleanup((child, methods)))
+                errors.extend(self._dispose_many_creations(value))
         return errors
 
     def _dispose_entry(self, value: StoredDisposalValue) -> List[Exception]:
@@ -614,16 +560,16 @@ class Creations(Cleanable):
         Dispose one detached disposal-registry value, whatever its shape.
 
         Purpose:
-            One dispatch over the three record shapes `_disposable_creations`
-            holds, for retirements of one record such as purge (0.2.8238).
+            One dispatch over the two record shapes `_disposable_creations`
+            holds, for retirements of one record such as purge (0.2.8238; two
+            shapes again since the holder record was removed, 2026-10-24).
             Whole-store disposal runs the same dispatch inline in its loop.
 
         Contract:
-            - An `(object, methods)` tuple goes to `_attempt_cleanup`.
+            - An `(object, methods)` tuple goes to `_attempt_cleanup`: one
+              object, a slotted holder included, runs only its own methods.
             - A `ManyDisposalBucket` goes to `_dispose_many_creations` (newest
               object first).
-            - A `HolderDisposalEntry` goes to `_dispose_holder_entry` (the
-              holder, then its children newest-first).
             - Takes no lock; the caller detached the value first.
 
         Args:
@@ -636,24 +582,22 @@ class Creations(Cleanable):
         """
         if isinstance(value, tuple):
             return self._attempt_cleanup(value)
-        if isinstance(value, ManyDisposalBucket):
-            return self._dispose_many_creations(value)
-        return self._dispose_holder_entry(value)
+        return self._dispose_many_creations(value)
 
-    def slot_guard(self, spell_id: str) -> RLock:
+    def slot_guard(self, key: str) -> RLock:
         """
         Return the build guard for one slot in this store.
 
         Purpose:
             Give "build this slot at most once" its own lock, so the store lock
             only ever protects the registries and can stay a leaf. A slot is a
-            spell id whose Existence promises at most one object in this store:
-            `unique_per_conduit`, `unique_per_spell_space`,
+            store key (`Spell.store_key`) whose Existence promises at most one
+            object in this store: `unique_per_conduit`, `unique_per_spell_space`,
             `unique_per_conduit_lineage` and `unique_per_conduit_cluster`.
             (`unique` uses `Spell._lock` instead; `many` has no slot.)
 
         Contract:
-            - Returns the same `RLock` for a spell id on every call for this
+            - Returns the same `RLock` for a key on every call for this
               store's lifetime, including across `clear_all()` and
               `reset_for_pool()`.
             - A hit is one lock-free dict read. The first request for a slot
@@ -662,15 +606,15 @@ class Creations(Cleanable):
               concurrent first requests converge on one guard.
             - Returning or holding a guard never implies holding `_lock`.
             - Generated doors and plan steps inline the hit as
-              `store._slot_guards.get(spell_id) or store.slot_guard(spell_id)`
+              `store._slot_guards.get(key) or store.slot_guard(key)`
               (one method call fewer per cold build). `_slot_guards` is
               therefore part of this class's internal contract: a plain
-              `dict` of spell id -> `RLock` whose entries are never replaced
+              `dict` of store key -> `RLock` whose entries are never replaced
               or removed while the store is live.
 
         Args:
-            spell_id:
-                Stable spell id of the slot being built or retired.
+            key:
+                Store key of the slot being built or retired.
 
         Returns:
             RLock:
@@ -686,10 +630,64 @@ class Creations(Cleanable):
             Callers hold the guard across recheck -> construct -> publish and
             acquire it BEFORE `_lock`, never while holding `_lock`.
         """
-        guard = self._slot_guards.get(spell_id)
+        guard = self._slot_guards.get(key)
         if guard is None:
-            guard = self._slot_guards.setdefault(spell_id, RLock())
+            guard = self._slot_guards.setdefault(key, RLock())
         return guard
+
+    def _note_slot(self, key: str, is_many: bool) -> None:
+        """
+        Record one store key on its spell id's shelf, with its slot's shape.
+
+        Purpose:
+            Keep the index that lets the operations on a spell - purge, the live
+            count, extract and restore - find every slot of every binding of a
+            spell id without scanning the store
+            (STORY-2026-10-25-creations_store_slots_by_binding).
+
+        Contract:
+            - The shelf id is the text before the key's last ':' (a store key is
+              `<spell_id>:<binding_hash>`); a key without ':' is its own shelf.
+            - A key joins its shelf once, at its first filing in this store, in
+              filing order. Its shape (`is_many`: the slot is a `many` list) is
+              recorded with it, and updated when a later filing finds the other
+              shape - a reused test or legacy key; a store key names one
+              existence, so its shape never changes.
+            - Writers call this BEFORE they write the slot's first value, so
+              every live slot is on its shelf. They test
+              `_slot_shapes.get(key) is not is_many` first, so a key already
+              recorded costs one dict read and no lock.
+            - Does nothing on a cleaned store: the caller's write is then
+              refused, dropped or fails exactly as it would without the index.
+
+        Args:
+            key:
+                The store key being filed.
+            is_many:
+                True when the slot holds a `many` list.
+
+        Returns:
+            None.
+
+        Threading:
+            Takes the store lock (re-entrant: a caller may already hold it) and
+            nothing under it, so the lock stays a leaf. The index changes only
+            here and in `cleanup`, so a reader under the store lock sees it
+            whole.
+        """
+        with self._lock:
+            if self._cleaned:
+                return
+            shapes = self._slot_shapes
+            if key not in shapes:
+                spell_id, separator, _binding_hash = key.rpartition(":")
+                shelf_id = spell_id if separator else key
+                shelf = self._shelves.get(shelf_id)
+                if shelf is None:
+                    self._shelves[shelf_id] = [key]
+                else:
+                    shelf.append(key)
+            shapes[key] = is_many
 
     def _refuse_publish_into_cleaned_store(
             self,
@@ -716,7 +714,7 @@ class Creations(Cleanable):
             - Always raises; never registers anything.
 
         Args:
-            key: Spell id the object would have been published under.
+            key: Store key the object would have been published under.
             item: The just-built object.
             has_disposal_methods: Whether the spell declared disposal methods.
             disposal_methods: The Spell-owned disposal method names.
@@ -757,6 +755,8 @@ class Creations(Cleanable):
         Register one scoped singleton creation.
 
         Contract:
+            - `key` is the slot's store key (`Spell.store_key`); the key is
+              recorded on its spell id's shelf before the object is stored.
             - Stores the live object in `_creations`.
             - Stores cleanup metadata in `_disposable_creations` only when
               disposal methods were declared.
@@ -802,6 +802,8 @@ class Creations(Cleanable):
             if not self._cleaned:
                 if key in self._creations or key in self._disposable_creations:
                     raise ValueError(f"Key {key} already exists in creations.")
+                if self._slot_shapes.get(key) is not False:
+                    self._note_slot(key, False)
                 self._creations[key] = item
                 return
         else:
@@ -809,6 +811,8 @@ class Creations(Cleanable):
                 if not self._cleaned:
                     if key in self._creations or key in self._disposable_creations:
                         raise ValueError(f"Key {key} already exists in creations.")
+                    if self._slot_shapes.get(key) is not False:
+                        self._note_slot(key, False)
                     self._creations[key] = item
                     self._disposable_creations[key] = (
                         item,
@@ -822,6 +826,47 @@ class Creations(Cleanable):
             disposal_methods=disposal_methods,
         )
 
+    def register_slot(self, key: str, item: object) -> None:
+        """
+        Publish one slotted object without disposal methods on the build path.
+
+        Purpose:
+            The publication emitted plans run for a slotted site whose Spell
+            declares no disposal methods. They stored `_creations[sid] = v`
+            inline until the store had to see a key's first filing to put it on
+            its spell id's shelf (STORY-2026-10-25-creations_store_slots_by_binding).
+
+        Contract:
+            - Precondition, NOT checked here: the caller holds the slot's build
+              lock (its slot guard, or `Spell._lock` for `unique`) and has
+              rechecked that the slot is empty. The emitters guarantee both;
+              callers that cannot promise them use `add_creation`.
+            - Records the key on its shelf at its first filing, then writes the
+              slot with one dict store: no store lock, no duplicate check and no
+              cleaned check, exactly the inline store it replaces. A write
+              racing `clear_all()`/`reset_for_pool()` lands in the detached
+              generation and is dropped with it; one racing `cleanup()` is
+              dropped or fails on the retired store's missing registry, with no
+              disposal methods to leak.
+
+        Args:
+            key:
+                The slot's store key.
+            item:
+                The just-built object.
+
+        Returns:
+            None.
+
+        Raises:
+            AttributeError:
+                After `cleanup()`, like every other live-surface use of a
+                retired store.
+        """
+        if self._slot_shapes.get(key) is not False:
+            self._note_slot(key, False)
+        self._creations[key] = item
+
     def add_many_creations(
             self,
             key: str,
@@ -831,18 +876,26 @@ class Creations(Cleanable):
             disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Register one creation into the scoped `many` list for a spell id.
+        Register one creation into the scoped `many` list of one store key.
 
         Contract:
+            - `key` is the store key (`Spell.store_key`); the key's first
+              registration records it on its spell id's shelf as a `many` slot.
             - Appends the live object into `_creations[key]`.
             - For a disposal-bearing key, records the Spell-owned method list
               ONCE, at the key's first registration, in a `ManyDisposalBucket`
               under `_disposable_creations[key]` whose `entries` is the live
               bucket itself; later registrations of the key append only.
             - Rejects collisions with non-list slots, and a registration whose
-              disposal declaration disagrees with the key's existing entries:
-              one many key carries one declaration (the spell id hashes the
-              resolved disposal names, so a live world cannot produce a mix).
+              disposal declaration disagrees with the key's existing entries -
+              a disposal-bearing registration of a key whose entries were
+              registered without disposal methods, or the reverse - so every
+              entry of a key is disposal-bearing or none is.
+            - Does not compare method lists: a disposal-bearing registration
+              of a key that already has its record appends under the record's
+              list. A store key names one binding, disposal order included, so
+              every registration of a key carries an equal list (see
+              `ManyDisposalBucket`).
             - Preserves insertion order; the disposal view is the live bucket,
               so the two cannot diverge (BUG-073, 2026-07-17 audit, now by
               construction: the first-use bucket and its record are created
@@ -862,8 +915,9 @@ class Creations(Cleanable):
 
         Raises:
             ValueError:
-                If the key already holds a non-list slot, or if the disposal
-                declaration disagrees with the key's existing entries.
+                If the key already holds a non-list slot, or if this
+                registration is disposal-bearing where the key's existing
+                entries are not, or the reverse.
             RuntimeError:
                 If this store was cleaned while the object was being built.
 
@@ -904,21 +958,27 @@ class Creations(Cleanable):
             registration on 3.14t, GIL off).
 
         Contract:
-            - Precondition, guaranteed by the emitters and NOT checked here:
-              `key` is a `many` spell id whose Spell declares disposal methods,
-              and `disposal_methods` is that Spell's own ordered list, the same
-              object on every call for the key. A spell id hashes its resolved
-              disposal names, so one key cannot carry two declarations, and one
-              Existence per Spell means the key's live slot is a list or absent.
-              Callers that cannot promise this use `add_many_creations`.
-            - The first registration of the key creates the live bucket and
-              its `ManyDisposalBucket` record (the bucket itself plus the
-              method list) in one critical section; every later one appends.
+            - Precondition, NOT checked here: `key` is the store key of a
+              `many` Spell that declares disposal methods, `disposal_methods`
+              is that Spell's own ordered list, and the key's live slot in this
+              store is a list or absent. The emitters guarantee all three - one
+              plan, one list object on every call, one Existence - and the key
+              keeps them across a rebind: a store key covers the existence and
+              the disposal order, so a class bound again another way files
+              under another key (STORY-2026-10-25-creations_store_slots_by_binding;
+              while the key was the spell id, a rebind's objects joined the
+              removed definition's record, or failed on its slotted object).
+              Callers that cannot promise them use `add_many_creations`, which
+              checks the slot's shape.
+            - The first registration of the key in this store records it on its
+              spell id's shelf, then creates the live bucket and its
+              `ManyDisposalBucket` record (the bucket itself plus the method
+              list) in one critical section; every later one appends.
             - Refuses a cleaned store exactly like `add_many_creations`: the
               object's disposal methods run and `RuntimeError` is raised.
 
         Args:
-            key: The many spell id.
+            key: The many Spell's store key.
             item: The just-built object.
             disposal_methods: The Spell-owned ordered disposal method names.
 
@@ -943,6 +1003,8 @@ class Creations(Cleanable):
             if not self._cleaned:
                 bucket = self._creations.get(key)
                 if bucket is None:
+                    if self._slot_shapes.get(key) is not True:
+                        self._note_slot(key, True)
                     bucket = []
                     self._creations[key] = bucket
                     self._disposable_creations[key] = ManyDisposalBucket(
@@ -975,16 +1037,18 @@ class Creations(Cleanable):
             - Validates before it appends, so a refused registration leaves the
               store untouched.
             - Creates the first-use bucket and, for a disposal-bearing key, its
-              `ManyDisposalBucket` record in one critical section. The record
-              IS the live bucket, so the live and disposal views cannot diverge
-              (the BUG-073 invariant, now by construction).
+              `ManyDisposalBucket` record in one critical section, after the key
+              is recorded on its shelf as a `many` slot. The record IS the live
+              bucket, so the live and disposal views cannot diverge (the BUG-073
+              invariant, now by construction).
 
         Raises:
             ValueError:
                 If the key already holds a non-list live slot or a non-many
-                disposable slot, or if this registration's disposal declaration
-                disagrees with the key's existing entries: one many key carries
-                one declaration (the spell id fixes it).
+                disposable slot, or if this registration is disposal-bearing
+                where the key's existing entries are not, or the reverse.
+                Method lists are not compared: a disposal-bearing registration
+                of a key with a record appends under the record's list.
         """
         bucket = self._creations.get(key)
         if bucket is not None and not isinstance(bucket, list):
@@ -1009,6 +1073,8 @@ class Creations(Cleanable):
                 f"methods; one many key carries one disposal declaration."
             )
         if bucket is None:
+            if self._slot_shapes.get(key) is not True:
+                self._note_slot(key, True)
             bucket = []
             self._creations[key] = bucket
         if has_disposal_methods and record is None:
@@ -1018,102 +1084,66 @@ class Creations(Cleanable):
             )
         bucket.append(item)
 
-    def adopt_children(
-            self,
-            holder_key: str,
-            holder: object,
-            children: Tuple[Tuple[str, object], ...],
-    ) -> None:
+    def get_creation(self, key: str) -> Optional[Any]:
         """
-        Record a just-published holder's `many` children with the holder.
+        Return one scoped live object, or a `many` list, by store key.
+
+        Contract:
+            - Reads one slot of `_creations`: the binding's that `key` names
+              (`Spell.store_key`). A spell's other bindings are other keys;
+              `count_spell_creations` reads all of them.
+            - Never consults `_disposable_creations`.
+            - Returns the stored value directly; None for an empty slot.
+        """
+        return self._creations.get(key)
+
+    def count_spell_creations(self, spell_id: str) -> int:
+        """
+        Return how many objects this store holds under every binding of one spell id.
 
         Purpose:
-            Make a slotted holder own the disposal-bearing `many` children built
-            for it (slotted_lifetime_ownership, 0.2.8238). An emitted miss builds
-            and registers each child in this store (`register_many`, before the
-            holder's build lock), then builds and publishes the holder; right
-            after publication, under the holder's build lock, it calls this verb,
-            which moves the children out of their spells' `many` buckets into
-            the holder's disposal record. Purge, extract/restore and whole-store
-            disposal of the holder then take the children with it.
+            The count the live probes report (`describe_live_creation_status`,
+            `has_live_creation`): a spell's objects in this store, whichever of
+            its bindings filed them (STORY-2026-10-25-creations_store_slots_by_binding;
+            before, a probe read one slot by spell id and took its shape from
+            the asking spell).
 
         Contract:
-            - Cold path only: one call per holder publication.
-            - Does nothing when this store was cleaned, or when the slot no
-              longer holds `holder` (a whole-store clear swapped the registries
-              after publication, and the children went with that generation).
-            - Each `(child_key, child)` is removed by identity from the key's
-              live bucket, scanning from the end - the child was appended
-              moments ago, so the scan normally stops at once. The key's method
-              list is taken from its `ManyDisposalBucket`. A bucket left empty
-              is dropped with its record, so a later registration of that key
-              starts again at the end of the registry. A child no longer in its
-              bucket (a concurrent `many` purge retired it) is skipped.
-            - The holder's disposal value becomes a `HolderDisposalEntry`: a
-              `(holder, methods)` tuple is replaced in place, keeping its
-              registry position; a holder published without disposal methods
-              gets a new record with `methods=[]`. With no child found, nothing
-              changes.
-            - Children registered without disposal methods are never passed in:
-              no store tracks them.
+            - Walks the spell id's shelf; each slot it holds now adds its
+              length when it is a `many` slot, one otherwise, and nothing when
+              it holds None (a None object reads as absent, as the probes always
+              read it).
+            - Reads only; never creates, registers or disposes.
 
         Args:
-            holder_key:
-                The holder's spell id (its slot in this store).
-            holder:
-                The holder object just published under `holder_key`.
-            children:
-                `(child_spell_id, child)` pairs in build order - exactly the
-                disposal-bearing `many` children the miss registered here.
+            spell_id:
+                The spell whose objects are counted.
 
         Returns:
-            None.
+            int: The number of objects; 0 when nothing is filed under the spell id.
+
+        Raises:
+            AttributeError:
+                After `cleanup()`, like every other live-surface read of a
+                retired store.
 
         Threading:
-            The caller holds the holder's build lock (its slot guard, or
-            `Spell._lock` for `unique`); this verb takes the store lock as a
-            leaf, as every registration does, so no lock-order edge is added.
-            No user code runs under it.
+            Runs under the store lock - a leaf: no other lock, no user code - so
+            the count is one consistent reading of the shelf.
         """
         with self._lock:
-            if self._cleaned or self._creations.get(holder_key) is not holder:
-                return
-            adopted: List[Tuple[object, List[str]]] = []
-            for child_key, child in children:
-                record = self._disposable_creations.get(child_key)
-                if record is None:
+            keys = self._shelves.get(spell_id)
+            if not keys:
+                return 0
+            creations = self._creations
+            shapes = self._slot_shapes
+            count = 0
+            for key in keys:
+                value = creations.get(key)
+                if value is None:
                     continue
-                bucket = record.entries
-                for index in range(len(bucket) - 1, -1, -1):
-                    if bucket[index] is child:
-                        del bucket[index]
-                        break
-                else:
-                    continue
-                adopted.append((child, record.methods))
-                if not bucket:
-                    del self._creations[child_key]
-                    del self._disposable_creations[child_key]
-            if not adopted:
-                return
-            current = self._disposable_creations.get(holder_key)
-            if current is None:
-                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, [], adopted)
-            elif isinstance(current, HolderDisposalEntry):
-                current.children.extend(adopted)
-            else:
-                self._disposable_creations[holder_key] = HolderDisposalEntry(holder, current[1], adopted)
-
-    def get_creation(self, spell_id: str) -> Optional[Any]:
-        """
-        Return one scoped live object by spell id.
-
-        Contract:
-            - Reads only `_creations`.
-            - Never consults `_disposable_creations`.
-            - Returns the stored object directly.
-        """
-        return self._creations.get(spell_id)
+                count += len(value) if shapes[key] else 1
+            return count
 
     def ensure_managed_quantity(self, spell: Spell) -> ManagedSpellQuantity:
         """
@@ -1127,9 +1157,9 @@ class Creations(Cleanable):
 
         Contract:
             - Idempotent: one pool per (store, spell id); a second call returns
-              the same pool. A rebind under the same content-stable id meets the
-              pool its earlier definition left (as a slotted replacement meets
-              its slot, 0.2.8219), which takes the new Spell object and its
+              the same pool. Pools stay keyed by spell id, not by store key: a
+              rebind under the same content-stable id meets the pool its earlier
+              definition left, under any binding, which takes the new Spell object and its
               settings (`ManagedSpellQuantity._rebind_spell`): a managed spell's
               settings are not part of its spell_id (0.2.8254), so a rebind with
               another mode, limit, timeout or reset names keeps the pool, its
@@ -1327,20 +1357,31 @@ class Creations(Cleanable):
         Contract:
             - The concrete Meld door has already selected and authorized this
               store. Creations neither discovers scopes nor authorizes callers.
-            - True removes the target key from both live and disposal registries.
-              Many removes its retained bucket; every other existence removes
-              one stored value, even when that value is falsey or a container.
-            - False removes only the supplied creation and its disposal record.
-              Other many entries remain in their original order. Empty buckets
-              are removed; an absent reference leaves the store unchanged.
-            - Disposal uses the recorded methods without rematching or copying
-              the Spell-owned method-name list. Many entries run newest-first;
-              each object's methods run in their established order.
-            - A holder's record is detached with the holder, so the `many`
-              children it adopted are disposed after it, newest first (0.2.8238);
-              the count stays the target's own entries. A `many` target's bucket
-              holds only children that no holder adopted, so purging a child
-              spell never disposes a child its live holder still uses.
+            - The target is the spell's whole shelf: every slot filed here under
+              its spell id, by any binding - a class bound again under another
+              existence or other disposal names leaves its removed definition's
+              objects in a slot of their own
+              (STORY-2026-10-25-creations_store_slots_by_binding).
+            - True removes every slot of the shelf from both live and disposal
+              registries. Each slot is counted by its recorded shape, never by
+              the asking spell's existence: a `many` slot counts its bucket's
+              length; any other slot one stored value, even when that value is
+              falsey or a container.
+            - False removes only the supplied creation and its disposal record,
+              from whichever slot of the shelf holds it (by identity). Other many
+              entries remain in their original order. Empty buckets are removed;
+              an absent reference leaves the store unchanged.
+            - Disposal uses each slot's recorded methods without rematching or
+              copying the Spell-owned method-name list. Slots run newest-filed
+              first and many entries newest-first; each object's methods run in
+              their established order.
+            - Purging a holder disposes only the holder, with its own methods:
+              the `many` objects it was built with stay in their spells' buckets
+              in the store that recorded them, and a `many` purge of their spell
+              counts and disposes every one of them, a live holder's included
+              (the owner's decision, 2026-10-24; from 0.2.8238 to 0.2.8265 a
+              holder's purge disposed its children and a `many` purge skipped
+              them).
             - Every declared method runs even after one fails; each failure is
               collected and other selected objects are still attempted, matching
               cleanup.
@@ -1351,9 +1392,9 @@ class Creations(Cleanable):
 
         Args:
             spell:
-                Existing definition discovered by Meld. Its id selects the
-                stored entry, and its Existence selects multiplicity and the
-                same writer-lock family used during creation.
+                Existing definition discovered by Meld. Its spell id selects the
+                shelf; its Existence and store key select the writer lock its
+                builds take (the slot shapes come from the store).
             purge_all:
                 True retires every retained entry for the discovered target.
                 False retires one entry for the supplied object reference.
@@ -1363,8 +1404,8 @@ class Creations(Cleanable):
 
         Returns:
             int:
-                Number of removed creations, or zero when the target key is
-                absent or the supplied instance is not retained. An untracked
+                Number of removed creations, or zero when the shelf holds no
+                live slot or the supplied instance is not retained. An untracked
                 many result contributes no retained entry.
 
         Raises:
@@ -1377,14 +1418,17 @@ class Creations(Cleanable):
                 processing of the selected objects. There is no disposal rollback.
 
         Threading / Concurrency:
-            Retirement takes the slot's build lock first, then this store's leaf
-            lock, so it waits for an in-flight build of the same slot and never
-            removes a half-built entry: `unique` takes Spell._lock;
+            Retirement takes the asking definition's build lock first, then this
+            store's leaf lock, so it waits for an in-flight build of its own slot
+            and never removes a half-built entry: `unique` takes Spell._lock;
             `unique_per_conduit`, `unique_per_spell_space`, lineage and cluster
-            take `slot_guard(spell_id)` of this store (the lineage/cluster store
-            selected by their Meld door); `many` has no slot and takes only the
-            store lock. Both maps detach in one critical section. All removal
-            locks are released before any user disposal method runs.
+            take `slot_guard(spell.store_key)` of this store (the lineage/cluster
+            store selected by their Meld door); `many` has no slot and takes only
+            the store lock. Slots of the shelf's other bindings - definitions
+            already removed - are detached under the store lock alone; a build
+            of one still in flight publishes after the purge and stays, like any
+            later registration. Every slot detaches in one critical section. All
+            removal locks are released before any user disposal method runs.
 
         Lifecycle / Cleanup:
             Detached live references stay alive until lock release, so implicit
@@ -1398,23 +1442,24 @@ class Creations(Cleanable):
         existence = spell.existence
         if existence is Existence.managed_spell_quantity:
             return 0
+        spell_id = spell.spell_id
         if existence is Existence.unique:
             with spell._lock:
-                count, retired, disposal = self._detach_purge_entries(
-                    spell, purge_all=purge_all, creation=creation,
+                count, retired, disposals = self._detach_purge_entries(
+                    spell_id, purge_all=purge_all, creation=creation,
                 )
         elif existence is Existence.many:
-            count, retired, disposal = self._detach_purge_entries(
-                spell, purge_all=purge_all, creation=creation,
+            count, retired, disposals = self._detach_purge_entries(
+                spell_id, purge_all=purge_all, creation=creation,
             )
         else:
-            with self.slot_guard(spell.spell_id):
-                count, retired, disposal = self._detach_purge_entries(
-                    spell, purge_all=purge_all, creation=creation,
+            with self.slot_guard(spell.store_key):
+                count, retired, disposals = self._detach_purge_entries(
+                    spell_id, purge_all=purge_all, creation=creation,
                 )
         errors: List[Exception] = []
-        if disposal is not None:
-            errors = self._dispose_entry(disposal)
+        for disposal in disposals:
+            errors.extend(self._dispose_entry(disposal))
         # Keep non-disposable objects alive until the removal locks are released.
         del retired
         if errors:
@@ -1423,67 +1468,93 @@ class Creations(Cleanable):
 
     def _detach_purge_entries(
             self,
-            spell: Spell,
+            spell_id: str,
             *,
             purge_all: bool,
             creation: Optional[object],
-    ) -> Tuple[int, object, Optional[StoredDisposalValue]]:
+    ) -> Tuple[int, List[object], List[StoredDisposalValue]]:
         """
-        Detach one target's paired entries while holding this store's writer lock.
+        Detach one spell's paired entries from every slot of its shelf while holding this store's writer lock.
 
         Purpose:
             Separate atomic registry removal from user disposal callbacks while
             preserving a strong reference to every removed live value.
 
         Contract:
-            - The caller already holds the slot's build lock: Spell._lock for
-              unique, this store's `slot_guard` for the other slotted
-              existences, none for many.
+            - The caller already holds the asking definition's build lock:
+              Spell._lock for unique, this store's `slot_guard(store_key)` for the
+              other slotted existences, none for many.
             - Rechecks cleaned state after acquiring the store lock.
-            - Key membership determines presence; Existence determines whether
-              the value is one object or an owned many bucket.
-            - Removes no other key and does not inspect caller/scope identity.
-            - Single retirement touches only the supplied creation, preserving
-              all other entries and their disposal metadata in a many bucket.
+            - Walks the spell id's shelf newest-filed key first; a slot's
+              presence is key membership, and its recorded shape decides whether
+              it is one object or an owned many bucket.
+            - Whole retirement pops every live slot of the shelf, with its
+              record; the count adds each `many` slot's length and one per other
+              slot.
+            - Single retirement touches only the supplied creation, in the first
+              slot that holds it by identity, preserving all other entries and
+              their disposal metadata in a many bucket.
+            - Removes no key of another spell id and does not inspect
+              caller/scope identity.
             - Performs no disposal and never builds extraction/restore payloads.
 
         Args:
-            spell: Discovered definition supplying the exact id and Existence.
-            purge_all: Whether to detach the entire target or one supplied instance.
+            spell_id: The spell id whose shelf is retired.
+            purge_all: Whether to detach every slot or one supplied instance.
             creation: Original instance for single retirement; otherwise ignored.
 
         Returns:
-            Tuple[int, object, Optional[StoredDisposalValue]]:
-                Removal count, detached live value and detached disposal metadata.
-                The caller retains these references beyond lock release. An
-                absent key returns (0, None, None).
+            Tuple[int, List[object], List[StoredDisposalValue]]:
+                Removal count, the detached live values and the detached
+                disposal records, in detach order. The caller retains these
+                references beyond lock release. A shelf with no live slot
+                returns (0, [], []).
 
         Raises:
             RuntimeError: If the store was permanently cleaned before removal.
 
         Threading / Lifecycle:
-            The store lock covers membership, count and both pops. No callback
-            runs here; the caller owns disposal and release of the returned values.
+            The store lock covers the shelf walk, the counts and every pop. No
+            callback runs here; the caller owns disposal and release of the
+            returned values.
         """
         with self._lock:
             self.check_cleaned()
-            spell_id = spell.spell_id
-            if spell_id not in self._creations:
-                return 0, None, None
-            live = self._creations[spell_id]
+            keys = self._shelves.get(spell_id)
+            if not keys:
+                return 0, [], []
+            creations = self._creations
+            shapes = self._slot_shapes
             if not purge_all:
-                if spell.existence is Existence.many:
-                    return self._detach_single_many_creation(spell_id, creation)
-                if live is not creation:
-                    return 0, None, None
-            count = len(live) if spell.existence is Existence.many else 1
-            self._creations.pop(spell_id)
-            disposal = self._disposable_creations.pop(spell_id, None)
-            return count, live, disposal
+                for key in reversed(keys):
+                    if key not in creations:
+                        continue
+                    if shapes[key]:
+                        found, retired, entry = self._detach_single_many_creation(key, creation)
+                        if found:
+                            return found, [retired], [] if entry is None else [entry]
+                    elif creations[key] is creation:
+                        retired = creations.pop(key)
+                        record = self._disposable_creations.pop(key, None)
+                        return 1, [retired], [] if record is None else [record]
+                return 0, [], []
+            count = 0
+            retired_values: List[object] = []
+            disposals: List[StoredDisposalValue] = []
+            for key in reversed(keys):
+                if key not in creations:
+                    continue
+                live = creations.pop(key)
+                count += len(live) if shapes[key] else 1
+                retired_values.append(live)
+                record = self._disposable_creations.pop(key, None)
+                if record is not None:
+                    disposals.append(record)
+            return count, retired_values, disposals
 
     def _detach_single_many_creation(
             self,
-            spell_id: str,
+            key: str,
             creation: object,
     ) -> Tuple[int, object, Optional[StoredDisposalEntry]]:
         """
@@ -1506,7 +1577,7 @@ class Creations(Cleanable):
             - Missing references return zero; no disposal callback runs here.
 
         Args:
-            spell_id: Existing key selected through normal spell discovery.
+            key: A live `many` slot of the spell's shelf.
             creation: Original application instance requested for retirement.
 
         Returns:
@@ -1518,7 +1589,7 @@ class Creations(Cleanable):
             Called only inside `_detach_purge_entries`' locked critical section.
             This helper owns no scope policy, additional lock or disposal action.
         """
-        bucket = self._creations[spell_id]
+        bucket = self._creations[key]
         for index, retired in enumerate(bucket):
             if retired is creation:
                 break
@@ -1526,11 +1597,11 @@ class Creations(Cleanable):
             return 0, None, None
 
         bucket.pop(index)
-        record = self._disposable_creations.get(spell_id)
+        record = self._disposable_creations.get(key)
         if not bucket:
-            del self._creations[spell_id]
+            del self._creations[key]
             if record is not None:
-                del self._disposable_creations[spell_id]
+                del self._disposable_creations[key]
         if record is None:
             return 1, retired, None
         return 1, retired, (retired, record.methods)
@@ -1544,19 +1615,24 @@ class Creations(Cleanable):
 
         Contract:
             - Extracts only this scoped store's local state.
+            - Extracts the spell's whole shelf: every slot filed here under the
+              spell id, by any binding, in first-filing order
+              (STORY-2026-10-25-creations_store_slots_by_binding). Each object row
+              carries its slot's store key as `"key"`, so a restore files it
+              where it was.
             - Preserves enough metadata for later restore.
-            - Supports both singleton and `many` storage shapes.
+            - Supports both singleton and `many` storage shapes, read from each
+              slot's recorded shape. A singleton slot holding a dict is left in
+              place, as before.
             - Does not reach into external owners or adjacent scopes.
             - Returns raw stored objects plus disposal metadata, not a richer
               wrapper object.
             - Retains each established method-list reference in the returned
               rows; this in-memory handoff is not a serialization boundary.
-            - A holder's row carries the children it adopted (0.2.8238):
-              `children` lists `{"stored", "disposal_methods"}` rows in build
-              order, and a holder without disposal methods of its own is
-              `disposable` with an empty `disposal_methods` list, so a restore
-              (an ownership transfer's move or its rollback) takes the children
-              wherever the holder goes.
+            - A holder's row is an ordinary unique row: the `many` objects it
+              was built with are not in it and stay where they were recorded
+              when the holder moves (the owner's decision, 2026-10-24; from
+              0.2.8238 to 0.2.8265 a holder's row carried its adopted children).
             - A managed spell's pool travels as one row (2026-10-15):
               `{"scope": "managed", "disposable": False, "stored": pool}` - the
               same `ManagedSpellQuantity` object with its idle objects, count and
@@ -1572,49 +1648,50 @@ class Creations(Cleanable):
             pool = self._managed_quantities.pop(spell_id, None)
             if pool is not None:
                 extracted.append({"scope": "managed", "disposable": False, "stored": pool})
-            live_value = self._creations.get(spell_id)
-            disposable_value = self._disposable_creations.get(spell_id)
-
-            if isinstance(live_value, list):
-                live_many = self._creations.pop(spell_id)
-                record = (
-                    self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, ManyDisposalBucket)
-                    else None
-                )
-                # One record per key: every row of a disposal-bearing many
-                # key carries the same Spell-owned list object.
-                methods = None if record is None else record.methods
-                for stored_value in live_many:
+            creations = self._creations
+            disposables = self._disposable_creations
+            shapes = self._slot_shapes
+            for key in self._shelves.get(spell_id, ()):
+                live_value = creations.get(key)
+                if live_value is None:
+                    continue
+                disposable_value = disposables.get(key)
+                if shapes[key]:
+                    live_many = creations.pop(key)
+                    record = (
+                        disposables.pop(key)
+                        if isinstance(disposable_value, ManyDisposalBucket)
+                        else None
+                    )
+                    # One record per key: every row of a disposal-bearing many
+                    # key carries the same Spell-owned list object.
+                    methods = None if record is None else record.methods
+                    for stored_value in live_many:
+                        entry = {
+                            "key": key,
+                            "scope": "many",
+                            "disposable": methods is not None,
+                            "stored": stored_value,
+                        }
+                        if methods is not None:
+                            entry["disposal_methods"] = methods
+                        extracted.append(entry)
+                elif not isinstance(live_value, dict):
+                    stored_value = creations.pop(key)
+                    disposable_entry = (
+                        disposables.pop(key)
+                        if isinstance(disposable_value, tuple)
+                        else None
+                    )
                     entry = {
-                        "scope": "many",
-                        "disposable": methods is not None,
+                        "key": key,
+                        "scope": "unique",
+                        "disposable": disposable_entry is not None,
                         "stored": stored_value,
                     }
-                    if methods is not None:
-                        entry["disposal_methods"] = methods
+                    if disposable_entry is not None:
+                        entry["disposal_methods"] = disposable_entry[1]
                     extracted.append(entry)
-            elif live_value is not None and not isinstance(live_value, dict):
-                stored_value = self._creations.pop(spell_id)
-                disposable_entry = (
-                    self._disposable_creations.pop(spell_id)
-                    if isinstance(disposable_value, (tuple, HolderDisposalEntry))
-                    else None
-                )
-                entry = {
-                    "scope": "unique",
-                    "disposable": disposable_entry is not None,
-                    "stored": stored_value,
-                }
-                if isinstance(disposable_entry, HolderDisposalEntry):
-                    entry["disposal_methods"] = disposable_entry.methods
-                    entry["children"] = [
-                        {"stored": child, "disposal_methods": methods}
-                        for child, methods in disposable_entry.children
-                    ]
-                elif disposable_entry is not None:
-                    entry["disposal_methods"] = disposable_entry[1]
-                extracted.append(entry)
 
         if pool is not None:
             # A pool in flight between stores is not routable until a restore registers it again.
@@ -1631,7 +1708,13 @@ class Creations(Cleanable):
 
         Contract:
             - Rebuilds this scoped store from the extracted payload only.
-            - Replaces any current local state for the spell id.
+            - Replaces any current local state for the spell id: every slot on
+              its shelf here, and the bare spell id key, is dropped undisposed
+              before the rows are installed.
+            - Files each object row under its `"key"` - the store key it was
+              extracted from - and a row without one under the spell id, which
+              is its own shelf; each key is recorded on its shelf first
+              (STORY-2026-10-25-creations_store_slots_by_binding).
             - Restores both live entries and disposal metadata; a many key's
               rows rebuild one `ManyDisposalBucket` over the restored bucket.
             - Raises when the payload does not match the local slot shape, or
@@ -1640,9 +1723,6 @@ class Creations(Cleanable):
               does not clone or rehydrate them.
             - Retains the extracted disposal lists directly, without copying
               their contents or reapplying binding policy.
-            - A unique row with `children` rebuilds the holder's
-              `HolderDisposalEntry` (0.2.8238); rows without it restore exactly
-              as before.
             - A `managed` row installs its pool under the spell id (2026-10-15).
               A different pool already there - the empty one an ownership
               transfer's flip composed at the target's stamp - is replaced and
@@ -1670,10 +1750,13 @@ class Creations(Cleanable):
         installed_pools: List[ManagedSpellQuantity] = []
         with self._lock:
             owner_conduit_id = self._owner_conduit_id
-            live_value = self._creations.get(spell_id)
-            if live_value is not None:
-                self._creations.pop(spell_id)
-            self._disposable_creations.pop(spell_id, None)
+            live = self._creations
+            disposables = self._disposable_creations
+            for key in self._shelves.get(spell_id, ()):
+                live.pop(key, None)
+                disposables.pop(key, None)
+            live.pop(spell_id, None)
+            disposables.pop(spell_id, None)
 
             for entry in creations:
                 scope = entry["scope"]
@@ -1689,37 +1772,35 @@ class Creations(Cleanable):
                     installed_pools.append(stored_value)
                     continue
 
+                key = entry.get("key", spell_id)
                 if scope == "unique":
-                    existing = self._creations.get(spell_id)
+                    existing = live.get(key)
                     if isinstance(existing, dict):
                         raise RuntimeError(
                             f"Cannot restore unique creation for spell '{spell_id}' into non-singleton slot."
                         )
-                    self._creations[spell_id] = stored_value
-                    children = entry.get("children")
-                    if children is not None:
-                        self._disposable_creations[spell_id] = HolderDisposalEntry(
-                            stored_value,
-                            disposal_methods if disposal_methods is not None else [],
-                            [(child["stored"], child["disposal_methods"]) for child in children],
-                        )
-                    elif is_disposable:
-                        self._disposable_creations[spell_id] = (
+                    if self._slot_shapes.get(key) is not False:
+                        self._note_slot(key, False)
+                    live[key] = stored_value
+                    if is_disposable:
+                        disposables[key] = (
                             stored_value,
                             disposal_methods if disposal_methods is not None else [],
                         )
                     continue
 
                 if scope == "many":
-                    existing = self._creations.get(spell_id)
+                    existing = live.get(key)
                     if existing is None:
+                        if self._slot_shapes.get(key) is not True:
+                            self._note_slot(key, True)
                         existing = []
-                        self._creations[spell_id] = existing
+                        live[key] = existing
                     elif not isinstance(existing, list):
                         raise RuntimeError(
                             f"Cannot restore many creations for spell '{spell_id}' into non-list slot."
                         )
-                    record = self._disposable_creations.get(spell_id)
+                    record = disposables.get(key)
                     if is_disposable:
                         if record is None:
                             if existing:
@@ -1727,7 +1808,7 @@ class Creations(Cleanable):
                                     f"Cannot restore a disposable many creation for spell '{spell_id}' "
                                     f"beside entries restored without disposal methods."
                                 )
-                            self._disposable_creations[spell_id] = ManyDisposalBucket(
+                            disposables[key] = ManyDisposalBucket(
                                 existing,
                                 disposal_methods if disposal_methods is not None else [],
                             )
@@ -1767,8 +1848,9 @@ class Creations(Cleanable):
             - Detaches live and disposable registries before disposal work.
             - Raises `ExceptionGroup` after best-effort disposal attempts.
             - Leaves this `Creations` instance reusable after the clear
-              completes. Slot guards are kept (they are per spell id, not per
-              generation).
+              completes. Slot guards and the shelf index are kept (they are per
+              store key, not per generation); every slot is disposed with its
+              own record.
             - Leaves the managed pools untouched: only root stores hold pools,
               and the reusable clears run on lesser and spellspace stores only (a
               lesser's pool return, a spellspace's exit), never on a root's.

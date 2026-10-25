@@ -258,6 +258,9 @@ class CodegenNameResolutionStrategy(Cleanable):
         self.check_cleaned()
         with self._lock:
             denied_builtin_names = set(namespace_configuration.denied_builtin_names)
+            denied_builtin_names.update(
+                namespace_configuration.static_only_denied_builtin_names
+            )
             return {
                 builtin_name
                 for builtin_name in vars(builtins).keys()

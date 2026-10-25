@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py",
- "source_sha256": "4875bd8c91cfd618a560055f0b102e2fc3ec485a11e4ae741080236c2002c554",
+ "source_sha256": "a459ca7b4446d29fd1ee9e773c9b3ca6068ac58180c92153c36b13059e2296da",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy": {
@@ -19,7 +19,7 @@
    "label": "CodegenBuiltinsStrategy",
    "kind": "class",
    "file": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py",
-   "lineno": 13,
+   "lineno": 17,
    "bases": [
     "Cleanable"
    ],
@@ -29,15 +29,16 @@
     "cleanup"
    ],
    "shape": {
-    "method_count": 2,
+    "method_count": 4,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "06eb58c2ab0e02eaae6409298a5bb890d1608c4c27151a4a040ee91c66b8d0a7",
+   "span_sha256": "008339f16967cd05a7043827780c949325df4923fa524ea5975ec1907d6e4f6e",
    "role": "Namespace exposure strategy for Python builtins.",
    "responsibilities": [
     "builds the __builtins__ mapping from the current namespace configuration",
-    "applies the compiled builtin denylist for one request"
+    "applies the compiled builtin denylist for one request",
+    "installs a runtime `__import__` wrapper when imports are on and an import list applies, raising ImportError for a denied or unlisted root and delegating an allowed root to the real import; full_access and safe install none (D-11, 0.2.8271)"
    ],
    "owns_state": [
     "_lock"
@@ -46,7 +47,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "06eb58c2ab0e02eaae6409298a5bb890d1608c4c27151a4a040ee91c66b8d0a7"
+   "semantics_authored_against": "008339f16967cd05a7043827780c949325df4923fa524ea5975ec1907d6e4f6e"
   }
  },
  "edges_out": [
@@ -69,6 +70,12 @@
    "to_label": "TypeError",
    "relation": "creates",
    "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy",
+   "to_label": "ImportError",
+   "relation": "creates",
+   "confidence": "candidate"
   }
  ],
  "published_aliases": [],
@@ -76,7 +83,12 @@
   "builtins": "builtins",
   "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Callable": "typing.Callable",
   "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "IMPORT_BUILTIN_NAMES": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.IMPORT_BUILTIN_NAMES",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "CodegenNamespaceConfiguration": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration"
  },
@@ -108,6 +120,17 @@
     "cleanup"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "relation": "uses",
+   "why": "CodegenBuiltinsStrategy reads IMPORT_BUILTIN_NAMES to replace the room's runtime `__import__` with a root-checking wrapper wherever an import list applies.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

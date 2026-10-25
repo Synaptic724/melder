@@ -19,7 +19,7 @@ Python objects: a tokenizer, counter, reporter, and a population of independent 
 | --- | --- |
 | `validate_codegen` | `accepted`, the selected frame, and any validation issues |
 | `execute_codegen` | The execution payload, including `result` and error information |
-| `materialize_codegen` | `materialized` and the named module's publication result |
+| `materialize_codegen` | `materialized` and the named module's publication result; `refusal` when the name is already loaded, under `melder`, a standard-library or installed name, or outside the frame's `materialize_modules` roots |
 | Import | The generated module's real classes |
 | Bind and meld | Objects managed through the normal registration and lifetime rules |
 

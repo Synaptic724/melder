@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-19T14:48:37Z
+- Updated: 2026-10-25T12:47:21Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -96,8 +96,11 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   disposing a parked version drops the binding signature of the active spell keyed like it (sweep A1).
   Landed by melder_1 at 0.2.8263: `_destroy_spell_index` drops only its own route and releases only the
   departing member's claim; turned in 2026-10-19, in tickets/stories/completed/.
-- [ ] Story: STORY-2026-10-17-notch_moves_signature_by_incoming_key_only - a notch moves signatures by the
-  incoming key alone: a parked version keeps its claim, or an active spell's key is taken (sweep A1).
+- [x] Story: STORY-2026-10-17-notch_moves_signature_by_incoming_key_only - a notch moves signatures by the
+  incoming key alone: a parked version keeps its claim, or an active spell's key is taken (sweep A1). Landed by
+  melder_1 at 0.2.8273 on the owner's rule (2026-10-25): every version of an index is bound the way its first
+  version was, so a notch keeps the address and refuses one another spell holds; turned in 2026-10-25, in
+  tickets/stories/completed/.
 - [x] Story: STORY-2026-10-17-parked_cleanup_leaves_borrower_copies - cleanup_spell of a parked version leaves
   its copy and id with index-link borrowers, past their own unlink (sweep A2). Landed at 0.2.8261 by
   melder_0 (every cleanup_spell door releases the version's contracts first), then handed to melder_1 with
@@ -1297,6 +1300,225 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-24T18:15:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: expert_1's three NOTICEs (2026-10-19T22:26:52Z, 23:09:08Z, 23:45:54Z) consumed at re-onboarding: it landed
+    0.2.8264 (Spell imports ManagedSpellMode at runtime, so the owner's 51 failures on Python 3.14.1-3.14.3 pass -
+    the NameError melder_1 had not written up yet) and 0.2.8265 (concurrent cluster adds admit one caller).
+    __version__ is 0.2.8265; the next src landing here notches above it.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-19_fix_managed_spell_mode_test_failures_task.md:1-6
+  - context_compass/tickets/tasks/completed/2026-10-19_fix_cluster_duplicate_add_concurrency_task.md:1-6
+  - src/melder/__version__.py:12-12
+  IMPACT: The 3.14.1-3.14.3 NameError needs no ticket from melder_1; S2 and S5 notch above 0.2.8265.
+  NEXT: The owner's cleanup of the boards, mailbox and artifacts; then S2 and S5 on his word.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T19:10:35Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: HYPOTHESIS
+  CLAIM: `Creations.register_many` still assumes "A spell id hashes its resolved disposal names, so one key cannot
+    carry two declarations"; since 0.2.8257 disposal names are a binding-manifest field, not part of the spell_id.
+    The verb appends to an existing bucket whose `ManyDisposalBucket` keeps the list of its FIRST registration, and
+    a removed definition's `many` objects stay in their store by ruling. So a `many` spell rebound after
+    `cleanup_spell` with a different non-empty disposal list (same class, same spell_id) and melded into a store that
+    still holds the old objects would have its new objects disposed with the old methods, never its own. Unproven.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:889-960
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1583-1632
+  - context_compass/system_docs/src_architecture.md:1348-1352
+  - context_compass/system_docs/src_architecture.md:1970-1973
+  IMPACT: If it reproduces, a store records the wrong disposal declaration for a rebound `many` spell (structure
+    recorded wrong); it touches the records the many-child disposal change will edit.
+  NEXT: A probe (rebind with another disposal list, meld into the same root, tear down) with the GIL off and on;
+    a story here if it reproduces.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-24T23:11:17Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The three open stories still reproduce on 0.2.8267 (3.14.7t; the GIL off and on give the same results).
+    S2: C5 - after a notch across keys the parked English keeps the ('greeter', 'greeter') claim, so a meld by
+    that address raises KeyError and another bind of it is refused naming English; C7 - French notched active in
+    its minted index takes that claim while English is active, and a meld by it raises DUPLICATE_SPELL_NAME; T4 -
+    the claim outlives the Book. S5: R2 - the restore reports complete with a staged_member_anchor_index_not_rebuilt
+    shortfall and drops French; G2 - the graft of the minted index makes French active. S11: H3 and H4 - after the
+    notch back a borrower's consumer melded first is refused, and stays refused after the lender's own meld. The
+    controls (C1-C4, C6, R1, R3, G1, G3, G4, H1, H2) behave as recorded. T5 is stale since 0.2.8257: it binds one
+    managed class twice, which the one-object rule refuses. Probes: scratch copies with the 0.2.8253 lookup rename.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:67-95
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:119-134
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:144-149
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:166-171
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:221-248
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:251-495
+  IMPACT: Nothing landed since 0.2.8263 fixed any of the three; their reproducers and acceptance stand as written.
+  NEXT: The owner's word on S2, S5 and S11 (discussed in chat 2026-10-24); no test or src edit before it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T23:31:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: Rechecked on the owner's ask (chat 2026-10-24, "check all these things again"): the three open stories are
+    still faulty on 0.2.8267 (src unchanged since the 23:09Z run), now also through public calls only, one case per
+    process, the GIL off and on. S2: after a notch from English ('greeter') to Spanish ('spanish') another Book's bind
+    of 'greeter' is refused naming English, and still after the lender's root is torn down (C5, T4). C7 needs a
+    version compiled before: French notched to and back, split into its own index and notched active there goes
+    through, and every meld at that address - by address, and English's and French's by spell_id - raises
+    SpellbookValidationError; a French never compiled is refused by the 0.2.8262 check and English stays served (the
+    S2 story's note). S5, across two processes: the restore reports complete with the shortfall and no French, and
+    the graft brings French back active. S11: H3 and H4 unchanged. The artifact probes re-run at 23:29Z gave the same
+    results as at 23:09Z (ids masked).
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:6-35
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:37-57
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:71-122
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_0_2_8267.txt:221-248
+  IMPACT: The three stories stand as written; melder_1's C7 example to the owner (a French never compiled) was wrong
+    and is corrected in chat.
+  NEXT: The owner's word on S2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T23:31:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Side finding while rechecking S5: a recorded world whose frame is settled dynamic by `conjure(dynamic=True)`
+    after its binds restores with no spells under a "complete" report. Bind records a spell crystal only while the
+    Crystallizer is active and the frame posture is dynamic; before that conjure the posture is unsettled, the
+    conjure guard checks only that the configuration was finalized before the first bind, and nothing records those
+    binds afterwards (the conjure-tail sweep was retired on 2026-07-05). Measured across two processes, the GIL off
+    and on: plain calls (B) - the checkpoint holds no spell_crystal or spell_index payload and the restore builds the
+    frame, the Book and the conduit with no spell and no shortfall; `configure_aether_frame(system_state='dynamic')`
+    before the first bind (C) restores English. No open or completed ticket covers it.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:6452-6476
+  - src/melder/aether/spellbook/spellbook.py:7573-7616
+  - src/melder/aether/spellbook/spellbook.py:7661-7724
+  - context_compass/artifacts/correctness_defects_20261017/probes/diag_restore_isolate.py:1-62
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:59-69
+  - context_compass/artifacts/correctness_defects_20261017/runs/recheck_open_stories_public_calls_0_2_8267.txt:124-134
+  IMPACT: Structure recorded wrong under a report that reads as success; S5's reproducers make the frame dynamic
+    before the first bind so their records hold the binds.
+  NEXT: The owner's word on filing it as a story here (refuse such a conjure in a recorded world, or record the binds
+    when it settles the frame - his call).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-24T23:31:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-36 consumed (melder_2, 2026-10-24T23:21:55Z): its lane STORY-2026-10-24-testpypi_trusted_publishing_and_
+    provenance edits .github/, tests/unit/github_workflows and system_docs/tests_components.md, takes no src, notch
+    or release-note entry and rebuilds at its turn-in; melder_1 holds none of those files.
+  EVIDENCE: context_compass/tickets/stories/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md:1-223
+  IMPACT: The regression tests of S2, S5 and S11 go into tests_components.md, so that docs step waits for melder_2's
+    turn-in or its hand-over of the file.
+  NEXT: Ask melder_2 for tests_components.md when an S-story reaches its docs step.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T00:57:13Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M2-40 consumed (melder_2, 2026-10-25T00:40:40Z): STORY-2026-10-24-testpypi_trusted_publishing_and_
+    provenance is turned in with no src and no notch; it updated tests_components and tests_architecture and their
+    indexes, and its asset and bundle rebuild follows. The next notch is still 0.2.8268, above 0.2.8267.
+  EVIDENCE: context_compass/tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md:1-435
+  IMPACT: tests_components.md is no longer held by that lane, so an S-story's docs step needs no hand-over; it
+    waits only for melder_2's rebuild to finish.
+  NEXT: S2's research on the story; its fix notches 0.2.8268 unless another lane lands first.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T02:02:53Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: A second side finding, from S2's meld-identity map (its FACT note of 2026-10-25T02:01:57Z): a consumer
+    injected by a class annotation that compiled without its provider - after a notch away from it, or before it
+    was bound - is never re-resolved when the provider comes back under a spellframe (a notch back, or a later bind
+    under a Protocol). Its UNRESOLVED_INPUT socket is watched under the class's name while bind and notch stage the
+    provider's address, so nothing marks it and every meld raises UnresolvedInputError until it is disposed and
+    bound again; a provider bound bare is unaffected. Pre-existing on 0.2.8267 in both address models, the GIL off
+    and on; the 0.2.8222 kind-matching task left the watcher's name keying for a follow-up ticket that was never
+    filed, and no open or completed ticket covers it.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:639-672
+  - context_compass/artifacts/correctness_defects_20261017/runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt:3-53
+  - context_compass/tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md:57-61
+  IMPACT: Stuck structure under the owner's runtime model; S2's fix does not touch it.
+  NEXT: The owner's word on filing it as a story here.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T02:47:38Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Two side findings routed. M3-9 consumed (melder_3, 2026-10-25T02:33:01Z): the HYPOTHESIS of
+    2026-10-24T19:10:35Z reproduces on 0.2.8267, the GIL off and on - a `many` cleaned up and bound again under
+    other disposal names joins the removed binding's ManyDisposalBucket and is disposed with the old list, and a
+    slotted spell bound again as `many` fails its next meld with AttributeError from `Creations.register_many`.
+    melder_3 corrected only the docstrings (0.2.8268); the behaviour is the gap the parked
+    STORY-2026-10-18-revalidate_on_binding_change closes, and a story here, if the owner wants one, is melder_1's.
+    The stuck class-annotated consumer (FACT note of 2026-10-25T02:02:53Z) has its own epic on the owner's ask,
+    EPIC-2026-10-25-dependency_watchers_listen_for_names, so no story for it is filed here.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-25_creations_many_disposal_docstrings_task.md:200-228
+  - context_compass/artifacts/creations_many_disposal_20261025/probes/probe_rebind_many_disposal.py:1-95
+  - context_compass/tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md:1-30
+  IMPACT: The rebind finding waits with the parked binding-change story; the stuck consumer leaves this epic.
+  NEXT: The owner's word on S5, S11, the recorded-world finding and the rebind finding.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T12:26:46Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2 landed at 0.2.8273 and is turned in: every version of a SpellIndex is bound the way its first version was
+    (the owner's rule and call 1, 2026-10-25), so staging and index moves refuse another binding, a notch keeps the
+    index's address and refuses one another spell holds, records below 5.0.0 are refused and the creation cache is
+    generation 24. Its probes ran again at the fix and stay as reproducers: C5, C6 and T4 are refused at the way in,
+    C7 by the notch. The epic's open stories (S5, S11) and findings wait for the owner.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:1-12
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_signature_claims_0_2_8273_gil0.txt:1-72
+  IMPACT: Sweep A1's last story is closed.
+  NEXT: The owner's word on S5, S11, the recorded-world finding and the rebind finding.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T12:47:21Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2's risks and gaps are labeled in EPIC-2026-10-25-index_binding_risks_and_gaps on the owner's ask (chat
+    2026-10-25): five risks of the change (RISK-1 to RISK-5) and fourteen gaps (GAP-1 to GAP-14), among them gaps 2
+    and 3 of S2's meld-identity map (GAP-2, GAP-3) and a checkpoint-retention defect measured at S2's landing
+    (GAP-1: a profile folder of earlier worlds deletes a new world's checkpoints). This epic keeps S5, S11 and its
+    open findings.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md:30-82
+  - context_compass/tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md:153-171
+  IMPACT: The change's edges have their own register; nothing moves out of this epic.
+  NEXT: The owner's word on S5, S11, the recorded-world finding and the rebind finding.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -1318,11 +1540,12 @@ this does not make independent review mandatory for every ticket.
   by melder_1 (S11, M1-47) - S9 done (0.2.8256, the
   refusal; M1-38) and S4 done (0.2.8259; M1-42); S8 done (0.2.8262; turned in
   2026-10-19); S7 done (0.2.8260; M1-44); S3 done (0.2.8261, melder_0; turned in by melder_1 2026-10-19);
-  S1 done (0.2.8263; turned in 2026-10-19); S2 and S5 go to melder_1, one at a time, on the owner's word (M1-45; the identity epic they waited for,
-  EPIC-2026-10-18-spell_identity_is_the_code, is turned in with its S3-S5 parked); S6 done; S10 withdrawn:
+  S1 done (0.2.8263; turned in 2026-10-19); S2 done (0.2.8273; turned in 2026-10-25); S5 goes to melder_1 on
+  the owner's word (M1-45; the identity epic it waited for, EPIC-2026-10-18-spell_identity_is_the_code, is
+  turned in with its S3-S5 parked); S6 done; S10 withdrawn:
   STORY-2026-10-17-staged_version_releases_active_signature (p1; done: landed at 0.2.8263, turned in 2026-10-19),
-  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2; answered: the notch moves the claim; its
-  leaked claim outlives the Book, A7),
+  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2; done: landed at 0.2.8273 - every version of
+  an index is bound the way its first version was - turned in 2026-10-25),
   STORY-2026-10-17-parked_cleanup_leaves_borrower_copies (p2; done: landed at 0.2.8261, turned in 2026-10-19),
   STORY-2026-10-17-minted_index_missing_from_frame_registry (p2; done: landed at 0.2.8259 with
   residency's parked verdict, turned in 2026-10-19),
@@ -1371,8 +1594,12 @@ this does not make independent review mandatory for every ticket.
 - Done since: S8 landed at 0.2.8262 and is turned in; S3 is turned in by melder_1; both on the owner's word
   (DECISION and FACT notes of 2026-10-19).
 - Done since: S1 landed at 0.2.8263 and is turned in (FACT note of 2026-10-19); the pass is rebuilt last.
-- Next: (1) S2 and S5 with melder_1, one at a time, on the owner's word, each from a failing test with its
-  own notch and the patch gate; (2) S11 on the owner's call; (3) a fourth tranche on the owner's word.
+- Done since: S2 landed at 0.2.8273 and is turned in (FACT note of 2026-10-25T12:26:46Z); the pass is rebuilt last.
+- Next: (1) S5 with melder_1 on the owner's word, from a failing test with its own notch and the patch gate;
+  (2) S11 on the owner's call; (3) a fourth tranche on the owner's word; (4) the
+  owner's word on filing the recorded world settled after its binds (FACT note of 2026-10-24T23:31:58Z) and the
+  rebind disposal record (FACT note of 2026-10-25T02:47:38Z); the stuck class-annotated consumer is
+  EPIC-2026-10-25-dependency_watchers_listen_for_names on the owner's ask.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

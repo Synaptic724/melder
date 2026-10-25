@@ -58,6 +58,7 @@ def test_extract_spell_creations_uses_base_behavior(
 
     assert extracted_unique == [
         {
+            "key": "spell-u",
             "scope": "unique",
             "disposable": False,
             "stored": first,
@@ -65,6 +66,7 @@ def test_extract_spell_creations_uses_base_behavior(
     ]
     assert extracted_many == [
         {
+            "key": "spell-m",
             "scope": "many",
             "disposable": False,
             "stored": second,

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell.py",
- "source_sha256": "1ed5801af785e9d54c7c2e275e19a97b3e902f8835e3502b1c504cd8adf6834f",
+ "source_sha256": "0947c1eeb0d110f74e7b7fb785114f1ad467de8eed8304fcd8df029e32f64930",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "The canonical bound-spell runtime record.",
-   "semantics_authored_against": "39fc7499d14a1520b24f4321222cf0e1e39625ef2e7fd54cb83c3552ab5c43c9"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell.Spell": {
    "id": "melder.aether.spellbook.spell.Spell",
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "642ee4e2794455c8f66e7daea74119a69ecdca39b15098008170120b3771bae6",
+   "span_sha256": "39a49bcf2f6afd6402102b59090ade5e21302eab1b025b67534da31765e93639",
    "role": "Canonical bound spell runtime record.",
    "responsibilities": [
     "wraps one bound target with lineage, lifecycle, and permission policy",
@@ -73,7 +73,9 @@
     "carries the binding's spellframe_kind and implemented_protocols (the Protocol it was checked against, else ()) as identity data that survives cleanup (0.2.8222)",
     "on a direct cleanup removes itself through its Spellbook outside its own lock, serialized per spell by a removal lock nothing else takes, so Book teardown and conjure, which take its lock under the Book lock, never wait on it (_direct_removal_route, 0.2.8233)",
     "retains a managed binding's normalized options read-only per version (managed_spell_mode, limit, timeout, reset methods; None, None, None and () on other existences) and, when an owner stamp carries a store, ensures the version's pool there (_add_owned_conduit -> Creations.ensure_managed_quantity, 0.2.8242-0.2.8243)",
-    "a direct cleanup of the active version of an index that also holds parked versions raises the Book's refusal and leaves the spell as it was (Spellbook.cleanup_and_remove_spell, 0.2.8256)"
+    "a direct cleanup of the active version of an index that also holds parked versions raises the Book's refusal and leaves the spell as it was (Spellbook.cleanup_and_remove_spell, 0.2.8256)",
+    "saves its Book's cache on request (emit_cache_file -> bool): False when caching is off, nothing was staged since the last save or the operating system refused the save, which no longer raises (0.2.8266)",
+    "carries its store key, store_key = <spell_id>:<binding_hash>, built right after the binding manifest and kept after cleanup: the key every Creations store files this version's objects, disposal record and build guard under, so two bindings of one class never share a slot and a class bound again the same way files where it did (0.2.8274)"
    ],
    "owns_state": [
     "_resolvable",
@@ -101,7 +103,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "642ee4e2794455c8f66e7daea74119a69ecdca39b15098008170120b3771bae6"
+   "semantics_authored_against": "39a49bcf2f6afd6402102b59090ade5e21302eab1b025b67534da31765e93639"
   }
  },
  "edges_out": [

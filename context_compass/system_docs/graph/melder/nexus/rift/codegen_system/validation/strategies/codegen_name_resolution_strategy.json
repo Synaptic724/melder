@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py",
- "source_sha256": "55ad4e8ee81686b0a431827de9fe4e1109b2a07acb15613c5bd1967af181a092",
+ "source_sha256": "2bb2674391d334569aaabc651c2d447a3d766e6515342315845350d997dffd1a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy": {
@@ -33,10 +33,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0c55f36b2ad3585a36cc71d7a647a4cbb24c2e9568f215e94c7ff3e77c1c9e17",
+   "span_sha256": "f36ee5463248a76ac69b596d55205b05a3464acc383e7f1fdb9239e73a579105",
    "role": "Name-resolution validation strategy.",
    "responsibilities": [
-    "validates load-time ast.Name usage against the namespace configuration contract"
+    "validates load-time ast.Name usage against the namespace configuration contract",
+    "drops `denied_builtin_names` united with `static_only_denied_builtin_names` from the allowed builtin names, so a bare `__import__` reference is refused wherever an import list applies (D-11, 0.2.8271)"
    ],
    "owns_state": [
     "_lock",
@@ -46,7 +47,7 @@
     "validation",
     "cleanup"
    ],
-   "semantics_authored_against": "0c55f36b2ad3585a36cc71d7a647a4cbb24c2e9568f215e94c7ff3e77c1c9e17"
+   "semantics_authored_against": "f36ee5463248a76ac69b596d55205b05a3464acc383e7f1fdb9239e73a579105"
   }
  },
  "edges_out": [

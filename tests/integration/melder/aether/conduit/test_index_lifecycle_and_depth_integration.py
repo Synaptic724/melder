@@ -10,6 +10,9 @@ Chains the whole surface end to end and fills out the behavioral corners:
 
 Transactions are OUT OF SCOPE. Runtime: Python 3.14t; the 3.10 sandbox cannot run
 these -> user runs on 3.14t (validate the notch multi-member harness first).
+
+A and B share one binding, spellframe 'service' and binding name 'a': every version of an index is bound the way
+its first version was (2026-10-25).
 """
 
 import contextlib
@@ -65,9 +68,11 @@ def _make_spellbook() -> Spellbook:
 
 
 def _two_member_conduit():
-    """Single dynamic conduit whose index has A active + B inactive."""
+    """Single dynamic conduit whose index has A active + B inactive, both under ('service', 'a')."""
     book = _make_spellbook()
-    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     conduit = book.conjure(dynamic=True, name="root")
     index = book.find_spell_by_spell_id(id_a).spell_index
     # bind_inactive stages B off the resolution surface AND attaches it to A's
@@ -75,7 +80,7 @@ def _two_member_conduit():
     # index; it cannot stand alone).
     id_b = conduit.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = book._get_owned_spell(id_b)
     return book, conduit, id_a, id_b, index, spell_b

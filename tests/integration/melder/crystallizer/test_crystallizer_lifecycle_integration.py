@@ -3,8 +3,14 @@ Integration tests for record lifecycle seams on the REAL runtime: staged
 custody (bind_inactive), notch park/promote activity mirroring, the Nexus/MR
 state-switch seams, frame-death eviction, and SpellCrystal bind-fact capture.
 
+The staging tests bind BasicService under the string category "BasicService" - the address a bare bind of it
+has - and stage _PromotedService under that category: every version of an index is bound the way its first version
+was (2026-10-25).
+
 Runs only on 3.14t (melder package root import chain).
 """
+from typing import Optional, Tuple
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -84,10 +90,15 @@ def _activate_crystallizer():
     return crystallizer
 
 
-def _recorded_world():
+def _recorded_world(spellframe: Optional[str] = None) -> Tuple[Crystallizer, Spellbook, Conduit, str]:
     """
     Build one recorded dynamic world: activated crystallizer + frozen-config
     book + one active bind + a conjured root conduit.
+
+    Args:
+        spellframe: The string category BasicService is bound under, or None
+            for a bare bind. A test that stages a second version passes
+            "BasicService" and stages it under the same category.
 
     Returns:
         tuple: (crystallizer, book, conduit, active_spell_id).
@@ -102,6 +113,7 @@ def _recorded_world():
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
+        spellframe=spellframe,
     )
     conduit = book.conjure(dynamic=True, name="lifecycle-root")
     return crystallizer, book, conduit, spell_id
@@ -145,13 +157,14 @@ def test_bind_inactive_stages_custody_in_the_inactive_location():
     Raises:
         AssertionError: If staging leaks into the active location.
     """
-    crystallizer, book, conduit, spell_id = _recorded_world()
+    crystallizer, book, conduit, spell_id = _recorded_world(spellframe="BasicService")
     active_spell = book._spells_by_id[spell_id]
     staged_id = conduit.bind_inactive(
         spell=_PromotedService,
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     summary = crystallizer.describe_profile()
     assert summary["spell_crystal_count"] == 1
@@ -172,13 +185,14 @@ def test_notch_promotion_moves_custody_both_directions():
     Raises:
         AssertionError: If custody fails to follow the notch.
     """
-    crystallizer, book, conduit, spell_id = _recorded_world()
+    crystallizer, book, conduit, spell_id = _recorded_world(spellframe="BasicService")
     active_spell = book._spells_by_id[spell_id]
     staged_id = conduit.bind_inactive(
         spell=_PromotedService,
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     staged_spell = book._inactive_spells[staged_id]
     conduit.notch_spell(

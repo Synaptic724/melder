@@ -1,0 +1,34 @@
+# probe_book_teardown_parked.py on 0.2.8273 (the device tree), -X gil=0, through scripts/run_with_alias.py (find_spell_by_id, renamed at 0.2.8253, aliased); T5 binds one class twice, refused since 0.2.8257; melder_1 at the fix, 2026-10-25T12:24:13Z
+T1 control: English active alone
+    root conduit torn down
+    English (active) cleaned: True
+    English's index cleaned: True
+
+T2 English active, French parked on English's index
+    root conduit torn down
+    English (active) cleaned: True
+    French (parked) cleaned: True
+    the shared index cleaned: True
+    French.cleanup() returned; cleaned: True
+
+T3 French separated into the index remove_from_spell_index mints
+    French's index is a new one: True
+    root conduit torn down
+    French (parked) cleaned: True
+    the minted index cleaned: True
+    English's index cleaned: True
+
+T4 notch English ('greeter') -> Spanish ('spanish'), then teardown
+  CASE RAISED ValueError: bind_inactive refused: SpellIndex 01M5SG717GE4RV1YJ7J1Z31T7G keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'greeter' - and 'Spanish' (spell_id 35ae6000b301244b7d88b18cb8600db6b713b6889bdb1709507825f17aa4d48e) is bound with the Protocol spellframe Greeter and binding_name 'spanish'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+T5 a managed class with one version active and one parked, then teardown
+  CASE RAISED RuntimeError: Spell ID collision detected: this object is already registered as spell_id de9f98171d5707b339845fcc0df3076cb517f073305c07d6c0eb132c2f5e65ee. A spell_id is the SHA256 of the object's code (its methods, 
+constructor, class-level values and base classes, or an existing object's class and 
+data), and one object is one spell: registering it again - under another binding 
+name, existence or spellframe, or in another Spellbook where spell_ids are unique 
+(the process by default, the frame under per-frame spell ids) - is refused. Use the 
+spell already registered (another conduit shares it through a link or a contract), 
+or cleanup_spell it and bind it again to change how it is bound. A changed method, 
+constructor, class-level value or base class is a new spell_id: stage it with 
+bind_inactive and notch to it.
+

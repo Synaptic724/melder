@@ -1,7 +1,8 @@
 name: Publish Python Package
 
-# Release events must reach this workflow on the default branch. Earlier PR CI
-# never substitutes for this fresh release-time test/build qualification.
+# Release events must reach this workflow on the default branch. The runtime tests do
+# not run again here: full CI and the release candidate tested this exact tree, and
+# release-gate refuses any other. Hygiene, both asset checks and the build run fresh.
 on:
   release:
     types: [published]
@@ -59,17 +60,8 @@ jobs:
     needs: release-gate
     uses: ./.github/workflows/build-repo-assets.yml
 
-  tests:
-    needs: release-gate
-    permissions:
-      contents: read
-      actions: read
-    uses: ./.github/workflows/test-runtime.yml
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   release-build:
-    needs: [release-gate, hygiene, source-assets, repo-assets, tests]
+    needs: [release-gate, hygiene, source-assets, repo-assets]
     uses: ./.github/workflows/build-distributions.yml
     with:
       artifact-name: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
@@ -77,14 +69,21 @@ jobs:
 
   pypi-publish:
     name: Publish to PyPI
-    needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
+    needs: [release-gate, hygiene, source-assets, repo-assets, release-build]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
       actions: read
+      # Trusted Publishing: this job's OIDC token is its only PyPI credential and signs each uploaded file's PEP 740
+      # attestation. No other job of this workflow holds it.
+      id-token: write
+    outputs:
+      # The attempt that uploaded, for the provenance job: a failed-jobs re-run of that job alone keeps this output
+      # from the upload's attempt, which is the attempt the attestations name.
+      attempt: ${{ github.run_attempt }}
     environment:
-      # Only this job receives the environment-scoped PYPI_API_TOKEN.
+      # PyPI's Trusted Publisher for this workflow names this environment, and the job's OIDC token carries it.
       name: pypi
       url: https://pypi.org/project/melder/
     steps:
@@ -120,13 +119,48 @@ jobs:
         run: python .github/scripts/check_candidate_run.py
       - name: Final tag and prod check immediately before publication
         # This runs AFTER environment approval and fails if the release tag or
-        # prod moved while tests, builds, or a human approval were pending.
+        # prod moved while checks, builds, or a human approval were pending.
         run: python .github/scripts/ci_policy.py release-head
-      - name: Publish freshly verified distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish freshly verified distributions to PyPI by Trusted Publishing, with attestations
+        # Pinned to its commit, as in release-candidate.yml, because this step runs with the job's id-token. With no
+        # user or password it authenticates as this workflow's PyPI Trusted Publisher (python-publish.yml,
+        # environment pypi) and signs every file in dist/ with Sigstore.
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/
-          attestations: false
+          attestations: true
           print-hash: true
+
+  pypi-provenance:
+    name: Release / provenance
+    needs: [release-build, pypi-publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.7"
+      - name: Retrieve this run's verified distributions
+        # The build pypi-publish verified and uploaded, named by release-build's output so a failed-jobs re-run of
+        # this job alone reads the same files; the check verifies them again before it trusts their digests.
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.release-build.outputs.artifact-name }}
+          path: dist/
+      - name: Verify every released file's PyPI provenance
+        # Five layers per file: a provenance exists, its publisher is this workflow in pypi, Sigstore verifies it,
+        # the certificate names this repository, workflow, ref, commit and upload attempt claim by claim, and the
+        # statement names the file's sha256. The pinned verifier first proves itself on a recorded attestation.
+        # The files are already on PyPI: a refusal fails this run before the release is announced.
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+          RELEASE_PUBLISH_ATTEMPT: ${{ needs.pypi-publish.outputs.attempt }}
+        run: python .github/scripts/pypi_provenance.py verify --report reports/provenance.json
+      - name: Retain provenance evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/provenance.json
+          if-no-files-found: error
+          retention-days: 90

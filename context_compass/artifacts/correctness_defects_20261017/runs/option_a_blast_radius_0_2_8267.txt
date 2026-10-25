@@ -1,0 +1,335 @@
+Option (A) blast radius on 0.2.8267 (melder_1, synaptic_python_developer, 2026-10-25)
+STORY-2026-10-17-notch_moves_signature_by_incoming_key_only - the owner's direction of 2026-10-24: the index is
+the representation of the binding signature, validated on the way in.
+
+Trees: scratch copies of src/ and tests/ at 0.2.8267 (their .py files identical to the working tree's, checked by
+diff; tests/unit/github_workflows aside, which no run here reads). Patches: scripts/option_a_experiment/
+option_a_patches.diff, three scratch hunks in spellbook.py, never in the repository:
+  A  bind_inactive and _apply_add_to_index refuse a version whose address (Spell._key) differs from its index's -
+     the index's active member's address, else its selected parked member's.
+  B  _apply_notch refuses an incoming address that the frame claim gives to a spell outside the index.
+Tests: every test file that calls bind_inactive, notch_spell, add_to_spell_index, remove_from_spell_index or a graft
+verb (62 files, 895 tests; the list is the a_test_files list below), run by scripts/option_a_experiment/
+run_exp_batch.sh with the resumable logger exp_log_plugin.py. The totals are counted from the logs,
+with each run's pytest line beside them:
+
+  0.2.8267, GIL off  895 tests: {'passed': 891, 'skipped': 4}   (pytest: 880 passed, 4 xfailed in 102.00s over 61 files; then 11 passed for the 62nd)
+  0.2.8267, GIL on   895 tests: {'passed': 892, 'skipped': 3}   (pytest: 891 passed, 3 xfailed, 1 xpassed, 1 warning in 106.43s (0:01:46))
+  A + B, GIL off     895 tests: {'FAILED': 169, 'passed': 723, 'skipped': 3}   (pytest: 169 failed, 711 passed, 3 xfailed, 1 xpassed in 77.55s over 61 files; then 11 passed for the 62nd)
+  A + B, GIL on      895 tests: {'FAILED': 169, 'passed': 723, 'skipped': 3}   (pytest: 169 failed, 722 passed, 3 xfailed, 1 xpassed, 1 warning in 80.93s (0:01:20))
+  B only, GIL off    895 tests: {'passed': 892, 'skipped': 3}   (pytest: 891 passed, 3 xfailed, 1 xpassed in 95.59s (0:01:35))
+  B only, GIL on     895 tests: {'passed': 892, 'skipped': 3}   (pytest: 891 passed, 3 xfailed, 1 xpassed, 1 warning in 112.71s (0:01:52))
+
+'skipped' counts xfailed tests: the three graft round trips marked xfail strict (the process-wide spell-id
+conflict) and, in some runs, the non-strict race test test_melds_racing_notches_get_a_version_or_the_lost_provider_
+refusal_and_end_on_the_last_version (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout; it passes
+in most runs, so its xfail/xpass varies run to run on every tree).
+
+A + B: 169 tests fail, the same set with the GIL off and on: True.
+By check: {'EXPERIMENT_A bind_inactive': 169}; B refused nothing (B alone fails no test, the GIL off and on).
+
+By file:
+   27  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py
+   12  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py
+   10  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py
+   10  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py
+   10  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py
+   10  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py
+   10  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py
+    8  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py
+    7  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py
+    6  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py
+    5  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py
+    5  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py
+    4  tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py
+    4  tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py
+    4  tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py
+    4  tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py
+    3  tests/component/melder/spellbook/test_spellbook_component_bind_inactive_public_surface.py
+    3  tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py
+    3  tests/integration/melder/aether/test_non_resolvable_graph_replay.py
+    3  tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py
+    2  tests/component/melder/aether/conduit/test_conduit_component_lock_gaps.py
+    2  tests/component/melder/spellbook/test_bind_lifecycle_hooks.py
+    2  tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py
+    2  tests/integration/melder/aether/conduit/test_lineage_remediation_notch_race.py
+    2  tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
+    2  tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py
+    1  tests/component/melder/aether/conduit/test_conduit_component_lock_residuals.py
+    1  tests/component/melder/spellbook/test_spellbook_component_spell_id_integrity.py
+    1  tests/component/melder/spellbook/test_spellbook_component_spell_map_races.py
+    1  tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py
+    1  tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py
+    1  tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+    1  tests/integration/melder/crystallizer/test_bind_hook_recording.py
+    1  tests/integration/melder/crystallizer/test_crystallizer_parked_disposal_integration.py
+    1  tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py
+
+By address (the staged version's address vs its index's; class names lowercased as Spell._key holds them):
+   71  ('_serviceb', 'b') vs ('_servicea', 'a')
+   23  ('serviceb', 'staged') vs ('servicea', 'active')
+   18  ('greeter', 'french') vs ('greeter', 'english')
+    8  ('ordereddisposalservice', '__default__') vs ('restoregamma', '__default__')
+    5  ('restorebeta', '__default__') vs ('restorealpha', '__default__')
+    4  ('pricingv2', '__default__') vs ('pricingv1', '__default__')
+    4  ('_stagedservice', '__default__') vs ('basicservice', '__default__')
+    4  ('make_service_b', 'staged') vs ('make_service_a', 'active')
+    3  ('_memberb', 'b') vs ('_heada', 'a')
+    3  ('parkedcandidateservice', '__default__') vs ('parkedhostservice', '__default__')
+    3  ('_parked', 'parked') vs ('_active', 'active')
+    3  ('recordedpoolnext', '__default__') vs ('recordedpool', '__default__')
+    2  ('hookalternative', '__default__') vs ('hookservice', '__default__')
+    2  ('_racebeta', 'b') vs ('_racealpha', 'a')
+    2  ('greeter', 'greeter_v2') vs ('greeter', 'greeter')
+    2  ('graphimplementationrevision', '__default__') vs ('graphimplementation', '__default__')
+    2  ('_promotedservice', '__default__') vs ('basicservice', '__default__')
+    1  ('integrityotherservice', '__default__') vs ('integritytenantcache', '__default__')
+    1  ('greeter', 'spanish') vs ('greeter', 'greeter')
+    1  ('greeter', 'french') vs ('greeter', 'greeter')
+    1  ('enginealternative', '__default__') vs ('engine', '__default__')
+    1  ('_servicec', 'c') vs ('_servicea', 'a')
+    1  ('graphconsumerrevision', '__default__') vs ('graphconsumer', '__default__')
+    1  ('sessionnext', '__default__') vs ('session', '__default__')
+    1  ('dep2', '__default__') vs ('dep', '__default__')
+    1  ('_parkedservice', '__default__') vs ('basicservice', '__default__')
+    1  ('tenantservicenext', '__default__') vs ('tenantservice', '__default__')
+
+Where the refused bind_inactive was called (pytest --tb=long over the 24 failing crystallizer tests): in test code
+for 16 of them; for the 8 of test_ordered_disposal_replay.py, in the graft merge lane - Crystallizer.graft ->
+GraftRunner._merge_members -> Conduit.bind_inactive with the recorded spellframe and binding name. The restore lane
+(RestoreEngine._bind_one_staged) is met by a record made before (A): runs/probe_mixed_record_under_option_a_0_2_8267.txt.
+
+The 169 failing tests:
+  tests/component/melder/aether/conduit/test_conduit_component_lock_gaps.py::test_contract_inspection_holds_off_a_concurrent_member_stage
+  tests/component/melder/aether/conduit/test_conduit_component_lock_gaps.py::test_notch_emission_holds_off_a_concurrent_link_and_every_borrower_follows_the_new_head
+  tests/component/melder/aether/conduit/test_conduit_component_lock_residuals.py::test_second_cleanup_spell_of_a_parked_member_refuses_while_the_first_runs
+  tests/component/melder/spellbook/test_bind_lifecycle_hooks.py::test_conduit_bind_hook_facade_uses_the_owning_book_registry[inactive]
+  tests/component/melder/spellbook/test_bind_lifecycle_hooks.py::test_inactive_post_observes_parked_member_on_final_index
+  tests/component/melder/spellbook/test_spellbook_component_bind_inactive_public_surface.py::test_component_a_parked_id_blocks_a_duplicate_bind
+  tests/component/melder/spellbook/test_spellbook_component_bind_inactive_public_surface.py::test_component_a_parked_spell_is_not_meldable
+  tests/component/melder/spellbook/test_spellbook_component_bind_inactive_public_surface.py::test_component_bind_inactive_returns_an_id_and_does_not_activate
+  tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py::test_a_raising_release_contracts_disposes_nothing_and_a_retry_completes
+  tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py::test_release_contracts_is_not_called_for_a_refused_disposal
+  tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py::test_release_contracts_runs_between_the_decision_and_the_disposal
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_active_spell_id_returns_its_active_spell
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_after_a_notch_each_spell_id_returns_its_own_spell
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_disposed_parked_spell_returns_none
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_lookup_never_iterates_the_live_active_index_map
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_disposed_mid_lookup_never_makes_it_raise
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_id_returns_the_parked_spell_itself
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_moved_to_another_index_returns_itself
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_parked_spell_split_off_to_a_fresh_index_returns_itself
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_transfer_moves_both_spell_ids_to_the_target_book
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py::test_unknown_and_foreign_spell_ids_return_none
+  tests/component/melder/spellbook/test_spellbook_component_spell_id_integrity.py::test_component_a_parked_spell_still_reserves_its_spell_id
+  tests/component/melder/spellbook/test_spellbook_component_spell_map_races.py::test_get_spell_permissions_answers_from_the_id_maps_without_walking
+  tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_parked_version_staged_under_its_own_key_claims_nothing
+  tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py::test_staging_does_not_release_another_books_binding_signature
+  tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py::test_invalidation_event_after_a_hydrated_conjure_matches_the_cold_world[notch]
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_borrowers_drop_the_version_while_it_is_still_live
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_cleanup_of_a_granted_sole_member_leaves_the_borrower_no_cleaned_copy
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_cleanup_of_a_parked_granted_version_drops_the_grant
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_cleanup_of_a_parked_member_drops_it_from_index_link_borrowers
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_direct_spellbook_cleanup_of_a_parked_member_updates_index_link_borrowers
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_direct_spellbook_cleanup_of_a_sole_member_drops_the_index_link
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_lesser_conduit_cleanup_spell_releases_the_root_contracts
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_notch_to_a_restaged_version_after_its_cleanup_reaches_index_link_borrowers
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_refused_cleanup_of_an_active_member_leaves_borrower_contracts_intact
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py::test_unlink_after_a_parked_cleanup_leaves_no_borrowed_ids
+  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py::test_add_then_remove_member_roundtrip
+  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py::test_add_to_index_keeps_source_creations_untouched_for_active
+  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py::test_cleanup_inactive_member_leaves_index_and_active
+  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py::test_full_lifecycle_stage_add_notch_meld
+  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py::test_lifecycle_notch_back_restores_and_melds_original
+  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py::test_bind_inactive_spell_is_not_meldable_until_notched
+  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py::test_borrower_melds_new_active_after_owner_notch
+  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py::test_index_link_spreads_member_existence_to_borrower
+  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py::test_notched_away_id_is_evicted_from_resolution
+  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py::test_transfer_multi_member_target_melds_active
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_add_member_to_linked_index_propagates_parked_copy
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_link_gives_borrower_active_and_parked_members
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_notch_moves_index_detail_head_on_borrower_contract
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_notch_parks_borrower_old_copy
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_notch_switches_borrower_active_copy
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_remove_member_from_linked_index_drops_borrower_copy
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py::test_two_borrowers_both_follow_a_notch
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_add_to_spell_index_by_spell_id_moves_a_parked_spell_onto_another_index
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book[add_to_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_by_spell_id_of_an_active_spell_is_refused_by_the_book[remove_from_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_an_unknown_spell_id_and_changes_nothing[add_to_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_an_unknown_spell_id_and_changes_nothing[remove_from_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_another_books_spell_id[add_to_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_another_books_spell_id[remove_from_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_both_and_neither[add_to_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_index_move_refuses_both_and_neither[remove_from_spell_index]
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py::test_remove_from_spell_index_by_spell_id_splits_a_parked_spell_into_a_fresh_index
+  tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py::test_transfer_multi_member_carries_inactive_member_to_target
+  tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py::test_transfer_multi_member_repoints_inactive_owner_spellbook
+  tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py::test_transfer_multi_member_source_loses_inactive_member
+  tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py::test_transfer_multi_member_target_owns_active
+  tests/integration/melder/aether/conduit/test_lineage_remediation_notch_race.py::test_notch_during_open_remediation_window_cannot_poison_post_settle_truth
+  tests/integration/melder/aether/conduit/test_lineage_remediation_notch_race.py::test_sequential_notch_control_lane
+  tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered
+  tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py::test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_index_link_borrower_follows_a_notch_made_by_id
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_back_by_id_restores_the_first_version
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_promotes_a_version_staged_after_conjure
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_promotes_a_version_staged_before_conjure
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_returns_the_now_active_version
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_by_id_to_the_active_version_is_a_no_op
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_a_parked_version_of_another_index_and_leaves_both_intact
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_a_version_another_book_owns_and_keeps_the_index_active
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_an_unknown_id_and_keeps_the_index_active
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py::test_notch_refuses_the_active_version_of_another_index_and_keeps_the_index_active
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_add_to_spell_index_leaves_active_meld_unchanged
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_add_to_spell_index_makes_index_multi_member
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_notch_activates_the_incoming_spell
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_notch_back_restores_original_active
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_notch_changes_what_melds
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_notch_deactivates_the_outgoing_spell
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_notch_does_not_reduce_the_index
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_notch_repoints_selected_member
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_remove_from_spell_index_gives_spell_its_own_index
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py::test_remove_from_spell_index_reduces_source_index
+  tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_a_parked_version_is_refused_never_answered_with_the_active_one[False]
+  tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_a_parked_version_is_refused_never_answered_with_the_active_one[True]
+  tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_after_a_notch_the_room_answers_the_version_now_active
+  tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py::test_the_room_answers_the_active_version_by_spell_id_source_id_and_index
+  tests/integration/melder/aether/test_non_resolvable_graph_replay.py::test_checkpoint_replay_preserves_false_and_reemits_it
+  tests/integration/melder/aether/test_non_resolvable_graph_replay.py::test_graft_preserves_active_and_parked_capability
+  tests/integration/melder/aether/test_non_resolvable_graph_replay.py::test_nexus_exposes_definition_reference_and_base_relationships
+  tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py::test_a_notch_dispenses_from_the_new_versions_pool
+  tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py::test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error
+  tests/integration/melder/crystallizer/test_bind_hook_recording.py::test_graft_uses_receiving_book_hooks_for_active_and_staged_members
+  tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py::test_bind_inactive_stages_custody_in_the_inactive_location
+  tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py::test_notch_promotion_moves_custody_both_directions
+  tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py::test_add_to_spell_index_moves_membership_between_snapshots
+  tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py::test_parked_disposal_reshapes_the_surviving_shared_index
+  tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py::test_remove_from_spell_index_snapshots_both_sides
+  tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py::test_staging_and_notch_reshape_the_snapshot
+  tests/integration/melder/crystallizer/test_crystallizer_parked_disposal_integration.py::test_cleanup_spell_on_a_parked_member_evicts_its_custody
+  tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_full_vocabulary_world_restores_identically_on_both_drivers
+  tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_post_notch_selection_restores_without_an_extra_notch
+  tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_round_trip_restores_staged_member_and_selection
+  tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_staged_member_world_restores_identically_on_both_drivers
+  tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py::test_a_graft_rebinds_the_selected_and_parked_versions_with_their_options
+  tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py::test_a_restore_rebinds_both_versions_with_their_options
+  tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py::test_the_crystal_records_both_versions_options
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-False-False]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-False-True]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-True-False]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge-True-True]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-False]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-True]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-False]
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py::test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-True]
+  tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py::test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_a_parked_version_disposed_before_the_teardown_is_not_retired_twice
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_alone_in_its_own_index[False]
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_alone_in_its_own_index[True]
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_on_a_shared_index[False]
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_book_teardown_cleans_a_parked_version_on_a_shared_index[True]
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py::test_spellbook_cleanup_before_conjure_cleans_a_version_parked_before_conjure
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_separated_version_is_registered_under_its_root_until_the_root_is_torn_down
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_separated_version_moved_back_leaves_no_registered_index_behind
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_can_be_granted_by_spell_id[notched_active]
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_can_be_granted_by_spell_id[parked]
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[other_frame-conjured_book]
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[other_frame-unconjured_book]
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[same_frame-conjured_book]
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_in_its_own_index_cannot_be_bound_again_by_another_book[same_frame-unconjured_book]
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_notched_active_in_its_own_index_can_be_transferred_by_spell_id
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_notched_active_in_its_own_index_is_found_by_spell_id
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_a_version_separated_into_its_own_index_is_found_by_spell_id
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py::test_residency_reads_a_separated_version_parked_then_active_after_a_notch
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_managed_version_staged_before_conjure_has_its_pool_from_conjure
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_existing_object_is_not_registered_in_the_store[staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_existing_object_is_not_registered_in_the_store[staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[existing_object-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[existing_object-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[function-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[function-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[managed_spell_quantity-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[managed_spell_quantity-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[many-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[many-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[unique-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[unique-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[unique_per_conduit-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_a_staged_version_melds_after_a_notch[unique_per_conduit-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[existing_object-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[existing_object-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[function-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[function-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[managed_spell_quantity-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[managed_spell_quantity-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[many-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[many-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[unique-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[unique-staged_before_conjure]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[unique_per_conduit-staged_after]
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py::test_before_its_notch_a_staged_version_is_not_meldable_by_id[unique_per_conduit-staged_before_conjure]
+
+The test files (a_test_files):
+  tests/component/melder/aether/conduit/test_conduit_component_lock_gaps.py
+  tests/component/melder/aether/conduit/test_conduit_component_lock_residuals.py
+  tests/component/melder/aether/conduit/test_conduit_component_non_resolvable_admission.py
+  tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py
+  tests/component/melder/spellbook/test_bind_lifecycle_hooks.py
+  tests/component/melder/spellbook/test_existing_instance_protocol_admission.py
+  tests/component/melder/spellbook/test_inherited_disposal_binding.py
+  tests/component/melder/spellbook/test_ordered_disposal_binding.py
+  tests/component/melder/spellbook/test_spellbook_component_bind_inactive_public_surface.py
+  tests/component/melder/spellbook/test_spellbook_component_dispose_spell_releases_contracts_first.py
+  tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py
+  tests/component/melder/spellbook/test_spellbook_component_override_required.py
+  tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py
+  tests/component/melder/spellbook/test_spellbook_component_spell_id_integrity.py
+  tests/component/melder/spellbook/test_spellbook_component_spell_identity.py
+  tests/component/melder/spellbook/test_spellbook_component_spell_map_races.py
+  tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py
+  tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py
+  tests/experimentation/test_bind_lifecycle_discovery_experiment.py
+  tests/integration/melder/aether/conduit/test_cleanup_releases_contracts_integration.py
+  tests/integration/melder/aether/conduit/test_index_lifecycle_and_depth_integration.py
+  tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py
+  tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py
+  tests/integration/melder/aether/conduit/test_index_moves_by_spell_id_integration.py
+  tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py
+  tests/integration/melder/aether/conduit/test_lineage_remediation_notch_race.py
+  tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
+  tests/integration/melder/aether/conduit/test_notch_spell_by_id_integration.py
+  tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py
+  tests/integration/melder/aether/conduit/test_spell_index_meld_and_contract_lifecycle.py
+  tests/integration/melder/aether/conduit/test_spell_index_notch_lifecycle.py
+  tests/integration/melder/aether/conduit/test_spell_index_op_guards.py
+  tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py
+  tests/integration/melder/aether/test_non_resolvable_graph_replay.py
+  tests/integration/melder/conduit/test_conduit_integration_managed_quantity_pool.py
+  tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py
+  tests/integration/melder/conduit/test_conduit_integration_managed_spell_quantity.py
+  tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py
+  tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+  tests/integration/melder/conduit/test_conduit_integration_release_managed_spell.py
+  tests/integration/melder/crystallizer/test_bind_hook_recording.py
+  tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py
+  tests/integration/melder/crystallizer/test_crystallizer_membership_integration.py
+  tests/integration/melder/crystallizer/test_crystallizer_parked_disposal_integration.py
+  tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py
+  tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py
+  tests/integration/melder/crystallizer/test_ordered_disposal_replay.py
+  tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py
+  tests/integration/melder/spellbook/test_book_teardown_retires_parked_versions_integration.py
+  tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_member_with_parked_versions_integration.py
+  tests/integration/melder/spellbook/test_managed_bind_options_integration.py
+  tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py
+  tests/integration/melder/spellbook/test_spellbook_integration_parked_before_conjure.py
+  tests/unit/melder/aether/conduit/test_conduit_index_move_target.py
+  tests/unit/melder/aether/conduit/test_conduit_notch_target.py
+  tests/unit/melder/crystallizer/persistence/test_restore_engine.py
+  tests/unit/melder/mutation_research/test_mutation_research_root.py
+  tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering_managed.py
+  tests/unit/melder/spellbook/test_spell_managed_quantity_stamp.py
+  tests/unit/melder/spellbook/test_spellbook_creation_system_parked_versions.py
+  tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error_preface.py
+  tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py

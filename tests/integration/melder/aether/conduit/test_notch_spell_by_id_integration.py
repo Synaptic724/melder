@@ -95,7 +95,9 @@ def _staged(
         *, before_conjure: bool = False, tag: str = "",
 ) -> Iterator[Tuple[Spellbook, Conduit, str, str, SpellIndex]]:
     """
-    A root whose index holds A (active) and B (parked), B staged before or after conjure.
+    A root whose index holds A (active) and B (parked), B staged before or after conjure under A's binding
+    (spellframe 'service', binding name 'a<tag>'): every version of an index is bound the way its first version
+    was (2026-10-25).
 
     Args:
         before_conjure: Stage B on the Book before `conjure` (True) or on the root after it (False).
@@ -109,19 +111,22 @@ def _staged(
     service_a = version_of(_ServiceA, world=tag) if tag else _ServiceA
     service_b = version_of(_ServiceB, world=tag) if tag else _ServiceB
     book = _make_spellbook()
-    id_a = book.bind(spell=service_a, existence=Existence.unique, permissions="create", binding_name=f"a{tag}")
+    id_a = book.bind(
+        spell=service_a, existence=Existence.unique, permissions="create", spellframe="service",
+        binding_name=f"a{tag}",
+    )
     index = book.find_spell_by_spell_id(id_a).spell_index
     if before_conjure:
         id_b = book.bind_inactive(
             spell=service_b, spell_index=index, existence=Existence.unique, permissions="create",
-            binding_name=f"b{tag}",
+            spellframe="service", binding_name=f"a{tag}",
         )
         root = book.conjure(dynamic=True, name=f"root{tag}")
     else:
         root = book.conjure(dynamic=True, name=f"root{tag}")
         id_b = root.bind_inactive(
             spell=service_b, spell_index=index, existence=Existence.unique, permissions="create",
-            binding_name=f"b{tag}",
+            spellframe="service", binding_name=f"a{tag}",
         )
     try:
         yield book, root, id_a, id_b, index
@@ -199,10 +204,13 @@ def test_notch_refuses_a_parked_version_of_another_index_and_leaves_both_intact(
         - By spell_id and by object, the call raises ValueError; both indexes keep selection, members and melds.
     """
     with _staged() as (book, root, id_a, id_b, index):
-        id_y1 = book.bind(spell=_ServiceY1, existence=Existence.unique, permissions="create", binding_name="y1")
+        id_y1 = book.bind(
+            spell=_ServiceY1, existence=Existence.unique, permissions="create", spellframe="other", binding_name="y1",
+        )
         other = book.find_spell_by_spell_id(id_y1).spell_index
         id_y2 = root.bind_inactive(
-            spell=_ServiceY2, spell_index=other, existence=Existence.unique, permissions="create", binding_name="y2",
+            spell=_ServiceY2, spell_index=other, existence=Existence.unique, permissions="create",
+            spellframe="other", binding_name="y1",
         )
 
         with pytest.raises(ValueError, match="belongs to another SpellIndex"):
@@ -255,14 +263,17 @@ def test_index_link_borrower_follows_a_notch_made_by_id() -> None:
     """A borrower linked to the index melds the version the owner notched in by spell_id."""
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         index = owner_book.find_spell_by_spell_id(id_a).spell_index
         id_b = owner.bind_inactive(
-            spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create", binding_name="b",
+            spell=_ServiceB, spell_index=index, existence=Existence.unique, permissions="create",
+            spellframe="service", binding_name="a",
         )
         with borrower.transaction("link", conduits=[borrower, owner]):
             borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")

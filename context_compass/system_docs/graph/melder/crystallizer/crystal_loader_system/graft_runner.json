@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/graft_runner.py",
- "source_sha256": "d001fe03780b9f6479ce9d006e8f0c69cd17d5a088bcf165460068bf9777e503",
+ "source_sha256": "1d7ba28dccd9322a14ece1389c59e7df16ff15d0dcd10076b84b07450e12c9e7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.graft_runner": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "76515135f1d781a9ddb0cd46de7964126f65d02614fdefc2f9ec48be40b73f96",
+   "span_sha256": "27d722bcb44c281524442ef5946fde3916a3f4163b17c4c51869691c7f236142",
    "role": "Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.",
    "responsibilities": [
     "gates the versioned graft record (RecordVersion MAJOR + graft_kind)",
@@ -55,7 +55,8 @@
     "preserves each member resolution capability through selected, parked and merged graft bindings",
     "hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)",
     "replays a managed member's recorded options (record 4.2.0, SpellCrystal.managed_bind_options) at the selected, parked and merged bind sites (0.2.8242)",
-    "lets receiving-Book policy decide each member's binding, never its spell_id: a live spell_id differs from the recorded one only when the member's code moved since the record (0.2.8257)"
+    "lets receiving-Book policy decide each member's binding, never its spell_id: a live spell_id differs from the recorded one only when the member's code moved since the record (0.2.8257)",
+    "files a merge member recorded under another binding than the merge target's (binding_signature) as the shortfall member_binding_differs_from_merge_target before bind_inactive, naming both bindings in the words the target's refusal uses and the remedy, so nothing of it is registered and the other members still park; a recorded selection refused that way is not adopted (2026-10-25)"
    ],
    "owns_state": [
     "_record",
@@ -69,7 +70,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "76515135f1d781a9ddb0cd46de7964126f65d02614fdefc2f9ec48be40b73f96"
+   "semantics_authored_against": "27d722bcb44c281524442ef5946fde3916a3f4163b17c4c51869691c7f236142"
   }
  },
  "edges_out": [
@@ -132,6 +133,12 @@
    "to": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
    "relation": "delegates_to",
    "why": "member hydration failures retry once after rebuilding absent user modules through the shared retained-text lane."
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
+   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+   "relation": "borrows",
+   "why": "an explicit merge reads the caller's index's binding (binding_signature and its refusal text) and files each member recorded another way as a shortfall before bind_inactive, so the index admits only members bound as its first version was (2026-10-25)."
   }
  ]
 }

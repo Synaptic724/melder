@@ -1,7 +1,9 @@
 """
 Integration test for the parked-lane disposal seam: cleanup_spell on an
 INACTIVE (staged) member evicts its custody from the record while the active
-member's custody survives untouched.
+member's custody survives untouched. Both members are bound under the string category "BasicService" - the address
+a bare bind of BasicService has - because every version of an index is bound the way its first version was
+(2026-10-25).
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -88,6 +90,7 @@ def test_cleanup_spell_on_a_parked_member_evicts_its_custody():
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     conduit = book.conjure(dynamic=True, name="parked-disposal-root")
     active_spell = book._spells_by_id[active_id]
@@ -96,6 +99,7 @@ def test_cleanup_spell_on_a_parked_member_evicts_its_custody():
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     assert crystallizer.get_spell_crystal(staged_id).id == staged_id
     staged_spell = book._inactive_spells[staged_id]

@@ -133,8 +133,8 @@ def _meld_in_lineage(spell_id: str) -> Tuple[Any, Any, List[Any]]:
                 lesser_instances.append(lesser.meld(spell_id=spell_id))
             finally:
                 lesser.cleanup()
-        # Capture root presence before teardown.
-        in_root_store = root._creations.get_creation(spell_id)
+        # Capture root presence before teardown; the store files it under its store key (STORY-2026-10-25-creations_store_slots_by_binding).
+        in_root_store = root._creations.get_creation(spellbook.find_spell_by_spell_id(spell_id).store_key)
         return root_instance, in_root_store, lesser_instances
     finally:
         root.permanent_cleanup()

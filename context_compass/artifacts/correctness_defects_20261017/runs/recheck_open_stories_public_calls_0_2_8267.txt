@@ -1,0 +1,134 @@
+# Recheck of the open stories through public calls on Melder 0.2.8267 (src unchanged since the 23:09 run; HEAD 9f240166f)
+# Python 3.14.7 free-threading build; run at 2026-10-24T23:28:50Z by melder_1; one case per process, S5 across two processes
+# Probes: probes/probe_open_stories_public_calls.py and probes/diag_restore_isolate.py (B: world settled at conjure; C: frame made dynamic first)
+# The artifact probes were re-run at 2026-10-24T23:29:12Z: identical to runs/recheck_open_stories_0_2_8267.txt (ids masked).
+
+===== probe_open_stories_public_calls.py S2_C5 (-X gil=0)
+case S2_C5
+  notch English ('greeter') -> Spanish ('spanish') -> Spanish
+  lender meld at 'spanish' -> Spanish says 'hola'
+  lender meld at 'greeter' (nothing should answer) -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  another Book binds Italian at 'greeter' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'. There is one active spell per signature per frame; use a distinct spellframe or 
+  tear the lender's root down -> None
+  a new Book binds Portuguese at 'greeter' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'. There is one active spell per signature per frame; use a distinct spellframe or 
+[exit 0]
+
+===== probe_open_stories_public_calls.py S2_C7_fresh (-X gil=0)
+case S2_C7_fresh
+  remove French into its own index -> Spell(name=French, binding=greeter, frame=Greeter, SHA256=20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd)
+  notch French active in its own index -> raises SpellbookValidationError: notch_spell refused: 'French' (spell_id 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd) failed its structural check, so the notch did not happen; the index still has no active version.
+  lender meld at 'greeter' -> English says 'hello'
+  lender meld English by spell_id -> English says 'hello'
+  lender meld French by spell_id -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+[exit 0]
+
+===== probe_open_stories_public_calls.py S2_C7_compiled (-X gil=0)
+case S2_C7_compiled
+  notch to French -> French
+  lender meld at 'greeter' -> French says 'bonjour'
+  notch back to English -> English
+  remove French into its own index -> Spell(name=French, binding=greeter, frame=Greeter, SHA256=20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd)
+  notch French active in its own index -> French
+  lender meld at 'greeter' -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+  lender meld English by spell_id -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: English.
+  lender meld French by spell_id -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+[exit 0]
+
+===== probe_open_stories_public_calls.py S5_R2: record, then restore in a new process (-X gil=0)
+case S5_R2_record
+  recorded: English active in its index; French parked alone in its own index: True
+  checkpoint flushed
+[exit 0]
+case S5_R2_restore
+  restore status: complete
+  shortfall: staged_member_anchor_index_not_rebuilt: 01M5R3XT1B8QPP8RYR8M3T460Q
+  English is there and ACTIVE (melds)
+  French is gone (Spell version 36a7f7be8288a021cd7bf2b4f8511357dfa7e22a041fd66d58e39522eae9c10f n)
+[exit 0]
+
+===== probe_open_stories_public_calls.py S5_G2: capture, then graft in a new process (-X gil=0)
+case S5_G2_capture
+  recorded: English active in its index; French parked alone in its own index: True
+  graft record of French's index captured (JSON: ok)
+[exit 0]
+case S5_G2_graft
+  graft status: complete; bound active 1; parked 0
+  French is there and ACTIVE (melds)
+[exit 0]
+
+===== diag_restore_isolate.py B: record, then restore in a new process (-X gil=0)
+recorded: English melds: English
+[exit 0]
+restore: complete {'frame': 1, 'spellbook': 1, 'conduit': 1} []
+[exit 0]
+
+===== diag_restore_isolate.py C: record, then restore in a new process (-X gil=0)
+recorded: English melds: English
+[exit 0]
+restore: complete {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1} []
+[exit 0]
+
+===== probe_open_stories_public_calls.py S2_C5 (-X gil=1)
+case S2_C5
+  notch English ('greeter') -> Spanish ('spanish') -> Spanish
+  lender meld at 'spanish' -> Spanish says 'hola'
+  lender meld at 'greeter' (nothing should answer) -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  another Book binds Italian at 'greeter' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'. There is one active spell per signature per frame; use a distinct spellframe or 
+  tear the lender's root down -> None
+  a new Book binds Portuguese at 'greeter' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'. There is one active spell per signature per frame; use a distinct spellframe or 
+[exit 0]
+
+===== probe_open_stories_public_calls.py S2_C7_fresh (-X gil=1)
+case S2_C7_fresh
+  remove French into its own index -> Spell(name=French, binding=greeter, frame=Greeter, SHA256=20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd)
+  notch French active in its own index -> raises SpellbookValidationError: notch_spell refused: 'French' (spell_id 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd) failed its structural check, so the notch did not happen; the index still has no active version.
+  lender meld at 'greeter' -> English says 'hello'
+  lender meld English by spell_id -> English says 'hello'
+  lender meld French by spell_id -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+[exit 0]
+
+===== probe_open_stories_public_calls.py S2_C7_compiled (-X gil=1)
+case S2_C7_compiled
+  notch to French -> French
+  lender meld at 'greeter' -> French says 'bonjour'
+  notch back to English -> English
+  remove French into its own index -> Spell(name=French, binding=greeter, frame=Greeter, SHA256=20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd)
+  notch French active in its own index -> French
+  lender meld at 'greeter' -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+  lender meld English by spell_id -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: English.
+  lender meld French by spell_id -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+[exit 0]
+
+===== probe_open_stories_public_calls.py S5_R2: record, then restore in a new process (-X gil=1)
+case S5_R2_record
+  recorded: English active in its index; French parked alone in its own index: True
+  checkpoint flushed
+[exit 0]
+case S5_R2_restore
+  restore status: complete
+  shortfall: staged_member_anchor_index_not_rebuilt: 01M5R3Y1D3XTQMB38MW8HNPC6G
+  English is there and ACTIVE (melds)
+  French is gone (Spell version 36a7f7be8288a021cd7bf2b4f8511357dfa7e22a041fd66d58e39522eae9c10f n)
+[exit 0]
+
+===== probe_open_stories_public_calls.py S5_G2: capture, then graft in a new process (-X gil=1)
+case S5_G2_capture
+  recorded: English active in its index; French parked alone in its own index: True
+  graft record of French's index captured (JSON: ok)
+[exit 0]
+case S5_G2_graft
+  graft status: complete; bound active 1; parked 0
+  French is there and ACTIVE (melds)
+[exit 0]
+
+===== diag_restore_isolate.py B: record, then restore in a new process (-X gil=1)
+recorded: English melds: English
+[exit 0]
+restore: complete {'frame': 1, 'spellbook': 1, 'conduit': 1} []
+[exit 0]
+
+===== diag_restore_isolate.py C: record, then restore in a new process (-X gil=1)
+recorded: English melds: English
+[exit 0]
+restore: complete {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1} []
+[exit 0]

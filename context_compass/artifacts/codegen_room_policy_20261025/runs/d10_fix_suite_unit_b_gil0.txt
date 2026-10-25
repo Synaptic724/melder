@@ -1,0 +1,4 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfE tests/unit/melder/spellbook tests/unit/melder/crystallizer tests/unit/melder/mutation_research <the remaining tests/unit/melder top-level files> (cwd: /tmp/m0s2/d10_fix, the D-10 fix; Python 3.14.7t)
+ran_at: 2026-10-25T02:25:43Z
+3665 passed in 17.66s
+exit: 0

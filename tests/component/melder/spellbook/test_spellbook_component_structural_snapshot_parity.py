@@ -111,9 +111,15 @@ class _StructuralRunSpy:
 
 
 def _bind_world(book: Spellbook) -> Dict[str, str]:
-    """Bind Engine (unique), Wheel (many), Car (many) and Radio (unique); return the ids by class name."""
+    """
+    Bind Engine (unique), Wheel (many), Car (many) and Radio (unique); return the ids by class name.
+
+    Engine is bound under the string category 'Engine' - the address a bare bind gives it, so `meld(spell=Engine)`
+    still reaches it - because every version of an index is bound the way its first version was (2026-10-25): the
+    notch event stages EngineAlternative under that binding. The child process binds it the same way.
+    """
     return {
-        "Engine": book.bind(spell=Engine, existence="unique", permissions="create"),
+        "Engine": book.bind(spell=Engine, existence="unique", permissions="create", spellframe="Engine"),
         "Wheel": book.bind(spell=Wheel, existence="many", permissions="create"),
         "Car": book.bind(spell=Car, existence="many", permissions="create"),
         "Radio": book.bind(spell=Radio, existence="unique", permissions="create"),
@@ -173,8 +179,8 @@ def _event_post_conjure_bind(book: Spellbook, conduit: Conduit, ids: Dict[str, s
 
 def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     """
-    Meld Car, stage an alternative Engine into Engine's index, notch it, meld the new member and Car, then notch back
-    to Engine and meld Car again.
+    Meld Car, stage an alternative Engine into Engine's index under Engine's binding (the category 'Engine'), notch
+    it, meld the new member and Car, then notch back to Engine and meld Car again.
 
     Rule 2 (D2, 2026-10-16): a notch marks every spell that depends on the notched one, so Car's next meld rechecks
     its structure against the version now active. A class annotation selects its own type (the kind rule), so
@@ -185,7 +191,9 @@ def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     """
     before = conduit.meld(spell=Car)
     engine_index = book.find_spell_by_spell_id(ids["Engine"]).spell_index
-    staged_id = conduit.bind_inactive(spell=EngineAlternative, spell_index=engine_index, existence="unique")
+    staged_id = conduit.bind_inactive(
+        spell=EngineAlternative, spell_index=engine_index, existence="unique", spellframe="Engine",
+    )
     conduit.notch_spell(spell_index=engine_index, spell_id=staged_id)
     member = conduit.meld(spell_id=staged_id)
     staged_is_active = book.find_spell_by_spell_id(staged_id).spell_id == staged_id
@@ -308,7 +316,7 @@ configuration.with_system_cache_root_path(Path({fragment!r}))
 book = Spellbook(aetheric_frame={frame!r})
 book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
 ids = [
-    book.bind(spell=Engine, existence="unique", permissions="create"),
+    book.bind(spell=Engine, existence="unique", permissions="create", spellframe="Engine"),
     book.bind(spell=Wheel, existence="many", permissions="create"),
     book.bind(spell=Car, existence="many", permissions="create"),
     book.bind(spell=Radio, existence="unique", permissions="create"),

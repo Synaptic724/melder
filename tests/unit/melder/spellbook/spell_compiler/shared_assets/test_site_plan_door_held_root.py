@@ -81,7 +81,6 @@ class RecordingStore:
         self._events: List[Event] = events
         self._creations: Dict[str, Any] = {}
         self._slot_guards: Dict[str, RecordingLock] = {}
-        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> RecordingLock:
         """Return one recording lock per slot, created on first use."""
@@ -97,10 +96,9 @@ class RecordingStore:
         """Record one disposal-bearing many registration (the hot verb emitted plans call)."""
         self._events.append(("register_many", key))
 
-    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
-        """Record one adoption an emitted miss made right after publishing its holder (0.2.8238)."""
-        self._events.append(("adopt_children", holder_key))
-        self.adoptions.append((holder_key, holder, children))
+    def register_slot(self, key: str, item: Any) -> None:
+        """Publish one slotted object without disposal methods, as the plans' former inline store did: no event."""
+        self._creations[key] = item
 
 
 class ClusterFacade:
@@ -144,6 +142,7 @@ def logging_spell(spell_id: str, events: List[Event], existence: Existence,
     return SimpleNamespace(
         spell=construct,
         spell_id=spell_id,
+        store_key=spell_id,  # its own shelf (STORY-2026-10-25-creations_store_slots_by_binding)
         spell_index=SimpleNamespace(selected_spell_id=spell_id),
         spell_name=spell_id,
         is_class_spell=True,
@@ -354,10 +353,11 @@ def test_door_held_disposal_bearing_root_still_registers_through_add_creation() 
     assert world.conduit_store._creations["root"] is result
 
 
-def test_door_held_root_adopts_its_many_child_after_publishing_without_a_guard() -> None:
+def test_door_held_root_registers_its_many_child_in_the_innermost_scope_without_a_guard() -> None:
     """
-    The door-held root's miss takes no guard, and its disposal-bearing many child is registered before the root is
-    built and adopted right after the root is published (slotted_lifetime_ownership, 0.2.8238).
+    The door-held root's miss takes no guard and registers its disposal-bearing many child in the meld's innermost
+    scope - the spellspace store when there is one, else the conduit store - before the root is built; nothing ties
+    the child to the root (the owner's decision, 2026-10-24; from 0.2.8238 to 0.2.8265 the miss adopted it).
     """
     events: List[Event] = []
     store = RecordingStore(events)
@@ -375,18 +375,22 @@ def test_door_held_root_adopts_its_many_child_after_publishing_without_a_guard()
     )
     graph.cleanup()
     assert "with " not in source.split(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(")[0]
+    assert "adopt_children" not in source
     exec(compile(source, "<test>", "exec"), namespace)
     plan = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
 
     result = plan(SimpleNamespace(_conduit_creations=store, _spellspace_creations=None))
 
-    assert events == [
-        ("build", "d"), ("register_many", "d"), ("build", "root"), ("add_creation", "root"),
-        ("adopt_children", "root"),
-    ]
-    built_child = next(value for value in list(result.args) + list(result.kwargs.values()) if value.name == "d")
-    assert store.adoptions == [("root", result, (("d", built_child),))]
+    assert events == [("build", "d"), ("register_many", "d"), ("build", "root"), ("add_creation", "root")]
+    assert store._creations["root"] is result
 
+    conduit_events: List[Event] = []
+    space_events: List[Event] = []
+    conduit_store, space_store = RecordingStore(conduit_events), RecordingStore(space_events)
+    again = plan(SimpleNamespace(_conduit_creations=conduit_store, _spellspace_creations=space_store))
+    assert space_events == [("register_many", "d")], "under a spellspace the child registers in the spellspace"
+    assert conduit_events == [("add_creation", "root")], "the root's store records only the root"
+    assert conduit_store._creations["root"] is again
 
 def test_eligible_routes_are_exactly_the_per_scope_ones() -> None:
     """Only the two per-scope routes, each with its own existence, are door-held; the map is the whole rule."""

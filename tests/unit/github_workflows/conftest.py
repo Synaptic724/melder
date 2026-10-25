@@ -71,3 +71,15 @@ def source_qualification() -> ModuleType:
 def runtime_matrix() -> ModuleType:
     """Provide stable-version discovery with HTTP and filesystem boundaries available to mock."""
     return load_script("python_runtime_matrix")
+
+
+@pytest.fixture
+def provenance() -> ModuleType:
+    """Provide the candidate provenance check with its network, process and environment boundaries to mock."""
+    return load_script("testpypi_provenance")
+
+
+@pytest.fixture
+def release_provenance() -> ModuleType:
+    """Provide the release provenance check with its network, process and environment boundaries to mock."""
+    return load_script("pypi_provenance")

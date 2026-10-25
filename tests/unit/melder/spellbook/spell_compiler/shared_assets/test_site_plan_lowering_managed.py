@@ -46,7 +46,6 @@ class Store:
         self._slot_guards: Dict[str, threading.RLock] = {}
         self._managed_quantities: Dict[str, ManagedSpellQuantity] = {}
         self.registered: List[Tuple[str, Any]] = []
-        self.adoptions: List[Tuple[str, Any, Tuple[Tuple[str, Any], ...]]] = []
 
     def slot_guard(self, spell_id: str) -> threading.RLock:
         """Return one RLock per slot."""
@@ -61,9 +60,9 @@ class Store:
         """Record one disposal-bearing many instance."""
         self.registered.append((key, item))
 
-    def adopt_children(self, holder_key: str, holder: Any, children: Tuple[Tuple[str, Any], ...]) -> None:
-        """Record one adoption an emitted shared miss made."""
-        self.adoptions.append((holder_key, holder, children))
+    def register_slot(self, key: str, item: Any) -> None:
+        """Publish one singleton without disposal methods."""
+        self._creations[key] = item
 
     def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
         """Return the pool held under one spell_id, as `Creations.get_managed_quantity` does."""
@@ -131,6 +130,7 @@ class World:
         spell = SimpleNamespace(
             spell=self._factory(name),
             spell_id=name,
+            store_key=name,  # its own shelf (STORY-2026-10-25-creations_store_slots_by_binding)
             spell_index=SimpleNamespace(selected_spell_id=name),
             spell_name=name,
             binding_name=None,

@@ -1,0 +1,14 @@
+# The owner's run on Windows, pasted in chat at 2026-10-25T09:35Z and transcribed verbatim (trailing spaces trimmed):
+# .venv_new, CPython 3.14 free-threaded (uv), melder editable from the working tree at 0.2.8270; $t as in
+# d10_windows_owner_gil0.txt (the four D-10 test files).
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .\.venv_new\Scripts\python.exe -X gil=1 -m pytest -q -p no:cacheprovider $t
+.............................................................................................................................................................................................xxxx..............................                                                                                                                                  [100%]
+========================================================================================================================================================================== warnings summary ===========================================================================================================================================================================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+219 passed, 4 xfailed, 1 warning in 1.04s

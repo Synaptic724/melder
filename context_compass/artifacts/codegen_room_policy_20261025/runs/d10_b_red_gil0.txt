@@ -1,0 +1,28 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_pathlib_writes_a_file_only_where_the_import_list_admits_pathlib tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_admits_pathlib_only_under_the_permissive_import_list (cwd: /tmp/m0s2/d10_b, a /tmp copy of the working tree: the option-B tests, src not yet changed; Python 3.14.7t)
+ran_at: 2026-10-25T08:08:03Z
+        )
+        configuration.set_codegen_configuration(
+            configuration.codegen_configuration.from_profile(
+                profile_factory(),
+                precision_profile=(
+                    precision_profile_factory() if precision_profile_factory is not None else None
+                ),
+            )
+        )
+        configuration.finalize()
+    
+        compiled_surface = _build_compiler().compile_frame_access_surface(
+            _build_frame_descriptor(),
+            configuration,
+        )
+    
+>       assert ("pathlib" in compiled_surface.allowed_import_module_roots) is pathlib_allowed
+E       AssertionError: assert ('pathlib' in ('base64', 'collections', 'copy', 'csv', 'dataclasses', 'datetime', ...)) is False
+E        +  where ('base64', 'collections', 'copy', 'csv', 'dataclasses', 'datetime', ...) = <melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface object at 0x34007f08480>.allowed_import_module_roots
+
+tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py:362: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_pathlib_writes_a_file_only_where_the_import_list_admits_pathlib[hybrid-None-False-Import root 'pathlib' is not allowed]
+FAILED tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_admits_pathlib_only_under_the_permissive_import_list[hybrid]
+2 failed, 8 passed in 0.67s
+exit: 1

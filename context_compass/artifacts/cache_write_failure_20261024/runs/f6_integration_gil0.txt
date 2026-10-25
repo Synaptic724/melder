@@ -1,0 +1,158 @@
+F6 validation of TASK-2026-10-24-cache_file_write_failure_fails_meld (the cache-save fix), run by melder_0;
+recorded 2026-10-24T20:32:56Z. Tree: /tmp/m0_mq/fix8266 (the working tree's src with the fix, its tests, pyproject.toml and the repository files the tests read). Python 3.14.7 free-threaded build.
+command: python -X gil=0 -m pytest tests/integration -p no:cacheprovider -q --tb=short -rfE
+
+........................................................................ [  3%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 15%]
+........................................................................ [ 18%]
+........................................................................ [ 21%]
+........................................................................ [ 25%]
+........................................................................ [ 28%]
+......xxxxx............................................................. [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 37%]
+........................................................................ [ 40%]
+................................FFFFFFFF................................ [ 43%]
+....................................FF.................X................ [ 46%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+..................................................................xxx... [ 56%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+..........................................................x............. [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 71%]
+........................................................................ [ 75%]
+........................................................................ [ 78%]
+........................................................................ [ 81%]
+........................................................................ [ 84%]
+...XX................................................................... [ 87%]
+........................................................................ [ 90%]
+..............................................ss........................ [ 93%]
+........................................................................ [ 96%]
+.......................................................................  [100%]
+=================================== FAILURES ===================================
+_ test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store _
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:213: in test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store
+    assert holder.child.closes == 0, "purging the holder must not dispose the many child it holds"
+E   AssertionError: purging the holder must not dispose the many child it holds
+E   assert 1 == 0
+E    +  where 1 = <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x546fe0c0910>.closes
+E    +    where <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x546fe0c0910> = <test_conduit_integration_holder_cleanup_leaves_its_many_children.PerConduitHolder object at 0x546fe0cbb90>.child
+_______ test_single_instance_purge_of_a_holder_disposes_only_the_holder ________
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:235: in test_single_instance_purge_of_a_holder_disposes_only_the_holder
+    assert Closable.log == ["PerConduitHolder"], "only the holder's own disposal runs"
+E   AssertionError: only the holder's own disposal runs
+E   assert ['PerConduitHolder', 'Child'] == ['PerConduitHolder']
+E     
+E     Left contains one more item: 'Child'
+E     Use -v to get more diff
+_______ test_purge_of_a_holder_without_disposal_methods_disposes_nothing _______
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:255: in test_purge_of_a_holder_without_disposal_methods_disposes_nothing
+    assert holder.child.closes == 0, "purging the holder must not dispose its many child"
+E   AssertionError: purging the holder must not dispose its many child
+E   assert 1 == 0
+E    +  where 1 = <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x546ff5cd210>.closes
+E    +    where <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x546ff5cd210> = <test_conduit_integration_holder_cleanup_leaves_its_many_children.PlainHolder object at 0x546fe0c0a90>.child
+_______ test_spellspace_holder_purge_leaves_its_child_for_the_space_exit _______
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:275: in test_spellspace_holder_purge_leaves_its_child_for_the_space_exit
+    assert (holder.closes, holder.child.closes) == (1, 0), "only the holder's own disposal runs"
+E   AssertionError: only the holder's own disposal runs
+E   assert (1, 1) == (1, 0)
+E     
+E     At index 1 diff: 1 != 0
+E     Use -v to get more diff
+________ test_owner_purge_of_a_unique_holder_leaves_its_many_child_open ________
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:298: in test_owner_purge_of_a_unique_holder_leaves_its_many_child_open
+    assert (holder.closes, holder.child.closes) == (1, 0), "only the holder's own disposal runs"
+E   AssertionError: only the holder's own disposal runs
+E   assert (1, 1) == (1, 0)
+E     
+E     At index 1 diff: 1 != 0
+E     Use -v to get more diff
+_ test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge _
+  + Exception Group Traceback (most recent call last):
+  |   File "/tmp/m0_mq/fix8266/tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py", line 317, in test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge
+  |     assert root.purge(spell_id=holder_id) == 1, "the holder's purge raises nothing: its own disposal succeeds"
+  |            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  |   File "/tmp/m0_mq/fix8266/src/melder/aether/conduit/conduit.py", line 5286, in purge
+  |     return self._meld.purge(
+  |            ~~~~~~~~~~~~~~~~^
+  |         internal_spell,
+  |         ^^^^^^^^^^^^^^^
+  |     ...<3 lines>...
+  |         purge_all=purge_all,
+  |         ^^^^^^^^^^^^^^^^^^^^
+  |     )
+  |     ^
+  |   File "/tmp/m0_mq/fix8266/src/melder/aether/conduit/meld/conduit_meld.py", line 205, in purge
+  |     return creations.purge(
+  |            ~~~~~~~~~~~~~~~^
+  |         target_spell,
+  |         ^^^^^^^^^^^^^
+  |         purge_all=purge_all,
+  |         ^^^^^^^^^^^^^^^^^^^^
+  |         creation=spell if not purge_all else None,
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     )
+  |     ^
+  |   File "/tmp/m0_mq/fix8266/src/melder/aether/conduit/creations/creations.py", line 1421, in purge
+  |     raise ExceptionGroup("Errors occurred during creations purge", errors)
+  | ExceptionGroup: Errors occurred during creations purge (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/tmp/m0_mq/fix8266/src/melder/aether/conduit/creations/creations.py", line 438, in _attempt_cleanup
+    |     method()
+    |     ~~~~~~^^
+    |   File "/tmp/m0_mq/fix8266/tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py", line 66, in close
+    |     raise RuntimeError("child close failed")
+    | RuntimeError: child close failed
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | RuntimeError: Failed to dispose object <test_conduit_integration_holder_cleanup_leaves_its_many_children.FailingChild object at 0x546fe0c8290> using method 'close': child close failed
+    +------------------------------------
+__ test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded __
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:341: in test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded
+    assert root.purge(spell_id=child_id) == 2, "the bucket holds the holder's child and the free one"
+E   AssertionError: the bucket holds the holder's child and the free one
+E   assert 1 == 2
+E    +  where 1 = purge(spell_id='dc0a8b06708df7d019044d889b1f2d5bee36cd2b81b6fbcad564537c7ffda934')
+E    +    where purge = <Conduit name=holder-children-many-purge id=01M5QSK9W99EFQYGH597FC3G27>.purge
+_ test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it __
+tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py:367: in test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it
+    assert child in _bucket(source, child_id), "the child stays in the store that built it"
+E   AssertionError: the child stays in the store that built it
+E   assert <test_conduit_integration_holder_cleanup_leaves_its_many_children.Child object at 0x546ff5cf790> in []
+E    +  where [] = _bucket(<Conduit name=holder-children-move-source id=01M5QSK9WPT1QWX5YQ12PBKVAV>, 'dc0a8b06708df7d019044d889b1f2d5bee36cd2b81b6fbcad564537c7ffda934')
+_ test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique _
+tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py:136: in test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique
+    assert first.child in _bucket(borrower._creations, child_id), (
+E   AssertionError: the borrowing root built the child and must record it
+E   assert <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x546fe0cb590> in []
+E    +  where <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x546fe0cb590> = <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.ContractedHolder object at 0x546fe0c9d90>.child
+E    +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x547016ae3f0>, 'db4adc5a7d705dd3cb8340394cb847e952f0d48d9d107e10e7bb48b245345b2f')
+E    +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x547016ae3f0> = <Conduit name=many_child_borrower id=01M5QSKBVDVYCXCRD61BCR2Z22>._creations
+__ test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder __
+tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py:183: in test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder
+    assert first.child in _bucket(member._creations, child_id), "the member built the child and must record it"
+E   AssertionError: the member built the child and must record it
+E   assert <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x546ff5ce9d0> in []
+E    +  where <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.Child object at 0x546ff5ce9d0> = <test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.ClusterHolder object at 0x546fe0cba10>.child
+E    +  and   [] = _bucket(<melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x547016ae770>, 'db4adc5a7d705dd3cb8340394cb847e952f0d48d9d107e10e7bb48b245345b2f')
+E    +    where <melder.aether.conduit.creations.conduit_creations.ConduitCreations object at 0x547016ae770> = <Conduit name=many_child_member id=01M5QSKBVR1MGP0EWX8FPGV0KC>._creations
+=========================== short test summary info ============================
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_single_instance_purge_of_a_holder_disposes_only_the_holder
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_purge_of_a_holder_without_disposal_methods_disposes_nothing
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_spellspace_holder_purge_leaves_its_child_for_the_space_exit
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_owner_purge_of_a_unique_holder_leaves_its_many_child_open
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py::test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py::test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder
+10 failed, 2279 passed, 2 skipped, 9 xfailed, 3 xpassed in 101.19s (0:01:41)

@@ -4,17 +4,22 @@ What the codegen room's profiles stop around Melder's core today (core-protectio
 Purpose:
     Agent code reaches the runtime through a codegen room, whose frame's codegen ACL profile decides
     what the code may import and call. The review's protected-core question depends on what those
-    profiles stop today, so this file pins it in two kinds of test:
+    profiles stop today, so this file pins it in three kinds of test:
     - Characterization tests pin what works: no profile names `melder` in a deny list, so an import of
       it is refused only by the imports-off rule (safe) or by an import allowlist that leaves it out
       (hybrid, precision, permissive) and full_access accepts it; and the hybrid profile refuses
       import statements of the roots its deny list names.
-    - Two known gaps are written as the contract their profiles document, under xfail(strict=True):
-      the safe profile documents that it denies writes, yet agent code writes files with the `open`
-      builtin; the hybrid profile denies subprocess, socket and importlib, yet `__import__` loads them,
-      also with the precision overlay. STRICT ON PURPOSE: when a gap is closed its test starts
-      passing, strict turns that into a failure, and whoever closed it must delete the marker. Do not
-      loosen these assertions to make them pass.
+    - File-posture tests pin what each profile does with files: `open` - called or only named - is
+      refused under safe, hybrid and the precision overlay, and under the engine's default posture for a
+      frame the room holds no projection for, and runs under permissive and full_access; `io.open`,
+      `os.open` and pathlib writes follow each profile's import list. `test_safe_profile_refuses_writing_files`
+      was the strict xfail for this gap (D-10) until the safe profile denied `open`.
+    - The dynamic-import gap (D-11) is closed (0.2.8271): wherever a codegen posture enables imports with an
+      allow or deny list - hybrid, the precision overlay and permissive - a `__import__` call or bare
+      reference is refused at validation (the builtin gate names `__import__` on a call, name resolution on a
+      reference), and the room's runtime `__import__` is a wrapper that checks each import's root against the
+      compiled roots. full_access carries no list, so `__import__` stays usable there. Import statements of
+      allowed roots keep working (the wrapper delegates them). These were four strict xfails until the fix.
     Characterization, not protection: the profiles run in the same process as the code they check, so
     they are policy and defence in depth, not a security boundary, and a green run here does not mean
     the core is protected.
@@ -22,7 +27,7 @@ Purpose:
 Runs only on 3.14t (melder package root import chain).
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 
 import pytest
 
@@ -133,22 +138,11 @@ def test_hybrid_refuses_import_statements_of_its_denied_roots(module_name: str) 
     assert "Import root '{0}' is not allowed".format(module_name) in result["validation_issues"][0]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "OPEN: no codegen profile denies the open builtin - the runtime __builtins__ is the full "
-        "builtins dict minus the profile's deny list, and no validator strategy inspects open or "
-        "non-dunder method calls - so agent code in a safe room writes any file the process can "
-        "write, although the safe profile documents that it denies writes. Core-protection review, "
-        "Note 10. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that "
-        "into a failure, and whoever closed it deletes this marker."
-    ),
-)
 def test_safe_profile_refuses_writing_files(tmp_path: Path) -> None:
     """
-    Contract (documented, not yet met): code run in a room under the safe profile cannot write a
-    file - the request is refused and nothing is written.
+    Contract: code run in a room under the safe profile that writes a file with `open` is refused, and
+    nothing is written. This was the strict xfail for defect D-10 (core-protection review, Note 10) until
+    the safe profile denied `open`.
     """
     target = tmp_path / "written_by_codegen.txt"
     conduit, command_system = _codegen_room("safe")
@@ -166,17 +160,6 @@ def test_safe_profile_refuses_writing_files(tmp_path: Path) -> None:
     assert not target.exists()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "OPEN: the import gate reads import statements only, and the compiler denies __import__ only "
-        "when imports are off, so __import__ loads the roots the hybrid profile (and the precision "
-        "overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed "
-        "this test passes, strict turns that into a failure, and whoever closed it deletes this "
-        "marker."
-    ),
-)
 @pytest.mark.parametrize(
     ("precision_profile_name", "module_name"),
     [
@@ -191,8 +174,9 @@ def test_hybrid_refuses_dynamic_imports_of_its_denied_roots(
         module_name: str,
 ) -> None:
     """
-    Contract (documented, not yet met): a root the hybrid profile denies cannot be loaded by a
-    `__import__` call either - the request is refused at validation.
+    Contract (D-11, criterion 1): a root the hybrid profile denies cannot be loaded by a `__import__` call
+    either - the request is refused at validation by the builtin gate, which names `__import__` (A denies the
+    `__import__` name wherever an import list applies), and nothing is loaded.
     """
     conduit, command_system = _codegen_room("hybrid", precision_profile_name)
     try:
@@ -204,3 +188,357 @@ def test_hybrid_refuses_dynamic_imports_of_its_denied_roots(
         conduit.cleanup()
 
     assert result["accepted"] is False
+    assert "Builtin '__import__' is not allowed in this codegen mode." in result["validation_issues"][0]
+
+
+def _execute_in_room(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        code: str,
+        *,
+        frame_name: str = "ops",
+) -> Dict[str, object]:
+    """
+    Execute one request in a fresh codegen room on frame "ops" and clean the room up.
+
+    Args:
+        profile_name: Standard codegen profile of frame "ops".
+        precision_profile_name: Optional precision overlay applied on top of the profile.
+        code: Room code to execute.
+        frame_name: Frame the request names. The room links "ops" only, so any other name runs under the
+            engine's default posture for a frame without a projection.
+
+    Returns:
+        Dict[str, object]: The room's execution payload.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        return command_system.execute_codegen(code, frame_name=frame_name)
+    finally:
+        conduit.cleanup()
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted"),
+    [
+        ("safe", None, False),
+        ("hybrid", None, False),
+        ("hybrid", "precision", False),
+        ("permissive", None, True),
+        ("full_access", None, True),
+    ],
+)
+def test_open_writes_a_file_only_under_permissive_and_full_access(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+) -> None:
+    """
+    Contract (D-10): a call to `open` that writes a file is refused under safe, hybrid and the precision
+    overlay - by the builtin gate, naming `open`, with nothing written - and runs under permissive and
+    full_access, whose file posture is open by design.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "handle = open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(str(target)),
+    )
+
+    assert payload["accepted"] is accepted
+    if accepted:
+        assert target.read_text() == "x"
+    else:
+        assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
+        assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted"),
+    [
+        ("safe", None, False),
+        ("hybrid", None, False),
+        ("hybrid", "precision", False),
+        ("permissive", None, True),
+        ("full_access", None, True),
+    ],
+)
+def test_open_reads_a_file_only_under_permissive_and_full_access(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+) -> None:
+    """
+    Contract (D-10): a call to `open` that reads a file is refused where `open` is denied, naming `open`, and
+    returns the file's text under permissive and full_access.
+    """
+    source = tmp_path / "read_by_codegen.txt"
+    source.write_text("kept")
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "handle = open({0!r})\nresult = handle.read()\nhandle.close()".format(str(source)),
+    )
+
+    assert payload["accepted"] is accepted
+    if accepted:
+        assert payload["result"] == "kept"
+    else:
+        assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name"),
+    [
+        ("safe", None),
+        ("hybrid", None),
+        ("hybrid", "precision"),
+    ],
+)
+def test_a_bare_reference_to_open_is_refused_where_open_is_denied(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+) -> None:
+    """
+    Contract (D-10): where `open` is denied, naming it without calling it (`reader = open`) is refused too - by
+    name resolution, because `open` is no longer an available builtin - so it cannot be called under another name.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        result = command_system.validate_codegen("reader = open\nresult = 1", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is False
+    assert "Name 'open' is not available in the codegen namespace." in result["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
+    [
+        ("safe", None, False, "Import statements are not allowed"),
+        ("hybrid", None, False, "Import root 'io' is not allowed"),
+        ("hybrid", "precision", False, "Import root 'io' is not allowed"),
+        ("permissive", None, True, None),
+        ("full_access", None, True, None),
+    ],
+)
+def test_io_open_writes_a_file_only_where_the_import_list_admits_io(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+        message_fragment: Optional[str],
+) -> None:
+    """
+    Contract (D-10 file posture): `io.open` writes a file only where the import gate admits `io` - permissive
+    and full_access; safe refuses every import and hybrid and the precision overlay leave `io` off their lists.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "import io\nhandle = io.open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(
+            str(target)
+        ),
+    )
+
+    assert payload["accepted"] is accepted
+    assert target.exists() is accepted
+    if message_fragment is not None:
+        assert message_fragment in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
+    [
+        ("safe", None, False, "Import statements are not allowed"),
+        ("hybrid", None, False, "Import root 'os' is not allowed"),
+        ("hybrid", "precision", False, "Import root 'os' is not allowed"),
+        ("permissive", None, True, None),
+        ("full_access", None, True, None),
+    ],
+)
+def test_os_open_writes_a_file_only_where_the_import_list_admits_os(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+        message_fragment: Optional[str],
+) -> None:
+    """
+    Contract (D-10 file posture): `os.open` writes a file only where the import gate admits `os` - permissive
+    and full_access; safe refuses every import and hybrid and the precision overlay leave `os` off their lists.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        (
+            "import os\n"
+            "descriptor = os.open({0!r}, os.O_WRONLY | os.O_CREAT, 0o600)\n"
+            "os.write(descriptor, b'x')\n"
+            "os.close(descriptor)\n"
+            "result = 1"
+        ).format(str(target)),
+    )
+
+    assert payload["accepted"] is accepted
+    assert target.exists() is accepted
+    if message_fragment is not None:
+        assert message_fragment in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
+    [
+        ("safe", None, False, "Import statements are not allowed"),
+        ("hybrid", None, False, "Import root 'pathlib' is not allowed"),
+        ("hybrid", "precision", False, "Import root 'pathlib' is not allowed"),
+        ("permissive", None, True, None),
+        ("full_access", None, True, None),
+    ],
+)
+def test_pathlib_writes_a_file_only_where_the_import_list_admits_pathlib(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+        message_fragment: Optional[str],
+) -> None:
+    """
+    Contract (D-10 file posture, the owner's option B): a pathlib write runs only where the import gate admits
+    `pathlib` - permissive and full_access; safe refuses every import, and hybrid and the precision overlay leave
+    `pathlib` off their lists, so hybrid code cannot write files through `pathlib.Path` either.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "import pathlib\npathlib.Path({0!r}).write_text('x')\nresult = 1".format(str(target)),
+    )
+
+    assert payload["accepted"] is accepted
+    assert target.exists() is accepted
+    if message_fragment is not None:
+        assert message_fragment in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize("profile_name", ["safe", "full_access"])
+def test_a_request_naming_a_frame_without_a_projection_cannot_open_files(
+        tmp_path: Path,
+        profile_name: str,
+) -> None:
+    """
+    Contract (D-10): a request naming a frame the room holds no projection for runs under the engine's default
+    posture, which denies what safe denies - `open` included - whatever profile the room's linked frame carries.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        None,
+        "handle = open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(str(target)),
+        frame_name="frame_without_projection",
+    )
+
+    assert payload["accepted"] is False
+    assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
+    assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted"),
+    [
+        ("hybrid", None, False),
+        ("hybrid", "precision", False),
+        ("permissive", None, False),
+        ("full_access", None, True),
+    ],
+)
+def test_dynamic_import_of_melder_is_refused_unless_full_access(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+) -> None:
+    """
+    Contract (D-11, criterion 2): `__import__('melder')` is refused under every posture that carries an import
+    list - hybrid, the precision overlay and permissive - because A denies the `__import__` name there, and is
+    accepted under full_access, which carries no list. This is validation only, so nothing is imported.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        result = command_system.validate_codegen(
+            "loaded = __import__('melder')\nresult = 1",
+            frame_name="ops",
+        )
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is accepted
+    if not accepted:
+        assert "Builtin '__import__' is not allowed in this codegen mode." in result["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name"),
+    [
+        ("hybrid", None),
+        ("hybrid", "precision"),
+        ("permissive", None),
+    ],
+)
+def test_a_bare_reference_to_dunder_import_is_refused_where_an_import_list_applies(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+) -> None:
+    """
+    Contract (D-11, A): where an import list applies, naming `__import__` without calling it (`imp = __import__`)
+    is refused by name resolution, so the import callable cannot be reached under another name.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        result = command_system.validate_codegen("imp = __import__\nresult = 1", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is False
+    assert "Name '__import__' is not available in the codegen namespace." in result["validation_issues"][0]
+
+
+def test_dynamic_import_of_an_allowed_root_is_refused_under_hybrid() -> None:
+    """
+    Contract (D-11, A): `__import__` is refused under hybrid even for an allowed root (json), because A denies the
+    name wherever an import list applies. Allowed roots are reached through import statements, not `__import__`.
+    """
+    conduit, command_system = _codegen_room("hybrid")
+    try:
+        result = command_system.validate_codegen("mod = __import__('json')\nresult = 1", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is False
+    assert "Builtin '__import__' is not allowed in this codegen mode." in result["validation_issues"][0]
+
+
+def test_dynamic_import_of_melder_runs_under_full_access() -> None:
+    """
+    Contract (D-11, criterion 2): under full_access, which carries no import list, `__import__('json')` runs and
+    returns the module - full_access installs no import wrapper and denies no name.
+    """
+    payload = _execute_in_room("full_access", None, "mod = __import__('json')\nresult = mod.dumps({'a': 1})")
+
+    assert payload["accepted"] is True
+    assert payload["result"] == '{"a": 1}'
+
+
+def test_an_allowed_import_statement_executes_under_hybrid() -> None:
+    """
+    Contract (D-11, criterion 3): an import statement of an allowed root (json under hybrid) still executes - the
+    room's runtime `__import__` wrapper delegates allowed roots to the real import - and the module is usable.
+    """
+    payload = _execute_in_room("hybrid", None, "import json\nresult = json.dumps({'a': 1})")
+
+    assert payload["accepted"] is True
+    assert payload["result"] == '{"a": 1}'

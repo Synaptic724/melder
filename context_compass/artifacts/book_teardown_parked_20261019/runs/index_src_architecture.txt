@@ -1,8 +1,0 @@
-WROTE: src_architecture_index.md
-  62 sections over 5457 document lines
-  index 92 lines (1% of document)
-  sectioned by: headings (level <= 3)
-  deepest level indexed: 3
-  largest section: 1253 lines (Operational Invariants)
-  all 62 ranges validated against their own headings
-  the document was NOT modified: context_compass/system_docs/src_architecture.md

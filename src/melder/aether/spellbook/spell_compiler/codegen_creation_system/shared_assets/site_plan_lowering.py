@@ -882,6 +882,14 @@ class SitePlanEmission(Cleanable):
           nothing is stored per step and misses take no dict parameter, so a
           warm creation whose shared sites all hit builds no dict at all.
           Direct-mode plans are unchanged.
+        - Store keys (STORY-2026-10-25-creations_store_slots_by_binding): a
+          site's `sid{i}` constant is its Spell's store key
+          (`<spell_id>:<binding_hash>`), so a plan reads, guards and publishes
+          its own binding's slot and never another binding's of the same
+          spell_id; a slotted site without disposal methods publishes through
+          `c{i}.register_slot(sid{i}, v{i})`, which records the key's first
+          filing on its spell_id's shelf. A leasing managed site's `sid{i}`
+          stays the spell_id: managed pools are per spell_id.
         - Owner-store constants (S9, 2026-10-03): a `unique` site whose provider
           Spell is owned by an automatic conduit and has an owner store binds
           `c{i}` to that store in the namespace and emits no alias line, so the
@@ -898,30 +906,26 @@ class SitePlanEmission(Cleanable):
           common to all its consumers; a shared site with a winning override is
           pinned to top level so its P2 refusal and build are exactly today's.
           Within a context steps keep the family's providers-first order.
-        - Child registration (many_child_follows_holder, 2026-10-14): a
-          disposal-bearing many step registers in the store that owns its
-          context. At the top level that is the meld's innermost scope
-          (`many_store`: the spellspace store, else the conduit store), where a
-          many root registers too. Inside `_miss{i}` it is `c{i}`, the store
-          shared site i publishes to - the spell owner's for `unique`, the
-          conduit's for `unique_per_conduit`, the spellspace's for
-          `unique_per_spell_space`, the lineage root's, the cluster's team
-          store (0.2.8237) - so a holder's `many` children belong to whatever
-          owns the holder and are disposed with that store, never by a narrower
-          scope that happened to meld the holder first. Until 0.2.8235 a miss
-          registered them in the innermost scope, whose end disposed a child
-          its holder still used.
-        - Child adoption (slotted_lifetime_ownership, 0.2.8238): right after a
-          miss publishes its site, still under the site's build lock, it calls
-          `c{i}.adopt_children(sid{i}, v{i}, ((sidN, vN), ...))` for exactly
-          the children it registered, which moves them from their spells'
-          `many` buckets into the holder's disposal record. Purge, an ownership
-          transfer's move and disposal of the holder then take them with it. A
-          lost cold race, a pinned-override refusal or a raising holder
-          constructor never reaches the call: those children stay in their
-          bucket and are disposed with the store. Only misses with
-          disposal-bearing children gain the line; every `_site_plan_executor`
-          body is unchanged.
+        - Child registration (the owner's decision, 2026-10-24): every
+          disposal-bearing many step registers through `many_store`, the meld's
+          innermost scope (the spellspace store, else the conduit store), where
+          a many root registers too - at the top level and inside a shared
+          site's `_miss{i}` alike. A function that registers one emits the store
+          selection itself (`_many_store_prologue`): the plan at its top, a miss
+          after its unresolved-input check. A `many` belongs to the scope that
+          built it: nothing records it with the holder it was passed to, so
+          cleaning up a holder - its purge or its store's end - runs only the
+          holder's own disposal methods, and the scope that built a child
+          disposes it when that scope ends, even while the holder lives on; what
+          the holder does with the child is its own dispose rule's business (the
+          owner: "it should behave like autofac not mysteriously cleanup
+          transient objects"). A lost cold race's children are recorded in the
+          loser's innermost scope like any `many`. From 0.2.8235 to 0.2.8265 a
+          miss registered its children in `c{i}`, the store its holder publishes
+          to, and from 0.2.8238 moved them into the holder's disposal record
+          after publishing it; both are removed, and a miss registers its
+          children as it did through 0.2.8234. Every `_site_plan_executor` body
+          is unchanged by either change.
         - Normal mode (S2b-2, 2026-09-26) drops `ov` from the plan and from
           every miss signature and call; nothing else changes.
         - Unresolved inputs (S4a, 2026-09-26): a context (the plan top, or a
@@ -1545,15 +1549,15 @@ class SitePlanEmission(Cleanable):
         Emit the steps placed in one context (top level or one miss body) into `lines`.
 
         Contract:
-            A disposal-bearing many step registers in the store that owns the
-            context (see "Child registration" in the class contract): the
-            top level (`context` None) registers through `many_store`, which the
-            plan prologue points at the meld's innermost scope; shared site i's
-            miss registers through `c{i}`, the store that site publishes to.
-            Inside leasing managed site i's miss it is appended to `kids{i}`
-            instead, to be adopted with the object (managed_spell_quantity S5).
-            A leasing site is emitted by its consumer's lease group, not where
-            it is placed; only a leasing root leases here.
+            A disposal-bearing many step registers through `many_store`, the
+            meld's innermost scope, in whatever context it is placed (see "Child
+            registration" in the class contract): the caller emits the store
+            selection when this returns True - the plan at its top, a shared
+            site's miss after its unresolved-input check. Inside leasing managed
+            site i's miss it is appended to `kids{i}` instead, to be adopted with
+            the object (managed_spell_quantity S5), so a leasing context never
+            reads `many_store`. A leasing site is emitted by its consumer's lease
+            group, not where it is placed; only a leasing root leases here.
 
         Args:
             context: None for the plan's top level, else the shared or leasing
@@ -1562,11 +1566,11 @@ class SitePlanEmission(Cleanable):
             lines: Target line list, appended in place.
 
         Returns:
-            bool: True when a disposal-bearing many step at the top level reads
-            `many_store` (the caller then emits the prologue); always False
-            for a miss, whose children use its `c{i}` parameter or `kids{i}`.
+            bool: True when a disposal-bearing many step placed in this context
+            registers through `many_store` (the caller then emits the store
+            selection ahead of these lines); always False for a leasing miss,
+            whose children go to `kids{i}`.
         """
-        store = "many_store" if context is None else f"c{context}"
         kids_name = self._kids_name(context) if context is not None and self._leasing[context] else None
         uses_many_store = False
         for index in self._children.get(context, []):
@@ -1576,7 +1580,7 @@ class SitePlanEmission(Cleanable):
             elif self._leasing[index]:
                 if index == self._root_index:
                     self._emit_root_lease(index, indent, lines)
-            elif self._emit_many(index, step, indent, lines, store, kids_name) and context is None:
+            elif self._emit_many(index, step, indent, lines, kids_name):
                 uses_many_store = True
         return uses_many_store
 
@@ -1586,35 +1590,32 @@ class SitePlanEmission(Cleanable):
             step: SitePlanStep,
             indent: str,
             lines: List[str],
-            store: str,
             kids_name: Optional[str] = None,
     ) -> bool:
         """
-        Emit one many (or fresh managed) step: construction, then its disposal registration in `store`.
+        Emit one many (or fresh managed) step: construction, then its registration in the innermost scope.
 
         Contract:
             A step without disposal methods is constructed and not recorded
             anywhere. A disposal-bearing step is recorded through
-            `<store>.register_many(sidN, vN, dmN)` right after construction,
-            before any build lock of the context is taken - or, inside a leasing
-            managed miss, appended as `(vN, dmN)` to `kids_name`. A fresh
-            managed step (a winning key on its own parameters) is recorded
-            nowhere: it is the caller's object. The construction runs inside
-            the step's lease group when it reads leasing managed sites
-            (managed_spell_quantity S5).
+            `many_store.register_many(sidN, vN, dmN)`, `sidN` its store key -
+            the meld's innermost scope, in whatever context the step is placed - right after
+            construction, before any build lock of the context is taken; or,
+            inside a leasing managed miss, appended as `(vN, dmN)` to
+            `kids_name`. A fresh managed step (a winning key on its own
+            parameters) is recorded nowhere: it is the caller's object. The
+            construction runs inside the step's lease group when it reads
+            leasing managed sites (managed_spell_quantity S5).
 
         Args:
             index: Kept step index.
             step: The step.
             indent: Indentation of the emitted lines.
             lines: Target line list, appended in place.
-            store: The store expression the registration targets - `many_store`
-                (the meld's innermost scope) at the top level, `c{i}` inside
-                shared site i's miss (the store the holder belongs to).
             kids_name: `kids{i}` inside leasing managed site i's miss, else None.
 
         Returns:
-            bool: True when the step registers in `store`.
+            bool: True when the step registers through `many_store`.
         """
         self._emit_leased_region(index, indent, lines, self._construct_region(index, step))
         if self._fresh[index] or not step.spell.has_disposal_methods:
@@ -1623,11 +1624,12 @@ class SitePlanEmission(Cleanable):
             kids_disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
             lines.append(f"{indent}{kids_name}.append((v{index}, {kids_disposal_name}))")
             return False
-        sid_name = self._bind(f"sid{index}", step.spell.spell_id)
+        # The store key: this binding's slot (STORY-2026-10-25-creations_store_slots_by_binding).
+        sid_name = self._bind(f"sid{index}", step.spell.store_key)
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
         # `register_many` (2026-10-01): the positional hot verb; the key's
         # disposal list is recorded once by the store, not carried per entry.
-        lines.append(f"{indent}{store}.register_many({sid_name}, v{index}, {disposal_name})")
+        lines.append(f"{indent}many_store.register_many({sid_name}, v{index}, {disposal_name})")
         return True
 
     @staticmethod
@@ -1663,7 +1665,8 @@ class SitePlanEmission(Cleanable):
         """
         spell_name = f"spells[{index}]"
         store = f"c{index}"
-        sid_name = self._bind(f"sid{index}", step.spell.spell_id)
+        # The store key: this binding's slot (STORY-2026-10-25-creations_store_slots_by_binding).
+        sid_name = self._bind(f"sid{index}", step.spell.store_key)
         if self._owner_store_constant(step):
             # S9: the owner store of a spell owned by an automatic conduit cannot
             # move after conjure, so the plan reads it as a global bound here
@@ -1696,16 +1699,14 @@ class SitePlanEmission(Cleanable):
             The calling door holds this same slot guard for the whole call (see
             the class contract), so nothing else changes: the recheck still
             follows the children, and publication is the same statement.
-            Children (many_child_follows_holder, 2026-10-14): the disposal-bearing
-            many steps placed in the miss register in `c{index}`, the store this
-            site publishes to, so they live and die with the holder's owner; the
-            miss therefore needs no innermost-scope prologue. A losing thread in
-            a cold race has registered its children there too, and they stay
-            until that store is disposed.
-            Adoption (0.2.8238): after publication, inside the guard and the
-            miss branch, `c{index}.adopt_children(...)` hands exactly those
-            registered children to the holder's disposal record (see the class
-            contract); a miss without disposal-bearing children emits no call.
+            Children (the owner's decision, 2026-10-24): the disposal-bearing
+            many steps placed in the miss register through `many_store`, the
+            meld's innermost scope, as at the plan top, so the miss emits the
+            store selection after its unresolved-input check and before its
+            children. They belong to the scope that built them, never to the
+            holder (see "Child registration" in the class contract): nothing
+            follows the publication, and a losing thread in a cold race leaves
+            its children recorded in its own innermost scope.
             Leases (managed_spell_quantity S5): when this site reads leasing
             managed sites they are leased after its children and before the
             guard, and the guard block runs inside the lease group's `try`. It
@@ -1718,12 +1719,12 @@ class SitePlanEmission(Cleanable):
         store = f"c{index}"
         supplied = self._supplied_names(step)
         children: List[str] = []
-        self._emit_context(index, "    ", children)
+        uses_many_store = self._emit_context(index, "    ", children)
         guarded = not (index == self._root_index and self._root_guard_held_by_door)
         leases = self._leases_by_consumer.get(index, ())
 
         def guard_region(region_indent: str, target: List[str]) -> None:
-            # Guard, recheck (P2 when pinned), construction, publication, adoption.
+            # Guard, recheck (P2 when pinned), construction, publication.
             body_indent = region_indent + "    " if guarded else region_indent
             inner_indent = body_indent + "    "
             inner: List[str] = []
@@ -1735,17 +1736,8 @@ class SitePlanEmission(Cleanable):
                     f"has_disposal_methods=True, disposal_methods={disposal_name})"
                 )
             else:
-                inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
-            adopted = [
-                child for child in self._children.get(index, [])
-                if self._is_plain_many(child) and self._steps[child].spell.has_disposal_methods
-            ]
-            if adopted:
-                # The children `_emit_many` registered in this store move into the
-                # holder's disposal record once it is published (0.2.8238).
-                pairs = ", ".join(f"(sid{child}, v{child})" for child in adopted)
-                trailing = "," if len(adopted) == 1 else ""
-                inner.append(f"{inner_indent}{store}.adopt_children({sid_name}, v{index}, ({pairs}{trailing}))")
+                # The store records the key's first filing on its spell_id's shelf.
+                inner.append(f"{inner_indent}{store}.register_slot({sid_name}, v{index})")
             if leases:
                 # Return from inside: falling out of the block means another meld
                 # published this site first (a lost cold race).
@@ -1762,6 +1754,8 @@ class SitePlanEmission(Cleanable):
                 target.append(f"{body_indent}return v{index}")
 
         body: List[str] = self._unresolved_check_lines(index, "    ")
+        if uses_many_store:
+            body.extend(self._many_store_prologue("    "))
         body.extend(children)
         if self._emit_leased_region(index, "    ", body, guard_region):
             body.append(f"    _return_unused_leases({self._lease_pairs(leases)})")
@@ -1970,12 +1964,13 @@ class SitePlanEmission(Cleanable):
     @staticmethod
     def _many_store_prologue(indent: str) -> List[str]:
         """
-        Return the innermost-scope store selection for the plan's top-level disposal-bearing many steps.
+        Return the innermost-scope store selection for disposal-bearing many steps.
 
         Contract:
-            Emitted once at the top of the plan body when a top-level many step
-            registers. A miss never emits it: its children register in its own
-            `c{i}` (see `_emit_context`).
+            Emitted once in each function that registers a disposal-bearing many
+            step: at the top of the plan body, and in a shared site's miss after
+            its unresolved-input check (see `_emit_context`). A leasing managed
+            miss never emits it: its children go to `kids{i}`.
         """
         return [
             f"{indent}many_store = meld._spellspace_creations",

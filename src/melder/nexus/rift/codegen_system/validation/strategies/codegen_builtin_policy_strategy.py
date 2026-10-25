@@ -109,6 +109,9 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
                     "Namespace configuration is missing for validation.",
                 )
             denied_builtin_names = set(namespace_configuration.denied_builtin_names)
+            denied_builtin_names.update(
+                namespace_configuration.static_only_denied_builtin_names
+            )
             for node in ast.walk(syntax_tree):
                 if not isinstance(node, ast.Call):
                     continue

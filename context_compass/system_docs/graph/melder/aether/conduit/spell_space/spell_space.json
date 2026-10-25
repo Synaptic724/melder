@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "d8e56bea1485d8cc383a3c0e2aee9580344cac7578d8ebe21f6a5baef44b1a6e",
+ "source_sha256": "9e3c23f3d44f6474422d77f3c44e6063372e86a2bed723fb26f34c1da8cbd98b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {
@@ -46,13 +46,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "211fc63213bd4c7625faf1170819747e4164e032bc45598785d9f5a9836d2b77",
+   "span_sha256": "1b3473fa436190983ddd96a5bd10110e80a78b859944a22373c5c70437e77eb5",
    "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
    "responsibilities": [
     "is one leased spellspace scope on a conduit, pushed on the calling thread's stack when managed",
     "refuses meld and purge while released to its pool (the _released lease flag); a destroyed space raises the cleaned RuntimeError",
     "clears spellspace-scoped instances on managed exit or cleanup, finishing its pool return or destroy when a disposal method fails and then raising the store's group",
-    "exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door",
+    "exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door; a spell_id reaches a parked version or a borrowed copy too (0.2.8269)",
     "restores temporary Meld maps after creation disposal and before manual or managed pool return",
     "explicitly cleans its owned Meld runtime on permanent teardown to release callback references",
     "leaves its thread stack without error when released or destroyed inside its own managed block",
@@ -72,7 +72,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "68fc2713d2365253986e2fa1e6818b2642f3819eeb01ffd8e42a3dbf164f7cdc"
+   "semantics_authored_against": "1b3473fa436190983ddd96a5bd10110e80a78b859944a22373c5c70437e77eb5"
   }
  },
  "edges_out": [

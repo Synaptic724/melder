@@ -204,6 +204,9 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
     )
     root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
+    # The store key, read before the upgrade leaves the definition behind (STORY-2026-10-25-creations_store_slots_by_binding).
+    unique_key = spellbook.find_spell_by_spell_id(unique_id).store_key
+    many_key = spellbook.find_spell_by_spell_id(many_id).store_key
     try:
         unique_instance = lesser.meld(spell_id=unique_id)
         many_instance = lesser.meld(spell_id=many_id)
@@ -211,12 +214,12 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
         lesser.upgrade_to_normal(name="upgraded")
 
         assert isinstance(lesser._creations, Creations)
-        assert lesser._creations._creations[unique_id] is unique_instance
+        assert lesser._creations._creations[unique_key] is unique_instance
         with pytest.raises(KeyError):
             lesser.meld(spell_id=unique_id)
         with pytest.raises(KeyError):
             lesser.meld(spell_id=many_id)
-        bucket = lesser._creations._disposable_creations.get(many_id)
+        bucket = lesser._creations._disposable_creations.get(many_key)
         assert bucket is not None
         values = list(bucket.entries)
         assert values == [many_instance]

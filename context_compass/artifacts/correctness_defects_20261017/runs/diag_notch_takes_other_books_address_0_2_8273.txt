@@ -1,0 +1,19 @@
+# diag_notch_takes_other_books_address.py on 0.2.8273 (the device tree), -X gil=0: the staging under another binding is refused at the way in, so the cross-Book notch cannot be set up; melder_1 at the fix, 2026-10-25T12:24:13Z
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/diag_notch_takes_other_books_address.py", line 56, in <module>
+    french_id = lender.bind_inactive(spell=French, spell_index=index, spellframe=Greeter, binding_name="spanish",
+                                     existence="many", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG6C2GJATSY9DRTJWM69A7 keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'greeter' - and 'French' (spell_id 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd) is bound with the Protocol spellframe Greeter and binding_name 'spanish'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.

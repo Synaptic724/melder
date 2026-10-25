@@ -4,7 +4,7 @@ Read this folder before you change anything under `.github/`, change `project.re
 dependencies in `pyproject.toml`, add a Python release, a CI job or a benchmark, or diagnose a failed run. It says
 what every CI file is for, how the pieces connect, how to extend them and how to check a change before handing it
 off. Branch and release policy (which pull request may target which branch, cutting a release, the TestPyPI and
-PyPI credentials) lives in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md); this folder links to it instead of
+PyPI Trusted Publishers) lives in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md); this folder links to it instead of
 repeating it.
 
 | Read | When |
@@ -34,11 +34,13 @@ pull request into preprod  -->  speed-tests.yml, beside ci.yml; nothing waits fo
   real-world-gauntlet, persistent-runtime-gauntlet, shallow-all-thread-scaling     when route says so
 
 push to release_candidate, or a manual run there  -->  release-candidate.yml
-  authorize -> source-qualification -> build -> publish (TestPyPI)
-  -> install (every test-manifest release on Linux, Windows and macOS) -> package-ready
+  authorize -> source-qualification -> build -> publish (TestPyPI, by Trusted Publishing, with attestations)
+  -> provenance (every file's attestation verified) -> install (every test-manifest release on Linux,
+  Windows and macOS) -> package-ready
 
 published release, or a manual run on prod  -->  python-publish.yml
-  release-gate -> hygiene, source-assets, repo-assets, tests -> release-build -> pypi-publish
+  release-gate -> hygiene, source-assets, repo-assets -> release-build -> pypi-publish (PyPI, by Trusted
+  Publishing, with attestations) -> pypi-provenance (every released file's attestation verified)
 ```
 
 Workflows only orchestrate. The decisions (routes, required results, Python matrices, installs, package checks)
@@ -54,7 +56,9 @@ Python releases CI may use are data: one manifest per release in `.github/python
    only reports, like the speed tests, gets its own workflow and never runs in `ci.yml`: later promotions reuse a
    CI run only when the whole run finished green.
 3. Logic goes in a script with a test, not in YAML. Scripts stay standard-library only: CI runs them before
-   anything is installed.
+   anything is installed, and a contract test enforces it. The one tool that needs packages, the provenance
+   verifier, lives in `.github/provenance/` and runs only in its own hash-pinned environment
+   ([scripts.md](scripts.md)).
 4. Check every CI change locally ([validating.md](validating.md)). Hosted runs belong to the owner: report them as
    "Not run" until you have seen their result.
 5. Keep this folder current in the change that changes CI. A contract test fails when a workflow, script or

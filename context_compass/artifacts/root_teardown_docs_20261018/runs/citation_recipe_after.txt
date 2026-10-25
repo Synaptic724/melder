@@ -1,3 +1,0 @@
-MISSING src_components.md 11833 spellbook.py:7233-7244
-MISSING src_components.md 11834 transfer_of_ownership.py:953
-done

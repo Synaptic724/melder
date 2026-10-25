@@ -1,6 +1,0 @@
-tree | unit_arch | rc=0 | 18 passed in 0.24s
-tree | unit_llm | rc=0 | 28 passed in 0.26s
-tree | unit_build | rc=0 | 116 passed in 76.48s (0:01:16)
-tree | unit_gh | rc=0 | 491 passed in 6.01s
-tree | unit_top | rc=0 | 145 passed in 73.96s (0:01:13)
-tree | new+updated tests | rc=0 | 159 passed in 6.18s
