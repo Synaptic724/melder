@@ -2,13 +2,13 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-25-codegen_room_policy_defects
-- Status: blocked
+- Status: in_progress
 - Owner: Mark
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-25T00:16:54Z
-- Updated: 2026-10-25T01:29:39Z
+- Updated: 2026-10-25T03:00:26Z
 - Target Window: set by the owner once the three decision requests are answered
 - Related Program/Initiative: the core-protection review (TASK-2026-10-08-review_core_protection_fork_aware_updates,
   completed 2026-10-10) and its governed-evolution contract (C1.4, C3.2, C6)
@@ -74,6 +74,11 @@ and every fix is described that way.
 - to_state: in_progress
 - transition_reason: the owner's ask (chat 2026-10-24),
   "focus on 2 and 3 make an epic for each and investigate them" - 2 being the three codegen-room p1 defects.
+
+- from_state: blocked
+- to_state: in_progress
+- transition_reason: the owner certified a new session as melder_0 and directed it (chat 2026-10-25):
+  "Go do the D-10 story first try that".
 
 ## Success Metrics
 - The four reproducers and the five strict xfails run on 0.2.8267, the GIL off and on, and recorded in the tasks.
@@ -270,6 +275,22 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T02:02:58Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner certified a new session as melder_0 (chat 2026-10-25) and directed "Go do the D-10 story
+    first try that". The BLOCKER of 2026-10-25T01:29:39Z belonged to the earlier session and is lifted; the
+    epic is in progress again. Tranche order and decisions stand: D-10 now, then D-11, then D-20, each with its
+    patch docs before any src/ edit.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md:217-236
+  - context_compass/tickets/tasks/2026-10-10_deny_file_access_under_safe_codegen_task.md:233-262
+  IMPACT: Milestone 3 starts with D-10; D-11 and D-20 rows wait on it.
+  NEXT: D-10 patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -285,10 +306,11 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 Scope: the three codegen-room p1 defects - D-10 `open` under safe, D-11 `__import__` past the import lists, D-20 a
-materialize over live modules - each in its own child task. State: in_progress, melder_0. Milestones 1 (all three
-re-measured on 0.2.8267: unchanged, causes confirmed at today's lines) and 2 (the owner's three decisions, Notes) are
-met. Next, on the owner's go, task by task in the order D-10, D-11, D-20: patch docs, red tests, the fix, notch,
-release-note entry and rebuild.
+materialize over live modules - each in its own child task. State: in_progress, melder_0 (a new session since
+2026-10-25T02:02:58Z; the earlier session's BLOCKER is lifted). Milestones 1 (all three re-measured on 0.2.8267) and 2
+(the owner's three decisions, Notes) are met. D-10: fixed, tested and documented (its Notes of 2026-10-25T02:27:56Z
+and 02:59:13Z); its hybrid pathlib row - and with it the notch, release note and rebuild - waits on the owner's A
+or B. Then D-11, then D-20.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

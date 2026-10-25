@@ -43,6 +43,11 @@ pip install melder
 
 **One dependency: pip.** Nothing else comes with it. Requires Python 3.14+.
 
+Releases are published to PyPI from this repository's release workflow, which signs every file it uploads
+([PEP 740](https://peps.python.org/pep-0740/)):
+[check a download](https://melder.readthedocs.io/en/latest/beginner/install.html#check-a-downloaded-file) with
+`pypi-attestations` before you install it.
+
 Working from a clone? Use the repository's `uv.lock` and
 [locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
 

@@ -1,0 +1,43 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx <D-10 tests> (cwd: /tmp/m0s2/d10_red, a /tmp copy of the working tree with D-10's tests and no src change; Python 3.14.7t)
+ran_at: 2026-10-25T02:15:48Z
+precision_profile_factory = <bound method FrameACLCodegenProfile.create_precision of <class 'melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile'>>
+open_denied = True
+>       assert ("open" in compiled_surface.denied_builtin_names) is open_denied
+E       AssertionError: assert ('open' in ('breakpoint', 'compile', 'delattr', 'dir', 'eval', 'exec', ...)) is True
+E        +  where ('breakpoint', 'compile', 'delattr', 'dir', 'eval', 'exec', ...) = <melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface object at 0x30f29b87800>.denied_builtin_names
+tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py:310: AssertionError
+_ test_unit_codegen_system_default_posture_without_projection_denies_what_safe_denies _
+>       assert "open" in configuration.denied_builtin_names
+E       AssertionError: assert 'open' in ('__import__', 'breakpoint', 'compile', 'dir', 'eval', 'exec', ...)
+E        +  where ('__import__', 'breakpoint', 'compile', 'dir', 'eval', 'exec', ...) = <melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration object at 0x30f2a5a48c0>.denied_builtin_names
+tests/unit/melder/aether/test_codegen_system_unit_matrix.py:374: AssertionError
+_ test_unit_codegen_builtins_strategy_leaves_open_out_of_the_safe_tuple_runtime_builtins _
+>       assert "open" not in entries["__builtins__"]
+E       assert 'open' not in {'__name__': 'builtins', '__doc__': "Built-in functions, types, exceptions, and other objects.\n\nThis module provides...lt-in of that name is also needed.", '__package__': '', '__loader__': <class '_frozen_importlib.BuiltinImporter'>, ...}
+tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py:536: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_open_writes_a_file_only_under_permissive_and_full_access[safe-None-False]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_open_writes_a_file_only_under_permissive_and_full_access[hybrid-None-False]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_open_writes_a_file_only_under_permissive_and_full_access[hybrid-precision-False]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_open_reads_a_file_only_under_permissive_and_full_access[safe-None-False]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_open_reads_a_file_only_under_permissive_and_full_access[hybrid-None-False]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_open_reads_a_file_only_under_permissive_and_full_access[hybrid-precision-False]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_a_bare_reference_to_open_is_refused_where_open_is_denied[safe-None]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_a_bare_reference_to_open_is_refused_where_open_is_denied[hybrid-None]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_a_bare_reference_to_open_is_refused_where_open_is_denied[hybrid-precision]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_a_request_naming_a_frame_without_a_projection_cannot_open_files[safe]
+FAILED tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_a_request_naming_a_frame_without_a_projection_cannot_open_files[full_access]
+FAILED tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies[safe]
+FAILED tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies[default]
+FAILED tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies[hybrid]
+FAILED tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies[hybrid+precision]
+FAILED tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py::test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies[permissive+precision]
+FAILED tests/unit/melder/aether/test_codegen_system_unit_matrix.py::test_unit_codegen_system_default_posture_without_projection_denies_what_safe_denies
+FAILED tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py::test_unit_codegen_builtins_strategy_leaves_open_out_of_the_safe_tuple_runtime_builtins
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_safe_profile_refuses_writing_files - OPEN: no codegen profile denies the open builtin - the runtime __builtins__ is the full builtins dict minus the profile's deny list, and no validator strategy inspects open or non-dunder method calls - so agent code in a safe room writes any file the process can write, although the safe profile documents that it denies writes. Core-protection review, Note 10. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-socket] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-importlib] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[precision-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import__ only when imports are off, so __import__ loads the roots the hybrid profile (and the precision overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+18 failed, 32 passed, 5 xfailed in 0.96s
+exit: 1

@@ -15,7 +15,7 @@ Regenerate with:
 
 DOCUMENT_FILE = 'src_graph.md'
 LINE_COUNT = 28193
-CONTENT_SHA256 = '5bfa5c42697a786cd42b962a9335fba8b141376b8f6390d54f77797d6f268f6f'
+CONTENT_SHA256 = '641ffd1feffae54075c313d12324ee7ce1a89cfc8c318190ed2e5d96b5df9cbf'
 
 TEXT = """# src_graph
 
@@ -5203,7 +5203,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `f09244c389015e64f400f0d44dbb8fa8a4885832cb51cfb18dff09e4ff69e31e`
+- source_sha256: `eb7851944fdd816fc2d094dcce0f8eef118615ff6d1547f2c1052ae68c75c2f9`
 - nodes: 3
 
 ### Nodes
@@ -5226,20 +5226,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Cleanup record of one disposal-bearing many key: the key's live bucket, aliased, plus the Spell's disposal list recorded once.
 - responsibilities:
   - entries IS the key's live bucket (the same list object the registry holds), never a copy, so one append serves both views
-  - methods is the Spell-owned disposal list retained by reference at the key's first registration and never matched, reordered or cleared by the store
-  - read by the disposal walk, purge, extract and restore in place of the former per-entry (object, methods) tuples; a many key carries one declaration, so sparse disposal metadata is impossible
+  - methods is the Spell-owned disposal list retained by reference at the key's first registration in the store and never matched, reordered or cleared by it; every later registration of the key appends under it, including a definition bound again under other disposal names after cleanup_spell (since 0.2.8257 the spell id covers no disposal name)
+  - read by the disposal walk, purge, extract and restore in place of the former per-entry (object, methods) tuples; every entry of a key is disposal-bearing or none is, so sparse disposal metadata is impossible
 - owns_state: `entries`, `methods`
 - phases: `runtime`, `cleanup`
 
 #### `Creations` (class)
 
 - id: `melder.aether.conduit.creations.creations.Creations`
-- defined at: `src/melder/aether/conduit/creations/creations.py:59`
+- defined at: `src/melder/aether/conduit/creations/creations.py:68`
 - extends: `Cleanable`
 - role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a slotted holder's included, and a ManyDisposalBucket per disposal-bearing many key.
 - responsibilities:
   - stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once
-  - register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a disposal declaration that disagrees with the key's entries
+  - register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append, the slot's shape unchecked; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a registration that is disposal-bearing where the key's entries are not, or the reverse; neither verb compares method lists
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes every declared method in list order even after one fails; collects one RuntimeError per failing method, chained from the raised exception, and never lets one failing object strand the rest
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists

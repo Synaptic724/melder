@@ -1,4 +1,4 @@
-# Melder 0.2.8267
+# Melder 0.2.8268
 
 **Unreleased**
 
@@ -124,4 +124,21 @@ every warm meld, which the stored object never uses.
   into `conduit.py` and `creations.py` remapped.
 - The internal-bind guard manifest holds 629 entries at 0.2.8267 (630 at 0.2.8257): `HolderDisposalEntry`, the record
   that kept a slotted object's `many` children with it (0.2.8238), left.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8267.
+- The internal `Creations` store's docstrings (`ManyDisposalBucket`, `add_many_creations`, `register_many`) no
+  longer say that a spell_id covers a `many` spell's disposal names - it has not since 0.2.8257, when the spell_id
+  became the SHA256 of the object's code - and say what the store does after `cleanup_spell` and a new `bind` of the
+  same class while a scope still holds the objects of the removed binding: bound again as a `many` with other
+  disposal names, the new objects join the removed binding's disposal record and are disposed with its names; bound
+  again as a `many` after a `unique` or `unique_per_conduit` binding, the next meld in that scope raises
+  `AttributeError` and returns nothing. Both are known and not fixed here; behaviour is unchanged. The packaged
+  system documents (`melder.__components__`, `melder.__architecture__`) and the packaged graph say the same, and
+  the code-map extent and line citations of `creations.py` are remeasured.
+- Releases on PyPI, and release candidates on TestPyPI, are published by Trusted Publishing: each upload
+  authenticates with its workflow's own short-lived identity, with no stored API token, and uploads a PEP 740
+  attestation for each file. After each upload the workflow checks every uploaded file's provenance on its
+  index - its publisher, its Sigstore signature, the repository, workflow, commit and run that signed it, and
+  the file's sha256 - and the release candidate does so before its installation tests use the files. The
+  installation guide (`docs/beginner/install.md`) shows how to check a downloaded file with
+  `pypi-attestations`, and the README links to it; the guide no longer says Melder has no runtime dependencies
+  (it declares pip).
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8268.

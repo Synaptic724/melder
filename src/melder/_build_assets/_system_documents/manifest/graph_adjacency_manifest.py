@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8267"
+BUILT_FOR_VERSION = "0.2.8268"
 NODE_COUNT = 1230
 EDGE_COUNT = 1419
 WHY_COUNT = 959
@@ -264,7 +264,7 @@ NODES = {
     'melder.aether.conduit.creations.conduit_creations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'conduit_creations', 'module', 1, False),
     'melder.aether.conduit.creations.conduit_creations.ConduitCreations': ('src/melder/aether/conduit/creations/conduit_creations.py', 'ConduitCreations', 'class', 8, False),
     'melder.aether.conduit.creations.creations': ('src/melder/aether/conduit/creations/creations.py', 'creations', 'module', 1, False),
-    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 59, False),
+    'melder.aether.conduit.creations.creations.Creations': ('src/melder/aether/conduit/creations/creations.py', 'Creations', 'class', 68, False),
     'melder.aether.conduit.creations.creations.ManyDisposalBucket': ('src/melder/aether/conduit/creations/creations.py', 'ManyDisposalBucket', 'class', 12, False),
     'melder.aether.conduit.creations.managed_spell_lease': ('src/melder/aether/conduit/creations/managed_spell_lease.py', 'managed_spell_lease', 'module', 1, False),
     'melder.aether.conduit.creations.managed_spell_lease.ManagedSpellLease': ('src/melder/aether/conduit/creations/managed_spell_lease.py', 'ManagedSpellLease', 'class', 11, False),

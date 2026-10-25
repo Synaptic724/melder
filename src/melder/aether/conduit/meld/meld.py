@@ -619,7 +619,11 @@ class Meld(Cleanable, ABC):
             concrete door's scope policy into this base class.
 
         Contract:
-            - Uses `_resolve_spell` unchanged for local/contracted lookup.
+            - A spell_id (a str `spell`) resolves to the exact version this door's
+              Book can see - its own or a borrowed copy, active or parked - through
+              `_resolve_probe_target` (STORY-2026-10-25-probe_and_purge_reach_every_version);
+              every other selector uses `_resolve_spell` unchanged, which names the
+              version an index has active, as meld does.
             - Returns the already-registered internal definition, never an
               application instance and never a newly constructed definition.
             - Inspects an application instance to obtain its class reference,
@@ -643,11 +647,15 @@ class Meld(Cleanable, ABC):
             RuntimeError: If this Meld has been cleaned.
             TypeError: If purge_all is not a bool.
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If ordinary meld discovery cannot find the binding.
+            KeyError: If no version this door's Book can see carries the spell_id,
+                or ordinary meld discovery cannot find the binding.
 
         Threading / Lifecycle:
-            Uses the same lookup maps as meld. Structural changes keep their
-            existing coordination contract; this helper owns no new state or lock.
+            Uses the same lookup maps as meld; a spell_id the active maps miss is
+            read once more under the Book lock (`_resolve_visible_version_by_id`),
+            which is released before the door takes any store, slot or spell lock.
+            Structural changes keep their existing coordination contract; this
+            helper owns no new state or lock.
         """
         self.check_cleaned()
         if not isinstance(purge_all, bool):
@@ -663,7 +671,7 @@ class Meld(Cleanable, ABC):
                 "purge_all=False requires an object instance. Pass that instance "
                 "as spell, or use purge_all=True with a binding selector."
             )
-        return self._resolve_spell(
+        return self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,
@@ -688,7 +696,11 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this door's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`), so a version a notch parked is
+              answered for; every other selector resolves as `meld(...)` does, to
+              the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Returns `False` when the spell resolves correctly but has no live
@@ -745,7 +757,11 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this door's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`), so a version a notch parked is
+              answered for; every other selector resolves as `meld(...)` does, to
+              the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports enough caller-context metadata that higher-level tooling
@@ -2184,6 +2200,103 @@ class Meld(Cleanable, ABC):
                 return spell_map[spell_id]
 
         raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+
+    def _resolve_visible_version_by_id(self, spell_id: str) -> Spell:
+        """
+        Internal
+
+        Resolve a spell_id to the exact version this door's Book can see: owned or borrowed, active or parked.
+
+        Purpose:
+            The spell_id lookup of the doors that build nothing - purge and the live-creation probes
+            (STORY-2026-10-25-probe_and_purge_reach_every_version). A version keeps its objects while a notch has
+            it parked, under its own spell_id in the creation stores, so these doors reach it there. The doors
+            that build or hand out an object keep `_resolve_spell_by_id`, which answers active versions only.
+
+        Contract:
+            - First the active read, unchanged: `_resolve_spell_by_id` - the active pool, the active versions and
+              each lender's active copies - lock-free.
+            - On its KeyError, one read of the Book's four id maps under the Book lock
+              (`Spellbook._find_visible_version`): the Book's own versions and its borrowed copies, active and
+              parked.
+            - A spell_id neither read finds re-raises the active read's KeyError, so its type and text are the
+              ones every meld door raises: "[MELD] No spell found with spell_id: <id>".
+            - Never builds, registers or mutates anything.
+
+        Args:
+            spell_id: The spell_id of the version - the SHA256 `bind` or `bind_inactive` returned.
+
+        Returns:
+            Spell: The version the spell_id names.
+
+        Raises:
+            KeyError: If no version this door's Book can see carries the spell_id.
+            RuntimeError: If the Spellbook has been cleaned.
+
+        Threading:
+            The active read takes no lock. The miss path takes the Book lock alone, holds it only for its dict
+            reads and releases it before returning, so a caller that goes on to take a store, slot or spell lock
+            (purge) never holds the Book lock with it. Under the Book lock a version is in exactly one map, so a
+            probe or purge racing a notch to or from its version finds it.
+        """
+        try:
+            return self._resolve_spell_by_id(spell_id)
+        except KeyError as missing:
+            visible = self._spellbook._find_visible_version(spell_id)
+            if visible is None:
+                raise missing
+            return visible
+
+    def _resolve_probe_target(
+            self,
+            *,
+            spell: Optional[Union[str, object]],
+            spell_name: Optional[str],
+            spellframe: Optional[Union[str, object]],
+            binding_name: Optional[str],
+    ) -> Spell:
+        """
+        Internal
+
+        Discover the target of a door that builds nothing: purge, or a live-creation probe.
+
+        Purpose:
+            Keep the two spell identities apart (owner ruling, 2026-10-17): a spell_id names one version, every
+            other selector names an index's active version. Only the doors that build nothing reach a version a
+            notch parked; meld keeps `_resolve_spell`.
+
+        Contract:
+            - A str `spell` is a spell_id: the exact version this door's Book can see, its own or a borrowed copy,
+              active or parked (`_resolve_visible_version_by_id`).
+            - Any other selector - a class or function, a name, spellframe and binding name - goes through
+              `_resolve_spell` unchanged, to the version an index has active.
+            - Never builds, registers or mutates anything.
+
+        Args:
+            spell: A spell_id string, or a class/function reference; None when another selector names the target.
+            spell_name: Optional logical name.
+            spellframe: Optional spellframe / Protocol / frame key.
+            binding_name: Optional binding name within that frame.
+
+        Returns:
+            Spell: The registered version the selector names.
+
+        Raises:
+            KeyError: If nothing this door's Book can see matches the selector.
+            ValueError: If key normalization receives no identity source.
+            RuntimeError: If a lookup map is inconsistent, or the Spellbook has been cleaned.
+
+        Threading:
+            As `_resolve_visible_version_by_id` for a spell_id; lock-free for every other selector.
+        """
+        if isinstance(spell, str):
+            return self._resolve_visible_version_by_id(spell)
+        return self._resolve_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
 
     def _resolve_spell_by_lookup_key(
             self,

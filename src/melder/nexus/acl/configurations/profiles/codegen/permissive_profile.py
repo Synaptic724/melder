@@ -13,8 +13,12 @@ class PermissiveCodegenProfileStrategy:
 
     Contract:
         This is the most open of the standard codegen profiles. It allows the
-        broadest set of conduit and spell operations while still denying the
-        highest-risk capability gates such as mutation and unsafe reflection.
+        broadest set of conduit and spell operations and every capability
+        gate - mutation and unsafe reflection included; the one guardrail it
+        keeps versus `full_access` is its import allowlist.
+        Files: an open file posture by design - `open` stays available and
+        `io`, `os` and `pathlib` are on the import allowlist, so room code
+        reads and writes any file the process can reach.
 
     Threading:
         Stateless preset construction; holds no state between builds.

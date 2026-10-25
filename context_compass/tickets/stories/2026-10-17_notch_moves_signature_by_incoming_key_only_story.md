@@ -9,7 +9,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-17T20:23:51Z
-- Updated: 2026-10-25T01:25:13Z
+- Updated: 2026-10-25T02:47:38Z
 
 ## User Narrative
 As an agent notching between versions, I want the frame's signature claims to follow the active version - the
@@ -70,7 +70,11 @@ holds (wrong: the next meld by address is refused).
 - [x] Task: the owner's answer on one signature per index (2026-10-17: one index may hold several; DECISION note).
 - [x] Task: research the binding-signature defenses for the index-owns-the-signature model (owner, 2026-10-24);
   the findings in Notes, for the owner's review.
-- [ ] Task: the owner's three calls (DECISION_REQUEST note of 2026-10-25T01:25:13Z).
+- [ ] Task: the owner's three calls (DECISION_REQUEST note of 2026-10-25T01:25:13Z): call 3 answered with
+  (A)'s go; calls 1 and 2 open; the rename rule asked (DECISION note of 2026-10-25T02:47:38Z).
+- [x] Task: map every meld identity across a notch (the owner, chat 2026-10-25; notes of 2026-10-25T02:01:57Z).
+- [x] Task: the owner's parked-door call (yes, 2026-10-25; its own lane,
+  STORY-2026-10-25-probe_and_purge_reach_every_version).
 - [ ] Task: patch docs for the seam; the owner's approval.
 - [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
@@ -134,6 +138,10 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/runs/option_a_blast_radius_0_2_8267.txt
   - artifacts/correctness_defects_20261017/probes/probe_mixed_record_under_option_a.py (a record of a mixed index)
   - artifacts/correctness_defects_20261017/runs/probe_mixed_record_under_option_a_0_2_8267.txt
+  - artifacts/correctness_defects_20261017/probes/probe_meld_identities_across_a_notch.py (every meld form)
+  - artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt
+  - artifacts/correctness_defects_20261017/probes/diag_class_annotated_consumer_after_notch_back.py (stuck consumer)
+  - artifacts/correctness_defects_20261017/runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
 
@@ -529,6 +537,186 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-25T02:01:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: How every meld names a spell, read in full on 0.2.8267 (the owner's question, chat 2026-10-25: does an index
+    owning the signature work "for all melds or just some", since "you can meld using spell_id and other things").
+    Three identities. (1) A spell_id - meld(spell_id), meld_existing_spell, has_live_creation and purge given one,
+    SpellSpace.meld, a capability room's meld - goes to `_resolve_spell_by_id`, which reads the active pool, the
+    active local versions and each lender's active copies and never the parked versions: that exact version, only
+    while it is active. (2) Every other form - a SpellName string, a class object, spellframe and binding name, and
+    purge or a probe given those - normalizes to an address (a class or a name keys by its lowercased name with the
+    default binding) and resolves address -> SpellIndex -> the index's active version, in the Book, then in each
+    lender's contracted maps: it follows the index. managed_spell_meld takes both forms and resolves them the same
+    way. (3) Injection: a class annotation selects spells whose class name matches; a Protocol annotation, spells
+    that recorded that Protocol; a SpellMap(spellframe=, binding_name=) compares the recorded spellframe object and
+    the binding; a SpellMap(spell=Cls) compares the class object by identity; a SpellContract resolves by address
+    through the contracted maps. Also following a notch: the input cache (each hit re-reads the active pool and
+    falls back to the address lookup), a compiled plan's recorded ids (taken to the index's current version) and an
+    index link; a version grant stays with its version. The fast doors are built on the non-dynamic lane only, and
+    a notch needs a dynamic world.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:2067-2322
+  - src/melder/utilities/helpers/general_helpers.py:404-456
+  - src/melder/aether/conduit/meld/conduit_meld.py:282-732
+  - src/melder/aether/conduit/meld/conduit_meld.py:733-956
+  - src/melder/aether/conduit/meld/conduit_meld.py:150-210
+  - src/melder/aether/conduit/meld/meld.py:605-730
+  - src/melder/aether/conduit/meld/spellspace_meld.py:241-678
+  - src/melder/nexus/rift/command_system/capability_command_system.py:1026-1090
+  - src/melder/aether/conduit/conduit.py:5097-5209
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:206-446
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:771-881
+  - src/melder/aether/conduit/meld/meld.py:1484-1585
+  - src/melder/aether/conduit/conduit.py:5652-5805
+  - src/melder/aether/conduit/conduit.py:6308-6383
+  IMPACT: (A) changes none of these lookups: a spell_id stays exact (the owner's rule of 2026-10-17), and every
+    address form already goes through the index, so pinning the index's address makes all of them follow a notch.
+  NEXT: The MEASURE below.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T02:01:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The forms across a notch (probe_meld_identities_across_a_notch.py, public calls, 0.2.8267; the GIL off and on
+    identical apart from object ids). Protocol case, English -> French at (Greeter, 'greeter'): after the notch the
+    address, the Protocol-annotated consumer, the SpellMap by address and the index-link borrower give French; by
+    spell_id French's works and English's raises KeyError "No spell found with spell_id", as do
+    meld_existing_spell, has_live_creation and purge of English while it is parked; the class-annotated consumer
+    raises UnresolvedInputError, the SpellMap(spell=English) consumer RuntimeError "SpellMap default could not be
+    resolved", and the version-grant borrower KeyError at the address. After the notch back every form gives
+    English's own `unique` object again, the one built before the notch - except the class-annotated consumer,
+    still refused (FACT below). meld(spell=English) and meld('English') raise KeyError in every state: English is
+    at (greeter, greeter), and a class or a name looks up (english, __default__). Bare cases: an edited class that
+    keeps its name is followed by every form, the class annotation included; a renamed version bound bare (allowed
+    today) loses the old name's forms and the consumer; a renamed version staged at the old address, as (A) stages
+    it, answers meld(spell=ReportService) and meld('ReportService') with a ReportServiceV2 object, while
+    meld(spell=ReportServiceV2) raises KeyError.
+  EVIDENCE:
+  - context_compass/artifacts/correctness_defects_20261017/probes/probe_meld_identities_across_a_notch.py:1-225
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:3-57
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:59-123
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:125-128
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:130-255
+  IMPACT: The answer to the owner: (A) holds for every meld that names the index; a spell_id names one version and is
+    refused while that version is parked, by design; three door rules sit outside (A) (next note).
+  NEXT: The gaps note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T02:01:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Three gaps the map shows, none caused or fixed by (A). (1) A parked version keeps its objects (the notch back
+    returns the same object), but no door reaches them while it is parked: has_live_creation and purge resolve
+    active versions only (`_resolve_purge_spell`, `describe_live_creation_status`), so checking or retiring an old
+    version's object takes a notch back first. (2) meld(spell=Cls) and meld('Name') are address lookups keyed by
+    the class's name, not type lookups: a version bound under a spellframe is never reached that way, and under (A)
+    a renamed version at the old address answers the old class's meld with an object of the new class. (3) Four
+    identity rules: a spell_id is the version, an address is the index, a class annotation is the class name and a
+    SpellMap(spell=Cls) is the class object, which never follows a notch, even to an edited class of the same name.
+    A SpellMap(spellframe=...) compares the recorded spellframe, None for a bare binding, so it never selects a
+    version bound bare (`_spellmap_frame_matches`): under (A) a bare first version and a renamed one staged with
+    spellframe='ReportService' share the address, but such a SpellMap selects only the second.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:605-730
+  - src/melder/aether/conduit/meld/conduit_meld.py:150-210
+  - src/melder/aether/conduit/meld/conduit_meld.py:892-956
+  - src/melder/utilities/helpers/general_helpers.py:241-275
+  - src/melder/utilities/helpers/general_helpers.py:404-456
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:261-280
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:771-881
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:38-42
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:118-119
+  IMPACT: (1) is a missing door; (2) and (3) are naming rules; each is the owner's call and separate from S2's fix.
+  NEXT: The side defect below, then the owner's answer.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T02:01:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Side defect, pre-existing on 0.2.8267 in both address models (the diag_class_annotated_consumer_after_notch_
+    back.py runs, the GIL off and on identical): a consumer injected by a class annotation that compiled without its
+    provider stays refused when the provider comes back under a spellframe. Phase 3 records the parameter as an
+    UNRESOLVED_INPUT socket, with no dependency edge, keyed by the annotation (('english', '__default__')), and
+    SpellSystemStates watches it under that key's frame, 'english'; bind and notch stage the incoming spell's
+    address, and the commit's dirty marker marks only the watchers of those frame keys. A class bound bare has the
+    frame 'english', so a notch back or a later bind marks the consumer and its next meld resolves. Bound under
+    Greeter its frame is 'greeter': nothing marks the consumer, which stays `valid` with its unresolved socket, and
+    every meld raises UnresolvedInputError - after a notch away and back (two Protocol versions at one address), and
+    after a later bind of the provider. cleanup_spell and bind of the consumer (the same spell_id) recover it. The
+    0.2.8222 kind-matching task left "the watcher ... name keying" out of scope for a follow-up ticket; none exists.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:1023-1220
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:883-926
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1889-1929
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1625-1696
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:841-877
+  - src/melder/aether/spellbook/spellbook.py:5526-5598
+  - src/melder/aether/conduit/conduit.py:5652-5805
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:113-221
+  - context_compass/artifacts/correctness_defects_20261017/probes/diag_class_annotated_consumer_after_notch_back.py:1-129
+  - context_compass/artifacts/correctness_defects_20261017/runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt:3-53
+  - context_compass/artifacts/correctness_defects_20261017/runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt:55-105
+  - context_compass/tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md:57-61
+  IMPACT: Stuck structure under the owner's runtime model, outside S2's scope and unchanged by (A): the watcher and
+    the staged key spell one provider two ways. A story under the epic on the owner's word (epic FACT note).
+  NEXT: The owner's answer on the call below and on filing it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T02:01:57Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: One call beside the three of 2026-10-25T01:25:13Z: should the two doors that build nothing - has_live_creation
+    and purge - reach a parked version by its spell_id, so an agent can check or retire an old version's object
+    without notching back (melder_1 recommends yes: they build nothing, so serving a parked version breaks no rule,
+    and a meld by spell_id stays active-only), or stay active-only as today. melder_1 also recommends a spell_id
+    stays exact (the owner's 2026-10-17 rule; the one handle no notch moves), (A) goes ahead for the address forms,
+    and the stuck consumer is filed as its own story under the epic.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:605-730
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:38-42
+  IMPACT: A yes adds a parked-version branch to those two doors, a change separate from S2's fix; a no leaves them.
+  NEXT: The owner's answers; then the Requirements rewritten and patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T02:47:38Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's answers (chat 2026-10-25): "ok yeah lets do it, this makes sense to me and yeah has_live_creation
+    and purge should be able to target the parked version ... go ahead and d othis ... make tests please before you
+    implement this"; on the address, "Spellindex hosts a bind frame and if your using notch adhere to it ... if you
+    change the name you clearly got a new spell". So (A) goes ahead for every address form, a spell_id stays exact,
+    and call 3 is answered: a version not at its index's address is refused. The parked-door call is yes and is its
+    own lane, STORY-2026-10-25-probe_and_purge_reach_every_version, which lands first (one lane at a time); the stuck
+    consumer is EPIC-2026-10-25-dependency_watchers_listen_for_names. Open before patch docs: calls 1 (records made
+    before (A)) and 2 (the split), and the rule his words imply for a rename: a version must carry its index's
+    recorded spellframe and binding name - for a class bound bare, no spellframe and its own class name - not only
+    the same normalized key. Today's (A) plan would still let ReportServiceV2 join a bare ReportService index by
+    passing spellframe='ReportService' (the bare_renamed_a run); the stricter rule makes that a new spell, and it
+    also closes gap 3's SpellMap(spellframe=...) mismatch between a bare version and one staged under a spellframe.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:497-537
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:673-690
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt:103-123
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:771-794
+  IMPACT: The Requirements rewrite waits for calls 1-2 and the rename rule; nothing in S2's code moves before the
+    probe-and-purge lane lands.
+  NEXT: The owner's answers on the rename rule and calls 1-2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -550,9 +738,15 @@ this does not make independent review mandatory for every ticket.
 - State: in_progress with melder_1, handoff. The research is done (FACT, MEASURE and PLAN notes of
   2026-10-25T01:25:13Z): no existing check needs a bypass; (A) adds a way-in check and a notch refusal; the
   refusal fails no test, the way-in check 169 that stage at other addresses; records made before (A) need a rule.
-- Next: (1) the owner's three calls (DECISION_REQUEST note of 2026-10-25T01:25:13Z); (2) the Requirements and
-  Acceptance rewritten, patch docs for (a)-(e) of the PLAN note and his approval; (3) red tests, the fix, docs,
-  notch 0.2.8268 and the rebuild last, with conduit.py custody from melder_0 before its docstrings change.
+  The meld-identity map is done (notes of 2026-10-25T02:01:57Z): every address form follows the index
+  under (A); a spell_id names one version and is refused while it is parked, by design; three door gaps and a
+  pre-existing stuck consumer (a side finding for the epic) sit outside (A).
+- Owner's word (DECISION note of 2026-10-25T02:47:38Z): (A) goes ahead, a spell_id stays exact, call 3
+  answered; the parked doors are STORY-2026-10-25-probe_and_purge_reach_every_version (lands first), the stuck
+  consumer EPIC-2026-10-25-dependency_watchers_listen_for_names.
+- Next: (1) the owner's calls 1-2 and the rename rule (DECISION note of 2026-10-25T02:47:38Z); (2) the Requirements and
+  Acceptance rewritten, patch docs for (a)-(e) of the PLAN note and his approval; (3) red tests, the fix, docs, the
+  next free notch and the rebuild last, with conduit.py custody from melder_0 before its docstrings change.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

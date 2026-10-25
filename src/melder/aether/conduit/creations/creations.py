@@ -24,10 +24,19 @@ class ManyDisposalBucket:
         - `entries` IS the live many bucket held in `_creations` - the same
           list object, never a copy - so the live and disposal views cannot
           diverge and a single-object purge needs one removal.
-        - `methods` is the Spell's established ordered disposal list, retained
-          by reference (never matched, reordered or copied), identical for
-          every entry of the key: a spell id hashes its resolved disposal
-          names, so one key carries one declaration.
+        - `methods` is the established ordered disposal list of the Spell
+          whose object first registered the key in this store, retained by
+          reference (never matched, reordered or copied), and every entry of
+          the key is disposed with it. Later registrations append to
+          `entries` and leave `methods` as it is; nothing compares lists.
+        - One list per key holds only while one definition registers the
+          key. Since 0.2.8257 a spell id is the object's code and does not
+          cover the disposal names, a field of the binding manifest. A spell
+          cleaned up (`cleanup_spell`) and bound again under other disposal
+          names keeps its id, and when the new definition's objects register
+          in a store that still holds the removed definition's objects (they
+          stay alive in their scope), they join this record and are disposed
+          with the removed definition's list, not their own.
         - Both fields are borrowed. The owning `Creations` store detaches the
           record (cleanup, clear, purge, extract) and disposes from it; the
           record itself owns nothing and needs no cleanup.
@@ -742,9 +751,15 @@ class Creations(Cleanable):
               under `_disposable_creations[key]` whose `entries` is the live
               bucket itself; later registrations of the key append only.
             - Rejects collisions with non-list slots, and a registration whose
-              disposal declaration disagrees with the key's existing entries:
-              one many key carries one declaration (the spell id hashes the
-              resolved disposal names, so a live world cannot produce a mix).
+              disposal declaration disagrees with the key's existing entries -
+              a disposal-bearing registration of a key whose entries were
+              registered without disposal methods, or the reverse - so every
+              entry of a key is disposal-bearing or none is.
+            - Does not compare method lists: a disposal-bearing registration
+              of a key that already has its record appends under the record's
+              list. A spell id no longer fixes that list (0.2.8257), so a
+              definition rebound under other disposal names joins the record
+              of the removed definition's objects (see `ManyDisposalBucket`).
             - Preserves insertion order; the disposal view is the live bucket,
               so the two cannot diverge (BUG-073, 2026-07-17 audit, now by
               construction: the first-use bucket and its record are created
@@ -764,8 +779,9 @@ class Creations(Cleanable):
 
         Raises:
             ValueError:
-                If the key already holds a non-list slot, or if the disposal
-                declaration disagrees with the key's existing entries.
+                If the key already holds a non-list slot, or if this
+                registration is disposal-bearing where the key's existing
+                entries are not, or the reverse.
             RuntimeError:
                 If this store was cleaned while the object was being built.
 
@@ -806,13 +822,24 @@ class Creations(Cleanable):
             registration on 3.14t, GIL off).
 
         Contract:
-            - Precondition, guaranteed by the emitters and NOT checked here:
-              `key` is a `many` spell id whose Spell declares disposal methods,
-              and `disposal_methods` is that Spell's own ordered list, the same
-              object on every call for the key. A spell id hashes its resolved
-              disposal names, so one key cannot carry two declarations, and one
-              Existence per Spell means the key's live slot is a list or absent.
-              Callers that cannot promise this use `add_many_creations`.
+            - Precondition, NOT checked here: `key` is a `many` spell id whose
+              Spell declares disposal methods, `disposal_methods` is that
+              Spell's own ordered list, and the key's live slot in this store
+              is a list or absent. Within one definition the emitters
+              guarantee all three - one plan, one list object on every call,
+              one Existence - and callers that cannot promise them use
+              `add_many_creations`, which checks the slot's shape.
+            - Nothing guarantees the precondition across a rebind: since
+              0.2.8257 a spell id is the object's code and covers neither the
+              disposal names nor the existence. A spell cleaned up and bound
+              again keeps its id, and the new definition meets what the
+              removed one left in this store. Under other disposal names its
+              objects are appended under the first registration's list and
+              disposed with it. After a slotted existence (`unique`,
+              `unique_per_conduit`, ...) the key's slot holds that object, so
+              the append - reached after the new object is built - raises
+              AttributeError and fails the meld, or calls that object's own
+              `append`.
             - The first registration of the key creates the live bucket and
               its `ManyDisposalBucket` record (the bucket itself plus the
               method list) in one critical section; every later one appends.
@@ -827,6 +854,9 @@ class Creations(Cleanable):
         Raises:
             RuntimeError:
                 If this store was cleaned while the object was being built.
+            AttributeError:
+                If the key's live slot holds an object with no `append` - the
+                precondition broken by a rebind after a slotted existence.
 
         Threading:
             `_lock` is a leaf here: only the dict read, the first-use stores
@@ -884,9 +914,10 @@ class Creations(Cleanable):
         Raises:
             ValueError:
                 If the key already holds a non-list live slot or a non-many
-                disposable slot, or if this registration's disposal declaration
-                disagrees with the key's existing entries: one many key carries
-                one declaration (the spell id fixes it).
+                disposable slot, or if this registration is disposal-bearing
+                where the key's existing entries are not, or the reverse.
+                Method lists are not compared: a disposal-bearing registration
+                of a key with a record appends under the record's list.
         """
         bucket = self._creations.get(key)
         if bucket is not None and not isinstance(bucket, list):

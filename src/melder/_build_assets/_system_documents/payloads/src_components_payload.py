@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 11874
-CONTENT_SHA256 = '6381710a4b40486e8d217d7ab549864f7312f4e52648a06898992da0c5a508d8'
+LINE_COUNT = 11976
+CONTENT_SHA256 = '2aafa186cea4274fe7cfe7cefa2d1c2dd09196f74cd91f79b260c3ab2b3ea216'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-24
+- Updated: 2026-10-25
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -175,16 +175,18 @@ Each item must include:
   `STORY-2026-02-13-mutation-research-runtime-wiring`.
   Current status: blocked (producers await the MR runtime-seam slice).
 
-- UNKNOWN: whether a `many` key's disposal record outlives a rebind of its spell under other disposal names.
-  Since 0.2.8257 a spell_id is the object's code, so `cleanup_spell` and a new `bind` of the same class with
-  other disposal names keep the spell_id. A store still holding the removed definition's `many` objects (they
-  stay alive in their scope, by design) keeps that key's `ManyDisposalBucket`, whose method list is the first
-  registration's, and `Creations.register_many` - the call emitted plans make, which trusts the emitter's
-  list - appends the new definition's objects to it; the checked `add_many_creations` would refuse the mismatch.
-  Why it matters: those objects could be disposed with the removed binding's methods when the store ends.
-  Where to investigate: `src/melder/aether/conduit/creations/creations.py:Creations.register_many` and
-  `Creations._append_many_locked`, with a disposal-bearing `many` rebound while a scope that built it is live;
-  the docstrings of `register_many` and `add_many_creations` still say a spell id hashes its disposal names.
+- UNKNOWN: what a store does with a `many` definition's objects when that definition is cleaned up
+  (`cleanup_spell`) and bound again under a slotted existence (`unique`, `unique_per_conduit`, ...) while a scope
+  that built them is live; the spell_id stays the same (0.2.8257). The other two rebinds are measured - Component:
+  Creations and SpellSpace, Failure Modes: a `many` bound again under other disposal names joins the removed
+  definition's disposal record, and a slotted definition bound again as `many` fails `register_many`'s append.
+  Why it matters: slotted stores are keyed by spell_id - after a slotted definition is rebound, the replacement's
+  first meld returns the object its store holds under the id (the owner's ruling of 2026-10-03) - and here that key
+  holds the removed definition's `many` bucket.
+  Where to investigate: `src/melder/aether/conduit/creations/creations.py:Creations.add_creation` and
+  `Creations.get_creation`, and the slotted miss
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_miss`,
+  with a disposal-bearing `many` bound again as `unique_per_conduit` in a live scope that built its objects.
   Related: S3 of EPIC-2026-10-18-spell_identity_is_the_code (a changed binding revalidates).
   Current status: uninvestigated.
 
@@ -2683,8 +2685,8 @@ Outputs:
   `execute_codegen_request(...)`)
 - shared `CodegenTransactionContext` (the FIRST element of both tuples - the
   context is returned alongside the verdict, not separately)
-  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:260
-  (`validate_codegen_request`), :295 (`execute_codegen_request`)
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:263
+  (`validate_codegen_request`), :298 (`execute_codegen_request`)
 - public validation payloads through the reporter
 
 Owned State:
@@ -2705,6 +2707,14 @@ Invariants/Guarantees:
 - validation runs before execution on the execute path
 - namespace building happens only after accepted validation
 - room-memory emission stays on `CodegenCommandSystem`, not the engine root
+- a request naming a frame the owning Rift holds no codegen projection for runs under the safe
+  posture (0.2.8269): imports off; no unsafe reflection, dunder access or recursive codegen; and the
+  denied builtins `__import__` plus `SAFE_DENIED_BUILTIN_NAMES`, `open` among them, read from the
+  presets' module so this default follows safe (Component: Nexus Descriptor And ACL Managers carries
+  the presets' file posture)
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem._build_default_namespace_configuration`,
+  `CodegenSystem._try_get_codegen_projection` and
+  `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:SAFE_DENIED_BUILTIN_NAMES`
 
 Failure Modes:
 - empty code or frame names raise `ValueError`
@@ -2712,6 +2722,10 @@ Failure Modes:
   compile/exec
 - missing projection support degrades to `None` projection instead of failing
   transaction construction
+- under that default, and under every projection whose compiled surface denies it, a call of `open` is
+  refused at validation ("Builtin 'open' is not allowed in this codegen mode."), a bare reference by
+  name resolution ("Name 'open' is not available in the codegen namespace."), and the runtime
+  `__builtins__` holds no `open` (0.2.8269)
 
 Observability:
 - `CodegenMonitor` publishes validation/execution lifecycle events through the
@@ -2771,6 +2785,37 @@ Published definition graph:
 - EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._build_published_relationships`,
   `src/melder/nexus/rift/frame_viewer/view_spell.py:ViewSpell.describe_spell_relationships`,
   `src/melder/nexus/rift/frame_viewer/frame_viewer.py:FrameViewer.describe_spell_relationships`.
+
+Codegen presets' file posture (0.2.8269):
+- The five standard codegen presets - safe, hybrid, precision, permissive and full_access - state in their
+  capability rulesets which builtins and import roots room code may use. Safe, hybrid and precision deny the
+  builtins of one tuple, `SAFE_DENIED_BUILTIN_NAMES` (hybrid and precision alias it), and `open` is on it; the
+  codegen engine's no-projection default reads the same tuple (Component: Codegen Internal Engine).
+- `FrameACLCompiler` compiles a frame's denied builtins as the union of the denies of its preset, its precision
+  overlay and its codegen capability override, minus the union of their allows, plus `__import__` when imports are
+  off, sorted into `CompiledFrameACLAccessSurface.denied_builtin_names`; a `builtin_names` allow rule in the override
+  therefore re-allows `open` for that frame. Import roots compile differently: the allow lists intersect, so the
+  overlay narrows the preset's, and the deny lists unite.
+- The file posture that follows, per preset: safe - no file access through builtins or imports (`open` denied,
+  imports off); hybrid - `open` denied, `io` and `os` off its allow list and `pathlib` on it, so a `pathlib.Path`
+  write runs; precision, alone or as the overlay - `open` denied and none of `io`, `os` or `pathlib` on its list;
+  permissive and full_access - open by design, `open` kept and `io`, `os` and `pathlib` importable. Each preset's
+  docstring states its posture.
+- A refusal names what it refused: a call of a denied builtin - "Builtin 'open' is not allowed in this codegen
+  mode." (the builtin gate); a bare reference - "Name 'open' is not available in the codegen namespace." (name
+  resolution, which runs after the builtin gate); a refused import - "Import statements are not allowed in this
+  codegen mode." under safe, "Import root '<root>' is not allowed in this codegen mode." under an allow list; and at
+  run time the room's `__builtins__` holds no denied name. These are policy checks in the room's own process -
+  defence in depth, not isolation.
+- EVIDENCE: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:SAFE_DENIED_BUILTIN_NAMES`,
+  `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py:SafeCodegenProfileStrategy.build`,
+  `src/melder/nexus/acl/frame_acl_compiler.py:FrameACLCompiler._compile_codegen_builtin_controls`,
+  `FrameACLCompiler._collect_import_module_roots_from_rulesets`,
+  `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py:CodegenValidator.validate`,
+  `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py:CodegenBuiltinPolicyStrategy.validate`,
+  `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:CodegenNameResolutionStrategy.validate`,
+  `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py:CodegenImportPolicyStrategy`
+  and `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:CodegenBuiltinsStrategy.build_namespace_entries`.
 
 Responsibilities:
 - `FrameDescriptorManager` owns `frame_name -> FrameDescriptor`.
@@ -3663,9 +3708,13 @@ whose `methods` is the Spell-owned disposal list recorded once, at the key's fir
 executors call `Creations.register_many(spell_id, instance, disposal_methods)`: explicit store-lock acquire/release,
 the cleaned check, one dict read, first use creates the bucket and the record, one append. `add_many_creations`
 keeps its signature, writes the same shape and keeps the checks the hot verb drops: a non-list slot, and a
-registration whose disposal declaration disagrees with the key's existing entries, raise ValueError. One many key
-carries one declaration - the record keeps the method list of the key's first registration, so disposal metadata
-cannot be sparse (`register_many` trusts the emitter's list; Unknowns has a rebind under another list). Every reader
+registration whose disposal declaration disagrees with the key's existing entries - disposal-bearing where they were
+registered without disposal methods, or the reverse - raise ValueError. Neither verb compares method lists: the record
+keeps the list of the Spell whose object first registered the key in this store, so disposal metadata cannot be
+sparse, and every later registration appends under it. Within one definition that is the Spell's own list (an emitted
+plan binds `step.spell.disposal_method_names` once, as `dmN`). Across a rebind it need not be: since 0.2.8257 a
+spell_id is the object's code and covers neither the disposal names nor the existence, so a definition bound again
+after `cleanup_spell` meets what the removed one left in a store - see Failure Modes. Every reader
 takes the record: the disposal walk (`_dispose_many_creations` pairs each object with `methods`, newest-first),
 purge (a whole target pops both; a single purge removes the object from the aliased bucket and returns `(object,
 methods)`; bucket and record go together when empty), extract (one row per object, each carrying the key's list) and
@@ -3676,7 +3725,7 @@ emitted line is `many_store.register_many(sidN, vN, dmN)` in the site plan, a sh
 and `creations_i.register_many(...)` in the specializer.
 EVIDENCE: `src/melder/aether/conduit/creations/creations.py:ManyDisposalBucket`, `Creations.register_many`,
 `Creations._append_many_locked`, `Creations._dispose_many_creations`, `Creations._detach_single_many_creation`,
-`Creations.extract_spell_creations`, `Creations.restore_spell_creations` and
+`Creations.add_many_creations`, `Creations.extract_spell_creations`, `Creations.restore_spell_creations` and
 `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_many`.
 
 Scope lease and finished exits (2026-09-27, 0.2.8203): a SpellSpace carries one lease flag, `_released`.
@@ -3794,7 +3843,7 @@ Lifecycle/Cleanup:
   python-dependency-injector issue #432. No ordering structure is needed: `_disposable_creations` is a plain dict,
   dict iteration is insertion-ordered by language guarantee, and insertion happens at creation time, so the registry
   already IS the creation-order record.
-  EVIDENCE: src/melder/aether/conduit/creations/creations.py:420-514.
+  EVIDENCE: src/melder/aether/conduit/creations/creations.py:429-523.
 - That covers ordering WITHIN one scope. Ordering BETWEEN scopes (lesser conduit
   before root, narrower existence before broader) remains owned by the conduit
   cleanup cascade, so the two axes compose without any graph walk.
@@ -3844,6 +3893,22 @@ Failure Modes:
   `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:245`, when a managed exit is not its thread's
   stack top - STACK CORRUPTION rather than a caller mistake. See `### Subcomponent: SpellSpace Thread State`.
 - RuntimeError if conduit state is missing during Creations initialization.
+- A rebind's objects are disposed with the removed definition's methods (measured on 0.2.8267, the GIL off and on;
+  TASK-2026-10-25-creations_many_disposal_docstrings). A `many` spell cleaned up (`cleanup_spell`) and bound again
+  under other disposal names keeps its spell_id, and when its objects register in a store that still holds the
+  removed definition's objects - they stay alive in their scope - they join that key's `ManyDisposalBucket`: the
+  store's end (a root's teardown, a lesser's pool return) runs the removed definition's list on every object of the
+  key, the new ones included, and the new list on none. Nothing raises. Bound again under the same list, each object
+  is disposed with that list; after a first definition without disposal methods (its objects are recorded nowhere),
+  the new objects get a record of their own.
+- AttributeError "'<Type>' object has no attribute 'append'" from `Creations.register_many` when a slotted definition
+  (`unique`, `unique_per_conduit`, ...) whose object is in the store is cleaned up and bound again as a
+  disposal-bearing `many` (the same measurement): the next meld builds the new object, the append to the object
+  under the spell_id then fails the meld, and the new object is neither returned nor recorded; an object there with
+  an `append` of its own would have it called instead. Both outcomes are the gap S3 of
+  EPIC-2026-10-18-spell_identity_is_the_code (a changed binding revalidates; parked) would close.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:ManyDisposalBucket`, `Creations.register_many` and
+  `Creations._append_many_locked`.
 
 Observability:
 - No logger of its own. Disposal failures surface as an `ExceptionGroup` raised
@@ -3854,9 +3919,9 @@ Observability:
   Since 0.2.80 this holds per method as well, and every error keeps the original
   exception as its cause, so the logged or raised group shows what actually failed.
   EVIDENCE:
-  - src/melder/aether/conduit/creations/creations.py:264-337
-  - src/melder/aether/conduit/creations/creations.py:339-387
-  - src/melder/aether/conduit/creations/creations.py:390-418
+  - src/melder/aether/conduit/creations/creations.py:273-346
+  - src/melder/aether/conduit/creations/creations.py:348-396
+  - src/melder/aether/conduit/creations/creations.py:399-427
 
 Extension Points:
 - Disposal method names in `SpellbookConfiguration`. The registry calls a
@@ -7885,17 +7950,20 @@ Contract/Interface:
 - `validate_codegen_request(...)`
 - `execute_codegen_request(...)`
 - `_build_transaction_context(...)`
+- `_build_default_namespace_configuration(...)`
 - `_build_namespace(...)`
 Invariants/Guarantees:
 - validation precedes execution
 - namespace is built only after accepted validation
+- with no projection for the requested frame, the safe posture: imports off and `__import__` plus
+  `SAFE_DENIED_BUILTIN_NAMES` denied (0.2.8269)
 Concurrency/Threading:
 - One instance `RLock` per codegen room, guarding transaction construction and
   the validator/namespace/compiler/executor/monitor collaborators it owns. The
   ordering the lock protects is the invariant directly above: validation must
   precede execution, and the namespace must not be built until validation is
   accepted.
-  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:139
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:142
 Key Files (C1):
 - `src/melder/nexus/rift/codegen_system/codegen_system.py`
 - `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
@@ -8847,9 +8915,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/nexus/rift/codegen_system/codegen_system.py`
   start_line: 1
-  end_line: 537
-  loc: 537
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 545
+  loc: 545
+  verified_at: 2026-10-25T02:56:51Z
 - path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
   start_line: 1
   end_line: 773
@@ -8952,9 +9020,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1680
-  loc: 1680
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 1711
+  loc: 1711
+  verified_at: 2026-10-25T02:23:41Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -10369,7 +10437,7 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
 - `src/melder/nexus/acl/configurations/profiles/codegen/precision.py` - Build the reusable `precision` codegen profile
 - `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py` - Build the reusable `safe` codegen profile
 - `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
-  UNKNOWN - no module docstring, `__agent_purpose__`, or class docstring
+  The import roots and denied builtins the standard codegen presets read
 - `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py`
   Purpose: Hold one reusable typed command-profile ruleset bundle
 - `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py`
@@ -11312,7 +11380,7 @@ Every promoted FACT in this document traces to source. The C3 catalog cites its 
 is the consolidated list of every source file the document cites - the C1 Code Map's core set among them - and the
 tests read for it.
 
-Primary source files (286, all resolved 2026-10-25T01:07:42Z):
+Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 
 - `src/melder/__architecture__.py`
 - `src/melder/__components__.py`
@@ -11519,6 +11587,8 @@ Primary source files (286, all resolved 2026-10-25T01:07:42Z):
 - `src/melder/mutation_research/research_set/transition_entry.py`
 - `src/melder/mutation_research/synthesis/structural_synthesizer.py`
 - `src/melder/nexus/acl/builder/frame_acl_builder.py`
+- `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py`
+- `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
 - `src/melder/nexus/acl/frame_acl_compiled_access_surface.py`
 - `src/melder/nexus/acl/frame_acl_compiler.py`
 - `src/melder/nexus/acl/frame_acl_configuration.py`
@@ -11546,11 +11616,15 @@ Primary source files (286, all resolved 2026-10-25T01:07:42Z):
 - `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+- `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py`
 - `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
 - `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
+- `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py`
+- `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py`
+- `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py`
 - `src/melder/nexus/rift/command_system/capability_command_system.py`
 - `src/melder/nexus/rift/command_system/codegen_command_system.py`
 - `src/melder/nexus/rift/command_system/command_system.py`
@@ -11611,6 +11685,34 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-10-25 codegen presets hold their file posture (0.2.8269; TASK-2026-10-10-deny-file-access-under-safe-codegen,
+defect D-10). What component contracts changed: Nexus Descriptor And ACL Managers gains the presets' file posture -
+`open` is on `SAFE_DENIED_BUILTIN_NAMES`, the denied-builtin tuple safe, hybrid and precision share, so their room
+code is refused at validation when it calls or names `open` and finds no `open` in its runtime builtins, how the
+compiler unites and subtracts the denied builtins (an override's allow rule re-allows a name) and intersects the
+import allow lists, each preset's posture for `open`, `io`, `os` and `pathlib`, and the refusal texts; Codegen
+Internal Engine and its CodegenSystem subcomponent say a request without a projection runs under the safe posture,
+the safe tuple read from the presets' module instead of a copy, and the refusals it meets. codegen_system.py grew
+eight lines (an import and the default's docstring): its numeric citations moved three lines and point at
+`validate_codegen_request`, `execute_codegen_request` and the instance lock again, and the code map remeasures it;
+stdlib_import_sets.py gained a module docstring, so the Full Package Inventory carries its purpose instead of
+UNKNOWN; Information Sources adds the six source files these entries cite. Still unknown: the Unknowns section,
+unchanged. Verify next: Codegen Internal Engine - whether a request naming a frame without a projection should run
+at all (out of D-10's scope), and the dynamic-import gap (D-11) beside these entries.
+
+2026-10-25 the `many` disposal record after a rebind (creations.py docstrings;
+TASK-2026-10-25-creations_many_disposal_docstrings). What component contracts changed: none in code - the
+docstrings of `ManyDisposalBucket`, `Creations.add_many_creations`, `register_many` and `_append_many_locked` no
+longer say a spell id hashes its disposal names and state the store as it has been since 0.2.8257; Creations and
+SpellSpace follows: its many registration trim says what the two verbs check and that neither compares method
+lists, and its Failure Modes gain the two measured rebind outcomes - a `many` bound again under other disposal names
+is disposed with the removed definition's list, and a slotted definition bound again as `many` fails
+`register_many` with AttributeError. The Unknowns entry that asked the first question is answered and gives way to
+the rebind nobody measured, a `many` bound again under a slotted existence. creations.py grew 31 lines (docstrings
+only): its numeric citations moved 9 lines and point at the disposal walk, `cleanup`, `_attempt_cleanup` and
+`_describe_for_disposal_error` again, and the code map remeasures it. Still unknown: that rebind (Unknowns). Verify
+next: Creations and SpellSpace against S3 of EPIC-2026-10-18-spell_identity_is_the_code when it is scheduled.
 
 2026-10-24 src_components to its authoring spec (documentation only; STORY-2026-10-24-src_components_to_spec, the
 owner's ask). What component contracts changed: none - every entry states its component as the source has it today.

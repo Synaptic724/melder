@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: b4a2e6118fc663e386e59e83d036e089be398c0d59c529a7afbb0ff5cb32aba7
-FILE COUNT: 1147
+SOURCE FINGERPRINT: 85fb62ddd9c056f0dd978459ca5775cd35c8c34517902dfffcbe3b413ec1a5c4
+FILE COUNT: 1150
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -14941,6 +14941,802 @@ def test_a_cleaned_conduit_refuses_the_read() -> None:
         _ = conduit.policy
 ================================================================================
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py
+CONTENT SHA256: 3fdaa7b9f921e0602795a718540fe17ee1ca0d9670a282fd36a68bee55f84f67
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component: purge and the live-creation probes reach every version by its spell_id
+(STORY-2026-10-25-probe_and_purge_reach_every_version).
+
+Versions coexist and keep their objects across a notch: a notch back returns the object a version built while it was
+active. The creation stores key every version's entries by its spell_id, so a parked version's objects are there under
+their own key. `purge(spell_id=...)`, `has_live_creation(spell=<spell_id>)` and `describe_live_creation_status(spell=
+<spell_id>)` build nothing, so they reach any version the conduit can see - its Book's own, active or parked, and a
+borrowed copy, active or parked - and act on that version's entries in the store the door authorizes, exactly as for an
+active version. Every door that builds stays active-only, and every selector other than a spell_id (a name, a class,
+spellframe and binding name, an instance) still names the version an index has active.
+
+Each test builds a fresh dynamic world in the "default" frame: disposal names ["cleanup"], caching off, one phase
+worker. `Resource` is version 1 and `version_of(Resource, version=2)` version 2 - new code under the same name, bound
+bare at the class's own address, so the worlds stay valid when an index owns its address (option A of
+STORY-2026-10-17-notch_moves_signature_by_incoming_key_only). The failure-mode ids (F1-F22) are the story's catalogue.
+"""
+
+from collections.abc import Iterator
+from typing import Any, Callable, List, Optional
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from tests._spell_identity_test_support import version_of
+
+
+class Resource:
+    """
+    Purpose:
+        Version 1 of the resource every test versions; its disposal is observable.
+    Contract:
+        - `cleanup` counts calls on the object and appends the object to `Resource.journal`, so a test can tell which
+          object was disposed and in what order.
+        - Owns no external resource.
+    """
+
+    version: int = 1
+    journal: List[Any] = []
+
+    def __init__(self) -> None:
+        """
+        Purpose: Start each object undisposed.
+        Contract: `cleanup_calls` starts at 0.
+        Returns: None.
+        """
+        self.cleanup_calls = 0
+
+    def cleanup(self) -> None:
+        """
+        Purpose: Make every disposal attempt observable.
+        Contract: Increments `cleanup_calls` and records the object in `Resource.journal`, once per call.
+        Returns: None.
+        """
+        self.cleanup_calls += 1
+        Resource.journal.append(self)
+
+
+class Anchor:
+    """
+    Purpose: Give a second Book something of its own to conjure.
+    Contract: Plain; no disposal method.
+    """
+
+
+@pytest.fixture(autouse=True)
+def fresh_world() -> Iterator[None]:
+    """
+    Purpose: Isolate every test: fresh Nexus and Aether, rebound on Spellbook and Conduit, and an empty journal.
+    Contract: Resets before and after the test.
+    Yields: None while the test owns its world.
+    """
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    Resource.journal = []
+    yield
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    Resource.journal = []
+
+
+def _book(*, first: bool = True) -> Spellbook:
+    """
+    Purpose: Build one Book in the "default" frame with disposal names ["cleanup"] and one phase worker.
+    Args:
+        first: True for the frame's first Book, which settles the frame dynamic with caching off; a later Book of
+            the same frame inherits that posture.
+    Returns:
+        Spellbook: The Book, not conjured.
+    """
+    configuration = SpellbookConfiguration("default")
+    configuration.set_property("disposal", True)
+    configuration.set_property("disposal_method_names", ["cleanup"])
+    configuration.load_default_dictionary()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    book = Spellbook(aetheric_frame="default", configuration=configuration)
+    if first:
+        book.configure_aether_frame(
+            system_state="dynamic", disposal=None, disposal_method_names=None, system_caching_enabled=False,
+        )
+    return book
+
+
+class _World:
+    """
+    Purpose:
+        One lender: `Resource` bound active, its version 2 staged parked on the same index after conjure.
+    Contract:
+        - `book`, `root`, `index`, `v1_id`, `v2_id` and `v2_class` name the world's parts.
+        - `notch(spell_id)` moves the index to that version through the public notch.
+        - `cleanup()` tears the root and the Book down; extra conduits are the test's to clean first.
+    """
+
+    def __init__(self, existence: Existence, *, stage_before_conjure: bool = False) -> None:
+        """
+        Purpose: Build the world.
+        Args:
+            existence: The existence both versions are bound with.
+            stage_before_conjure: Stage version 2 with `Spellbook.bind_inactive` before conjure instead of
+                `Conduit.bind_inactive` after it.
+        Returns: None.
+        """
+        self.book: Spellbook = _book()
+        self.v2_class: type = version_of(Resource, version=2)
+        self.v1_id: str = self.book.bind(spell=Resource, existence=existence, permissions="create")
+        if stage_before_conjure:
+            self.index: Any = self.book.find_spell_by_spell_id(self.v1_id).spell_index
+            self.v2_id: str = self.book.bind_inactive(
+                spell=self.v2_class, spell_index=self.index, existence=existence, permissions="create",
+            )
+            self.root: Conduit = self.book.conjure(dynamic=True, name="lender")
+        else:
+            self.root = self.book.conjure(dynamic=True, name="lender")
+            self.index = self.root.get_spell_by_spell_id(self.v1_id).spell_index
+            self.v2_id = self.root.bind_inactive(
+                spell=self.v2_class, spell_index=self.index, existence=existence, permissions="create",
+            )
+
+    def notch(self, spell_id: str) -> None:
+        """
+        Purpose: Make `spell_id` the index's active version.
+        Args: spell_id: A version of the world's index.
+        Returns: None.
+        """
+        self.root.notch_spell(spell_index=self.index, spell_id=spell_id)
+
+    def cleanup(self) -> None:
+        """
+        Purpose: Tear the world down: the root, then the Book.
+        Returns: None.
+        """
+        self.root.cleanup()
+        self.book.cleanup()
+
+
+def _count(scope: Any, spell_id: str) -> int:
+    """
+    Purpose: Read a version's live-creation count through the probe a scope offers.
+    Args:
+        scope: A Conduit, or a Meld door (a SpellSpace has no public probe; its door is `space._meld`).
+        spell_id: The version to probe.
+    Returns:
+        int: The status payload's `creation_count`.
+    """
+    status = scope.describe_live_creation_status(spell=spell_id)
+    assert status["spell_id"] == spell_id
+    return status["creation_count"]
+
+
+_SLOTTED_AND_MANY = [
+    Existence.unique,
+    Existence.unique_per_conduit,
+    Existence.unique_per_conduit_lineage,
+    Existence.many,
+]
+
+
+# --- F1, F2, F3: a parked version's own entries ---------------------------------------------------------------------
+
+@pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+def test_parked_version_is_probed_and_purged_by_spell_id(existence: Existence) -> None:
+    """
+    Purpose: F1/F3 - a version built while active, then parked by a notch, is probed and purged by its spell_id.
+    Contract: The probe counts the parked version's own objects; purge disposes exactly them and returns their count;
+        the active version's object is untouched; a second purge returns 0. Before the story every call raised
+        KeyError "[MELD] No spell found with spell_id".
+    Args: existence: The lifetime both versions are bound with.
+    Returns: None.
+    """
+    world = _World(existence)
+    try:
+        built = 2 if existence is Existence.many else 1
+        old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(built)]
+        world.notch(world.v2_id)
+        active_object = world.root.meld(spell_id=world.v2_id)
+
+        assert world.root.has_live_creation(spell=world.v1_id) is True
+        assert _count(world.root, world.v1_id) == built
+        assert world.root.purge(spell_id=world.v1_id) == built
+        assert [obj.cleanup_calls for obj in old_objects] == [1] * built
+        assert active_object.cleanup_calls == 0
+        assert world.root.has_live_creation(spell=world.v1_id) is False
+        assert world.root.has_live_creation(spell=world.v2_id) is True
+        assert world.root.purge(spell_id=world.v1_id) == 0
+    finally:
+        world.cleanup()
+
+
+@pytest.mark.parametrize("purge_first", [True, False])
+def test_notch_back_after_purging_builds_a_fresh_object(purge_first: bool) -> None:
+    """
+    Purpose: F1 - a notch back returns the object the version kept, unless it was purged while parked.
+    Contract: Without a purge the notch back returns the same `unique` object (versions keep their objects); after a
+        purge of the parked version the notch back builds a fresh one and the purged object stays disposed once.
+    Args: purge_first: Purge the parked version before the notch back.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        first = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        if purge_first:
+            assert world.root.purge(spell_id=world.v1_id) == 1
+        world.notch(world.v1_id)
+        again = world.root.meld(spell_id=world.v1_id)
+        if purge_first:
+            assert again is not first
+            assert (first.cleanup_calls, again.cleanup_calls) == (1, 0)
+        else:
+            assert again is first
+            assert first.cleanup_calls == 0
+    finally:
+        world.cleanup()
+
+
+@pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+def test_parked_version_never_built_probes_false_and_purges_zero(existence: Existence) -> None:
+    """
+    Purpose: F2 - a version staged parked and never active has no entries; the doors answer instead of raising.
+    Contract: The probe is False with a count of 0, purge returns 0, and the active version's object is untouched.
+    Args: existence: The lifetime both versions are bound with.
+    Returns: None.
+    """
+    world = _World(existence)
+    try:
+        active_object = world.root.meld(spell_id=world.v1_id)
+        assert world.root.has_live_creation(spell=world.v2_id) is False
+        assert _count(world.root, world.v2_id) == 0
+        assert world.root.purge(spell_id=world.v2_id) == 0
+        assert active_object.cleanup_calls == 0
+        assert world.root.has_live_creation(spell=world.v1_id) is True
+    finally:
+        world.cleanup()
+
+
+def test_parked_many_purge_disposes_newest_first_and_keeps_the_active_versions() -> None:
+    """
+    Purpose: F3 - purging a parked `many` version disposes its objects newest first and nothing of the active one.
+    Contract: Three objects of version 1 are disposed in reverse build order; version 2's two objects stay counted.
+    Returns: None.
+    """
+    world = _World(Existence.many)
+    try:
+        old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(3)]
+        world.notch(world.v2_id)
+        new_objects = [world.root.meld(spell_id=world.v2_id) for _ in range(2)]
+        assert world.root.purge(spell_id=world.v1_id) == 3
+        assert Resource.journal == list(reversed(old_objects))
+        assert [obj.cleanup_calls for obj in new_objects] == [0, 0]
+        assert _count(world.root, world.v2_id) == 2
+    finally:
+        world.cleanup()
+
+
+# --- F4, F5, F6, F7, F8, F9: store selection and authority are unchanged --------------------------------------------
+
+@pytest.mark.parametrize("existence", [Existence.unique_per_conduit, Existence.many])
+def test_lesser_purges_only_its_own_entries_of_a_parked_version(existence: Existence) -> None:
+    """
+    Purpose: F4 - per-conduit and `many` lifetimes use the caller's own store, for a parked version too.
+    Contract: A lesser's purge of the parked version retires the lesser's object and leaves the root's; the root's
+        purge then retires its own.
+    Args: existence: A caller-local lifetime.
+    Returns: None.
+    """
+    world = _World(existence)
+    lesser = world.root.create_lesser_conduit()
+    try:
+        root_object = world.root.meld(spell_id=world.v1_id)
+        lesser_object = lesser.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        assert lesser.purge(spell_id=world.v1_id) == 1
+        assert (lesser_object.cleanup_calls, root_object.cleanup_calls) == (1, 0)
+        assert world.root.has_live_creation(spell=world.v1_id) is True
+        assert world.root.purge(spell_id=world.v1_id) == 1
+        assert root_object.cleanup_calls == 1
+    finally:
+        lesser.cleanup()
+        world.cleanup()
+
+
+def test_lineage_root_alone_purges_a_parked_lineage_version() -> None:
+    """
+    Purpose: F4 - a lineage version's object lives in the lineage root's store; only the root may purge it.
+    Contract: The lesser sees the object and is refused naming the lineage root; the root purges it once.
+    Returns: None.
+    """
+    world = _World(Existence.unique_per_conduit_lineage)
+    lesser = world.root.create_lesser_conduit()
+    try:
+        obj = lesser.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        assert lesser.has_live_creation(spell=world.v1_id) is True
+        with pytest.raises(RuntimeError, match="lineage root conduit"):
+            lesser.purge(spell_id=world.v1_id)
+        assert obj.cleanup_calls == 0
+        assert world.root.purge(spell_id=world.v1_id) == 1
+        assert obj.cleanup_calls == 1
+    finally:
+        lesser.cleanup()
+        world.cleanup()
+
+
+def test_lesser_cannot_purge_a_parked_unique_version() -> None:
+    """
+    Purpose: F5 - a parked `unique` version's object is its owner's; a lesser sees it but may not purge it.
+    Contract: The lesser's probe is True; its purge raises RuntimeError naming the spell-owning conduit and disposes
+        nothing; the owner root's purge retires it.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    lesser = world.root.create_lesser_conduit()
+    try:
+        obj = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        assert lesser.has_live_creation(spell=world.v1_id) is True
+        with pytest.raises(RuntimeError, match="spell-owning conduit"):
+            lesser.purge(spell_id=world.v1_id)
+        assert obj.cleanup_calls == 0
+        assert world.root.purge(spell_id=world.v1_id) == 1
+    finally:
+        lesser.cleanup()
+        world.cleanup()
+
+
+@pytest.mark.parametrize("existence", [Existence.unique_per_spell_space, Existence.many])
+def test_spellspace_purges_its_entries_of_a_parked_version(existence: Existence) -> None:
+    """
+    Purpose: F6 - a SpellSpace probes and purges its own entries of a parked version.
+    Contract: The space's door counts the parked version's objects in the space's store and its purge retires them.
+    Args: existence: A lifetime a SpellSpace retires.
+    Returns: None.
+    """
+    world = _World(existence)
+    space = world.root.create_spellspace()
+    try:
+        built = 2 if existence is Existence.many else 1
+        objects = [space.meld(spell_id=world.v1_id) for _ in range(built)]
+        world.notch(world.v2_id)
+        assert space._meld.has_live_creation(spell=world.v1_id) is True
+        assert _count(space._meld, world.v1_id) == built
+        assert space.purge(spell_id=world.v1_id) == built
+        assert [obj.cleanup_calls for obj in objects] == [1] * built
+    finally:
+        space.cleanup()
+        world.cleanup()
+
+
+def test_conduit_still_refuses_a_parked_spellspace_version() -> None:
+    """
+    Purpose: F6 - the conduit door keeps refusing a spellspace lifetime, for a parked version too.
+    Contract: Conduit.purge raises RuntimeError "call purge on the specific SpellSpace" and the probe refuses it as a
+        spellspace-request spell; the space's object is untouched.
+    Returns: None.
+    """
+    world = _World(Existence.unique_per_spell_space)
+    space = world.root.create_spellspace()
+    try:
+        obj = space.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        with pytest.raises(RuntimeError, match="call purge on the specific SpellSpace"):
+            world.root.purge(spell_id=world.v1_id)
+        with pytest.raises(RuntimeError, match="must be built from a spellspace"):
+            world.root.has_live_creation(spell=world.v1_id)
+        assert obj.cleanup_calls == 0
+    finally:
+        space.cleanup()
+        world.cleanup()
+
+
+def test_cluster_leader_purges_a_parked_cluster_version() -> None:
+    """
+    Purpose: F7 - a parked cluster version's object stays in the cluster's team store; only the elected leader purges.
+    Contract: The binding owner is refused naming the leader; the leader, which borrows the version through the
+        cluster's share, probes it and purges it once.
+    Returns: None.
+    """
+    world = _World(Existence.unique_per_conduit_cluster)
+    leader = _book(first=False).conjure(dynamic=True, name="leader")
+    try:
+        world.root.link(leader)
+        cloud = world.root.get_conduit_cloud()
+        cloud.create_cluster("versions")
+        cloud.add_conduit_to_cluster(world.root, "versions")
+        cloud.add_conduit_to_cluster(leader, "versions")
+        cloud.refresh_cluster_shares_for_conduit(world.root)
+        cloud.get_cluster("versions").elect_leader(leader.id)
+        obj = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        with pytest.raises(RuntimeError, match="leader"):
+            world.root.purge(spell_id=world.v1_id)
+        assert leader.has_live_creation(spell=world.v1_id) is True
+        assert leader.purge(spell_id=world.v1_id) == 1
+        assert obj.cleanup_calls == 1
+    finally:
+        leader.cleanup()
+        world.cleanup()
+
+
+def test_parked_managed_version_reports_its_own_pool_and_purges_nothing() -> None:
+    """
+    Purpose: F8 - a parked managed version's probe reads that version's own pool; purge stays outside the design.
+    Contract: The probe counts the object still out from version 1's pool (storage scope "managed_pool"); purge
+        returns 0 and disposes nothing.
+    Returns: None.
+    """
+    world = _World(Existence.managed_spell_quantity)
+    try:
+        leased = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        status = world.root.describe_live_creation_status(spell=world.v1_id)
+        assert (status["is_live"], status["storage_scope_kind"], status["creation_count"]) == (True, "managed_pool", 1)
+        assert world.root.purge(spell_id=world.v1_id) == 0
+        assert leased.cleanup_calls == 0
+    finally:
+        world.cleanup()
+
+
+def test_parked_existing_object_is_live_and_purge_retires_nothing() -> None:
+    """
+    Purpose: F9 - a version staged as an existing object is live (its object exists) but holds no store entry.
+    Contract: The probe is True with storage scope "existing_creation"; purge returns 0 (a parked existing object is
+        not registered in the store) and the supplied object is never disposed.
+    Returns: None.
+    """
+    book = _book()
+    first = Resource()
+    v1_id = book.bind(spell=first, existence=Existence.unique, permissions="create")
+    root = book.conjure(dynamic=True, name="lender")
+    try:
+        index = root.get_spell_by_spell_id(v1_id).spell_index
+        second = version_of(Resource, version=2)()
+        v2_id = root.bind_inactive(spell=second, spell_index=index, existence=Existence.unique, permissions="create")
+        status = root.describe_live_creation_status(spell=v2_id)
+        assert (status["is_live"], status["storage_scope_kind"], status["creation_count"]) == (
+            True, "existing_creation", 1,
+        )
+        assert root.purge(spell_id=v2_id) == 0
+        assert second.cleanup_calls == 0
+    finally:
+        root.cleanup()
+        book.cleanup()
+
+
+# --- F10: borrowed copies ---------------------------------------------------------------------------------------------
+
+def _borrow(world: _World, how: str) -> Conduit:
+    """
+    Purpose: Give a second root of the frame a copy of version 1, by an index link or by a version grant.
+    Args:
+        world: The lender's world, version 1 active.
+        how: "index_link" (the borrower follows the index) or "grant" (the borrower holds version 1 itself).
+    Returns:
+        Conduit: The borrower's root, linked to the lender.
+    """
+    borrower = _book(first=False).conjure(dynamic=True, name="borrower")
+    world.root.link(borrower)
+    if how == "index_link":
+        borrower.add_index_to_contract(index=world.index, conduit=world.root, permissions="create")
+    else:
+        borrower.add_spell_to_contract(spell_id=world.v1_id, conduit=world.root, permissions="create")
+    return borrower
+
+
+@pytest.mark.parametrize("how", ["index_link", "grant"])
+def test_borrower_reaches_its_parked_copy_of_a_unique_version(how: str) -> None:
+    """
+    Purpose: F10 - a borrower's copy parked by the lender's notch is probed, and its purge keeps the unique rule.
+    Contract: The borrower reads the lender's store (True) and is refused naming the spell-owning conduit; the lender
+        purges the object once.
+    Args: how: How the borrower holds version 1.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    borrower = _borrow(world, how)
+    try:
+        obj = borrower.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        assert borrower.has_live_creation(spell=world.v1_id) is True
+        with pytest.raises(RuntimeError, match="spell-owning conduit"):
+            borrower.purge(spell_id=world.v1_id)
+        assert obj.cleanup_calls == 0
+        assert world.root.purge(spell_id=world.v1_id) == 1
+        assert obj.cleanup_calls == 1
+    finally:
+        borrower.cleanup()
+        world.cleanup()
+
+
+@pytest.mark.parametrize("how", ["index_link", "grant"])
+def test_borrower_purges_its_own_many_entries_of_a_parked_copy(how: str) -> None:
+    """
+    Purpose: F10 - `many` objects a borrower built from its copy are in the borrower's store; it purges them.
+    Contract: After the lender's notch the borrower counts and purges its two objects; the lender holds none.
+    Args: how: How the borrower holds version 1.
+    Returns: None.
+    """
+    world = _World(Existence.many)
+    borrower = _borrow(world, how)
+    try:
+        objects = [borrower.meld(spell_id=world.v1_id) for _ in range(2)]
+        world.notch(world.v2_id)
+        assert _count(borrower, world.v1_id) == 2
+        assert _count(world.root, world.v1_id) == 0
+        assert borrower.purge(spell_id=world.v1_id) == 2
+        assert [obj.cleanup_calls for obj in objects] == [1, 1]
+    finally:
+        borrower.cleanup()
+        world.cleanup()
+
+
+# --- F11, F12, F13: what does not change -------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("which", ["unknown", "disposed", "foreign"])
+def test_spell_ids_no_visible_version_carries_still_raise_key_error(which: str) -> None:
+    """
+    Purpose: F11 - a spell_id no version the conduit can see carries keeps today's KeyError.
+    Contract: An unknown spell_id, a disposed version's and another Book's (not borrowed) raise KeyError "[MELD] No
+        spell found with spell_id: <id>" from the probe and from purge.
+    Args: which: The kind of spell_id.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    other: Optional[Conduit] = None
+    try:
+        if which == "unknown":
+            spell_id = "0" * 64
+        elif which == "disposed":
+            spell_id = world.v2_id
+            world.root.cleanup_spell(spell=world.root.get_spell_by_spell_id(world.v2_id))
+        else:
+            other_book = _book(first=False)
+            spell_id = other_book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
+            other = other_book.conjure(dynamic=True, name="other")
+        with pytest.raises(KeyError, match="No spell found with spell_id"):
+            world.root.has_live_creation(spell=spell_id)
+        with pytest.raises(KeyError, match="No spell found with spell_id"):
+            world.root.purge(spell_id=spell_id)
+    finally:
+        if other is not None:
+            other.cleanup()
+        world.cleanup()
+
+
+def test_meld_doors_stay_active_only() -> None:
+    """
+    Purpose: F12 - the doors that build or hand out an object never reach a parked version.
+    Contract: meld(spell_id=<parked>) and meld_existing_spell(spell=<parked>) raise KeyError, before and after a notch.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        with pytest.raises(KeyError, match="No spell found with spell_id"):
+            world.root.meld(spell_id=world.v2_id)
+        world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        with pytest.raises(KeyError, match="No spell found with spell_id"):
+            world.root.meld(spell_id=world.v1_id)
+        with pytest.raises(KeyError, match="No spell found with spell_id"):
+            world.root.meld_existing_spell(spell=world.v1_id)
+    finally:
+        world.cleanup()
+
+
+def test_spell_id_purge_still_needs_purge_all() -> None:
+    """
+    Purpose: F13 - single-object retirement still needs an instance, for a parked version too.
+    Contract: purge(spell_id=<parked>, purge_all=False) raises ValueError and disposes nothing.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        obj = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        with pytest.raises(ValueError, match="requires an object instance"):
+            world.root.purge(spell_id=world.v1_id, purge_all=False)
+        assert obj.cleanup_calls == 0
+    finally:
+        world.cleanup()
+
+
+# --- F14, F17, F19, F20, F21, F22 -------------------------------------------------------------------------------------
+
+def test_instance_of_a_parked_version_resolves_through_its_address() -> None:
+    """
+    Purpose: F14 - an instance names its class's address, which serves the active version (a documented limit).
+    Contract: purge(spell=<version 1 object>, purge_all=False) looks in the active version's entry, finds another
+        object and returns 0; purge(spell=<version 1 object>) retires the ACTIVE version's object, not version 1's;
+        purge(spell_id=<version 1>) is the way to retire version 1's object.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        old = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        new = world.root.meld(spell_id=world.v2_id)
+        assert world.root.purge(spell=old, purge_all=False) == 0
+        assert (old.cleanup_calls, new.cleanup_calls) == (0, 0)
+        assert world.root.purge(spell=old) == 1
+        assert (old.cleanup_calls, new.cleanup_calls) == (0, 1)
+        assert world.root.purge(spell_id=world.v1_id) == 1
+        assert old.cleanup_calls == 1
+    finally:
+        world.cleanup()
+
+
+def test_purge_refuses_a_unique_version_with_no_owner_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose: F17 - a `unique` version whose owner stamp failed at conjure is refused by purge with a clear error.
+    Contract: Version 2 is staged before conjure and its stamp raises (conjure logs it and goes on). Parked and then
+        active, the probe answers False and purge raises RuntimeError naming the missing owner store, where an
+        active one raised AttributeError "'NoneType' object has no attribute 'owner_conduit_id'".
+    Args: monkeypatch: Makes the owner stamp raise for version 2 during conjure only.
+    Returns: None.
+    """
+    original: Callable[..., Any] = Spell._add_owned_conduit
+    refused: List[str] = []
+
+    def refusing_stamp(spell: Spell, *args: Any, **kwargs: Any) -> Any:
+        """Raise for the version named in `refused`; stamp every other version as conjure does."""
+        if spell.spell_id in refused:
+            raise RuntimeError("test: the owner stamp raised")
+        return original(spell, *args, **kwargs)
+
+    book = _book()
+    v1_id = book.bind(spell=Resource, existence=Existence.unique, permissions="create")
+    index = book.find_spell_by_spell_id(v1_id).spell_index
+    v2_id = book.bind_inactive(
+        spell=version_of(Resource, version=2), spell_index=index, existence=Existence.unique, permissions="create",
+    )
+    refused.append(v2_id)
+    monkeypatch.setattr(Spell, "_add_owned_conduit", refusing_stamp, raising=True)
+    root = book.conjure(dynamic=True, name="lender")
+    monkeypatch.undo()
+    try:
+        assert root.has_live_creation(spell=v2_id) is False
+        with pytest.raises(RuntimeError, match="no owner store"):
+            root.purge(spell_id=v2_id)
+        root.notch_spell(spell_index=index, spell_id=v2_id)
+        with pytest.raises(RuntimeError, match="no owner store"):
+            root.purge(spell_id=v2_id)
+    finally:
+        root.cleanup()
+        book.cleanup()
+
+
+def test_split_version_is_reached_by_spell_id() -> None:
+    """
+    Purpose: F19 - a version split into an index of its own by remove_from_spell_index is reached as a parked version.
+    Contract: Version 2 builds an object while active, is parked by a notch back, then split off; its probe is True
+        and its purge retires the object.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        world.notch(world.v2_id)
+        obj = world.root.meld(spell_id=world.v2_id)
+        world.notch(world.v1_id)
+        world.root.remove_from_spell_index(spell_id=world.v2_id, source_index=world.index)
+        assert world.root.get_spell_by_spell_id(world.v2_id).spell_index is not world.index
+        assert world.root.has_live_creation(spell=world.v2_id) is True
+        assert world.root.purge(spell_id=world.v2_id) == 1
+        assert obj.cleanup_calls == 1
+    finally:
+        world.cleanup()
+
+
+def test_transfer_moves_the_reach_with_the_versions() -> None:
+    """
+    Purpose: F20 - after an ownership transfer the source no longer sees the moved versions and the target does.
+    Contract: The source's probe of either version raises KeyError; the target probes the parked version it received
+        (its object moved with it) and purges it once.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    target_book = _book(first=False)
+    target_book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
+    target = target_book.conjure(dynamic=True, name="target")
+    try:
+        old = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        world.root.meld(spell_id=world.v2_id)
+        world.root.transfer_spell_ownership(spell=world.v2_id, target_conduit=target)
+        for spell_id in (world.v1_id, world.v2_id):
+            with pytest.raises(KeyError, match="No spell found with spell_id"):
+                world.root.has_live_creation(spell=spell_id)
+        assert target.has_live_creation(spell=world.v1_id) is True
+        assert target.purge(spell_id=world.v1_id) == 1
+        assert old.cleanup_calls == 1
+    finally:
+        target.cleanup()
+        world.cleanup()
+
+
+def test_other_selectors_still_name_the_active_version() -> None:
+    """
+    Purpose: F21 - a name, a class and the address name the index's active version, as meld does.
+    Contract: describe by name answers version 2; purge by class retires version 2's object only; purge by name
+        string after a rebuild does the same; version 1's object survives both.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        old = world.root.meld(spell_id=world.v1_id)
+        world.notch(world.v2_id)
+        new = world.root.meld(spell_id=world.v2_id)
+        assert world.root.describe_live_creation_status(spell_name="Resource")["spell_id"] == world.v2_id
+        assert world.root.purge(spell=Resource) == 1
+        assert (old.cleanup_calls, new.cleanup_calls) == (0, 1)
+        rebuilt = world.root.meld(spell_id=world.v2_id)
+        assert world.root.purge("Resource") == 1
+        assert (old.cleanup_calls, rebuilt.cleanup_calls) == (0, 1)
+        assert world.root.has_live_creation(spell=world.v1_id) is True
+    finally:
+        world.cleanup()
+
+
+def test_a_spell_object_is_not_a_selector_for_its_version() -> None:
+    """
+    Purpose: F22 - the Spell object `get_spell_by_spell_id` returns is treated as an application instance, unchanged.
+    Contract: Its class `Spell` is looked up as an address and raises KeyError naming frame 'spell'; the handle for a
+        version is its spell_id.
+    Returns: None.
+    """
+    world = _World(Existence.unique)
+    try:
+        world.root.meld(spell_id=world.v1_id)
+        version_1 = world.root.get_spell_by_spell_id(world.v1_id)
+        with pytest.raises(KeyError, match="frame='spell'"):
+            world.root.has_live_creation(spell=version_1)
+        with pytest.raises(KeyError, match="frame='spell'"):
+            world.root.purge(spell=version_1)
+        assert world.root.has_live_creation(spell=world.v1_id) is True
+    finally:
+        world.cleanup()
+
+
+def test_versions_staged_before_conjure_are_reached_like_those_staged_after() -> None:
+    """
+    Purpose: F2 for a Book that staged version 2 before conjure: the same answers as one staged after.
+    Contract: The parked version is probed False and purged 0 before a notch; after a notch to it, a build, and a
+        notch back, it is probed True and purged once.
+    Returns: None.
+    """
+    world = _World(Existence.unique, stage_before_conjure=True)
+    try:
+        assert world.root.has_live_creation(spell=world.v2_id) is False
+        assert world.root.purge(spell_id=world.v2_id) == 0
+        world.notch(world.v2_id)
+        obj = world.root.meld(spell_id=world.v2_id)
+        world.notch(world.v1_id)
+        assert world.root.has_live_creation(spell=world.v2_id) is True
+        assert world.root.purge(spell_id=world.v2_id) == 1
+        assert obj.cleanup_calls == 1
+    finally:
+        world.cleanup()
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_purge.py
@@ -109509,7 +110305,7 @@ END FILE: tests/integration/melder/aether/test_capability_space_frame_and_workst
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_codegen_core_boundary_integration.py
-CONTENT SHA256: 89b7cdd9068e135b1bcbac294aef0ec7534878c798548aa2e800483f93aa6520
+CONTENT SHA256: 0b80d6a63043404176710d67a494d06e5e10b7155f462ceed97be8492b280910
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -109518,17 +110314,21 @@ What the codegen room's profiles stop around Melder's core today (core-protectio
 Purpose:
     Agent code reaches the runtime through a codegen room, whose frame's codegen ACL profile decides
     what the code may import and call. The review's protected-core question depends on what those
-    profiles stop today, so this file pins it in two kinds of test:
+    profiles stop today, so this file pins it in three kinds of test:
     - Characterization tests pin what works: no profile names `melder` in a deny list, so an import of
       it is refused only by the imports-off rule (safe) or by an import allowlist that leaves it out
       (hybrid, precision, permissive) and full_access accepts it; and the hybrid profile refuses
       import statements of the roots its deny list names.
-    - Two known gaps are written as the contract their profiles document, under xfail(strict=True):
-      the safe profile documents that it denies writes, yet agent code writes files with the `open`
-      builtin; the hybrid profile denies subprocess, socket and importlib, yet `__import__` loads them,
-      also with the precision overlay. STRICT ON PURPOSE: when a gap is closed its test starts
-      passing, strict turns that into a failure, and whoever closed it must delete the marker. Do not
-      loosen these assertions to make them pass.
+    - File-posture tests pin what each profile does with files: `open` - called or only named - is
+      refused under safe, hybrid and the precision overlay, and under the engine's default posture for a
+      frame the room holds no projection for, and runs under permissive and full_access; `io.open`,
+      `os.open` and pathlib writes follow each profile's import list. `test_safe_profile_refuses_writing_files`
+      was the strict xfail for this gap (D-10) until the safe profile denied `open`.
+    - One known gap is written as the contract its profiles document, under xfail(strict=True): the
+      hybrid profile denies subprocess, socket and importlib, yet `__import__` loads them, also with the
+      precision overlay. STRICT ON PURPOSE: when the gap is closed its test starts passing, strict turns
+      that into a failure, and whoever closed it must delete the marker. Do not loosen these assertions
+      to make them pass.
     Characterization, not protection: the profiles run in the same process as the code they check, so
     they are policy and defence in depth, not a security boundary, and a green run here does not mean
     the core is protected.
@@ -109536,7 +110336,7 @@ Purpose:
 Runs only on 3.14t (melder package root import chain).
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 
 import pytest
 
@@ -109647,22 +110447,11 @@ def test_hybrid_refuses_import_statements_of_its_denied_roots(module_name: str) 
     assert "Import root '{0}' is not allowed".format(module_name) in result["validation_issues"][0]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "OPEN: no codegen profile denies the open builtin - the runtime __builtins__ is the full "
-        "builtins dict minus the profile's deny list, and no validator strategy inspects open or "
-        "non-dunder method calls - so agent code in a safe room writes any file the process can "
-        "write, although the safe profile documents that it denies writes. Core-protection review, "
-        "Note 10. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that "
-        "into a failure, and whoever closed it deletes this marker."
-    ),
-)
 def test_safe_profile_refuses_writing_files(tmp_path: Path) -> None:
     """
-    Contract (documented, not yet met): code run in a room under the safe profile cannot write a
-    file - the request is refused and nothing is written.
+    Contract: code run in a room under the safe profile that writes a file with `open` is refused, and
+    nothing is written. This was the strict xfail for defect D-10 (core-protection review, Note 10) until
+    the safe profile denied `open`.
     """
     target = tmp_path / "written_by_codegen.txt"
     conduit, command_system = _codegen_room("safe")
@@ -109718,6 +110507,262 @@ def test_hybrid_refuses_dynamic_imports_of_its_denied_roots(
         conduit.cleanup()
 
     assert result["accepted"] is False
+
+
+def _execute_in_room(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        code: str,
+        *,
+        frame_name: str = "ops",
+) -> Dict[str, object]:
+    """
+    Execute one request in a fresh codegen room on frame "ops" and clean the room up.
+
+    Args:
+        profile_name: Standard codegen profile of frame "ops".
+        precision_profile_name: Optional precision overlay applied on top of the profile.
+        code: Room code to execute.
+        frame_name: Frame the request names. The room links "ops" only, so any other name runs under the
+            engine's default posture for a frame without a projection.
+
+    Returns:
+        Dict[str, object]: The room's execution payload.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        return command_system.execute_codegen(code, frame_name=frame_name)
+    finally:
+        conduit.cleanup()
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted"),
+    [
+        ("safe", None, False),
+        ("hybrid", None, False),
+        ("hybrid", "precision", False),
+        ("permissive", None, True),
+        ("full_access", None, True),
+    ],
+)
+def test_open_writes_a_file_only_under_permissive_and_full_access(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+) -> None:
+    """
+    Contract (D-10): a call to `open` that writes a file is refused under safe, hybrid and the precision
+    overlay - by the builtin gate, naming `open`, with nothing written - and runs under permissive and
+    full_access, whose file posture is open by design.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "handle = open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(str(target)),
+    )
+
+    assert payload["accepted"] is accepted
+    if accepted:
+        assert target.read_text() == "x"
+    else:
+        assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
+        assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted"),
+    [
+        ("safe", None, False),
+        ("hybrid", None, False),
+        ("hybrid", "precision", False),
+        ("permissive", None, True),
+        ("full_access", None, True),
+    ],
+)
+def test_open_reads_a_file_only_under_permissive_and_full_access(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+) -> None:
+    """
+    Contract (D-10): a call to `open` that reads a file is refused where `open` is denied, naming `open`, and
+    returns the file's text under permissive and full_access.
+    """
+    source = tmp_path / "read_by_codegen.txt"
+    source.write_text("kept")
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "handle = open({0!r})\nresult = handle.read()\nhandle.close()".format(str(source)),
+    )
+
+    assert payload["accepted"] is accepted
+    if accepted:
+        assert payload["result"] == "kept"
+    else:
+        assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name"),
+    [
+        ("safe", None),
+        ("hybrid", None),
+        ("hybrid", "precision"),
+    ],
+)
+def test_a_bare_reference_to_open_is_refused_where_open_is_denied(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+) -> None:
+    """
+    Contract (D-10): where `open` is denied, naming it without calling it (`reader = open`) is refused too - by
+    name resolution, because `open` is no longer an available builtin - so it cannot be called under another name.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        result = command_system.validate_codegen("reader = open\nresult = 1", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is False
+    assert "Name 'open' is not available in the codegen namespace." in result["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
+    [
+        ("safe", None, False, "Import statements are not allowed"),
+        ("hybrid", None, False, "Import root 'io' is not allowed"),
+        ("hybrid", "precision", False, "Import root 'io' is not allowed"),
+        ("permissive", None, True, None),
+        ("full_access", None, True, None),
+    ],
+)
+def test_io_open_writes_a_file_only_where_the_import_list_admits_io(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+        message_fragment: Optional[str],
+) -> None:
+    """
+    Contract (D-10 file posture): `io.open` writes a file only where the import gate admits `io` - permissive
+    and full_access; safe refuses every import and hybrid and the precision overlay leave `io` off their lists.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "import io\nhandle = io.open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(
+            str(target)
+        ),
+    )
+
+    assert payload["accepted"] is accepted
+    assert target.exists() is accepted
+    if message_fragment is not None:
+        assert message_fragment in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
+    [
+        ("safe", None, False, "Import statements are not allowed"),
+        ("hybrid", None, False, "Import root 'os' is not allowed"),
+        ("hybrid", "precision", False, "Import root 'os' is not allowed"),
+        ("permissive", None, True, None),
+        ("full_access", None, True, None),
+    ],
+)
+def test_os_open_writes_a_file_only_where_the_import_list_admits_os(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+        message_fragment: Optional[str],
+) -> None:
+    """
+    Contract (D-10 file posture): `os.open` writes a file only where the import gate admits `os` - permissive
+    and full_access; safe refuses every import and hybrid and the precision overlay leave `os` off their lists.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        (
+            "import os\n"
+            "descriptor = os.open({0!r}, os.O_WRONLY | os.O_CREAT, 0o600)\n"
+            "os.write(descriptor, b'x')\n"
+            "os.close(descriptor)\n"
+            "result = 1"
+        ).format(str(target)),
+    )
+
+    assert payload["accepted"] is accepted
+    assert target.exists() is accepted
+    if message_fragment is not None:
+        assert message_fragment in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted", "message_fragment"),
+    [
+        ("safe", None, False, "Import statements are not allowed"),
+        ("hybrid", None, True, None),
+        ("hybrid", "precision", False, "Import root 'pathlib' is not allowed"),
+        ("permissive", None, True, None),
+        ("full_access", None, True, None),
+    ],
+)
+def test_pathlib_writes_a_file_only_where_the_import_list_admits_pathlib(
+        tmp_path: Path,
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+        message_fragment: Optional[str],
+) -> None:
+    """
+    Contract (D-10 file posture): a pathlib write runs only where the import gate admits `pathlib` - hybrid,
+    permissive and full_access; safe refuses every import and the precision overlay leaves `pathlib` off its list.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        precision_profile_name,
+        "import pathlib\npathlib.Path({0!r}).write_text('x')\nresult = 1".format(str(target)),
+    )
+
+    assert payload["accepted"] is accepted
+    assert target.exists() is accepted
+    if message_fragment is not None:
+        assert message_fragment in payload["validation_issues"][0]
+
+
+@pytest.mark.parametrize("profile_name", ["safe", "full_access"])
+def test_a_request_naming_a_frame_without_a_projection_cannot_open_files(
+        tmp_path: Path,
+        profile_name: str,
+) -> None:
+    """
+    Contract (D-10): a request naming a frame the room holds no projection for runs under the engine's default
+    posture, which denies what safe denies - `open` included - whatever profile the room's linked frame carries.
+    """
+    target = tmp_path / "written_by_codegen.txt"
+    payload = _execute_in_room(
+        profile_name,
+        None,
+        "handle = open({0!r}, 'w')\nhandle.write('x')\nhandle.close()\nresult = 1".format(str(target)),
+        frame_name="frame_without_projection",
+    )
+
+    assert payload["accepted"] is False
+    assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
+    assert not target.exists()
 ================================================================================
 END FILE: tests/integration/melder/aether/test_codegen_core_boundary_integration.py
 ================================================================================
@@ -123198,6 +124243,203 @@ def test_melds_racing_notches_get_a_version_or_the_lost_provider_refusal_and_end
         world.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py
+CONTENT SHA256: c17d52eee89396cfb3bce4cbee8af8a0761e204abe5912d7e49401d323f0c3b2
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration: purge and the live-creation probes never miss a version while notches move it
+(STORY-2026-10-25-probe_and_purge_reach_every_version, failure mode F15).
+
+A notch moves a version between its Book's active and parked maps under the Book lock, taking it out of one map before
+it puts it in the other, and the conduit then moves each linked borrower's copy the same way under the borrower's Book
+lock. `has_live_creation`, `describe_live_creation_status` and `purge` given a spell_id read the active maps without a
+lock and, on a miss, read every map of the Book once under its lock, where a version is in exactly one map. So a probe
+or a purge racing notches to and from its version always finds it - from the lender and from a borrower whose index
+link follows the notches. Before the story a parked spell_id raised KeyError "[MELD] No spell found with spell_id".
+
+Real threads against real notches, so the test is integration; run it with the GIL off (`-X gil=0`) and on.
+"""
+
+import time
+from collections.abc import Iterator
+from threading import Event, Thread
+from typing import Any, List, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from tests._spell_identity_test_support import version_of
+
+
+class Resource:
+    """
+    Purpose: A `unique` resource whose two versions are notched back and forth; disposal is observable.
+    Contract: `cleanup` counts calls; owns no external resource.
+    """
+
+    version: int = 1
+
+    def __init__(self) -> None:
+        """
+        Purpose: Start undisposed.
+        Returns: None.
+        """
+        self.cleanup_calls = 0
+
+    def cleanup(self) -> None:
+        """
+        Purpose: Count one disposal.
+        Returns: None.
+        """
+        self.cleanup_calls += 1
+
+
+class Ticket:
+    """
+    Purpose: A `many` spell with no objects, purged during the race to exercise purge's discovery alone.
+    Contract: Plain; no disposal method, so nothing is recorded and every purge returns 0.
+    """
+
+    version: int = 1
+
+
+@pytest.fixture(autouse=True)
+def fresh_world() -> Iterator[None]:
+    """
+    Purpose: Isolate the test: fresh Nexus and Aether, rebound on Spellbook and Conduit, before and after.
+    Yields: None while the test owns its world.
+    """
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _book(*, first: bool = True) -> Spellbook:
+    """
+    Purpose: One Book of the "default" frame with disposal names ["cleanup"] and one phase worker.
+    Args:
+        first: True for the frame's first Book, which settles the frame dynamic with caching off.
+    Returns:
+        Spellbook: The Book, not conjured.
+    """
+    configuration = SpellbookConfiguration("default")
+    configuration.set_property("disposal", True)
+    configuration.set_property("disposal_method_names", ["cleanup"])
+    configuration.load_default_dictionary()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    book = Spellbook(aetheric_frame="default", configuration=configuration)
+    if first:
+        book.configure_aether_frame(
+            system_state="dynamic", disposal=None, disposal_method_names=None, system_caching_enabled=False,
+        )
+    return book
+
+
+@pytest.mark.parametrize("prober", ["lender", "index_borrower"])
+def test_probes_and_purges_never_miss_a_version_while_it_is_notched(prober: str) -> None:
+    """
+    Purpose: F15 - probes and purges by spell_id never raise for a version a notch is moving.
+    Contract: Two indexes are notched back and forth - at least 40 times each, and until each of two prober threads
+        has completed 20 rounds, so the probes overlap the notches with the GIL on too - while the probers probe both
+        versions of the `unique` index (each has a live object, so every probe is True and names its own version)
+        and purge both versions of the `many` index (no objects, so every purge returns 0). No call raises, no answer
+        is wrong, and no object is disposed.
+    Args:
+        prober: "lender" probes through the lender's root; "index_borrower" through a borrower whose index links
+            follow the notches.
+    Returns: None.
+    """
+    book = _book()
+    v1_id = book.bind(spell=Resource, existence=Existence.unique, permissions="create")
+    w1_id = book.bind(spell=Ticket, existence=Existence.many, permissions="create")
+    root = book.conjure(dynamic=True, name="lender")
+    resource_index = root.get_spell_by_spell_id(v1_id).spell_index
+    ticket_index = root.get_spell_by_spell_id(w1_id).spell_index
+    v2_id = root.bind_inactive(
+        spell=version_of(Resource, version=2), spell_index=resource_index, existence=Existence.unique,
+        permissions="create",
+    )
+    w2_id = root.bind_inactive(
+        spell=version_of(Ticket, version=2), spell_index=ticket_index, existence=Existence.many,
+        permissions="create",
+    )
+    borrower = _book(first=False).conjure(dynamic=True, name="borrower")
+    try:
+        root.link(borrower)
+        borrower.add_index_to_contract(index=resource_index, conduit=root, permissions="create")
+        borrower.add_index_to_contract(index=ticket_index, conduit=root, permissions="create")
+        first = root.meld(spell_id=v1_id)
+        root.notch_spell(spell_index=resource_index, spell_id=v2_id)
+        second = root.meld(spell_id=v2_id)
+        scope = root if prober == "lender" else borrower
+        errors: List[Tuple[str, Any]] = []
+        progress = [0, 0]
+        turns: List[int] = []
+        done = Event()
+
+        def notch_back_and_forth() -> None:
+            """Notch both indexes, alternating versions, until 40 turns and 20 prober rounds each (60 s cap)."""
+            turn = 0
+            deadline = time.monotonic() + 60.0
+            try:
+                while (turn < 40 or min(progress) < 20) and time.monotonic() < deadline:
+                    root.notch_spell(spell_index=resource_index, spell_id=v1_id if turn % 2 == 0 else v2_id)
+                    root.notch_spell(spell_index=ticket_index, spell_id=w1_id if turn % 2 == 0 else w2_id)
+                    turn += 1
+            except BaseException as error:
+                errors.append(("notch", error))
+            finally:
+                turns.append(turn)
+                done.set()
+
+        def probe_and_purge(slot: int) -> None:
+            """Probe and purge every version until the notches are done; record any raise or wrong answer."""
+            try:
+                while not done.is_set():
+                    for spell_id in (v1_id, v2_id):
+                        if scope.has_live_creation(spell=spell_id) is not True:
+                            errors.append(("not live", spell_id))
+                        if scope.describe_live_creation_status(spell=spell_id)["spell_id"] != spell_id:
+                            errors.append(("wrong version", spell_id))
+                    for spell_id in (w1_id, w2_id):
+                        if scope.purge(spell_id=spell_id) != 0:
+                            errors.append(("purged objects", spell_id))
+                    progress[slot] += 1
+            except BaseException as error:
+                errors.append(("probe", error))
+
+        threads = [Thread(target=probe_and_purge, args=(slot,)) for slot in range(2)]
+        threads.append(Thread(target=notch_back_and_forth))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=120)
+        assert not any(thread.is_alive() for thread in threads)
+        assert errors == []
+        assert turns[0] >= 40 and min(progress) >= 20
+        assert (first.cleanup_calls, second.cleanup_calls) == (0, 0)
+    finally:
+        borrower.cleanup()
+        root.cleanup()
+        book.cleanup()
+================================================================================
+END FILE: tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_public_api.py
@@ -173667,7 +174909,7 @@ END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/conftest.py
-CONTENT SHA256: c39baf7c80f98d7f5c15a76477d0556285e777e1acc69c53def41350636f3e08
+CONTENT SHA256: 06f7086ba569a05f91f784369c990d2759a192475136007441d4152832a91e3f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Load standalone CI scripts without creating a runtime package or booting Melder."""
@@ -173749,6 +174991,12 @@ def runtime_matrix() -> ModuleType:
 def provenance() -> ModuleType:
     """Provide the candidate provenance check with its network, process and environment boundaries to mock."""
     return load_script("testpypi_provenance")
+
+
+@pytest.fixture
+def release_provenance() -> ModuleType:
+    """Provide the release provenance check with its network, process and environment boundaries to mock."""
+    return load_script("pypi_provenance")
 ================================================================================
 END FILE: tests/unit/github_workflows/conftest.py
 ================================================================================
@@ -176993,6 +178241,681 @@ def test_staging_preserves_existing_output(runtime_matrix: ModuleType, tmp_path:
 END FILE: tests/unit/github_workflows/test_python_runtime_matrix.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_release_provenance.py
+CONTENT SHA256: 4092938e1610d2629f9d70880c014cf927297a33f6f1a5aea9b0137a8cc458fd
+SOURCE ENCODING: utf-8
+================================================================================
+"""Prove the release provenance check: PyPI's attestation of every released file, checked after the upload.
+
+The release check runs the candidate check's five layers (`test_candidate_provenance.py` proves them) with the
+publication workflow's identity. These tests prove what is the release's own: its policy, the run identity of a
+published release and of a manual dispatch on prod, the signer every released file must name, PyPI's Integrity API,
+and the whole check with every network and process boundary replaced. The recorded control - PyPI's real
+provenance of the pypi-attestations 0.0.30 wheel, signed by a `release` event at a tag in the `pypi` environment -
+proves that the release identity reproduces a real release certificate claim for claim. Nothing reaches PyPI,
+Sigstore or pip.
+"""
+
+import base64
+import hashlib
+import io
+import json
+import pathlib
+import subprocess
+import time
+import urllib.error
+import urllib.request
+from collections.abc import Mapping, Sequence
+from types import ModuleType
+from typing import Optional
+
+import pytest
+import yaml
+
+from tests.unit.github_workflows.test_candidate_provenance import Der, Signer, control_document, copy_tool_directory
+
+
+class ReleaseSigner:
+    """The identity a release run of python-publish.yml signs with, written out independently of the script."""
+
+    PREFIX = "1.3.6.1.4.1.57264.1."
+    SHA = "c" * 40
+    WORKFLOW_SHA = "d" * 40
+    TAG = "v0.2.8300"
+    TAG_REF = "refs/tags/v0.2.8300"
+    PROD_REF = "refs/heads/prod"
+    ISSUER = "https://token.actions.githubusercontent.com"
+    PUBLISHER: Mapping[str, str] = {"kind": "GitHub", "repository": "Synaptic724/melder",
+                                    "workflow": "python-publish.yml", "environment": "pypi"}
+
+    @staticmethod
+    def workflow(ref: str) -> str:
+        """Return python-publish.yml's URI at a ref: the SAN, Build Signer URI and Build Config URI."""
+        return f"https://github.com/Synaptic724/melder/.github/workflows/python-publish.yml@{ref}"
+
+    @classmethod
+    def claims(cls, ref: str = TAG_REF, run: str = "4004", attempt: str = "1",
+               trigger: str = "release") -> dict[str, str]:
+        """Return every claim Fulcio writes for a run of python-publish.yml in the pypi environment."""
+        oid = cls.PREFIX
+        workflow = cls.workflow(ref)
+        return {
+            oid + "1": cls.ISSUER, oid + "2": trigger, oid + "3": cls.SHA, oid + "4": "Publish Python Package",
+            oid + "5": "Synaptic724/melder", oid + "6": ref,
+            oid + "8": cls.ISSUER, oid + "9": workflow, oid + "10": cls.WORKFLOW_SHA, oid + "11": "github-hosted",
+            oid + "12": "https://github.com/Synaptic724/melder", oid + "13": cls.SHA, oid + "14": ref,
+            oid + "15": "1001",
+            oid + "16": "https://github.com/Synaptic724", oid + "17": "2002", oid + "18": workflow,
+            oid + "19": cls.WORKFLOW_SHA, oid + "20": trigger,
+            oid + "21": f"https://github.com/Synaptic724/melder/actions/runs/{run}/attempts/{attempt}",
+            oid + "22": "public", oid + "23": "pypi", oid + "24": "repo:Synaptic724/melder:environment:pypi",
+        }
+
+    @classmethod
+    def certificate(cls, claims: Mapping[str, str], sans: Sequence[str] = ()) -> bytes:
+        """Return a certificate carrying these claims and SANs (by default the Build Signer URI the claims name)."""
+        return Der.certificate([Der.subject_names(*(sans or (claims[cls.PREFIX + "9"],))),
+                                *(Der.claim(oid, value) for oid, value in claims.items())])
+
+    @classmethod
+    def provenance(cls, name: str, sha256: str, claims: Mapping[str, str],
+                   publisher: Optional[Mapping[str, str]] = None) -> dict[str, object]:
+        """Return a provenance as PyPI's Integrity API answers it, holding one attestation of one file.
+
+        It is the candidate tests' provenance of the file with this signer's certificate and PyPI's publisher record.
+        """
+        document = Signer.provenance(name, sha256, claims, publisher=publisher or cls.PUBLISHER)
+        material = document["attestation_bundles"][0]["attestations"][0]["verification_material"]
+        material["certificate"] = base64.b64encode(cls.certificate(claims)).decode("ascii")
+        return document
+
+    @classmethod
+    def environment(cls, **changes: str) -> dict[str, str]:
+        """Return the provenance job's variables for a published release (attempt 2 re-running the check alone)."""
+        values = {
+            "GITHUB_SERVER_URL": "https://github.com", "GITHUB_REPOSITORY": "Synaptic724/melder",
+            "GITHUB_REF": cls.TAG_REF,
+            "GITHUB_WORKFLOW_REF": cls.workflow(cls.TAG_REF).removeprefix("https://github.com/"),
+            "GITHUB_SHA": cls.SHA, "GITHUB_WORKFLOW_SHA": cls.WORKFLOW_SHA, "GITHUB_REPOSITORY_ID": "1001",
+            "GITHUB_REPOSITORY_OWNER_ID": "2002", "GITHUB_RUN_ID": "4004", "GITHUB_RUN_ATTEMPT": "2",
+            "GITHUB_EVENT_NAME": "release", "RELEASE_TAG": cls.TAG, "RELEASE_PUBLISH_ATTEMPT": "1",
+        }
+        values.update(changes)
+        return values
+
+    @classmethod
+    def dispatch_environment(cls, **changes: str) -> dict[str, str]:
+        """Return the provenance job's variables for a manual dispatch on prod, which has no release tag."""
+        return cls.environment(**{"GITHUB_REF": cls.PROD_REF, "GITHUB_EVENT_NAME": "workflow_dispatch",
+                                  "GITHUB_WORKFLOW_REF": cls.workflow(cls.PROD_REF).removeprefix("https://github.com/"),
+                                  "RELEASE_TAG": "", **changes})
+
+
+def identity_of(release_provenance: ModuleType, claims: Mapping[str, str],
+                sans: Sequence[str] = ()) -> dict[str, object]:
+    """Read back what the script sees in a synthetic release certificate."""
+    return release_provenance.certificate_identity(ReleaseSigner.certificate(claims, sans))
+
+
+def expected_for(release_provenance: ModuleType, environment: Mapping[str, str],
+                 attempt: int = 1) -> dict[str, object]:
+    """Return what the script demands of every released file in the run an environment describes."""
+    return release_provenance.release_identity(release_provenance.release_context(environment), attempt)
+
+
+def test_the_release_policy_is_the_publication_workflows_trusted_publisher(release_provenance: ModuleType) -> None:
+    """PyPI's publisher record and signer: this repository's python-publish.yml in pypi, read from pypi.org."""
+    policy = release_provenance.ReleaseProvenancePolicy
+    assert policy.publisher() == dict(ReleaseSigner.PUBLISHER)
+    assert policy.INDEX_NAME == "PyPI" and policy.INTEGRITY_ROOT == "https://pypi.org/integrity/melder/"
+    assert policy.workflow_uri(ReleaseSigner.TAG_REF) == ReleaseSigner.workflow(ReleaseSigner.TAG_REF)
+    assert policy.workflow_uri() == ReleaseSigner.workflow(ReleaseSigner.PROD_REF)
+    assert set(policy.TRIGGERS) == {"release", "workflow_dispatch"} and policy.ENTRY_PREFIX == "release"
+    shared = release_provenance.ProvenancePolicy
+    assert issubclass(policy, shared)
+    for name in ("SERVER", "REPOSITORY", "OWNER", "ISSUER", "RUNNER", "VISIBILITY", "STATEMENT_TYPE",
+                 "PUBLISH_PREDICATE", "INTEGRITY_MEDIA_TYPE", "TOOL_INDEX", "TOOL_LOCK", "VERIFIER"):
+        assert getattr(policy, name) == getattr(shared, name), name
+    assert policy.tool_directory() == shared.tool_directory()
+
+
+def test_the_expected_publisher_is_the_job_that_uploads(release_provenance: ModuleType, policy: ModuleType) -> None:
+    """The identity the check demands is pypi-publish's own: this workflow, its environment, its events and prod."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    release = release_provenance.ReleaseProvenancePolicy
+    document = yaml.load((root / ".github/workflows" / release.WORKFLOW).read_text(encoding="utf-8"),
+                         Loader=yaml.BaseLoader)
+    upload_job = document["jobs"]["pypi-publish"]
+    assert upload_job["environment"]["name"] == release.ENVIRONMENT
+    assert set(document["on"]) == set(release.TRIGGERS)
+    upload = upload_job["steps"][-1]
+    assert upload["uses"].startswith("pypa/gh-action-pypi-publish@") and "repository-url" not in upload["with"]
+    # A manual dispatch is publication only on prod (ci_policy.py), the ref the check expects without a tag.
+    sha = "e" * 40
+    policy.validate_release("workflow_dispatch", release.REF, {}, sha, sha, sha)
+    with pytest.raises(ValueError, match="Manual publication must run on prod"):
+        policy.validate_release("workflow_dispatch", "refs/heads/release_candidate", {}, sha, sha, sha)
+
+
+def test_the_candidate_policy_keeps_its_index_and_takes_a_ref(provenance: ModuleType) -> None:
+    """The shared layers read TestPyPI from the candidate's policy, whose signer URI can be asked at any ref."""
+    candidate = provenance.ProvenancePolicy
+    assert candidate.INDEX_NAME == "TestPyPI" and candidate.USER_AGENT == "melder-candidate-ci"
+    assert candidate.workflow_uri() == Signer.WORKFLOW
+    assert candidate.workflow_uri("refs/heads/dev") == Signer.WORKFLOW.replace("release_candidate", "dev")
+    assert "new candidate version" in candidate.missing_provenance("m.whl")
+
+
+def test_a_published_release_runs_at_its_tag(release_provenance: ModuleType) -> None:
+    """A release event's run is at refs/tags/<its tag>, with its repository, owner, commits, run and attempt."""
+    assert release_provenance.release_context(ReleaseSigner.environment()) == {
+        "repository_id": "1001", "owner_id": "2002", "sha": ReleaseSigner.SHA,
+        "workflow_sha": ReleaseSigner.WORKFLOW_SHA,
+        "event": "release", "ref": ReleaseSigner.TAG_REF, "tag": ReleaseSigner.TAG, "run_id": "4004", "run_attempt": 2,
+    }
+
+
+def test_a_manual_dispatch_runs_on_prod_without_a_tag(release_provenance: ModuleType) -> None:
+    """A manual dispatch is checked at refs/heads/prod and carries no release tag."""
+    context = release_provenance.release_context(ReleaseSigner.dispatch_environment(GITHUB_SHA="f" * 64,
+                                                                                  GITHUB_WORKFLOW_SHA="f" * 64))
+    assert (context["event"], context["ref"], context["tag"]) == ("workflow_dispatch", ReleaseSigner.PROD_REF, "")
+    assert context["sha"] == context["workflow_sha"] == "f" * 64
+
+
+@pytest.mark.parametrize(("changes", "name"), [
+    ({"GITHUB_SERVER_URL": "https://github.example.com"}, "GITHUB_SERVER_URL"),
+    ({"GITHUB_REPOSITORY": "someone/melder"}, "GITHUB_REPOSITORY"),
+    ({"GITHUB_REF": "refs/tags/v0.2.8299"}, "GITHUB_REF"),
+    ({"GITHUB_REF": "refs/heads/prod"}, "GITHUB_REF"),
+    ({"GITHUB_WORKFLOW_REF": "Synaptic724/melder/.github/workflows/ci.yml@refs/tags/v0.2.8300"}, "GITHUB_WORKFLOW_REF"),
+    ({"GITHUB_WORKFLOW_REF": "Synaptic724/melder/.github/workflows/python-publish.yml@refs/heads/prod"},
+     "GITHUB_WORKFLOW_REF"),
+    ({"GITHUB_EVENT_NAME": "push"}, "GITHUB_EVENT_NAME"),
+    ({"GITHUB_EVENT_NAME": "pull_request"}, "GITHUB_EVENT_NAME"),
+    ({"GITHUB_EVENT_NAME": ""}, "GITHUB_EVENT_NAME"),
+    ({"RELEASE_TAG": ""}, "RELEASE_TAG"),
+    ({"GITHUB_SHA": "c" * 39}, "GITHUB_SHA"),
+    ({"GITHUB_WORKFLOW_SHA": "D" * 40}, "GITHUB_WORKFLOW_SHA"),
+    ({"GITHUB_REPOSITORY_ID": "0"}, "GITHUB_REPOSITORY_ID"),
+    ({"GITHUB_REPOSITORY_OWNER_ID": "02002"}, "GITHUB_REPOSITORY_OWNER_ID"),
+    ({"GITHUB_RUN_ID": "x"}, "GITHUB_RUN_ID"),
+    ({"GITHUB_RUN_ATTEMPT": "0"}, "GITHUB_RUN_ATTEMPT"),
+])
+def test_the_check_runs_only_as_this_repositorys_release(release_provenance: ModuleType, changes: dict[str, str],
+                                                         name: str) -> None:
+    """Another server, repository, tag, workflow or event, or a malformed identifier, is refused before any fetch."""
+    with pytest.raises(ValueError, match=name):
+        release_provenance.release_context(ReleaseSigner.environment(**changes))
+
+
+@pytest.mark.parametrize(("changes", "message"), [
+    ({"RELEASE_TAG": "v0.2.8300"}, "RELEASE_TAG is 'v0.2.8300'; a manual dispatch publishes from refs/heads/prod"),
+    ({"GITHUB_REF": "refs/heads/dev",
+      "GITHUB_WORKFLOW_REF": "Synaptic724/melder/.github/workflows/python-publish.yml@refs/heads/dev"}, "GITHUB_REF"),
+])
+def test_a_manual_dispatch_publishes_only_from_prod_with_no_tag(release_provenance: ModuleType,
+                                                                changes: dict[str, str], message: str) -> None:
+    """A dispatch that carries a release tag, or runs on another branch, is refused, the tag by its own rule."""
+    with pytest.raises(ValueError, match=message):
+        release_provenance.release_context(ReleaseSigner.dispatch_environment(**changes))
+
+
+def test_a_missing_run_variable_is_refused(release_provenance: ModuleType) -> None:
+    """An absent variable is refused, not read as empty or defaulted."""
+    environment = ReleaseSigner.environment()
+    del environment["GITHUB_REPOSITORY_ID"]
+    with pytest.raises(ValueError, match="GITHUB_REPOSITORY_ID"):
+        release_provenance.release_context(environment)
+
+
+def test_the_publish_attempt_is_the_upload_jobs_own(release_provenance: ModuleType) -> None:
+    """The attempt that uploaded may be this one or, after a re-run of the check alone, an earlier one."""
+    assert release_provenance.publish_attempt({"RELEASE_PUBLISH_ATTEMPT": "1"}, 2) == 1
+    assert release_provenance.publish_attempt({"RELEASE_PUBLISH_ATTEMPT": "2"}, 2) == 2
+
+
+@pytest.mark.parametrize("attempt", [None, "", "0", "01", "x", "3"])
+def test_a_malformed_or_future_publish_attempt_is_refused(release_provenance: ModuleType,
+                                                          attempt: Optional[str]) -> None:
+    """The publish attempt must be an attempt of this run no later than the current one."""
+    environment = {} if attempt is None else {"RELEASE_PUBLISH_ATTEMPT": attempt}
+    with pytest.raises(ValueError, match="RELEASE_PUBLISH_ATTEMPT"):
+        release_provenance.publish_attempt(environment, 2)
+
+
+def test_every_released_file_must_name_this_runs_upload_exactly(release_provenance: ModuleType) -> None:
+    """Every claim is exact: the workflow at the tag, the commit, this run's upload attempt and event; no pattern."""
+    expected = expected_for(release_provenance, ReleaseSigner.environment(), attempt=1)
+    claims = ReleaseSigner.claims(ref=ReleaseSigner.TAG_REF, run="4004", attempt="1", trigger="release")
+    assert expected == {"san": ReleaseSigner.workflow(ReleaseSigner.TAG_REF), "patterns": {},
+                        "exact": {oid: value for oid, value in claims.items() if int(oid.rsplit(".", 1)[1]) >= 8}}
+    release_provenance.check_identity(identity_of(release_provenance, claims), expected, "melder.whl")
+
+
+def test_a_dispatched_release_must_name_prod(release_provenance: ModuleType) -> None:
+    """A manual dispatch's files name the workflow on prod and the workflow_dispatch event."""
+    expected = expected_for(release_provenance, ReleaseSigner.dispatch_environment(), attempt=1)
+    claims = ReleaseSigner.claims(ref=ReleaseSigner.PROD_REF, trigger="workflow_dispatch")
+    assert expected["san"] == ReleaseSigner.workflow(ReleaseSigner.PROD_REF) and expected["patterns"] == {}
+    release_provenance.check_identity(identity_of(release_provenance, claims), expected, "melder.whl")
+    with pytest.raises(ValueError, match="Source Repository Ref"):
+        release_provenance.check_identity(identity_of(release_provenance, ReleaseSigner.claims(
+            ref=ReleaseSigner.TAG_REF, trigger="workflow_dispatch"), (ReleaseSigner.workflow(ReleaseSigner.PROD_REF),)),
+            expected, "melder.whl")
+
+
+@pytest.mark.parametrize(("change", "name"), [
+    ({"21": "https://github.com/Synaptic724/melder/actions/runs/4004/attempts/2"}, "Run Invocation URI"),
+    ({"21": "https://github.com/Synaptic724/melder/actions/runs/4005/attempts/1"}, "Run Invocation URI"),
+    ({"20": "workflow_dispatch", "2": "workflow_dispatch"}, "Build Trigger"),
+    ({"14": "refs/heads/prod", "6": "refs/heads/prod"}, "Source Repository Ref"),
+    ({"13": "e" * 40, "3": "e" * 40}, "Source Repository Digest"),
+    ({"10": "e" * 40}, "Build Signer Digest"),
+    ({"19": "e" * 40}, "Build Config Digest"),
+    ({"23": "pypitest"}, "Deployment Environment"),
+    ({"24": "repo:Synaptic724/melder:environment:pypitest"}, "Token Subject"),
+    ({"15": "1002"}, "Source Repository Identifier"),
+    ({"17": "2003"}, "Source Repository Owner Identifier"),
+    ({"11": "self-hosted"}, "Runner Environment"),
+    ({"22": "private"}, "Source Repository Visibility At Signing"),
+    ({"18": ReleaseSigner.workflow(ReleaseSigner.TAG_REF).replace("python-publish", "release-candidate")},
+     "Build Config URI"),
+])
+def test_every_release_claim_is_checked_on_its_own(release_provenance: ModuleType, change: dict[str, str],
+                                                   name: str) -> None:
+    """Changing any one claim refuses the file, naming that claim with what was expected and what was found."""
+    claims = {**ReleaseSigner.claims(), **{ReleaseSigner.PREFIX + arc: value for arc, value in change.items()}}
+    with pytest.raises(ValueError, match=name) as refusal:
+        release_provenance.check_identity(identity_of(release_provenance, claims),
+                                          expected_for(release_provenance, ReleaseSigner.environment()),
+                                          "melder-0.2.8300.tar.gz")
+    assert "melder-0.2.8300.tar.gz" in str(refusal.value)
+
+
+def test_a_candidate_attestation_cannot_pass_as_a_release(release_provenance: ModuleType) -> None:
+    """A file the candidate run signed for TestPyPI names another workflow, ref and environment: refused here."""
+    candidate = Der.certificate([Der.subject_names(Signer.WORKFLOW),
+                                 *(Der.claim(oid, value) for oid, value in Signer.claims().items())])
+    with pytest.raises(ValueError) as refusal:
+        release_provenance.check_identity(release_provenance.certificate_identity(candidate),
+                                          expected_for(release_provenance, ReleaseSigner.environment()), "melder.whl")
+    message = str(refusal.value)
+    for claim in ("subject alternative names", "Build Signer URI", "Deployment Environment", "Token Subject"):
+        assert claim in message, claim
+
+
+class ControlRelease:
+    """The real control's run, as the release check would see it: pypi/pypi-attestations' release of v0.0.30."""
+
+    ENVIRONMENT: Mapping[str, str] = {
+        "GITHUB_SERVER_URL": "https://github.com", "GITHUB_REPOSITORY": "pypi/pypi-attestations",
+        "GITHUB_REF": "refs/tags/v0.0.30",
+        "GITHUB_WORKFLOW_REF": "pypi/pypi-attestations/.github/workflows/release.yml@refs/tags/v0.0.30",
+        "GITHUB_SHA": "845bfac2f2912912fb2d1ab96775ac75708279c4",
+        "GITHUB_WORKFLOW_SHA": "845bfac2f2912912fb2d1ab96775ac75708279c4", "GITHUB_REPOSITORY_ID": "772247423",
+        "GITHUB_REPOSITORY_OWNER_ID": "2964877", "GITHUB_RUN_ID": "30366799661", "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_EVENT_NAME": "release", "RELEASE_TAG": "v0.0.30",
+    }
+
+    @staticmethod
+    def policy(release_provenance: ModuleType) -> type:
+        """Return the release policy with the control's repository and workflow in place of Melder's."""
+        class Policy(release_provenance.ReleaseProvenancePolicy):
+            """pypi/pypi-attestations' PyPI Trusted Publisher: release.yml in the pypi environment."""
+
+            OWNER = "pypi"
+            REPOSITORY = "pypi/pypi-attestations"
+            WORKFLOW = "release.yml"
+
+        return Policy
+
+
+def test_the_release_identity_reproduces_a_real_release_attestation(release_provenance: ModuleType) -> None:
+    """The release rules, given the control's run, demand exactly the claims PyPI's real attestation carries.
+
+    The control was signed by a published GitHub release at its tag in the `pypi` environment, the kind of run
+    Melder's publication is, so this is the release identity checked against a real Fulcio certificate rather than
+    against claims written for the test.
+    """
+    control = release_provenance.ProvenanceControl
+    policy = ControlRelease.policy(release_provenance)
+    context = release_provenance.release_context(ControlRelease.ENVIRONMENT, policy)
+    expected = release_provenance.release_identity(context, 1, policy)
+    assert expected == {"san": control.SAN, "exact": dict(control.CLAIMS), "patterns": {}}
+    document = control_document(release_provenance)
+    attestation = release_provenance.single_attestation(document, "the control", policy.publisher())
+    der = release_provenance.certificate_der(attestation, "the control")
+    certificate = release_provenance.certificate_identity(der)
+    release_provenance.check_identity(certificate, expected, "the control")
+    release_provenance.check_statement(attestation, control.NAME, control.SHA256, "the control")
+    with pytest.raises(ValueError, match="Run Invocation URI"):
+        release_provenance.check_identity(certificate, release_provenance.release_identity(context, 2, policy),
+                                          "the control")
+
+
+class Answer(io.BytesIO):
+    """One urlopen answer: its body and the URL it was finally served from."""
+
+    def __init__(self, body: bytes, url: str) -> None:
+        """Hold the body to read and the URL urllib reports after any redirect."""
+        super().__init__(body)
+        self.url = url
+
+
+def pypi_url(name: str) -> str:
+    """Return the address of one released file's provenance on PyPI's Integrity API."""
+    return f"https://pypi.org/integrity/melder/0.2.8300/{name}/provenance"
+
+
+def test_the_release_reads_pypis_integrity_api_without_credentials(release_provenance: ModuleType,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """One request to the file's provenance on pypi.org, as the release check, with no credentials."""
+    name = "melder-0.2.8300-py3-none-any.whl"
+    answers: list[Answer] = []
+
+    def answer(request: urllib.request.Request, timeout: int) -> Answer:
+        """Check the request at the network boundary and answer it."""
+        assert request.full_url == pypi_url(name)
+        assert request.get_header("Accept") == "application/vnd.pypi.integrity.v1+json"
+        assert request.get_header("User-agent") == "melder-release-ci"
+        assert request.get_header("Authorization") is None and timeout == 30
+        answers.append(Answer(b'{"version": 1}', pypi_url(name)))
+        return answers[-1]
+
+    monkeypatch.setattr(urllib.request, "urlopen", answer)
+    monkeypatch.setattr(time, "sleep", lambda seconds: pytest.fail("a definitive answer was retried"))
+    policy = release_provenance.ReleaseProvenancePolicy
+    assert release_provenance.fetch_provenance("0.2.8300", name, policy) == b'{"version": 1}'
+    assert len(answers) == 1 and answers[0].closed
+
+
+def test_a_released_file_pypi_never_attested_is_refused_with_what_to_check(release_provenance: ModuleType,
+                                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 404 that outlasts every retry means no attestation; the refusal says the file is out and what to check."""
+    calls: list[str] = []
+
+    def missing(request: urllib.request.Request, timeout: int) -> None:
+        """Answer 404 every time."""
+        calls.append(request.full_url)
+        raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(urllib.request, "urlopen", missing)
+    monkeypatch.setattr(time, "sleep", lambda seconds: None)
+    policy = release_provenance.ReleaseProvenancePolicy
+    with pytest.raises(ValueError, match="PyPI holds no provenance for m.whl") as refusal:
+        release_provenance.fetch_provenance("0.2.8300", "m.whl", policy)
+    assert "cannot be replaced" in str(refusal.value) and "BRANCH_WORKFLOW.md" in str(refusal.value)
+    assert calls == [pypi_url("m.whl")] * policy.LOOKUP_ATTEMPTS
+
+
+def test_a_redirected_release_answer_is_refused_naming_pypi(release_provenance: ModuleType,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """An answer served from another URL is not the file's provenance."""
+    monkeypatch.setattr(urllib.request, "urlopen", lambda request, timeout: Answer(b"{}", "https://example.com/x"))
+    with pytest.raises(ValueError, match="PyPI answered the provenance of m.whl from https://example.com/x"):
+        release_provenance.fetch_provenance("0.2.8300", "m.whl", release_provenance.ReleaseProvenancePolicy)
+
+
+@pytest.mark.parametrize(("changes", "message"), [
+    ({}, None),
+    ({"release:b.tar.gz": {"outcome": "refused", "reason": "bad signature"}}, "b.tar.gz: bad signature"),
+    ({"control:wrong-signer": {"outcome": "verified"}}, "not checking"),
+])
+def test_release_entries_are_judged_by_their_own_prefix(release_provenance: ModuleType,
+                                                        changes: dict[str, Mapping[str, str]],
+                                                        message: Optional[str]) -> None:
+    """The verifier's verdicts on `release:` entries decide, after the controls split as they must."""
+    outcomes: dict[str, Mapping[str, str]] = {
+        "control:known-good": {"outcome": "verified"}, "control:wrong-digest": {"outcome": "refused"},
+        "control:wrong-signer": {"outcome": "refused"}, "release:a.whl": {"outcome": "verified"},
+        "release:b.tar.gz": {"outcome": "verified"}, **changes,
+    }
+    if message is None:
+        release_provenance.require_outcomes(outcomes, ["a.whl", "b.tar.gz"], "release")
+    else:
+        with pytest.raises(ValueError, match=message) as refusal:
+            release_provenance.require_outcomes(outcomes, ["a.whl", "b.tar.gz"], "release")
+        assert "TestPyPI" not in str(refusal.value)
+
+
+def test_released_files_must_be_this_tags_version(release_provenance: ModuleType, tmp_path: pathlib.Path) -> None:
+    """The downloaded pair is verified again with the release tag, which must name the package version."""
+    (tmp_path / "melder-0.2.8300-py3-none-any.whl").write_bytes(b"wheel")
+    (tmp_path / "melder-0.2.8300.tar.gz").write_bytes(b"sdist")
+    with pytest.raises(ValueError, match="Release tag 'v0.2.8299' does not match package version '0.2.8300'"):
+        release_provenance.released_files(tmp_path, "0.2.8300", "v0.2.8299")
+
+
+def test_released_files_returns_each_files_digest_after_the_check(release_provenance: ModuleType,
+                                                                 tmp_path: pathlib.Path,
+                                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """After the distributions pass, each file is identified by its sha256 and size, in name order."""
+    checked: list[tuple[pathlib.Path, str, str]] = []
+    monkeypatch.setattr(release_provenance, "verify_distributions",
+                        lambda directory, version, tag: checked.append((directory, version, tag)))
+    (tmp_path / "b.tar.gz").write_bytes(b"sdist")
+    (tmp_path / "a.whl").write_bytes(b"wheel")
+    files = release_provenance.released_files(tmp_path, "0.2.8300", "")
+    assert checked == [(tmp_path, "0.2.8300", "")]
+    assert list(files) == ["a.whl", "b.tar.gz"]
+    assert files["a.whl"] == {"sha256": hashlib.sha256(b"wheel").hexdigest(), "size": 5}
+
+
+class ReleaseRun:
+    """A Release / provenance job with every network and process boundary replaced, recording what crossed each one.
+
+    PyPI answers from `documents`; the distributions are given (`released_files` is replaced and records its
+    arguments); the pinned tool is never built (its environment is a path) and the verifier process reads each
+    request, records the provenance bytes every entry points at and answers from `outcomes`.
+    """
+
+    def __init__(self, release_provenance: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                 tmp_path: pathlib.Path) -> None:
+        """Install the replacements on the loaded script for this test only."""
+        self.files = {"melder-0.2.8300-py3-none-any.whl": {"sha256": "1" * 64, "size": 100},
+                      "melder-0.2.8300.tar.gz": {"sha256": "2" * 64, "size": 200}}
+        self.module = release_provenance
+        self.documents: dict[str, bytes] = {}
+        self.fetched: list[tuple[str, str, type]] = []
+        self.selected: list[tuple[pathlib.Path, str, str]] = []
+        self.tools: list[pathlib.Path] = []
+        self.requests: list[dict[str, object]] = []
+        self.stored: dict[str, bytes] = {}
+        self.outcomes: dict[str, Mapping[str, str]] = {
+            "control:wrong-digest": {"outcome": "refused", "reason": "subject does not match"},
+            "control:wrong-signer": {"outcome": "refused", "reason": "SANs do not match"},
+        }
+        self.directory = tmp_path / "dist"
+        self.report = tmp_path / "reports" / "provenance.json"
+        self.scratch = tmp_path
+        monkeypatch.setattr(release_provenance, "package_version", lambda: "0.2.8300")
+        monkeypatch.setattr(release_provenance, "released_files", self.select)
+        monkeypatch.setattr(release_provenance, "fetch_provenance", self.fetch)
+        monkeypatch.setattr(release_provenance, "tool_environment", self.tool)
+        monkeypatch.setattr(release_provenance, "git_output", lambda arguments: ReleaseSigner.SHA)
+        monkeypatch.setattr(subprocess, "run", self.verifier)
+
+    def select(self, directory: pathlib.Path, version: str, tag: str) -> dict[str, dict[str, object]]:
+        """Stand in for re-verifying the downloaded pair, recording the version and tag it was asked for."""
+        self.selected.append((directory, version, tag))
+        return self.files
+
+    def fetch(self, version: str, name: str, policy: type) -> bytes:
+        """Answer one file's provenance as PyPI would, recording the index the check asked."""
+        self.fetched.append((version, name, policy))
+        return self.documents[name]
+
+    def tool(self, root: pathlib.Path) -> pathlib.Path:
+        """Stand in for building the tool environment inside the job's scratch directory."""
+        self.tools.append(root)
+        return root / "tools" / "bin" / "python"
+
+    def verifier(self, command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Play the verifier process: record the request and the files it names, then answer every entry."""
+        assert check and command[1] == "-I" and command[2].endswith("verify_attestations.py")
+        request = json.loads(pathlib.Path(command[command.index("--request") + 1]).read_text(encoding="utf-8"))
+        self.requests.append(request)
+        self.stored.update({entry["id"]: pathlib.Path(entry["provenance"]).read_bytes()
+                            for entry in request["entries"]})
+        results = [{"id": entry["id"], **self.outcomes.get(entry["id"], {"outcome": "verified"})}
+                   for entry in request["entries"]]
+        pathlib.Path(command[command.index("--result") + 1]).write_text(
+            json.dumps({"format": 1, "results": results}), encoding="utf-8")
+
+    def serve(self, wheel: Mapping[str, str], sdist: Mapping[str, str],
+              publisher: Optional[Mapping[str, str]] = None) -> None:
+        """Make PyPI hold an attestation of each built file signed with these claims."""
+        for (name, identity), claims in zip(self.files.items(), (wheel, sdist), strict=True):
+            self.documents[name] = json.dumps(
+                ReleaseSigner.provenance(name, str(identity["sha256"]), claims, publisher)).encode()
+
+    def verify(self, environment: Mapping[str, str]) -> None:
+        """Run the check as the job does, with its scratch space under this test's directory."""
+        self.module.verify_release(self.directory, self.report, {**environment, "RUNNER_TEMP": str(self.scratch)})
+
+
+def test_every_released_file_is_checked_in_all_five_layers(release_provenance: ModuleType, tmp_path: pathlib.Path,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both files of a published release pass; the tool sees exact identities and the report says who signed."""
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    run.serve(ReleaseSigner.claims(attempt="1"), ReleaseSigner.claims(attempt="1"))
+    run.verify(ReleaseSigner.environment())
+    policy = release_provenance.ReleaseProvenancePolicy
+    assert run.selected == [(run.directory, "0.2.8300", ReleaseSigner.TAG)]
+    assert run.fetched == [("0.2.8300", name, policy) for name in run.files]
+    (request,) = run.requests
+    assert [entry["id"] for entry in request["entries"]] == [
+        "control:known-good", "control:wrong-digest", "control:wrong-signer",
+        "release:melder-0.2.8300-py3-none-any.whl", "release:melder-0.2.8300.tar.gz"]
+    expected = expected_for(release_provenance, ReleaseSigner.environment(), attempt=1)
+    for entry, (name, identity) in zip(request["entries"][3:], run.files.items(), strict=True):
+        assert entry["identity"] == {**expected, "issuer": ReleaseSigner.ISSUER}
+        assert entry["name"] == name and entry["sha256"] == identity["sha256"]
+        assert run.stored[f"release:{name}"] == run.documents[name]
+    assert run.tools == [run.tools[0]] and run.tools[0].parent == tmp_path
+    invocation = "https://github.com/Synaptic724/melder/actions/runs/4004/attempts/1"
+    assert json.loads(run.report.read_text(encoding="utf-8")) == {
+        "status": "provenance-verified", "index": "PyPI", "version": "0.2.8300", "files": run.files,
+        "provenance": {name: {"run_invocation": invocation, "build_trigger": "release"} for name in run.files},
+        "publisher": dict(ReleaseSigner.PUBLISHER), "signer": ReleaseSigner.workflow(ReleaseSigner.TAG_REF),
+        "controls": {"control:known-good": "verified", "control:wrong-digest": "refused",
+                     "control:wrong-signer": "refused"},
+        "repository": "Synaptic724/melder", "commit": ReleaseSigner.SHA, "event": "release",
+        "ref": ReleaseSigner.TAG_REF, "run_id": "4004", "run_attempt": 2, "publish_attempt": 1,
+    }
+
+
+def test_a_dispatched_release_is_checked_against_prod(release_provenance: ModuleType, tmp_path: pathlib.Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A manual dispatch's files are checked without a tag, as the workflow on prod, from workflow_dispatch."""
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    claims = ReleaseSigner.claims(ref=ReleaseSigner.PROD_REF, trigger="workflow_dispatch", attempt="2")
+    run.serve(claims, claims)
+    run.verify(ReleaseSigner.dispatch_environment(RELEASE_PUBLISH_ATTEMPT="2"))
+    assert run.selected == [(run.directory, "0.2.8300", "")]
+    report = json.loads(run.report.read_text(encoding="utf-8"))
+    assert (report["event"], report["ref"], report["publish_attempt"]) == ("workflow_dispatch",
+                                                                          ReleaseSigner.PROD_REF, 2)
+    assert report["signer"] == ReleaseSigner.workflow(ReleaseSigner.PROD_REF)
+
+
+@pytest.mark.parametrize(("sdist", "publisher", "message"), [
+    (ReleaseSigner.claims(attempt="2"), None, "Run Invocation URI"),
+    (Signer.claims(), None, "does not name the expected signer"),
+    (ReleaseSigner.claims(), {**ReleaseSigner.PUBLISHER, "workflow": "release-candidate.yml"},
+     "not the expected Trusted Publisher"),
+    (ReleaseSigner.claims(), {**ReleaseSigner.PUBLISHER, "environment": "pypitest"},
+     "environment is 'pypitest', expected 'pypi'"),
+])
+def test_a_wrong_signer_or_publisher_is_refused_before_the_tool_is_built(release_provenance: ModuleType,
+                                                                        tmp_path: pathlib.Path,
+                                                                        monkeypatch: pytest.MonkeyPatch,
+                                                                        sdist: dict[str, str],
+                                                                        publisher: Optional[dict[str, str]],
+                                                                        message: str) -> None:
+    """The script's own layers refuse first: no tool environment, no verifier process, no report.
+
+    The sdist was signed by another attempt, or by the candidate's TestPyPI identity, or PyPI's record names
+    another publisher.
+    """
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    run.serve(ReleaseSigner.claims(), sdist)
+    if publisher is not None:
+        name = "melder-0.2.8300.tar.gz"
+        run.documents[name] = json.dumps(ReleaseSigner.provenance(name, "2" * 64, sdist, publisher)).encode()
+    with pytest.raises(ValueError, match=message) as refusal:
+        run.verify(ReleaseSigner.environment())
+    assert "melder-0.2.8300.tar.gz" in str(refusal.value)
+    assert run.tools == [] and run.requests == [] and not run.report.exists()
+
+
+def test_sigstore_refusing_a_released_file_fails_without_a_report(release_provenance: ModuleType,
+                                                                  tmp_path: pathlib.Path,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every stdlib layer can pass and Sigstore still refuse (a forged certificate); that refusal decides."""
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    run.serve(ReleaseSigner.claims(), ReleaseSigner.claims())
+    run.outcomes["release:melder-0.2.8300.tar.gz"] = {"outcome": "refused", "reason": "invalid signature"}
+    with pytest.raises(ValueError, match="Sigstore refused the attestation of melder-0.2.8300.tar.gz: invalid"):
+        run.verify(ReleaseSigner.environment())
+    assert len(run.requests) == 1 and not run.report.exists()
+
+
+def test_an_unreadable_release_provenance_is_refused_by_name(release_provenance: ModuleType, tmp_path: pathlib.Path,
+                                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """A provenance answer that is not JSON names the file and stops the check."""
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    run.documents = {name: b"<html>maintenance</html>" for name in run.files}
+    with pytest.raises(ValueError, match="PyPI's provenance of melder-0.2.8300-py3-none-any.whl is not JSON"):
+        run.verify(ReleaseSigner.environment())
+    assert run.tools == [] and not run.report.exists()
+
+
+def test_the_run_is_checked_before_anything_is_read(release_provenance: ModuleType, tmp_path: pathlib.Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """A run at another ref, or without the upload's attempt, refuses before the files or PyPI are read."""
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    with pytest.raises(ValueError, match="GITHUB_REF"):
+        run.verify(ReleaseSigner.environment(GITHUB_REF="refs/tags/v0.2.8299"))
+    environment = ReleaseSigner.environment()
+    del environment["RELEASE_PUBLISH_ATTEMPT"]
+    with pytest.raises(ValueError, match="RELEASE_PUBLISH_ATTEMPT"):
+        run.verify(environment)
+    assert run.selected == [] and run.fetched == [] and run.tools == []
+
+
+def test_the_controls_are_checked_before_pypi_is_asked(release_provenance: ModuleType, tmp_path: pathlib.Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    """A lock that no longer installs the control stops the check before any released file is fetched."""
+    run = ReleaseRun(release_provenance, monkeypatch, tmp_path)
+    directory = copy_tool_directory(release_provenance, tmp_path / "provenance")
+    lock = directory / release_provenance.ProvenancePolicy.TOOL_LOCK
+    lock.write_text(lock.read_text(encoding="utf-8").replace("pypi-attestations==0.0.30", "pypi-attestations==0.1.0"),
+                    encoding="utf-8")
+    monkeypatch.setattr(release_provenance.ProvenancePolicy, "tool_directory", staticmethod(lambda: directory))
+    with pytest.raises(ValueError, match="pypi-attestations==0.1.0"):
+        run.verify(ReleaseSigner.environment())
+    assert run.fetched == [] and run.tools == []
+
+
+def test_the_command_line_verifies_dist_and_names_its_report(release_provenance: ModuleType, tmp_path: pathlib.Path,
+                                                            monkeypatch: pytest.MonkeyPatch,
+                                                            capsys: pytest.CaptureFixture[str]) -> None:
+    """`verify` checks dist/ with the job's environment and prints where the report is; nothing else is offered."""
+    calls: list[tuple[pathlib.Path, pathlib.Path, Mapping[str, str]]] = []
+    monkeypatch.setattr(release_provenance, "verify_release",
+                        lambda directory, report, environment: calls.append((directory, report, environment)))
+    report = tmp_path / "provenance.json"
+    assert release_provenance.main(["verify", "--report", str(report)]) == 0
+    assert calls == [(pathlib.Path("dist"), report, release_provenance.os.environ)]
+    assert capsys.readouterr().out == f"OK: verify; report={report}\n"
+    with pytest.raises(SystemExit):
+        release_provenance.main(["upload", "--report", str(report)])
+================================================================================
+END FILE: tests/unit/github_workflows/test_release_provenance.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_sdist_normalization.py
 CONTENT SHA256: 5f27e2cf64b79df9f7d84aa40719791474ada64814fa253d2c29b99b8e2aafe7
 SOURCE ENCODING: utf-8
@@ -177508,7 +179431,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 668461de1feb20bea215a10f4c081d4bb587b1263d113c5c0fab6af8edb00b2b
+CONTENT SHA256: ea1a912ffe98b3aabba2351e562044dca61d6bceb0d3faaf4eb6c3c0aacec090
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -178015,6 +179938,60 @@ def test_publication_refuses_a_failed_jobs_rerun_by_name() -> None:
     assert download["with"]["name"] == uploaded
 
 
+def test_pypi_upload_uses_trusted_publishing_with_attestations() -> None:
+    """The PyPI upload authenticates by its OIDC token alone and signs every file it uploads.
+
+    EPIC-2026-10-24-pypi_provenance_attestations moved it to Trusted Publishing. The job keeps `actions: read` for
+    its candidate lookup and adds `id-token: write`; the publishing action, pinned to the commit the release
+    candidate pins, takes no user, password or secret and uploads `dist/` with attestations.
+    The job reports its run attempt, which the provenance job expects in every file's certificate.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    publisher = jobs["pypi-publish"]
+    assert publisher["permissions"] == {"contents": "read", "actions": "read", "id-token": "write"}
+    assert publisher["environment"] == {"name": "pypi", "url": "https://pypi.org/project/melder/"}
+    assert publisher["outputs"] == {"attempt": "${{ github.run_attempt }}"}
+    upload = publisher["steps"][-1]
+    assert upload["uses"] == "pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"
+    assert upload["with"] == {"packages-dir": "dist/", "attestations": "true", "print-hash": "true"}
+    assert not [step for step in publisher["steps"] if "secrets." in json.dumps(step)]
+    candidate = workflow("release-candidate.yml")["jobs"]["publish"]
+    assert upload["uses"] == next(step["uses"] for step in candidate["steps"]
+                                  if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
+
+
+def test_release_provenance_is_verified_after_the_upload() -> None:
+    """Release / provenance checks each released file's PyPI attestation once the upload has finished.
+
+    It runs on the helper release with no OIDC token, no environment and no secret, downloads the build the upload
+    used by release-build's output, reads the attempt that uploaded and the release tag, and keeps its evidence. The
+    files are on PyPI by then, so nothing waits on it but the run's own result.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    job = jobs["pypi-provenance"]
+    assert job["name"] == "Release / provenance"
+    assert set(job["needs"]) == {"release-build", "pypi-publish"}
+    assert job["runs-on"] == "ubuntu-24.04" and "timeout-minutes" in job
+    for key in ("if", "continue-on-error", "environment", "permissions", "strategy", "outputs"):
+        assert key not in job, key
+    steps = job["steps"]
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert download["with"] == {"name": "${{ needs.release-build.outputs.artifact-name }}", "path": "dist/"}
+    verify = next(step for step in steps if "pypi_provenance.py" in step.get("run", ""))
+    assert verify["run"] == "python .github/scripts/pypi_provenance.py verify --report reports/provenance.json"
+    assert verify["env"] == {"RELEASE_TAG": "${{ github.event.release.tag_name || '' }}",
+                             "RELEASE_PUBLISH_ATTEMPT": "${{ needs.pypi-publish.outputs.attempt }}"}
+    assert "if" not in verify and "continue-on-error" not in verify
+    retained = steps[-1]
+    assert retained["uses"].startswith("actions/upload-artifact@")
+    assert retained["with"] == {"name": "release-provenance-${{ github.run_id }}-${{ github.run_attempt }}",
+                                "path": "reports/provenance.json", "if-no-files-found": "error",
+                                "retention-days": "90"}
+    assert steps.index(download) < steps.index(verify) < len(steps) - 1
+    assert not [step for step in steps if "secrets." in json.dumps(step)]
+    assert [name for name, other in jobs.items() if "pypi-provenance" in other.get("needs", [])] == []
+
+
 def test_distribution_build_reports_the_artifact_it_uploaded() -> None:
     """A consumer in the same run names the build by the build job's output, never by its own attempt.
 
@@ -178228,16 +180205,15 @@ def test_candidate_provenance_is_verified_before_any_probe_installs(policy: Modu
     assert set(jobs["package-ready"]["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
 
 
-def test_only_the_candidate_upload_can_request_an_oidc_token() -> None:
-    """id-token: write lets a job mint a credential and sign as this repository; only the TestPyPI upload holds it.
+def test_only_the_two_upload_jobs_can_request_an_oidc_token() -> None:
+    """id-token: write lets a job mint a credential and sign as this repository; only the two uploads hold it.
 
-    No workflow grants it at the top level, and none names the retired TestPyPI token any more: Trusted
-    Publishing replaced it.
+    They are the TestPyPI upload of the release candidate and the PyPI upload of a final release, each its index's
+    Trusted Publisher. No workflow grants it at the top level.
     """
     root = pathlib.Path(__file__).resolve().parents[3]
     holders: list[tuple[str, str]] = []
     for path in sorted((root / ".github/workflows").glob("*.yml")):
-        assert "melder_api_token" not in path.read_text(encoding="utf-8"), path.name
         document = workflow(path.name)
         top = document.get("permissions", {})
         assert isinstance(top, dict) and top.get("id-token") != "write", path.name
@@ -178246,7 +180222,20 @@ def test_only_the_candidate_upload_can_request_an_oidc_token() -> None:
             assert isinstance(permissions, dict), (path.name, name)
             if permissions.get("id-token") == "write":
                 holders.append((path.name, name))
-    assert holders == [("release-candidate.yml", "publish")]
+    assert holders == [("python-publish.yml", "pypi-publish"), ("release-candidate.yml", "publish")]
+
+
+def test_no_workflow_names_a_retired_upload_token() -> None:
+    """Both indexes publish by Trusted Publishing, so neither upload token may come back in any workflow.
+
+    `melder_api_token` was TestPyPI's environment secret and `PYPI_API_TOKEN` PyPI's; once the owner has deleted them
+    a workflow naming one would fail at upload, and while they exist it would revive a long-lived credential.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        text = path.read_text(encoding="utf-8").lower()
+        for token in ("melder_api_token", "pypi_api_token"):
+            assert token not in text, (path.name, token)
 
 
 def test_jobs_that_hold_an_oidc_token_pin_third_party_actions_to_a_commit() -> None:
@@ -178262,7 +180251,7 @@ def test_jobs_that_hold_an_oidc_token_pin_third_party_actions_to_a_commit() -> N
                 if uses and not uses.startswith(("actions/", "./")):
                     assert re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}", uses), (path.name, name, uses)
                     checked.append(uses)
-    assert checked == ["pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"]
+    assert checked == ["pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"] * 2
 
 
 def test_ci_scripts_use_only_the_standard_library() -> None:
@@ -244424,13 +246413,16 @@ END FILE: tests/unit/melder/aether/test_codegen_materialize_verb.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py
-CONTENT SHA256: be1e56b74fe6cf8f5662db96e91b46e65001c662d7ee27d9647f01e2c9ba3df0
+CONTENT SHA256: a7cb484b454a053a695b05aafd2d6fac04e75b56b910aa8db0da2650cf95c470
 SOURCE ENCODING: utf-8
 ================================================================================
 import builtins
 
 import pytest
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.execution.codegen_compiler import (
     CodegenCompiler,
 )
@@ -244945,6 +246937,22 @@ def _build_context_for_observability():
             "code": "result = 1",
         },
     )()
+
+
+def test_unit_codegen_builtins_strategy_leaves_open_out_of_the_safe_tuple_runtime_builtins() -> None:
+    """
+    Contract (D-10): runtime builtins built from the safe deny tuple - which safe, hybrid and precision share -
+    carry no `open`, so code that reaches the name past the static gates fails at run time.
+    """
+    strategy = CodegenBuiltinsStrategy()
+    configuration = build_namespace_configuration(
+        denied_builtin_names=SAFE_DENIED_BUILTIN_NAMES,
+    )
+
+    entries = strategy.build_namespace_entries(configuration)
+
+    assert "open" not in entries["__builtins__"]
+    assert "len" in entries["__builtins__"]
 ================================================================================
 END FILE: tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py
 ================================================================================
@@ -245144,11 +247152,14 @@ END FILE: tests/unit/melder/aether/test_codegen_support_object_unit_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_system_unit_matrix.py
-CONTENT SHA256: 5c03c70b9ab6751202ac69c93968a43fc2c9d0319560cac04d72658d91022a12
+CONTENT SHA256: dac7088a6948e3c920a1b3a3e763a2ef4a2631e05e3186f743399e82e157c0e9
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -245502,6 +247513,23 @@ def test_unit_codegen_report_validation_result_and_payload_matrix(
         assert payload["accepted"] is True
     else:
         assert payload["reason"] == expected_reason
+
+
+def test_unit_codegen_system_default_posture_without_projection_denies_what_safe_denies() -> None:
+    """
+    Contract (D-10): with no projection for the frame a request names, the default posture denies `__import__`
+    plus exactly the safe profile's builtins - `open` among them - with imports off.
+    """
+    system = CodegenSystem(rift=DetachedRiftProjectionOwner(), space=CodegenSpaceDouble())
+
+    configuration = system._build_default_namespace_configuration(
+        frame_name="ops",
+        projection=None,
+    )
+
+    assert configuration.denied_builtin_names == ("__import__",) + SAFE_DENIED_BUILTIN_NAMES
+    assert "open" in configuration.denied_builtin_names
+    assert configuration.imports_enabled is False
 ================================================================================
 END FILE: tests/unit/melder/aether/test_codegen_system_unit_matrix.py
 ================================================================================
@@ -249683,10 +251711,11 @@ END FILE: tests/unit/melder/aether/test_frame_acl_codegen_safe_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py
-CONTENT SHA256: b9db41e3f281d35059374cf7197d4cb7c6939cbfbf6b6a21b130640812db2358
+CONTENT SHA256: 377563070abefa3735b8114b86e26551a70ce6e907158c3b7906ff7ea995bd02
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
+from typing import Callable, Optional
 
 import pytest
 
@@ -249941,6 +251970,60 @@ def test_frame_acl_validator_rejects_codegen_builtin_rule_without_builtin_names(
         validator._validate_codegen_configuration_shape_only(
             configuration.codegen_configuration
         )
+
+
+@pytest.mark.parametrize(
+    ("profile_factory", "precision_profile_factory", "open_denied"),
+    [
+        pytest.param(FrameACLCodegenProfile.create_safe, None, True, id="safe"),
+        pytest.param(FrameACLCodegenProfile.create_default, None, True, id="default"),
+        pytest.param(FrameACLCodegenProfile.create_hybrid, None, True, id="hybrid"),
+        pytest.param(
+            FrameACLCodegenProfile.create_hybrid,
+            FrameACLCodegenProfile.create_precision,
+            True,
+            id="hybrid+precision",
+        ),
+        pytest.param(
+            FrameACLCodegenProfile.create_permissive,
+            FrameACLCodegenProfile.create_precision,
+            True,
+            id="permissive+precision",
+        ),
+        pytest.param(FrameACLCodegenProfile.create_permissive, None, False, id="permissive"),
+        pytest.param(FrameACLCodegenProfile.create_full_access, None, False, id="full_access"),
+    ],
+)
+def test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies(
+        profile_factory: Callable[[], FrameACLCodegenProfile],
+        precision_profile_factory: Optional[Callable[[], FrameACLCodegenProfile]],
+        open_denied: bool,
+) -> None:
+    """
+    Contract (D-10): the compiled deny list carries `open` for safe (the default profile), hybrid and any chain
+    with the precision overlay - the postures whose rules use the safe tuple - and not for permissive or
+    full_access, which keep `open` as a documented file posture.
+    """
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="open_builtin_posture",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            profile_factory(),
+            precision_profile=(
+                precision_profile_factory() if precision_profile_factory is not None else None
+            ),
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert ("open" in compiled_surface.denied_builtin_names) is open_denied
 ================================================================================
 END FILE: tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py
 ================================================================================

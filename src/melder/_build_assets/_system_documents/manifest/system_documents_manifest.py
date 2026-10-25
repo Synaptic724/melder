@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8267"
-SOURCE_SHA256 = "8569bf2c428fe40aafe5d1d4e972e61bd2d7c0c59bec7092982e905b433ff05c"
+BUILT_FOR_VERSION = "0.2.8268"
+SOURCE_SHA256 = "b6b5e77f2efad75006e3e7c9e222d76042eb2165c82c71936b8e0e1744c52d92"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -40,8 +40,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_architecture.md',
         'payload_module': 'src_architecture_payload',
-        'line_count': 4784,
-        'content_sha256': '98e905a1edca0e3fc3ed9c192751d7cf7ee4c4251a724e71b09d5649205df050',
+        'line_count': 4843,
+        'content_sha256': '9944d845d934f818e3c0562c80791358469968c9cc31d62236a44c67b68dc998',
     },
     '__components__': {
         'name': '__components__',
@@ -52,8 +52,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_components.md',
         'payload_module': 'src_components_payload',
-        'line_count': 11874,
-        'content_sha256': '6381710a4b40486e8d217d7ab549864f7312f4e52648a06898992da0c5a508d8',
+        'line_count': 11976,
+        'content_sha256': '2aafa186cea4274fe7cfe7cefa2d1c2dd09196f74cd91f79b260c3ab2b3ea216',
     },
     '__graph_network__': {
         'name': '__graph_network__',
@@ -65,7 +65,7 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 28193,
-        'content_sha256': '5bfa5c42697a786cd42b962a9335fba8b141376b8f6390d54f77797d6f268f6f',
+        'content_sha256': '641ffd1feffae54075c313d12324ee7ce1a89cfc8c318190ed2e5d96b5df9cbf',
     },
     '__graph_details__': {
         'name': '__graph_details__',
@@ -77,6 +77,6 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 28193,
-        'content_sha256': '5bfa5c42697a786cd42b962a9335fba8b141376b8f6390d54f77797d6f268f6f',
+        'content_sha256': '641ffd1feffae54075c313d12324ee7ce1a89cfc8c318190ed2e5d96b5df9cbf',
     },
 }

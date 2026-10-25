@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T15:54:20Z
-- Updated: 2026-10-25T00:48:34Z
+- Updated: 2026-10-25T03:01:26Z
 
 ## Objective
 A meld of a borrower's spell that is in flight while the lender's `notch_spell` parks and reactivates the borrower's
@@ -390,6 +390,25 @@ this does not make independent review mandatory for every ticket.
   EVIDENCE: context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:350-363
   IMPACT: conduit.py is free for this task's fix today; the two lanes coordinate before either edits it.
   NEXT: Before a conduit.py edit, check melder_1's board row and ask.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T03:01:26Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-62 (melder_1's NOTICE, 2026-10-25T02:47:38Z, ACK requested; consumed here, ACK in M0-224): melder_1
+    opens STORY-2026-10-25-probe_and_purge_reach_every_version and will edit meld.py (purge discovery, a by-id
+    lookup), conduit_meld.py, spellspace_meld.py, spellbook.py and the purge and probe docstrings of conduit.py and
+    spell_space.py - tests first, src after its patch docs - notching above 0.2.8268. melder_0 holds neither
+    conduit.py nor meld.py today: this task waits on the owner's design choice, and its design 2 edits
+    `Conduit.notch_spell` and the meld's catch-up. Whichever lane edits second re-reads the files and remaps its
+    citations, and melder_0 asks melder_1 before this task's first edit of either file.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-25_probe_and_purge_reach_every_version_story.md:34-38
+  - context_compass/tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:380-394
+  IMPACT: No custody conflict now; notches go in landing order (D-10's included).
+  NEXT: Before this task's first conduit.py or meld.py edit, check melder_1's board row and ask.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 

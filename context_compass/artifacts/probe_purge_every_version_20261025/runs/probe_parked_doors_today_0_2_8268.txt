@@ -1,0 +1,144 @@
+
+===== instance on __version__ = "0.2.8268" (-X gil=0)
+case instance
+  purge(spell=<v1 object>, purge_all=False)                      -> 0
+  purge(spell=<v1 object>) (purge_all=True)                      -> 0
+  journal                                                        -> []
+[exit 0]
+
+===== spell_object on __version__ = "0.2.8268" (-X gil=0)
+case spell_object
+  has_live_creation(spell=<v1 Spell>) while active               -> raises KeyError: "[MELD] No spell found for frame='spell', binding='__default__'."
+  purge(spell=<v1 Spell>) while active                           -> raises KeyError: "[MELD] No spell found for frame='spell', binding='__default__'."
+  has_live_creation(spell=<v1 id>) while active                  -> True
+[exit 0]
+
+===== existing on __version__ = "0.2.8268" (-X gil=0)
+case existing
+  describe(spell=<v1 id>) active existing                        -> {'is_live': True, 'spell_id': '60d6b9693da70eb94c8257abfc5982e3f218ebbe67be1a760349a692f9ad5679', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNRAKE8SF7AVAESDG9XBY', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  describe(spell=<v2 id>) parked existing                        -> raises KeyError: '[MELD] No spell found with spell_id: dd914ab00eab0f0320913633fdfb44a61227f5a6bb39105ff0f4086191f419b1'
+  notch to v2                                                    -> True
+  meld(spell_id=<v2>) is the supplied object                     -> True
+  describe(spell=<v2 id>) active existing                        -> {'is_live': True, 'spell_id': 'dd914ab00eab0f0320913633fdfb44a61227f5a6bb39105ff0f4086191f419b1', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNRAKE8SF7AVAESDG9XBY', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  purge(spell_id=<v2>) active existing                           -> 0
+  meld(spell_id=<v2>) after the purge is the supplied object     -> True
+  describe(spell=<v2 id>) after the purge                        -> {'is_live': True, 'spell_id': 'dd914ab00eab0f0320913633fdfb44a61227f5a6bb39105ff0f4086191f419b1', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNRAKE8SF7AVAESDG9XBY', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  journal                                                        -> []
+[exit 0]
+
+===== active_existing on __version__ = "0.2.8268" (-X gil=0)
+case active_existing
+  describe(spell=<v1>) active existing                           -> {'is_live': True, 'spell_id': '60d6b9693da70eb94c8257abfc5982e3f218ebbe67be1a760349a692f9ad5679', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNRVFDBFQXQNJME5Y4G9A', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  purge(spell_id=<v1>) active existing                           -> 1
+  meld(spell_id=<v1>) after the purge is the supplied object     -> True
+  journal                                                        -> []
+[exit 0]
+
+===== unstamped on __version__ = "0.2.8268" (-X gil=0)
+case unstamped
+  v2 _owner_creations after conjure                              -> None
+  notch to v2                                                    -> True
+  has_live_creation(spell=<v2>) active, unstamped                -> False
+  purge(spell_id=<v2>) active, unstamped                         -> raises AttributeError: 'NoneType' object has no attribute 'owner_conduit_id'
+  meld(spell_id=<v2>) active, unstamped                          -> raises RuntimeError: Spell has no configured CreationContextFactory.
+[exit 0]
+
+===== split on __version__ = "0.2.8268" (-X gil=0)
+case split
+  remove_from_spell_index(spell_id=<v2>)                         -> Spell(name=Res, binding=__default__, frame=type, SHA256=dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a)
+  get_spell_by_spell_id(<v2>).spell_index is not the source      -> True
+  has_live_creation(spell=<v2>) split, parked                    -> raises KeyError: '[MELD] No spell found with spell_id: dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a'
+  purge(spell_id=<v2>) split, parked                             -> raises KeyError: '[MELD] No spell found with spell_id: dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a'
+[exit 0]
+
+===== transfer on __version__ = "0.2.8268" (-X gil=0)
+case transfer
+  transfer_spell_ownership(spell=<v2>, target)                   -> ['borrowers', 'creations', 'dependencies', 'op_id', 'options', 'snapshot', 'source', 'spell_id', 'spell_index', 'target']
+  source has_live_creation(spell=<v1>) (parked)                  -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  source has_live_creation(spell=<v2>) (active)                  -> raises KeyError: '[MELD] No spell found with spell_id: dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a'
+  target has_live_creation(spell=<v1>) (parked)                  -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  target has_live_creation(spell=<v2>) (active)                  -> True
+[exit 0]
+
+===== borrowers on __version__ = "0.2.8268" (-X gil=0)
+case borrowers
+  grant borrower meld(spell_id=<v1>) is the same unique object   -> True
+  index has_live_creation(spell=<v1>) (parked)                   -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  index purge(spell_id=<v1>) (parked)                            -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  grant has_live_creation(spell=<v1>) (parked)                   -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  grant purge(spell_id=<v1>) (parked)                            -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  lender has_live_creation(spell=<v1>) (parked)                  -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  lender purge(spell_id=<v1>) (parked)                           -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+[exit 0]
+
+===== instance on __version__ = "0.2.8268" (-X gil=1)
+case instance
+  purge(spell=<v1 object>, purge_all=False)                      -> 0
+  purge(spell=<v1 object>) (purge_all=True)                      -> 0
+  journal                                                        -> []
+[exit 0]
+
+===== spell_object on __version__ = "0.2.8268" (-X gil=1)
+case spell_object
+  has_live_creation(spell=<v1 Spell>) while active               -> raises KeyError: "[MELD] No spell found for frame='spell', binding='__default__'."
+  purge(spell=<v1 Spell>) while active                           -> raises KeyError: "[MELD] No spell found for frame='spell', binding='__default__'."
+  has_live_creation(spell=<v1 id>) while active                  -> True
+[exit 0]
+
+===== existing on __version__ = "0.2.8268" (-X gil=1)
+case existing
+  describe(spell=<v1 id>) active existing                        -> {'is_live': True, 'spell_id': '60d6b9693da70eb94c8257abfc5982e3f218ebbe67be1a760349a692f9ad5679', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNX1PFWCNG4FKWKT7HA5A', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  describe(spell=<v2 id>) parked existing                        -> raises KeyError: '[MELD] No spell found with spell_id: dd914ab00eab0f0320913633fdfb44a61227f5a6bb39105ff0f4086191f419b1'
+  notch to v2                                                    -> True
+  meld(spell_id=<v2>) is the supplied object                     -> True
+  describe(spell=<v2 id>) active existing                        -> {'is_live': True, 'spell_id': 'dd914ab00eab0f0320913633fdfb44a61227f5a6bb39105ff0f4086191f419b1', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNX1PFWCNG4FKWKT7HA5A', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  purge(spell_id=<v2>) active existing                           -> 0
+  meld(spell_id=<v2>) after the purge is the supplied object     -> True
+  describe(spell=<v2 id>) after the purge                        -> {'is_live': True, 'spell_id': 'dd914ab00eab0f0320913633fdfb44a61227f5a6bb39105ff0f4086191f419b1', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNX1PFWCNG4FKWKT7HA5A', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  journal                                                        -> []
+[exit 0]
+
+===== active_existing on __version__ = "0.2.8268" (-X gil=1)
+case active_existing
+  describe(spell=<v1>) active existing                           -> {'is_live': True, 'spell_id': '60d6b9693da70eb94c8257abfc5982e3f218ebbe67be1a760349a692f9ad5679', 'spell_name': 'Res', 'existence': 'unique', 'query_conduit_id': '01M5RFNXKJNT2ZA9YDYZ8RZY1H', 'storage_scope_kind': 'existing_creation', 'storage_owner_conduit_id': None, 'active_spellspace_id': None, 'creation_count': 1}
+  purge(spell_id=<v1>) active existing                           -> 1
+  meld(spell_id=<v1>) after the purge is the supplied object     -> True
+  journal                                                        -> []
+[exit 0]
+
+===== unstamped on __version__ = "0.2.8268" (-X gil=1)
+case unstamped
+  v2 _owner_creations after conjure                              -> None
+  notch to v2                                                    -> True
+  has_live_creation(spell=<v2>) active, unstamped                -> False
+  purge(spell_id=<v2>) active, unstamped                         -> raises AttributeError: 'NoneType' object has no attribute 'owner_conduit_id'
+  meld(spell_id=<v2>) active, unstamped                          -> raises RuntimeError: Spell has no configured CreationContextFactory.
+[exit 0]
+
+===== split on __version__ = "0.2.8268" (-X gil=1)
+case split
+  remove_from_spell_index(spell_id=<v2>)                         -> Spell(name=Res, binding=__default__, frame=type, SHA256=dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a)
+  get_spell_by_spell_id(<v2>).spell_index is not the source      -> True
+  has_live_creation(spell=<v2>) split, parked                    -> raises KeyError: '[MELD] No spell found with spell_id: dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a'
+  purge(spell_id=<v2>) split, parked                             -> raises KeyError: '[MELD] No spell found with spell_id: dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a'
+[exit 0]
+
+===== transfer on __version__ = "0.2.8268" (-X gil=1)
+case transfer
+  transfer_spell_ownership(spell=<v2>, target)                   -> ['borrowers', 'creations', 'dependencies', 'op_id', 'options', 'snapshot', 'source', 'spell_id', 'spell_index', 'target']
+  source has_live_creation(spell=<v1>) (parked)                  -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  source has_live_creation(spell=<v2>) (active)                  -> raises KeyError: '[MELD] No spell found with spell_id: dde9d693aff3b6600ba4fb6379565c5a9b63ef0bff26aed18ab7e10eceb33f3a'
+  target has_live_creation(spell=<v1>) (parked)                  -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  target has_live_creation(spell=<v2>) (active)                  -> True
+[exit 0]
+
+===== borrowers on __version__ = "0.2.8268" (-X gil=1)
+case borrowers
+  grant borrower meld(spell_id=<v1>) is the same unique object   -> True
+  index has_live_creation(spell=<v1>) (parked)                   -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  index purge(spell_id=<v1>) (parked)                            -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  grant has_live_creation(spell=<v1>) (parked)                   -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  grant purge(spell_id=<v1>) (parked)                            -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  lender has_live_creation(spell=<v1>) (parked)                  -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+  lender purge(spell_id=<v1>) (parked)                           -> raises KeyError: '[MELD] No spell found with spell_id: 495be877bf1a44a268148649ddb4b24a58e7aafcd25668ec1ab22445e35779df'
+[exit 0]

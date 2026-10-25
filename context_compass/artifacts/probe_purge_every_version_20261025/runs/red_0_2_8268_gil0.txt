@@ -1,0 +1,2475 @@
+# __version__ = "0.2.8268" -X gil=0: tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py 
+FFFFF.FFFFFFFFFFFFFFFFFFF.....FFFFF.FFF                                  [100%]
+=================================== FAILURES ===================================
+_________ test_parked_version_is_probed_and_purged_by_spell_id[unique] _________
+
+existence = <Existence.unique: 1>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_is_probed_and_purged_by_spell_id(existence: Existence) -> None:
+        """
+        Purpose: F1/F3 - a version built while active, then parked by a notch, is probed and purged by its spell_id.
+        Contract: The probe counts the parked version's own objects; purge disposes exactly them and returns their count;
+            the active version's object is untouched; a second purge returns 0. Before the story every call raised
+            KeyError "[MELD] No spell found with spell_id".
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            built = 2 if existence is Existence.many else 1
+            old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(built)]
+            world.notch(world.v2_id)
+            active_object = world.root.meld(spell_id=world.v2_id)
+    
+>           assert world.root.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:209: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de184a500>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+___ test_parked_version_is_probed_and_purged_by_spell_id[unique_per_conduit] ___
+
+existence = <Existence.unique_per_conduit: 2>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_is_probed_and_purged_by_spell_id(existence: Existence) -> None:
+        """
+        Purpose: F1/F3 - a version built while active, then parked by a notch, is probed and purged by its spell_id.
+        Contract: The probe counts the parked version's own objects; purge disposes exactly them and returns their count;
+            the active version's object is untouched; a second purge returns 0. Before the story every call raised
+            KeyError "[MELD] No spell found with spell_id".
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            built = 2 if existence is Existence.many else 1
+            old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(built)]
+            world.notch(world.v2_id)
+            active_object = world.root.meld(spell_id=world.v2_id)
+    
+>           assert world.root.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:209: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de1846800>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_ test_parked_version_is_probed_and_purged_by_spell_id[unique_per_conduit_lineage] _
+
+existence = <Existence.unique_per_conduit_lineage: 5>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_is_probed_and_purged_by_spell_id(existence: Existence) -> None:
+        """
+        Purpose: F1/F3 - a version built while active, then parked by a notch, is probed and purged by its spell_id.
+        Contract: The probe counts the parked version's own objects; purge disposes exactly them and returns their count;
+            the active version's object is untouched; a second purge returns 0. Before the story every call raised
+            KeyError "[MELD] No spell found with spell_id".
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            built = 2 if existence is Existence.many else 1
+            old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(built)]
+            world.notch(world.v2_id)
+            active_object = world.root.meld(spell_id=world.v2_id)
+    
+>           assert world.root.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:209: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de184c500>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+__________ test_parked_version_is_probed_and_purged_by_spell_id[many] __________
+
+existence = <Existence.many: 3>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_is_probed_and_purged_by_spell_id(existence: Existence) -> None:
+        """
+        Purpose: F1/F3 - a version built while active, then parked by a notch, is probed and purged by its spell_id.
+        Contract: The probe counts the parked version's own objects; purge disposes exactly them and returns their count;
+            the active version's object is untouched; a second purge returns 0. Before the story every call raised
+            KeyError "[MELD] No spell found with spell_id".
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            built = 2 if existence is Existence.many else 1
+            old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(built)]
+            world.notch(world.v2_id)
+            active_object = world.root.meld(spell_id=world.v2_id)
+    
+>           assert world.root.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:209: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de184d100>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+__________ test_notch_back_after_purging_builds_a_fresh_object[True] ___________
+
+purge_first = True
+
+    @pytest.mark.parametrize("purge_first", [True, False])
+    def test_notch_back_after_purging_builds_a_fresh_object(purge_first: bool) -> None:
+        """
+        Purpose: F1 - a notch back returns the object the version kept, unless it was purged while parked.
+        Contract: Without a purge the notch back returns the same `unique` object (versions keep their objects); after a
+            purge of the parked version the notch back builds a fresh one and the purged object stays disposed once.
+        Args: purge_first: Purge the parked version before the notch back.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        try:
+            first = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+            if purge_first:
+>               assert world.root.purge(spell_id=world.v1_id) == 1
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de184e500>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_____ test_parked_version_never_built_probes_false_and_purges_zero[unique] _____
+
+existence = <Existence.unique: 1>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_never_built_probes_false_and_purges_zero(existence: Existence) -> None:
+        """
+        Purpose: F2 - a version staged parked and never active has no entries; the doors answer instead of raising.
+        Contract: The probe is False with a count of 0, purge returns 0, and the active version's object is untouched.
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            active_object = world.root.meld(spell_id=world.v1_id)
+>           assert world.root.has_live_creation(spell=world.v2_id) is False
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23a1200>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_ test_parked_version_never_built_probes_false_and_purges_zero[unique_per_conduit] _
+
+existence = <Existence.unique_per_conduit: 2>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_never_built_probes_false_and_purges_zero(existence: Existence) -> None:
+        """
+        Purpose: F2 - a version staged parked and never active has no entries; the doors answer instead of raising.
+        Contract: The probe is False with a count of 0, purge returns 0, and the active version's object is untouched.
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            active_object = world.root.meld(spell_id=world.v1_id)
+>           assert world.root.has_live_creation(spell=world.v2_id) is False
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23a0c00>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_ test_parked_version_never_built_probes_false_and_purges_zero[unique_per_conduit_lineage] _
+
+existence = <Existence.unique_per_conduit_lineage: 5>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_never_built_probes_false_and_purges_zero(existence: Existence) -> None:
+        """
+        Purpose: F2 - a version staged parked and never active has no entries; the doors answer instead of raising.
+        Contract: The probe is False with a count of 0, purge returns 0, and the active version's object is untouched.
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            active_object = world.root.meld(spell_id=world.v1_id)
+>           assert world.root.has_live_creation(spell=world.v2_id) is False
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23a4500>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+______ test_parked_version_never_built_probes_false_and_purges_zero[many] ______
+
+existence = <Existence.many: 3>
+
+    @pytest.mark.parametrize("existence", _SLOTTED_AND_MANY)
+    def test_parked_version_never_built_probes_false_and_purges_zero(existence: Existence) -> None:
+        """
+        Purpose: F2 - a version staged parked and never active has no entries; the doors answer instead of raising.
+        Contract: The probe is False with a count of 0, purge returns 0, and the active version's object is untouched.
+        Args: existence: The lifetime both versions are bound with.
+        Returns: None.
+        """
+        world = _World(existence)
+        try:
+            active_object = world.root.meld(spell_id=world.v1_id)
+>           assert world.root.has_live_creation(spell=world.v2_id) is False
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23a5900>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+__ test_parked_many_purge_disposes_newest_first_and_keeps_the_active_versions __
+
+    def test_parked_many_purge_disposes_newest_first_and_keeps_the_active_versions() -> None:
+        """
+        Purpose: F3 - purging a parked `many` version disposes its objects newest first and nothing of the active one.
+        Contract: Three objects of version 1 are disposed in reverse build order; version 2's two objects stay counted.
+        Returns: None.
+        """
+        world = _World(Existence.many)
+        try:
+            old_objects = [world.root.meld(spell_id=world.v1_id) for _ in range(3)]
+            world.notch(world.v2_id)
+            new_objects = [world.root.meld(spell_id=world.v2_id) for _ in range(2)]
+>           assert world.root.purge(spell_id=world.v1_id) == 3
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:279: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23a4200>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_ test_lesser_purges_only_its_own_entries_of_a_parked_version[unique_per_conduit] _
+
+existence = <Existence.unique_per_conduit: 2>
+
+    @pytest.mark.parametrize("existence", [Existence.unique_per_conduit, Existence.many])
+    def test_lesser_purges_only_its_own_entries_of_a_parked_version(existence: Existence) -> None:
+        """
+        Purpose: F4 - per-conduit and `many` lifetimes use the caller's own store, for a parked version too.
+        Contract: A lesser's purge of the parked version retires the lesser's object and leaves the root's; the root's
+            purge then retires its own.
+        Args: existence: A caller-local lifetime.
+        Returns: None.
+        """
+        world = _World(existence)
+        lesser = world.root.create_lesser_conduit()
+        try:
+            root_object = world.root.meld(spell_id=world.v1_id)
+            lesser_object = lesser.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           assert lesser.purge(spell_id=world.v1_id) == 1
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:304: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23a9000>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+______ test_lesser_purges_only_its_own_entries_of_a_parked_version[many] _______
+
+existence = <Existence.many: 3>
+
+    @pytest.mark.parametrize("existence", [Existence.unique_per_conduit, Existence.many])
+    def test_lesser_purges_only_its_own_entries_of_a_parked_version(existence: Existence) -> None:
+        """
+        Purpose: F4 - per-conduit and `many` lifetimes use the caller's own store, for a parked version too.
+        Contract: A lesser's purge of the parked version retires the lesser's object and leaves the root's; the root's
+            purge then retires its own.
+        Args: existence: A caller-local lifetime.
+        Returns: None.
+        """
+        world = _World(existence)
+        lesser = world.root.create_lesser_conduit()
+        try:
+            root_object = world.root.meld(spell_id=world.v1_id)
+            lesser_object = lesser.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           assert lesser.purge(spell_id=world.v1_id) == 1
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:304: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23aae00>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+___________ test_lineage_root_alone_purges_a_parked_lineage_version ____________
+
+    def test_lineage_root_alone_purges_a_parked_lineage_version() -> None:
+        """
+        Purpose: F4 - a lineage version's object lives in the lineage root's store; only the root may purge it.
+        Contract: The lesser sees the object and is refused naming the lineage root; the root purges it once.
+        Returns: None.
+        """
+        world = _World(Existence.unique_per_conduit_lineage)
+        lesser = world.root.create_lesser_conduit()
+        try:
+            obj = lesser.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           assert lesser.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:325: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23ac000>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_______________ test_lesser_cannot_purge_a_parked_unique_version _______________
+
+    def test_lesser_cannot_purge_a_parked_unique_version() -> None:
+        """
+        Purpose: F5 - a parked `unique` version's object is its owner's; a lesser sees it but may not purge it.
+        Contract: The lesser's probe is True; its purge raises RuntimeError naming the spell-owning conduit and disposes
+            nothing; the owner root's purge retires it.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        lesser = world.root.create_lesser_conduit()
+        try:
+            obj = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           assert lesser.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23ade00>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_ test_spellspace_purges_its_entries_of_a_parked_version[unique_per_spell_space] _
+
+existence = <Existence.unique_per_spell_space: 6>
+
+    @pytest.mark.parametrize("existence", [Existence.unique_per_spell_space, Existence.many])
+    def test_spellspace_purges_its_entries_of_a_parked_version(existence: Existence) -> None:
+        """
+        Purpose: F6 - a SpellSpace probes and purges its own entries of a parked version.
+        Contract: The space's door counts the parked version's objects in the space's store and its purge retires them.
+        Args: existence: A lifetime a SpellSpace retires.
+        Returns: None.
+        """
+        world = _World(existence)
+        space = world.root.create_spellspace()
+        try:
+            built = 2 if existence is Existence.many else 1
+            objects = [space.meld(spell_id=world.v1_id) for _ in range(built)]
+            world.notch(world.v2_id)
+>           assert space._meld.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:372: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/spellspace_meld.py:886: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld object at 0x58de1f6d840>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_________ test_spellspace_purges_its_entries_of_a_parked_version[many] _________
+
+existence = <Existence.many: 3>
+
+    @pytest.mark.parametrize("existence", [Existence.unique_per_spell_space, Existence.many])
+    def test_spellspace_purges_its_entries_of_a_parked_version(existence: Existence) -> None:
+        """
+        Purpose: F6 - a SpellSpace probes and purges its own entries of a parked version.
+        Contract: The space's door counts the parked version's objects in the space's store and its purge retires them.
+        Args: existence: A lifetime a SpellSpace retires.
+        Returns: None.
+        """
+        world = _World(existence)
+        space = world.root.create_spellspace()
+        try:
+            built = 2 if existence is Existence.many else 1
+            objects = [space.meld(spell_id=world.v1_id) for _ in range(built)]
+            world.notch(world.v2_id)
+>           assert space._meld.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:372: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/spellspace_meld.py:886: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld object at 0x58de1f6e740>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+____________ test_conduit_still_refuses_a_parked_spellspace_version ____________
+
+    def test_conduit_still_refuses_a_parked_spellspace_version() -> None:
+        """
+        Purpose: F6 - the conduit door keeps refusing a spellspace lifetime, for a parked version too.
+        Contract: Conduit.purge raises RuntimeError "call purge on the specific SpellSpace" and the probe refuses it as a
+            spellspace-request spell; the space's object is untouched.
+        Returns: None.
+        """
+        world = _World(Existence.unique_per_spell_space)
+        space = world.root.create_spellspace()
+        try:
+            obj = space.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+            with pytest.raises(RuntimeError, match="call purge on the specific SpellSpace"):
+>               world.root.purge(spell_id=world.v1_id)
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:394: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de23af300>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_____________ test_cluster_leader_purges_a_parked_cluster_version ______________
+
+    def test_cluster_leader_purges_a_parked_cluster_version() -> None:
+        """
+        Purpose: F7 - a parked cluster version's object stays in the cluster's team store; only the elected leader purges.
+        Contract: The binding owner is refused naming the leader; the leader, which borrows the version through the
+            cluster's share, probes it and purges it once.
+        Returns: None.
+        """
+        world = _World(Existence.unique_per_conduit_cluster)
+        leader = _book(first=False).conjure(dynamic=True, name="leader")
+        try:
+            world.root.link(leader)
+            cloud = world.root.get_conduit_cloud()
+            cloud.create_cluster("versions")
+            cloud.add_conduit_to_cluster(world.root, "versions")
+            cloud.add_conduit_to_cluster(leader, "versions")
+            cloud.refresh_cluster_shares_for_conduit(world.root)
+            cloud.get_cluster("versions").elect_leader(leader.id)
+            obj = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+            with pytest.raises(RuntimeError, match="leader"):
+>               world.root.purge(spell_id=world.v1_id)
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:423: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26f2b00>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_____ test_parked_managed_version_reports_its_own_pool_and_purges_nothing ______
+
+    def test_parked_managed_version_reports_its_own_pool_and_purges_nothing() -> None:
+        """
+        Purpose: F8 - a parked managed version's probe reads that version's own pool; purge stays outside the design.
+        Contract: The probe counts the object still out from version 1's pool (storage scope "managed_pool"); purge
+            returns 0 and disposes nothing.
+        Returns: None.
+        """
+        world = _World(Existence.managed_spell_quantity)
+        try:
+            leased = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           status = world.root.describe_live_creation_status(spell=world.v1_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:443: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5491: in describe_live_creation_status
+    return meld_component.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26f1100>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+________ test_parked_existing_object_is_live_and_purge_retires_nothing _________
+
+    def test_parked_existing_object_is_live_and_purge_retires_nothing() -> None:
+        """
+        Purpose: F9 - a version staged as an existing object is live (its object exists) but holds no store entry.
+        Contract: The probe is True with storage scope "existing_creation"; purge returns 0 (a parked existing object is
+            not registered in the store) and the supplied object is never disposed.
+        Returns: None.
+        """
+        book = _book()
+        first = Resource()
+        v1_id = book.bind(spell=first, existence=Existence.unique, permissions="create")
+        root = book.conjure(dynamic=True, name="lender")
+        try:
+            index = root.get_spell_by_spell_id(v1_id).spell_index
+            second = version_of(Resource, version=2)()
+            v2_id = root.bind_inactive(spell=second, spell_index=index, existence=Existence.unique, permissions="create")
+>           status = root.describe_live_creation_status(spell=v2_id)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:466: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5491: in describe_live_creation_status
+    return meld_component.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26f5a00>
+spell_id = '90a59dcc2c274ecf3e618132e494cdefef779f77544e05bb1bedca6a2eaa3f34'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 90a59dcc2c274ecf3e618132e494cdefef779f77544e05bb1bedca6a2eaa3f34'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+____ test_borrower_reaches_its_parked_copy_of_a_unique_version[index_link] _____
+
+how = 'index_link'
+
+    @pytest.mark.parametrize("how", ["index_link", "grant"])
+    def test_borrower_reaches_its_parked_copy_of_a_unique_version(how: str) -> None:
+        """
+        Purpose: F10 - a borrower's copy parked by the lender's notch is probed, and its purge keeps the unique rule.
+        Contract: The borrower reads the lender's store (True) and is refused naming the spell-owning conduit; the lender
+            purges the object once.
+        Args: how: How the borrower holds version 1.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        borrower = _borrow(world, how)
+        try:
+            obj = borrower.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           assert borrower.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:511: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26f7700>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_______ test_borrower_reaches_its_parked_copy_of_a_unique_version[grant] _______
+
+how = 'grant'
+
+    @pytest.mark.parametrize("how", ["index_link", "grant"])
+    def test_borrower_reaches_its_parked_copy_of_a_unique_version(how: str) -> None:
+        """
+        Purpose: F10 - a borrower's copy parked by the lender's notch is probed, and its purge keeps the unique rule.
+        Contract: The borrower reads the lender's store (True) and is refused naming the spell-owning conduit; the lender
+            purges the object once.
+        Args: how: How the borrower holds version 1.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        borrower = _borrow(world, how)
+        try:
+            obj = borrower.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+>           assert borrower.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:511: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26f6500>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+____ test_borrower_purges_its_own_many_entries_of_a_parked_copy[index_link] ____
+
+how = 'index_link'
+
+    @pytest.mark.parametrize("how", ["index_link", "grant"])
+    def test_borrower_purges_its_own_many_entries_of_a_parked_copy(how: str) -> None:
+        """
+        Purpose: F10 - `many` objects a borrower built from its copy are in the borrower's store; it purges them.
+        Contract: After the lender's notch the borrower counts and purges its two objects; the lender holds none.
+        Args: how: How the borrower holds version 1.
+        Returns: None.
+        """
+        world = _World(Existence.many)
+        borrower = _borrow(world, how)
+        try:
+            objects = [borrower.meld(spell_id=world.v1_id) for _ in range(2)]
+            world.notch(world.v2_id)
+>           assert _count(borrower, world.v1_id) == 2
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:535: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:177: in _count
+    status = scope.describe_live_creation_status(spell=spell_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5491: in describe_live_creation_status
+    return meld_component.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26fa500>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+______ test_borrower_purges_its_own_many_entries_of_a_parked_copy[grant] _______
+
+how = 'grant'
+
+    @pytest.mark.parametrize("how", ["index_link", "grant"])
+    def test_borrower_purges_its_own_many_entries_of_a_parked_copy(how: str) -> None:
+        """
+        Purpose: F10 - `many` objects a borrower built from its copy are in the borrower's store; it purges them.
+        Contract: After the lender's notch the borrower counts and purges its two objects; the lender holds none.
+        Args: how: How the borrower holds version 1.
+        Returns: None.
+        """
+        world = _World(Existence.many)
+        borrower = _borrow(world, how)
+        try:
+            objects = [borrower.meld(spell_id=world.v1_id) for _ in range(2)]
+            world.notch(world.v2_id)
+>           assert _count(borrower, world.v1_id) == 2
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:535: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:177: in _count
+    status = scope.describe_live_creation_status(spell=spell_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5491: in describe_live_creation_status
+    return meld_component.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26fa600>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+________ test_instance_of_a_parked_version_resolves_through_its_address ________
+
+    def test_instance_of_a_parked_version_resolves_through_its_address() -> None:
+        """
+        Purpose: F14 - an instance names its class's address, which serves the active version (a documented limit).
+        Contract: purge(spell=<version 1 object>, purge_all=False) looks in the active version's entry, finds another
+            object and returns 0; purge(spell=<version 1 object>) retires the ACTIVE version's object, not version 1's;
+            purge(spell_id=<version 1>) is the way to retire version 1's object.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        try:
+            old = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+            new = world.root.meld(spell_id=world.v2_id)
+            assert world.root.purge(spell=old, purge_all=False) == 0
+            assert (old.cleanup_calls, new.cleanup_calls) == (0, 0)
+            assert world.root.purge(spell=old) == 1
+            assert (old.cleanup_calls, new.cleanup_calls) == (0, 1)
+>           assert world.root.purge(spell_id=world.v1_id) == 1
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:633: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5288: in purge
+    return self._meld.purge(
+src/melder/aether/conduit/meld/conduit_meld.py:197: in purge
+    target_spell = self._resolve_purge_spell(
+src/melder/aether/conduit/meld/meld.py:666: in _resolve_purge_spell
+    return self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26fb500>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+___________ test_purge_refuses_a_unique_version_with_no_owner_store ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x58de1db3710>
+
+    def test_purge_refuses_a_unique_version_with_no_owner_store(monkeypatch: pytest.MonkeyPatch) -> None:
+        """
+        Purpose: F17 - a `unique` version whose owner stamp failed at conjure is refused by purge with a clear error.
+        Contract: Version 2 is staged before conjure and its stamp raises (conjure logs it and goes on). Parked and then
+            active, the probe answers False and purge raises RuntimeError naming the missing owner store, where an
+            active one raised AttributeError "'NoneType' object has no attribute 'owner_conduit_id'".
+        Args: monkeypatch: Makes the owner stamp raise for version 2 during conjure only.
+        Returns: None.
+        """
+        original: Callable[..., Any] = Spell._add_owned_conduit
+        refused: List[str] = []
+    
+        def refusing_stamp(spell: Spell, *args: Any, **kwargs: Any) -> Any:
+            """Raise for the version named in `refused`; stamp every other version as conjure does."""
+            if spell.spell_id in refused:
+                raise RuntimeError("test: the owner stamp raised")
+            return original(spell, *args, **kwargs)
+    
+        book = _book()
+        v1_id = book.bind(spell=Resource, existence=Existence.unique, permissions="create")
+        index = book.find_spell_by_spell_id(v1_id).spell_index
+        v2_id = book.bind_inactive(
+            spell=version_of(Resource, version=2), spell_index=index, existence=Existence.unique, permissions="create",
+        )
+        refused.append(v2_id)
+        monkeypatch.setattr(Spell, "_add_owned_conduit", refusing_stamp, raising=True)
+        root = book.conjure(dynamic=True, name="lender")
+        monkeypatch.undo()
+        try:
+>           assert root.has_live_creation(spell=v2_id) is False
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:668: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de26fd700>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+__________________ test_split_version_is_reached_by_spell_id ___________________
+
+    def test_split_version_is_reached_by_spell_id() -> None:
+        """
+        Purpose: F19 - a version split into an index of its own by remove_from_spell_index is reached as a parked version.
+        Contract: Version 2 builds an object while active, is parked by a notch back, then split off; its probe is True
+            and its purge retires the object.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        try:
+            world.notch(world.v2_id)
+            obj = world.root.meld(spell_id=world.v2_id)
+            world.notch(world.v1_id)
+            world.root.remove_from_spell_index(spell_id=world.v2_id, source_index=world.index)
+            assert world.root.get_spell_by_spell_id(world.v2_id).spell_index is not world.index
+>           assert world.root.has_live_creation(spell=world.v2_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:693: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58ddfa9ac00>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+_______________ test_transfer_moves_the_reach_with_the_versions ________________
+
+    def test_transfer_moves_the_reach_with_the_versions() -> None:
+        """
+        Purpose: F20 - after an ownership transfer the source no longer sees the moved versions and the target does.
+        Contract: The source's probe of either version raises KeyError; the target probes the parked version it received
+            (its object moved with it) and purges it once.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        target_book = _book(first=False)
+        target_book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
+        target = target_book.conjure(dynamic=True, name="target")
+        try:
+            old = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+            world.root.meld(spell_id=world.v2_id)
+            world.root.transfer_spell_ownership(spell=world.v2_id, target_conduit=target)
+            for spell_id in (world.v1_id, world.v2_id):
+                with pytest.raises(KeyError, match="No spell found with spell_id"):
+                    world.root.has_live_creation(spell=spell_id)
+>           assert target.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:719: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de32d3300>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+______________ test_other_selectors_still_name_the_active_version ______________
+
+    def test_other_selectors_still_name_the_active_version() -> None:
+        """
+        Purpose: F21 - a name, a class and the address name the index's active version, as meld does.
+        Contract: describe by name answers version 2; purge by class retires version 2's object only; purge by name
+            string after a rebuild does the same; version 1's object survives both.
+        Returns: None.
+        """
+        world = _World(Existence.unique)
+        try:
+            old = world.root.meld(spell_id=world.v1_id)
+            world.notch(world.v2_id)
+            new = world.root.meld(spell_id=world.v2_id)
+            assert world.root.describe_live_creation_status(spell_name="Resource")["spell_id"] == world.v2_id
+            assert world.root.purge(spell=Resource) == 1
+            assert (old.cleanup_calls, new.cleanup_calls) == (0, 1)
+            rebuilt = world.root.meld(spell_id=world.v2_id)
+            assert world.root.purge("Resource") == 1
+            assert (old.cleanup_calls, rebuilt.cleanup_calls) == (0, 1)
+>           assert world.root.has_live_creation(spell=world.v1_id) is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:745: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de32d4800>
+spell_id = 'a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: a527cb49db007574c2739c306b7617ec86d049e18c287c0b31bda538f4016497'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+___ test_versions_staged_before_conjure_are_reached_like_those_staged_after ____
+
+    def test_versions_staged_before_conjure_are_reached_like_those_staged_after() -> None:
+        """
+        Purpose: F2 for a Book that staged version 2 before conjure: the same answers as one staged after.
+        Contract: The parked version is probed False and purged 0 before a notch; after a notch to it, a build, and a
+            notch back, it is probed True and purged once.
+        Returns: None.
+        """
+        world = _World(Existence.unique, stage_before_conjure=True)
+        try:
+>           assert world.root.has_live_creation(spell=world.v2_id) is False
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py:779: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/melder/aether/conduit/conduit.py:5431: in has_live_creation
+    return meld_component.has_live_creation(
+src/melder/aether/conduit/meld/meld.py:722: in has_live_creation
+    status = self.describe_live_creation_status(
+src/melder/aether/conduit/meld/conduit_meld.py:942: in describe_live_creation_status
+    target_spell = self._resolve_spell(
+src/melder/aether/conduit/meld/meld.py:2121: in _resolve_spell
+    return self._resolve_spell_by_id(spell)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x58de32d5100>
+spell_id = '71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+    def _resolve_spell_by_id(self, spell_id: str) -> Spell:
+        """
+        Resolve a spell by its current canonical spell id.
+    
+        This is the direct-id lookup path for callers that already know the
+        exact current spell_id and do not need logical frame/binding
+        normalization.
+    
+        Args:
+            spell_id:
+                The spell's spell_id - the SHA256 of the registered object's code.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell with the given spell_id exists in either
+                the local or contracted spell maps.
+        """
+        # Local spells
+        pooled_spell = self._spell_id_pool.get(spell_id)
+        if pooled_spell is not None:
+            return pooled_spell
+    
+        # Local spells
+        if spell_id in self._spells_by_id:
+            return self._spells_by_id[spell_id]
+    
+        # Contracted spells (per-conduit maps)
+        for spell_map in self._contracted_spells_by_id.values():
+            if spell_id in spell_map:
+                return spell_map[spell_id]
+    
+>       raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+E       KeyError: '[MELD] No spell found with spell_id: 71db5e43978c2abf31041dabbb4a24ffa834c2e715dee3e2ef19b28337a482c3'
+
+src/melder/aether/conduit/meld/meld.py:2186: KeyError
+___ test_probes_and_purges_never_miss_a_version_while_it_is_notched[lender] ____
+
+prober = 'lender'
+
+    @pytest.mark.parametrize("prober", ["lender", "index_borrower"])
+    def test_probes_and_purges_never_miss_a_version_while_it_is_notched(prober: str) -> None:
+        """
+        Purpose: F15 - probes and purges by spell_id never raise for a version a notch is moving.
+        Contract: Two indexes are notched back and forth 40 times each while two threads probe both versions of the
+            `unique` index (each has a live object, so every probe is True and names its own version) and purge both
+            versions of the `many` index (no objects, so every purge returns 0). No call raises, no answer is wrong, each
+            prober completes at least one round, and no object is disposed.
+        Args:
+            prober: "lender" probes through the lender's root; "index_borrower" through a borrower whose index links
+                follow the notches.
+        Returns: None.
+        """
+        book = _book()
+        v1_id = book.bind(spell=Resource, existence=Existence.unique, permissions="create")
+        w1_id = book.bind(spell=Ticket, existence=Existence.many, permissions="create")
+        root = book.conjure(dynamic=True, name="lender")
+        resource_index = root.get_spell_by_spell_id(v1_id).spell_index
+        ticket_index = root.get_spell_by_spell_id(w1_id).spell_index
+        v2_id = root.bind_inactive(
+            spell=version_of(Resource, version=2), spell_index=resource_index, existence=Existence.unique,
+            permissions="create",
+        )
+        w2_id = root.bind_inactive(
+            spell=version_of(Ticket, version=2), spell_index=ticket_index, existence=Existence.many,
+            permissions="create",
+        )
+        borrower = _book(first=False).conjure(dynamic=True, name="borrower")
+        try:
+            root.link(borrower)
+            borrower.add_index_to_contract(index=resource_index, conduit=root, permissions="create")
+            borrower.add_index_to_contract(index=ticket_index, conduit=root, permissions="create")
+            first = root.meld(spell_id=v1_id)
+            root.notch_spell(spell_index=resource_index, spell_id=v2_id)
+            second = root.meld(spell_id=v2_id)
+            scope = root if prober == "lender" else borrower
+            errors: List[Tuple[str, Any]] = []
+            rounds: List[int] = []
+            done = Event()
+    
+            def notch_back_and_forth() -> None:
+                """Notch both indexes 40 times, alternating versions; record anything raised; then signal done."""
+                try:
+                    for turn in range(40):
+                        root.notch_spell(spell_index=resource_index, spell_id=v1_id if turn % 2 == 0 else v2_id)
+                        root.notch_spell(spell_index=ticket_index, spell_id=w1_id if turn % 2 == 0 else w2_id)
+                except BaseException as error:
+                    errors.append(("notch", error))
+                finally:
+                    done.set()
+    
+            def probe_and_purge() -> None:
+                """Probe and purge every version until the notches are done; record any raise or wrong answer."""
+                count = 0
+                try:
+                    while not done.is_set():
+                        for spell_id in (v1_id, v2_id):
+                            if scope.has_live_creation(spell=spell_id) is not True:
+                                errors.append(("not live", spell_id))
+                            if scope.describe_live_creation_status(spell=spell_id)["spell_id"] != spell_id:
+                                errors.append(("wrong version", spell_id))
+                        for spell_id in (w1_id, w2_id):
+                            if scope.purge(spell_id=spell_id) != 0:
+                                errors.append(("purged objects", spell_id))
+                        count += 1
+                except BaseException as error:
+                    errors.append(("probe", error))
+                rounds.append(count)
+    
+            threads = [Thread(target=notch_back_and_forth)] + [Thread(target=probe_and_purge) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=120)
+            assert not any(thread.is_alive() for thread in threads)
+>           assert errors == []
+E           AssertionError: assert [('probe', Ke...883e442b01'))] == []
+E             
+E             Left contains 2 more items, first extra item: ('probe', KeyError('[MELD] No spell found with spell_id: e6b609d2b34eb35b19490fdcd30a94446a44f7b0d5f666ac148ce3883e442b01'))
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py:177: AssertionError
+_ test_probes_and_purges_never_miss_a_version_while_it_is_notched[index_borrower] _
+
+prober = 'index_borrower'
+
+    @pytest.mark.parametrize("prober", ["lender", "index_borrower"])
+    def test_probes_and_purges_never_miss_a_version_while_it_is_notched(prober: str) -> None:
+        """
+        Purpose: F15 - probes and purges by spell_id never raise for a version a notch is moving.
+        Contract: Two indexes are notched back and forth 40 times each while two threads probe both versions of the
+            `unique` index (each has a live object, so every probe is True and names its own version) and purge both
+            versions of the `many` index (no objects, so every purge returns 0). No call raises, no answer is wrong, each
+            prober completes at least one round, and no object is disposed.
+        Args:
+            prober: "lender" probes through the lender's root; "index_borrower" through a borrower whose index links
+                follow the notches.
+        Returns: None.
+        """
+        book = _book()
+        v1_id = book.bind(spell=Resource, existence=Existence.unique, permissions="create")
+        w1_id = book.bind(spell=Ticket, existence=Existence.many, permissions="create")
+        root = book.conjure(dynamic=True, name="lender")
+        resource_index = root.get_spell_by_spell_id(v1_id).spell_index
+        ticket_index = root.get_spell_by_spell_id(w1_id).spell_index
+        v2_id = root.bind_inactive(
+            spell=version_of(Resource, version=2), spell_index=resource_index, existence=Existence.unique,
+            permissions="create",
+        )
+        w2_id = root.bind_inactive(
+            spell=version_of(Ticket, version=2), spell_index=ticket_index, existence=Existence.many,
+            permissions="create",
+        )
+        borrower = _book(first=False).conjure(dynamic=True, name="borrower")
+        try:
+            root.link(borrower)
+            borrower.add_index_to_contract(index=resource_index, conduit=root, permissions="create")
+            borrower.add_index_to_contract(index=ticket_index, conduit=root, permissions="create")
+            first = root.meld(spell_id=v1_id)
+            root.notch_spell(spell_index=resource_index, spell_id=v2_id)
+            second = root.meld(spell_id=v2_id)
+            scope = root if prober == "lender" else borrower
+            errors: List[Tuple[str, Any]] = []
+            rounds: List[int] = []
+            done = Event()
+    
+            def notch_back_and_forth() -> None:
+                """Notch both indexes 40 times, alternating versions; record anything raised; then signal done."""
+                try:
+                    for turn in range(40):
+                        root.notch_spell(spell_index=resource_index, spell_id=v1_id if turn % 2 == 0 else v2_id)
+                        root.notch_spell(spell_index=ticket_index, spell_id=w1_id if turn % 2 == 0 else w2_id)
+                except BaseException as error:
+                    errors.append(("notch", error))
+                finally:
+                    done.set()
+    
+            def probe_and_purge() -> None:
+                """Probe and purge every version until the notches are done; record any raise or wrong answer."""
+                count = 0
+                try:
+                    while not done.is_set():
+                        for spell_id in (v1_id, v2_id):
+                            if scope.has_live_creation(spell=spell_id) is not True:
+                                errors.append(("not live", spell_id))
+                            if scope.describe_live_creation_status(spell=spell_id)["spell_id"] != spell_id:
+                                errors.append(("wrong version", spell_id))
+                        for spell_id in (w1_id, w2_id):
+                            if scope.purge(spell_id=spell_id) != 0:
+                                errors.append(("purged objects", spell_id))
+                        count += 1
+                except BaseException as error:
+                    errors.append(("probe", error))
+                rounds.append(count)
+    
+            threads = [Thread(target=notch_back_and_forth)] + [Thread(target=probe_and_purge) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=120)
+            assert not any(thread.is_alive() for thread in threads)
+>           assert errors == []
+E           AssertionError: assert [('probe', Ke...6eac291572'))] == []
+E             
+E             Left contains 2 more items, first extra item: ('probe', KeyError('[MELD] No spell found with spell_id: e6b609d2b34eb35b19490fdcd30a94446a44f7b0d5f666ac148ce3883e442b01'))
+E             Use -v to get more diff
+
+tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py:177: AssertionError
+=========================== short test summary info ============================
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_is_probed_and_purged_by_spell_id[unique]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_is_probed_and_purged_by_spell_id[unique_per_conduit]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_is_probed_and_purged_by_spell_id[unique_per_conduit_lineage]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_is_probed_and_purged_by_spell_id[many]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_notch_back_after_purging_builds_a_fresh_object[True]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_never_built_probes_false_and_purges_zero[unique]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_never_built_probes_false_and_purges_zero[unique_per_conduit]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_never_built_probes_false_and_purges_zero[unique_per_conduit_lineage]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_version_never_built_probes_false_and_purges_zero[many]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_many_purge_disposes_newest_first_and_keeps_the_active_versions
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_lesser_purges_only_its_own_entries_of_a_parked_version[unique_per_conduit]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_lesser_purges_only_its_own_entries_of_a_parked_version[many]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_lineage_root_alone_purges_a_parked_lineage_version
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_lesser_cannot_purge_a_parked_unique_version
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_spellspace_purges_its_entries_of_a_parked_version[unique_per_spell_space]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_spellspace_purges_its_entries_of_a_parked_version[many]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_conduit_still_refuses_a_parked_spellspace_version
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_cluster_leader_purges_a_parked_cluster_version
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_managed_version_reports_its_own_pool_and_purges_nothing
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_parked_existing_object_is_live_and_purge_retires_nothing
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_borrower_reaches_its_parked_copy_of_a_unique_version[index_link]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_borrower_reaches_its_parked_copy_of_a_unique_version[grant]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_borrower_purges_its_own_many_entries_of_a_parked_copy[index_link]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_borrower_purges_its_own_many_entries_of_a_parked_copy[grant]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_instance_of_a_parked_version_resolves_through_its_address
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_purge_refuses_a_unique_version_with_no_owner_store
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_split_version_is_reached_by_spell_id
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_transfer_moves_the_reach_with_the_versions
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_other_selectors_still_name_the_active_version
+FAILED tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py::test_versions_staged_before_conjure_are_reached_like_those_staged_after
+FAILED tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py::test_probes_and_purges_never_miss_a_version_while_it_is_notched[lender]
+FAILED tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py::test_probes_and_purges_never_miss_a_version_while_it_is_notched[index_borrower]
+32 failed, 7 passed in 2.24s
+[exit 1]

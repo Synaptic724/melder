@@ -16,6 +16,11 @@ class SafeCodegenProfileStrategy:
         limits codegen to safe query/bind-existing operations and denies link
         mutation, local creation, invocation, writes, and dangerous capability
         escalation.
+        Files: room code gets no file access through builtins or imports.
+        `open` is a denied builtin - refused at validation whether called or
+        only named, and left out of the room's runtime builtins - and imports
+        are off, so `io`, `os` and `pathlib` are refused too. These are policy
+        checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -65,9 +70,10 @@ class SafeCodegenProfileStrategy:
               transfer-ownership.
             - spell: allow resolve-existing and bind-existing; DENY local-create,
               invoke-method, read-attribute, and write-attribute.
-            - capability: imports are NOT enabled; DENY dangerous builtins,
-              dynamic access, mutation, contract override, unsafe reflection,
-              dunder access, and recursive codegen.
+            - capability: imports are NOT enabled; DENY dangerous builtins
+              (`SAFE_DENIED_BUILTIN_NAMES`, `open` among them), dynamic access,
+              mutation, contract override, unsafe reflection, dunder access,
+              and recursive codegen.
             Stateless: a new instance is returned per call.
 
         Returns:

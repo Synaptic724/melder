@@ -1,0 +1,9 @@
+# __version__ = "0.2.8268" -X gil=1: scripts/release_note_claim.py
+has_live_creation(v1): True
+purge(v1): 1 first.closed: True second.closed: False
+has_live_creation(v1) after: False
+describe(v1) spell_id is v1: True
+meld(v1): KeyError '[MELD] No spell found with spell_id: ed2444cb015c17334b7255f609a557379744fd00ee66910b7bd4ad096ed1f58a'
+v1 active: False v2 active: True
+unknown spell_id: KeyError '[MELD] No spell found with spell_id: 0000000000000000000000000000000000000000000000000000000000000000'
+[exit 0]

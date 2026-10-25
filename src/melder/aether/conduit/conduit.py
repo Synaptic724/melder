@@ -5230,6 +5230,10 @@ class Conduit(Cleanable):
               binding owner, lineage the lineage root, and cluster its leader.
             - Never redirects into an active SpellSpace; use that space's purge.
             - Preserves the binding, compiled context, conduit and pools.
+            - A spell_id reaches any version this conduit can see - its Book's own
+              or a borrowed copy, active or parked - so a version a notch parked is
+              purged without a notch back; every other selector names the version
+              an index has active, as meld does.
 
         Args:
             spell:
@@ -5237,8 +5241,9 @@ class Conduit(Cleanable):
                 An instance is inspected for its class before ordinary lookup.
                 The original reference is retained for single-object removal.
             spell_id:
-                Explicit machine identity. Mutually exclusive with spell and
-                forwarded directly into the internal id lookup lane.
+                A version's spell_id, mutually exclusive with spell. It names
+                exactly that version - active or parked, this conduit's Book's own
+                or a borrowed copy - and its entries in the authorized store.
             spellframe:
                 Optional frame/type used by ordinary binding discovery.
             binding_name:
@@ -5257,9 +5262,11 @@ class Conduit(Cleanable):
                 If selectors conflict, no target is supplied, or single-object
                 removal is requested without an instance.
             KeyError:
-                If normal meld discovery cannot find the binding.
+                If no version this conduit can see carries the spell_id, or normal
+                meld discovery cannot find the binding.
             RuntimeError:
-                If cleaned, the cluster is inert, or this conduit lacks authority.
+                If cleaned, the cluster is inert, this conduit lacks authority, or a
+                `unique` version has no owner store.
             TypeError:
                 If purge_all is not a bool.
             ExceptionGroup:
@@ -5392,7 +5399,10 @@ class Conduit(Cleanable):
             entering the meld creation path.
 
         Contract:
-            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Mirrors the root identity inputs accepted by `meld(...)`, with one
+              difference: a spell_id given as `spell` names exactly that version,
+              active or parked, this conduit's Book's own or a borrowed copy, so a
+              version a notch parked is answered for without a notch back.
             - Delegates all lookup and existence semantics to the owned
               `Meld` instance.
             - Never creates, registers, links, or mutates objects.
@@ -5422,7 +5432,8 @@ class Conduit(Cleanable):
                 If none of `spell_name`, `spell`, or `spellframe` are
                 provided.
             KeyError:
-                Propagated from `Meld` when a spell cannot be resolved.
+                Propagated from `Meld` when a spell cannot be resolved: for a
+                spell_id, when no version this conduit can see carries it.
         """
         self.check_cleaned()
         meld_component = self._meld
@@ -5454,7 +5465,10 @@ class Conduit(Cleanable):
             no-create probe used by `has_live_creation(...)`.
 
         Contract:
-            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Mirrors the root identity inputs accepted by `meld(...)`, with one
+              difference: a spell_id given as `spell` names exactly that version,
+              active or parked, this conduit's Book's own or a borrowed copy, and
+              the payload's `spell_id` is that version's.
             - Delegates all lookup and existence semantics to the owned
               `Meld` instance.
             - Never creates, registers, links, or mutates objects.
@@ -5482,7 +5496,8 @@ class Conduit(Cleanable):
                 If none of `spell_name`, `spell`, or `spellframe` are
                 provided.
             KeyError:
-                Propagated from `Meld` when a spell cannot be resolved.
+                Propagated from `Meld` when a spell cannot be resolved: for a
+                spell_id, when no version this conduit can see carries it.
         """
         self.check_cleaned()
         meld_component = self._meld

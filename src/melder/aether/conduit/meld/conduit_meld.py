@@ -164,7 +164,11 @@ class ConduitMeld(Meld):
             existing conduit-specific resolution behavior.
 
         Contract:
-            - Shared discovery returns the existing registered definition.
+            - Shared discovery returns the existing registered definition; a
+              spell_id names one version - this conduit's Book's own or a borrowed
+              copy, active or parked - so a version a notch parked is purged from
+              the store its existence selects without a notch back
+              (STORY-2026-10-25-probe_and_purge_reach_every_version).
             - `_get_purge_creations` applies conduit lifetime/authority rules.
             - The chosen Creations performs synchronized removal and disposal.
             - No SpellSpace is inferred, entered, or cleared by this door.
@@ -183,10 +187,12 @@ class ConduitMeld(Meld):
 
         Raises:
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If normal meld discovery cannot find the target.
+            KeyError: If no version this conduit can see carries the spell_id, or
+                normal meld discovery cannot find the target.
             TypeError: If purge_all is not a bool.
-            RuntimeError: If cleaned, a cluster has no elected leader, or the
-                caller lacks the required local/root/leader authority.
+            RuntimeError: If cleaned, a cluster has no elected leader, the caller
+                lacks the required local/root/leader authority, or a `unique`
+                version has no owner store.
             ExceptionGroup: Disposal failures after selected entries are removed.
 
         Threading / Lifecycle:
@@ -223,6 +229,11 @@ class ConduitMeld(Meld):
               cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
               authority.
             - SpellSpace lifetime is refused even when a space is active.
+            - A `unique` version with no owner store - its owner stamp failed when
+              its Book was conjured, which the conjure logged - is refused with a
+              RuntimeError naming it (R6 of
+              STORY-2026-10-25-probe_and_purge_reach_every_version); until then the
+              store read raised AttributeError.
             - A managed spell (`Existence.managed_spell_quantity`) uses this
               caller's own store, where `Creations.purge` returns 0 for it: its
               objects live in a pool, and purge is not part of the managed design
@@ -238,7 +249,8 @@ class ConduitMeld(Meld):
 
         Raises:
             RuntimeError: If the lifetime is unsupported here, the cluster is
-                inert, or the caller is not the required owner/root/leader.
+                inert, the caller is not the required owner/root/leader, or a
+                `unique` version has no owner store.
 
         Lifecycle:
             Uses current ownership/store references on every call. Ownership
@@ -256,6 +268,12 @@ class ConduitMeld(Meld):
         creations: Creations
         if existence is Existence.unique:
             creations = spell._owner_creations
+            if creations is None:
+                raise RuntimeError(
+                    f"Cannot purge spell '{spell.spell_name}' ({spell.spell_id}): it has no owner store, so "
+                    "nothing was ever stored for it. Its owner stamp failed when its Book was conjured (the "
+                    "conjure logged the error). Dispose it with cleanup_spell and bind it again."
+                )
             authority = "spell-owning conduit"
             authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_lineage:
@@ -906,7 +924,10 @@ class ConduitMeld(Meld):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this conduit's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`); every other selector resolves as
+              `meld(...)` does, to the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports the query conduit context explicitly so callers know
@@ -939,7 +960,7 @@ class ConduitMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell(
+        target_spell = self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,

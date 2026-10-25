@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "dcff699810f9d5a557a0a23b7c769b56d2bdffac561cfbb55f8a00cbac4d8eb0",
+ "source_sha256": "59f7b919421d32b42dd45a26e1817261e676424adc15a6575919fd2512b8c091",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -120,11 +120,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3e7853c19915a8f2b74c18d0097a0aea02a3f308ac8f200e6a761951b2f2c6be",
+   "span_sha256": "26818224cd3fd1705e24f18cfd9f37d2e45b0ffa601a56ca4073419d5ff92b76",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
-    "forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact",
+    "forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact; a spell_id given to purge or the live-creation probes reaches any version this conduit can see, active or parked (0.2.PPNOTCH)",
     "forwards per-version resolvable policy through both binding facades without changing conduit state",
     "owns concrete conduit-facing runtime helpers and pooled spellspace state",
     "creates lesser conduits",
@@ -170,7 +170,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "dea791cc56036fb2102b77939be3e7726adbb1488a2c3f44cd7bf2b190b18b3c"
+   "semantics_authored_against": "26818224cd3fd1705e24f18cfd9f37d2e45b0ffa601a56ca4073419d5ff92b76"
   }
  },
  "edges_out": [

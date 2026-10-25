@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Callable, Optional
 
 import pytest
 
@@ -253,3 +254,109 @@ def test_frame_acl_validator_rejects_codegen_builtin_rule_without_builtin_names(
         validator._validate_codegen_configuration_shape_only(
             configuration.codegen_configuration
         )
+
+
+@pytest.mark.parametrize(
+    ("profile_factory", "precision_profile_factory", "open_denied"),
+    [
+        pytest.param(FrameACLCodegenProfile.create_safe, None, True, id="safe"),
+        pytest.param(FrameACLCodegenProfile.create_default, None, True, id="default"),
+        pytest.param(FrameACLCodegenProfile.create_hybrid, None, True, id="hybrid"),
+        pytest.param(
+            FrameACLCodegenProfile.create_hybrid,
+            FrameACLCodegenProfile.create_precision,
+            True,
+            id="hybrid+precision",
+        ),
+        pytest.param(
+            FrameACLCodegenProfile.create_permissive,
+            FrameACLCodegenProfile.create_precision,
+            True,
+            id="permissive+precision",
+        ),
+        pytest.param(FrameACLCodegenProfile.create_permissive, None, False, id="permissive"),
+        pytest.param(FrameACLCodegenProfile.create_full_access, None, False, id="full_access"),
+    ],
+)
+def test_frame_acl_compiler_denies_open_exactly_where_the_safe_tuple_applies(
+        profile_factory: Callable[[], FrameACLCodegenProfile],
+        precision_profile_factory: Optional[Callable[[], FrameACLCodegenProfile]],
+        open_denied: bool,
+) -> None:
+    """
+    Contract (D-10): the compiled deny list carries `open` for safe (the default profile), hybrid and any chain
+    with the precision overlay - the postures whose rules use the safe tuple - and not for permissive or
+    full_access, which keep `open` as a documented file posture.
+    """
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="open_builtin_posture",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            profile_factory(),
+            precision_profile=(
+                precision_profile_factory() if precision_profile_factory is not None else None
+            ),
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert ("open" in compiled_surface.denied_builtin_names) is open_denied
+
+
+@pytest.mark.parametrize(
+    ("profile_factory", "precision_profile_factory", "pathlib_allowed"),
+    [
+        pytest.param(FrameACLCodegenProfile.create_safe, None, False, id="safe"),
+        pytest.param(FrameACLCodegenProfile.create_hybrid, None, False, id="hybrid"),
+        pytest.param(
+            FrameACLCodegenProfile.create_hybrid,
+            FrameACLCodegenProfile.create_precision,
+            False,
+            id="hybrid+precision",
+        ),
+        pytest.param(FrameACLCodegenProfile.create_permissive, None, True, id="permissive"),
+        pytest.param(
+            FrameACLCodegenProfile.create_permissive,
+            FrameACLCodegenProfile.create_precision,
+            False,
+            id="permissive+precision",
+        ),
+    ],
+)
+def test_frame_acl_compiler_admits_pathlib_only_under_the_permissive_import_list(
+        profile_factory: Callable[[], FrameACLCodegenProfile],
+        precision_profile_factory: Optional[Callable[[], FrameACLCodegenProfile]],
+        pathlib_allowed: bool,
+) -> None:
+    """
+    Contract (D-10, the owner's option B): `pathlib` is an allowed import root of the permissive list only - hybrid's
+    list leaves it out, the precision overlay narrows any chain to a list without it, and safe allows no import - so
+    room code outside permissive and full_access cannot write files through `pathlib.Path`.
+    """
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="pathlib_import_posture",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            profile_factory(),
+            precision_profile=(
+                precision_profile_factory() if precision_profile_factory is not None else None
+            ),
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert ("pathlib" in compiled_surface.allowed_import_module_roots) is pathlib_allowed

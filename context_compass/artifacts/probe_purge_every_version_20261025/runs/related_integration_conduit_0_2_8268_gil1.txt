@@ -1,0 +1,19 @@
+# __version__ = "0.2.8268" -X gil=1: tests/integration/melder/conduit tests/integration/melder/aether/conduit
+........................................................................ [ 13%]
+........................................................................ [ 27%]
+......................................................X................. [ 40%]
+........................................................................ [ 54%]
+........................................................ssss............ [ 68%]
+........................................................................ [ 81%]
+........................................................................ [ 95%]
+.......................                                                  [100%]
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/cc_res/mirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+522 passed, 4 skipped, 1 xpassed, 1 warning in 13.22s
+[exit 0] [13 s]

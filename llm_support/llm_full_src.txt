@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: fae5e924ec1ee1000a03a30cf7ac9529b1679012a579ddb22d22904fa340afa1
+SOURCE FINGERPRINT: 6587962223e304a2929b8cbe4684f419282ace0488151bd3b2a465ca4c2e21f8
 FILE COUNT: 585
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: dd59467ef6c7d952701a7b01503b2637722f96b102a1c04625f357518d824fad
+CONTENT SHA256: 1a2f2e26c5b56c73f655dba8e346f757796a534ee6b762720c30e377e6971192
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8267"
+__version__ = "0.2.8268"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -44024,7 +44024,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: dcff699810f9d5a557a0a23b7c769b56d2bdffac561cfbb55f8a00cbac4d8eb0
+CONTENT SHA256: 59f7b919421d32b42dd45a26e1817261e676424adc15a6575919fd2512b8c091
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -49259,6 +49259,10 @@ class Conduit(Cleanable):
               binding owner, lineage the lineage root, and cluster its leader.
             - Never redirects into an active SpellSpace; use that space's purge.
             - Preserves the binding, compiled context, conduit and pools.
+            - A spell_id reaches any version this conduit can see - its Book's own
+              or a borrowed copy, active or parked - so a version a notch parked is
+              purged without a notch back; every other selector names the version
+              an index has active, as meld does.
 
         Args:
             spell:
@@ -49266,8 +49270,9 @@ class Conduit(Cleanable):
                 An instance is inspected for its class before ordinary lookup.
                 The original reference is retained for single-object removal.
             spell_id:
-                Explicit machine identity. Mutually exclusive with spell and
-                forwarded directly into the internal id lookup lane.
+                A version's spell_id, mutually exclusive with spell. It names
+                exactly that version - active or parked, this conduit's Book's own
+                or a borrowed copy - and its entries in the authorized store.
             spellframe:
                 Optional frame/type used by ordinary binding discovery.
             binding_name:
@@ -49286,9 +49291,11 @@ class Conduit(Cleanable):
                 If selectors conflict, no target is supplied, or single-object
                 removal is requested without an instance.
             KeyError:
-                If normal meld discovery cannot find the binding.
+                If no version this conduit can see carries the spell_id, or normal
+                meld discovery cannot find the binding.
             RuntimeError:
-                If cleaned, the cluster is inert, or this conduit lacks authority.
+                If cleaned, the cluster is inert, this conduit lacks authority, or a
+                `unique` version has no owner store.
             TypeError:
                 If purge_all is not a bool.
             ExceptionGroup:
@@ -49421,7 +49428,10 @@ class Conduit(Cleanable):
             entering the meld creation path.
 
         Contract:
-            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Mirrors the root identity inputs accepted by `meld(...)`, with one
+              difference: a spell_id given as `spell` names exactly that version,
+              active or parked, this conduit's Book's own or a borrowed copy, so a
+              version a notch parked is answered for without a notch back.
             - Delegates all lookup and existence semantics to the owned
               `Meld` instance.
             - Never creates, registers, links, or mutates objects.
@@ -49451,7 +49461,8 @@ class Conduit(Cleanable):
                 If none of `spell_name`, `spell`, or `spellframe` are
                 provided.
             KeyError:
-                Propagated from `Meld` when a spell cannot be resolved.
+                Propagated from `Meld` when a spell cannot be resolved: for a
+                spell_id, when no version this conduit can see carries it.
         """
         self.check_cleaned()
         meld_component = self._meld
@@ -49483,7 +49494,10 @@ class Conduit(Cleanable):
             no-create probe used by `has_live_creation(...)`.
 
         Contract:
-            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Mirrors the root identity inputs accepted by `meld(...)`, with one
+              difference: a spell_id given as `spell` names exactly that version,
+              active or parked, this conduit's Book's own or a borrowed copy, and
+              the payload's `spell_id` is that version's.
             - Delegates all lookup and existence semantics to the owned
               `Meld` instance.
             - Never creates, registers, links, or mutates objects.
@@ -49511,7 +49525,8 @@ class Conduit(Cleanable):
                 If none of `spell_name`, `spell`, or `spellframe` are
                 provided.
             KeyError:
-                Propagated from `Meld` when a spell cannot be resolved.
+                Propagated from `Meld` when a spell cannot be resolved: for a
+                spell_id, when no version this conduit can see carries it.
         """
         self.check_cleaned()
         meld_component = self._meld
@@ -61782,7 +61797,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: f09244c389015e64f400f0d44dbb8fa8a4885832cb51cfb18dff09e4ff69e31e
+CONTENT SHA256: eb7851944fdd816fc2d094dcce0f8eef118615ff6d1547f2c1052ae68c75c2f9
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -61811,10 +61826,19 @@ class ManyDisposalBucket:
         - `entries` IS the live many bucket held in `_creations` - the same
           list object, never a copy - so the live and disposal views cannot
           diverge and a single-object purge needs one removal.
-        - `methods` is the Spell's established ordered disposal list, retained
-          by reference (never matched, reordered or copied), identical for
-          every entry of the key: a spell id hashes its resolved disposal
-          names, so one key carries one declaration.
+        - `methods` is the established ordered disposal list of the Spell
+          whose object first registered the key in this store, retained by
+          reference (never matched, reordered or copied), and every entry of
+          the key is disposed with it. Later registrations append to
+          `entries` and leave `methods` as it is; nothing compares lists.
+        - One list per key holds only while one definition registers the
+          key. Since 0.2.8257 a spell id is the object's code and does not
+          cover the disposal names, a field of the binding manifest. A spell
+          cleaned up (`cleanup_spell`) and bound again under other disposal
+          names keeps its id, and when the new definition's objects register
+          in a store that still holds the removed definition's objects (they
+          stay alive in their scope), they join this record and are disposed
+          with the removed definition's list, not their own.
         - Both fields are borrowed. The owning `Creations` store detaches the
           record (cleanup, clear, purge, extract) and disposes from it; the
           record itself owns nothing and needs no cleanup.
@@ -62529,9 +62553,15 @@ class Creations(Cleanable):
               under `_disposable_creations[key]` whose `entries` is the live
               bucket itself; later registrations of the key append only.
             - Rejects collisions with non-list slots, and a registration whose
-              disposal declaration disagrees with the key's existing entries:
-              one many key carries one declaration (the spell id hashes the
-              resolved disposal names, so a live world cannot produce a mix).
+              disposal declaration disagrees with the key's existing entries -
+              a disposal-bearing registration of a key whose entries were
+              registered without disposal methods, or the reverse - so every
+              entry of a key is disposal-bearing or none is.
+            - Does not compare method lists: a disposal-bearing registration
+              of a key that already has its record appends under the record's
+              list. A spell id no longer fixes that list (0.2.8257), so a
+              definition rebound under other disposal names joins the record
+              of the removed definition's objects (see `ManyDisposalBucket`).
             - Preserves insertion order; the disposal view is the live bucket,
               so the two cannot diverge (BUG-073, 2026-07-17 audit, now by
               construction: the first-use bucket and its record are created
@@ -62551,8 +62581,9 @@ class Creations(Cleanable):
 
         Raises:
             ValueError:
-                If the key already holds a non-list slot, or if the disposal
-                declaration disagrees with the key's existing entries.
+                If the key already holds a non-list slot, or if this
+                registration is disposal-bearing where the key's existing
+                entries are not, or the reverse.
             RuntimeError:
                 If this store was cleaned while the object was being built.
 
@@ -62593,13 +62624,24 @@ class Creations(Cleanable):
             registration on 3.14t, GIL off).
 
         Contract:
-            - Precondition, guaranteed by the emitters and NOT checked here:
-              `key` is a `many` spell id whose Spell declares disposal methods,
-              and `disposal_methods` is that Spell's own ordered list, the same
-              object on every call for the key. A spell id hashes its resolved
-              disposal names, so one key cannot carry two declarations, and one
-              Existence per Spell means the key's live slot is a list or absent.
-              Callers that cannot promise this use `add_many_creations`.
+            - Precondition, NOT checked here: `key` is a `many` spell id whose
+              Spell declares disposal methods, `disposal_methods` is that
+              Spell's own ordered list, and the key's live slot in this store
+              is a list or absent. Within one definition the emitters
+              guarantee all three - one plan, one list object on every call,
+              one Existence - and callers that cannot promise them use
+              `add_many_creations`, which checks the slot's shape.
+            - Nothing guarantees the precondition across a rebind: since
+              0.2.8257 a spell id is the object's code and covers neither the
+              disposal names nor the existence. A spell cleaned up and bound
+              again keeps its id, and the new definition meets what the
+              removed one left in this store. Under other disposal names its
+              objects are appended under the first registration's list and
+              disposed with it. After a slotted existence (`unique`,
+              `unique_per_conduit`, ...) the key's slot holds that object, so
+              the append - reached after the new object is built - raises
+              AttributeError and fails the meld, or calls that object's own
+              `append`.
             - The first registration of the key creates the live bucket and
               its `ManyDisposalBucket` record (the bucket itself plus the
               method list) in one critical section; every later one appends.
@@ -62614,6 +62656,9 @@ class Creations(Cleanable):
         Raises:
             RuntimeError:
                 If this store was cleaned while the object was being built.
+            AttributeError:
+                If the key's live slot holds an object with no `append` - the
+                precondition broken by a rebind after a slotted existence.
 
         Threading:
             `_lock` is a leaf here: only the dict read, the first-use stores
@@ -62671,9 +62716,10 @@ class Creations(Cleanable):
         Raises:
             ValueError:
                 If the key already holds a non-list live slot or a non-many
-                disposable slot, or if this registration's disposal declaration
-                disagrees with the key's existing entries: one many key carries
-                one declaration (the spell id fixes it).
+                disposable slot, or if this registration is disposal-bearing
+                where the key's existing entries are not, or the reverse.
+                Method lists are not compared: a disposal-bearing registration
+                of a key with a record appends under the record's list.
         """
         bucket = self._creations.get(key)
         if bucket is not None and not isinstance(bucket, list):
@@ -65336,7 +65382,7 @@ END FILE: src/melder/aether/conduit/creations/release_managed_spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/conduit_meld.py
-CONTENT SHA256: 16671f8f7c1f777fbda6ddfc3350d7db5454de284d65d880c89f93d0875661aa
+CONTENT SHA256: 032b159577c6c13ddca51c7b4ff88fd780ee2c085b4a3bcb4a701547f0e75a34
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -65505,7 +65551,11 @@ class ConduitMeld(Meld):
             existing conduit-specific resolution behavior.
 
         Contract:
-            - Shared discovery returns the existing registered definition.
+            - Shared discovery returns the existing registered definition; a
+              spell_id names one version - this conduit's Book's own or a borrowed
+              copy, active or parked - so a version a notch parked is purged from
+              the store its existence selects without a notch back
+              (STORY-2026-10-25-probe_and_purge_reach_every_version).
             - `_get_purge_creations` applies conduit lifetime/authority rules.
             - The chosen Creations performs synchronized removal and disposal.
             - No SpellSpace is inferred, entered, or cleared by this door.
@@ -65524,10 +65574,12 @@ class ConduitMeld(Meld):
 
         Raises:
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If normal meld discovery cannot find the target.
+            KeyError: If no version this conduit can see carries the spell_id, or
+                normal meld discovery cannot find the target.
             TypeError: If purge_all is not a bool.
-            RuntimeError: If cleaned, a cluster has no elected leader, or the
-                caller lacks the required local/root/leader authority.
+            RuntimeError: If cleaned, a cluster has no elected leader, the caller
+                lacks the required local/root/leader authority, or a `unique`
+                version has no owner store.
             ExceptionGroup: Disposal failures after selected entries are removed.
 
         Threading / Lifecycle:
@@ -65564,6 +65616,11 @@ class ConduitMeld(Meld):
               cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
               authority.
             - SpellSpace lifetime is refused even when a space is active.
+            - A `unique` version with no owner store - its owner stamp failed when
+              its Book was conjured, which the conjure logged - is refused with a
+              RuntimeError naming it (R6 of
+              STORY-2026-10-25-probe_and_purge_reach_every_version); until then the
+              store read raised AttributeError.
             - A managed spell (`Existence.managed_spell_quantity`) uses this
               caller's own store, where `Creations.purge` returns 0 for it: its
               objects live in a pool, and purge is not part of the managed design
@@ -65579,7 +65636,8 @@ class ConduitMeld(Meld):
 
         Raises:
             RuntimeError: If the lifetime is unsupported here, the cluster is
-                inert, or the caller is not the required owner/root/leader.
+                inert, the caller is not the required owner/root/leader, or a
+                `unique` version has no owner store.
 
         Lifecycle:
             Uses current ownership/store references on every call. Ownership
@@ -65597,6 +65655,12 @@ class ConduitMeld(Meld):
         creations: Creations
         if existence is Existence.unique:
             creations = spell._owner_creations
+            if creations is None:
+                raise RuntimeError(
+                    f"Cannot purge spell '{spell.spell_name}' ({spell.spell_id}): it has no owner store, so "
+                    "nothing was ever stored for it. Its owner stamp failed when its Book was conjured (the "
+                    "conjure logged the error). Dispose it with cleanup_spell and bind it again."
+                )
             authority = "spell-owning conduit"
             authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_lineage:
@@ -66247,7 +66311,10 @@ class ConduitMeld(Meld):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this conduit's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`); every other selector resolves as
+              `meld(...)` does, to the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports the query conduit context explicitly so callers know
@@ -66280,7 +66347,7 @@ class ConduitMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell(
+        target_spell = self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,
@@ -68376,7 +68443,7 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebui
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/meld.py
-CONTENT SHA256: de5becea69e0d7c6a2d1bd3666402fa2c277cac8978c2c62fe767473c348ca75
+CONTENT SHA256: 2dea9f6f53b3d7ccb16ec8acb570bc8f1e5014228941d2c28be1db2196d5e7e2
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
@@ -69000,7 +69067,11 @@ class Meld(Cleanable, ABC):
             concrete door's scope policy into this base class.
 
         Contract:
-            - Uses `_resolve_spell` unchanged for local/contracted lookup.
+            - A spell_id (a str `spell`) resolves to the exact version this door's
+              Book can see - its own or a borrowed copy, active or parked - through
+              `_resolve_probe_target` (STORY-2026-10-25-probe_and_purge_reach_every_version);
+              every other selector uses `_resolve_spell` unchanged, which names the
+              version an index has active, as meld does.
             - Returns the already-registered internal definition, never an
               application instance and never a newly constructed definition.
             - Inspects an application instance to obtain its class reference,
@@ -69024,11 +69095,15 @@ class Meld(Cleanable, ABC):
             RuntimeError: If this Meld has been cleaned.
             TypeError: If purge_all is not a bool.
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If ordinary meld discovery cannot find the binding.
+            KeyError: If no version this door's Book can see carries the spell_id,
+                or ordinary meld discovery cannot find the binding.
 
         Threading / Lifecycle:
-            Uses the same lookup maps as meld. Structural changes keep their
-            existing coordination contract; this helper owns no new state or lock.
+            Uses the same lookup maps as meld; a spell_id the active maps miss is
+            read once more under the Book lock (`_resolve_visible_version_by_id`),
+            which is released before the door takes any store, slot or spell lock.
+            Structural changes keep their existing coordination contract; this
+            helper owns no new state or lock.
         """
         self.check_cleaned()
         if not isinstance(purge_all, bool):
@@ -69044,7 +69119,7 @@ class Meld(Cleanable, ABC):
                 "purge_all=False requires an object instance. Pass that instance "
                 "as spell, or use purge_all=True with a binding selector."
             )
-        return self._resolve_spell(
+        return self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,
@@ -69069,7 +69144,11 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this door's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`), so a version a notch parked is
+              answered for; every other selector resolves as `meld(...)` does, to
+              the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Returns `False` when the spell resolves correctly but has no live
@@ -69126,7 +69205,11 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this door's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`), so a version a notch parked is
+              answered for; every other selector resolves as `meld(...)` does, to
+              the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports enough caller-context metadata that higher-level tooling
@@ -70566,6 +70649,103 @@ class Meld(Cleanable, ABC):
 
         raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
 
+    def _resolve_visible_version_by_id(self, spell_id: str) -> Spell:
+        """
+        Internal
+
+        Resolve a spell_id to the exact version this door's Book can see: owned or borrowed, active or parked.
+
+        Purpose:
+            The spell_id lookup of the doors that build nothing - purge and the live-creation probes
+            (STORY-2026-10-25-probe_and_purge_reach_every_version). A version keeps its objects while a notch has
+            it parked, under its own spell_id in the creation stores, so these doors reach it there. The doors
+            that build or hand out an object keep `_resolve_spell_by_id`, which answers active versions only.
+
+        Contract:
+            - First the active read, unchanged: `_resolve_spell_by_id` - the active pool, the active versions and
+              each lender's active copies - lock-free.
+            - On its KeyError, one read of the Book's four id maps under the Book lock
+              (`Spellbook._find_visible_version`): the Book's own versions and its borrowed copies, active and
+              parked.
+            - A spell_id neither read finds re-raises the active read's KeyError, so its type and text are the
+              ones every meld door raises: "[MELD] No spell found with spell_id: <id>".
+            - Never builds, registers or mutates anything.
+
+        Args:
+            spell_id: The spell_id of the version - the SHA256 `bind` or `bind_inactive` returned.
+
+        Returns:
+            Spell: The version the spell_id names.
+
+        Raises:
+            KeyError: If no version this door's Book can see carries the spell_id.
+            RuntimeError: If the Spellbook has been cleaned.
+
+        Threading:
+            The active read takes no lock. The miss path takes the Book lock alone, holds it only for its dict
+            reads and releases it before returning, so a caller that goes on to take a store, slot or spell lock
+            (purge) never holds the Book lock with it. Under the Book lock a version is in exactly one map, so a
+            probe or purge racing a notch to or from its version finds it.
+        """
+        try:
+            return self._resolve_spell_by_id(spell_id)
+        except KeyError as missing:
+            visible = self._spellbook._find_visible_version(spell_id)
+            if visible is None:
+                raise missing
+            return visible
+
+    def _resolve_probe_target(
+            self,
+            *,
+            spell: Optional[Union[str, object]],
+            spell_name: Optional[str],
+            spellframe: Optional[Union[str, object]],
+            binding_name: Optional[str],
+    ) -> Spell:
+        """
+        Internal
+
+        Discover the target of a door that builds nothing: purge, or a live-creation probe.
+
+        Purpose:
+            Keep the two spell identities apart (owner ruling, 2026-10-17): a spell_id names one version, every
+            other selector names an index's active version. Only the doors that build nothing reach a version a
+            notch parked; meld keeps `_resolve_spell`.
+
+        Contract:
+            - A str `spell` is a spell_id: the exact version this door's Book can see, its own or a borrowed copy,
+              active or parked (`_resolve_visible_version_by_id`).
+            - Any other selector - a class or function, a name, spellframe and binding name - goes through
+              `_resolve_spell` unchanged, to the version an index has active.
+            - Never builds, registers or mutates anything.
+
+        Args:
+            spell: A spell_id string, or a class/function reference; None when another selector names the target.
+            spell_name: Optional logical name.
+            spellframe: Optional spellframe / Protocol / frame key.
+            binding_name: Optional binding name within that frame.
+
+        Returns:
+            Spell: The registered version the selector names.
+
+        Raises:
+            KeyError: If nothing this door's Book can see matches the selector.
+            ValueError: If key normalization receives no identity source.
+            RuntimeError: If a lookup map is inconsistent, or the Spellbook has been cleaned.
+
+        Threading:
+            As `_resolve_visible_version_by_id` for a spell_id; lock-free for every other selector.
+        """
+        if isinstance(spell, str):
+            return self._resolve_visible_version_by_id(spell)
+        return self._resolve_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+
     def _resolve_spell_by_lookup_key(
             self,
             lookup_key: tuple[str, str],
@@ -70762,7 +70942,7 @@ END FILE: src/melder/aether/conduit/meld/meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/spellspace_meld.py
-CONTENT SHA256: b61050a6898139e05cc96c323ace159408f341a984f9a87818cc07448bacfd2e
+CONTENT SHA256: 55a7f8206f5522103fe9f412a70efe367cba6dfd792c765633465c8e208e34e8
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -70955,7 +71135,11 @@ class SpellSpaceMeld(Meld):
             independently of the broader stores available for normal resolution.
 
         Contract:
-            - Uses shared discovery to find the registered definition.
+            - Uses shared discovery to find the registered definition; a spell_id
+              names one version - the owner conduit's Book's own or a borrowed copy,
+              active or parked - so this space's entries of a version a notch parked
+              are purged without a notch back
+              (STORY-2026-10-25-probe_and_purge_reach_every_version).
             - Accepts only many and unique_per_spell_space lifetimes.
             - Always delegates to `_spellspace_creations`; never to the owner
               conduit, Spell owner, lineage root, or cluster team store.
@@ -70975,7 +71159,8 @@ class SpellSpaceMeld(Meld):
 
         Raises:
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If normal meld discovery cannot find the target.
+            KeyError: If no version this space's Book can see carries the spell_id,
+                or normal meld discovery cannot find the target.
             TypeError: If purge_all is not a bool.
             RuntimeError: If cleaned or the target has a broader lifetime.
             ExceptionGroup: Disposal failures after selected entries are removed.
@@ -71617,7 +71802,10 @@ class SpellSpaceMeld(Meld):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this space's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`); every other selector resolves as
+              `meld(...)` does, to the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports the query conduit context explicitly so callers know the
@@ -71650,7 +71838,7 @@ class SpellSpaceMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell(
+        target_spell = self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,
@@ -71821,7 +72009,7 @@ END FILE: src/melder/aether/conduit/meld/spellspace_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/spell_space/spell_space.py
-CONTENT SHA256: e58cfa4eff2fc7427a0083b8a9c936d3bd37d98d7fd4f54f8431c00de8cddb64
+CONTENT SHA256: c0f1f5864a1e9d142acc4582955dccb348c83ce9771d3067060ec9e08499979a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -72561,7 +72749,9 @@ class SpellSpace(Cleanable):
                 An instance is inspected for its class before ordinary lookup.
                 The original reference is retained for single-object removal.
             spell_id:
-                Explicit machine identity, mutually exclusive with spell.
+                A version's spell_id, mutually exclusive with spell. It names
+                exactly that version - active or parked, the owner conduit's Book's
+                own or a borrowed copy - and this space's entries of it.
             spellframe:
                 Optional frame/type used by ordinary binding discovery.
             binding_name:
@@ -72579,7 +72769,8 @@ class SpellSpace(Cleanable):
                 If selectors conflict, no target is supplied, or single-object
                 removal is requested without an instance.
             KeyError:
-                If normal meld discovery cannot find the binding.
+                If no version this space's Book can see carries the spell_id, or
+                normal meld discovery cannot find the binding.
             RuntimeError:
                 If permanently cleaned or the target has a broader lifetime.
             SpellSpaceScopeError:
@@ -135188,7 +135379,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 66e4f3428dedfc1059f2c6a92d2d54469b87e5b621d47d7b73956f64ae8628e5
+CONTENT SHA256: 7a1a088e0ca1b388990b54b9e71436542c7cd91dbca981d1b4b8a70dab4c9a34
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -138651,6 +138842,66 @@ class Spellbook(Cleanable):
             if spell is not None:
                 return spell
             return self._inactive_spells.get(spell_id)
+
+    def _find_visible_version(self, spell_id: str) -> Optional[Spell]:
+        """
+        Internal
+
+        Return the version this Book can see under `spell_id` - owned or borrowed, active or parked - or None.
+
+        Purpose:
+            Give the doors that build nothing - purge and the live-creation probes - the exact version a spell_id
+            names, wherever this Book keeps it (STORY-2026-10-25-probe_and_purge_reach_every_version). A spell_id
+            names one version (owner ruling, 2026-10-17): this answers with that version, never with the version
+            its index has active, and a version a notch parked keeps its objects under its own spell_id.
+
+        Contract:
+            - Reads the Book's four id maps once, in this order: `_spells_by_id` (owned, active),
+              `_inactive_spells` (owned, parked), every lender's `_contracted_spells_by_id` (borrowed, active),
+              every lender's `_inactive_contracted_spells` (borrowed, parked). Returns the first Spell found. A
+              spell_id is owned by one Book and a borrower holds one copy of a version, so one map at most
+              holds it.
+            - Returns None when no map holds it: an unknown spell_id, a disposed version, another Book's version
+              this Book does not borrow, or a version between an ownership transfer's flip and its migration.
+            - Pure lookup: creates, registers and mutates nothing.
+
+        Threading:
+            Takes `self._lock` alone and holds it only for the dict reads. Every writer of these maps holds that
+            lock - a notch's park and promotion and their borrowed twins, the index moves, disposal, a transfer -
+            and moves a version from one map to another inside one locked section, so under the lock a version
+            is in exactly one map: a lookup racing a notch to or from the version finds it, where a lock-free
+            read can land between the two steps. The caller holds no other Melder lock when it calls (the Meld's
+            miss path calls before any store, slot or spell lock). The returned Spell is borrowed, not leased.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Args:
+            spell_id: The spell_id of the version - the SHA256 `bind` or `bind_inactive` returned.
+
+        Returns:
+            Optional[Spell]: The version, or None when this Book can see none under `spell_id`.
+
+        Raises:
+            RuntimeError: If the Spellbook has already been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            spell = self._spells_by_id.get(spell_id)
+            if spell is not None:
+                return spell
+            spell = self._inactive_spells.get(spell_id)
+            if spell is not None:
+                return spell
+            for active_copies in self._contracted_spells_by_id.values():
+                spell = active_copies.get(spell_id)
+                if spell is not None:
+                    return spell
+            for parked_copies in self._inactive_contracted_spells.values():
+                spell = parked_copies.get(spell_id)
+                if spell is not None:
+                    return spell
+        return None
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
@@ -199287,7 +199538,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py
-CONTENT SHA256: e52aee92e56a23c77b67657d16a0af9aeb4971e9d19632b4ea820056f6399c87
+CONTENT SHA256: cfa3ab23c2ec2e20b85c5415780c298147ecf191c26af50f43c328d21349a399
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -199305,6 +199556,9 @@ class FullAccessCodegenProfileStrategy:
         model. It enables imports without an allowlist, leaves builtin/meta
         posture open, and allows the broadest conduit, spell, and capability
         operations including recursive codegen.
+        Files: an open file posture by design - `open` stays available and
+        imports are unrestricted, so room code reads and writes any file the
+        process can reach.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -199467,7 +199721,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/full_access_profi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
-CONTENT SHA256: 2fc52e8acd300d6abdbb0ed2b8f78a198a58dd6211ccd8c2c0e8ac3af6d78563
+CONTENT SHA256: 9912b4304b15f50dbb476edabfe8f35f2bcc4617ae0cde43237696f09ae287de
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -199490,6 +199744,11 @@ class HybridCodegenProfileStrategy:
         open `permissive` posture. It allows core query/link/invoke/read
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
+        Files: `open` is a denied builtin (the safe tuple), and `io` and `os`
+        are not on the import allowlist, so neither route reads or writes
+        files. `pathlib` is on the allowlist, so `pathlib.Path` reads and
+        writes do run under this profile. These are policy checks in the
+        room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -199541,7 +199800,8 @@ class HybridCodegenProfileStrategy:
             - spell: allow resolve-existing/bind-existing/invoke-method/
               read-attribute; DENY local-create and write-attribute.
             - capability: enable imports for the hybrid module-root allowlist
-              (denying the hybrid denylist and dangerous builtins); DENY dynamic
+              (denying the hybrid denylist and dangerous builtins, `open` among
+              them); DENY dynamic
               access, mutation, contract override, unsafe reflection, dunder
               access, and recursive codegen.
             Mirrors `precision`'s allow/deny shape but with the hybrid import
@@ -199627,7 +199887,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py
-CONTENT SHA256: 081972e660660a38dc61977fc9169c31a5733d1a2e75c527aee61e3ac2465444
+CONTENT SHA256: 7a33c500879cc95fe11ec9d94d60155c307ab310af5304733fff0cd6cd64255b
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -199645,8 +199905,12 @@ class PermissiveCodegenProfileStrategy:
 
     Contract:
         This is the most open of the standard codegen profiles. It allows the
-        broadest set of conduit and spell operations while still denying the
-        highest-risk capability gates such as mutation and unsafe reflection.
+        broadest set of conduit and spell operations and every capability
+        gate - mutation and unsafe reflection included; the one guardrail it
+        keeps versus `full_access` is its import allowlist.
+        Files: an open file posture by design - `open` stays available and
+        `io`, `os` and `pathlib` are on the import allowlist, so room code
+        reads and writes any file the process can reach.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -199763,7 +200027,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/permissive_profil
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/precision.py
-CONTENT SHA256: ff5fa0ffcfa0f6a6ffab3250838c76d051863eb5d8fc2e5425ea820b5d3f3097
+CONTENT SHA256: fb730d49f6db8b6ebc3967a5802155710ac42dcfe56a28a26384c575a9a9ce7f
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -199780,6 +200044,11 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
 class PrecisionCodegenProfileStrategy:
     """
     Build the reusable `precision` codegen profile.
+
+    Contract:
+        Files: `open` is a denied builtin (the safe tuple), and the precision
+        import allowlist names none of `io`, `os` or `pathlib`. These are
+        policy checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -199831,7 +200100,8 @@ class PrecisionCodegenProfileStrategy:
             - spell: allow resolve-existing/bind-existing/invoke-method/
               read-attribute; DENY local-create and write-attribute.
             - capability: enable imports for the precision module-root allowlist
-              (denying the precision denylist and dangerous builtins); DENY
+              (denying the precision denylist and dangerous builtins, `open`
+              among them); DENY
               dynamic access, mutation, contract override, unsafe reflection,
               dunder access, and recursive codegen.
             Stateless: a new instance is returned per call.
@@ -199915,7 +200185,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/precision.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
-CONTENT SHA256: 698f352a4a8d50aeff8b21e05a75a9841d4929e81ca30888e9f39bd5a5d05561
+CONTENT SHA256: 3b46fb816e2804da467cc677f4e26a29169db820132ab8820bdec9027f958d1f
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -199936,6 +200206,11 @@ class SafeCodegenProfileStrategy:
         limits codegen to safe query/bind-existing operations and denies link
         mutation, local creation, invocation, writes, and dangerous capability
         escalation.
+        Files: room code gets no file access through builtins or imports.
+        `open` is a denied builtin - refused at validation whether called or
+        only named, and left out of the room's runtime builtins - and imports
+        are off, so `io`, `os` and `pathlib` are refused too. These are policy
+        checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -199985,9 +200260,10 @@ class SafeCodegenProfileStrategy:
               transfer-ownership.
             - spell: allow resolve-existing and bind-existing; DENY local-create,
               invoke-method, read-attribute, and write-attribute.
-            - capability: imports are NOT enabled; DENY dangerous builtins,
-              dynamic access, mutation, contract override, unsafe reflection,
-              dunder access, and recursive codegen.
+            - capability: imports are NOT enabled; DENY dangerous builtins
+              (`SAFE_DENIED_BUILTIN_NAMES`, `open` among them), dynamic access,
+              mutation, contract override, unsafe reflection, dunder access,
+              and recursive codegen.
             Stateless: a new instance is returned per call.
 
         Returns:
@@ -200048,9 +200324,33 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py
-CONTENT SHA256: bf4f2d0f8807b460c8c40782890ccec52a9fd51ab42c91df7e4fd83ce1e1df79
+CONTENT SHA256: f1f89aad0aba4dd2c1b0e6e5fe7fc79e75e97e69513a2c32b6c1e4136a24d13e
 SOURCE ENCODING: utf-8
 ================================================================================
+"""
+The import roots and denied builtins the standard codegen presets read.
+
+Purpose:
+    Keep the name tuples the safe, hybrid, precision and permissive codegen presets put in their
+    capability rulesets in one place, so presets that share a posture share one tuple and cannot
+    drift apart.
+
+Contract:
+    - Values only: every public name is a tuple of str built at import and never mutated, and the
+      module imports nothing, so a preset or the codegen engine imports it without an import cycle.
+    - Import roots: `HYBRID_IMPORT_MODULE_ROOTS` is the common list, `PRECISION_IMPORT_MODULE_ROOTS`
+      a narrower one, and `PERMISSIVE_IMPORT_MODULE_ROOTS` the common list plus the permissive
+      extras, sorted. `HYBRID_DENIED_IMPORT_MODULE_ROOTS` (which precision aliases) names roots the
+      compiler refuses even where an allow list admits them.
+    - Denied builtins: `SAFE_DENIED_BUILTIN_NAMES` is the one tuple safe, hybrid and precision deny
+      (`HYBRID_DENIED_BUILTIN_NAMES` and `PRECISION_DENIED_BUILTIN_NAMES` are the same object), and
+      the codegen engine's no-projection default denies it plus `__import__`. `open` is on it, so
+      those postures refuse file access through that builtin; permissive and full_access do not use
+      it and keep `open`.
+    - Policy, not isolation: these names feed checks that run in the room's own process, as defence
+      in depth.
+"""
+
 _COMMON_SAFE_IMPORT_MODULE_ROOTS = (
     "base64",
     "collections",
@@ -200133,6 +200433,11 @@ HYBRID_DENIED_IMPORT_MODULE_ROOTS = (
 )
 PRECISION_DENIED_IMPORT_MODULE_ROOTS = HYBRID_DENIED_IMPORT_MODULE_ROOTS
 
+# The builtins the safe posture denies; hybrid and precision deny the same tuple, and the codegen engine's
+# default posture (a request naming a frame with no codegen projection) denies it plus `__import__`.
+# `open` is on it so these postures refuse file reads and writes through that builtin: room code that calls
+# or names it is refused at validation, and the room's runtime `__builtins__` leaves it out. This is policy in
+# the room's own process, not isolation. Permissive and full_access do not use this tuple and keep `open`.
 SAFE_DENIED_BUILTIN_NAMES = (
     "breakpoint",
     "compile",
@@ -200143,6 +200448,7 @@ SAFE_DENIED_BUILTIN_NAMES = (
     "globals",
     "input",
     "locals",
+    "open",
     "setattr",
     "delattr",
     "vars",
@@ -222355,12 +222661,15 @@ END FILE: src/melder/nexus/nexus_frame_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/codegen_system.py
-CONTENT SHA256: 43666d37727d50dcb6c67f6fb925663fdedbfe76ab5989e1fb552b82c42d7832
+CONTENT SHA256: 772a357a4c2db412b43c2f611e336944fbd17eb42e2d9ea7517728f7a7642a14
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
@@ -222770,6 +223079,21 @@ class CodegenSystem(Cleanable):
         """
         Build the current stable default namespace configuration.
 
+        Contract:
+            - With a projection, the posture is the frame's compiled access
+              surface: imports, allowed and denied import roots, denied
+              builtins, and the reflection, dunder-access and
+              recursive-codegen flags exactly as compiled.
+            - Without one - the owning Rift holds no codegen projection for
+              `frame_name`, which `_try_get_codegen_projection` reports as
+              None - the request runs under the safe posture: imports off; no
+              unsafe reflection, dunder access or recursive codegen; and the
+              denied builtins are `__import__` plus the safe profile's
+              `SAFE_DENIED_BUILTIN_NAMES`, `open` among them. The tuple is
+              read from the profile module, not copied, so this default and
+              the safe profile cannot drift apart.
+            - Pure: builds a new configuration per call and mutates nothing.
+
         Args:
             frame_name:
                 Target frame name for the request.
@@ -222782,20 +223106,10 @@ class CodegenSystem(Cleanable):
         imports_enabled = False
         allowed_import_module_roots: Tuple[str, ...] = tuple()
         denied_import_module_roots: Tuple[str, ...] = tuple()
+        # No projection means the safe posture: imports are off, so `__import__`
+        # is denied with everything the safe profile denies.
         denied_builtin_names: Tuple[str, ...] = (
-            "__import__",
-            "breakpoint",
-            "compile",
-            "dir",
-            "eval",
-            "exec",
-            "getattr",
-            "globals",
-            "input",
-            "locals",
-            "setattr",
-            "delattr",
-            "vars",
+            ("__import__",) + SAFE_DENIED_BUILTIN_NAMES
         )
         allow_unsafe_reflection = False
         allow_dunder_access = False

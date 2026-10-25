@@ -13,6 +13,9 @@ class FullAccessCodegenProfileStrategy:
         model. It enables imports without an allowlist, leaves builtin/meta
         posture open, and allows the broadest conduit, spell, and capability
         operations including recursive codegen.
+        Files: an open file posture by design - `open` stays available and
+        imports are unrestricted, so room code reads and writes any file the
+        process can reach.
 
     Threading:
         Stateless preset construction; holds no state between builds.

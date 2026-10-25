@@ -502,6 +502,60 @@ def test_publication_refuses_a_failed_jobs_rerun_by_name() -> None:
     assert download["with"]["name"] == uploaded
 
 
+def test_pypi_upload_uses_trusted_publishing_with_attestations() -> None:
+    """The PyPI upload authenticates by its OIDC token alone and signs every file it uploads.
+
+    EPIC-2026-10-24-pypi_provenance_attestations moved it to Trusted Publishing. The job keeps `actions: read` for
+    its candidate lookup and adds `id-token: write`; the publishing action, pinned to the commit the release
+    candidate pins, takes no user, password or secret and uploads `dist/` with attestations.
+    The job reports its run attempt, which the provenance job expects in every file's certificate.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    publisher = jobs["pypi-publish"]
+    assert publisher["permissions"] == {"contents": "read", "actions": "read", "id-token": "write"}
+    assert publisher["environment"] == {"name": "pypi", "url": "https://pypi.org/project/melder/"}
+    assert publisher["outputs"] == {"attempt": "${{ github.run_attempt }}"}
+    upload = publisher["steps"][-1]
+    assert upload["uses"] == "pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"
+    assert upload["with"] == {"packages-dir": "dist/", "attestations": "true", "print-hash": "true"}
+    assert not [step for step in publisher["steps"] if "secrets." in json.dumps(step)]
+    candidate = workflow("release-candidate.yml")["jobs"]["publish"]
+    assert upload["uses"] == next(step["uses"] for step in candidate["steps"]
+                                  if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
+
+
+def test_release_provenance_is_verified_after_the_upload() -> None:
+    """Release / provenance checks each released file's PyPI attestation once the upload has finished.
+
+    It runs on the helper release with no OIDC token, no environment and no secret, downloads the build the upload
+    used by release-build's output, reads the attempt that uploaded and the release tag, and keeps its evidence. The
+    files are on PyPI by then, so nothing waits on it but the run's own result.
+    """
+    jobs = workflow("python-publish.yml")["jobs"]
+    job = jobs["pypi-provenance"]
+    assert job["name"] == "Release / provenance"
+    assert set(job["needs"]) == {"release-build", "pypi-publish"}
+    assert job["runs-on"] == "ubuntu-24.04" and "timeout-minutes" in job
+    for key in ("if", "continue-on-error", "environment", "permissions", "strategy", "outputs"):
+        assert key not in job, key
+    steps = job["steps"]
+    download = next(step for step in steps if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert download["with"] == {"name": "${{ needs.release-build.outputs.artifact-name }}", "path": "dist/"}
+    verify = next(step for step in steps if "pypi_provenance.py" in step.get("run", ""))
+    assert verify["run"] == "python .github/scripts/pypi_provenance.py verify --report reports/provenance.json"
+    assert verify["env"] == {"RELEASE_TAG": "${{ github.event.release.tag_name || '' }}",
+                             "RELEASE_PUBLISH_ATTEMPT": "${{ needs.pypi-publish.outputs.attempt }}"}
+    assert "if" not in verify and "continue-on-error" not in verify
+    retained = steps[-1]
+    assert retained["uses"].startswith("actions/upload-artifact@")
+    assert retained["with"] == {"name": "release-provenance-${{ github.run_id }}-${{ github.run_attempt }}",
+                                "path": "reports/provenance.json", "if-no-files-found": "error",
+                                "retention-days": "90"}
+    assert steps.index(download) < steps.index(verify) < len(steps) - 1
+    assert not [step for step in steps if "secrets." in json.dumps(step)]
+    assert [name for name, other in jobs.items() if "pypi-provenance" in other.get("needs", [])] == []
+
+
 def test_distribution_build_reports_the_artifact_it_uploaded() -> None:
     """A consumer in the same run names the build by the build job's output, never by its own attempt.
 
@@ -715,16 +769,15 @@ def test_candidate_provenance_is_verified_before_any_probe_installs(policy: Modu
     assert set(jobs["package-ready"]["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
 
 
-def test_only_the_candidate_upload_can_request_an_oidc_token() -> None:
-    """id-token: write lets a job mint a credential and sign as this repository; only the TestPyPI upload holds it.
+def test_only_the_two_upload_jobs_can_request_an_oidc_token() -> None:
+    """id-token: write lets a job mint a credential and sign as this repository; only the two uploads hold it.
 
-    No workflow grants it at the top level, and none names the retired TestPyPI token any more: Trusted
-    Publishing replaced it.
+    They are the TestPyPI upload of the release candidate and the PyPI upload of a final release, each its index's
+    Trusted Publisher. No workflow grants it at the top level.
     """
     root = pathlib.Path(__file__).resolve().parents[3]
     holders: list[tuple[str, str]] = []
     for path in sorted((root / ".github/workflows").glob("*.yml")):
-        assert "melder_api_token" not in path.read_text(encoding="utf-8"), path.name
         document = workflow(path.name)
         top = document.get("permissions", {})
         assert isinstance(top, dict) and top.get("id-token") != "write", path.name
@@ -733,7 +786,20 @@ def test_only_the_candidate_upload_can_request_an_oidc_token() -> None:
             assert isinstance(permissions, dict), (path.name, name)
             if permissions.get("id-token") == "write":
                 holders.append((path.name, name))
-    assert holders == [("release-candidate.yml", "publish")]
+    assert holders == [("python-publish.yml", "pypi-publish"), ("release-candidate.yml", "publish")]
+
+
+def test_no_workflow_names_a_retired_upload_token() -> None:
+    """Both indexes publish by Trusted Publishing, so neither upload token may come back in any workflow.
+
+    `melder_api_token` was TestPyPI's environment secret and `PYPI_API_TOKEN` PyPI's; once the owner has deleted them
+    a workflow naming one would fail at upload, and while they exist it would revive a long-lived credential.
+    """
+    root = pathlib.Path(__file__).resolve().parents[3]
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        text = path.read_text(encoding="utf-8").lower()
+        for token in ("melder_api_token", "pypi_api_token"):
+            assert token not in text, (path.name, token)
 
 
 def test_jobs_that_hold_an_oidc_token_pin_third_party_actions_to_a_commit() -> None:
@@ -749,7 +815,7 @@ def test_jobs_that_hold_an_oidc_token_pin_third_party_actions_to_a_commit() -> N
                 if uses and not uses.startswith(("actions/", "./")):
                     assert re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}", uses), (path.name, name, uses)
                     checked.append(uses)
-    assert checked == ["pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"]
+    assert checked == ["pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"] * 2
 
 
 def test_ci_scripts_use_only_the_standard_library() -> None:

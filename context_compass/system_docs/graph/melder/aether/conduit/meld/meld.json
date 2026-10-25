@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "de5becea69e0d7c6a2d1bd3666402fa2c277cac8978c2c62fe767473c348ca75",
+ "source_sha256": "2dea9f6f53b3d7ccb16ec8acb570bc8f1e5014228941d2c28be1db2196d5e7e2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -49,15 +49,15 @@
     "set_meld_hooks"
    ],
    "shape": {
-    "method_count": 43,
+    "method_count": 45,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0c435a377f6fd02ff29a6ead8d537bfb5a7d67b3b844f4156837195a275e345a",
+   "span_sha256": "8dce397a3dad73fe8615a33f7671c50792ecb0bc277477b18e784889625143b0",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
-    "discovers purge bindings through inspected instance classes or explicit selectors; concrete doors own scope authority",
+    "discovers purge and probe targets through _resolve_probe_target: a spell_id reaches the version the door's Book can see, owned or borrowed, active or parked (_resolve_visible_version_by_id - the lock-free active read, then Spellbook._find_visible_version under the Book lock), any other selector the version an index has active through _resolve_spell; an instance resolves through its class; concrete doors own scope authority (0.2.PPNOTCH)",
     "enforces validity and dirty-root gates",
     "chooses reuse versus construction",
     "dispatches execution into CreationContext",
@@ -86,7 +86,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4b1d2177fc50b3da07b716365c9a97c859e2436e7eddbe5e352ab2c9f9f8a1ba"
+   "semantics_authored_against": "8dce397a3dad73fe8615a33f7671c50792ecb0bc277477b18e784889625143b0"
   }
  },
  "edges_out": [

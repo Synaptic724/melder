@@ -2,6 +2,9 @@ import builtins
 
 import pytest
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.execution.codegen_compiler import (
     CodegenCompiler,
 )
@@ -516,3 +519,19 @@ def _build_context_for_observability():
             "code": "result = 1",
         },
     )()
+
+
+def test_unit_codegen_builtins_strategy_leaves_open_out_of_the_safe_tuple_runtime_builtins() -> None:
+    """
+    Contract (D-10): runtime builtins built from the safe deny tuple - which safe, hybrid and precision share -
+    carry no `open`, so code that reaches the name past the static gates fails at run time.
+    """
+    strategy = CodegenBuiltinsStrategy()
+    configuration = build_namespace_configuration(
+        denied_builtin_names=SAFE_DENIED_BUILTIN_NAMES,
+    )
+
+    entries = strategy.build_namespace_entries(configuration)
+
+    assert "open" not in entries["__builtins__"]
+    assert "len" in entries["__builtins__"]

@@ -1,0 +1,4 @@
+# __version__ = "0.2.8268" -X gil=0: tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py 
+.......................................                                  [100%]
+39 passed in 0.95s
+[exit 0]

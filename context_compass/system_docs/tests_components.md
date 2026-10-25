@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-25T00:34:42Z
+- Updated: 2026-10-25T03:47:32Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -365,8 +365,8 @@ Protects:
   object, internal classes stay unbindable, the version and build-asset stamps
   agree (see `### Subcomponent: Package Root Unit Cluster`)
 - the release gates in the CI scripts: fail-closed routing, candidate and source
-  identity, distribution contents, the free-threaded runtime gate and the
-  candidate's provenance (see `### Subcomponent: Repository Tooling Unit Cluster`)
+  identity, distribution contents, the free-threaded runtime gate and the provenance
+  of what the release candidate and the release upload (see `### Subcomponent: Repository Tooling Unit Cluster`)
 - race fixes, as deterministic stand-ins for the concurrent writer (see
   `### Flow: Concurrent-Writer Stand-In`)
 - managed spells (0.2.8241-0.2.8246, 0.2.8254): the member and its Phase 6 rank, the bind options with their
@@ -424,7 +424,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 516 `test_*.py` modules among 519 `.py` files (recounted 2026-10-25)
+- the densest tier: 517 `test_*.py` modules among 520 `.py` files (recounted 2026-10-25)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -463,7 +463,7 @@ Key Files (C1):
 - The 3 test_*.py modules in tests/unit/melder/build_assets/ and the 9 package-root
   modules directly under tests/unit/melder/ are cited in their C2 clusters.
 - `tests/unit/github_workflows/conftest.py`
-- The repository-tooling trees carry 11 `test_*.py` modules (github_workflows 9,
+- The repository-tooling trees carry 12 `test_*.py` modules (github_workflows 10,
   llm_support 1, architecture_and_design 1), cited in their C2 cluster.
 
 ### Component: Component Test Suite
@@ -957,6 +957,11 @@ Protects:
   only the named version for a spell_id or a source id and names what was asked when it refuses (not live,
   unsupported existence), while its index path still answers the first record of the index with a live
   object; both rooms advertise `get_spell_by_spell_id` and keep no `get_spell_by_id`
+- the codegen presets' `open` posture (0.2.8269, D-10): the compiled deny list carries `open` for safe (the
+  default profile), hybrid and every chain with the precision overlay, and not for permissive or full_access
+  (`test_frame_acl_codegen_validation_profiles.py`); the engine's no-projection default denies `__import__`
+  plus exactly the safe tuple, imports off (`test_codegen_system_unit_matrix.py`); and runtime builtins built
+  from the safe tuple carry no `open` (`test_codegen_namespace_runtime_unit_matrix.py`)
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
@@ -1459,6 +1464,16 @@ Protects:
   file and sha256 - and the tool, installed from an exact hashed lock, proven every run on a
   recorded genuine attestation and two tampered copies of it; and every `.github/scripts/`
   module importing the standard library only, with its two named exceptions
+- the release's provenance (2026-10-25): the PyPI upload by Trusted Publishing - `id-token: write` beside the
+  candidate lookup's `actions: read`, the publish action pinned to the release candidate's commit with attestations
+  on and no user, password or secret, and the job's run attempt as an output; `id-token: write` held by the two
+  upload jobs alone and no workflow naming either retired upload token; `Release / provenance` after the upload, on
+  the downloaded build with the release tag and the upload's attempt, keeping its report; the same five layers with
+  the release identity - `python-publish.yml` at `refs/tags/<tag>` for a published release or at `refs/heads/prod`
+  for a dispatch with no tag, the run's commit, this run and the upload's attempt, the `pypi` environment, every
+  claim exact - checked against PyPI's real release attestation of the verifier's own wheel; and the shared layers
+  reading their index from a policy (pypi.org, its texts and the entry prefix), the candidate's policy keeping
+  TestPyPI
 - the LLM bundle builder's deterministic build/check lifecycle and explicit
   opt-in for untracked files; the architecture-docs tool's manifest, link, anchor
   and render-hash checks
@@ -1468,6 +1483,7 @@ Key Files (C1):
 - `tests/unit/github_workflows/test_workflow_contracts.py`
 - `tests/unit/github_workflows/test_candidate_publication.py`
 - `tests/unit/github_workflows/test_candidate_provenance.py`
+- `tests/unit/github_workflows/test_release_provenance.py`
 - `tests/unit/github_workflows/test_source_qualification.py`
 - `tests/unit/github_workflows/test_python_runtime_matrix.py`
 - `tests/unit/github_workflows/test_distributions.py`
@@ -1525,6 +1541,20 @@ Protects:
   and four threads melding while 40 notches flip the lineage never build the definition (a lookup that lands
   inside a notch's swap may raise the pre-existing KeyError, which the test accepts). Every flag check asserts
   that the registry's published set agrees with the lineage's flag
+- purge and the live-creation probes by spell_id (0.2.PPNOTCH;
+  `test_conduit_component_probe_and_purge_reach_every_version.py`, 24 tests, 37 cases): a version a notch parked is
+  probed and purged by its spell_id in the store its existence selects - `unique`, `many`, `unique_per_conduit`,
+  lineage - and a notch back after its purge builds a fresh object; a parked version never built probes False and
+  purges 0; a parked `many` is disposed newest first while the active version's stay; a lesser purges only its own
+  entries, the lineage root alone a parked lineage version, and a lesser is refused a parked `unique`; a spellspace
+  purges its entries of a parked version while the conduit still refuses a spellspace lifetime; the elected leader
+  alone purges a parked cluster version; a parked managed version reports its own pool and purges nothing; a parked
+  existing object is live and purge retires nothing; a borrower reaches its parked copy of a `unique` (a grant, an
+  index link) and purges its own `many` entries of one; unknown, disposed and foreign spell_ids still raise the
+  KeyError; the meld doors stay active-only; a spell_id purge still needs `purge_all=True`; an instance of a parked
+  version resolves through its address; a `unique` version with no owner store is refused with a RuntimeError; a
+  split version and a transfer's moved versions are reached where they live; other selectors still name the active
+  version; a Spell object is not a selector; versions staged before conjure are reached like those staged after
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -1539,6 +1569,7 @@ Key Files (C1):
 - `tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py` (2026-10-24)
 - `tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py` (2026-10-15)
 - `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py` (2026-10-25)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -1693,11 +1724,15 @@ Protects:
   cleaned-Aether refusals; listing and lookups while other threads create and clean frames; the frame's shared
   configuration (None without sharing, the bound object with it, the one the next Book adopts) and
   `Conduit.spellbook` for roots, lessers, a torn-down root and an upgraded lesser
-- what the codegen room's profiles stop around the core today (2026-10-10; a characterization, not
-  protection): an `import melder` statement refused under every standard profile but full_access, hybrid
-  refusing import statements of its denied roots, and two known gaps held as their profiles' documented
-  contracts under strict xfail - safe codegen writing files through the `open` builtin, and `__import__`
-  loading roots the hybrid profile and the precision overlay deny
+- what the codegen room's profiles stop around the core and what each does with files (2026-10-10, file
+  postures 0.2.8269; a characterization, not protection; 46 tests): an `import melder` statement refused under
+  every standard profile but full_access; hybrid refusing import statements of its denied roots; every
+  profile's file posture - `open` called to write or read, or only named, refused under safe, hybrid, the
+  precision overlay and the engine's default posture for a frame the room holds no projection for, and run
+  under permissive and full_access; `io.open`, `os.open` and pathlib writes following each profile's import
+  list (a pathlib write runs under hybrid) - with `test_safe_profile_refuses_writing_files`, the strict xfail
+  for this gap (D-10) until 0.2.8269, passing; and one known gap held as its profiles' documented contract under
+  strict xfail, `__import__` loading roots the hybrid profile and the precision overlay deny
 - a capability room's lookups by spell_id (0.2.8253;
   `test_rift_spell_id_lookups_return_that_spell_integration.py`, 4 tests): in a dynamic frame open to Rift
   rooms, with PricingV1 active and PricingV2 parked on one index, the room answers PricingV1 by its spell_id,
@@ -1711,7 +1746,8 @@ Key Files (C1):
 - `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
 - `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
 - `tests/integration/melder/aether/test_aether_frame_lookups.py` (frame lookups and read accessors, 2026-09-29)
-- `tests/integration/melder/aether/test_codegen_core_boundary_integration.py` (characterization, 2026-10-10)
+- `tests/integration/melder/aether/test_codegen_core_boundary_integration.py` (characterization, 2026-10-10;
+  file postures, 2026-10-25)
 - `tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py` (2026-10-17)
 
 ### Subcomponent: Crystallizer Integration Cluster
@@ -1967,6 +2003,11 @@ Protects:
   provider; a dependency notch in the lending Book reaches the borrower's dependents; and four threads melding
   against 20 notches, held as a non-strict xfail until
   TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout (see `tests_architecture`)
+- probes and purges during notches (0.2.PPNOTCH; `test_conduit_integration_probe_and_purge_during_notches.py`, 1 test,
+  2 cases): while one thread notches two indexes back and forth - at least 40 turns, and until each of two prober
+  threads has run 20 rounds - the probers, from the lender and from a borrower whose index links follow the
+  notches, probe both versions of a `unique` index (each live, each answered as itself) and purge both versions of
+  a `many` index (0 each); nothing raises, no answer names another version and no object is disposed
 Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_concurrency.py`
 - `tests/integration/melder/conduit/test_conduit_integration_lifecycle.py`
@@ -1988,6 +2029,7 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py` (2026-10-15)
 - `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py` (2026-10-16)
 - `tests/integration/melder/conduit/test_conduit_integration_managed_settings_rebind.py` (2026-10-18)
+- `tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py` (2026-10-25)
 
 ### Subcomponent: Multithreading Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -2138,7 +2180,34 @@ Key Files (C1):
    (`test_a_wrong_signer_is_refused_before_the_tool_is_built`), and no fetch when the lock no
    longer installs the control (`test_the_controls_are_checked_before_testpypi_is_asked`).
    EVIDENCE: tests/unit/github_workflows/test_candidate_provenance.py:937-1097
-   EVIDENCE: .github/scripts/testpypi_provenance.py:721-757
+   EVIDENCE: .github/scripts/testpypi_provenance.py:757-793
+
+### Flow: Release Provenance Check End To End
+1. `ReleaseRun(release_provenance, monkeypatch, tmp_path)` replaces every boundary of `verify_release`:
+   `package_version` (0.2.8300), `released_files` (records the directory, version and tag it is asked for and
+   answers a wheel and an sdist), `fetch_provenance` (answers from `documents` and records the policy it was
+   given), `tool_environment` (a path; nothing is built), `subprocess.run` (plays the verifier: reads the request,
+   keeps the bytes each entry names, answers from `outcomes`, which refuse the two tampered controls) and
+   `git_output`; the fetch, the tool and the verifier stand-ins record what crossed them.
+2. `serve(wheel_claims, sdist_claims, publisher=None)` makes PyPI hold one attestation per released file:
+   `ReleaseSigner.provenance` puts a certificate `ReleaseSigner.certificate` writes element by element (`Der`),
+   with the claims a run of `python-publish.yml` in `pypi` signs with, into the candidate tests' provenance
+   document under PyPI's publisher record.
+3. `verify_release(dist, report, ReleaseSigner.environment())` runs as a re-run of the check alone (attempt 2 of a
+   run whose attempt 1 uploaded): the run's variables, the upload's attempt, the version and the tag-checked files
+   are read, the recorded control is checked, then each file's provenance (publisher record, statement,
+   certificate claims), then one verifier process on all five entries (three controls, two `release:` entries),
+   then the report is written.
+4. `test_every_released_file_is_checked_in_all_five_layers` asserts the tag handed to the distributions check, one
+   fetch per file with the release policy, the entries' order, each file's exact identity (every claim, no
+   pattern), that every stored provenance is the bytes PyPI answered, one tool environment and the report field by
+   field; `test_a_dispatched_release_is_checked_against_prod` runs the same check from a dispatch on prod with no
+   tag. The refusal tests assert what never happened: no tool, verifier request or report when a standard-library
+   layer refuses first (`test_a_wrong_signer_or_publisher_is_refused_before_the_tool_is_built`), no file read and
+   no fetch when the run is not the release's (`test_the_run_is_checked_before_anything_is_read`), and no fetch
+   when the lock no longer installs the control (`test_the_controls_are_checked_before_pypi_is_asked`).
+   EVIDENCE: tests/unit/github_workflows/test_release_provenance.py:458-652
+   EVIDENCE: .github/scripts/pypi_provenance.py:208-251
 
 ### Flow: Concurrent-Writer Stand-In
 1. the regression builds a real Spellbook, binds `PoolConfig`, `PoolRepository` and
@@ -2215,12 +2284,12 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 283 paths (recounted 2026-10-25) - and nothing else. Change a component's key files and this set
+above - 284 paths (recounted 2026-10-25) - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 865 test modules of the
+builders - not every `test_*.py` module beneath it. The 868 test modules of the
 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -2890,10 +2959,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-01T10:23:50Z
 - path: `tests/integration/melder/aether/test_codegen_core_boundary_integration.py`
   start_line: 1
-  end_line: 206
-  loc: 206
-  verified_at: 2026-10-10T12:34:42Z
-  note: codegen import gate around melder and two strict-xfail profile gaps (open writes, __import__).
+  end_line: 455
+  loc: 455
+  verified_at: 2026-10-25T02:58:15Z
+  note: codegen import gate around melder, every profile's file posture (open, io, os, pathlib; the
+    no-projection default) and one strict-xfail gap (__import__).
 - path: `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
   start_line: 1
   end_line: 215
@@ -2999,9 +3069,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-24T19:37:10Z
 - path: `tests/unit/github_workflows/conftest.py`
   start_line: 1
-  end_line: 79
-  loc: 79
-  verified_at: 2026-10-25T00:34:42Z
+  end_line: 85
+  loc: 85
+  verified_at: 2026-10-25T03:14:26Z
 - path: `tests/experiments/cprofile_testing/profile_harness.py`
   start_line: 1
   end_line: 176
@@ -3179,9 +3249,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-25T00:34:42Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 1048
-  loc: 1048
-  verified_at: 2026-10-25T00:34:42Z
+  end_line: 1114
+  loc: 1114
+  verified_at: 2026-10-25T03:14:26Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
   end_line: 565
@@ -3193,6 +3263,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   loc: 1169
   verified_at: 2026-10-25T00:34:42Z
   note: the candidate provenance check's five layers on a recorded attestation and on certificates built byte by byte.
+- path: `tests/unit/github_workflows/test_release_provenance.py`
+  start_line: 1
+  end_line: 667
+  loc: 667
+  verified_at: 2026-10-25T03:14:26Z
+  note: the release provenance check: run identity, exact signer, PyPI fetch, a real release certificate, end to end.
 - path: `tests/unit/github_workflows/test_source_qualification.py`
   start_line: 1
   end_line: 412
@@ -3589,6 +3665,13 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   loc: 491
   verified_at: 2026-10-15T22:33:31Z
   note: leases through real melds, injections and `managed_spell_meld` (0.2.8245).
+- path: `tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py`
+  start_line: 1
+  end_line: 788
+  loc: 788
+  verified_at: 2026-10-25T03:47:32Z
+  note: purge and the live-creation probes by spell_id: parked, split, borrowed and transferred versions, and the
+    refusals that stay (0.2.PPNOTCH).
 - path: `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
   start_line: 1
   end_line: 456
@@ -3637,6 +3720,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-18T23:13:06Z
   note: contract consumers and dependents following notches, grants and uncontracts; the
     meld-vs-notch race as a non-strict xfail (0.2.8250). Rewritten for S1 and S2 (0.2.8257-0.2.8258).
+- path: `tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py`
+  start_line: 1
+  end_line: 189
+  loc: 189
+  verified_at: 2026-10-25T03:47:32Z
+  note: probes and purges by spell_id racing notches, from the lender and an index-link borrower (0.2.PPNOTCH).
 - path: `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
   start_line: 1
   end_line: 185
@@ -3813,6 +3902,9 @@ graph TD
 - `tests/unit/github_workflows/test_candidate_provenance.py`
 - `.github/scripts/testpypi_provenance.py`
 - `.github/workflows/release-candidate.yml`
+- `tests/unit/github_workflows/test_release_provenance.py`
+- `.github/scripts/pypi_provenance.py`
+- `.github/workflows/python-publish.yml`
 - `tests/unit/melder/aether/conduit/conftest.py`
 - `tests/unit/melder/test_system_document_view.py`
 - `tests/unit/melder/test_melder_registration_guard.py`
@@ -3894,6 +3986,8 @@ graph TD
 - `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
 - `tests/integration/melder/spellbook/test_managed_bind_options_integration.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_purge.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py`
+- `tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py`
 - `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py`
 - `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py`
 - `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
@@ -3943,6 +4037,9 @@ graph TD
 - `tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py`
 - `tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py`
 - `tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py`
+- `tests/unit/melder/aether/test_frame_acl_codegen_validation_profiles.py`
+- `tests/unit/melder/aether/test_codegen_system_unit_matrix.py`
+- `tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py`
 
 ## Open Questions
 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a
@@ -3955,6 +4052,44 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-10-25 purge and the live-creation probes by spell_id (0.2.PPNOTCH;
+STORY-2026-10-25-probe_and_purge_reach_every_version): the Aether Component Cluster gains
+`test_conduit_component_probe_and_purge_reach_every_version.py` (24 tests, 37 cases: a parked version's objects
+probed and purged by its spell_id in the store and under the authority its existence selects, for every lifetime,
+from roots, lessers, spellspaces, cluster leaders and borrowers, with the refusals that stay) and the Conduit
+Integration Cluster `test_conduit_integration_probe_and_purge_during_notches.py` (probes and purges racing notches
+from the lender and an index-link borrower, the GIL off and on); the core map adds both and Information Sources
+lists them. Counts are unchanged: the recount of this date already took both in. Still unknown: the Unknowns
+section, unchanged. Map next: the meld-identity tests of STORY-2026-10-17-notch_moves_signature_by_incoming_key_only
+when its fix lands.
+
+2026-10-25 the release's provenance (no notch; CI, tests and documentation only;
+STORY-2026-10-25-pypi_trusted_publishing_and_provenance): the Repository Tooling Unit Cluster gains
+`test_release_provenance.py` (29 tests, 68 cases: the release policy and the publisher job it reads; the run identity
+of a published release at its tag and of a dispatch on prod with no tag, every refusal; the upload's attempt; the
+exact release signer, every claim on its own, a candidate's certificate refused; PyPI's real release attestation of
+the verifier's wheel reproduced claim for claim; pypi.org's Integrity API without credentials, its 404 and redirect
+refusals; the `release:` verdicts; the tag-checked files; the whole check end to end with its report; the command
+line) and protects the PyPI Trusted Publishing posture, `Release / provenance`, the two `id-token: write` holders
+and no retired upload token in any workflow; a call flow describes the end-to-end harness, and the candidate flow's
+script citation is remeasured. The core map adds the module and remeasures `conftest.py` (85) and
+`test_workflow_contracts.py` (1114); the key-file union is 284 paths. Counts are recounted from disk (unit 520
+`.py`, 517 of them `test_*.py`; component 173, 171; integration 187, 180; 868 test modules in the three tiers): this
+lane adds one unit module, and the count also takes in
+`test_conduit_component_probe_and_purge_reach_every_version.py` and
+`test_conduit_integration_probe_and_purge_during_notches.py`, which no cluster lists yet.
+
+2026-10-25 the codegen presets' file posture (0.2.8269; TASK-2026-10-10-deny-file-access-under-safe-codegen,
+defect D-10): the Aether Integration Cluster's codegen entry pins every profile's file posture in
+`test_codegen_core_boundary_integration.py` (46 tests, D-11's four strict xfails among them) - `open` called or
+named refused under safe, hybrid, the precision overlay and the engine's no-projection default and run under
+permissive and full_access; `io.open`, `os.open` and pathlib writes following each import list - and
+`test_safe_profile_refuses_writing_files` passes without the strict xfail it carried since 2026-10-10. The
+Aether/Nexus/Rift Unit Cluster protects the compiled `open` deny per preset, the no-projection default and the
+runtime builtins of the safe tuple (new tests in three existing modules, named in its entry and in Information
+Sources). The core map remeasures the integration module (455); the key-file union stays 283 paths, and this lane
+adds no module, so the counts are unchanged.
 
 2026-10-25 the candidate's provenance (no notch; CI, tests and documentation only;
 STORY-2026-10-24-testpypi_trusted_publishing_and_provenance): the Repository Tooling Unit Cluster gains

@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-19T14:48:37Z
+- Updated: 2026-10-25T02:47:38Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -1440,6 +1440,48 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-25T02:02:53Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: A second side finding, from S2's meld-identity map (its FACT note of 2026-10-25T02:01:57Z): a consumer
+    injected by a class annotation that compiled without its provider - after a notch away from it, or before it
+    was bound - is never re-resolved when the provider comes back under a spellframe (a notch back, or a later bind
+    under a Protocol). Its UNRESOLVED_INPUT socket is watched under the class's name while bind and notch stage the
+    provider's address, so nothing marks it and every meld raises UnresolvedInputError until it is disposed and
+    bound again; a provider bound bare is unaffected. Pre-existing on 0.2.8267 in both address models, the GIL off
+    and on; the 0.2.8222 kind-matching task left the watcher's name keying for a follow-up ticket that was never
+    filed, and no open or completed ticket covers it.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:639-672
+  - context_compass/artifacts/correctness_defects_20261017/runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt:3-53
+  - context_compass/tickets/tasks/completed/2026-10-04_repair_annotation_kind_matching_task.md:57-61
+  IMPACT: Stuck structure under the owner's runtime model; S2's fix does not touch it.
+  NEXT: The owner's word on filing it as a story here.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T02:47:38Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Two side findings routed. M3-9 consumed (melder_3, 2026-10-25T02:33:01Z): the HYPOTHESIS of
+    2026-10-24T19:10:35Z reproduces on 0.2.8267, the GIL off and on - a `many` cleaned up and bound again under
+    other disposal names joins the removed binding's ManyDisposalBucket and is disposed with the old list, and a
+    slotted spell bound again as `many` fails its next meld with AttributeError from `Creations.register_many`.
+    melder_3 corrected only the docstrings (0.2.8268); the behaviour is the gap the parked
+    STORY-2026-10-18-revalidate_on_binding_change closes, and a story here, if the owner wants one, is melder_1's.
+    The stuck class-annotated consumer (FACT note of 2026-10-25T02:02:53Z) has its own epic on the owner's ask,
+    EPIC-2026-10-25-dependency_watchers_listen_for_names, so no story for it is filed here.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-25_creations_many_disposal_docstrings_task.md:200-228
+  - context_compass/artifacts/creations_many_disposal_20261025/probes/probe_rebind_many_disposal.py:1-95
+  - context_compass/tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md:1-30
+  IMPACT: The rebind finding waits with the parked binding-change story; the stuck consumer leaves this epic.
+  NEXT: The owner's word on S5, S11, the recorded-world finding and the rebind finding.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -1515,7 +1557,10 @@ this does not make independent review mandatory for every ticket.
   (DECISION and FACT notes of 2026-10-19).
 - Done since: S1 landed at 0.2.8263 and is turned in (FACT note of 2026-10-19); the pass is rebuilt last.
 - Next: (1) S2 and S5 with melder_1, one at a time, on the owner's word, each from a failing test with its
-  own notch and the patch gate; (2) S11 on the owner's call; (3) a fourth tranche on the owner's word.
+  own notch and the patch gate; (2) S11 on the owner's call; (3) a fourth tranche on the owner's word; (4) the
+  owner's word on filing the recorded world settled after its binds (FACT note of 2026-10-24T23:31:58Z) and the
+  rebind disposal record (FACT note of 2026-10-25T02:47:38Z); the stuck class-annotated consumer is
+  EPIC-2026-10-25-dependency_watchers_listen_for_names on the owner's ask.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

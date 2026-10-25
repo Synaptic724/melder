@@ -188,7 +188,11 @@ class SpellSpaceMeld(Meld):
             independently of the broader stores available for normal resolution.
 
         Contract:
-            - Uses shared discovery to find the registered definition.
+            - Uses shared discovery to find the registered definition; a spell_id
+              names one version - the owner conduit's Book's own or a borrowed copy,
+              active or parked - so this space's entries of a version a notch parked
+              are purged without a notch back
+              (STORY-2026-10-25-probe_and_purge_reach_every_version).
             - Accepts only many and unique_per_spell_space lifetimes.
             - Always delegates to `_spellspace_creations`; never to the owner
               conduit, Spell owner, lineage root, or cluster team store.
@@ -208,7 +212,8 @@ class SpellSpaceMeld(Meld):
 
         Raises:
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If normal meld discovery cannot find the target.
+            KeyError: If no version this space's Book can see carries the spell_id,
+                or normal meld discovery cannot find the target.
             TypeError: If purge_all is not a bool.
             RuntimeError: If cleaned or the target has a broader lifetime.
             ExceptionGroup: Disposal failures after selected entries are removed.
@@ -850,7 +855,10 @@ class SpellSpaceMeld(Meld):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this space's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`); every other selector resolves as
+              `meld(...)` does, to the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports the query conduit context explicitly so callers know the
@@ -883,7 +891,7 @@ class SpellSpaceMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell(
+        target_spell = self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,

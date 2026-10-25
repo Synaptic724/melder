@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T22:21:35Z
-- Updated: 2026-10-25T00:40:15Z
+- Updated: 2026-10-25T03:25:27Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: integrity of the published package (the owner's request, chat 2026-10-24, 16:16 MDT)
 
@@ -140,12 +140,16 @@ until both indexes have published with attestations.
   (`testpypi_provenance.py verify`), between the upload and `probe-install` rather than inside it: every built
   file's provenance (Synaptic724/melder, `release-candidate.yml`, `pypitest`) checked in D3's five layers before any
   probe installs it; accept and refuse paths tested on recorded and synthetic answers; the tool pinned (D6).
-- [ ] Story: S3 pypi_trusted_publishing - `python-publish.yml`'s pypi-publish job uploads by OIDC with attestations
-  and checks the uploaded files' provenance; contract tests and docs.
-- [ ] Story: S4 retire_upload_tokens - no workflow references a token; the owner deletes both environment secrets and
+- [x] Story: S3 pypi_trusted_publishing (one story with S4's contract test and S5, D8:
+  STORY-2026-10-25-pypi_trusted_publishing_and_provenance, turned in 2026-10-25, hosted run Not run) -
+  `python-publish.yml`'s pypi-publish job uploads by OIDC with attestations and checks the uploaded files'
+  provenance; contract tests and docs.
+- [ ] Story: S4 retire_upload_tokens (its contract test landed with the S3 story, D8; deleting and revoking the
+  secrets stays the owner's) - no workflow references a token; the owner deletes both environment secrets and
   revokes the tokens; a contract test forbids them.
-- [ ] Story: S5 document_provenance_for_users - the verification command for users (README or docs), the release
-  note's Packaging line, BRANCH_WORKFLOW.md's credential sections rewritten for Trusted Publishing.
+- [x] Story: S5 document_provenance_for_users (in the S3 story, D8; turned in 2026-10-25) - the verification
+  command for users (README or docs), the release note's Packaging line, BRANCH_WORKFLOW.md's credential sections
+  rewritten for Trusted Publishing.
 - [ ] Story: S6 build_provenance (D4; after S3) - GitHub artifact attestations of the built distributions in
   `build-distributions.yml`.
 
@@ -191,8 +195,9 @@ Story tickets are created as each starts, one at a time; S1 and S2 are one story
 - UNKNOWN: TestPyPI serves the Integrity API at the PyPI route (`/integrity/<project>/<version>/<file>/provenance`);
   Warehouse serves both indexes and the publishing action attests for both, but neither CI environment here can
   reach test.pypi.org. The first hosted RC run settles it; a missing route reads as a refusal naming each file.
-- Whether the PyPI job checks after the upload, or the RC check is the gate (the Integrity API may answer a moment
-  after the upload).
+- Answered by D8: the PyPI job's upload is checked after it (Release / provenance), and the RC check of the same
+  tree stays the gate before it.
+- S6 (D4): kept or dropped - the owner's call, still open.
 
 ## Decision Log
 - D1 (2026-10-24, the owner, chat 16:16 MDT): make an epic to implement PyPI provenance. The token-only posture in
@@ -217,6 +222,11 @@ Story tickets are created as each starts, one at a time; S1 and S2 are one story
   attestation and two tampered copies of it.
 - D7 (melder_2): the publish action is pinned to its commit (`7245906fb61fa33a13554f9d5fb856fe61758086`, v1.14.3),
   as `astral-sh/setup-uv` is, because that job alone holds `id-token: write`.
+- D8 (2026-10-24, the owner, chat 20:12 MDT: "yeah ok go ahead and implement everything you need to", on the
+  DECISION_REQUEST of 2026-10-25T01:56:46Z): S3, S4's contract test and S5 are one story,
+  STORY-2026-10-25-pypi_trusted_publishing_and_provenance; PyPI's upload is checked after it by a Release /
+  provenance job (the recommended option), and the RC check of the same tree stays the gate before it. S6 (D4)
+  stays open for his keep-or-drop: this story does not touch `build-distributions.yml`.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -386,6 +396,112 @@ this does not make independent review mandatory for every ticket.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T01:50:29Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The owner committed S1+S2: commit 982698ecc (2026-10-24 19:39:58 -0600) holds every file of the story -
+    the five new files, the workflow, scripts, tests, CI guide, BRANCH_WORKFLOW.md, the tests pair and both
+    tickets - and the rebuilt bundles, each equal to the working copy with line endings normalized (read-only
+    git, compared file by file); dev merged into codex_features2 at d1c91e3d6. Owner-owed still: the TestPyPI
+    Trusted Publisher, the promotion and the first RC run on a version TestPyPI has never seen, then the token's
+    retirement. My 19:40 reminder to commit with `git add -A` came from an untracked-files check made before that
+    commit; check `git log` before telling the owner what is uncommitted.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md:1-8
+  IMPACT: The commit step is done; the next owner steps are the publisher and the RC run.
+  NEXT: Wait for the owner's RC run link or logs; read RC / publish-to-TestPyPI and RC / provenance first.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T01:56:46Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION_REQUEST
+  CLAIM: The prod plan, asked for by the owner (chat 2026-10-24 19:54 MDT). Today `pypi-publish` uploads with
+    `PYPI_API_TOKEN`, attestations off and the action by `@release/v1`; it runs on a published final release (ref
+    `refs/tags/<tag>`) or a dispatch on prod (`refs/heads/prod`), always at prod HEAD, and refuses failed-jobs
+    re-runs. Proposed S3, one story: `id-token: write` on `pypi-publish` alone (the contract's holder list grows by
+    it), no user or password, attestations on, the action pinned to 7245906f (D7); a `pypi-provenance` job after
+    the upload checking every released file on pypi.org's Integrity API in D3's five layers with the release
+    identity (`python-publish.yml` at the run's ref, environment `pypi`, this run and attempt, prod's commit),
+    sharing the candidate check's layers, verifier, lock and control; S4's code (a contract test forbidding
+    `PYPI_API_TOKEN` and `melder_api_token`) and S5 (README verification command, the release note's Packaging
+    line) folded in. Owner: the PyPI publisher (D2: Synaptic724 / melder / python-publish.yml / pypi) before the
+    first final release that carries it; after that release, delete `PYPI_API_TOKEN` and revoke it. Decisions
+    asked: the go for S3 as scoped; the post-upload check (recommended) or the RC check alone; S6 kept or dropped.
+  EVIDENCE:
+  - .github/workflows/python-publish.yml:1-124
+  - .github/scripts/ci_policy.py:269-306
+  - tests/unit/github_workflows/test_workflow_contracts.py:454-482
+  IMPACT: S3 can land before the first RC run: prod publication already requires a successful RC run of the exact
+    tree (check_candidate_run.py), so TestPyPI's check passes before any PyPI upload of that tree.
+  NEXT: On the owner's go, open the S3 story with its board row and read the shared layers' callers first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T02:34:43Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's go answers the prod plan (D8): S3 with S4's code and S5 is one story, opened as
+    STORY-2026-10-25-pypi_trusted_publishing_and_provenance with its board row; the PyPI upload switches to Trusted
+    Publishing with attestations and a post-upload Release / provenance job checks every released file in D3's five
+    layers; S6 is not part of the go and stays open. Owner-owed for prod, unchanged: the PyPI publisher (D2) before
+    the first final release that carries this, then `PYPI_API_TOKEN` deleted and revoked.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-25_pypi_trusted_publishing_and_provenance_story.md:1-60
+  - context_compass/tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md:416-440
+  IMPACT: Tranche order becomes S1+S2 (done), the S3 story, then S6 on the owner's word; S4 shrinks to the owner's
+    secret deletion and revocation once both indexes have published with attestations.
+  NEXT: Implement the S3 story; report to the owner at its turn-in.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T03:21:46Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S3 with S4's code and S5 is turned in (STORY-2026-10-25-pypi_trusted_publishing_and_provenance, done).
+    `pypi-publish` uploads by Trusted Publishing with attestations through the action pinned to its commit (D7),
+    with no user, password or secret and its attempt as an output; `id-token: write` is held by it and the RC
+    upload alone. Release / provenance checks every released file on pypi.org after the upload in D3's five layers
+    with the release identity (`python-publish.yml` at `refs/tags/<tag>` or `refs/heads/prod`, the run's commit,
+    this run and the upload's attempt, `pypi`), reusing the candidate check's layers, lock, verifier and control,
+    and keeps its report 90 days. No workflow names `PYPI_API_TOKEN` or `melder_api_token` (a contract test). The
+    install guide gives users the `pypi-attestations verify pypi` command, the README links it, and the running
+    note's Packaging bullet covers both indexes. 752 workflow tests, the GIL off and on; no src, no notch. Not run:
+    hosted runs, the Sphinx build.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-25_pypi_trusted_publishing_and_provenance_story.md:1-8
+  - .github/workflows/python-publish.yml:70-166
+  - .github/scripts/pypi_provenance.py:208-251
+  IMPACT: Milestones 3 and 4 wait on the owner: his PyPI publisher before the first final release that carries this,
+    that release, then both tokens deleted and revoked; S6 stays his call.
+  NEXT: Rebuild the assets and the LLM bundles, then report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T03:25:27Z
+  AUTHOR: melder_2
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The S3 story's rebuild ran last, after its closure and the board and epic sync, on CPython 3.14.7t from
+    the repository root: `_build_asset_runner.py` wrote the three asset manifests at v0.2.8268 (agent documentation
+    469 entries, bind guard 629, system documents 4) and `--check` printed only OK lines; `llm_support/_builder.py
+    --include-untracked` rewrote the src, tests and other bundles (src's fingerprint had moved with another lane's
+    working-tree source) and `--check --include-untracked` printed only OK lines. The system-documents asset ingests
+    src_architecture, src_components and the graph, not the tests pair or tickets, and the bundles skip
+    context_compass/, so this note and a later tests-pair edit leave both checks as they are.
+  EVIDENCE:
+  - src/melder/_build_assets/_system_documents/_builder.py:110-136
+  - llm_support/_builder.py:62-100
+  IMPACT: The change set is complete in the owner's checkout; what remains is his (commit with `git add -A`, the
+    publishers, the hosted runs, the tokens, S6).
+  NEXT: Report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -402,14 +518,21 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: PEP 740 provenance for every Melder upload to TestPyPI and PyPI, through Trusted Publishing, verified in the
   release candidate before anything depends on it; then the tokens retired. State: in_progress, melder_2.
-- Decisions: D3 deepest check, D4 S6 in the epic, D5 S1+S2 one story, D6 the pinned tool, D7 the pinned action.
-- Holds: the owner's TestPyPI Trusted Publisher (D2) before S1+S2 reaches release_candidate; PyPI's before S3.
-- Done: S1+S2 (STORY-2026-10-24-testpypi_trusted_publishing_and_provenance, turned in 2026-10-25; 681 workflow
-  tests, the GIL off and on). Hosted runs: Not run.
-- Owner-owed now: the TestPyPI Trusted Publisher (D2), the commit (`git add -A`) and promotion, the first RC run on
-  a version TestPyPI has never seen; then delete the `melder_api_token` environment secret and revoke its token.
-- UNKNOWN until that run: TestPyPI's Integrity API route; the action's image for the pinned commit on GHCR.
-- Next: (1) the owner's first RC run; (2) S3 on his word, after his PyPI publisher; (3) S4, S5 and S6.
+- Decisions: D3 deepest check, D4 S6 in the epic, D5 S1+S2 one story, D6 the pinned tool, D7 the pinned action,
+  D8 S3 with S4's code and S5 one story, checked after the upload.
+- Holds: the owner's TestPyPI Trusted Publisher (D2) before S1+S2 reaches release_candidate; PyPI's before the
+  first final release that carries S3.
+- Done: S1+S2 (STORY-2026-10-24-testpypi_trusted_publishing_and_provenance; committed 982698ecc) and S3 with S4's
+  code and S5 (STORY-2026-10-25-pypi_trusted_publishing_and_provenance), both turned in 2026-10-25; 752 workflow
+  tests, the GIL off and on. Hosted runs: Not run.
+- Owner-owed now: commit the S3 story (two new files: `git add -A`); the TestPyPI Trusted Publisher (D2), the
+  promotion and the first RC run on a version TestPyPI has never seen, then the `melder_api_token` secret deleted
+  and its token revoked; the PyPI Trusted Publisher (D2) before the first final release that carries S3, then,
+  after the first attested release, `PYPI_API_TOKEN` deleted and revoked; S6 kept or dropped.
+- UNKNOWN until those runs: TestPyPI's Integrity API route; the action's image for the pinned commit on GHCR; the
+  release identity on a real Melder release (proven against PyPI's real release certificate of the verifier).
+- Next: (1) the owner's first RC run and first attested release - read RC / provenance and Release / provenance
+  first; (2) S4's secret deletion and revocation, the owner's; (3) S6 on his word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

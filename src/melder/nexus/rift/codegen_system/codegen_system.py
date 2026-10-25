@@ -1,6 +1,9 @@
 import threading
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
@@ -410,6 +413,21 @@ class CodegenSystem(Cleanable):
         """
         Build the current stable default namespace configuration.
 
+        Contract:
+            - With a projection, the posture is the frame's compiled access
+              surface: imports, allowed and denied import roots, denied
+              builtins, and the reflection, dunder-access and
+              recursive-codegen flags exactly as compiled.
+            - Without one - the owning Rift holds no codegen projection for
+              `frame_name`, which `_try_get_codegen_projection` reports as
+              None - the request runs under the safe posture: imports off; no
+              unsafe reflection, dunder access or recursive codegen; and the
+              denied builtins are `__import__` plus the safe profile's
+              `SAFE_DENIED_BUILTIN_NAMES`, `open` among them. The tuple is
+              read from the profile module, not copied, so this default and
+              the safe profile cannot drift apart.
+            - Pure: builds a new configuration per call and mutates nothing.
+
         Args:
             frame_name:
                 Target frame name for the request.
@@ -422,20 +440,10 @@ class CodegenSystem(Cleanable):
         imports_enabled = False
         allowed_import_module_roots: Tuple[str, ...] = tuple()
         denied_import_module_roots: Tuple[str, ...] = tuple()
+        # No projection means the safe posture: imports are off, so `__import__`
+        # is denied with everything the safe profile denies.
         denied_builtin_names: Tuple[str, ...] = (
-            "__import__",
-            "breakpoint",
-            "compile",
-            "dir",
-            "eval",
-            "exec",
-            "getattr",
-            "globals",
-            "input",
-            "locals",
-            "setattr",
-            "delattr",
-            "vars",
+            ("__import__",) + SAFE_DENIED_BUILTIN_NAMES
         )
         allow_unsafe_reflection = False
         allow_dunder_access = False

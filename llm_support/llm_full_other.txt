@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 803cf53897a416451fea0e47de04f4be9ea3f7d197db3a37b1655244f6718c36
-FILE COUNT: 417
+SOURCE FINGERPRINT: 72b864cb1360d115cd9f89051a34f9bed531f585ee9d8c57f57b3a3af45b276f
+FILE COUNT: 418
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: f9abe1ac2b9f7d4cc4be35e7236d16d51179f8385cd0a11953996ad91354251c
+CONTENT SHA256: b2624b788afed4dc02e4d8f4762477b283f94b12f32f29cf6912c5cb9488faa6
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -452,8 +452,8 @@ upload credential when the token's claims match the publisher above, and
 Sigstore and uploads its PEP 740 attestation. A failed-jobs re-run of the upload
 asks for a fresh token. Once a run has published this way, the old
 `melder_api_token` environment secret can be deleted and its token revoked on
-TestPyPI: no workflow reads it. Production continues using its independent pypi
-environment and PYPI_API_TOKEN credential.
+TestPyPI: no workflow reads it. Production publishes the same way, through its
+own `pypi` environment and PyPI Trusted Publisher (Final publication checks).
 
 An `invalid-publisher` error from the upload means the publisher's values and the
 job's claims disagree; an earlier OIDC attempt failed that way, so compare all four
@@ -528,13 +528,46 @@ workflow on prod, starts a fresh qualification chain:
 5. Recheck distribution identity and candidate qualification, then the live release tag,
    fetch/check prod again immediately before the PyPI upload action. Annotated
    tags use their peeled target; missing or moved tags refuse publication.
+6. Upload by Trusted Publishing: `pypa/gh-action-pypi-publish`, pinned to its
+   commit, signs every file with Sigstore and uploads its PEP 740 attestation.
+7. `Release / provenance` then checks every released file's provenance on PyPI
+   in the release candidate's five layers: a provenance exists; its publisher is
+   `python-publish.yml` in `pypi`; Sigstore verifies the attestation on the
+   production trust root; the signing certificate names this repository and its
+   owner (with their numeric ids), the workflow at the release tag (or `prod`, for
+   a manual dispatch), the released commit, this run and the attempt that
+   uploaded, its event, a GitHub-hosted runner, public visibility and the `pypi`
+   environment; and the attested statement names exactly the file and its
+   sha256. The files are on PyPI by then, so a refusal fails the run before the
+   release is announced but cannot unpublish anything; `.github/ci_cd/validating.md`
+   says what each refusal means. Its report, `release-provenance-<run>-<attempt>`,
+   keeps each file's verified signer, run and trigger.
 
 Earlier dev/preprod success does not replace these checks. A prod movement during
 the checks or environment approval refuses publication. GitHub prerelease events do
 not trigger final publication. All publication runs share a serialization group.
-Only the upload job uses the pypi environment and its PYPI_API_TOKEN secret.
 Production builds and validates fresh final distributions; it does not relabel
 or claim byte identity with an earlier rcN package.
+
+Only the upload job uses the pypi environment, and PyPI publication has no
+stored credential (owner, 2026-10-24). Add the publisher before the first final
+release made with this workflow: on PyPI, the `melder` project -> Manage ->
+Publishing -> add a GitHub publisher with exactly these values.
+
+| Field | Value |
+| --- | --- |
+| Owner | `Synaptic724` |
+| Repository name | `melder` |
+| Workflow name | `python-publish.yml` |
+| Environment name | `pypi` |
+
+The upload job alone requests a short-lived OIDC token (`id-token: write`); PyPI
+exchanges it for an upload credential when the token's claims match the
+publisher above. An `invalid-publisher` error means they disagree and nothing
+was uploaded: compare the four values, then **Re-run all jobs**. Once a release
+has published this way, delete the `PYPI_API_TOKEN` environment secret and
+revoke its token on PyPI: no workflow reads it, and a contract test refuses a
+workflow that names either retired token.
 
 Artifacts include the workflow run and attempt in their names. After a failed
 publication, use **Re-run all jobs** to obtain fresh qualification and fresh
@@ -542,7 +575,10 @@ artifacts; rerunning only a failed upload must not reuse an earlier attempt's
 unqualified artifact implicitly, so a failed-jobs re-run of the upload stops
 before downloading anything, with an error naming **Re-run all jobs**. Confirm
 PyPI state before retrying an upload whose outcome is uncertain; existing
-package versions are never silently skipped.
+package versions are never silently skipped. A `Release / provenance` check that
+failed only because PyPI or the verifier's trust root could not be reached is
+rerun alone with **Re-run failed jobs**: it reads the same build and still
+expects the attempt that uploaded, and it uploads nothing.
 
 ## Activating GitHub enforcement
 
@@ -604,7 +640,7 @@ END FILE: .github/FUNDING.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/README.md
-CONTENT SHA256: ebdd3b07f4b913652f0b0e8a0aa157aca97f10e18f364d69eca9522cbb1c6e33
+CONTENT SHA256: f0f49d2d920f0877bf8c01c60d9bdaa325400431878e8b55fadbf0919d5f2e5b
 SOURCE ENCODING: utf-8
 ================================================================================
 # CI/CD guide for agents
@@ -613,7 +649,7 @@ Read this folder before you change anything under `.github/`, change `project.re
 dependencies in `pyproject.toml`, add a Python release, a CI job or a benchmark, or diagnose a failed run. It says
 what every CI file is for, how the pieces connect, how to extend them and how to check a change before handing it
 off. Branch and release policy (which pull request may target which branch, cutting a release, the TestPyPI and
-PyPI credentials) lives in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md); this folder links to it instead of
+PyPI Trusted Publishers) lives in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md); this folder links to it instead of
 repeating it.
 
 | Read | When |
@@ -648,7 +684,8 @@ push to release_candidate, or a manual run there  -->  release-candidate.yml
   Windows and macOS) -> package-ready
 
 published release, or a manual run on prod  -->  python-publish.yml
-  release-gate -> hygiene, source-assets, repo-assets -> release-build -> pypi-publish
+  release-gate -> hygiene, source-assets, repo-assets -> release-build -> pypi-publish (PyPI, by Trusted
+  Publishing, with attestations) -> pypi-provenance (every released file's attestation verified)
 ```
 
 Workflows only orchestrate. The decisions (routes, required results, Python matrices, installs, package checks)
@@ -678,7 +715,7 @@ END FILE: .github/ci_cd/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/extending.md
-CONTENT SHA256: 76398fbdb19b47142fa41e665f9958ee4e87e34437cb5721f25600d57a88d28a
+CONTENT SHA256: 3948826ec3417b30c44ca0cfb5289227fac29fd2a437cff7cebf0dd3fbfa0608
 SOURCE ENCODING: utf-8
 ================================================================================
 # Extending CI
@@ -707,10 +744,11 @@ Every change below ends the same way: run the workflow tests, update this folder
   `RuntimeMatrixPolicy.TARGETS` together and run the full matrix.
 - `PYTHON_GIL=0` goes on the steps that run Melder, never on a whole job: Python's setup on macOS runs a
   certificate installer that cannot start with the GIL disabled.
-- Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else, and the
-  PyPI token lives in the `pypi` environment, used by one job. TestPyPI publication has no secret: the
-  release candidate's `publish` job authenticates by Trusted Publishing and is the only job in any workflow that
-  holds `id-token: write`; a third-party action in a job that holds it is pinned to a full commit SHA.
+- Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else.
+  Publication has no secret: the release candidate's `publish` job (TestPyPI, environment `pypitest`) and
+  `python-publish.yml`'s `pypi-publish` job (PyPI, environment `pypi`) authenticate by Trusted Publishing and are
+  the only jobs in any workflow that hold `id-token: write`; a third-party action in a job that holds it is pinned
+  to a full commit SHA, and no workflow may name the retired upload tokens `melder_api_token` or `PYPI_API_TOKEN`.
 - Artifact names carry `${{ github.run_id }}-${{ github.run_attempt }}`, so a rerun never picks up another
   attempt's files by accident. A job that downloads a build made earlier in the same run names it from the build
   job's output (`needs.<build>.outputs.artifact-name`), never from its own attempt, because a failed-jobs re-run
@@ -735,15 +773,18 @@ workflow, as `speed-tests.yml` does for the speed tests.
 ## Add a stage to the release-candidate or publication run
 
 `package-ready` requires exactly `CIPolicy.CANDIDATE_JOBS`; a new release-candidate stage goes into its `needs`
-and that list together. A publication job that must finish before the upload goes into `pypi-publish`'s `needs`.
+and that list together. A publication job that must finish before the upload goes into `pypi-publish`'s `needs`;
+a check of what was uploaded, like `pypi-provenance`, needs `pypi-publish`, downloads the build by
+`needs.release-build.outputs.artifact-name` and reads the upload's attempt from `pypi-publish`'s outputs.
 
 ## Change the provenance tool
 
 The provenance check verifies with the toolchain the publishing action signs with, so the three move together
 in one change:
 
-1. Pin `pypa/gh-action-pypi-publish` in `release-candidate.yml` to the new release's full commit SHA (with the
-   tag in a comment) and update the pinned SHA in `test_workflow_contracts.py`.
+1. Pin `pypa/gh-action-pypi-publish` in `release-candidate.yml` and `python-publish.yml` to the new release's full
+   commit SHA (with the tag in a comment), the same in both, and update the pinned SHA in
+   `test_workflow_contracts.py`.
 2. Regenerate `.github/provenance/requirements.txt` with the command in its header: `pypi-attestations` at the
    version that release's `requirements/runtime.txt` pins, with that file as constraints, so sigstore and the
    rest take the action's versions (hashes for every pin, wheels only, the helper release on Linux x64).
@@ -956,7 +997,7 @@ END FILE: .github/ci_cd/python_versions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/scripts.md
-CONTENT SHA256: 29e931939ff50ba56f94fba3752f4f40d359e767bc0e1154c7e3fe192c92e3b3
+CONTENT SHA256: c14379a491e89220df869f8098b2d65009ca8c07dbcc5950bc71383778029c02
 SOURCE ENCODING: utf-8
 ================================================================================
 # Scripts and other `.github` files
@@ -978,8 +1019,9 @@ import, with two exceptions that run inside the environment they test: `run_runt
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
 | `check_candidate_run.py` | `--wait-seconds` | `ci.yml`, `python-publish.yml` | `test_candidate_publication.py` |
 | `testpypi_candidate.py` | `prepare-upload`, `probe-install` | `release-candidate.yml` | `test_candidate_publication.py` |
-| `testpypi_provenance.py` | `verify` | `release-candidate.yml` | `test_candidate_provenance.py` |
-| `verify_distributions.py` | `--directory`, `--release-tag` | `build-distributions.yml`, `python-publish.yml` | `test_distributions.py` |
+| `testpypi_provenance.py` | `verify` | `release-candidate.yml`; `pypi_provenance.py` imports its layers | `test_candidate_provenance.py` |
+| `pypi_provenance.py` | `verify` | `python-publish.yml` | `test_release_provenance.py` |
+| `verify_distributions.py` | `--directory`, `--release-tag` | `build-distributions.yml`, `python-publish.yml`; `pypi_provenance.py` calls it with the release tag | `test_distributions.py` |
 | `normalize_sdist.py` | `--directory` | `build-distributions.yml` | `test_sdist_normalization.py` |
 | `smoke_wheel.py` | `--expected-version` | `build-distributions.yml`, `testpypi_candidate.py probe-install` | the distribution contract in `test_workflow_contracts.py` |
 
@@ -1068,6 +1110,23 @@ sigstore, the versions `pypa/gh-action-pypi-publish` signs with. The same run fi
 genuine attestation `.github/provenance/known_good_provenance.json` must verify, and two tampered copies of it (another
 digest, another signer) must be refused, or no verdict counts. The expected identity lives in one class,
 `ProvenancePolicy`; every refusal names the file, the claim, what was expected and what was found. The report
+`reports/provenance.json` is written only after every check passed. The layers that read an index
+(`fetch_provenance`, `single_attestation`, `require_outcomes`) take it from the policy they are given, which is how
+`pypi_provenance.py` reuses them for PyPI.
+
+### `pypi_provenance.py`
+
+`verify` runs in `Release / provenance`, after `pypi-publish` has uploaded a final release. It is the candidate
+check with the release's identity: the same five layers, the same pinned verifier, lock and control, imported from
+`testpypi_provenance.py`, and one policy class, `ReleaseProvenancePolicy` (a `ProvenancePolicy` subclass), naming
+PyPI's Integrity API (`https://pypi.org/integrity/melder/<version>/<file>/provenance`), `python-publish.yml` and the
+`pypi` environment. `release_context` reads the run: a published release at `refs/tags/<tag>`, the tag passed from
+the event as `RELEASE_TAG`, or a manual dispatch on `prod` with no tag; anything else is refused before PyPI is
+asked. The downloaded files are verified again with that tag, which must name the package version. Every released
+file must then name exactly this run's upload: PyPI takes a file name once and the upload never skips one, so,
+unlike the candidate check, no claim is matched by pattern - the workflow at the run's ref, the commit, the run, the
+attempt `pypi-publish` reported (`RELEASE_PUBLISH_ATTEMPT`) and its event. A 404 that outlasts the retries is
+reported as a release whose files are published without an accepted attestation. The report
 `reports/provenance.json` is written only after every check passed.
 
 ### `verify_distributions.py`, `normalize_sdist.py` and `smoke_wheel.py`
@@ -1082,14 +1141,14 @@ agree, and a small bind, conjure and meld scenario must work with the GIL off.
 ## Other files in `.github`
 
 - `BRANCH_WORKFLOW.md`: branch, release and publication policy for people and agents.
-- `provenance/`: the provenance check's tool, used only by `testpypi_provenance.py`.
+- `provenance/`: the provenance checks' tool, used by `testpypi_provenance.py` and `pypi_provenance.py`.
   `.github/provenance/verify_attestations.py` is the verifier, the one script under `.github/` that imports
   packages outside the standard library, so it never runs on a bare interpreter.
   `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it.
   `.github/provenance/known_good_provenance.json` is the recorded control: PyPI's provenance of the
   pypi-attestations wheel the lock installs. Moving the tool is one change: the publishing action's pin in
-  `release-candidate.yml`, the lock at the versions that action signs with, and the control re-recorded for the
-  new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
+  `release-candidate.yml` and `python-publish.yml`, the lock at the versions that action signs with, and the control
+  re-recorded for the new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
 - `python/`: the Python release manifests ([python_versions.md](python_versions.md)).
 - `rulesets/`: `dev.json`, `preprod.json`, `release_candidate.json` and `prod.json` are the branch protection
   payloads. Each requires a pull request and the `CI / merge-ready` status from the GitHub Actions app (ID 15368)
@@ -1103,7 +1162,7 @@ END FILE: .github/ci_cd/scripts.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/validating.md
-CONTENT SHA256: 5db86ef6c90a0b6590eaad560878c37afffe7fd24e984473bbd1f3149ca680f6
+CONTENT SHA256: 2294b24f5865f8c3ab74b01717c6ff5015df0ffddf091d35b71f043fe0667faa
 SOURCE ENCODING: utf-8
 ================================================================================
 # Validating a CI change
@@ -1155,13 +1214,18 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `RC / provenance`: "The pinned tool refused the recorded genuine attestation" | The verifier could not verify in that environment (most often Sigstore's trust root could not be fetched). **Re-run failed jobs**; if it persists, check the lock and the control ([extending.md](extending.md), "Change the provenance tool"). |
 | An RC job: "Artifact not found for name: candidate-dists-<run>-<n>" | A failed-jobs re-run of a run that started before the build reported its artifact (2026-10-06); use **Re-run all jobs**. |
 | `Publish to PyPI`: "Use Re-run all jobs: this attempt did not build the distributions" | A failed-jobs re-run of the upload; publication never reuses an earlier attempt's build. Use **Re-run all jobs**. |
+| `Publish to PyPI`: `invalid-publisher` | PyPI's Trusted Publisher and the job's OIDC claims disagree, and nothing was uploaded. Check the publisher's four values against BRANCH_WORKFLOW.md (owner `Synaptic724`, repository `melder`, workflow `python-publish.yml`, environment `pypi`), then **Re-run all jobs**. |
+| `Release / provenance`: "PyPI holds no provenance for <file>" | The files were uploaded but PyPI holds no accepted attestation for them. They are published and cannot be replaced: compare PyPI's Trusted Publisher with BRANCH_WORKFLOW.md and read the `Publish to PyPI` log before the release is announced; whether to yank it is the owner's call. |
+| `Release / provenance`: "... does not name the expected signer" or "is not the expected Trusted Publisher" | The message lists each claim with what was expected and what was found. `ReleaseProvenancePolicy` in `pypi_provenance.py` holds the expected identity; a changed workflow, environment, repository or event changes it. The files are published: find the cause before the release is announced. |
+| `Release / provenance`: a PyPI lookup, the tool's install or its trust root failed after the retries | **Re-run failed jobs**: the check runs alone again on the same build and still expects the attempt that uploaded. |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
 
 Artifacts worth opening: `runtime-results-*` (JUnit) and `coverage-*` for each test cell,
 `runtime-python-matrix-*` (the releases a run tested), the speed tests' results folders (logs, `install.log`,
-`environment.json`), `source-qualification-*`, and the release candidate's `candidate-*` reports, among them
-`candidate-provenance-*`, which records each file's verified signer, run and trigger.
+`environment.json`), `source-qualification-*`, the release candidate's `candidate-*` reports, among them
+`candidate-provenance-*`, which records each file's verified signer, run and trigger, and a release's
+`release-provenance-*`, which records the same for every file published to PyPI.
 
 ## Environment notes for agents
 
@@ -1175,7 +1239,7 @@ END FILE: .github/ci_cd/validating.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/workflows.md
-CONTENT SHA256: 9a0174cd247c7c1b408c0b9a144c078a6188ce895e6ce91c690d25afd3f90e5c
+CONTENT SHA256: ae709284b8dec663bfbfd6c2b9298a6d90dbe1b81f10cf850c74a32b5bb5e75b
 SOURCE ENCODING: utf-8
 ================================================================================
 # Workflows
@@ -1266,7 +1330,12 @@ Publication runs are serialized.
 | `release-gate` (Require current prod HEAD) | The event, the checkout and the current `prod` head (and the live release tag) are one commit (`ci_policy.py release-head`), and that commit's candidate passed TestPyPI qualification (`check_candidate_run.py`). |
 | `hygiene`, `source-assets`, `repo-assets` | Hygiene and both asset checks again, fresh. The runtime tests do not run again: full CI and the release candidate tested this exact tree, and `release-gate` refuses any other (owner, 2026-10-24). |
 | `release-build` | Builds and verifies the distributions and compares the release tag with the package version (`build-distributions.yml`). |
-| `pypi-publish` (Publish to PyPI) | In the `pypi` environment: refuses a failed-jobs re-run, because publication never reuses an earlier attempt's build (use **Re-run all jobs**), then rechecks the files, the candidate and the release head immediately before uploading with `PYPI_API_TOKEN`. |
+| `pypi-publish` (Publish to PyPI) | In the `pypi` environment: refuses a failed-jobs re-run, because publication never reuses an earlier attempt's build (use **Re-run all jobs**), then rechecks the files, the candidate and the release head immediately before uploading them by Trusted Publishing with a PEP 740 attestation each (`pypa/gh-action-pypi-publish`, pinned to the commit the release candidate pins). With the release candidate's `publish` it is one of the two jobs that hold `id-token: write`; it uses no secret and reports its run attempt as an output. |
+| `pypi-provenance` (Release / provenance) | After the upload, on the helper release, for every released file: reads its provenance from PyPI's Integrity API and checks it in the five layers `RC / provenance` uses, with the release's identity - its publisher is this workflow in `pypi`, and the signing certificate names this repository, the workflow at the run's ref (the release tag, or `prod` for a manual dispatch), the released commit, this run's upload attempt and its event (`pypi_provenance.py verify`). The files are on PyPI by then: a refusal fails the run, before the release is announced, but cannot unpublish them. Keeps `release-provenance-<run>-<attempt>`. |
+
+`pypi-provenance` downloads the build `release-build` reports and reads the attempt `pypi-publish` recorded, so
+after a PyPI lookup that ran out of retries **Re-run failed jobs** runs the check alone on the same files; it
+never uploads anything.
 
 ## Reusable workflows
 
@@ -3535,6 +3604,303 @@ if __name__ == "__main__":
 END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/scripts/pypi_provenance.py
+CONTENT SHA256: c6c32173233cf522eb437c29e0ab8835e2b669e04f5d22964497f141a186158f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Verify the PEP 740 provenance of every file of a final release on PyPI, after the upload.
+
+The publication workflow's provenance job (Release / provenance) runs `verify` once `pypi-publish` has uploaded the
+release by Trusted Publishing. For every built distribution it reads the provenance PyPI's Integrity API holds and
+checks it in the same five layers as the release candidate's check (`testpypi_provenance.py`), with the release's
+identity:
+
+1. a provenance exists;
+2. its one bundle's publisher record is this repository's `python-publish.yml` in the `pypi` environment;
+3. Sigstore verifies its one attestation on the production trust root (certificate chain, transparency log,
+   signature);
+4. the signing certificate names this run's upload, claim by claim: the workflow at the run's ref (the release tag,
+   or `prod` for a manual dispatch), the released commit, this run and the attempt that uploaded, its event, the
+   `pypi` environment;
+5. the attested statement names exactly this file and its sha256, with the PyPI publish predicate.
+
+The layers, the pinned verifier, its lock and its recorded control are the candidate check's, imported from
+`testpypi_provenance.py`; only the policy and the run identity are the release's. The files are already on PyPI
+when this runs, so a refusal cannot unpublish them: it fails the run, naming the file and what differs, before the
+release is announced.
+"""
+
+import argparse
+import json
+import os
+import pathlib
+import re
+import tempfile
+from collections.abc import Mapping, Sequence
+from typing import Optional, TypedDict
+
+from ci_policy import git_output
+from testpypi_candidate import FileIdentity, file_identity, package_version
+from testpypi_provenance import (ExpectedIdentity, FulcioClaim, ProvenanceControl, ProvenancePolicy, certificate_der,
+                                 certificate_identity, check_identity, check_statement, control_entries,
+                                 fetch_provenance, require_outcomes, run_verifier, single_attestation,
+                                 tool_environment)
+from verify_distributions import verify_distributions
+
+
+class ReleaseContext(TypedDict):
+    """This publication run's identity, read from GitHub's default environment variables and checked before use.
+
+    `ref` is the full ref the run and its signing certificate name; `tag` is the release's tag, or empty for a
+    manual dispatch on prod.
+    """
+
+    repository_id: str
+    owner_id: str
+    sha: str
+    workflow_sha: str
+    event: str
+    ref: str
+    tag: str
+    run_id: str
+    run_attempt: int
+
+
+class ReleaseProvenancePolicy(ProvenancePolicy):
+    """Hold the release provenance check's identity: PyPI's Trusted Publisher for the publication workflow.
+
+    The owner configures that publisher on PyPI (BRANCH_WORKFLOW.md): this repository, `python-publish.yml`, the
+    `pypi` environment. A publication run starts from a published GitHub release, at that release's tag, or from a
+    manual dispatch on `prod`, so the ref its certificate names is the run's own (`release_context`); every other
+    expected value is fixed here or inherited. The server, repository, owner, issuer, runner, visibility, statement
+    format, retry bounds and the pinned tool are `ProvenancePolicy`'s; this class overrides the index, the workflow,
+    the environment, the events and the refusal for a missing provenance. Change it only deliberately, together
+    with the publisher on PyPI.
+    """
+
+    INDEX_NAME = "PyPI"
+    INTEGRITY_ROOT = "https://pypi.org/integrity/melder/"
+    USER_AGENT = "melder-release-ci"
+    WORKFLOW = "python-publish.yml"
+    ENVIRONMENT = "pypi"
+    # A manual dispatch publishes from prod; a published release runs at TAG_REF_PREFIX + its tag.
+    REF = "refs/heads/prod"
+    TAG_REF_PREFIX = "refs/tags/"
+    RELEASE_EVENT = "release"
+    TRIGGERS: tuple[str, ...] = ("release", "workflow_dispatch")
+    # The verifier entries of released files are `release:<file>`; the controls keep their own ids.
+    ENTRY_PREFIX = "release"
+
+    @classmethod
+    def missing_provenance(cls, name: str) -> str:
+        """Return the refusal for a released file PyPI still holds no provenance for after the last lookup.
+
+        The upload has already happened, so the remedy is to find out why before the release is announced: the
+        Trusted Publisher, or the upload step's log.
+        """
+        return (f"PyPI holds no provenance for {name}: it was uploaded without Trusted Publishing, or PyPI did not "
+                "accept its attestation. The file is published and cannot be replaced: compare PyPI's Trusted "
+                "Publisher for melder with BRANCH_WORKFLOW.md and read the Publish to PyPI log before announcing "
+                "this release.")
+
+
+def release_context(environment: Mapping[str, str],
+                    policy: type[ReleaseProvenancePolicy] = ReleaseProvenancePolicy) -> ReleaseContext:
+    """Read and check this publication run's identity from GitHub's default environment variables.
+
+    The run must come from one of the policy's events: a published release, whose tag the workflow passes as
+    `RELEASE_TAG` from the event and whose ref is that tag, or a manual dispatch on `prod`, which has no tag. Its
+    server, repository, ref and workflow ref must be the policy's at that ref; its commit SHAs must be full and its
+    numeric identifiers decimal. A tag that does not name the package version is refused later, with the files
+    (`released_files`).
+
+    Args:
+        environment: The job's environment variables.
+        policy: The identity to check against; `ReleaseProvenancePolicy` in CI.
+
+    Returns:
+        The checked run identity.
+
+    Raises:
+        ValueError: Naming the variable that is missing or differs.
+    """
+    event = environment.get("GITHUB_EVENT_NAME", "")
+    if event not in policy.TRIGGERS:
+        raise ValueError(f"GITHUB_EVENT_NAME is {event!r}; the release provenance check runs only for "
+                         f"{', '.join(policy.TRIGGERS)}.")
+    tag = environment.get("RELEASE_TAG", "")
+    if event == policy.RELEASE_EVENT and not tag:
+        raise ValueError("RELEASE_TAG is ''; a published release's check needs that release's tag.")
+    if event != policy.RELEASE_EVENT and tag:
+        raise ValueError(f"RELEASE_TAG is {tag!r}; a manual dispatch publishes from {policy.REF} with no tag.")
+    ref = (policy.TAG_REF_PREFIX + tag) if tag else policy.REF
+    fixed = {"GITHUB_SERVER_URL": policy.SERVER, "GITHUB_REPOSITORY": policy.REPOSITORY, "GITHUB_REF": ref,
+             "GITHUB_WORKFLOW_REF": policy.workflow_uri(ref).removeprefix(policy.SERVER + "/")}
+    for name, value in fixed.items():
+        if environment.get(name) != value:
+            raise ValueError(f"{name} is {environment.get(name)!r}; this {event} run's check runs only as {value!r}.")
+    formats = {"GITHUB_SHA": r"[0-9a-f]{40}(?:[0-9a-f]{24})?", "GITHUB_WORKFLOW_SHA": r"[0-9a-f]{40}(?:[0-9a-f]{24})?",
+               "GITHUB_REPOSITORY_ID": r"[1-9][0-9]*", "GITHUB_REPOSITORY_OWNER_ID": r"[1-9][0-9]*",
+               "GITHUB_RUN_ID": r"[1-9][0-9]*", "GITHUB_RUN_ATTEMPT": r"[1-9][0-9]*"}
+    for name, pattern in formats.items():
+        if re.fullmatch(pattern, environment.get(name, "")) is None:
+            raise ValueError(f"{name} is {environment.get(name)!r}; expected it to match {pattern!r}.")
+    return {"repository_id": environment["GITHUB_REPOSITORY_ID"], "owner_id": environment["GITHUB_REPOSITORY_OWNER_ID"],
+            "sha": environment["GITHUB_SHA"], "workflow_sha": environment["GITHUB_WORKFLOW_SHA"], "event": event,
+            "ref": ref, "tag": tag, "run_id": environment["GITHUB_RUN_ID"],
+            "run_attempt": int(environment["GITHUB_RUN_ATTEMPT"])}
+
+
+def publish_attempt(environment: Mapping[str, str], run_attempt: int) -> int:
+    """Read which attempt of this run uploaded the release, from the upload job's output.
+
+    `pypi-publish` reports its run attempt (`RELEASE_PUBLISH_ATTEMPT`). A failed-jobs re-run of the provenance job
+    alone keeps that output from the attempt that uploaded, so it may be below this run's attempt; the attestations
+    name it.
+
+    Raises:
+        ValueError: When the output is missing or malformed, or names an attempt after this one.
+    """
+    attempt = environment.get("RELEASE_PUBLISH_ATTEMPT", "")
+    if re.fullmatch(r"[1-9][0-9]*", attempt) is None or int(attempt) > run_attempt:
+        raise ValueError(f"RELEASE_PUBLISH_ATTEMPT must be an attempt of this run up to {run_attempt}; got "
+                         f"{attempt!r}.")
+    return int(attempt)
+
+
+def release_identity(context: ReleaseContext, attempt: int,
+                     policy: type[ReleaseProvenancePolicy] = ReleaseProvenancePolicy) -> ExpectedIdentity:
+    """Return the signing identity every released file's attestation must carry (layer 4).
+
+    PyPI takes a file name once and the upload job never skips an existing file, so every file of this release was
+    uploaded, and signed, by this run's upload attempt: the publication workflow at the run's ref and commit, from
+    the run's event, in the `pypi` environment, on a GitHub-hosted runner of this public repository. Every claim is
+    exact; unlike the candidate check, nothing is matched by pattern.
+
+    Args:
+        context: The checked run identity (`release_context`).
+        attempt: The attempt that uploaded (`publish_attempt`).
+        policy: The identity's fixed values; `ReleaseProvenancePolicy` in CI.
+    """
+    signer = policy.workflow_uri(context["ref"])
+    exact = {
+        FulcioClaim.ISSUER: policy.ISSUER, FulcioClaim.BUILD_SIGNER_URI: signer,
+        FulcioClaim.BUILD_SIGNER_DIGEST: context["workflow_sha"], FulcioClaim.RUNNER_ENVIRONMENT: policy.RUNNER,
+        FulcioClaim.SOURCE_REPOSITORY_URI: f"{policy.SERVER}/{policy.REPOSITORY}",
+        FulcioClaim.SOURCE_REPOSITORY_DIGEST: context["sha"], FulcioClaim.SOURCE_REPOSITORY_REF: context["ref"],
+        FulcioClaim.SOURCE_REPOSITORY_IDENTIFIER: context["repository_id"],
+        FulcioClaim.SOURCE_REPOSITORY_OWNER_URI: f"{policy.SERVER}/{policy.OWNER}",
+        FulcioClaim.SOURCE_REPOSITORY_OWNER_IDENTIFIER: context["owner_id"],
+        FulcioClaim.BUILD_CONFIG_URI: signer, FulcioClaim.BUILD_CONFIG_DIGEST: context["workflow_sha"],
+        FulcioClaim.BUILD_TRIGGER: context["event"],
+        FulcioClaim.RUN_INVOCATION_URI: (f"{policy.SERVER}/{policy.REPOSITORY}/actions/runs/{context['run_id']}"
+                                         f"/attempts/{attempt}"),
+        FulcioClaim.SOURCE_REPOSITORY_VISIBILITY: policy.VISIBILITY,
+        FulcioClaim.DEPLOYMENT_ENVIRONMENT: policy.ENVIRONMENT,
+        FulcioClaim.TOKEN_SUBJECT: f"repo:{policy.REPOSITORY}:environment:{policy.ENVIRONMENT}",
+    }
+    return {"san": signer, "exact": exact, "patterns": {}}
+
+
+def released_files(directory: pathlib.Path, version: str, tag: str) -> dict[str, FileIdentity]:
+    """Verify the downloaded distributions again and return each file's identity.
+
+    The wheel and sdist must be the verified pair for this version, and a release tag must name that version
+    (`verify_distributions`), so the digests the provenance must name are this run's build.
+
+    Raises:
+        ValueError: When the files or the tag are not the release's.
+    """
+    verify_distributions(directory, version, tag)
+    return {path.name: file_identity(path) for path in sorted(directory.iterdir())}
+
+
+def verify_release(directory: pathlib.Path, report: pathlib.Path, environment: Mapping[str, str]) -> None:
+    """Verify every released file's PyPI provenance in five layers, then write the evidence report.
+
+    The run's identity is checked first, then the built files are verified again against the version and the
+    release tag. The recorded control and every released file are checked with the candidate check's own layers
+    (1, 2, 4 and 5) before the tool environment is built, so a wrong signer refuses before anything is installed;
+    the pinned tool then checks layers 3 and 4 for all of them in one process, and its verdicts count only when it
+    verified the genuine control and refused both tampered copies. The report is written only after every check
+    has passed.
+
+    Raises:
+        ValueError: Naming the file and what differs, for any refused layer, run variable or file.
+        urllib.error.URLError: When PyPI could not be read after the bounded retries.
+        subprocess.CalledProcessError: When the tool environment could not be built or the verifier could not run.
+    """
+    policy = ReleaseProvenancePolicy
+    context = release_context(environment)
+    attempt = publish_attempt(environment, context["run_attempt"])
+    version = package_version()
+    files = released_files(directory, version, context["tag"])
+    expected = release_identity(context, attempt)
+    with tempfile.TemporaryDirectory(prefix="melder-release-provenance-",
+                                     dir=environment.get("RUNNER_TEMP")) as scratch:
+        root = pathlib.Path(scratch)
+        entries = control_entries()
+        evidence: dict[str, dict[str, object]] = {}
+        for name, identity in files.items():
+            raw = fetch_provenance(version, name, policy)
+            try:
+                document = json.loads(raw)
+            except json.JSONDecodeError as error:
+                raise ValueError(f"PyPI's provenance of {name} is not JSON.") from error
+            attestation = single_attestation(document, name, policy.publisher())
+            check_statement(attestation, name, identity["sha256"], name)
+            certificate = certificate_identity(certificate_der(attestation, name))
+            check_identity(certificate, expected, name)
+            stored = root / f"{name}.provenance.json"
+            stored.write_bytes(raw)
+            entries.append({"id": f"{policy.ENTRY_PREFIX}:{name}", "name": name, "sha256": identity["sha256"],
+                            "provenance": str(stored), "identity": {**expected, "issuer": policy.ISSUER}})
+            evidence[name] = {"run_invocation": certificate["claims"][FulcioClaim.RUN_INVOCATION_URI],
+                              "build_trigger": certificate["claims"][FulcioClaim.BUILD_TRIGGER]}
+        require_outcomes(run_verifier(tool_environment(root), entries, root), sorted(files), policy.ENTRY_PREFIX)
+    write_report(report, version, files, evidence, context, attempt)
+
+
+def write_report(path: pathlib.Path, version: str, files: Mapping[str, FileIdentity],
+                 evidence: Mapping[str, Mapping[str, object]], context: ReleaseContext, attempt: int) -> None:
+    """Retain this release's verified provenance identity as a small, credential-free JSON report.
+
+    It names the index, the version, each file's sha256 and size and the run and trigger its certificate names, the
+    publisher and signer checked, the controls' verdicts, and the run: repository, checked-out commit, event, ref,
+    run, attempt and the attempt that uploaded.
+    """
+    policy = ReleaseProvenancePolicy
+    path.parent.mkdir(parents=True, exist_ok=True)
+    report = {
+        "status": "provenance-verified", "index": policy.INDEX_NAME, "version": version, "files": dict(files),
+        "provenance": dict(evidence), "publisher": policy.publisher(), "signer": policy.workflow_uri(context["ref"]),
+        "controls": {ProvenanceControl.GOOD: "verified", ProvenanceControl.WRONG_DIGEST: "refused",
+                     ProvenanceControl.WRONG_SIGNER: "refused"},
+        "repository": policy.REPOSITORY, "commit": git_output(("rev-parse", "HEAD^{commit}")),
+        "event": context["event"], "ref": context["ref"], "run_id": context["run_id"],
+        "run_attempt": context["run_attempt"], "publish_attempt": attempt,
+    }
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Verify the release's PyPI provenance; never upload or install anything but the pinned tool."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("operation", choices=("verify",))
+    parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("dist"))
+    parser.add_argument("--report", type=pathlib.Path, required=True)
+    args = parser.parse_args(argv)
+    verify_release(args.directory, args.report, os.environ)
+    print(f"OK: {args.operation}; report={args.report}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/pypi_provenance.py
+================================================================================
+================================================================================
 BEGIN FILE: .github/scripts/python_runtime_matrix.py
 CONTENT SHA256: bbdc316269889421b95e0be918e69c5f785fe383372f73e7508cd0af3d003358
 SOURCE ENCODING: utf-8
@@ -4540,7 +4906,7 @@ END FILE: .github/scripts/testpypi_candidate.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/testpypi_provenance.py
-CONTENT SHA256: 3e32e1f8b36e80ff362685cce3c2bbe2730f80cf2242ac36a82e570e2fe6d42e
+CONTENT SHA256: 600a7d0b051fe312a054ab6ac3b6bc5957ec0565ba167032af2d4414fa5b4fda
 SOURCE ENCODING: utf-8
 ================================================================================
 """Verify the PEP 740 provenance of every candidate file on TestPyPI before any probe installs one.
@@ -4560,6 +4926,10 @@ Layers 1, 2, 4 and 5 are checked here with the standard library; layer 4 by read
 from its DER. Layers 3 and 4 are then checked by the pinned pypi-attestations and sigstore in their own environment
 (`.github/provenance/verify_attestations.py`), which first has to verify a recorded genuine attestation and refuse
 two tampered copies of it, so a tool that cannot verify, or does not check, fails the run instead of passing it.
+
+The release check, `pypi_provenance.py`, runs the same layers on PyPI after a final release's upload: it imports
+them from here with its own `ProvenancePolicy` subclass, which names PyPI's Integrity API and the publication
+workflow's identity.
 """
 
 import argparse
@@ -4615,10 +4985,17 @@ class ProvenancePolicy:
     The identity is the TestPyPI Trusted Publisher the owner configures (BRANCH_WORKFLOW.md): this repository, the
     `release-candidate.yml` workflow on `release_candidate`, the `pypitest` environment. Change it here, and only
     deliberately, when one of those changes.
+
+    The layers the release check shares with this one (`fetch_provenance`, `single_attestation`, the verifier) read
+    the index from the policy they are given: `INDEX_NAME`, `INTEGRITY_ROOT`, `USER_AGENT`, the retry bounds and
+    `missing_provenance`. `pypi_provenance.ReleaseProvenancePolicy` overrides those with PyPI's and the publication
+    workflow's identity; everything else here (the server, the repository, the issuer, the tool) is shared.
     """
 
+    INDEX_NAME = "TestPyPI"
     INTEGRITY_ROOT = "https://test.pypi.org/integrity/melder/"
     INTEGRITY_MEDIA_TYPE = "application/vnd.pypi.integrity.v1+json"
+    USER_AGENT = "melder-candidate-ci"
     SERVER = "https://github.com"
     OWNER = "Synaptic724"
     REPOSITORY = "Synaptic724/melder"
@@ -4640,14 +5017,30 @@ class ProvenancePolicy:
 
     @classmethod
     def publisher(cls) -> dict[str, str]:
-        """Return the publisher record TestPyPI must hold for every candidate file (layer 2)."""
+        """Return the publisher record the index must hold for every file this check verifies (layer 2)."""
         return {"kind": "GitHub", "repository": cls.REPOSITORY, "workflow": cls.WORKFLOW,
                 "environment": cls.ENVIRONMENT}
 
     @classmethod
-    def workflow_uri(cls) -> str:
-        """Return the signing workflow's URI: the certificate's SAN, Build Signer URI and Build Config URI."""
-        return f"{cls.SERVER}/{cls.REPOSITORY}/.github/workflows/{cls.WORKFLOW}@{cls.REF}"
+    def workflow_uri(cls, ref: Optional[str] = None) -> str:
+        """Return the signing workflow's URI: the certificate's SAN, Build Signer URI and Build Config URI.
+
+        Args:
+            ref: The full Git ref the workflow ran at; `REF` when omitted. The candidate always runs at `REF`; a
+                release runs at its tag or at `prod`, so the release check passes its run's ref.
+        """
+        return f"{cls.SERVER}/{cls.REPOSITORY}/.github/workflows/{cls.WORKFLOW}@{cls.REF if ref is None else ref}"
+
+    @classmethod
+    def missing_provenance(cls, name: str) -> str:
+        """Return the refusal for a file the index still holds no provenance for after the last lookup.
+
+        On TestPyPI that means the file was uploaded by a token, before this check existed, or its attestation was
+        not accepted; the remedy is a candidate version TestPyPI has never seen.
+        """
+        return (f"TestPyPI holds no provenance for {name}: it was uploaded without Trusted Publishing (by an API "
+                "token, before this check existed), or the upload's attestation was not accepted. Choose a new "
+                "candidate version so this workflow uploads every file with an attestation.")
 
     @staticmethod
     def tool_directory() -> pathlib.Path:
@@ -5029,50 +5422,53 @@ def expected_identity(context: RunContext, uploaded_here: bool, publish_attempt:
     return {"san": policy.workflow_uri(), "exact": exact, "patterns": patterns}
 
 
-def fetch_provenance(version: str, name: str) -> bytes:
-    """Read one file's provenance from TestPyPI's Integrity API (layer 1).
+def fetch_provenance(version: str, name: str, policy: type[ProvenancePolicy] = ProvenancePolicy) -> bytes:
+    """Read one file's provenance from the policy's index, through its Integrity API (layer 1).
 
-    A 404 is retried, since TestPyPI may answer one for a moment after the upload, and so are the statuses in
-    `TestIndexPolicy.TRANSIENT_STATUSES`, timeouts and failed connections: up to `LOOKUP_ATTEMPTS` tries,
-    `RETRY_SECONDS` apart, each retry printed. Every other status raises at once. A response from any URL but the
-    one asked for is refused. No credentials are sent.
+    A 404 is retried, since an index may answer one for a moment after the upload, and so are the statuses in
+    `TestIndexPolicy.TRANSIENT_STATUSES`, timeouts and failed connections: up to the policy's `LOOKUP_ATTEMPTS`
+    tries, `RETRY_SECONDS` apart, each retry printed. Every other status raises at once. A response from any URL
+    but the one asked for is refused. No credentials are sent.
+
+    Args:
+        version: The release whose file is looked up.
+        name: The file's name.
+        policy: The index to ask: `ProvenancePolicy` (TestPyPI) for the candidate, the release check's subclass for
+            PyPI. It supplies the Integrity API root, the user agent, the retry bounds and the refusal texts.
 
     Raises:
-        ValueError: When TestPyPI still answers 404 after the last attempt, or redirected the request.
+        ValueError: When the index still answers 404 after the last attempt (`policy.missing_provenance`), or
+            redirected the request.
         urllib.error.URLError: When the last attempt's failure was another HTTP status or a network error.
     """
-    url = (ProvenancePolicy.INTEGRITY_ROOT + urllib.parse.quote(version, safe="") + "/"
+    url = (policy.INTEGRITY_ROOT + urllib.parse.quote(version, safe="") + "/"
            + urllib.parse.quote(name, safe="") + "/provenance")
-    request = urllib.request.Request(url, headers={"User-Agent": "melder-candidate-ci",
-                                                   "Accept": ProvenancePolicy.INTEGRITY_MEDIA_TYPE})
+    request = urllib.request.Request(url, headers={"User-Agent": policy.USER_AGENT,
+                                                   "Accept": policy.INTEGRITY_MEDIA_TYPE})
     attempt = 1
     while True:
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 if response.url != url:
-                    raise ValueError(f"TestPyPI answered the provenance of {name} from {response.url}; "
+                    raise ValueError(f"{policy.INDEX_NAME} answered the provenance of {name} from {response.url}; "
                                      "refusing a redirected answer.")
                 return response.read()
         except urllib.error.HTTPError as error:
             error.close()
             if error.code != 404 and error.code not in TestIndexPolicy.TRANSIENT_STATUSES:
                 raise
-            if attempt == ProvenancePolicy.LOOKUP_ATTEMPTS:
+            if attempt == policy.LOOKUP_ATTEMPTS:
                 if error.code == 404:
-                    raise ValueError(
-                        f"TestPyPI holds no provenance for {name}: it was uploaded without Trusted Publishing (by "
-                        "an API token, before this check existed), or the upload's attestation was not accepted. "
-                        "Choose a new candidate version so this workflow uploads every file with an attestation."
-                    ) from error
+                    raise ValueError(policy.missing_provenance(name)) from error
                 raise
             failure = f"HTTP {error.code}"
         except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
-            if attempt == ProvenancePolicy.LOOKUP_ATTEMPTS:
+            if attempt == policy.LOOKUP_ATTEMPTS:
                 raise
             failure = type(error).__name__
-        print(f"TestPyPI provenance lookup for {name} failed ({failure}), attempt {attempt} of "
-              f"{ProvenancePolicy.LOOKUP_ATTEMPTS}; retrying in {ProvenancePolicy.RETRY_SECONDS}s.", flush=True)
-        time.sleep(ProvenancePolicy.RETRY_SECONDS)
+        print(f"{policy.INDEX_NAME} provenance lookup for {name} failed ({failure}), attempt {attempt} of "
+              f"{policy.LOOKUP_ATTEMPTS}; retrying in {policy.RETRY_SECONDS}s.", flush=True)
+        time.sleep(policy.RETRY_SECONDS)
         attempt += 1
 
 
@@ -5095,7 +5491,7 @@ def single_attestation(document: object, label: str, publisher: Mapping[str, str
     differences = [f"{key} is {record.get(key)!r}, expected {value!r}" for key, value in publisher.items()
                    if record.get(key) != value]
     if differences:
-        raise ValueError(f"TestPyPI's publisher record for {label} is not the expected Trusted Publisher: "
+        raise ValueError(f"The publisher record for {label} is not the expected Trusted Publisher: "
                          + "; ".join(differences) + ".")
     attestations = bundle.get("attestations")
     if not isinstance(attestations, list) or len(attestations) != 1:
@@ -5242,12 +5638,18 @@ def run_verifier(python: pathlib.Path, entries: Sequence[Mapping[str, object]],
     return outcomes
 
 
-def require_outcomes(outcomes: Mapping[str, Mapping[str, object]], candidates: Sequence[str]) -> None:
-    """Accept the verifier's verdicts only when the controls split as they must and every candidate verified.
+def require_outcomes(outcomes: Mapping[str, Mapping[str, object]], candidates: Sequence[str],
+                     prefix: str = "candidate") -> None:
+    """Accept the verifier's verdicts only when the controls split as they must and every checked file verified.
+
+    Args:
+        outcomes: The verifier's verdict for each entry, by entry id.
+        candidates: The names of the files checked, whose entries are `<prefix>:<name>`.
+        prefix: The id prefix their entries carry: `candidate` here, `release` for the release check.
 
     Raises:
         ValueError: When the tool refused the genuine control (it cannot verify here), accepted a tampered copy
-            (it is not checking), or refused a candidate file (naming the file and Sigstore's reason).
+            (it is not checking), or refused a file (naming the file and Sigstore's reason).
     """
     good = outcomes[ProvenanceControl.GOOD]
     if good.get("outcome") != "verified":
@@ -5257,10 +5659,10 @@ def require_outcomes(outcomes: Mapping[str, Mapping[str, object]], candidates: S
         if outcomes[entry_id].get("outcome") != "refused":
             raise ValueError(f"The pinned tool accepted a tampered copy of the recorded attestation ({entry_id}); "
                              "it is not checking, so none of its verdicts can be trusted.")
-    refused = [f"{name}: {outcomes[f'candidate:{name}'].get('reason')}" for name in candidates
-               if outcomes[f"candidate:{name}"].get("outcome") != "verified"]
+    refused = [f"{name}: {outcomes[f'{prefix}:{name}'].get('reason')}" for name in candidates
+               if outcomes[f"{prefix}:{name}"].get("outcome") != "verified"]
     if refused:
-        raise ValueError("Sigstore refused the TestPyPI attestation of " + "; ".join(refused) + ".")
+        raise ValueError("Sigstore refused the attestation of " + "; ".join(refused) + ".")
 
 
 def verify_candidate(directory: pathlib.Path, report: pathlib.Path, environment: Mapping[str, str]) -> None:
@@ -6122,7 +6524,7 @@ END FILE: .github/workflows/persistent-runtime-gauntlet.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 7e094956a8f58374169e7fbc7b3c85453e6a9812512095e7040abd68d0d78d7c
+CONTENT SHA256: c6db0c57231e8fcc0e581c670aa2025f207465820bb7e03513d1e80db5ee975b
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -6202,8 +6604,15 @@ jobs:
     permissions:
       contents: read
       actions: read
+      # Trusted Publishing: this job's OIDC token is its only PyPI credential and signs each uploaded file's PEP 740
+      # attestation. No other job of this workflow holds it.
+      id-token: write
+    outputs:
+      # The attempt that uploaded, for the provenance job: a failed-jobs re-run of that job alone keeps this output
+      # from the upload's attempt, which is the attempt the attestations name.
+      attempt: ${{ github.run_attempt }}
     environment:
-      # Only this job receives the environment-scoped PYPI_API_TOKEN.
+      # PyPI's Trusted Publisher for this workflow names this environment, and the job's OIDC token carries it.
       name: pypi
       url: https://pypi.org/project/melder/
     steps:
@@ -6241,14 +6650,49 @@ jobs:
         # This runs AFTER environment approval and fails if the release tag or
         # prod moved while checks, builds, or a human approval were pending.
         run: python .github/scripts/ci_policy.py release-head
-      - name: Publish freshly verified distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish freshly verified distributions to PyPI by Trusted Publishing, with attestations
+        # Pinned to its commit, as in release-candidate.yml, because this step runs with the job's id-token. With no
+        # user or password it authenticates as this workflow's PyPI Trusted Publisher (python-publish.yml,
+        # environment pypi) and signs every file in dist/ with Sigstore.
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/
-          attestations: false
+          attestations: true
           print-hash: true
+
+  pypi-provenance:
+    name: Release / provenance
+    needs: [release-build, pypi-publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.7"
+      - name: Retrieve this run's verified distributions
+        # The build pypi-publish verified and uploaded, named by release-build's output so a failed-jobs re-run of
+        # this job alone reads the same files; the check verifies them again before it trusts their digests.
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.release-build.outputs.artifact-name }}
+          path: dist/
+      - name: Verify every released file's PyPI provenance
+        # Five layers per file: a provenance exists, its publisher is this workflow in pypi, Sigstore verifies it,
+        # the certificate names this repository, workflow, ref, commit and upload attempt claim by claim, and the
+        # statement names the file's sha256. The pinned verifier first proves itself on a recorded attestation.
+        # The files are already on PyPI: a refusal fails this run before the release is announced.
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+          RELEASE_PUBLISH_ATTEMPT: ${{ needs.pypi-publish.outputs.attempt }}
+        run: python .github/scripts/pypi_provenance.py verify --report reports/provenance.json
+      - name: Retain provenance evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/provenance.json
+          if-no-files-found: error
+          retention-days: 90
 ================================================================================
 END FILE: .github/workflows/python-publish.yml
 ================================================================================
@@ -8333,7 +8777,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: c06eec3dc76e9e9923f312eaf43c2e858df038f4e4f4c7e1c737a382a8e172f6
+CONTENT SHA256: dca460ee822bb467b09a31f6be1c9f3489a8b4c652f98fa0ff38f399c39d6df1
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -8380,6 +8824,11 @@ pip install melder
 ```
 
 **One dependency: pip.** Nothing else comes with it. Requires Python 3.14+.
+
+Releases are published to PyPI from this repository's release workflow, which signs every file it uploads
+([PEP 740](https://peps.python.org/pep-0740/)):
+[check a download](https://melder.readthedocs.io/en/latest/beginner/install.html#check-a-downloaded-file) with
+`pypi-attestations` before you install it.
 
 Working from a clone? Use the repository's `uv.lock` and
 [locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
@@ -71549,7 +71998,7 @@ END FILE: docs/beginner/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/beginner/install.md
-CONTENT SHA256: 7eba3ddcae1f6232251edaebc59b8036d002870ef9590b47625c4765b59dd966
+CONTENT SHA256: 3418bf59c63953e972199d64a333f6f83015d4853cb2250ff5a2a37cde115104
 SOURCE ENCODING: utf-8
 ================================================================================
 # Install and run Melder
@@ -71585,8 +72034,31 @@ python -m pip install melder
 py -3.14t -m pip install melder
 ```
 
-Melder has no runtime package dependencies. Application code imports the public
-namespace as `import melder as md`.
+Melder declares one runtime dependency, pip, which the install brings with it at
+the version Melder pins. Application code imports the public namespace as
+`import melder as md`.
+
+## Check a downloaded file
+
+Melder's releases are published to PyPI from this repository's release workflow,
+which signs every file it uploads: a PEP 740 attestation, recorded in Sigstore's
+public transparency log, names the repository, the workflow and the commit that
+published the file. `pypi-attestations`, a tool from PyPI's maintainers, checks a
+file against that record:
+
+```bash
+python -m pip install pypi-attestations
+pypi-attestations verify pypi --repository https://github.com/Synaptic724/melder \
+    pypi:melder-<version>-py3-none-any.whl
+```
+
+`pypi:<file name>` downloads that file from PyPI and checks it. Give a path instead
+to check a file you already have, such as one saved by
+`python -m pip download melder==<version> --no-deps`. The command prints
+`OK: <file name>` when the attestation verifies and the reason when it does not.
+Releases published before Melder moved to Trusted Publishing carry no
+attestation, and the command reports that it found none. pip does not check
+attestations when it installs a package.
 
 ## Get the runnable examples
 
@@ -80240,10 +80712,10 @@ END FILE: release_docs/0.2.8265.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 568cf4b2cfeea110e98220d7c650fd482d1ef4af6232739cc3c6432a050fd0de
+CONTENT SHA256: 3e54f1b030e8a24a406f8fabc837a6c768dd5c3b272cabba3b069f6d8b8ec1a2
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8267
+# Melder 0.2.8268
 
 **Unreleased**
 
@@ -80369,7 +80841,24 @@ every warm meld, which the stored object never uses.
   into `conduit.py` and `creations.py` remapped.
 - The internal-bind guard manifest holds 629 entries at 0.2.8267 (630 at 0.2.8257): `HolderDisposalEntry`, the record
   that kept a slotted object's `many` children with it (0.2.8238), left.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8267.
+- The internal `Creations` store's docstrings (`ManyDisposalBucket`, `add_many_creations`, `register_many`) no
+  longer say that a spell_id covers a `many` spell's disposal names - it has not since 0.2.8257, when the spell_id
+  became the SHA256 of the object's code - and say what the store does after `cleanup_spell` and a new `bind` of the
+  same class while a scope still holds the objects of the removed binding: bound again as a `many` with other
+  disposal names, the new objects join the removed binding's disposal record and are disposed with its names; bound
+  again as a `many` after a `unique` or `unique_per_conduit` binding, the next meld in that scope raises
+  `AttributeError` and returns nothing. Both are known and not fixed here; behaviour is unchanged. The packaged
+  system documents (`melder.__components__`, `melder.__architecture__`) and the packaged graph say the same, and
+  the code-map extent and line citations of `creations.py` are remeasured.
+- Releases on PyPI, and release candidates on TestPyPI, are published by Trusted Publishing: each upload
+  authenticates with its workflow's own short-lived identity, with no stored API token, and uploads a PEP 740
+  attestation for each file. After each upload the workflow checks every uploaded file's provenance on its
+  index - its publisher, its Sigstore signature, the repository, workflow, commit and run that signed it, and
+  the file's sha256 - and the release candidate does so before its installation tests use the files. The
+  installation guide (`docs/beginner/install.md`) shows how to check a downloaded file with
+  `pypi-attestations`, and the README links to it; the guide no longer says Melder has no runtime dependencies
+  (it declares pip).
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8268.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

@@ -3459,6 +3459,66 @@ class Spellbook(Cleanable):
                 return spell
             return self._inactive_spells.get(spell_id)
 
+    def _find_visible_version(self, spell_id: str) -> Optional[Spell]:
+        """
+        Internal
+
+        Return the version this Book can see under `spell_id` - owned or borrowed, active or parked - or None.
+
+        Purpose:
+            Give the doors that build nothing - purge and the live-creation probes - the exact version a spell_id
+            names, wherever this Book keeps it (STORY-2026-10-25-probe_and_purge_reach_every_version). A spell_id
+            names one version (owner ruling, 2026-10-17): this answers with that version, never with the version
+            its index has active, and a version a notch parked keeps its objects under its own spell_id.
+
+        Contract:
+            - Reads the Book's four id maps once, in this order: `_spells_by_id` (owned, active),
+              `_inactive_spells` (owned, parked), every lender's `_contracted_spells_by_id` (borrowed, active),
+              every lender's `_inactive_contracted_spells` (borrowed, parked). Returns the first Spell found. A
+              spell_id is owned by one Book and a borrower holds one copy of a version, so one map at most
+              holds it.
+            - Returns None when no map holds it: an unknown spell_id, a disposed version, another Book's version
+              this Book does not borrow, or a version between an ownership transfer's flip and its migration.
+            - Pure lookup: creates, registers and mutates nothing.
+
+        Threading:
+            Takes `self._lock` alone and holds it only for the dict reads. Every writer of these maps holds that
+            lock - a notch's park and promotion and their borrowed twins, the index moves, disposal, a transfer -
+            and moves a version from one map to another inside one locked section, so under the lock a version
+            is in exactly one map: a lookup racing a notch to or from the version finds it, where a lock-free
+            read can land between the two steps. The caller holds no other Melder lock when it calls (the Meld's
+            miss path calls before any store, slot or spell lock). The returned Spell is borrowed, not leased.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Args:
+            spell_id: The spell_id of the version - the SHA256 `bind` or `bind_inactive` returned.
+
+        Returns:
+            Optional[Spell]: The version, or None when this Book can see none under `spell_id`.
+
+        Raises:
+            RuntimeError: If the Spellbook has already been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            spell = self._spells_by_id.get(spell_id)
+            if spell is not None:
+                return spell
+            spell = self._inactive_spells.get(spell_id)
+            if spell is not None:
+                return spell
+            for active_copies in self._contracted_spells_by_id.values():
+                spell = active_copies.get(spell_id)
+                if spell is not None:
+                    return spell
+            for parked_copies in self._inactive_contracted_spells.values():
+                spell = parked_copies.get(spell_id)
+                if spell is not None:
+                    return spell
+        return None
+
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
         Internal

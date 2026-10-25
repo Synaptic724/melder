@@ -1,5 +1,8 @@
 import pytest
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -353,3 +356,20 @@ def test_unit_codegen_report_validation_result_and_payload_matrix(
         assert payload["accepted"] is True
     else:
         assert payload["reason"] == expected_reason
+
+
+def test_unit_codegen_system_default_posture_without_projection_denies_what_safe_denies() -> None:
+    """
+    Contract (D-10): with no projection for the frame a request names, the default posture denies `__import__`
+    plus exactly the safe profile's builtins - `open` among them - with imports off.
+    """
+    system = CodegenSystem(rift=DetachedRiftProjectionOwner(), space=CodegenSpaceDouble())
+
+    configuration = system._build_default_namespace_configuration(
+        frame_name="ops",
+        projection=None,
+    )
+
+    assert configuration.denied_builtin_names == ("__import__",) + SAFE_DENIED_BUILTIN_NAMES
+    assert "open" in configuration.denied_builtin_names
+    assert configuration.imports_enabled is False

@@ -25,6 +25,10 @@ the previous spell_id restores the old version, which stayed parked. Expert 17 r
 whole loop on public calls, as does the README's sketch. A lookup by spell_id is exact:
 `get_spell_by_spell_id` returns the version that spell_id names, parked or active, and the
 version an index has active is a lookup by the index, `get_spell_by_index_id`.
+The calls that build nothing follow the same rule: `has_live_creation(spell=...)`,
+`describe_live_creation_status(spell=...)` and `purge(spell_id=...)` given a spell_id
+answer for that version, parked or active, so a parked version's objects can be
+checked or retired without a notch back; `meld` builds only the selected member.
 `notch_spell` refuses a version of another index, or one another Spellbook owns, before
 it changes anything. `add_to_spell_index` and `remove_from_spell_index` take `spell_id=`
 the same way, to move a parked candidate onto another index or out into one of its own.
