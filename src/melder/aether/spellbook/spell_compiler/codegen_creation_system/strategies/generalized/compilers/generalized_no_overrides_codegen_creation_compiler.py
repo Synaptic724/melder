@@ -383,12 +383,14 @@ def _register_spell_instance(
     Register a constructed instance into creations for no-overrides execution.
 
     Contract:
+        - Files under the spell's store key (`Spell.store_key`), its binding's
+          slot (STORY-2026-10-25-creations_store_slots_by_binding).
         - Shared/per-conduit singleton scopes use add_creation.
         - many uses add_many_creations only when disposal methods exist.
         - spellspace scope uses add_creation on the direct spellspace-owned store.
     """
     _register_spell_instance_prebound(
-        spell_id=spell.spell_id,
+        store_key=spell.store_key,
         instance=instance,
         creations=creations,
         existence=existence,
@@ -399,7 +401,7 @@ def _register_spell_instance(
 
 def _register_spell_instance_prebound(
         *,
-        spell_id: str,
+        store_key: str,
         instance: Any,
         creations: Any,
         existence: Existence,
@@ -410,8 +412,8 @@ def _register_spell_instance_prebound(
     Register a constructed instance using prebound spell registration metadata.
 
     Contract:
-        - Uses spell-static metadata (`spell_id`, disposal flags/methods)
-          supplied by the generated step lane.
+        - Uses spell-static metadata (`store_key`, disposal flags/methods)
+          supplied by the generated step lane; files under the store key.
         - Preserves the same existence routing semantics as
           `_register_spell_instance`.
     """
@@ -423,7 +425,7 @@ def _register_spell_instance_prebound(
             Existence.unique_per_conduit_lineage,
     ):
         creations.add_creation(
-            spell_id,
+            store_key,
             instance,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
@@ -434,7 +436,7 @@ def _register_spell_instance_prebound(
         if not has_disposal_methods:
             return
         creations.add_many_creations(
-            spell_id,
+            store_key,
             instance,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
@@ -443,7 +445,7 @@ def _register_spell_instance_prebound(
 
     if existence is Existence.unique_per_spell_space:
         creations.add_creation(
-            spell_id,
+            store_key,
             instance,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,
@@ -452,7 +454,7 @@ def _register_spell_instance_prebound(
 
     raise RuntimeError(
         f"[MELD] Unsupported Existence '{existence}' for registration "
-        f"(spell_id={spell_id})."
+        f"(store_key={store_key})."
     )
 
 

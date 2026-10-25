@@ -36,9 +36,11 @@ class StagedDisposalService(OrderedDisposalService):
     The second version of OrderedDisposalService that the captured index stages.
 
     One object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code): staging the service itself again
-    is refused, so the staged member is new code - one class-level value more. It is bound under the service's
-    address (spellframe "OrderedDisposalService"), inherits every disposal method, and is defined at module
-    level so restore and graft can import it by its module and qualname.
+    is refused, so the staged member is new code - one class-level value more. It inherits every disposal method
+    and is defined at module level so restore and graft can import it by its module and qualname. Every version of
+    an index is bound the way its first version was (2026-10-25), so the service and this version are both bound
+    under the string category "OrderedDisposalService" - the address a bare bind of the service has - and a merge
+    target is an index bound that way too.
     """
 
     version = 2
@@ -66,7 +68,7 @@ def _capture_world(priority: bool) -> tuple[dict[str, Any], str]:
     crystallizer = _activate_crystallizer()
     with _recording_book(["flush", "missing", "flush"], priority, "disposal-source") as book:
         selected_id = book.bind(
-            spell=OrderedDisposalService, existence="many",
+            spell=OrderedDisposalService, existence="many", spellframe="OrderedDisposalService",
             disposal_method_names=["stop", "close", "flush", "stop"],
         )
         selected = book.find_spell_by_spell_id(selected_id)
@@ -186,7 +188,8 @@ def test_graft_preserves_members_and_receiving_book_order(
         resident = None
         merge_index = None
         if mode != "fresh":
-            resident_id = host.bind(spell=RestoreGamma, existence="many")
+            # The merge target keeps the members' binding: a member bound another way is a shortfall (2026-10-25).
+            resident_id = host.bind(spell=RestoreGamma, existence="many", spellframe="OrderedDisposalService")
             resident = host.find_spell_by_spell_id(resident_id)
             assert resident is not None
             merge_index = resident.spell_index
@@ -285,7 +288,7 @@ def test_merge_does_not_adopt_a_skipped_resident_selection(priority: bool) -> No
     record, _checkpoint_id = _capture_world(priority)
     with _recording_book(["flush"], priority, "disposal-skip-host") as host:
         resident_id = host.bind(
-            spell=OrderedDisposalService, existence="many",
+            spell=OrderedDisposalService, existence="many", spellframe="OrderedDisposalService",
             disposal_method_names=["stop", "close", "flush"],
         )
         resident = host.find_spell_by_spell_id(resident_id)

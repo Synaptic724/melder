@@ -608,13 +608,14 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
     trace: list[str] = []
     creation = object()
     try:
+        # Filed and guarded by the spell's store key (STORY-2026-10-25-creations_store_slots_by_binding).
         if existence is Existence.many:
-            store.add_many_creations(spell_id, creation)
+            store.add_many_creations(spell.store_key, creation)
         else:
-            store.add_creation(spell_id, creation)
+            store.add_creation(spell.store_key, creation)
         spell._lock = ObservedLock("spell", trace)
         store._lock = ObservedLock("store", trace)
-        store._slot_guards[spell_id] = ObservedLock("guard", trace)
+        store._slot_guards[spell.store_key] = ObservedLock("guard", trace)
         assert store.purge(spell, purge_all=purge_all, creation=creation) == 1
         expected = ["store:enter", "store:exit"]
         if existence is Existence.unique:
@@ -624,7 +625,7 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
         assert trace == expected
     finally:
         spell._lock, store._lock = original_spell_lock, original_store_lock
-        store._slot_guards.pop(spell_id, None)
+        store._slot_guards.pop(spell.store_key, None)
         root.permanent_cleanup()
 
 
@@ -651,7 +652,7 @@ def test_native_purge_of_a_managed_spell_takes_no_lock_and_returns_zero(purge_al
         store._lock = ObservedLock("store", trace)
         assert store.purge(spell, purge_all=purge_all, creation=object()) == 0
         assert trace == []
-        assert spell_id not in store._slot_guards
+        assert spell.store_key not in store._slot_guards
         assert store.get_managed_quantity(spell_id) is pool
     finally:
         spell._lock, store._lock = original_spell_lock, original_store_lock
@@ -725,7 +726,7 @@ def test_purge_waits_for_the_actual_singleton_constructor_lock(
         original_lock = spell._lock
         spell._lock = observed
     else:
-        store._slot_guards[spell_id] = observed
+        store._slot_guards[spell.store_key] = observed
 
     def run_purge() -> int:
         """
@@ -755,7 +756,7 @@ def test_purge_waits_for_the_actual_singleton_constructor_lock(
         if existence is Existence.unique:
             spell._lock = original_lock
         else:
-            store._slot_guards.pop(spell_id, None)
+            store._slot_guards.pop(spell.store_key, None)
         space.cleanup()
         root.permanent_cleanup()
 
@@ -806,7 +807,7 @@ def test_disposal_runs_outside_locks_and_keeps_callback_replacement() -> None:
             assert available.wait(3), "Disposal retained a removal lock."
             worker.join(timeout=3)
             store.add_creation(
-                spell_id,
+                spell.store_key,
                 replacement,
                 has_disposal_methods=True,
                 disposal_methods=["cleanup"],
@@ -814,7 +815,7 @@ def test_disposal_runs_outside_locks_and_keeps_callback_replacement() -> None:
 
     try:
         store.add_creation(
-            spell_id,
+            spell.store_key,
             ReplacingResource(),
             has_disposal_methods=True,
             disposal_methods=["cleanup"],

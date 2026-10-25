@@ -163,16 +163,24 @@ def _book(specialize: bool = False) -> Tuple[Spellbook, str]:
 
 def _bucket(store: Creations, child_id: str) -> List[Any]:
     """
-    Return a copy of one store's live `many` bucket for Child's spell id (empty when it keeps none).
+    Return every Child one store records under Child's spell id (empty when it keeps none).
+
+    A store files a spell's objects under each binding's store key, all on the spell id's shelf
+    (STORY-2026-10-25-creations_store_slots_by_binding), so the bucket is read through the shelf.
 
     Args:
         store: A conduit's or a spellspace's creations store.
         child_id: Child's spell id.
 
     Returns:
-        List[Any]: A copy of the bucket - every Child this store recorded.
+        List[Any]: A copy of the buckets - every Child this store recorded.
     """
-    return list(store._creations.get(child_id) or [])
+    found: List[Any] = []
+    for key in store._shelves.get(child_id, ()):
+        value = store._creations.get(key)
+        if isinstance(value, list):
+            found.extend(value)
+    return found
 
 
 def _holder_disposal_record(store: Creations, holder_id: str) -> Optional[Any]:
@@ -189,7 +197,11 @@ def _holder_disposal_record(store: Creations, holder_id: str) -> Optional[Any]:
     Returns:
         Optional[Any]: The record, or None when the store keeps none.
     """
-    return store._disposable_creations.get(holder_id)
+    for key in store._shelves.get(holder_id, ()):
+        record = store._disposable_creations.get(key)
+        if record is not None:
+            return record
+    return None
 
 
 def _first_meld_through_lesser(root: Conduit, holder_id: str) -> Tuple[Any, Any, Optional[Conduit]]:

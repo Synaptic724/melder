@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/builder/frame_acl_codegen_builder.py",
- "source_sha256": "063c979b0297eb7164a72db1cefefc9086da43c03e26e74b125704e8635e1a44",
+ "source_sha256": "106cb0bba9c39bf0232ab175ab2c344edb742b59965a0526e70df58de2af7b6d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.builder.frame_acl_codegen_builder": {
@@ -28,6 +28,7 @@
     "allow_builtin_names",
     "allow_dunder_access",
     "allow_import_module_roots",
+    "allow_materialize_module_roots",
     "allow_recursive_codegen",
     "allow_unsafe_reflection",
     "cleanup",
@@ -35,6 +36,7 @@
     "deny_builtin_names",
     "deny_dunder_access",
     "deny_import_module_roots",
+    "deny_materialize_module_roots",
     "deny_recursive_codegen",
     "deny_unsafe_reflection",
     "disable_imports",
@@ -51,16 +53,17 @@
     "use_profile"
    ],
    "shape": {
-    "method_count": 26,
+    "method_count": 28,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9282ddc94ae57b1bff1c69b62e1bff3ed0e7da34969e1d7ad66cf226f62f95e3",
+   "span_sha256": "6e052f7720ac73ac4f50e7dfd7dca91c3ee076c54d8d06ed60ccf57b85c30a7f",
    "role": "Fluent authoring surface for one active codegen-family ACL draft.",
    "responsibilities": [
     "borrows one active codegen draft from the generic ACL builder",
     "mutates the borrowed typed codegen configuration in place through fluent capability and rule helpers",
-    "commits or discards the active codegen draft through the generic builder"
+    "commits or discards the active codegen draft through the generic builder",
+    "merges generation-namespace roots into stable `materialize_modules` allow and deny rules (allow_materialize_module_roots, deny_materialize_module_roots) (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_id",
@@ -70,7 +73,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "9282ddc94ae57b1bff1c69b62e1bff3ed0e7da34969e1d7ad66cf226f62f95e3"
+   "semantics_authored_against": "6e052f7720ac73ac4f50e7dfd7dca91c3ee076c54d8d06ed60ccf57b85c30a7f"
   }
  },
  "edges_out": [

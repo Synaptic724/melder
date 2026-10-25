@@ -105,9 +105,23 @@ def _bucket(store: Creations, child_id: str) -> List[Any]:
         child_id: Child's spell id.
 
     Returns:
-        List[Any]: Every Child the store recorded.
+        List[Any]: Every Child the store recorded, under any binding's slot on the shelf (STORY-2026-10-25-creations_store_slots_by_binding).
     """
-    return list(store._creations.get(child_id) or [])
+    found: List[Any] = []
+    for key in store._shelves.get(child_id, ()):
+        value = store._creations.get(key)
+        if isinstance(value, list):
+            found.extend(value)
+    return found
+
+
+def _holder_record(store: Any, holder_id: str) -> Any:
+    """The disposal record a store keeps for any binding of the holder's spell id, or None."""
+    for key in store._shelves.get(holder_id, ()):
+        record = store._disposable_creations.get(key)
+        if record is not None:
+            return record
+    return None
 
 
 def test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique() -> None:
@@ -137,7 +151,7 @@ def test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_uni
             "the borrowing root built the child and must record it"
         )
         assert first.child not in _bucket(owner._creations, child_id), "the owner root must not record the child"
-        assert owner._creations._disposable_creations.get(holder_id) is None, (
+        assert _holder_record(owner._creations, holder_id) is None, (
             "the owner must not tie the child to its holder"
         )
         borrower.cleanup()
@@ -182,7 +196,7 @@ def test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder()
         team_store = cloud.get_cluster("many_child")._team_store
         assert first.child in _bucket(member._creations, child_id), "the member built the child and must record it"
         assert first.child not in _bucket(team_store, child_id), "the cluster's team store must not record the child"
-        assert team_store._disposable_creations.get(holder_id) is None, (
+        assert _holder_record(team_store, holder_id) is None, (
             "the team store must not tie the child to the holder"
         )
         member.cleanup()

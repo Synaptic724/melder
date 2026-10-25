@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
- "source_sha256": "893e92b260a507e8f02ecb05b085fa0eedce98f3a2c4abe6392ab04f4968b64f",
+ "source_sha256": "4ede07a12f02546dc1f2eec2ccd9bdea2232b3a554ea532c89bd18406509be20",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.codegen_system": {
@@ -19,12 +19,13 @@
    "label": "CodegenSystem",
    "kind": "class",
    "file": "src/melder/nexus/rift/codegen_system/codegen_system.py",
-   "lineno": 46,
+   "lineno": 49,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
+    "build_materialize_builtins",
     "cleanup",
     "codegen_system_id",
     "execute_codegen",
@@ -35,17 +36,20 @@
     "validate_codegen_request"
    ],
    "shape": {
-    "method_count": 12,
+    "method_count": 13,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "bf6570d4aca43595dc9d54afcd3d1745627daeb539813b0eec859cb921eec363",
+   "span_sha256": "b000227f0f7c1e725994ee4af318895556a29c978bd75336a5b6ad7332a507c5",
    "role": "Room-owned internal codegen engine.",
    "responsibilities": [
     "builds per-call transaction contexts",
     "owns validation namespace execution and monitor collaborators",
     "validates before execution",
-    "delegates compile and execute stages for accepted requests"
+    "delegates compile and execute stages for accepted requests",
+    "runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)",
+    "reads `static_only_denied_builtin_names` off the projection's compiled surface into the namespace configuration, empty for the no-projection default, so the codegen import gate reaches every built namespace (D-11, 0.2.8271)",
+    "returns the room's filtered builtins mapping for an accepted materialize (build_materialize_builtins), the mapping execute_codegen gives room code, so a materialized module reaches what the room reaches (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_rift",
@@ -62,7 +66,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5ec511eb8a36ff8ee5accaf8ee21141f067ca7db1551d56166d3d11a1e1b100a"
+   "semantics_authored_against": "b000227f0f7c1e725994ee4af318895556a29c978bd75336a5b6ad7332a507c5"
   }
  },
  "edges_out": [
@@ -142,6 +146,7 @@
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
+  "SAFE_DENIED_BUILTIN_NAMES": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.SAFE_DENIED_BUILTIN_NAMES",
   "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
   "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
   "CodegenCompiler": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
@@ -265,6 +270,17 @@
     "cleanup"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "relation": "uses",
+   "why": "CodegenSystem's no-projection default posture denies `__import__` plus SAFE_DENIED_BUILTIN_NAMES, read from the preset module so the default and the safe preset cannot drift apart.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

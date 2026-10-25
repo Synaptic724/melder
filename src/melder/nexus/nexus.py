@@ -2230,6 +2230,13 @@ class Nexus(Cleanable):
                 compiled_access_surface.denied_import_module_roots
             ),
             denied_builtin_names=compiled_access_surface.denied_builtin_names,
+            static_only_denied_builtin_names=(
+                compiled_access_surface.static_only_denied_builtin_names
+            ),
+            generation_module_roots=compiled_access_surface.generation_module_roots,
+            denied_generation_module_roots=(
+                compiled_access_surface.denied_generation_module_roots
+            ),
             codegen_unsafe_reflection_allowed=(
                 compiled_access_surface.codegen_unsafe_reflection_allowed
             ),

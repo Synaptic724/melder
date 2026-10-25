@@ -735,7 +735,9 @@ class SpellSpace(Cleanable):
                 An instance is inspected for its class before ordinary lookup.
                 The original reference is retained for single-object removal.
             spell_id:
-                Explicit machine identity, mutually exclusive with spell.
+                A version's spell_id, mutually exclusive with spell. It names
+                exactly that version - active or parked, the owner conduit's Book's
+                own or a borrowed copy - and this space's entries of it.
             spellframe:
                 Optional frame/type used by ordinary binding discovery.
             binding_name:
@@ -753,7 +755,8 @@ class SpellSpace(Cleanable):
                 If selectors conflict, no target is supplied, or single-object
                 removal is requested without an instance.
             KeyError:
-                If normal meld discovery cannot find the binding.
+                If no version this space's Book can see carries the spell_id, or
+                normal meld discovery cannot find the binding.
             RuntimeError:
                 If permanently cleaned or the target has a broader lifetime.
             SpellSpaceScopeError:

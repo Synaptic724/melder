@@ -18,6 +18,9 @@ index is contracted to one or more borrowers and assert the borrower state:
 Transactions are OUT OF SCOPE (another agent). Runtime: Python 3.14t; the 3.10
 sandbox cannot execute these -> user runs on 3.14t (validate the notch multi-member
 harness in `test_spell_index_notch_lifecycle.py` first).
+
+A, B and C share one binding, spellframe 'service' and binding name 'a': every version of an index is bound the way
+its first version was (2026-10-25).
 """
 
 import contextlib
@@ -84,14 +87,16 @@ def _two_member_linked() -> Iterator[tuple]:
     """
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(  # index = {A, B}, A active
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = owner_book._get_owned_spell(id_b)
     _link_index(borrower, owner, index)
@@ -107,7 +112,9 @@ def _single_member_linked() -> Iterator[tuple]:
     """Owner with a 1-member index A, linked to one borrower."""
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
@@ -161,7 +168,7 @@ def test_add_member_to_linked_index_propagates_parked_copy():
         # (bind_inactive attaches C to an existing index; it cannot stand alone).
         id_c = owner.bind_inactive(
             spell=_ServiceC, spell_index=index, existence=Existence.unique,
-            permissions="create", binding_name="c",
+            permissions="create", spellframe="service", binding_name="a",
         )
         spell_c = ob._get_owned_spell(id_c)
         # The borrower now carries C as a per-member contract (parked copy) + a Detail.
@@ -202,7 +209,9 @@ def test_two_borrowers_both_follow_a_notch():
     owner_book = _make_spellbook()
     b1_book = _make_spellbook()
     b2_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     b1 = b1_book.conjure(dynamic=True, name="b1")
     b2 = b2_book.conjure(dynamic=True, name="b2")
@@ -211,7 +220,7 @@ def test_two_borrowers_both_follow_a_notch():
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = owner_book._get_owned_spell(id_b)
     _link_index(b1, owner, index)

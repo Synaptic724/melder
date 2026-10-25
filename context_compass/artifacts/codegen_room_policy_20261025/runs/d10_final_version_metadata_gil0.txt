@@ -1,0 +1,5 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx tests/unit/melder/test_package_version_metadata.py (cwd: /tmp/m0s2/d10_final, a /tmp copy of the working tree after the 0.2.8270 rebuild; Python 3.14.7t)
+ran_at: 2026-10-25T09:19:03Z
+....                                                                     [100%]
+4 passed in 0.68s
+exit: 0

@@ -361,3 +361,68 @@ def test_unit_case_clear_registry_removes_all_live_modules(
     SyntheticModule.clear_import_registry()
     for module_name in case["expected_loaded_names"]:
         assert module_name not in sys.modules
+
+
+def _d20_synthetic(name: str) -> SyntheticModule:
+    return SyntheticModule(
+        module_name=name,
+        spell_crystal_id="d20",
+        source_text="value = 2\n",
+        source_sha256="d20",
+        binding_signature="d20",
+    )
+
+
+def test_cleanup_restores_the_real_module_a_publication_displaced() -> None:
+    """
+    Contract (D-20, R6): a SyntheticModule published over a real module puts it back on cleanup and on unpublish.
+    """
+    import types
+
+    original = types.ModuleType("d20_displaced_probe")
+    sys.modules["d20_displaced_probe"] = original
+    try:
+        module = _d20_synthetic("d20_displaced_probe")
+        module.publish_to_sys_modules()
+        assert sys.modules["d20_displaced_probe"] is module
+        module.unpublish_from_sys_modules()
+        assert sys.modules["d20_displaced_probe"] is original
+        module.publish_to_sys_modules()
+        module.cleanup()
+        assert sys.modules["d20_displaced_probe"] is original
+    finally:
+        sys.modules.pop("d20_displaced_probe", None)
+
+
+def test_detach_restores_the_parent_attribute_a_publication_displaced() -> None:
+    """
+    Contract (D-20, R6): attaching to a parent package over an existing attribute puts that attribute back.
+    """
+    import types
+
+    parent = types.ModuleType("d20_parent_probe")
+    parent.child = "original attribute"
+    sys.modules["d20_parent_probe"] = parent
+    try:
+        module = _d20_synthetic("d20_parent_probe.child")
+        module.publish_to_sys_modules()
+        assert parent.child is module
+        module.cleanup()
+        assert parent.child == "original attribute"
+        assert "d20_parent_probe.child" not in sys.modules
+    finally:
+        sys.modules.pop("d20_parent_probe", None)
+
+
+def test_cleanup_does_not_restore_a_displaced_synthetic_module() -> None:
+    """
+    Contract (D-20): a SyntheticModule displaced by another is crystallizer world state and is not put back.
+    """
+    first = _d20_synthetic("d20_synthetic_probe")
+    first.publish_to_sys_modules()
+    second = _d20_synthetic("d20_synthetic_probe")
+    second.publish_to_sys_modules()
+    first.cleanup()
+    second.cleanup()
+
+    assert "d20_synthetic_probe" not in sys.modules

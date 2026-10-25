@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/codegen/precision.py",
- "source_sha256": "5fc15816d81c3d1720c5824e0bcef0631516adbfc0e124cd3db9175a7807fd8e",
+ "source_sha256": "fb730d49f6db8b6ebc3967a5802155710ac42dcfe56a28a26384c575a9a9ce7f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.codegen.precision": {
@@ -16,7 +16,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   },
   "melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy": {
    "id": "melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy",
@@ -35,18 +36,19 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "a86e8dc26b92d12a185d6a0177b8208bb51eafbe44d4adda7c7e800c81d026f4",
+   "span_sha256": "88108c630e5673558a72152d48494b8cd5da47e6a56d3d7742a1b7560de9ff92",
    "include": true,
    "role": "The enumerate-exactly posture, deliberately outside the safe/hybrid/permissive ordering.",
    "responsibilities": [
     "build the precision codegen profile from explicitly-enumerated allowances (frame: query only)",
     "draw its import posture from the PRECISION_* stdlib import sets rather than an open allowlist",
-    "exist for operators who enumerate what is permitted instead of picking a tier"
+    "exist for operators who enumerate what is permitted instead of picking a tier",
+    "deny `open` (the safe tuple); its import allow list names none of `io`, `os` or `pathlib` (0.2.8270)"
    ],
    "phases": [
     "init"
    ],
-   "semantics_authored_against": "a86e8dc26b92d12a185d6a0177b8208bb51eafbe44d4adda7c7e800c81d026f4"
+   "semantics_authored_against": "88108c630e5673558a72152d48494b8cd5da47e6a56d3d7742a1b7560de9ff92"
   }
  },
  "edges_out": [],

@@ -1,4 +1,9 @@
-"""Non-resolvable definitions remain connected, inspectable and non-resolvable after replay."""
+"""
+Non-resolvable definitions remain connected, inspectable and non-resolvable after replay.
+
+A revision is staged under its index's binding - the string category named after the class it revises, the address a
+bare bind of that class has - because every version of an index is bound the way its first version was (2026-10-25).
+"""
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
@@ -119,7 +124,9 @@ def test_nexus_exposes_definition_reference_and_base_relationships() -> None:
     research.activate(hydrate_from_record=False)
     rift.create_frame_link("ops")
     definition_id = conduit.bind(spell=GraphDefinition, existence="unique", resolvable=False)
-    child_id = conduit.bind(spell=GraphImplementation, existence="unique", resolvable=False)
+    child_id = conduit.bind(
+        spell=GraphImplementation, existence="unique", resolvable=False, spellframe="GraphImplementation",
+    )
     consumer_id = conduit.bind(spell=GraphConsumer, existence="many")
     rift.refresh_runtime_projections(frame_names=("ops",))
     book = conduit._spellbook
@@ -137,7 +144,9 @@ def test_nexus_exposes_definition_reference_and_base_relationships() -> None:
     source_view = rift.space.command_system.research_source(definition_id)
     assert "class GraphDefinition" in repr(source_view)
     index = book._spells_by_id[child_id].spell_index
-    revision_id = conduit.bind_inactive(spell=GraphImplementationRevision, spell_index=index, existence="unique")
+    revision_id = conduit.bind_inactive(
+        spell=GraphImplementationRevision, spell_index=index, existence="unique", spellframe="GraphImplementation",
+    )
     assert revision_id != child_id
     assert rift.space.command_system.research_history(revision_id)["lane_name"] == "default"
     conduit.notch_spell(spell_index=index, spell=book._inactive_spells[revision_id])
@@ -158,11 +167,12 @@ def test_checkpoint_replay_preserves_false_and_reemits_it(tmp_path: Path, monkey
     root = _recording()
     book = _book("recorded")
     definition_id = book.bind(spell=GraphDefinition, existence="unique", resolvable=False)
-    consumer_id = book.bind(spell=GraphConsumer, existence="many")
+    consumer_id = book.bind(spell=GraphConsumer, existence="many", spellframe="GraphConsumer")
     original_conduit = book.conjure(dynamic=True, name="root")
     consumer_index = book._spells_by_id[consumer_id].spell_index
     parked_id = original_conduit.bind_inactive(
         spell=GraphConsumerRevision, spell_index=consumer_index, existence="many", resolvable=False,
+        spellframe="GraphConsumer",
     )
     assert root.get_spell_crystal(definition_id).describe()["resolvable"] is False
     checkpoint_id = root.create_checkpoint()
@@ -185,10 +195,14 @@ def test_graft_preserves_active_and_parked_capability() -> None:
     """Fresh graft retains each version's own bool rather than applying one index-wide policy."""
     root = _recording()
     source = _book("source")
-    false_id = source.bind(spell=GraphImplementation, existence="unique", resolvable=False)
+    false_id = source.bind(
+        spell=GraphImplementation, existence="unique", resolvable=False, spellframe="GraphImplementation",
+    )
     conduit = source.conjure(dynamic=True, name="source-root")
     index = source._spells_by_id[false_id].spell_index
-    true_id = conduit.bind_inactive(spell=GraphImplementationRevision, spell_index=index, existence="unique")
+    true_id = conduit.bind_inactive(
+        spell=GraphImplementationRevision, spell_index=index, existence="unique", spellframe="GraphImplementation",
+    )
     record = root.capture_index_graft(index.id)
     # Graft from detached custody after releasing live claims; process-wide uniqueness stays enforced.
     conduit.permanent_cleanup()
@@ -211,8 +225,13 @@ def test_old_record_reader_refuses_new_capability_records(monkeypatch: pytest.Mo
         RecordVersion.check_readable(payload, "definition graph")
 
 
-def test_legacy_graft_without_capability_remains_resolvable() -> None:
-    """An actual old-shaped member uses True when its recorded bool is absent."""
+def test_legacy_graft_record_is_refused_at_the_version_gate() -> None:
+    """
+    An old-shaped graft record - record version 1.0.0, no recorded bool - is refused before anything is grafted.
+
+    A record made before record version 5.0.0 cannot promise that every version of an index shares its binding, so
+    it is not read (the owner's call, 2026-10-25); until then such a member grafted with resolvable True.
+    """
     root = _recording()
     source = _book("legacy-source")
     spell_id = source.bind(spell=GraphImplementation, existence="unique")
@@ -222,10 +241,10 @@ def test_legacy_graft_without_capability_remains_resolvable() -> None:
     record["members"][spell_id]["payload"].pop("resolvable")
     conduit.permanent_cleanup()
     host = _book("legacy-host")
-    host_conduit = host.conjure(dynamic=True, name="legacy-host-root")
-    assert root.graft_index(record, host)["status"] == "complete"
-    assert host._spells_by_id[spell_id].resolvable is True
-    assert host_conduit.meld(spell_id=spell_id).value() == "supplied"
+    host.conjure(dynamic=True, name="legacy-host-root")
+    with pytest.raises(ValueError, match=r"older than the oldest this melder reads \(5\.0\.0\)"):
+        root.graft_index(record, host)
+    assert host.find_spell_by_spell_id(spell_id) is None
 
 
 @pytest.mark.parametrize("binding_visible", [False, True])

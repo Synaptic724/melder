@@ -383,8 +383,8 @@ upload credential when the token's claims match the publisher above, and
 Sigstore and uploads its PEP 740 attestation. A failed-jobs re-run of the upload
 asks for a fresh token. Once a run has published this way, the old
 `melder_api_token` environment secret can be deleted and its token revoked on
-TestPyPI: no workflow reads it. Production continues using its independent pypi
-environment and PYPI_API_TOKEN credential.
+TestPyPI: no workflow reads it. Production publishes the same way, through its
+own `pypi` environment and PyPI Trusted Publisher (Final publication checks).
 
 An `invalid-publisher` error from the upload means the publisher's values and the
 job's claims disagree; an earlier OIDC attempt failed that way, so compare all four
@@ -459,13 +459,46 @@ workflow on prod, starts a fresh qualification chain:
 5. Recheck distribution identity and candidate qualification, then the live release tag,
    fetch/check prod again immediately before the PyPI upload action. Annotated
    tags use their peeled target; missing or moved tags refuse publication.
+6. Upload by Trusted Publishing: `pypa/gh-action-pypi-publish`, pinned to its
+   commit, signs every file with Sigstore and uploads its PEP 740 attestation.
+7. `Release / provenance` then checks every released file's provenance on PyPI
+   in the release candidate's five layers: a provenance exists; its publisher is
+   `python-publish.yml` in `pypi`; Sigstore verifies the attestation on the
+   production trust root; the signing certificate names this repository and its
+   owner (with their numeric ids), the workflow at the release tag (or `prod`, for
+   a manual dispatch), the released commit, this run and the attempt that
+   uploaded, its event, a GitHub-hosted runner, public visibility and the `pypi`
+   environment; and the attested statement names exactly the file and its
+   sha256. The files are on PyPI by then, so a refusal fails the run before the
+   release is announced but cannot unpublish anything; `.github/ci_cd/validating.md`
+   says what each refusal means. Its report, `release-provenance-<run>-<attempt>`,
+   keeps each file's verified signer, run and trigger.
 
 Earlier dev/preprod success does not replace these checks. A prod movement during
 the checks or environment approval refuses publication. GitHub prerelease events do
 not trigger final publication. All publication runs share a serialization group.
-Only the upload job uses the pypi environment and its PYPI_API_TOKEN secret.
 Production builds and validates fresh final distributions; it does not relabel
 or claim byte identity with an earlier rcN package.
+
+Only the upload job uses the pypi environment, and PyPI publication has no
+stored credential (owner, 2026-10-24). Add the publisher before the first final
+release made with this workflow: on PyPI, the `melder` project -> Manage ->
+Publishing -> add a GitHub publisher with exactly these values.
+
+| Field | Value |
+| --- | --- |
+| Owner | `Synaptic724` |
+| Repository name | `melder` |
+| Workflow name | `python-publish.yml` |
+| Environment name | `pypi` |
+
+The upload job alone requests a short-lived OIDC token (`id-token: write`); PyPI
+exchanges it for an upload credential when the token's claims match the
+publisher above. An `invalid-publisher` error means they disagree and nothing
+was uploaded: compare the four values, then **Re-run all jobs**. Once a release
+has published this way, delete the `PYPI_API_TOKEN` environment secret and
+revoke its token on PyPI: no workflow reads it, and a contract test refuses a
+workflow that names either retired token.
 
 Artifacts include the workflow run and attempt in their names. After a failed
 publication, use **Re-run all jobs** to obtain fresh qualification and fresh
@@ -473,7 +506,10 @@ artifacts; rerunning only a failed upload must not reuse an earlier attempt's
 unqualified artifact implicitly, so a failed-jobs re-run of the upload stops
 before downloading anything, with an error naming **Re-run all jobs**. Confirm
 PyPI state before retrying an upload whose outcome is uncertain; existing
-package versions are never silently skipped.
+package versions are never silently skipped. A `Release / provenance` check that
+failed only because PyPI or the verifier's trust root could not be reached is
+rerun alone with **Re-run failed jobs**: it reads the same build and still
+expects the attempt that uploaded, and it uploads nothing.
 
 ## Activating GitHub enforcement
 

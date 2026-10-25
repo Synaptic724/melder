@@ -16,7 +16,8 @@ a parked version is not in the pool Phase 3 resolves against.
 
 Worlds follow probe N1-N3 (artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py): a dynamic
 frame with caching off, English active on the lender's index and, when a borrower is asked for, a second Book that
-links and contracts the whole index.
+links and contracts the whole index. Every version is staged under English's binding (Greeter, 'greeter'): every
+version of an index is bound the way its first version was (2026-10-25).
 """
 import contextlib
 from typing import Any, Iterator, List, Optional, Protocol, Set, Tuple
@@ -380,22 +381,29 @@ def test_a_refused_notch_is_checked_again_when_retried() -> None:
         _assert_english_stands(world, broken_id)
 
 
-def test_a_refused_notch_releases_the_claim_it_took_for_the_broken_versions_address() -> None:
+def test_a_version_cannot_be_staged_at_another_address_of_the_index() -> None:
     """
-    Regression: a version staged at another address of the index took that address's frame claim with the switch.
+    The case a refused notch once had to undo at another address - a version staged there, whose frame claim the
+    switch took (fixed in 0.2.8262) - cannot arise: every version of an index is bound the way its first version was
+    (2026-10-25), so the staging is refused before anything is registered or claimed.
 
     Contract:
-        - After the refusal that address is unclaimed and unrouted, as before the notch, and English keeps its own.
+        - `bind_inactive` under another binding name raises ValueError naming both bindings; that address stays
+          unclaimed and unrouted.
+        - Nothing of SelfMade stays registered, so staging it under the index's binding is admitted (no spell_id
+          collision); a notch to it is then refused with nothing moved, and English keeps its claim.
     """
     with _world("refused_other_address") as world:
-        broken_id = world.stage(SelfMade, binding_name="greeter_v2")
-        broken_key = world.book.find_spell_by_spell_id(broken_id).key
-        assert world.frame_claim(broken_key) is None
+        other_key = ("greeter", "greeter_v2")
+        with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+            world.stage(SelfMade, binding_name="greeter_v2")
+        assert world.frame_claim(other_key) is None
+        assert other_key not in world.book._lookup_spells
 
+        broken_id = world.stage(SelfMade)
         _refused_notch(world, broken_id)
 
-        assert world.frame_claim(broken_key) is None
-        assert broken_key not in world.book._lookup_spells
+        assert world.frame_claim(other_key) is None
         _assert_english_stands(world, broken_id)
 
 
@@ -504,15 +512,24 @@ def test_a_refused_notch_leaves_the_nexus_record_on_the_old_version() -> None:
 def test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistered() -> None:
     """
     A version split into its own index (`remove_from_spell_index`) has no active version; activating it takes a
-    notch. Refused, it stays parked, its index is not tracked, published or claimed, and English is untouched.
+    notch. Refused, it stays parked, its index is not tracked, published or claimed.
+
+    The split version keeps its binding, English's, so its index goes active only once English no longer holds the
+    address (2026-10-25): the first notch is refused for the address with nothing moved, and the structural refusal
+    comes once English is disposed.
     """
     with _world("refused_minted", rift_enabled=True) as world:
-        broken_id = world.stage(SelfMade, binding_name="greeter_v2")
+        broken_id = world.stage(SelfMade)
         world.lender.remove_from_spell_index(spell_id=broken_id, source_index=world.index)
         minted = world.book.find_spell_by_spell_id(broken_id).spell_index
         broken_key = world.book.find_spell_by_spell_id(broken_id).key
         assert minted is not world.index
         assert world.book._spell_system_states.get_by_index_id(minted.id) is None
+        with pytest.raises(RuntimeError, match=f"is held by spell_id '{world.english_id}'"):
+            world.lender.notch_spell(spell_index=minted, spell_id=broken_id)
+        assert world.frame_claim(broken_key) == world.english_id
+        assert isinstance(world.lender.meld(spellframe=Greeter, binding_name="greeter"), English)
+        world.lender.cleanup_spell(spell=world.book.find_spell_by_spell_id(world.english_id))
 
         _refused_notch(world, broken_id, index=minted)
 
@@ -524,10 +541,6 @@ def test_a_refused_activation_of_a_minted_index_leaves_it_parked_and_unregistere
         assert world.frame_claim(broken_key) is None
         assert broken_key not in world.book._lookup_spells
         assert (world.book.id, broken_id) not in world.nexus_spell_records()
-        english = world.book.find_spell_by_spell_id(world.english_id)
-        assert world.frame_claim(english.key) == world.english_id
-        assert world.book._lookup_spells[english.key] is world.index
-        assert isinstance(world.lender.meld(spellframe=Greeter, binding_name="greeter"), English)
 
 
 def test_after_a_refusal_the_book_flag_falls_once_english_melds() -> None:

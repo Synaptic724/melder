@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "de5becea69e0d7c6a2d1bd3666402fa2c277cac8978c2c62fe767473c348ca75",
+ "source_sha256": "e3e4f85416080e650dcc43313585fd445b8ae5b1c89c2b5cf44f210e63e37871",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -23,7 +23,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f88d4b07b883f26531241081b123509b6b07d27fecae8d59647dde8bf16f683c"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.meld.meld.Meld": {
    "id": "melder.aether.conduit.meld.meld.Meld",
@@ -49,15 +49,15 @@
     "set_meld_hooks"
    ],
    "shape": {
-    "method_count": 43,
+    "method_count": 45,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0c435a377f6fd02ff29a6ead8d537bfb5a7d67b3b844f4156837195a275e345a",
+   "span_sha256": "85493ea28de18f30c9876266bc372a889d98f9b0729f1438d02c75199bff4676",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
-    "discovers purge bindings through inspected instance classes or explicit selectors; concrete doors own scope authority",
+    "discovers purge and probe targets through _resolve_probe_target: a spell_id reaches the version the door's Book can see, owned or borrowed, active or parked (_resolve_visible_version_by_id - the lock-free active read, then Spellbook._find_visible_version under the Book lock), any other selector the version an index has active through _resolve_spell; an instance resolves through its class; concrete doors own scope authority (0.2.8269)",
     "enforces validity and dirty-root gates",
     "chooses reuse versus construction",
     "dispatches execution into CreationContext",
@@ -86,7 +86,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4b1d2177fc50b3da07b716365c9a97c859e2436e7eddbe5e352ab2c9f9f8a1ba"
+   "semantics_authored_against": "85493ea28de18f30c9876266bc372a889d98f9b0729f1438d02c75199bff4676"
   }
  },
  "edges_out": [

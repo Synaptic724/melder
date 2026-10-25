@@ -188,9 +188,15 @@ def _bucket(scope: Any, spell_id: str) -> List[Any]:
         spell_id: The `many` spell id.
 
     Returns:
-        List[Any]: The objects registered under the spell id itself.
+        List[Any]: The objects registered under the spell id: every binding's slot on its shelf (STORY-2026-10-25-creations_store_slots_by_binding).
     """
-    return list(scope._creations._creations.get(spell_id) or [])
+    store = scope._creations
+    found: List[Any] = []
+    for key in store._shelves.get(spell_id, ()):
+        value = store._creations.get(key)
+        if isinstance(value, list):
+            found.extend(value)
+    return found
 
 
 def _leaf_errors(group: BaseException) -> List[BaseException]:

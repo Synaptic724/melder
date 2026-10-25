@@ -2359,8 +2359,9 @@ class ConduitWard(Cleanable):
         index_id = index.id
         owner_conduit_id = self._conduit._id
         record_affected_contracts = []
-        # Under this ward's lock: link and sever write _contracts under it, and this emission runs outside any
-        # transaction window, so the mediator does not order it against them (cross_object_lock_gaps, 0.2.8231).
+        # Under this ward's lock: link and sever write _contracts under it. A notch runs this emission inside its own
+        # transaction window (design 2: its seal and freeze cover these peers); the lock still orders it against link
+        # and sever on any path the mediator does not (cross_object_lock_gaps, 0.2.8231).
         with self._lock:
             for contract in self._contracts.values():
                 index_detail = (

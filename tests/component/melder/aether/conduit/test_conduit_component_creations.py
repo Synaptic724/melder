@@ -278,7 +278,8 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
         instance_b = conduit.meld(spell_id=spell_id)
 
         assert instance_a is not instance_b
-        bucket = creations._creations.get(spell_id)
+        # A store files a spell's objects under its store key (STORY-2026-10-25-creations_store_slots_by_binding).
+        bucket = creations._creations.get(spellbook.find_spell_by_spell_id(spell_id).store_key)
         assert bucket is not None
         assert bucket == [instance_a, instance_b]
     finally:
@@ -306,7 +307,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
     try:
         creations = conduit._creations
         instance = conduit.meld(spell_id=spell_id)
-        entry = creations._creations.get(spell_id)
+        entry = creations._creations.get(spellbook.find_spell_by_spell_id(spell_id).store_key)
         assert entry is not None
         assert entry is instance
     finally:
@@ -346,10 +347,11 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
 
         creations = cloud.get_cluster("cluster-a")._team_store
         instance = conduit.meld(spell_id=spell_id)
-        entry = creations._creations.get(spell_id)
+        store_key = spellbook.find_spell_by_spell_id(spell_id).store_key
+        entry = creations._creations.get(store_key)
         assert entry is not None
         assert entry is instance
-        assert conduit._creations._creations.get(spell_id) is None
+        assert conduit._creations._creations.get(store_key) is None
     finally:
         conduit.permanent_cleanup()
 
@@ -417,6 +419,9 @@ def test_component_conduit_upgrade_retains_creations_without_inheriting_spells()
     )
     root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
+    # The store keys, read before the upgrade leaves the definitions behind.
+    unique_key = spellbook.find_spell_by_spell_id(unique_id).store_key
+    many_key = spellbook.find_spell_by_spell_id(many_id).store_key
     try:
         unique_instance = lesser.meld(spell_id=unique_id)
         many_instance = lesser.meld(spell_id=many_id)
@@ -424,8 +429,8 @@ def test_component_conduit_upgrade_retains_creations_without_inheriting_spells()
         lesser.upgrade_to_normal(name="upgraded")
 
         assert isinstance(lesser._creations, Creations)
-        assert lesser._creations._creations[unique_id] is unique_instance
-        assert lesser._creations._creations[many_id] == [many_instance]
+        assert lesser._creations._creations[unique_key] is unique_instance
+        assert lesser._creations._creations[many_key] == [many_instance]
         assert lesser._spellbook.spells == {}
         with pytest.raises(KeyError):
             lesser.meld(spell_id=unique_id)

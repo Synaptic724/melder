@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/frame_acl_validator.py",
- "source_sha256": "787ba58b3298d389728dd61d49f4acf7b2260c3b20777f7e257773b07bd9eeb6",
+ "source_sha256": "a9cb7d9dbbbca8bb71819e88946968067be62551a0fcf18a7d12acd9bb4529a4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.frame_acl_validator": {
@@ -32,16 +32,17 @@
     "validate_configuration_against_descriptor"
    ],
    "shape": {
-    "method_count": 32,
+    "method_count": 33,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "edf758b3c6199ea74cc8dbeb824485ac8651720ec334bb8022443f6990c5e7e9",
+   "span_sha256": "748b9b5d9c210733e23ee070721781f4c37bdb427bc7bddcb8b69bb2b14b3e66",
    "role": "Frame-scoped ACL validator against descriptor truth.",
    "responsibilities": [
     "validates typed ACL configuration for one frame",
     "checks descriptor payload contracts against ACL requirements",
-    "validates selector-aware spell rules against published descriptor records"
+    "validates selector-aware spell rules against published descriptor records",
+    "accepts the `materialize_modules` capability operation and requires its `module_roots` to be non-empty and dotted-identifier legal (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_frame_name",
@@ -53,7 +54,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "edf758b3c6199ea74cc8dbeb824485ac8651720ec334bb8022443f6990c5e7e9"
+   "semantics_authored_against": "748b9b5d9c210733e23ee070721781f4c37bdb427bc7bddcb8b69bb2b14b3e66"
   }
  },
  "edges_out": [

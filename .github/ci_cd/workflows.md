@@ -86,7 +86,12 @@ Publication runs are serialized.
 | `release-gate` (Require current prod HEAD) | The event, the checkout and the current `prod` head (and the live release tag) are one commit (`ci_policy.py release-head`), and that commit's candidate passed TestPyPI qualification (`check_candidate_run.py`). |
 | `hygiene`, `source-assets`, `repo-assets` | Hygiene and both asset checks again, fresh. The runtime tests do not run again: full CI and the release candidate tested this exact tree, and `release-gate` refuses any other (owner, 2026-10-24). |
 | `release-build` | Builds and verifies the distributions and compares the release tag with the package version (`build-distributions.yml`). |
-| `pypi-publish` (Publish to PyPI) | In the `pypi` environment: refuses a failed-jobs re-run, because publication never reuses an earlier attempt's build (use **Re-run all jobs**), then rechecks the files, the candidate and the release head immediately before uploading with `PYPI_API_TOKEN`. |
+| `pypi-publish` (Publish to PyPI) | In the `pypi` environment: refuses a failed-jobs re-run, because publication never reuses an earlier attempt's build (use **Re-run all jobs**), then rechecks the files, the candidate and the release head immediately before uploading them by Trusted Publishing with a PEP 740 attestation each (`pypa/gh-action-pypi-publish`, pinned to the commit the release candidate pins). With the release candidate's `publish` it is one of the two jobs that hold `id-token: write`; it uses no secret and reports its run attempt as an output. |
+| `pypi-provenance` (Release / provenance) | After the upload, on the helper release, for every released file: reads its provenance from PyPI's Integrity API and checks it in the five layers `RC / provenance` uses, with the release's identity - its publisher is this workflow in `pypi`, and the signing certificate names this repository, the workflow at the run's ref (the release tag, or `prod` for a manual dispatch), the released commit, this run's upload attempt and its event (`pypi_provenance.py verify`). The files are on PyPI by then: a refusal fails the run, before the release is announced, but cannot unpublish them. Keeps `release-provenance-<run>-<attempt>`. |
+
+`pypi-provenance` downloads the build `release-build` reports and reads the attempt `pypi-publish` recorded, so
+after a PyPI lookup that ran out of retries **Re-run failed jobs** runs the check alone on the same files; it
+never uploads anything.
 
 ## Reusable workflows
 

@@ -1,0 +1,28 @@
+command: PYTHONPATH=src python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx UX_and_AIX_experiences/pytest_examples/test_expert_examples.py UX_and_AIX_experiences/pytest_examples/test_expert_probes.py (cwd: /tmp/m0s2/d10_b, a /tmp copy of the working tree with option B; the lessons are outside the CI testpaths; Python 3.14.7t)
+ran_at: 2026-10-25T08:15:25Z
+        structural validator refuses. This is why 30's two generated modules
+        declare ReportBase and ReportDonor rather than Report twice."""
+        frame_name = "probe-dupname-frame"
+        book = _frame(frame_name)
+    
+        class Alpha:
+            def __init__(self) -> None:
+                self.tag = "a"
+    
+        Beta = type("Alpha", (), {"__init__": lambda self: None})
+    
+        # Same order the failing run took: bind, conjure, then the SECOND bind
+        # is what trips the post-conjure structural validator.
+        book.bind(spell=Alpha, existence="unique", permissions="create",
+                  binding_name="probe-dup-one")
+        book.conjure(name="probe-dup-root")
+    
+>       with pytest.raises(Exception) as collision:
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE Exception
+
+UX_and_AIX_experiences/pytest_examples/test_expert_probes.py:1015: Failed
+=========================== short test summary info ============================
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+1 failed, 84 passed in 8.12s
+exit: 1

@@ -1,0 +1,33 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx tests/unit/melder/spellbook tests/unit/melder/crystallizer tests/unit/melder/mutation_research <the tests/unit/melder top-level files> (cwd: /tmp/m0s2/d10_b, a /tmp copy of the working tree; Python 3.14.7t)
+ran_at: 2026-10-25T08:13:55Z
+        manifests = sorted(assets_root.glob("*/manifest/*.py"))
+        stamped = {}
+        for generated in manifests:
+            match = re.search(
+                r'^BUILT_FOR_VERSION\s*=\s*"([^"]+)"',
+                generated.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            if match:
+                stamped[generated.relative_to(assets_root).as_posix()] = match.group(1)
+    
+        assert stamped, (
+            "no generated build assets carried a BUILT_FOR_VERSION stamp - the glob or "
+            "the pattern has drifted from the generated layout, so this gate is inert"
+        )
+        unstamped = [
+            generated.relative_to(assets_root).as_posix()
+            for generated in manifests
+            if generated.relative_to(assets_root).as_posix() not in stamped
+        ]
+        assert not unstamped, f"generated manifests carrying no version stamp: {unstamped}"
+        drifted = {name: v for name, v in stamped.items() if v != __version__}
+>       assert not drifted, f"assets stamped for the wrong version: {drifted} (package is {__version__})"
+E       AssertionError: assets stamped for the wrong version: {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8268', '_bind_guard/manifest/bind_guard_manifest.py': '0.2.8268', '_system_documents/manifest/graph_adjacency_manifest.py': '0.2.8268', '_system_documents/manifest/system_documents_index.py': '0.2.8268', '_system_documents/manifest/system_documents_manifest.py': '0.2.8268'} (package is 0.2.8269)
+E       assert not {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8268', '_bind_guard/manifest/bind_guard_manifes...fest/graph_adjacency_manifest.py': '0.2.8268', '_system_documents/manifest/system_documents_index.py': '0.2.8268', ...}
+
+tests/unit/melder/test_package_version_metadata.py:84: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+1 failed, 3664 passed in 16.36s
+exit: 1

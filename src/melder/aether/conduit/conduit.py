@@ -1743,8 +1743,10 @@ class Conduit(Cleanable):
           constructed instance (existing-object spells).
         - These spells are treated as **singletons** for this Conduit and
           must use `Existence.unique`.
-        - The instance is registered under `spell.spell_id` via
-          `Creations.add_creation(...)`.
+        - The instance is registered under `spell.store_key` (its binding's
+          slot, `<spell_id>:<binding_hash>`) via `Creations.add_creation(...)`:
+          the key emitted plans read an existing-object dependency by, so the
+          object is filed once (STORY-2026-10-25-creations_store_slots_by_binding).
         - Disposal metadata from the spell is forwarded only when the retained
           entry actually needs explicit disposal tracking.
 
@@ -1765,9 +1767,8 @@ class Conduit(Cleanable):
                 "registered into Creations."
             )
 
-        spell_id: str = spell.spell_id
         self._creations.add_creation(
-            spell_id,
+            spell.store_key,
             instance,
             has_disposal_methods=spell.has_disposal_methods,
             disposal_methods=spell.disposal_method_names,
@@ -4048,6 +4049,13 @@ class Conduit(Cleanable):
             - Only available in a dynamic environment; raises otherwise.
             - Only normal conduits may stage spells.
             - Delegates to the owning Spellbook's `bind_inactive` surface.
+            - EVERY VERSION OF AN INDEX IS BOUND THE WAY ITS FIRST VERSION WAS
+              (2026-10-25): the same kind of spellframe (none, a string category, a
+              Protocol) and the same address (spellframe and binding name,
+              case-insensitive). Stage an edited class with the index's spellframe and
+              binding_name; a renamed class or a new binding name is a new spell - bind
+              it on its own. A version bound another way, or an index another
+              Spellbook owns, is refused before anything is registered.
             - Change-control transaction admission for this staging op is owned by
               the conduit/mediator lane (wired separately); this facade performs
               the dynamic gate and delegation only, holding no transaction window.
@@ -4093,12 +4101,15 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError:
                 If the conduit is cleaned, is not normal, the dynamic environment
-                is not enabled, or there is no owning Spellbook.
+                is not enabled, or there is no owning Spellbook; from the Spellbook,
+                if `spell_index` is another Spellbook's (nothing is registered).
             TypeError:
                 If resolvable is not a bool or Bind rejects the target (a managed option of
                 the wrong type or a managed non-class included).
             ValueError:
-                If a managed option is malformed or set on another existence.
+                If a managed option is malformed or set on another existence, or the
+                version is bound another way than `spell_index`'s versions (the message
+                names both bindings and the remedy; nothing is registered).
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -5230,6 +5241,10 @@ class Conduit(Cleanable):
               binding owner, lineage the lineage root, and cluster its leader.
             - Never redirects into an active SpellSpace; use that space's purge.
             - Preserves the binding, compiled context, conduit and pools.
+            - A spell_id reaches any version this conduit can see - its Book's own
+              or a borrowed copy, active or parked - so a version a notch parked is
+              purged without a notch back; every other selector names the version
+              an index has active, as meld does.
 
         Args:
             spell:
@@ -5237,8 +5252,9 @@ class Conduit(Cleanable):
                 An instance is inspected for its class before ordinary lookup.
                 The original reference is retained for single-object removal.
             spell_id:
-                Explicit machine identity. Mutually exclusive with spell and
-                forwarded directly into the internal id lookup lane.
+                A version's spell_id, mutually exclusive with spell. It names
+                exactly that version - active or parked, this conduit's Book's own
+                or a borrowed copy - and its entries in the authorized store.
             spellframe:
                 Optional frame/type used by ordinary binding discovery.
             binding_name:
@@ -5257,9 +5273,11 @@ class Conduit(Cleanable):
                 If selectors conflict, no target is supplied, or single-object
                 removal is requested without an instance.
             KeyError:
-                If normal meld discovery cannot find the binding.
+                If no version this conduit can see carries the spell_id, or normal
+                meld discovery cannot find the binding.
             RuntimeError:
-                If cleaned, the cluster is inert, or this conduit lacks authority.
+                If cleaned, the cluster is inert, this conduit lacks authority, or a
+                `unique` version has no owner store.
             TypeError:
                 If purge_all is not a bool.
             ExceptionGroup:
@@ -5392,7 +5410,10 @@ class Conduit(Cleanable):
             entering the meld creation path.
 
         Contract:
-            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Mirrors the root identity inputs accepted by `meld(...)`, with one
+              difference: a spell_id given as `spell` names exactly that version,
+              active or parked, this conduit's Book's own or a borrowed copy, so a
+              version a notch parked is answered for without a notch back.
             - Delegates all lookup and existence semantics to the owned
               `Meld` instance.
             - Never creates, registers, links, or mutates objects.
@@ -5422,7 +5443,8 @@ class Conduit(Cleanable):
                 If none of `spell_name`, `spell`, or `spellframe` are
                 provided.
             KeyError:
-                Propagated from `Meld` when a spell cannot be resolved.
+                Propagated from `Meld` when a spell cannot be resolved: for a
+                spell_id, when no version this conduit can see carries it.
         """
         self.check_cleaned()
         meld_component = self._meld
@@ -5454,7 +5476,10 @@ class Conduit(Cleanable):
             no-create probe used by `has_live_creation(...)`.
 
         Contract:
-            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Mirrors the root identity inputs accepted by `meld(...)`, with one
+              difference: a spell_id given as `spell` names exactly that version,
+              active or parked, this conduit's Book's own or a borrowed copy, and
+              the payload's `spell_id` is that version's.
             - Delegates all lookup and existence semantics to the owned
               `Meld` instance.
             - Never creates, registers, links, or mutates objects.
@@ -5482,7 +5507,8 @@ class Conduit(Cleanable):
                 If none of `spell_name`, `spell`, or `spellframe` are
                 provided.
             KeyError:
-                Propagated from `Meld` when a spell cannot be resolved.
+                Propagated from `Meld` when a spell cannot be resolved: for a
+                spell_id, when no version this conduit can see carries it.
         """
         self.check_cleaned()
         meld_component = self._meld
@@ -5693,6 +5719,13 @@ class Conduit(Cleanable):
               refused one is parked again with no verdict kept, nothing is journaled or
               published for it, and no borrower is touched. A retry is checked, and
               refused, again.
+            - A NOTCH NEVER MOVES THE INDEX'S ADDRESS (2026-10-25): every version of an
+              index is bound at the index's address, so the switch moves the address's
+              claim from the outgoing version to the incoming one. An address another
+              spell holds - another index's active version of this Spellbook (a version
+              split off with `remove_from_spell_index` while its source still serves the
+              address) or another Spellbook's spell - refuses the notch with a
+              RuntimeError naming the holder, before anything moves.
             - After the window, every linked peer parks its copy of the outgoing version, a
               peer holding a parked copy of the incoming version (a grant of that version) has
               it made active again, and index-link borrowers move to the new one. The consumers
@@ -5726,14 +5759,17 @@ class Conduit(Cleanable):
                 SpellIndex.
             TypeError: When `spell_id` is not a string, or a string is given as `spell`.
             RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
-                Conduit has no owning Spellbook; and whatever the transaction or the
-                switch raises, including a reversal of a refused notch that fails (a
-                Melder bug; the message names both versions).
+                Conduit has no owning Spellbook; when another spell holds the index's
+                address (the message names its spell_id and the remedy; nothing moved);
+                and whatever the transaction or the switch raises, including a reversal
+                of a refused notch that fails (a Melder bug; the message names both
+                versions).
 
         Example:
-            id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
+            # ReportService edited: the same class name and binding as the index's versions.
+            id_v2 = conduit.bind_inactive(spell=ReportService, spell_index=index, existence="unique")
             conduit.notch_spell(spell_index=index, spell_id=id_v2)
-            conduit.meld(spell_id=id_v2)    # a ReportV2
+            conduit.meld(spell_id=id_v2)    # the edited ReportService
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -5766,6 +5802,15 @@ class Conduit(Cleanable):
             "conduit_lineage_gate_ops": (
                 self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
             ),
+            # Design 2: the lineage roots of the peers the borrower fan-out walks join the
+            # notch's seal and freeze, so each of them is parked while it is moved.
+            "linked_root_conduit_ids": tuple(sorted(
+                {
+                    peer._root_conduit_id
+                    for peer in (self._conduit_ward._get_links() if self._conduit_ward is not None else ())
+                    if peer is not None and peer is not self
+                }
+            )),
         }
         # The index's current active member is the outgoing spell. The conduit
         # admits the notch (it owns the change-control envelope); the owning
@@ -5779,20 +5824,15 @@ class Conduit(Cleanable):
             transaction_type=ChangeTransactionType.NOTCH,
             metadata=metadata,
         )
-        try:
-            # Check the target again under the notch seal: an index operation that ran
-            # between the check above and admission may have moved it, and none can run
-            # from here to the switch.
-            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
-            # A version that fails its structural check raises here with the switch already
-            # undone by the Spellbook; the transaction then ends as failed and no borrower is
-            # touched (2026-10-19).
-            result = self._spellbook._notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
-        except Exception:
-            mediator.end_transaction(expected_type="notch", success=False)
-            raise
-        mediator.end_transaction(expected_type="notch", success=True)
-        if outgoing_id is not None and outgoing_id != spell.spell_id:
+        # Design 2 (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): the
+        # borrower fan-out runs INSIDE the transaction window, as `_notch_spell`'s after-switch
+        # hook, while every linked lineage's CreationGate is parked - a borrower meld cannot run
+        # between the park and the reactivation. A fan-out error undoes the whole notch: the
+        # Spellbook reverts its switch, then `_undo_borrower_fan_out` moves the borrowers back.
+        fan_out_started = [False]
+
+        def _fan_out_to_borrowers() -> None:
+            fan_out_started[0] = True
             self._deactivate_borrowed_spell(outgoing_id)
             # Outgoing first, so no peer holds two active copies under one key. A version
             # grant parked by an earlier notch away comes back here (D3, 2026-10-16); the
@@ -5801,6 +5841,30 @@ class Conduit(Cleanable):
             # Index-link receivers follow the index's selected spell: move their subscription head
             # to the new active member (park old, activate new) via the ward.
             self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
+
+        fan_out = outgoing_id is not None and outgoing_id != spell.spell_id
+        try:
+            # Check the target again under the notch seal: an index operation that ran
+            # between the check above and admission may have moved it, and none can run
+            # from here to the switch.
+            self._owned_notch_target(spell_index=spell_index, spell_id=spell.spell_id, spell=spell)
+            # A version that fails its structural check, or a borrower fan-out that fails, raises
+            # here with the switch already undone by the Spellbook; the transaction then ends as
+            # failed (2026-10-19; design 2).
+            result = self._spellbook._notch_spell(
+                spell_index=spell_index,
+                spell=spell,
+                change_reason=change_reason,
+                after_switch=_fan_out_to_borrowers if fan_out else None,
+            )
+        except Exception:
+            try:
+                if fan_out_started[0]:
+                    self._undo_borrower_fan_out(spell_index, outgoing_id, spell.spell_id)
+            finally:
+                mediator.end_transaction(expected_type="notch", success=False)
+            raise
+        mediator.end_transaction(expected_type="notch", success=True)
         return result
 
     def _resolve_notch_target(
@@ -6051,6 +6115,11 @@ class Conduit(Cleanable):
               `get_spell_by_id` answered a parked spell_id with the index's active spell).
             - ONLY A PARKED SPELL MOVES: the Spellbook refuses an active spell (notch away
               from it first), a spell it does not own, and a `target_index` it does not own.
+            - ONLY A SPELL BOUND THE WAY THE TARGET'S VERSIONS ARE MOVES (2026-10-25): every
+              version of an index is bound the way its first version was, so a spell bound
+              with another kind of spellframe or at another address is refused
+              (ValueError) before anything moves. A version split off with
+              `remove_from_spell_index` keeps its binding and can be moved back.
             - Adds a version to the index WITHOUT making it active - selection is a
               separate `notch_spell` step, so adding is safe to do ahead of a switch.
             - The spell leaves its current index, and an index the move empties is
@@ -6073,11 +6142,14 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
                 Conduit has no owning Spellbook; from the Spellbook, if the spell is not
                 owned there, is active, or `target_index` is not an index it owns.
+            ValueError: From the Spellbook, inside the window, if the spell is bound
+                another way than `target_index`'s versions; nothing moves.
 
         Example:
-            id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
-            conduit.add_to_spell_index(spell_id=id_v2, target_index=other_index)
-            conduit.notch_spell(spell_index=other_index, spell_id=id_v2)
+            # A version split off into an index of its own moves back into its index:
+            conduit.remove_from_spell_index(spell_id=id_v2, source_index=index)
+            conduit.add_to_spell_index(spell_id=id_v2, target_index=index)
+            conduit.notch_spell(spell_index=index, spell_id=id_v2)
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -6304,6 +6376,36 @@ class Conduit(Cleanable):
         # do not keep a subscription to a dead index. Its member already left every contract, so no member id.
         if destroyed_index_id is not None:
             ward._emit_index_destroy(destroyed_index_id, ())
+
+    def _undo_borrower_fan_out(self, spell_index: SpellIndex, outgoing_id: str, incoming_id: str) -> None:
+        """
+        Move this lender's borrowers back to the outgoing version after a failed notch (design 2).
+
+        Contract:
+            - Runs inside the notch's transaction window, after `Spellbook._notch_spell` has reverted
+              the lender's switch: the ward emission back to the outgoing version first (it reads the
+              lender's active member, now the outgoing one), then every peer's incoming member
+              deactivated and outgoing member reactivated - both no-ops on a peer already in that state.
+            - An error here is a Melder bug: RuntimeError naming the index, chained to its cause.
+
+        Args:
+            spell_index: The notched index.
+            outgoing_id: The version the notch moved away from (restored).
+            incoming_id: The version the failed notch moved to.
+
+        Returns:
+            None.
+        """
+        try:
+            self._conduit_ward._emit_index_notch(spell_index, incoming_id, outgoing_id)
+            self._deactivate_borrowed_spell(incoming_id)
+            self._activate_borrowed_spell(outgoing_id)
+        except Exception as error:
+            raise RuntimeError(
+                f"notch_spell could not move the borrowers of index {spell_index.id} back to spell_id "
+                f"{outgoing_id} after a failed borrower fan-out: {error}. Borrowers may hold the refused "
+                "version. This is a Melder bug; please report it with this message."
+            ) from error
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """

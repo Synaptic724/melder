@@ -1,0 +1,10 @@
+# The owner's run on Windows, pasted in chat at 2026-10-25T09:35Z and transcribed verbatim (trailing spaces trimmed):
+# .venv_new, CPython 3.14 free-threaded (uv), melder editable from the working tree at 0.2.8270.
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> cd C:\Users\Mark\PycharmProjects\melder_private
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> $t = "tests\unit\melder\aether\test_frame_acl_codegen_validation_profiles.py",
+>>      "tests\unit\melder\aether\test_codegen_system_unit_matrix.py",
+>>      "tests\unit\melder\aether\test_codegen_namespace_runtime_unit_matrix.py",
+>>      "tests\integration\melder\aether\test_codegen_core_boundary_integration.py"
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .\.venv_new\Scripts\python.exe -X gil=0 -m pytest -q -p no:cacheprovider $t
+.............................................................................................................................................................................................xxxx..............................                                                                                                                                  [100%]
+219 passed, 4 xfailed in 1.19s

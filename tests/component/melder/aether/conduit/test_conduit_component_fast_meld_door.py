@@ -773,6 +773,8 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
+    # A store files the marker under its store key (STORY-2026-10-25-creations_store_slots_by_binding).
+    marker_key = spellbook.find_spell_by_spell_id(marker_id).store_key
     try:
         with conduit.enter_spellspace() as scope_a:
             marker_a = scope_a.meld(spell_id=marker_id)
@@ -803,7 +805,7 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                             == 4
                         ), "spellspace stores aliased across nested scopes"
                         assert (
-                            scope_c._creations.get_creation(marker_id)
+                            scope_c._creations.get_creation(marker_key)
                             is marker_c
                         ), "marker_c missing from scope_c store at depth"
                         distinct = {
@@ -822,7 +824,7 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                     # state after that scope's own exit is the historical
                     # defect this test once shipped with.
                     assert (
-                        scope_c._creations.get_creation(marker_id) is marker_c
+                        scope_c._creations.get_creation(marker_key) is marker_c
                     ), "scope_c store lost marker_c after scope_d exit"
                     fast_entry = scope_c._meld._fast_meld_doors.get(marker_id)
                     if fast_entry is not None:
@@ -836,12 +838,12 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                     assert scope_c.meld(spell_id=marker_id) is marker_c
                 # LIFO unwind step 2: C's exit must not disturb B's storage.
                 assert (
-                    scope_b._creations.get_creation(marker_id) is marker_b
+                    scope_b._creations.get_creation(marker_key) is marker_b
                 ), "scope_b store lost marker_b after scope_c exit"
                 assert scope_b.meld(spell_id=marker_id) is marker_b
             # LIFO unwind step 3: B's exit must not disturb A's storage.
             assert (
-                scope_a._creations.get_creation(marker_id) is marker_a
+                scope_a._creations.get_creation(marker_key) is marker_a
             ), "scope_a store lost marker_a after scope_b exit"
             assert scope_a.meld(spell_id=marker_id) is marker_a
         # The yielded object is the spellspace itself (no wrapper exists).

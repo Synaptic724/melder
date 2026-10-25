@@ -11,6 +11,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import FrameACLCodegenProfile
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import FrameACLCommandProfile
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import IMPORT_BUILTIN_NAMES
 
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
@@ -229,6 +230,21 @@ class FrameACLCompiler(Cleanable):
             configuration,
             imports_enabled=codegen_imports_enabled,
         )
+        static_only_denied_builtin_names = (
+            self._compile_codegen_static_import_name_control(
+                codegen_imports_enabled,
+                allowed_import_module_roots,
+                denied_import_module_roots,
+            )
+        )
+        (
+            generation_module_roots,
+            denied_generation_module_roots,
+        ) = self._compile_codegen_generation_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
+        )
         (
             codegen_unsafe_reflection_allowed,
             codegen_dunder_access_allowed,
@@ -284,6 +300,17 @@ class FrameACLCompiler(Cleanable):
             allowed_import_module_roots=tuple(sorted(allowed_import_module_roots)),
             denied_import_module_roots=tuple(sorted(denied_import_module_roots)),
             denied_builtin_names=tuple(sorted(denied_builtin_names)),
+            static_only_denied_builtin_names=tuple(
+                sorted(static_only_denied_builtin_names)
+            ),
+            generation_module_roots=(
+                tuple(sorted(generation_module_roots))
+                if generation_module_roots is not None
+                else None
+            ),
+            denied_generation_module_roots=tuple(
+                sorted(denied_generation_module_roots)
+            ),
             codegen_unsafe_reflection_allowed=codegen_unsafe_reflection_allowed,
             codegen_dunder_access_allowed=codegen_dunder_access_allowed,
             codegen_recursive_codegen_allowed=codegen_recursive_codegen_allowed,
@@ -597,6 +624,54 @@ class FrameACLCompiler(Cleanable):
         )
 
     @staticmethod
+    def _compile_codegen_generation_controls(
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: Optional[FrameACLCodegenProfile],
+            configuration: FrameACLConfiguration,
+    ) -> Tuple[Optional[Set[str]], Set[str]]:
+        """
+        Derive the generation namespace for `materialize_codegen` from `materialize_modules` rules (D-20).
+
+        Contract:
+            - Returns `(None, denied)` when no ruleset carries a `materialize_modules` allow rule: the frame declares
+              no namespace, so only the verb's hard refusals apply (the owner's decision, 2026-10-25).
+            - Otherwise the allowed roots intersect across the allow-bearing rulesets (an overlay narrows the
+              preset), minus the denied roots, which union across the rulesets - the import-root semantics.
+
+        Returns:
+            Tuple[Optional[Set[str]], Set[str]]: Allowed generation roots (None when undeclared) and denied roots.
+        """
+        rulesets = (
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            FrameACLCompiler._as_frame_acl_ruleset(
+                configuration.codegen_configuration.capability_override_ruleset
+            ),
+        )
+        allowed_value_sets: List[Set[str]] = []
+        denied_values: Set[str] = set()
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            ruleset_allowed_values: Set[str] = set()
+            for rule in FrameACLCompiler._as_frame_acl_ruleset(ruleset).rules_by_name.values():
+                if rule.operation != "materialize_modules":
+                    continue
+                module_roots = set(rule.conditions.get("module_roots", tuple()))
+                if rule.effect == "allow":
+                    ruleset_allowed_values.update(module_roots)
+                elif rule.effect == "deny":
+                    denied_values.update(module_roots)
+            if len(ruleset_allowed_values) > 0:
+                allowed_value_sets.append(ruleset_allowed_values)
+        if len(allowed_value_sets) == 0:
+            return None, denied_values
+        allowed_values = set(allowed_value_sets[0])
+        for value_set in allowed_value_sets[1:]:
+            allowed_values.intersection_update(value_set)
+        return allowed_values.difference(denied_values), denied_values
+
+    @staticmethod
     def _compile_codegen_builtin_controls(
             codegen_profile: FrameACLCodegenProfile,
             precision_profile: Optional[FrameACLCodegenProfile],
@@ -628,6 +703,49 @@ class FrameACLCompiler(Cleanable):
         if not imports_enabled:
             final_denied_builtin_names.add("__import__")
         return final_denied_builtin_names.difference(allowed_builtin_names)
+
+    @staticmethod
+    def _compile_codegen_static_import_name_control(
+            imports_enabled: bool,
+            allowed_import_module_roots: Set[str],
+            denied_import_module_roots: Set[str],
+    ) -> Set[str]:
+        """
+        Derive the import builtins the static gates refuse without stripping them from the runtime builtins.
+
+        Purpose:
+            Close the dynamic-import gap (D-11): wherever a codegen posture enables imports with an allow or deny
+            list, a `__import__` call or bare reference must be refused at validation, while an import statement
+            of an allowed root keeps working at run time through the wrapped runtime `__import__`.
+
+        Contract:
+            - Returns `set(IMPORT_BUILTIN_NAMES)` (the `__import__` name) when `imports_enabled` is True AND at
+              least one of the allowed or denied import-root sets is non-empty.
+            - Returns an empty set otherwise. With imports off, `__import__` is already added to
+              `denied_builtin_names` by `_compile_codegen_builtin_controls`, so it is fully denied; with imports
+              on and no list (full_access), `__import__` stays usable.
+            - These names feed the two static gates only; they are never removed from the runtime builtins, which
+              is what lets an import statement of an allowed root still call `__import__`.
+            - Policy and defence in depth, checked in the room's own process, not isolation.
+
+        Args:
+            imports_enabled:
+                Whether the compiled posture enables import statements.
+            allowed_import_module_roots:
+                Compiled allowed import roots (narrowed across profiles).
+            denied_import_module_roots:
+                Compiled denied import roots (united across profiles).
+
+        Returns:
+            Set[str]: The import builtin names to deny statically, or an empty set.
+        """
+        import_list_applies = (
+            len(allowed_import_module_roots) > 0
+            or len(denied_import_module_roots) > 0
+        )
+        if imports_enabled and import_list_applies:
+            return set(IMPORT_BUILTIN_NAMES)
+        return set()
 
     @staticmethod
     def _compile_codegen_meta_controls(

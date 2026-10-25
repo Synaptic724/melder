@@ -2,6 +2,9 @@ import builtins
 
 import pytest
 
+from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.nexus.rift.codegen_system.execution.codegen_compiler import (
     CodegenCompiler,
 )
@@ -516,3 +519,66 @@ def _build_context_for_observability():
             "code": "result = 1",
         },
     )()
+
+
+def test_unit_codegen_builtins_strategy_leaves_open_out_of_the_safe_tuple_runtime_builtins() -> None:
+    """
+    Contract (D-10): runtime builtins built from the safe deny tuple - which safe, hybrid and precision share -
+    carry no `open`, so code that reaches the name past the static gates fails at run time.
+    """
+    strategy = CodegenBuiltinsStrategy()
+    configuration = build_namespace_configuration(
+        denied_builtin_names=SAFE_DENIED_BUILTIN_NAMES,
+    )
+
+    entries = strategy.build_namespace_entries(configuration)
+
+    assert "open" not in entries["__builtins__"]
+    assert "len" in entries["__builtins__"]
+
+
+def test_unit_codegen_builtins_strategy_wraps_import_when_an_import_list_applies() -> None:
+    strategy = CodegenBuiltinsStrategy()
+    configuration = build_namespace_configuration(
+        imports_enabled=True,
+        allowed_import_module_roots=("json",),
+        denied_import_module_roots=("subprocess",),
+    )
+
+    entries = strategy.build_namespace_entries(configuration)
+    guarded_import = entries["__builtins__"]["__import__"]
+
+    assert guarded_import is not builtins.__import__
+    with pytest.raises(ImportError) as denied_root_error:
+        guarded_import("subprocess")
+    assert "Import root 'subprocess' is not allowed in this codegen mode." in (
+        str(denied_root_error.value)
+    )
+    with pytest.raises(ImportError) as unlisted_root_error:
+        guarded_import("os")
+    assert "Import root 'os' is not allowed in this codegen mode." in (
+        str(unlisted_root_error.value)
+    )
+    delegated_module = guarded_import("json")
+    assert delegated_module.__name__ == "json"
+
+
+def test_unit_codegen_builtins_strategy_leaves_import_unwrapped_without_an_import_list() -> None:
+    strategy = CodegenBuiltinsStrategy()
+    configuration = build_namespace_configuration(imports_enabled=True)
+
+    entries = strategy.build_namespace_entries(configuration)
+
+    assert entries["__builtins__"]["__import__"] is builtins.__import__
+
+
+def test_unit_codegen_builtins_strategy_keeps_import_present_under_a_list() -> None:
+    strategy = CodegenBuiltinsStrategy()
+    configuration = build_namespace_configuration(
+        imports_enabled=True,
+        allowed_import_module_roots=("json",),
+    )
+
+    entries = strategy.build_namespace_entries(configuration)
+
+    assert "__import__" in entries["__builtins__"]

@@ -171,6 +171,7 @@ def test_extract_unique_returns_scope_and_is_destructive(creations: Creations) -
 
     assert extracted == [
         {
+            "key": "spell-1",
             "scope": "unique",
             "disposable": False,
             "stored": obj,

@@ -102,6 +102,8 @@ def test_nested_spellspace_scopes_keep_per_level_storage_until_their_own_exit() 
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
+    # The stores file the marker under its store key (STORY-2026-10-25-creations_store_slots_by_binding).
+    marker_key = spellbook.find_spell_by_spell_id(marker_id).store_key
     try:
         with conduit.enter_spellspace() as scope_a:
             marker_a = scope_a.meld(spell_id=marker_id)
@@ -118,14 +120,14 @@ def test_nested_spellspace_scopes_keep_per_level_storage_until_their_own_exit() 
                         assert scope_d.meld(spell_id=marker_id) is marker_d
                     # Inside C's body: D's exit left C's storage intact.
                     assert (
-                        scope_c._creations.get_creation(marker_id) is marker_c
+                        scope_c._creations.get_creation(marker_key) is marker_c
                     )
                     assert scope_c.meld(spell_id=marker_id) is marker_c
                 # Inside B's body: C's exit left B's storage intact.
-                assert scope_b._creations.get_creation(marker_id) is marker_b
+                assert scope_b._creations.get_creation(marker_key) is marker_b
                 assert scope_b.meld(spell_id=marker_id) is marker_b
             # Inside A's body: B's exit left A's storage intact.
-            assert scope_a._creations.get_creation(marker_id) is marker_a
+            assert scope_a._creations.get_creation(marker_key) is marker_a
             assert scope_a.meld(spell_id=marker_id) is marker_a
     finally:
         conduit.permanent_cleanup()

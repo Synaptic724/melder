@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py",
- "source_sha256": "4668f3122d76947ade0b6e77e5d3621e4b2f3125114f6c31e7145db457445974",
+ "source_sha256": "e2f50f8a5d1a72a9e866b2400bfb5484f2f9dacd5785e9938d476eee06b5471c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler": {

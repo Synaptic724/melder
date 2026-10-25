@@ -13,6 +13,11 @@ class PrecisionCodegenProfileStrategy:
     """
     Build the reusable `precision` codegen profile.
 
+    Contract:
+        Files: `open` is a denied builtin (the safe tuple), and the precision
+        import allowlist names none of `io`, `os` or `pathlib`. These are
+        policy checks in the room's own process, not isolation.
+
     Threading:
         Stateless preset construction; holds no state between builds.
 
@@ -63,7 +68,8 @@ class PrecisionCodegenProfileStrategy:
             - spell: allow resolve-existing/bind-existing/invoke-method/
               read-attribute; DENY local-create and write-attribute.
             - capability: enable imports for the precision module-root allowlist
-              (denying the precision denylist and dangerous builtins); DENY
+              (denying the precision denylist and dangerous builtins, `open`
+              among them); DENY
               dynamic access, mutation, contract override, unsafe reflection,
               dunder access, and recursive codegen.
             Stateless: a new instance is returned per call.

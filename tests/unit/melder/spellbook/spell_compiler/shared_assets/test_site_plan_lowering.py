@@ -60,6 +60,10 @@ class FakeStore:
         """Record one disposal-bearing many instance registered through the hot verb (2026-10-01)."""
         self.disposal_adds.append((key, item))
 
+    def register_slot(self, key: str, item: Any) -> None:
+        """Publish one singleton without disposal methods, as the plans' former inline store did."""
+        self._creations[key] = item
+
 
 def _factory(name: str, built: Counter) -> Callable[..., Any]:
     """Return a constructor that counts builds and keeps its arguments."""
@@ -77,6 +81,7 @@ def _spell(spell_id: str, built: Counter, existence: Existence = Existence.many,
     return SimpleNamespace(
         spell=_factory(spell_id, built),
         spell_id=spell_id,
+        store_key=spell_id,  # its own shelf (STORY-2026-10-25-creations_store_slots_by_binding)
         spell_index=SimpleNamespace(selected_spell_id=spell_id),
         spell_name=spell_id,
         is_class_spell=True,

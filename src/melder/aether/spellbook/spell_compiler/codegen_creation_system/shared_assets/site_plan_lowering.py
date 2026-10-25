@@ -882,6 +882,14 @@ class SitePlanEmission(Cleanable):
           nothing is stored per step and misses take no dict parameter, so a
           warm creation whose shared sites all hit builds no dict at all.
           Direct-mode plans are unchanged.
+        - Store keys (STORY-2026-10-25-creations_store_slots_by_binding): a
+          site's `sid{i}` constant is its Spell's store key
+          (`<spell_id>:<binding_hash>`), so a plan reads, guards and publishes
+          its own binding's slot and never another binding's of the same
+          spell_id; a slotted site without disposal methods publishes through
+          `c{i}.register_slot(sid{i}, v{i})`, which records the key's first
+          filing on its spell_id's shelf. A leasing managed site's `sid{i}`
+          stays the spell_id: managed pools are per spell_id.
         - Owner-store constants (S9, 2026-10-03): a `unique` site whose provider
           Spell is owned by an automatic conduit and has an owner store binds
           `c{i}` to that store in the namespace and emits no alias line, so the
@@ -1590,8 +1598,8 @@ class SitePlanEmission(Cleanable):
         Contract:
             A step without disposal methods is constructed and not recorded
             anywhere. A disposal-bearing step is recorded through
-            `many_store.register_many(sidN, vN, dmN)` - the meld's innermost
-            scope, in whatever context the step is placed - right after
+            `many_store.register_many(sidN, vN, dmN)`, `sidN` its store key -
+            the meld's innermost scope, in whatever context the step is placed - right after
             construction, before any build lock of the context is taken; or,
             inside a leasing managed miss, appended as `(vN, dmN)` to
             `kids_name`. A fresh managed step (a winning key on its own
@@ -1616,7 +1624,8 @@ class SitePlanEmission(Cleanable):
             kids_disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
             lines.append(f"{indent}{kids_name}.append((v{index}, {kids_disposal_name}))")
             return False
-        sid_name = self._bind(f"sid{index}", step.spell.spell_id)
+        # The store key: this binding's slot (STORY-2026-10-25-creations_store_slots_by_binding).
+        sid_name = self._bind(f"sid{index}", step.spell.store_key)
         disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
         # `register_many` (2026-10-01): the positional hot verb; the key's
         # disposal list is recorded once by the store, not carried per entry.
@@ -1656,7 +1665,8 @@ class SitePlanEmission(Cleanable):
         """
         spell_name = f"spells[{index}]"
         store = f"c{index}"
-        sid_name = self._bind(f"sid{index}", step.spell.spell_id)
+        # The store key: this binding's slot (STORY-2026-10-25-creations_store_slots_by_binding).
+        sid_name = self._bind(f"sid{index}", step.spell.store_key)
         if self._owner_store_constant(step):
             # S9: the owner store of a spell owned by an automatic conduit cannot
             # move after conjure, so the plan reads it as a global bound here
@@ -1726,7 +1736,8 @@ class SitePlanEmission(Cleanable):
                     f"has_disposal_methods=True, disposal_methods={disposal_name})"
                 )
             else:
-                inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
+                # The store records the key's first filing on its spell_id's shelf.
+                inner.append(f"{inner_indent}{store}.register_slot({sid_name}, v{index})")
             if leases:
                 # Return from inside: falling out of the block means another meld
                 # published this site first (a lost cold race).

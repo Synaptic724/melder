@@ -24,10 +24,11 @@ Every change below ends the same way: run the workflow tests, update this folder
   `RuntimeMatrixPolicy.TARGETS` together and run the full matrix.
 - `PYTHON_GIL=0` goes on the steps that run Melder, never on a whole job: Python's setup on macOS runs a
   certificate installer that cannot start with the GIL disabled.
-- Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else, and the
-  PyPI token lives in the `pypi` environment, used by one job. TestPyPI publication has no secret: the
-  release candidate's `publish` job authenticates by Trusted Publishing and is the only job in any workflow that
-  holds `id-token: write`; a third-party action in a job that holds it is pinned to a full commit SHA.
+- Secrets are passed explicitly and only where needed: `tests` receives `CODECOV_TOKEN` and nothing else.
+  Publication has no secret: the release candidate's `publish` job (TestPyPI, environment `pypitest`) and
+  `python-publish.yml`'s `pypi-publish` job (PyPI, environment `pypi`) authenticate by Trusted Publishing and are
+  the only jobs in any workflow that hold `id-token: write`; a third-party action in a job that holds it is pinned
+  to a full commit SHA, and no workflow may name the retired upload tokens `melder_api_token` or `PYPI_API_TOKEN`.
 - Artifact names carry `${{ github.run_id }}-${{ github.run_attempt }}`, so a rerun never picks up another
   attempt's files by accident. A job that downloads a build made earlier in the same run names it from the build
   job's output (`needs.<build>.outputs.artifact-name`), never from its own attempt, because a failed-jobs re-run
@@ -52,15 +53,18 @@ workflow, as `speed-tests.yml` does for the speed tests.
 ## Add a stage to the release-candidate or publication run
 
 `package-ready` requires exactly `CIPolicy.CANDIDATE_JOBS`; a new release-candidate stage goes into its `needs`
-and that list together. A publication job that must finish before the upload goes into `pypi-publish`'s `needs`.
+and that list together. A publication job that must finish before the upload goes into `pypi-publish`'s `needs`;
+a check of what was uploaded, like `pypi-provenance`, needs `pypi-publish`, downloads the build by
+`needs.release-build.outputs.artifact-name` and reads the upload's attempt from `pypi-publish`'s outputs.
 
 ## Change the provenance tool
 
 The provenance check verifies with the toolchain the publishing action signs with, so the three move together
 in one change:
 
-1. Pin `pypa/gh-action-pypi-publish` in `release-candidate.yml` to the new release's full commit SHA (with the
-   tag in a comment) and update the pinned SHA in `test_workflow_contracts.py`.
+1. Pin `pypa/gh-action-pypi-publish` in `release-candidate.yml` and `python-publish.yml` to the new release's full
+   commit SHA (with the tag in a comment), the same in both, and update the pinned SHA in
+   `test_workflow_contracts.py`.
 2. Regenerate `.github/provenance/requirements.txt` with the command in its header: `pypi-attestations` at the
    version that release's `requirements/runtime.txt` pins, with that file as constraints, so sigstore and the
    rest take the action's versions (hashes for every pin, wheels only, the helper release on Linux x64).

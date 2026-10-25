@@ -96,6 +96,11 @@ def _bind_world() -> Tuple[Spellbook, str, str, _Log]:
     return spellbook, leaf_id, root_id, log
 
 
+def _key(spellbook: Spellbook, spell_id: str) -> str:
+    """The store key a store files the spell's objects under (STORY-2026-10-25-creations_store_slots_by_binding)."""
+    return spellbook.find_spell_by_spell_id(spell_id).store_key
+
+
 def test_conduit_meld_registers_one_record_per_key_aliasing_the_bucket() -> None:
     """Two melds of the root register leaf and root into one record each, aliased to the live buckets."""
     spellbook, leaf_id, root_id, _log = _bind_world()
@@ -105,9 +110,9 @@ def test_conduit_meld_registers_one_record_per_key_aliasing_the_bucket() -> None
         second = conduit.meld(spell_id=root_id)
         store = conduit._creations
         for spell_id, expected in ((root_id, [first, second]), (leaf_id, [first.leaf, second.leaf])):
-            record = store._disposable_creations[spell_id]
+            record = store._disposable_creations[_key(spellbook, spell_id)]
             assert isinstance(record, ManyDisposalBucket)
-            assert record.entries is store._creations[spell_id]
+            assert record.entries is store._creations[_key(spellbook, spell_id)]
             assert record.entries == expected
             spell = spellbook.find_spell_by_spell_id(spell_id)
             assert spell is not None
@@ -138,7 +143,7 @@ def test_solo_leaf_registers_through_the_hot_verb_and_is_disposed() -> None:
     leaf_a = conduit.meld(spell_id=leaf_id)
     leaf_b = conduit.meld(spell_id=leaf_id)
     leaf_a.serial, leaf_b.serial = 1, 2
-    record = conduit._creations._disposable_creations[leaf_id]
+    record = conduit._creations._disposable_creations[_key(spellbook, leaf_id)]
     assert record.entries == [leaf_a, leaf_b]
 
     conduit.permanent_cleanup()
@@ -156,12 +161,12 @@ def test_spellspace_exit_disposes_the_space_store_only() -> None:
         with conduit.enter_spellspace() as space:
             inner = space.meld(spell_id=root_id)
             inner.serial, inner.leaf.serial = 1, 1
-            record = space._creations._disposable_creations[root_id]
-            assert record.entries is space._creations._creations[root_id]
+            record = space._creations._disposable_creations[_key(spellbook, root_id)]
+            assert record.entries is space._creations._creations[_key(spellbook, root_id)]
             assert record.entries == [inner]
-            assert conduit._creations._disposable_creations[root_id].entries == [outer]
+            assert conduit._creations._disposable_creations[_key(spellbook, root_id)].entries == [outer]
         assert log.entries == ["root1", "leaf1"]
-        assert leaf_id not in space._creations._creations
+        assert _key(spellbook, leaf_id) not in space._creations._creations
     finally:
         conduit.permanent_cleanup()
     assert log.entries == ["root1", "leaf1", "root9", "leaf9"]
@@ -181,9 +186,9 @@ def test_purge_one_transient_from_a_live_conduit_keeps_the_others() -> None:
 
         assert removed == 1
         assert log.entries == ["root1"]
-        record = conduit._creations._disposable_creations[root_id]
+        record = conduit._creations._disposable_creations[_key(spellbook, root_id)]
         assert record.entries == [second]
-        assert record.entries is conduit._creations._creations[root_id]
+        assert record.entries is conduit._creations._creations[_key(spellbook, root_id)]
     finally:
         conduit.permanent_cleanup()
     assert log.entries == ["root1", "root2", "leaf2", "leaf1"]

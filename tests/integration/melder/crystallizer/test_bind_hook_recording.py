@@ -255,16 +255,20 @@ def test_graft_uses_receiving_book_hooks_for_active_and_staged_members() -> None
     """
     Purpose: Verify live graft enters the receiving Book's actual callback lifecycle.
     Contract: Source callbacks do not transfer; active and staged new members each invoke host hooks.
+        Both members are bound under the category "RestoreAlpha", the address a bare bind of RestoreAlpha has:
+        every version of an index is bound the way its first version was (2026-10-25).
     Returns: None; source claims are explicitly released before grafting identical versions.
     """
     crystallizer = Crystallizer()
     source = _dynamic_book()
     source_calls: list[object] = []
     source.add_bind_hooks(pre=[source_calls.append])
-    active_id = source.bind(spell=RestoreAlpha, existence="unique")
+    active_id = source.bind(spell=RestoreAlpha, existence="unique", spellframe="RestoreAlpha")
     source_root = source.conjure(dynamic=True)
     index = source.find_spell_by_spell_id(active_id).spell_index
-    staged_id = source_root.bind_inactive(spell=RestoreBeta, spell_index=index, existence="unique")
+    staged_id = source_root.bind_inactive(
+        spell=RestoreBeta, spell_index=index, existence="unique", spellframe="RestoreAlpha",
+    )
     record = crystallizer.capture_index_graft(index.id)
     source_root.permanent_cleanup()
     host = _dynamic_book()

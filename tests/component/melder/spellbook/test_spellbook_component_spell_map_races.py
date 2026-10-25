@@ -37,7 +37,7 @@ class _ServiceA:
 
 
 class _ServiceB:
-    """Second active spell, or a parked version of _ServiceA's index."""
+    """Second active spell, or a parked version of _ServiceA's index, staged under _ServiceA's binding."""
 
 
 class _ServiceC:
@@ -264,13 +264,17 @@ def test_get_spell_permissions_answers_from_the_id_maps_without_walking() -> Non
         AssertionError: If the lookup walks the map or answers the wrong permissions.
     """
     book = Spellbook(configuration=_dynamic_configuration())
-    id_a = _bind(book, _ServiceA, "a")
+    # Every version of an index is bound the way its first version was (2026-10-25): both versions sit at
+    # ('maps', 'a'); permissions are not part of the binding, so the parked version keeps its own.
+    id_a = book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="maps", binding_name="a",
+    )
     conduit = book.conjure(dynamic=True, name="permissions")
     try:
         index_a = book._spells_by_id[id_a].spell_index
         id_b = conduit.bind_inactive(
             spell=_ServiceB, spell_index=index_a, existence=Existence.unique,
-            permissions="read", binding_name="b",
+            permissions="read", spellframe="maps", binding_name="a",
         )
         live_map = book._spells
         book._spells = _NoIterationDict(live_map)

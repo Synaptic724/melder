@@ -17,8 +17,9 @@ import, with two exceptions that run inside the environment they test: `run_runt
 | `ci_qualification.py` | `record`, `select`, `verify` | `ci.yml`, `verify-source-qualification.yml` | `test_source_qualification.py`, `test_checkout_identity.py` |
 | `check_candidate_run.py` | `--wait-seconds` | `ci.yml`, `python-publish.yml` | `test_candidate_publication.py` |
 | `testpypi_candidate.py` | `prepare-upload`, `probe-install` | `release-candidate.yml` | `test_candidate_publication.py` |
-| `testpypi_provenance.py` | `verify` | `release-candidate.yml` | `test_candidate_provenance.py` |
-| `verify_distributions.py` | `--directory`, `--release-tag` | `build-distributions.yml`, `python-publish.yml` | `test_distributions.py` |
+| `testpypi_provenance.py` | `verify` | `release-candidate.yml`; `pypi_provenance.py` imports its layers | `test_candidate_provenance.py` |
+| `pypi_provenance.py` | `verify` | `python-publish.yml` | `test_release_provenance.py` |
+| `verify_distributions.py` | `--directory`, `--release-tag` | `build-distributions.yml`, `python-publish.yml`; `pypi_provenance.py` calls it with the release tag | `test_distributions.py` |
 | `normalize_sdist.py` | `--directory` | `build-distributions.yml` | `test_sdist_normalization.py` |
 | `smoke_wheel.py` | `--expected-version` | `build-distributions.yml`, `testpypi_candidate.py probe-install` | the distribution contract in `test_workflow_contracts.py` |
 
@@ -107,6 +108,23 @@ sigstore, the versions `pypa/gh-action-pypi-publish` signs with. The same run fi
 genuine attestation `.github/provenance/known_good_provenance.json` must verify, and two tampered copies of it (another
 digest, another signer) must be refused, or no verdict counts. The expected identity lives in one class,
 `ProvenancePolicy`; every refusal names the file, the claim, what was expected and what was found. The report
+`reports/provenance.json` is written only after every check passed. The layers that read an index
+(`fetch_provenance`, `single_attestation`, `require_outcomes`) take it from the policy they are given, which is how
+`pypi_provenance.py` reuses them for PyPI.
+
+### `pypi_provenance.py`
+
+`verify` runs in `Release / provenance`, after `pypi-publish` has uploaded a final release. It is the candidate
+check with the release's identity: the same five layers, the same pinned verifier, lock and control, imported from
+`testpypi_provenance.py`, and one policy class, `ReleaseProvenancePolicy` (a `ProvenancePolicy` subclass), naming
+PyPI's Integrity API (`https://pypi.org/integrity/melder/<version>/<file>/provenance`), `python-publish.yml` and the
+`pypi` environment. `release_context` reads the run: a published release at `refs/tags/<tag>`, the tag passed from
+the event as `RELEASE_TAG`, or a manual dispatch on `prod` with no tag; anything else is refused before PyPI is
+asked. The downloaded files are verified again with that tag, which must name the package version. Every released
+file must then name exactly this run's upload: PyPI takes a file name once and the upload never skips one, so,
+unlike the candidate check, no claim is matched by pattern - the workflow at the run's ref, the commit, the run, the
+attempt `pypi-publish` reported (`RELEASE_PUBLISH_ATTEMPT`) and its event. A 404 that outlasts the retries is
+reported as a release whose files are published without an accepted attestation. The report
 `reports/provenance.json` is written only after every check passed.
 
 ### `verify_distributions.py`, `normalize_sdist.py` and `smoke_wheel.py`
@@ -121,14 +139,14 @@ agree, and a small bind, conjure and meld scenario must work with the GIL off.
 ## Other files in `.github`
 
 - `BRANCH_WORKFLOW.md`: branch, release and publication policy for people and agents.
-- `provenance/`: the provenance check's tool, used only by `testpypi_provenance.py`.
+- `provenance/`: the provenance checks' tool, used by `testpypi_provenance.py` and `pypi_provenance.py`.
   `.github/provenance/verify_attestations.py` is the verifier, the one script under `.github/` that imports
   packages outside the standard library, so it never runs on a bare interpreter.
   `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it.
   `.github/provenance/known_good_provenance.json` is the recorded control: PyPI's provenance of the
   pypi-attestations wheel the lock installs. Moving the tool is one change: the publishing action's pin in
-  `release-candidate.yml`, the lock at the versions that action signs with, and the control re-recorded for the
-  new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
+  `release-candidate.yml` and `python-publish.yml`, the lock at the versions that action signs with, and the control
+  re-recorded for the new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
 - `python/`: the Python release manifests ([python_versions.md](python_versions.md)).
 - `rulesets/`: `dev.json`, `preprod.json`, `release_candidate.json` and `prod.json` are the branch protection
   payloads. Each requires a pull request and the `CI / merge-ready` status from the GitHub Actions app (ID 15368)

@@ -21,6 +21,9 @@ different operations. Follow the complete script's lifetime choices first.
 The live-probe lesson checks `False` before its first meld and `True` afterward,
 then uses `describe_live_creation_status(...)` for detail. A diagnostic path can
 use these reads without using a meld merely to discover whether something is alive.
+Given a spell_id as `spell=`, both probes answer for exactly that version, also one a
+notch has parked or a copy borrowed from a linked conduit, while `meld` builds only
+the selected version.
 
 Continue to [deep overrides](../advanced/overrides.md) when the target is inside
 a dependency graph rather than a parameter of the object you are resolving.

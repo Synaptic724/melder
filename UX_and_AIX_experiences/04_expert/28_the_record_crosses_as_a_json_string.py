@@ -37,14 +37,20 @@ GOAL: NO FILE, NO DATABASE, NO DRIVER - A PYTHON STRING. Merge two
       purpose - `bind_inactive` declares its version into `default`
       automatically, and single residence means that id then lives in
       exactly one lane, so registering it onto a branch would raise the
-      rediscovery signal instead (expert 26 shows that refusal).
+      rediscovery signal instead (expert 26 shows that refusal). And the
+      staged version is bound the way the index's first one was: Policy
+      under the string category 'Policy' - the address a bare bind of
+      Policy has - with binding name 'wire-policy', and PolicyV2 the
+      same; bind_inactive refuses a version bound any other way
+      (2026-10-25).
 SURFACE EXERCISED: md.ResearchSet.from_payload, ResearchSet.describe /
                    lane_names / walk / set_id /
                    network_snapshot_shas, research_create_lane /
                    research_join / research_heads,
                    Conduit.bind_inactive, and the mesh quartet
                    (with_store_handler / with_fetch_handler)
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import json
 
@@ -102,8 +108,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=Policy, existence="unique", permissions="create",
-                   binding_name="wire-policy")
+    v1 = book.bind(spell=Policy, spellframe="Policy", existence="unique",
+                   permissions="create", binding_name="wire-policy")
     conduit = book.conjure(name="wire-root")
 
     nexus = md.Nexus()
@@ -140,10 +146,12 @@ def main() -> None:
     print("join('wire-clean') accepted - an empty line is a legal line;")
     print("  what makes it clean is the ANCHOR agreeing with the tip")
 
-    # Now move the receiver, so the second branch is provably stale.
+    # Now move the receiver, so the second branch is provably stale. The
+    # new version is bound the way the index's first one was.
     v2 = conduit.bind_inactive(
         spell=PolicyV2,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        spellframe="Policy", binding_name="wire-policy",
         existence="unique", permissions="create",
     )
     print("v2 staged; the default lane moved on:", v2[:12], "...")

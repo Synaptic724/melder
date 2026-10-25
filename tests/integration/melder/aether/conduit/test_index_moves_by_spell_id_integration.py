@@ -6,6 +6,9 @@ Both verbs move only a spell parked in the Book. `bind_inactive` returns the par
 lookups answer a parked spell_id with the index's active spell, so until 0.2.8249 neither verb could be called from
 public code. Each call resolves the spell_id inside the call, as `notch_spell(spell_id=...)` does; the Book's own
 checks (owned, parked, a member of the source index) are unchanged.
+
+Every version of an index is bound the way its first version was (2026-10-25), so a parked version moves only onto an
+index bound as it is - here, back onto the index it was split from - and an index bound another way refuses it.
 """
 import contextlib
 from typing import Iterator, Tuple
@@ -93,17 +96,25 @@ def _two_indexes() -> Iterator[Tuple[Spellbook, Conduit, str, str, str, SpellInd
     """
     A root with index X (A active, B parked) and index Y (Y active).
 
+    X's versions share one binding, spellframe 'service' and binding name 'a'; Y is bound another way, spellframe
+    'other' and binding name 'y', so a version of X cannot join it (2026-10-25).
+
     Yields:
         Tuple: (book, root, id_a, id_b, id_y, index_x, index_y).
     """
     book = _make_spellbook()
-    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_y = book.bind(spell=_ServiceY, existence=Existence.unique, permissions="create", binding_name="y")
+    id_a = book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
+    id_y = book.bind(
+        spell=_ServiceY, existence=Existence.unique, permissions="create", spellframe="other", binding_name="y",
+    )
     root = book.conjure(dynamic=True, name="root")
     index_x = book.find_spell_by_spell_id(id_a).spell_index
     index_y = book.find_spell_by_spell_id(id_y).spell_index
     id_b = root.bind_inactive(
-        spell=_ServiceB, spell_index=index_x, existence=Existence.unique, permissions="create", binding_name="b",
+        spell=_ServiceB, spell_index=index_x, existence=Existence.unique, permissions="create",
+        spellframe="service", binding_name="a",
     )
     try:
         yield book, root, id_a, id_b, id_y, index_x, index_y
@@ -138,20 +149,40 @@ def test_add_to_spell_index_by_spell_id_moves_a_parked_spell_onto_another_index(
     The spell_id `bind_inactive` returned is enough to move the parked spell; a notch to it then melds it.
 
     Contract:
-        - B leaves X and joins Y as a parked member; X keeps A active; the call returns B's Spell.
+        - B split out of X into an index of its own moves back onto X by its spell_id as a parked member - the index
+          it moves onto keeps B's binding (2026-10-25): its own index empties and goes, X keeps A active, and the
+          call returns B's Spell.
     """
     with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
-        moved = root.add_to_spell_index(spell_id=id_b, target_index=index_y)
+        own_index = root.remove_from_spell_index(spell_id=id_b, source_index=index_x).spell_index
+
+        moved = root.add_to_spell_index(spell_id=id_b, target_index=index_x)
 
         assert moved.spell_id == id_b
-        assert moved.spell_index is index_y
-        assert index_x.spells_in_index() == {id_a}
-        assert index_y.spells_in_index() == {id_y, id_b}
-        assert index_y.selected_spell_id == id_y
+        assert moved.spell_index is index_x
+        assert own_index.cleaned
+        assert index_x.spells_in_index() == {id_a, id_b}
+        assert index_x.selected_spell_id == id_a
         assert root.meld(spell_id=id_a).tag == "A"
 
-        root.notch_spell(spell_index=index_y, spell_id=id_b)
+        root.notch_spell(spell_index=index_x, spell_id=id_b)
         assert root.meld(spell_id=id_b).tag == "B"
+
+
+def test_add_to_spell_index_by_spell_id_refuses_an_index_bound_another_way() -> None:
+    """
+    Regression for the strict rule (2026-10-25): B, bound as X's versions are, cannot join Y, which is bound another
+    way; until then it joined Y, and a notch to it there moved Y's address.
+
+    Contract:
+        - ValueError "add_to_spell_index refused: SpellIndex <Y> keeps the binding its first version was bound
+          with ..."; nothing moves.
+    """
+    with _two_indexes() as (book, root, id_a, id_b, id_y, index_x, index_y):
+        with pytest.raises(ValueError, match="add_to_spell_index refused: SpellIndex .* keeps the binding"):
+            root.add_to_spell_index(spell_id=id_b, target_index=index_y)
+
+        _assert_indexes_intact(root, index_x, index_y, id_a, id_b, id_y)
 
 
 def test_remove_from_spell_index_by_spell_id_splits_a_parked_spell_into_a_fresh_index() -> None:

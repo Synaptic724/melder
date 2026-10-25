@@ -1,0 +1,13 @@
+/sessions/rcw-01lthtdmhut2saupx6mtrh56/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.8 free-threaded=1 gil=True
+R6a: unique_per_conduit -> many; same spell_id: True; slot type before rebind: Svc
+   second meld raised AttributeError: 'Svc' object has no attribute 'append'
+   innermost frame: register_many (creations.py:853)
+   disposal events: [('first', 'close')]
+R6b: unique -> many; same spell_id: True; slot type before rebind: Svc
+   second meld raised AttributeError: 'Svc' object has no attribute 'append'
+   innermost frame: register_many (creations.py:853)
+   disposal events: [('first', 'close')]

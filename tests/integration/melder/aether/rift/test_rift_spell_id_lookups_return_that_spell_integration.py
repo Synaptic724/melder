@@ -9,7 +9,9 @@ version the index has active. Until 0.2.8253 the spell_id lookup was named `get_
 spell_id and source-id lookups went through paths that turn a spell_id into its index.
 
 Each test builds a dynamic `default` frame open to Rift rooms: one Book binds PricingV1 active, conjures and stages
-PricingV2 on its index with `bind_inactive`; an enabled Nexus creates a capability Rift linked to the frame.
+PricingV2 on its index with `bind_inactive`; an enabled Nexus creates a capability Rift linked to the frame. Both
+versions are bound under the string category "pricing": every version of an index is bound the way its first version
+was (2026-10-25).
 """
 
 from collections.abc import Iterator
@@ -72,10 +74,12 @@ def _build_world() -> Dict[str, object]:
     configure_frame_posture_for_spellbook_configuration(configuration, dynamic=True, rift_enabled=True)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook = Spellbook(aetheric_frame="default", configuration=configuration)
-    v1_id = spellbook.bind(spell=PricingV1, existence=Existence.unique, permissions="create")
+    v1_id = spellbook.bind(spell=PricingV1, existence=Existence.unique, permissions="create", spellframe="pricing")
     root = spellbook.conjure(name="pricing_root", dynamic=True)
     index = spellbook._spells_by_id[v1_id].spell_index
-    v2_id = root.bind_inactive(spell=PricingV2, spell_index=index, existence=Existence.unique, permissions="create")
+    v2_id = root.bind_inactive(
+        spell=PricingV2, spell_index=index, existence=Existence.unique, permissions="create", spellframe="pricing",
+    )
     nexus = Nexus()
     nexus_configuration = nexus.create_configuration()
     nexus_configuration.with_rift_creation_enabled(True)

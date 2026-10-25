@@ -122,7 +122,8 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
         )
         spellbook.end_transaction("bind")
         creations = conduit._creations
-        creation = creations._creations.get(existing_id)
+        # Filed under its store key (STORY-2026-10-25-creations_store_slots_by_binding).
+        creation = creations._creations.get(spellbook.find_spell_by_spell_id(existing_id).store_key)
         assert creation is not None
         assert creation is existing
     finally:
@@ -148,14 +149,15 @@ def test_component_spellspace_cleanup_disposes_and_clears_bucket() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
+    store_key = spellbook.find_spell_by_spell_id(spell_id).store_key
     try:
         with conduit.enter_spellspace() as space:
             instance = space.meld(spell_id=spell_id)
-            creation = space._creations.get_creation(spell_id)
+            creation = space._creations.get_creation(store_key)
             assert creation is not None
             assert creation is instance
         assert instance.cleanup_calls == 1
-        assert space._creations.get_creation(spell_id) is None
+        assert space._creations.get_creation(store_key) is None
     finally:
         conduit.permanent_cleanup()
 
@@ -179,13 +181,14 @@ def test_component_spellspace_cleanup_preserves_other_spellspaces() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
+    store_key = spellbook.find_spell_by_spell_id(spell_id).store_key
     try:
         with conduit.enter_spellspace() as outer:
             outer_instance = outer.meld(spell_id=spell_id)
             with conduit.enter_spellspace() as inner:
                 inner.meld(spell_id=spell_id)
-            assert inner._creations.get_creation(spell_id) is None
-            outer_creation = outer._creations.get_creation(spell_id)
+            assert inner._creations.get_creation(store_key) is None
+            outer_creation = outer._creations.get_creation(store_key)
             assert outer_creation is not None
             assert outer_creation is outer_instance
     finally:
@@ -219,7 +222,8 @@ def test_component_creations_extract_restore_spellspace_reuses_instance() -> Non
             assert len(snapshot) == 1
             entry = snapshot[0]
             assert entry["scope"] == "unique"
-            assert creations.get_creation(spell_id) is None
+            assert entry["key"] == spellbook.find_spell_by_spell_id(spell_id).store_key
+            assert creations.get_creation(entry["key"]) is None
             creations.restore_spell_creations(spell_id, snapshot)
             restored = space.meld(spell_id=spell_id)
             assert restored is instance

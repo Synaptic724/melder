@@ -1,0 +1,17 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx tests/unit/melder/aether tests/unit/melder/utilities tests/unit/melder/build_assets tests/unit/github_workflows tests/unit/llm_support tests/unit/architecture_and_design (cwd: /tmp/m0s2/d10_b, a /tmp copy of the working tree; Python 3.14.7t)
+ran_at: 2026-10-25T08:13:24Z
+...................x.............................x....x.....x...x....... [ 78%]
+.................................................x................x..... [ 79%]
+........s....................s.......................................... [ 80%]
+........................................................s............... [ 86%]
+=========================== short test summary info ============================
+XFAIL tests/unit/melder/utilities/helpers/test_pack_testing.py::TestPackageAdvancedScenarios::test_call_fallback_fills_missing_positional_args
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_normalize_task_rejects_coroutines
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_validate_callable_rejects_coroutines
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_normalize_many_rejects_coroutine_in_iterable
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_is_valid_callable_with_package
+XFAIL tests/unit/melder/utilities/helpers/test_package_decorators.py::TestPackDecorators::test_async_decorated_function_rejected
+XFAIL tests/unit/melder/utilities/helpers/test_package_wrapping.py::TestPackage::test_package_rejects_coroutine
+6323 passed, 3 skipped, 7 xfailed in 30.07s
+<sys>:0: RuntimeWarning: coroutine 'coro' was never awaited
+exit: 0

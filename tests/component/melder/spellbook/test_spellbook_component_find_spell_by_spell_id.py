@@ -13,11 +13,15 @@ removed); it kept answering a parked spell_id with its index's active spell. 0.2
 between the maps - notch, add-to-index, remove-from-index, ownership transfer and parked disposal - and the two
 properties 0.2.8229 added: the lookup never iterates the live active-index map, and a parked version disposed in
 the middle of a lookup never makes it raise.
+
+Every version of an index is bound the way its first version was (2026-10-25,
+STORY-2026-10-17-notch_moves_signature_by_incoming_key_only), so _ServiceB is staged under _ServiceA's
+spellframe and binding name, and an add-to-index move takes a version split off its index back into it.
 """
 
 import threading
 from collections.abc import Iterator
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -33,15 +37,11 @@ from tests._frame_posture_test_support import (
 
 
 class _ServiceA:
-    """First version of the index: the active version unless a test notches it out."""
+    """First version of the index, bound at ('service', 'a'): the active version unless a test notches it out."""
 
 
 class _ServiceB:
-    """Second version of the index: bound parked into _ServiceA's index."""
-
-
-class _ServiceC:
-    """Active member of a second index, the destination of an add-to-index move."""
+    """Second version of the index: bound parked into _ServiceA's index at the same ('service', 'a')."""
 
 
 class _ForeignService:
@@ -123,29 +123,25 @@ def _dynamic_configuration() -> SpellbookConfiguration:
 
 class _Lineage:
     """
-    One dynamic Book whose first index holds _ServiceA active and _ServiceB parked.
+    One dynamic Book whose index holds _ServiceA active and _ServiceB parked, both bound at ('service', 'a').
 
-    With `second_index=True` the Book also holds _ServiceC active in its own index. The fixture owns the
-    Book's root conduit for one test; `cleanup()` tears it down and the autouse fixture resets the Aether.
+    The fixture owns the Book's root conduit for one test; `cleanup()` tears it down and the autouse fixture
+    resets the Aether.
     """
 
-    def __init__(self, *, second_index: bool = False) -> None:
-        """Bind A (and C), conjure the dynamic root, then park B into A's index."""
+    def __init__(self) -> None:
+        """Bind A, conjure the dynamic root, then park B into A's index under A's binding."""
         self.book = Spellbook(configuration=_dynamic_configuration())
         self.id_a = self.book.bind(
-            spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a",
+            spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service",
+            binding_name="a",
         )
-        self.id_c: Optional[str] = None
-        if second_index:
-            self.id_c = self.book.bind(
-                spell=_ServiceC, existence=Existence.unique, permissions="create", binding_name="c",
-            )
         self.conduit = self.book.conjure(dynamic=True, name="lineage")
         self.spell_a = self.book._spells_by_id[self.id_a]
         self.index = self.spell_a.spell_index
         self.id_b = self.conduit.bind_inactive(
             spell=_ServiceB, spell_index=self.index, existence=Existence.unique,
-            permissions="create", binding_name="b",
+            permissions="create", spellframe="service", binding_name="a",
         )
         self.spell_b = self.book._inactive_spells[self.id_b]
 
@@ -185,15 +181,21 @@ def test_after_a_notch_each_spell_id_returns_its_own_spell() -> None:
         world.cleanup()
 
 
-def test_parked_spell_moved_to_another_index_returns_itself() -> None:
-    """An add-to-index move repoints the parked version's index; its spell_id still answers that Spell."""
-    world = _Lineage(second_index=True)
+def test_parked_spell_moved_back_into_its_index_returns_itself() -> None:
+    """
+    An add-to-index move repoints the parked version's index; its spell_id still answers that Spell.
+
+    The version is split off into an index of its own, then moved back into _ServiceA's index - the move an
+    index allows, since every version of it is bound the same way.
+    """
+    world = _Lineage()
     try:
-        spell_c = world.book._spells_by_id[world.id_c]
-        world.conduit.add_to_spell_index(spell=world.spell_b, target_index=spell_c.spell_index)
+        world.conduit.remove_from_spell_index(spell=world.spell_b, source_index=world.index)
+        split_index = world.spell_b.spell_index
+        world.conduit.add_to_spell_index(spell=world.spell_b, target_index=world.index)
         assert world.book.find_spell_by_spell_id(world.id_b) is world.spell_b
-        assert world.spell_b.spell_index is spell_c.spell_index
-        assert world.book.find_spell_by_spell_id(world.id_c) is spell_c
+        assert world.spell_b.spell_index is world.index
+        assert world.spell_b.spell_index is not split_index
         assert world.book.find_spell_by_spell_id(world.id_a) is world.spell_a
     finally:
         world.cleanup()
@@ -226,7 +228,9 @@ def test_transfer_moves_both_spell_ids_to_the_target_book() -> None:
     """A transfer moves the whole index: each spell_id answers its own Spell in the target Book, none in the source."""
     configuration = _dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     target_book = Spellbook(configuration=configuration)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
@@ -234,7 +238,7 @@ def test_transfer_moves_both_spell_ids_to_the_target_book() -> None:
         index = owner_book._spells_by_id[id_a].spell_index
         id_b = owner.bind_inactive(
             spell=_ServiceB, spell_index=index, existence=Existence.unique,
-            permissions="create", binding_name="b",
+            permissions="create", spellframe="service", binding_name="a",
         )
         owner.transfer_spell_ownership(spell=id_a, target_conduit=target)
         active = target_book.find_spell_by_spell_id(id_a)

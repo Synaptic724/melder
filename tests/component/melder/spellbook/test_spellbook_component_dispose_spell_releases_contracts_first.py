@@ -5,6 +5,9 @@ before its disposal (cleanup_releases_contracts_2026_10_19, 0.2.8261).
 The hook is how `Conduit.cleanup_spell` takes a version out of every contract before the Book disposes it: it runs
 once the Book has decided to dispose the version and marked it in flight, with no Book lock held, and never for a
 refused call; a raise from it ends the call with nothing disposed and the in-flight mark cleared.
+
+Every version of an index is bound the way its first version was (2026-10-25), so `_Active` and `_Parked` share one
+binding, the string spellframe 'disposal' and the binding name 'active'.
 """
 
 from typing import Iterator, List, Tuple
@@ -27,7 +30,7 @@ class _Active:
 
 
 class _Parked:
-    """A version parked on the active one's index."""
+    """A version parked on the active one's index, under its binding ('disposal', 'active')."""
 
 
 @pytest.fixture(autouse=True)
@@ -60,10 +63,12 @@ def _book_with_parked_version() -> Tuple[Spellbook, str, str]:
     apply_dynamic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
     book = Spellbook(configuration=configuration)
-    active_id = book.bind(spell=_Active, existence=Existence.unique, permissions="create", binding_name="active")
+    active_id = book.bind(
+        spell=_Active, existence=Existence.unique, permissions="create", spellframe="disposal", binding_name="active",
+    )
     index = book.find_spell_by_spell_id(active_id).spell_index
     parked_id = book.bind_inactive(spell=_Parked, spell_index=index, existence=Existence.unique,
-                                   permissions="create", binding_name="parked")
+                                   permissions="create", spellframe="disposal", binding_name="active")
     return book, active_id, parked_id
 
 

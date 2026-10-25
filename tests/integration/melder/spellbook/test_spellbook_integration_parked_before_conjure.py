@@ -7,6 +7,9 @@ owner stamp a post-conjure `bind_inactive` applies. Until then a version parked 
 CreationContextFactory, and after a notch its first meld raised "Spell has no configured CreationContextFactory."
 for every existence. Each test runs a dynamic world twice - the version staged before conjure and after it - and
 expects the same outcome from both.
+
+Both versions are bound under one string spellframe, 'service', and the default binding name: every version of an
+index is bound the way its first version was (2026-10-25).
 """
 from collections.abc import Iterator
 from typing import Any, Callable, Dict, List, Tuple
@@ -97,21 +100,21 @@ class _World:
         configuration.finalize()
         self.book: Spellbook = Spellbook(aetheric_frame="default", configuration=configuration)
         self.active_id: str = self.book.bind(
-            spell=active_target, existence=family.existence, permissions="create", binding_name="active",
+            spell=active_target, existence=family.existence, permissions="create", spellframe="service",
             **family.options,
         )
         self.index: Any = self.book.find_spell_by_spell_id(self.active_id).spell_index
         if staged_before_conjure:
             self.staged_id: str = self.book.bind_inactive(
                 spell=staged_target, spell_index=self.index, existence=family.existence, permissions="create",
-                binding_name="staged", **family.options,
+                spellframe="service", **family.options,
             )
             self.root: Conduit = self.book.conjure(dynamic=True, name="root")
         else:
             self.root = self.book.conjure(dynamic=True, name="root")
             self.staged_id = self.root.bind_inactive(
                 spell=staged_target, spell_index=self.index, existence=family.existence, permissions="create",
-                binding_name="staged", **family.options,
+                spellframe="service", **family.options,
             )
 
     def notch_to_staged(self) -> None:
@@ -219,11 +222,14 @@ def test_a_staged_existing_object_is_not_registered_in_the_store(staged_before_c
     family = _family("existing_object")
     world = _World(family, staged_before_conjure=staged_before_conjure)
     try:
-        store = world.root._creations._creations
-        assert world.active_id in store and world.staged_id not in store
+        # A store files objects by store key and counts a spell over every binding's slot
+        # (STORY-2026-10-25-creations_store_slots_by_binding).
+        creations = world.root._creations
+        assert creations.count_spell_creations(world.active_id) == 1
+        assert creations.count_spell_creations(world.staged_id) == 0
         world.notch_to_staged()
         assert world.root.meld(spell_id=world.staged_id) is world.staged_target
-        assert world.staged_id not in store
+        assert creations.count_spell_creations(world.staged_id) == 0
     finally:
         world.close()
 

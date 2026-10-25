@@ -1,0 +1,275 @@
+# probe_meld_identities_across_a_notch.py on 0.2.8273 (the device tree), every case, the GIL off then on (melder_1, at the fix)
+
+===== protocol (-X gil=0)
+case protocol
+[before: English active, French parked]
+  lender meld(spell_id=<English>)                            -> English 'hello' (object ...8f790)
+  lender meld(spell_id=<French>)                             -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld(spellframe=Greeter, binding_name='greeter')    -> English 'hello' (object ...8f790)
+  lender meld(spell=English)  (a class)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('English')  (a SpellName)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld_existing_spell(spell=<English>)  (reuse-only)  -> English 'hello' (object ...8f790)
+  lender consumer ByProtocol                                 -> English 'hello' (object ...8f790)
+  lender consumer ByClass                                    -> English 'hello' (object ...8f790)
+  lender consumer ByMapAddress                               -> English 'hello' (object ...8f790)
+  lender consumer ByMapClass                                 -> English 'hello' (object ...8f790)
+  index borrower meld at (Greeter, 'greeter')                -> English 'hello' (object ...8f790)
+  index borrower meld(spell_id=<English>)                    -> English 'hello' (object ...8f790)
+  index borrower meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  grant borrower (English granted) meld at the address       -> English 'hello' (object ...8f790)
+  grant borrower meld(spell_id=<English>)                    -> English 'hello' (object ...8f790)
+  notch to French                                            -> French
+[after the notch: French active, English parked]
+  lender meld(spell_id=<English>)                            -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<French>)                             -> French 'bonjour' (object ...8f490)
+  lender meld(spellframe=Greeter, binding_name='greeter')    -> French 'bonjour' (object ...8f490)
+  lender meld(spell=English)  (a class)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('English')  (a SpellName)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld_existing_spell(spell=<English>)  (reuse-only)  -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender consumer ByProtocol                                 -> French 'bonjour' (object ...8f490)
+  lender consumer ByClass                                    -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32a994ee2632dd2) at node 8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32
+  lender consumer ByMapAddress                               -> French 'bonjour' (object ...8f490)
+  lender consumer ByMapClass                                 -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'ByMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe
+  index borrower meld at (Greeter, 'greeter')                -> French 'bonjour' (object ...8f490)
+  index borrower meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  index borrower meld(spell_id=<French>)                     -> French 'bonjour' (object ...8f490)
+  grant borrower (English granted) meld at the address       -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  grant borrower meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender has_live_creation(spell=<English>)  (parked)        -> True
+  lender purge(spell_id=<English>)  (parked)                 -> 1
+  notch back to English                                      -> English
+[after the notch back: English active again]
+  lender meld(spell_id=<English>)                            -> English 'hello' (object ...726d0)
+  lender meld(spell_id=<French>)                             -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld(spellframe=Greeter, binding_name='greeter')    -> English 'hello' (object ...726d0)
+  lender meld(spell=English)  (a class)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('English')  (a SpellName)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld_existing_spell(spell=<English>)  (reuse-only)  -> English 'hello' (object ...726d0)
+  lender consumer ByProtocol                                 -> English 'hello' (object ...726d0)
+  lender consumer ByClass                                    -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32a994ee2632dd2) at node 8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32
+  lender consumer ByMapAddress                               -> English 'hello' (object ...726d0)
+  lender consumer ByMapClass                                 -> English 'hello' (object ...726d0)
+  index borrower meld at (Greeter, 'greeter')                -> English 'hello' (object ...726d0)
+  index borrower meld(spell_id=<English>)                    -> English 'hello' (object ...726d0)
+  index borrower meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  grant borrower (English granted) meld at the address       -> English 'hello' (object ...726d0)
+  grant borrower meld(spell_id=<English>)                    -> English 'hello' (object ...726d0)
+
+===== bare_same_name (-X gil=0)
+case bare_same_name
+  v1 address reportservice/__default__; v2 (ReportService) address reportservice/__default__
+[before: v1 active, v2 parked]
+  meld(spell_id=<v1>)                                        -> ReportService 'v1 report' (object ...8f190)
+  meld(spell_id=<v2>)                                        -> raises KeyError: '[MELD] No spell found with spell_id: b2b7296243fcf435658e54ab2f2b0e370d7e78b857db621cbbf23eef59af73c6'
+  meld(spell=ReportService)  (v1's class)                    -> ReportService 'v1 report' (object ...8f190)
+  meld(spell=<v2's class>)                                   -> ReportService 'v1 report' (object ...8f190)
+  meld('ReportService')  (a SpellName)                       -> ReportService 'v1 report' (object ...8f190)
+  meld('ReportServiceV2')  (a SpellName)                     -> raises KeyError: "[MELD] No spell found for frame='reportservicev2', binding='__default__'."
+  consumer injected by the class annotation ReportService    -> ReportService 'v1 report' (object ...8f190)
+  notch to v2                                                -> ReportService
+[after the notch: v2 active, v1 parked]
+  meld(spell_id=<v1>)                                        -> raises KeyError: '[MELD] No spell found with spell_id: a2817642a4f2853c2198fcfbb82a4085512bc681b4885d9eaf38da54a517762d'
+  meld(spell_id=<v2>)                                        -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld(spell=ReportService)  (v1's class)                    -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld(spell=<v2's class>)                                   -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld('ReportService')  (a SpellName)                       -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld('ReportServiceV2')  (a SpellName)                     -> raises KeyError: "[MELD] No spell found for frame='reportservicev2', binding='__default__'."
+  consumer injected by the class annotation ReportService    -> ReportService 'v2 report (same class name)' (object ...8fd90)
+
+===== bare_renamed (-X gil=0)
+case bare_renamed
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 225, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 219, in main
+    bare_case(case)
+    ~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 187, in bare_case
+    v2_id = world.bind_inactive(spell=v2_cls, spell_index=index, existence="unique", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG7YRN4ZS2NXE0B5FHS1EH keeps the binding its first version was bound with - no spellframe (bare, addressed by its own name 'ReportService') and the default binding name - and 'ReportServiceV2' (spell_id e3d86603502c3a7cc84dc1fb511c570fa416d93a76a871b064f1b529a6c69c90) is bound with no spellframe (bare, addressed by its own name 'ReportServiceV2') and the default binding name. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+===== bare_renamed_a (-X gil=0)
+case bare_renamed_a
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 225, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 219, in main
+    bare_case(case)
+    ~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 190, in bare_case
+    v2_id = world.bind_inactive(spell=v2_cls, spell_index=index, spellframe="ReportService",
+                                existence="unique", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG7YY1YT65M5PS6PA4NQ5Z keeps the binding its first version was bound with - no spellframe (bare, addressed by its own name 'ReportService') and the default binding name - and 'ReportServiceV2' (spell_id e3d86603502c3a7cc84dc1fb511c570fa416d93a76a871b064f1b529a6c69c90) is bound with the string spellframe 'ReportService' and the default binding name. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+===== protocol (-X gil=1)
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case protocol
+[before: English active, French parked]
+  lender meld(spell_id=<English>)                            -> English 'hello' (object ...8f610)
+  lender meld(spell_id=<French>)                             -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld(spellframe=Greeter, binding_name='greeter')    -> English 'hello' (object ...8f610)
+  lender meld(spell=English)  (a class)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('English')  (a SpellName)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld_existing_spell(spell=<English>)  (reuse-only)  -> English 'hello' (object ...8f610)
+  lender consumer ByProtocol                                 -> English 'hello' (object ...8f610)
+  lender consumer ByClass                                    -> English 'hello' (object ...8f610)
+  lender consumer ByMapAddress                               -> English 'hello' (object ...8f610)
+  lender consumer ByMapClass                                 -> English 'hello' (object ...8f610)
+  index borrower meld at (Greeter, 'greeter')                -> English 'hello' (object ...8f610)
+  index borrower meld(spell_id=<English>)                    -> English 'hello' (object ...8f610)
+  index borrower meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  grant borrower (English granted) meld at the address       -> English 'hello' (object ...8f610)
+  grant borrower meld(spell_id=<English>)                    -> English 'hello' (object ...8f610)
+  notch to French                                            -> French
+[after the notch: French active, English parked]
+  lender meld(spell_id=<English>)                            -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<French>)                             -> French 'bonjour' (object ...8fd90)
+  lender meld(spellframe=Greeter, binding_name='greeter')    -> French 'bonjour' (object ...8fd90)
+  lender meld(spell=English)  (a class)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('English')  (a SpellName)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld_existing_spell(spell=<English>)  (reuse-only)  -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender consumer ByProtocol                                 -> French 'bonjour' (object ...8fd90)
+  lender consumer ByClass                                    -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32a994ee2632dd2) at node 8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32
+  lender consumer ByMapAddress                               -> French 'bonjour' (object ...8fd90)
+  lender consumer ByMapClass                                 -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'ByMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe
+  index borrower meld at (Greeter, 'greeter')                -> French 'bonjour' (object ...8fd90)
+  index borrower meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  index borrower meld(spell_id=<French>)                     -> French 'bonjour' (object ...8fd90)
+  grant borrower (English granted) meld at the address       -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+  grant borrower meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender has_live_creation(spell=<English>)  (parked)        -> True
+  lender purge(spell_id=<English>)  (parked)                 -> 1
+  notch back to English                                      -> English
+[after the notch back: English active again]
+  lender meld(spell_id=<English>)                            -> English 'hello' (object ...72810)
+  lender meld(spell_id=<French>)                             -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld(spellframe=Greeter, binding_name='greeter')    -> English 'hello' (object ...72810)
+  lender meld(spell=English)  (a class)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('English')  (a SpellName)                      -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld_existing_spell(spell=<English>)  (reuse-only)  -> English 'hello' (object ...72810)
+  lender consumer ByProtocol                                 -> English 'hello' (object ...72810)
+  lender consumer ByClass                                    -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32a994ee2632dd2) at node 8d97d57b1a52c8c9491582e18e9b81ccc298027139bd983fc32
+  lender consumer ByMapAddress                               -> English 'hello' (object ...72810)
+  lender consumer ByMapClass                                 -> English 'hello' (object ...72810)
+  index borrower meld at (Greeter, 'greeter')                -> English 'hello' (object ...72810)
+  index borrower meld(spell_id=<English>)                    -> English 'hello' (object ...72810)
+  index borrower meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  grant borrower (English granted) meld at the address       -> English 'hello' (object ...72810)
+  grant borrower meld(spell_id=<English>)                    -> English 'hello' (object ...72810)
+
+===== bare_same_name (-X gil=1)
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case bare_same_name
+  v1 address reportservice/__default__; v2 (ReportService) address reportservice/__default__
+[before: v1 active, v2 parked]
+  meld(spell_id=<v1>)                                        -> ReportService 'v1 report' (object ...8f190)
+  meld(spell_id=<v2>)                                        -> raises KeyError: '[MELD] No spell found with spell_id: b2b7296243fcf435658e54ab2f2b0e370d7e78b857db621cbbf23eef59af73c6'
+  meld(spell=ReportService)  (v1's class)                    -> ReportService 'v1 report' (object ...8f190)
+  meld(spell=<v2's class>)                                   -> ReportService 'v1 report' (object ...8f190)
+  meld('ReportService')  (a SpellName)                       -> ReportService 'v1 report' (object ...8f190)
+  meld('ReportServiceV2')  (a SpellName)                     -> raises KeyError: "[MELD] No spell found for frame='reportservicev2', binding='__default__'."
+  consumer injected by the class annotation ReportService    -> ReportService 'v1 report' (object ...8f190)
+  notch to v2                                                -> ReportService
+[after the notch: v2 active, v1 parked]
+  meld(spell_id=<v1>)                                        -> raises KeyError: '[MELD] No spell found with spell_id: a2817642a4f2853c2198fcfbb82a4085512bc681b4885d9eaf38da54a517762d'
+  meld(spell_id=<v2>)                                        -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld(spell=ReportService)  (v1's class)                    -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld(spell=<v2's class>)                                   -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld('ReportService')  (a SpellName)                       -> ReportService 'v2 report (same class name)' (object ...8fd90)
+  meld('ReportServiceV2')  (a SpellName)                     -> raises KeyError: "[MELD] No spell found for frame='reportservicev2', binding='__default__'."
+  consumer injected by the class annotation ReportService    -> ReportService 'v2 report (same class name)' (object ...8fd90)
+
+===== bare_renamed (-X gil=1)
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case bare_renamed
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 225, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 219, in main
+    bare_case(case)
+    ~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 187, in bare_case
+    v2_id = world.bind_inactive(spell=v2_cls, spell_index=index, existence="unique", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG7ZH5ZQTX8JE82WSSGKYR keeps the binding its first version was bound with - no spellframe (bare, addressed by its own name 'ReportService') and the default binding name - and 'ReportServiceV2' (spell_id e3d86603502c3a7cc84dc1fb511c570fa416d93a76a871b064f1b529a6c69c90) is bound with no spellframe (bare, addressed by its own name 'ReportServiceV2') and the default binding name. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+===== bare_renamed_a (-X gil=1)
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case bare_renamed_a
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 225, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 219, in main
+    bare_case(case)
+    ~~~~~~~~~^^^^^^
+  File "/tmp/cc_res/s2/probes/probe_meld_identities_across_a_notch.py", line 190, in bare_case
+    v2_id = world.bind_inactive(spell=v2_cls, spell_index=index, spellframe="ReportService",
+                                existence="unique", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG7ZPFG2173A0AJYG1FHT9 keeps the binding its first version was bound with - no spellframe (bare, addressed by its own name 'ReportService') and the default binding name - and 'ReportServiceV2' (spell_id e3d86603502c3a7cc84dc1fb511c570fa416d93a76a871b064f1b529a6c69c90) is bound with the string spellframe 'ReportService' and the default binding name. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.

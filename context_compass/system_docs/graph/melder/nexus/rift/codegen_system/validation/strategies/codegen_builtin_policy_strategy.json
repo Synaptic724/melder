@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py",
- "source_sha256": "cb5f6095c8a97d9e669ea81d92465c669672f54141644a3b53241c08e07e2c63",
+ "source_sha256": "57f47ce6601cee4004b9561ab9aebd9ccbf7b0230db104dff040d32ed4cda29a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy": {
@@ -33,10 +33,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "68ed413c9b48afdd5d48ecf668d46a3f660e035f1135faa197275506d53a9088",
+   "span_sha256": "54347d417ad074c847e027c7fc53707877f25488eae0610b6de4de4aedf8b9bc",
    "role": "Builtins-policy validation strategy.",
    "responsibilities": [
-    "blocks denied builtin usage in the selected codegen posture"
+    "blocks denied builtin usage in the selected codegen posture",
+    "refuses a call of any name in `denied_builtin_names` united with `static_only_denied_builtin_names`, so a `__import__` call is refused wherever an import list applies (D-11, 0.2.8271)"
    ],
    "owns_state": [
     "_lock"
@@ -45,7 +46,7 @@
     "validation",
     "cleanup"
    ],
-   "semantics_authored_against": "68ed413c9b48afdd5d48ecf668d46a3f660e035f1135faa197275506d53a9088"
+   "semantics_authored_against": "54347d417ad074c847e027c7fc53707877f25488eae0610b6de4de4aedf8b9bc"
   }
  },
  "edges_out": [

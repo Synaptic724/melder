@@ -15,6 +15,10 @@ Layers 1, 2, 4 and 5 are checked here with the standard library; layer 4 by read
 from its DER. Layers 3 and 4 are then checked by the pinned pypi-attestations and sigstore in their own environment
 (`.github/provenance/verify_attestations.py`), which first has to verify a recorded genuine attestation and refuse
 two tampered copies of it, so a tool that cannot verify, or does not check, fails the run instead of passing it.
+
+The release check, `pypi_provenance.py`, runs the same layers on PyPI after a final release's upload: it imports
+them from here with its own `ProvenancePolicy` subclass, which names PyPI's Integrity API and the publication
+workflow's identity.
 """
 
 import argparse
@@ -70,10 +74,17 @@ class ProvenancePolicy:
     The identity is the TestPyPI Trusted Publisher the owner configures (BRANCH_WORKFLOW.md): this repository, the
     `release-candidate.yml` workflow on `release_candidate`, the `pypitest` environment. Change it here, and only
     deliberately, when one of those changes.
+
+    The layers the release check shares with this one (`fetch_provenance`, `single_attestation`, the verifier) read
+    the index from the policy they are given: `INDEX_NAME`, `INTEGRITY_ROOT`, `USER_AGENT`, the retry bounds and
+    `missing_provenance`. `pypi_provenance.ReleaseProvenancePolicy` overrides those with PyPI's and the publication
+    workflow's identity; everything else here (the server, the repository, the issuer, the tool) is shared.
     """
 
+    INDEX_NAME = "TestPyPI"
     INTEGRITY_ROOT = "https://test.pypi.org/integrity/melder/"
     INTEGRITY_MEDIA_TYPE = "application/vnd.pypi.integrity.v1+json"
+    USER_AGENT = "melder-candidate-ci"
     SERVER = "https://github.com"
     OWNER = "Synaptic724"
     REPOSITORY = "Synaptic724/melder"
@@ -95,14 +106,30 @@ class ProvenancePolicy:
 
     @classmethod
     def publisher(cls) -> dict[str, str]:
-        """Return the publisher record TestPyPI must hold for every candidate file (layer 2)."""
+        """Return the publisher record the index must hold for every file this check verifies (layer 2)."""
         return {"kind": "GitHub", "repository": cls.REPOSITORY, "workflow": cls.WORKFLOW,
                 "environment": cls.ENVIRONMENT}
 
     @classmethod
-    def workflow_uri(cls) -> str:
-        """Return the signing workflow's URI: the certificate's SAN, Build Signer URI and Build Config URI."""
-        return f"{cls.SERVER}/{cls.REPOSITORY}/.github/workflows/{cls.WORKFLOW}@{cls.REF}"
+    def workflow_uri(cls, ref: Optional[str] = None) -> str:
+        """Return the signing workflow's URI: the certificate's SAN, Build Signer URI and Build Config URI.
+
+        Args:
+            ref: The full Git ref the workflow ran at; `REF` when omitted. The candidate always runs at `REF`; a
+                release runs at its tag or at `prod`, so the release check passes its run's ref.
+        """
+        return f"{cls.SERVER}/{cls.REPOSITORY}/.github/workflows/{cls.WORKFLOW}@{cls.REF if ref is None else ref}"
+
+    @classmethod
+    def missing_provenance(cls, name: str) -> str:
+        """Return the refusal for a file the index still holds no provenance for after the last lookup.
+
+        On TestPyPI that means the file was uploaded by a token, before this check existed, or its attestation was
+        not accepted; the remedy is a candidate version TestPyPI has never seen.
+        """
+        return (f"TestPyPI holds no provenance for {name}: it was uploaded without Trusted Publishing (by an API "
+                "token, before this check existed), or the upload's attestation was not accepted. Choose a new "
+                "candidate version so this workflow uploads every file with an attestation.")
 
     @staticmethod
     def tool_directory() -> pathlib.Path:
@@ -484,50 +511,53 @@ def expected_identity(context: RunContext, uploaded_here: bool, publish_attempt:
     return {"san": policy.workflow_uri(), "exact": exact, "patterns": patterns}
 
 
-def fetch_provenance(version: str, name: str) -> bytes:
-    """Read one file's provenance from TestPyPI's Integrity API (layer 1).
+def fetch_provenance(version: str, name: str, policy: type[ProvenancePolicy] = ProvenancePolicy) -> bytes:
+    """Read one file's provenance from the policy's index, through its Integrity API (layer 1).
 
-    A 404 is retried, since TestPyPI may answer one for a moment after the upload, and so are the statuses in
-    `TestIndexPolicy.TRANSIENT_STATUSES`, timeouts and failed connections: up to `LOOKUP_ATTEMPTS` tries,
-    `RETRY_SECONDS` apart, each retry printed. Every other status raises at once. A response from any URL but the
-    one asked for is refused. No credentials are sent.
+    A 404 is retried, since an index may answer one for a moment after the upload, and so are the statuses in
+    `TestIndexPolicy.TRANSIENT_STATUSES`, timeouts and failed connections: up to the policy's `LOOKUP_ATTEMPTS`
+    tries, `RETRY_SECONDS` apart, each retry printed. Every other status raises at once. A response from any URL
+    but the one asked for is refused. No credentials are sent.
+
+    Args:
+        version: The release whose file is looked up.
+        name: The file's name.
+        policy: The index to ask: `ProvenancePolicy` (TestPyPI) for the candidate, the release check's subclass for
+            PyPI. It supplies the Integrity API root, the user agent, the retry bounds and the refusal texts.
 
     Raises:
-        ValueError: When TestPyPI still answers 404 after the last attempt, or redirected the request.
+        ValueError: When the index still answers 404 after the last attempt (`policy.missing_provenance`), or
+            redirected the request.
         urllib.error.URLError: When the last attempt's failure was another HTTP status or a network error.
     """
-    url = (ProvenancePolicy.INTEGRITY_ROOT + urllib.parse.quote(version, safe="") + "/"
+    url = (policy.INTEGRITY_ROOT + urllib.parse.quote(version, safe="") + "/"
            + urllib.parse.quote(name, safe="") + "/provenance")
-    request = urllib.request.Request(url, headers={"User-Agent": "melder-candidate-ci",
-                                                   "Accept": ProvenancePolicy.INTEGRITY_MEDIA_TYPE})
+    request = urllib.request.Request(url, headers={"User-Agent": policy.USER_AGENT,
+                                                   "Accept": policy.INTEGRITY_MEDIA_TYPE})
     attempt = 1
     while True:
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 if response.url != url:
-                    raise ValueError(f"TestPyPI answered the provenance of {name} from {response.url}; "
+                    raise ValueError(f"{policy.INDEX_NAME} answered the provenance of {name} from {response.url}; "
                                      "refusing a redirected answer.")
                 return response.read()
         except urllib.error.HTTPError as error:
             error.close()
             if error.code != 404 and error.code not in TestIndexPolicy.TRANSIENT_STATUSES:
                 raise
-            if attempt == ProvenancePolicy.LOOKUP_ATTEMPTS:
+            if attempt == policy.LOOKUP_ATTEMPTS:
                 if error.code == 404:
-                    raise ValueError(
-                        f"TestPyPI holds no provenance for {name}: it was uploaded without Trusted Publishing (by "
-                        "an API token, before this check existed), or the upload's attestation was not accepted. "
-                        "Choose a new candidate version so this workflow uploads every file with an attestation."
-                    ) from error
+                    raise ValueError(policy.missing_provenance(name)) from error
                 raise
             failure = f"HTTP {error.code}"
         except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
-            if attempt == ProvenancePolicy.LOOKUP_ATTEMPTS:
+            if attempt == policy.LOOKUP_ATTEMPTS:
                 raise
             failure = type(error).__name__
-        print(f"TestPyPI provenance lookup for {name} failed ({failure}), attempt {attempt} of "
-              f"{ProvenancePolicy.LOOKUP_ATTEMPTS}; retrying in {ProvenancePolicy.RETRY_SECONDS}s.", flush=True)
-        time.sleep(ProvenancePolicy.RETRY_SECONDS)
+        print(f"{policy.INDEX_NAME} provenance lookup for {name} failed ({failure}), attempt {attempt} of "
+              f"{policy.LOOKUP_ATTEMPTS}; retrying in {policy.RETRY_SECONDS}s.", flush=True)
+        time.sleep(policy.RETRY_SECONDS)
         attempt += 1
 
 
@@ -550,7 +580,7 @@ def single_attestation(document: object, label: str, publisher: Mapping[str, str
     differences = [f"{key} is {record.get(key)!r}, expected {value!r}" for key, value in publisher.items()
                    if record.get(key) != value]
     if differences:
-        raise ValueError(f"TestPyPI's publisher record for {label} is not the expected Trusted Publisher: "
+        raise ValueError(f"The publisher record for {label} is not the expected Trusted Publisher: "
                          + "; ".join(differences) + ".")
     attestations = bundle.get("attestations")
     if not isinstance(attestations, list) or len(attestations) != 1:
@@ -697,12 +727,18 @@ def run_verifier(python: pathlib.Path, entries: Sequence[Mapping[str, object]],
     return outcomes
 
 
-def require_outcomes(outcomes: Mapping[str, Mapping[str, object]], candidates: Sequence[str]) -> None:
-    """Accept the verifier's verdicts only when the controls split as they must and every candidate verified.
+def require_outcomes(outcomes: Mapping[str, Mapping[str, object]], candidates: Sequence[str],
+                     prefix: str = "candidate") -> None:
+    """Accept the verifier's verdicts only when the controls split as they must and every checked file verified.
+
+    Args:
+        outcomes: The verifier's verdict for each entry, by entry id.
+        candidates: The names of the files checked, whose entries are `<prefix>:<name>`.
+        prefix: The id prefix their entries carry: `candidate` here, `release` for the release check.
 
     Raises:
         ValueError: When the tool refused the genuine control (it cannot verify here), accepted a tampered copy
-            (it is not checking), or refused a candidate file (naming the file and Sigstore's reason).
+            (it is not checking), or refused a file (naming the file and Sigstore's reason).
     """
     good = outcomes[ProvenanceControl.GOOD]
     if good.get("outcome") != "verified":
@@ -712,10 +748,10 @@ def require_outcomes(outcomes: Mapping[str, Mapping[str, object]], candidates: S
         if outcomes[entry_id].get("outcome") != "refused":
             raise ValueError(f"The pinned tool accepted a tampered copy of the recorded attestation ({entry_id}); "
                              "it is not checking, so none of its verdicts can be trusted.")
-    refused = [f"{name}: {outcomes[f'candidate:{name}'].get('reason')}" for name in candidates
-               if outcomes[f"candidate:{name}"].get("outcome") != "verified"]
+    refused = [f"{name}: {outcomes[f'{prefix}:{name}'].get('reason')}" for name in candidates
+               if outcomes[f"{prefix}:{name}"].get("outcome") != "verified"]
     if refused:
-        raise ValueError("Sigstore refused the TestPyPI attestation of " + "; ".join(refused) + ".")
+        raise ValueError("Sigstore refused the attestation of " + "; ".join(refused) + ".")
 
 
 def verify_candidate(directory: pathlib.Path, report: pathlib.Path, environment: Mapping[str, str]) -> None:

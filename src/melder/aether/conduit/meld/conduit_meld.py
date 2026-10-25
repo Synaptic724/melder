@@ -164,7 +164,11 @@ class ConduitMeld(Meld):
             existing conduit-specific resolution behavior.
 
         Contract:
-            - Shared discovery returns the existing registered definition.
+            - Shared discovery returns the existing registered definition; a
+              spell_id names one version - this conduit's Book's own or a borrowed
+              copy, active or parked - so a version a notch parked is purged from
+              the store its existence selects without a notch back
+              (STORY-2026-10-25-probe_and_purge_reach_every_version).
             - `_get_purge_creations` applies conduit lifetime/authority rules.
             - The chosen Creations performs synchronized removal and disposal.
             - No SpellSpace is inferred, entered, or cleared by this door.
@@ -183,10 +187,12 @@ class ConduitMeld(Meld):
 
         Raises:
             ValueError: If no usable selector is supplied, or False has no instance.
-            KeyError: If normal meld discovery cannot find the target.
+            KeyError: If no version this conduit can see carries the spell_id, or
+                normal meld discovery cannot find the target.
             TypeError: If purge_all is not a bool.
-            RuntimeError: If cleaned, a cluster has no elected leader, or the
-                caller lacks the required local/root/leader authority.
+            RuntimeError: If cleaned, a cluster has no elected leader, the caller
+                lacks the required local/root/leader authority, or a `unique`
+                version has no owner store.
             ExceptionGroup: Disposal failures after selected entries are removed.
 
         Threading / Lifecycle:
@@ -223,6 +229,11 @@ class ConduitMeld(Meld):
               cluster's, 0.2.8237). A lesser's `_resolution_conduit_id` grants no
               authority.
             - SpellSpace lifetime is refused even when a space is active.
+            - A `unique` version with no owner store - its owner stamp failed when
+              its Book was conjured, which the conjure logged - is refused with a
+              RuntimeError naming it (R6 of
+              STORY-2026-10-25-probe_and_purge_reach_every_version); until then the
+              store read raised AttributeError.
             - A managed spell (`Existence.managed_spell_quantity`) uses this
               caller's own store, where `Creations.purge` returns 0 for it: its
               objects live in a pool, and purge is not part of the managed design
@@ -238,7 +249,8 @@ class ConduitMeld(Meld):
 
         Raises:
             RuntimeError: If the lifetime is unsupported here, the cluster is
-                inert, or the caller is not the required owner/root/leader.
+                inert, the caller is not the required owner/root/leader, or a
+                `unique` version has no owner store.
 
         Lifecycle:
             Uses current ownership/store references on every call. Ownership
@@ -256,6 +268,12 @@ class ConduitMeld(Meld):
         creations: Creations
         if existence is Existence.unique:
             creations = spell._owner_creations
+            if creations is None:
+                raise RuntimeError(
+                    f"Cannot purge spell '{spell.spell_name}' ({spell.spell_id}): it has no owner store, so "
+                    "nothing was ever stored for it. Its owner stamp failed when its Book was conjured (the "
+                    "conjure logged the error). Dispose it with cleanup_spell and bind it again."
+                )
             authority = "spell-owning conduit"
             authority_conduit_id = creations.owner_conduit_id
         elif existence is Existence.unique_per_conduit_lineage:
@@ -757,6 +775,10 @@ class ConduitMeld(Meld):
               Spell owner's `owner_creations` for `unique`, the lineage root for
               `unique_per_conduit_lineage` and the cluster's team store for
               `unique_per_conduit_cluster` (not live while no leader is elected).
+            - Reads the resolved binding's own slot (`Spell.store_key`): the
+              object a meld of this binding returns. A removed binding's object
+              of the same spell id is never returned, though the live probes
+              count it (STORY-2026-10-25-creations_store_slots_by_binding).
 
         Args:
             spell_name:
@@ -844,7 +866,7 @@ class ConduitMeld(Meld):
             )
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
+            creation = caller_creations.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -876,7 +898,7 @@ class ConduitMeld(Meld):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            creation = store.get_creation(spell_id)
+            creation = store.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -906,7 +928,10 @@ class ConduitMeld(Meld):
 
         Contract:
             - Uses the same root identity inputs as `meld(...)`.
-            - Reuses the same spell-resolution helpers used by the meld path.
+            - A spell_id given as `spell` names one version: the exact version
+              this conduit's Book can see, its own or a borrowed copy, active or
+              parked (`_resolve_probe_target`); every other selector resolves as
+              `meld(...)` does, to the version an index has active.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
             - Reports the query conduit context explicitly so callers know
@@ -939,7 +964,7 @@ class ConduitMeld(Meld):
                 If the probe encounters an unsupported or inconsistent runtime
                 storage state.
         """
-        target_spell = self._resolve_spell(
+        target_spell = self._resolve_probe_target(
             spell=spell,
             spell_name=spell_name,
             spellframe=spellframe,
@@ -995,9 +1020,16 @@ class ConduitMeld(Meld):
             existing-creation object.
 
         Contract:
+            - The count is every object the selected store holds under the
+              spell id, whichever binding filed it
+              (`Creations.count_spell_creations`;
+              STORY-2026-10-25-creations_store_slots_by_binding): a class bound
+              again under another existence or other disposal names keeps its
+              spell id, and a removed binding's objects still alive there are
+              the spell's too. `is_live` is a count above 0.
             - `many` and `unique_per_conduit` read from caller-local conduit
-              storage; a `many` without disposal methods is never tracked and
-              reports 0.
+              storage; `many` objects without disposal methods are never
+              tracked, so such a binding adds 0.
             - `unique` reads the Spell owner's `owner_creations`;
               `unique_per_conduit_lineage` the lineage-root store;
               `unique_per_conduit_cluster` the cluster's team store, and is
@@ -1029,12 +1061,7 @@ class ConduitMeld(Meld):
         caller_creations = self._conduit_creations
 
         if existence is Existence.many:
-            creation_bucket = caller_creations.get_creation(spell_id)
-            creation_count = (
-                len(creation_bucket)
-                if isinstance(creation_bucket, list)
-                else 0
-            )
+            creation_count = caller_creations.count_spell_creations(spell_id)
             return {
                 "is_live": creation_count > 0,
                 "spell_id": spell_id,
@@ -1048,9 +1075,9 @@ class ConduitMeld(Meld):
             }
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
+            creation_count = caller_creations.count_spell_creations(spell_id)
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -1058,7 +1085,7 @@ class ConduitMeld(Meld):
                 "storage_scope_kind": "caller_conduit",
                 "storage_owner_conduit_id": query_conduit_id,
                 "active_spellspace_id": None,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence in {
@@ -1091,11 +1118,11 @@ class ConduitMeld(Meld):
                 # it is a published diagnostics value.
                 storage_scope_kind = "cluster_leader"
                 storage_owner_conduit_id = None
-            creation = (
-                store.get_creation(spell_id) if store is not None else None
+            creation_count = (
+                store.count_spell_creations(spell_id) if store is not None else 0
             )
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -1103,7 +1130,7 @@ class ConduitMeld(Meld):
                 "storage_scope_kind": storage_scope_kind,
                 "storage_owner_conduit_id": storage_owner_conduit_id,
                 "active_spellspace_id": None,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence is Existence.managed_spell_quantity:

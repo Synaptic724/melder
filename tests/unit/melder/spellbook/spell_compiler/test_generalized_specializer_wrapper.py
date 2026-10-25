@@ -79,8 +79,9 @@ def _stub_spell(
     Build one stub spell exposing exactly the capture-read surface.
 
     Contract:
-        - `_door_epoch` and `_owner_creations._creations` are the only
-          attributes the capture pass reads (epoch BEFORE instance).
+        - `_door_epoch`, `_owner_creations._creations` and `store_key` (the
+          slot read) are the only attributes the capture pass reads (epoch
+          BEFORE instance).
         - `owner_store_missing=True` models a spell whose owner store is
           unavailable (must decline, never raise).
     """
@@ -90,6 +91,9 @@ def _stub_spell(
     return SimpleNamespace(
         _door_epoch=door_epoch,
         _owner_creations=owner_creations,
+        # The capture pass reads the owner store by the spell's store key; the rows' spell id is its own shelf
+        # (STORY-2026-10-25-creations_store_slots_by_binding).
+        store_key="u1",
     )
 
 
