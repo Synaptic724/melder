@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-25T03:50:37Z |
-| line_count | 12049 |
+| generated_at | 2026-10-25T08:18:37Z |
+| line_count | 12050 |
 | line_ending | lf |
-| content_sha256 | `a30fd13c8112a94592d3af150c3a00e10693acbc805396a779c3c8f0348d2e6c` |
+| content_sha256 | `cb95539c208d0d27f9e8708cc1b9d1ffadc42e5931a339872901863a04c58704` |
 | sections | 155 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -181,4 +181,4 @@ which you did.
 | 11385-11399 | 3 | Diagrams > Mermaid: Managed Pools |
 | 11400-11416 | 3 | Diagrams > Mermaid: Ownership Transfer |
 | 11417-11726 | 2 | Information Sources |
-| 11727-12049 | 2 | Context / Handoff Summary |
+| 11727-12050 | 2 | Context / Handoff Summary |

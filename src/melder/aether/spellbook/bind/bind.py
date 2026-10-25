@@ -646,7 +646,10 @@ class Bind(Cleanable):
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
         * Computes the spell_id - the SHA256 of the target's code (`SpellCodeDigest`), nothing
-          from this call - and the SpellIndex from it.
+          from this call - and the SpellIndex from it. The index keeps this call's binding - the
+          spellframe's kind and the address it gives (`SpellIndex.for_binding`) - and admits only
+          versions bound the same way (2026-10-25,
+          STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
         * Resolves disposal names once in group priority order and passes that list to Spell
           without another conversion; it enters the Spell's binding manifest, not the spell_id.
         * Validates and normalizes the four managed options once
@@ -806,7 +809,15 @@ class Bind(Cleanable):
             # manifest, hashed apart, so one object is one spell: the duplicate-id refusals downstream
             # refuse a second registration of it.
             spell_id: str = self._spell_code_digest.spell_id(spell)
-            spell_index = SpellIndex(initial_id=spell_id)
+            # The index keeps the binding of its first version - this one: the kind of spellframe and the
+            # address it gives - and every later version of it must be bound the same way
+            # (`SpellIndex.check_admits`, run before a version is staged or moved onto it).
+            spell_index = SpellIndex.for_binding(
+                spell_id,
+                spellframe=spellframe,
+                spell_name=str(spell_name),
+                binding_name=binding_name,
+            )
 
             # Check if this should be treated as an "existing creation"
             is_instance = isinstance(

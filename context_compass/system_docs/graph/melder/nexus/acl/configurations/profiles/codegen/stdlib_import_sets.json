@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py",
- "source_sha256": "ed1bc01965ba9388e5fef6ce6a2484af2622fa6dadbe7466a49f1165b889d7ec",
+ "source_sha256": "75f16770f527a3b5f64bdba830e75ffcfa661abb0a00ce07a72a8f8889bceb35",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets": {
@@ -12,9 +12,11 @@
    "lineno": 1,
    "role": "Shared import-root and builtin-name constant catalog for codegen ACL profiles.",
    "responsibilities": [
-    "defines reusable safe, hybrid, precision, and permissive import-root sets",
+    "defines the import-root allow lists the presets read - the common list hybrid uses, precision's narrower one and permissive's (the common list plus the permissive extras, sorted) - and the deny list hybrid and precision share",
     "defines shared denied builtin-name sets for codegen profile factories",
-    "keeps codegen profile factory modules aligned on import-surface policy constants"
+    "keeps codegen profile factory modules aligned on import-surface policy constants",
+    "puts `open` on SAFE_DENIED_BUILTIN_NAMES, the one denied-builtin tuple safe, hybrid and precision share and the codegen engine's no-projection default reads (0.2.8270)",
+    "keeps `io`, `os` and `pathlib` among the permissive extras, so permissive's is the only allow list that admits them (0.2.8270)"
    ],
    "owns_state": [
     "_COMMON_SAFE_IMPORT_MODULE_ROOTS",
@@ -23,7 +25,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],

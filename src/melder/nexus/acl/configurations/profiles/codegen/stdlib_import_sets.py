@@ -11,8 +11,9 @@ Contract:
       module imports nothing, so a preset or the codegen engine imports it without an import cycle.
     - Import roots: `HYBRID_IMPORT_MODULE_ROOTS` is the common list, `PRECISION_IMPORT_MODULE_ROOTS`
       a narrower one, and `PERMISSIVE_IMPORT_MODULE_ROOTS` the common list plus the permissive
-      extras, sorted. `HYBRID_DENIED_IMPORT_MODULE_ROOTS` (which precision aliases) names roots the
-      compiler refuses even where an allow list admits them.
+      extras, sorted. `io`, `os` and `pathlib` are permissive extras rather than common roots, so of
+      the presets with an allow list only permissive admits them. `HYBRID_DENIED_IMPORT_MODULE_ROOTS`
+      (which precision aliases) names roots the compiler refuses even where an allow list admits them.
     - Denied builtins: `SAFE_DENIED_BUILTIN_NAMES` is the one tuple safe, hybrid and precision deny
       (`HYBRID_DENIED_BUILTIN_NAMES` and `PRECISION_DENIED_BUILTIN_NAMES` are the same object), and
       the codegen engine's no-projection default denies it plus `__import__`. `open` is on it, so
@@ -38,7 +39,6 @@ _COMMON_SAFE_IMPORT_MODULE_ROOTS = (
     "itertools",
     "json",
     "math",
-    "pathlib",
     "pprint",
     "re",
     "statistics",
@@ -56,6 +56,7 @@ _PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS = (
     "importlib",
     "io",
     "os",
+    "pathlib",
     "random",
     "shutil",
     "socket",

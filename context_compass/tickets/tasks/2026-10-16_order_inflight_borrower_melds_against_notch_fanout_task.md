@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T15:54:20Z
-- Updated: 2026-10-25T03:01:26Z
+- Updated: 2026-10-25T09:08:41Z
 
 ## Objective
 A meld of a borrower's spell that is in flight while the lender's `notch_spell` parks and reactivates the borrower's
@@ -410,6 +410,25 @@ this does not make independent review mandatory for every ticket.
   IMPACT: No custody conflict now; notches go in landing order (D-10's included).
   NEXT: Before this task's first conduit.py or meld.py edit, check melder_1's board row and ask.
   REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T09:08:41Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M1-67 (melder_1's NOTICE, 2026-10-25T08:40:52Z, consumed here): melder_1 holds spell_index.py, bind.py,
+    spellbook.py, lookup_container.py, aetheric_frame.py, conduit.py (docstrings), restore_engine.py,
+    graft_runner.py, README.md and 35 tests that stage versions under another signature, for
+    STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (S2), and notches above D-10. Either design here
+    changes when `Conduit.notch_spell` runs its borrower fan-out, so this task's fix touches conduit.py; it is
+    waiting on the owner's design choice and needs none of those files now. M0-228 tells melder_1 so, and that D-10
+    has landed and been rebuilt at 0.2.8270.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md
+  - context_compass/tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:396-413
+  IMPACT: When the owner picks a design, the fix agrees custody of conduit.py with melder_1 before its first edit.
+  NEXT: The owner chooses the design (2 recommended) and assigns an implementer.
+  REREAD: REQUIRED
   SCORE_0_TO_10: 7
 
 ## Context / Handoff Summary

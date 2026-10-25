@@ -1,0 +1,10 @@
+python 3.14.8 gil True
+E1 close -> shutdown -> flush, all melded at the root: ['close'] ['close'] ['close']
+E2 ['flush','close'] -> ['close']: first ['flush', 'close'] second ['flush', 'close']
+E3 old object in a lesser, new one melded at the root: first ['close'] second ['shutdown']
+E4 lesser returned before the rebind, new lesser: first ['close'] second ['shutdown'] same shell: True
+E5 unique -> many, three melds at the root: AttributeErrors 3, built 4, disposal calls per object [['close'], [], [], []]
+E5 unique_per_conduit -> many, three melds at the root: AttributeErrors 3, built 4, disposal calls per object [['close'], [], [], []]
+E6 unique -> many, the new meld through a lesser: returned a new object [['close'], ['close']]
+E6 unique_per_conduit -> many, the new meld through a lesser: returned a new object [['close'], ['close']]
+E7 a `unique` with its own append(), rebound as many: returned a new object | old object's items now: ['the new object'] | disposal calls: old ['close'] new []

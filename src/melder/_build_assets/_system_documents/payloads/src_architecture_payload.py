@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 4843
-CONTENT_SHA256 = '9944d845d934f818e3c0562c80791358469968c9cc31d62236a44c67b68dc998'
+LINE_COUNT = 4909
+CONTENT_SHA256 = 'e861a9ce34804aacb50f4e32eb713e171e9ad54b6ff3db2b283e62faa1b17819'
 
 TEXT = """# Src Architecture (C4)
 
@@ -420,13 +420,13 @@ External interfaces are Python APIs:
   (`get_spell_by_spell_id`, `find_spell_by_spell_id`) answer a parked spell_id with that parked spell, so a
   parked version can be named by its spell_id or by the Spell they return.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5652, 5777 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5806-6024 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5667, 5792 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5821-6039 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6026, 6116 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6139, 6214 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4545 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4578 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6041, 6131 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6154, 6229 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4605 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4638 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -447,6 +447,10 @@ External interfaces are Python APIs:
     `StaticCommandSystem.get_spell_by_source_id`
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
+- `Conduit.purge(...)`, `Conduit.has_live_creation(...)`, `Conduit.describe_live_creation_status(...)` and
+  `SpellSpace.purge(...)`, the doors that build nothing: a spell_id given to them names that version wherever
+  the conduit can see it - its Book's own or a borrowed copy, active or parked (0.2.8269) - and every other
+  selector names the version an index has active, as `meld` does.
 - `Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None)`
   (0.2.8245): a meld of a managed spell that returns a `ManagedSpellLease`; its `with` gives the object back.
 - Managed spells (0.2.8241-0.2.8246): `Existence.managed_spell_quantity` and the keyword-only bind options
@@ -539,7 +543,7 @@ fan-out). A notch names its target by spell_id or by Spell and checks that it is
 index before anything moves; the two index moves take a spell_id the same way (0.2.8249). A notch whose
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4107-4898 (the three seams, remeasured 2026-10-24 at 0.2.8266);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4167-4958 (the three seams, remeasured 2026-10-25 at 0.2.8269);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -954,14 +958,14 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4107-4898 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4107-4268
-   - src/melder/aether/spellbook/spellbook.py:4578-4673
-   - src/melder/aether/spellbook/spellbook.py:4788-4898
-   - src/melder/aether/conduit/conduit.py:5652-5804
-   - src/melder/aether/conduit/conduit.py:5806-6024
-   - src/melder/aether/conduit/conduit.py:6026-6227
-   - src/melder/aether/conduit/conduit.py:6308-6337
-   - src/melder/aether/conduit/conduit.py:6339-6382
+   - src/melder/aether/spellbook/spellbook.py:4167-4328
+   - src/melder/aether/spellbook/spellbook.py:4638-4733
+   - src/melder/aether/spellbook/spellbook.py:4848-4958
+   - src/melder/aether/conduit/conduit.py:5667-5819
+   - src/melder/aether/conduit/conduit.py:5821-6039
+   - src/melder/aether/conduit/conduit.py:6041-6242
+   - src/melder/aether/conduit/conduit.py:6323-6352
+   - src/melder/aether/conduit/conduit.py:6354-6397
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1037,7 +1041,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5601-5603 (the check and the raise)
+  - src/melder/aether/conduit/conduit.py:5616-5618 (the check and the raise)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
   - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
@@ -1056,26 +1060,58 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
-- Codegen presets hold their file posture (2026-10-25, 0.2.8269; TASK-2026-10-10-deny-file-access-under-safe-codegen,
-  which closes defect D-10, on the owner's decision in chat, 2026-10-25: deny `open` under safe, hybrid and precision,
-  and keep permissive and full_access open): the safe, hybrid and precision codegen presets - a frame's profile, or
-  precision as its overlay - deny the builtins of one tuple, `SAFE_DENIED_BUILTIN_NAMES`, and `open` is on it. Room
-  code under those presets that calls `open` is refused at validation by the builtin gate ("Builtin 'open' is not
-  allowed in this codegen mode."), code that only names it is refused by name resolution ("Name 'open' is not
-  available in the codegen namespace."), and the room's runtime `__builtins__` leaves it out, so a form the static
-  gates miss fails when it runs. A request naming a frame the room holds no codegen projection for runs under the
-  engine's default posture, which denies `__import__` plus that same tuple, read from the preset module rather than
-  copied, so the default cannot fall behind safe again. Permissive and full_access keep `open`: their file posture
-  is open by design. The other file routes follow the import lists: safe refuses every import, the hybrid and
-  precision lists leave out `io` and `os`, and hybrid's admits `pathlib`, so a `pathlib.Path` write runs there while
-  precision's list leaves `pathlib` out. Each preset's docstring states its file posture. The compiled deny list is
-  the union of the denies of the preset, the precision overlay and the frame's codegen capability override, minus
-  the union of their allows, so a `builtin_names` allow rule in a frame's override still re-allows `open` for that
-  frame. This is policy checked in the room's own process - defence in depth, not isolation. Nothing persisted,
-  cached or recorded reads the deny lists (each projection compiles its own), so no cache generation or record
-  version moves. Locks: none added; the tuple is an immutable module value read at each compile and at each
-  no-projection request.
+- A spell_id reaches every version in the doors that build nothing (2026-10-25, 0.2.8269;
+  STORY-2026-10-25-probe_and_purge_reach_every_version, on the owner's go in chat, 2026-10-25: "has_live_creation
+  and purge should be able to target the parked version ... you should be able to target any spell with purge and
+  has live creation"): `Conduit.purge(spell_id=...)`, `Conduit.has_live_creation(spell=<spell_id>)`,
+  `Conduit.describe_live_creation_status(spell=<spell_id>)` and `SpellSpace.purge(spell_id=...)` - on a root, a
+  lesser and a SpellSpace's door - resolve a spell_id to the exact version the conduit can see: its Book's own
+  version, active or parked, or a borrowed copy, active or parked. A spell_id names one version (the owner's rule,
+  2026-10-17), and a version keeps its objects while a notch has it parked, under its own spell_id in the creation
+  stores, so these doors check or retire an old version's objects without a notch back. Store selection and purge
+  authority come from the version's existence and owner stamp, which a park does not change: a parked `unique` is
+  purged only by its owner root, a lineage version by its root, a cluster version by the elected leader, a `many`
+  or per-conduit version from the caller's store, a spellspace lifetime only through its spellspace, and a managed
+  version's purge returns 0 while its probe reads that version's pool. Every other selector - a name, a class,
+  spellframe and binding name, an instance - still names the version an index has active, as meld does, and every
+  door that builds or hands out an object (`meld`, `meld_existing_spell`, `managed_spell_meld`, `SpellSpace.meld`,
+  the Rift rooms) still reaches active versions only. A spell_id no visible version carries - unknown, disposed,
+  another Book's and not borrowed - raises the KeyError it raised, and purge refuses a `unique` version with no
+  owner store (its owner stamp failed at conjure) with a RuntimeError naming the remedy. Locks: the active read
+  stays lock-free; a spell_id it misses is read once more under the Book lock alone
+  (`Spellbook._find_visible_version`), for dict reads, released before purge takes a slot, spell or store lock;
+  every writer of the Book's four id maps moves a version inside one Book-locked section, so a probe or purge
+  racing a notch to or from its version finds it. No lock-order edge is added, and nothing persisted, cached,
+  recorded or emitted changes.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._resolve_probe_target`,
+  `Meld._resolve_visible_version_by_id`, `Meld._resolve_purge_spell`,
+  `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld._get_purge_creations`,
+  `ConduitMeld.describe_live_creation_status`,
+  `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld.describe_live_creation_status`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._find_visible_version`,
+  `src/melder/aether/conduit/conduit.py:Conduit.purge` and
+  `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.purge`.
+- Codegen presets hold their file posture (2026-10-25, 0.2.8270; TASK-2026-10-10-deny-file-access-under-safe-codegen,
+  which closes defect D-10, on the owner's decisions in chat, 2026-10-25: deny `open` under safe, hybrid and precision,
+  keep permissive and full_access open, and "focus on B" for hybrid's `pathlib`): the safe, hybrid and precision
+  codegen presets - a frame's profile, or precision as its overlay - deny the builtins of one tuple,
+  `SAFE_DENIED_BUILTIN_NAMES`, and `open` is on it. Room code under those presets that calls `open` is refused at
+  validation by the builtin gate ("Builtin 'open' is not allowed in this codegen mode."), code that only names it is
+  refused by name resolution ("Name 'open' is not available in the codegen namespace."), and the room's runtime
+  `__builtins__` leaves it out, so a form the static gates miss fails when it runs. A request naming a frame the room
+  holds no codegen projection for runs under the engine's default posture, which denies `__import__` plus that same
+  tuple, read from the preset module rather than copied, so the default cannot fall behind safe again. Permissive and
+  full_access keep `open`: their file posture is open by design. The other file routes follow the import lists: safe
+  refuses every import, and `io`, `os` and `pathlib` are permissive extras that no other preset's list admits -
+  `pathlib` is not on the common list hybrid uses, so hybrid refuses `import pathlib`, path arithmetic included. Each
+  preset's docstring states its file posture. The compiled deny list is the union of the denies of the preset, the
+  precision overlay and the frame's codegen capability override, minus the union of their allows, so a
+  `builtin_names` allow rule in a frame's override still re-allows `open` for that frame. This is policy checked in
+  the room's own process - defence in depth, not isolation. Nothing persisted, cached or recorded reads the deny or
+  import lists (each projection compiles its own), so no cache generation or record version moves. Locks: none
+  added; the tuples are immutable module values read at each compile and at each no-projection request.
   EVIDENCE: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:SAFE_DENIED_BUILTIN_NAMES`,
+  `_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS`,
   `src/melder/nexus/acl/frame_acl_compiler.py:FrameACLCompiler._compile_codegen_builtin_controls`,
   `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem._build_default_namespace_configuration`,
   `CodegenSystem._try_get_codegen_projection`,
@@ -2121,10 +2157,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7573-7616
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7603-7615,
-    effective-mode return :7616; remeasured 2026-10-24 at 0.2.8266)
-  - src/melder/aether/spellbook/spellbook.py:7829
+  - src/melder/aether/spellbook/spellbook.py:7633-7676
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7663-7675,
+    effective-mode return :7676; remeasured 2026-10-25 at 0.2.8269)
+  - src/melder/aether/spellbook/spellbook.py:7889
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2184,15 +2220,32 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
-- Breaking (0.2.8269): code run in a codegen room under the safe, hybrid or precision preset - or in any room, for a
+- A parked version's spell_id is answered by purge and the live-creation probes (0.2.8269): a spell_id of a version a
+  notch parked, of one split off by `remove_from_spell_index` or of a borrowed copy its lender's notch parked no
+  longer raises KeyError "[MELD] No spell found with spell_id: <id>" from `Conduit.purge(spell_id=...)`,
+  `Conduit.has_live_creation(spell=...)`, `Conduit.describe_live_creation_status(spell=...)` or
+  `SpellSpace.purge(spell_id=...)`: they answer for that version, and purge disposes its entries in the authorized
+  store and returns the count. The meld doors still raise that KeyError for a parked version, and every door still
+  raises it for a spell_id no version the conduit can see carries.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._resolve_visible_version_by_id`.
+- Fixed in 0.2.8269: purge of a `unique` version with no owner store - its owner stamp failed when its Book was
+  conjured, which the conjure logged - raises RuntimeError "Cannot purge spell '<name>' (<id>): it has no owner
+  store, so nothing was ever stored for it. Its owner stamp failed when its Book was conjured (the conjure logged
+  the error). Dispose it with cleanup_spell and bind it again." Until 0.2.8269 an AttributeError "'NoneType'
+  object has no attribute 'owner_conduit_id'" escaped, for an active version as for a parked one. Its probe
+  reports it not live.
+  EVIDENCE: `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld._get_purge_creations`.
+- Breaking (0.2.8270): code run in a codegen room under the safe, hybrid or precision preset - or in any room, for a
   request naming a frame the room holds no codegen projection for - that calls `open` is refused at validation:
   `validate_codegen` and `execute_codegen` answer `accepted` False with "Builtin 'open' is not allowed in this
   codegen mode.", or with "Name 'open' is not available in the codegen namespace." for a bare reference (`reader =
-  open`), and nothing runs; `open` is gone from the room's runtime builtins. Through 0.2.8268 every preset ran such
-  code, which read or wrote any file the process could reach - under safe too, whose posture says it denies writes.
-  Code that must use files runs under the permissive or full_access preset.
-  EVIDENCE: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:SAFE_DENIED_BUILTIN_NAMES`
-  and `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem._build_default_namespace_configuration`.
+  open`), and nothing runs; `open` is gone from the room's runtime builtins. Under hybrid `import pathlib` is refused
+  too, with "Import root 'pathlib' is not allowed in this codegen mode.". Through 0.2.8269 every preset ran `open`,
+  which read or wrote any file the process could reach - under safe too, whose posture says it denies writes - and
+  hybrid ran pathlib writes. Code that must use files runs under the permissive or full_access preset.
+  EVIDENCE: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:SAFE_DENIED_BUILTIN_NAMES`,
+  `_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS` and
+  `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem._build_default_namespace_configuration`.
 - Breaking (0.2.8267): a scope that builds a holder's disposal-bearing `many` dependency disposes it when that scope
   ends, even while the holder lives on - the behaviour through 0.2.8234, on the owner's decision. A `unique` holder
   first melded through a lesser, in a root spellspace or in a lesser's spellspace (also as the dependency of a
@@ -3074,9 +3127,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8398
-  loc: 8398
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 8458
+  loc: 8458
+  verified_at: 2026-10-25T03:47:32Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -3785,9 +3838,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 7909
-  loc: 7909
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 7924
+  loc: 7924
+  verified_at: 2026-10-25T03:47:32Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -3850,9 +3903,9 @@ Resolution and creations:
   note: one leased managed object and its pool.
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 2378
-  loc: 2378
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 2491
+  loc: 2491
+  verified_at: 2026-10-25T03:47:32Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -3886,9 +3939,9 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 792
-  loc: 792
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 795
+  loc: 795
+  verified_at: 2026-10-25T03:47:32Z
   note: spellspace scoping; lease flag and finished exits.
 - path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
   start_line: 1
@@ -4091,11 +4144,12 @@ flowchart LR
 ### Scoped Purge
 ```text
 Conduit / SpellSpace -> shared discovery -> concrete Meld: authorize -> Creations: lock + retire -> dispose
+                        (a spell_id: that version, active or parked, owned or borrowed)
 ```
 
 ```mermaid
 flowchart LR
-  C[Conduit or SpellSpace] --> L[Meld: inspect class or use explicit selectors]
+  C[Conduit or SpellSpace] --> L[Meld: inspect class or use explicit selectors; a spell_id reaches a parked version]
   L --> M[ConduitMeld or SpellSpaceMeld: scope authority]
   M --> S[Creations: retire all or one under writer locks]
   S --> D[Existing disposal helpers after lock release]
@@ -4529,15 +4583,27 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 
 ## Context / Handoff Summary
 
-2026-10-25 codegen presets hold their file posture (0.2.8269; TASK-2026-10-10-deny-file-access-under-safe-codegen,
-defect D-10, on the owner's decision): `open` joins the denied-builtin tuple the safe, hybrid and precision presets
+2026-10-25 purge and the live-creation probes reach any version by its spell_id (0.2.8269;
+STORY-2026-10-25-probe_and_purge_reach_every_version, on the owner's go): `Conduit.purge(spell_id=...)`,
+`has_live_creation`, `describe_live_creation_status` and `SpellSpace.purge(spell_id=...)` answer for a parked
+version or a borrowed copy by its spell_id - the Meld's lock-free active read first, then one Book-locked read of
+the Book's four id maps - in the store and under the authority its existence selects, and purge refuses a `unique`
+version with no owner store; every meld door and every other selector still names an index's active version. A
+new first operational invariant, the boundary list, two failure modes, the scoped-purge diagram and the code map
+(four files remeasured) carry it; the component map carries the per-component contracts. Numeric citations into
+spellbook.py and conduit.py past the edits moved 60 and 15 lines and were remapped line by line. Still unknown: see
+Unknowns. Where to start: src_components, Component: Meld Resolution Runtime, then Spellbook Core's visible-version
+lookup.
+
+2026-10-25 codegen presets hold their file posture (0.2.8270; TASK-2026-10-10-deny-file-access-under-safe-codegen,
+defect D-10, on the owner's decisions): `open` joins the denied-builtin tuple the safe, hybrid and precision presets
 share, so their room code is refused at validation when it calls or names `open` and finds no `open` in its runtime
-builtins, and the engine's no-projection default posture reads that tuple instead of keeping its own copy;
-permissive and full_access keep `open`, and each preset's docstring states its file posture. A new first
-operational invariant, a Breaking failure mode, the code map (codegen_system.py remeasured) and the sources carry
-it; the component map carries the per-component contracts. Still unknown: see Unknowns. Where to start:
-src_components, Component: Nexus Descriptor And ACL Managers (the presets' file posture) and Component: Codegen
-Internal Engine (the default posture).
+builtins, and the engine's no-projection default posture reads that tuple instead of keeping its own copy; `pathlib`
+becomes a permissive extra, so hybrid refuses `import pathlib`; permissive and full_access keep `open`, and each
+preset's docstring states its file posture. A new operational invariant, a Breaking failure mode, the code map
+(codegen_system.py remeasured) and the sources carry it; the component map carries the per-component contracts.
+Still unknown: see Unknowns. Where to start: src_components, Component: Nexus Descriptor And ACL Managers (the
+presets' file posture) and Component: Codegen Internal Engine (the default posture).
 
 2026-10-25 the `many` disposal record after a rebind (creations.py docstrings;
 TASK-2026-10-25-creations_many_disposal_docstrings): the creations.py docstrings no longer say a spell id hashes its

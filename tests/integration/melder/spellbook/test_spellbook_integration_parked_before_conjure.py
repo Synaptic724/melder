@@ -7,6 +7,9 @@ owner stamp a post-conjure `bind_inactive` applies. Until then a version parked 
 CreationContextFactory, and after a notch its first meld raised "Spell has no configured CreationContextFactory."
 for every existence. Each test runs a dynamic world twice - the version staged before conjure and after it - and
 expects the same outcome from both.
+
+Both versions are bound under one string spellframe, 'service', and the default binding name: every version of an
+index is bound the way its first version was (2026-10-25).
 """
 from collections.abc import Iterator
 from typing import Any, Callable, Dict, List, Tuple
@@ -97,21 +100,21 @@ class _World:
         configuration.finalize()
         self.book: Spellbook = Spellbook(aetheric_frame="default", configuration=configuration)
         self.active_id: str = self.book.bind(
-            spell=active_target, existence=family.existence, permissions="create", binding_name="active",
+            spell=active_target, existence=family.existence, permissions="create", spellframe="service",
             **family.options,
         )
         self.index: Any = self.book.find_spell_by_spell_id(self.active_id).spell_index
         if staged_before_conjure:
             self.staged_id: str = self.book.bind_inactive(
                 spell=staged_target, spell_index=self.index, existence=family.existence, permissions="create",
-                binding_name="staged", **family.options,
+                spellframe="service", **family.options,
             )
             self.root: Conduit = self.book.conjure(dynamic=True, name="root")
         else:
             self.root = self.book.conjure(dynamic=True, name="root")
             self.staged_id = self.root.bind_inactive(
                 spell=staged_target, spell_index=self.index, existence=family.existence, permissions="create",
-                binding_name="staged", **family.options,
+                spellframe="service", **family.options,
             )
 
     def notch_to_staged(self) -> None:

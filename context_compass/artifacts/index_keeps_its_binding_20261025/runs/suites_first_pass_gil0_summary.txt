@@ -1,0 +1,6 @@
+unit: <sys>:0: RuntimeWarning: coroutine 'coro' was never awaited
+2 failed, 10001 passed, 3 skipped, 7 xfailed in 45.80s
+component:
+29 failed, 2451 passed, 23 skipped, 5 xfailed in 23.55s
+integration:
+181 failed, 2129 passed, 6 skipped, 8 xfailed, 3 xpassed in 56.76s

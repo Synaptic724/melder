@@ -9,58 +9,78 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-17T20:23:51Z
-- Updated: 2026-10-25T02:47:38Z
+- Updated: 2026-10-25T09:44:14Z
 
 ## User Narrative
-As an agent notching between versions, I want the frame's signature claims to follow the active version - the
-outgoing version's claim released, the incoming version's key taken only when no other active spell holds it - so
-that no parked spell keeps a signature and no two active spells share one address.
+As an agent iterating on one object through versions, I want every version of an index bound the way its first
+version was, so that a notch never moves the index's address, every caller that names the address follows the
+notch, and no two active spells ever share an address.
 
 ## Value / MRP Alignment
-A notch only moves which version is active (owner ruling); the binding signature belongs with the active version.
-Today a notch across keys leaves a parked version holding a signature nobody can bind again (stuck), and a notch
-inside an index `remove_from_spell_index` minted puts a second active spell at an address an active spell already
-holds (wrong: the next meld by address is refused).
+The address is how every caller but an injected one reaches an index. While a version could be staged at any
+address, a notch across addresses broke those callers, left the parked version holding the old address (stuck) and
+could give the incoming version an address another index's active version held (wrong: two active spells at one
+address). The owner's rule closes all three at the way in: the index keeps its first version's binding, a version
+bound any other way is a new spell, and a notch only moves which version serves the address.
 
 ## Ticket Contract
-- ENTRY_GATE: the owner schedules the story and assigns an agent (the open question was answered on 2026-10-17);
-  spellbook.py's holder releases it or carries the fix; an active board row; a component patch for the seam.
-- EXECUTION_BOUNDARY: step 4 of `Spellbook._apply_notch` (the signature repoint and the refusal of a key another
-  active spell holds); regression tests; system docs with their indexes and the graph; the release note; one notch;
-  the rebuild last. Staging stays open to any key (owner, 2026-10-17).
-- DEPENDENCIES: EPIC-2026-10-17-correctness_defects; STORY-2026-10-17-staged_version_releases_active_signature (the same
-  claims; staging disturbs them until it lands, so this story's tests heal or avoid that first);
-  TASK-2026-10-16-notch_seam_checks_incoming_before_parking (the same seam: a check moved ahead of the park); the
-  probe and its runs.
-- EXIT_GATE: the probe's C5 and C7 show the claims following the active version, or the notch refused before
-  anything moved; regression tests pass with the GIL off and on; docs, notch and the rebuild with both checks OK.
-- FAILURE_ESCALATION: CONFLICT if the notch-seam backlog task lands first with another order of checks, or while
-  spellbook.py is held.
+- ENTRY_GATE: the owner's go (chat 2026-10-25: "if you want to use notch you gotta use the signature that was used
+  originally and spell_index would retain that validation check ... go ahead and implement it") and his call 1
+  ("notch the cache version and invalidate all the records"); the board row; the patch docs linked; the red tests
+  recorded before any src edit.
+- EXECUTION_BOUNDARY: `SpellIndex` (the binding and its check), `Bind._bind_logic` (records it), `Spellbook`
+  (`bind_inactive`'s way-in checks, `_apply_add_to_index`, `_apply_notch`'s claim move, `_apply_remove_from_index`,
+  `_revert_refused_notch`), `LookupContainer` and `AethericFrame` (`repoint`), `RecordVersion` (5.0.0 and the older-
+  major refusal), `CachingSystem` (generation 24), `GraftRunner._merge_members` (the per-member shortfall), the
+  Conduit's docstrings, README; the tests; the system docs with their indexes and the graph; the release note; one
+  notch; the rebuild last.
+- DEPENDENCIES: EPIC-2026-10-17-correctness_defects; STORY-2026-10-25-probe_and_purge_reach_every_version (turned
+  in at 0.2.8269); melder_0's D-10 (lands 0.2.8270 first; this lane notches above it and edits the docs and the
+  graph after it); melder_3's rebind tests task (tests_components waits for its turn-in).
+- EXIT_GATE: the red tests green the GIL off and on; the full suite green both ways with the staging tests rewritten;
+  docs, notch, release-note entry and closure; the rebuild last with both checks OK.
+- FAILURE_ESCALATION: CONFLICT when another lane holds a file in the boundary; DECISION_REQUEST when a refusal's
+  wording or reach needs the owner.
 
 ## Requirements (Functional)
-- After a notch the frame claims the incoming version's key for it, and the outgoing version's claim is released
-  when its key differs (released by spell_id, so a sibling's claim is never touched).
-- A notch whose incoming key is held by another active spell of the frame - not the outgoing version - is refused
-  before anything is parked, as `bind` refuses ("Binding signature already active in this frame ...").
-- The Book's address map follows: the outgoing key no longer routes to the index, the incoming key does, and it
-  never overwrites another index's route.
+- R1. A SpellIndex records the binding of the version it is created for - its spellframe's kind (none, a string
+  category, a Protocol) and the address that gives (frame key and binding key, case-insensitive) - for its life;
+  `SpellIndex.binding_signature` reads it. Bind records it for the index it creates; `remove_from_spell_index`
+  records the moved version's.
+- R2. `bind_inactive` stages a version only on an index this Book owns that keeps the version's binding, and checks
+  both before anything is registered: a binding mismatch raises ValueError naming the index's binding, the
+  version's and the remedy; another Book's index raises RuntimeError; either way nothing stays registered, so a
+  retry with the right arguments is not refused as a spell_id collision.
+- R3. `add_to_spell_index` refuses a parked version bound another way than its target index (ValueError) before
+  anything moves.
+- R4. A notch never moves an index's address. It moves the address's frame claim from the outgoing version to the
+  incoming one in one atomic step, before the park, and refuses - RuntimeError naming the holder and the remedy,
+  nothing moved - when another spell holds the address: another index's active version in this Book (a split
+  version's index notched active while its source still serves it) or another Book's spell.
+- R5. A version split off with `remove_from_spell_index` keeps its binding; its index can be notched active once no
+  other spell holds the address, and `add_to_spell_index` moves it back.
+- R6. Records: RecordVersion 5.0.0, and `check_readable` refuses every older major - pre-versioning ones included -
+  naming why and the remedy (record the world again). The creation cache moves to generation 24.
+- R7. Graft, merge lane: a recorded member bound another way than the merge target is a per-member shortfall.
+- R8. C5 and T4 cannot occur (every version of an index shares its address), so `_revert_refused_notch`'s
+  different-key branch goes.
 
 ## Requirements (Non-Functional)
-- No new lock or lock-order edge (the frame's lookup container lock is a leaf); the refusal runs inside the held
-  notch window before the park, so a refused notch changes nothing.
+- No new lock-order edge: the binding is immutable on the index and read without a lock; the claim move is one call
+  into the frame container's leaf lock, under the Book lock, where the notch's unconditional update ran.
+- No meld path changes; no new verb on Conduit or Spellbook; SpellIndex gains `binding_signature` (a read),
+  `signature_of`, `for_binding` and `check_admits`.
 
 ## Scope Boundaries
-- In scope: the notch's signature handling. One index may hold versions under different signatures (owner,
-  2026-10-17), so staging and index moves keep their admission.
-- Out of scope: `_destroy_spell_index` (STORY-2026-10-17-staged_version_releases_active_signature); spell_id lookups and
-  contracts (melder_1's lane).
+- In scope: R1-R8; the tests that stage versions under another binding, rewritten to stage at their index's binding;
+  README, docstrings, system docs, a Breaking release-note entry.
+- Out of scope: EPIC-2026-10-25-dependency_watchers_listen_for_names (the stuck consumer); the meld naming rules of
+  the identity map (gap 2 and gap 3); S3 (a changed binding revalidates).
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: the owner's direction (chat 2026-10-24): the index is the representation of the binding
-  signature, validated on the way in, and the overlapping signature defenses are researched first (DECISION note).
-  Before that, draft -> ready: the defect proven on 0.2.8251 (Notes), with one open question for the owner.
+- from_state: in_progress (research, handoff)
+- to_state: in_progress (implementation)
+- transition_reason: the owner's go and his call 1 (chat 2026-10-25; DECISION notes of 08:39 and 08:51).
 
 ## Dependencies / Related Work
 - STORY-2026-10-17-staged_version_releases_active_signature.
@@ -70,34 +90,38 @@ holds (wrong: the next meld by address is refused).
 - [x] Task: the owner's answer on one signature per index (2026-10-17: one index may hold several; DECISION note).
 - [x] Task: research the binding-signature defenses for the index-owns-the-signature model (owner, 2026-10-24);
   the findings in Notes, for the owner's review.
-- [ ] Task: the owner's three calls (DECISION_REQUEST note of 2026-10-25T01:25:13Z): call 3 answered with
-  (A)'s go; calls 1 and 2 open; the rename rule asked (DECISION note of 2026-10-25T02:47:38Z).
+- [x] Task: the owner's three calls and the rename rule (DECISION notes of 2026-10-25: call 3 and (A)'s go;
+  the strict rule and call 2; call 1, the record and cache versions).
+- [x] Task: red tests (MEASURE note), the GIL off and on.
 - [x] Task: map every meld identity across a notch (the owner, chat 2026-10-25; notes of 2026-10-25T02:01:57Z).
 - [x] Task: the owner's parked-door call (yes, 2026-10-25; its own lane,
   STORY-2026-10-25-probe_and_purge_reach_every_version).
-- [ ] Task: patch docs for the seam; the owner's approval.
+- [x] Task: patch docs and the mapping note (PLAN note); the owner's go of 2026-10-25 covers the implementation.
 - [ ] Task: the fix with symptom-named regression tests, docs, notch and the rebuild last.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Record meaningful attributed findings in supported Notes/comments or authorized linked evidence.
 
 ## Acceptance Criteria
-- After a notch from a version keyed K1 to one keyed K2, K1 is free in the frame (a bind of it succeeds) and K2
-  names the incoming version; a notch back restores K1 and frees K2.
-- A notch that would give the incoming version a key another active spell holds raises before anything moves, and
-  both indexes stay as they were.
-- Staging or adding a version keyed differently from its index's other versions stays allowed (owner, 2026-10-17).
+- The new symptom tests pass the GIL off and on, and the full suite passes both ways with the staging tests rewritten.
+- A record of an older major is refused at the version gate with the message; the creation cache is generation 24.
+- The docs and the release note say how a version of an index is bound and what a notch refuses.
 
 ## Validation / Test Plan
-- Regression tests named for the symptom, e.g. `test_notch_across_keys_frees_the_outgoing_signature`,
-  `test_notch_refuses_a_signature_another_active_spell_holds`; GIL off and on; the probe re-run (C5, C7).
+- tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py (the binding, the
+  way-in refusals, the foreign-index leak, the add refusal, the notch refusals C7 and cross-Book, the controls);
+  tests/unit/melder/aether/test_lookup_container_repoint.py; tests/unit/melder/spellbook/bind/
+  test_spell_index_binding_signature.py; a record-version unit test; a graft-merge shortfall test; the full suite,
+  the GIL off and on.
 
 ## UX / API / Data Notes
-- Visible today: after a notch across keys, a bind of the old signature raises "Binding signature already active in
-  this frame ... held by spell_id='<the parked version>'"; after C7's notch, `meld(spellframe=..., binding_name=...)`
-  raises SpellbookValidationError [DUPLICATE_SPELL_NAME]. A refused notch is a new error for C7's call sequence.
+- Breaking: `bind_inactive` and `add_to_spell_index` refuse a version bound another way than its index (stage an
+  edited class under its index's spellframe and binding name; a renamed class or a new binding name is a new spell);
+  a notch refuses an address another spell holds; records made before are refused (record the world again).
 
 ## Risks / Mitigations
-- The notch-seam backlog task also moves a check ahead of the park: whichever lands second rebases on the first.
+- Agent code that stages renamed classes breaks at its next run: the release note's Breaking entry gives the remedy,
+  and the refusal message names both bindings.
+- Saved records stop loading: the owner's call; the refusal names the remedy.
 
 ## Applicable Anti-Patterns
 - [ ] No story-state transition without linked task-state evidence.
@@ -105,10 +129,7 @@ holds (wrong: the next meld by address is refused).
 - [ ] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
-- May one SpellIndex hold versions under different binding signatures? If yes, the notch moves the claim (above); if
-  no, staging refuses a differently keyed version and C5 cannot occur. C7 needs the notch refusal either way.
-  Answered (owner, 2026-10-17T21:55:46Z): yes - "1 spellindex can hold versions with different binding
-  signatures, this is why revalidation happens" (DECISION note).
+- None: the rename rule, calls 1 and 2 and the version bumps are answered (DECISION notes of 2026-10-25).
 
 ## Decision Log
 - 2026-10-17T20:23:51Z: filed under EPIC-2026-10-17-correctness_defects from sweep A1 (Notes).
@@ -117,6 +138,8 @@ holds (wrong: the next meld by address is refused).
 - 2026-10-25T00:39:06Z: superseded by the owner's direction (chat 2026-10-24): the index is the representation of
   the binding signature, validated on the way in; research the overlapping defenses first; melder_1 assigned
   (DECISION note).
+- 2026-10-25: the owner's go for (A) with the strict rule, then call 1: the record version to 5.0.0, older records
+  refused, the creation cache to generation 24 (DECISION notes).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -142,8 +165,15 @@ this does not make independent review mandatory for every ticket.
   - artifacts/correctness_defects_20261017/runs/probe_meld_identities_across_a_notch_0_2_8267.txt
   - artifacts/correctness_defects_20261017/probes/diag_class_annotated_consumer_after_notch_back.py (stuck consumer)
   - artifacts/correctness_defects_20261017/runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt
-- DISPOSITION: retain_as_reference
-- CLEANUP_TRIGGER: the probe is re-run at the fix and kept as the defect's reproducer
+  - system_docs/patches/active/index_keeps_its_first_binding_2026_10_25/ (the patch: architecture, four component
+    patches, the Spellbook Core code description, their indexes; promote_to_documentation)
+  - artifacts/index_keeps_its_binding_20261025/runs/red_gil0.txt (the red run; delete_on_close)
+  - artifacts/index_keeps_its_binding_20261025/runs/red_gil1.txt
+  - artifacts/index_keeps_its_binding_20261025/scripts/run_tree.sh (the lane's runner)
+- DISPOSITION: retain_as_reference for the probes and runs of artifacts/correctness_defects_20261017/;
+  promote_to_documentation for the patch folder; delete_on_close for artifacts/index_keeps_its_binding_20261025/
+- CLEANUP_TRIGGER: the probes are re-run at the fix and kept as the defects' reproducers; the patch merges into the
+  system docs and its folder goes at closure; the lane's runs are summarized in Notes and deleted at closure
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -717,6 +747,224 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-25T08:40:04Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's go (chat 2026-10-25): "if you want to use notch you gotta use the signature that was used
+    originally and spell_index would retain that validation check ... I think your spell_index idea fits, go ahead
+    and implement it". The rename rule is the strict one: a SpellIndex records the signature its first version was
+    bound with - the spellframe's kind (none, a string category, a Protocol) and the normalized address (frame key,
+    binding key) - and admits only a version bound the same way, so bind_inactive and add_to_spell_index refuse any
+    other before anything registers or moves, and a renamed class or a new binding name is a new spell. A notch never
+    moves the address, and it refuses one the frame claim gives to another index's version (C7, the cross-Book case)
+    before anything moves. A spell_id stays exact; the owner counts the spell_id gaps as resolved by
+    STORY-2026-10-25-probe_and_purge_reach_every_version ("now you can target any id so thats resolved"). Call 2
+    (the split) is taken as recommended; call 1 (records made before the rule) is asked of the owner in chat - bring
+    such a version back parked in an index of its own (needs `bind_inactive(..., spell_index=None)`), or skip it with
+    a report entry - and the core proceeds meanwhile.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:457-523
+  - src/melder/aether/spellbook/bind/spell_index.py:12-118
+  - src/melder/aether/spellbook/spellbook.py:5896-6170
+  - src/melder/aether/spellbook/spellbook.py:4029-4328
+  - src/melder/aether/spellbook/spellbook.py:4638-4733
+  - src/melder/aether/aetheric_frame/lookup_container.py:92-152
+  IMPACT: The Requirements and Acceptance are rewritten for (A) with the strict rule; then the patch docs, the red
+    tests and the fix.
+  NEXT: Custody NOTICEs, the Requirements rewrite, the patch docs, the red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T08:49:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Call 1, the owner's answer (chat 2026-10-25): "we gotta just notch the cache version and invalidate all the
+    records bro and keep moving", then, on the plain restatement, "yeah your right now we basically are saying they
+    all must have the same name yep like this is the right spot to land on anyways". So no replay rule for records
+    holding a mixed index and no `bind_inactive(spell_index=None)`: RecordVersion moves to a new major (5.0.0) and
+    `check_readable` refuses every record of an older major - pre-versioning ones included - with a message naming
+    why and the remedy (record the world again); the creation cache moves to generation 24, so bundles written
+    before are cold once. A record made after the rule cannot hold a mixed index. The graft's merge lane can still
+    meet a recorded member bound another way than the merge target: that member becomes a per-member shortfall, the
+    graft's rule for per-member problems.
+  EVIDENCE:
+  - src/melder/crystallizer/persistence/record_version.py:17-194
+  - src/melder/utilities/caching_system/caching_system.py:200-256
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:492-584
+  IMPACT: The restore engine needs no change beyond the version gate; the 8 graft-merge tests stage at the merge
+    target's binding or assert the shortfall; tests pinning record 4.x readability move to 5.0.0.
+  NEXT: The Requirements rewrite and the patch docs, then the red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T08:52:07Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The red run on 0.2.8269 (the working tree; melder_0's uncommitted D-10 edits in it), the GIL off and on
+    identical: 27 failed, 5 passed over the three new files. Failing for the reason this story fixes: the API is
+    missing (SpellIndex.binding_signature, signature_of, for_binding, check_admits; LookupContainer.repoint); the
+    three way-in refusals and the add refusal did not raise; the foreign-index staging raised "not owned" but left
+    FrenchGreeter registered in Book B (`find_spell_by_spell_id` returned it), so a retry would be refused as a
+    collision; the compiled C7 and the cross-Book notches stood; the uncompiled C7 was refused as a failed structural
+    check, not for the taken address. Passing, the controls: the three admitted stagings, a notch keeping its
+    address, and a split version notched active once its address is free.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:1-547
+  - tests/unit/melder/aether/test_lookup_container_repoint.py:1-82
+  - tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:1-145
+  - context_compass/artifacts/index_keeps_its_binding_20261025/runs/red_gil0.txt
+  - context_compass/artifacts/index_keeps_its_binding_20261025/runs/red_gil1.txt
+  IMPACT: The tests pin R1-R5 before any src edit; the foreign-index leak is a pre-existing defect R2 fixes.
+  NEXT: The patch docs and the mapping note, then the implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T09:02:41Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: Three messages consumed. M3-14 (melder_3, 08:37:18Z): melder_3 added the rebind module
+    test_conduit_component_rebind_while_old_objects_are_alive.py under tests/component (tests only; untracked
+    until the owner commits, so the LLM bundles are built and checked with --include-untracked) and moved the tests
+    pair, both indexes regenerated: re-read tests_components and tests_architecture before editing them, and check
+    the module against the strict rule with the other staging tests. M0-225 (melder_0, 08:38:33Z): D-10 took
+    0.2.8270 and closed at 08:42:12Z, so S2 notches above it and its system-doc and graph edits may start - after
+    melder_0's rebuild, which is not recorded yet: the bind-guard and agent-documentation manifests read 0.2.8270,
+    the system-documents manifest still 0.2.8269. M3-16 (melder_3, 08:47:37Z, re M1-69): tests_components is no
+    longer melder_3's; melder_3 re-reads it and tells this lane before any edit if the owner changes the module.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:17-17
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:22-22
+  - context_compass/tickets/tasks/completed/2026-10-10_deny_file_access_under_safe_codegen_task.md:3-8
+  - context_compass/tickets/tasks/2026-10-25_rebind_while_old_objects_are_alive_tests_task.md:1-16
+  IMPACT: The notch is 0.2.8271 unless another lane lands first; the docs pair and tests_components are this lane's
+    at landing, melder_0's rebuild state checked first.
+  NEXT: The patch docs, then the mapping note.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T09:17:53Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: The patch is written and linked (architecture_patch, component patches for the Binding Pipeline, Spellbook
+    Core, AethericFrame Services and the Crystallizer, and the Spellbook Core code description, each indexed). The
+    mapping, patch section -> code -> test: (1) binding_pipeline: SpellIndex keeps `_binding_signature` and
+    `_binding_text` (kept after cleanup, like `_id`), `signature_of`, `for_binding`, `binding_signature`,
+    `check_admits`; Bind builds its index with `for_binding` -> the unit file test_spell_index_binding_signature.py and
+    the component test of the recorded binding. (2) aetheric_frame_services: `LookupContainer.repoint` and
+    `AethericFrame.repoint_lookup` -> test_lookup_container_repoint.py. (3) spellbook_core and its code description:
+    `bind_inactive` runs `check_admits` and the ownership check after the collision check, before the hooks and
+    registration; `_apply_add_to_index` runs `check_admits` before the move; `_apply_notch` reads the claim's holder,
+    repoints by compare-and-set before the park, refuses a holder (RuntimeError naming it, two remedies), puts the claim
+    back if the park or promotion raises and no longer calls `update_lookup`; `_apply_remove_from_index` mints with
+    `for_binding`; the different-key branch of `_revert_refused_notch` goes -> the component file's staging, add, notch
+    and split tests, and the 0.2.8262 refusal tests unchanged. (4) The cache: generation 24 -> the cache-version tests.
+    (5) crystallizer: RecordVersion 5.0.0 with `OLDEST_READABLE_MAJOR = 5` -> a new unit test; GraftRunner's merge
+    lane checks each member's signature before `bind_inactive` -> a new graft-merge test. (6) The Conduit docstrings,
+    README and the UX examples -> the example runs. Then the suites, the GIL off and on.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/index_keeps_its_first_binding_2026_10_25/architecture_patch.md:1-119
+  - context_compass/system_docs/patches/active/index_keeps_its_first_binding_2026_10_25/component_patch_spellbook_core.md:1-100
+  - context_compass/system_docs/patches/active/index_keeps_its_first_binding_2026_10_25/code_description_patch_spellbook_core.md:1-88
+  - context_compass/system_docs/patches/active/index_keeps_its_first_binding_2026_10_25/component_patch_crystallizer.md:1-73
+  - src/melder/aether/spellbook/bind/spell_index.py:75-118
+  - src/melder/aether/spellbook/bind/bind.py:808-809
+  - src/melder/aether/aetheric_frame/lookup_container.py:92-152
+  - src/melder/aether/spellbook/spellbook.py:6053-6075
+  - src/melder/aether/spellbook/spellbook.py:4167-4328
+  - src/melder/aether/spellbook/spellbook.py:4402-4507
+  - src/melder/crystallizer/persistence/record_version.py:80-194
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:492-584
+  IMPACT: The patch gate is met; each code step has the test that pins it, and the notch's park-before-check order
+    for a target that is not parked stays with its backlog task (the claim is put back on that path).
+  NEXT: SpellIndex and Bind, then the frame's repoint, then the Book.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T09:29:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: The patch is implemented as mapped. SpellIndex keeps `_binding_signature` and `_binding_text` (kept after
+    cleanup, like `_id`) and gains `for_binding`, `signature_of`, `_describe_binding`, `binding_signature` and
+    `check_admits`; Bind builds every index with `for_binding`. `LookupContainer.repoint` is the claim's
+    compare-and-set and `AethericFrame.repoint_lookup` wraps it (both files CRLF, kept). In the Book: `bind_inactive`
+    runs `check_admits` and the ownership check right after the collision check, before the hooks and registration;
+    `_apply_add_to_index` runs `check_admits` before the move; `_apply_notch` reads the claim's holder, repoints from
+    the outgoing version (or from no one) before the park, refuses another holder through the new
+    `_refuse_taken_address` (RuntimeError naming the holder; one remedy for this Book's other index, one for another
+    Book's spell), gives the claim back if the park or promotion raises, and no longer calls `update_lookup`;
+    `_apply_remove_from_index` mints with `for_binding`; `_revert_refused_notch` lost its different-key branch.
+    RecordVersion is 5.0.0 with `OLDEST_READABLE_MAJOR = 5` and refuses older majors with the reason and remedy; the
+    cache is generation 24; the graft's merge lane files `member_binding_differs_from_merge_target` before
+    `bind_inactive`. Docstrings: the Conduit's `bind_inactive`, `notch_spell` (its example stages an edited
+    ReportService) and `add_to_spell_index` (its example moves a split version back), and the stale managed-options
+    line of `bind` and `bind_inactive` ("part of a managed spell's id").
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/spell_index.py:156-298
+  - src/melder/aether/spellbook/bind/spell_index.py:631-720
+  - src/melder/aether/spellbook/bind/bind.py:811-820
+  - src/melder/aether/aetheric_frame/lookup_container.py:157-202
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:1134-1157
+  - src/melder/aether/spellbook/spellbook.py:6213-6232
+  - src/melder/aether/spellbook/spellbook.py:4810-4818
+  - src/melder/aether/spellbook/spellbook.py:4169-4367
+  - src/melder/aether/spellbook/spellbook.py:4368-4431
+  - src/melder/aether/spellbook/spellbook.py:4504-4607
+  - src/melder/aether/spellbook/spellbook.py:5049-5058
+  - src/melder/crystallizer/persistence/record_version.py:90-217
+  - src/melder/utilities/caching_system/caching_system.py:231-263
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:492-618
+  IMPACT: R1-R6 and R8 are in the code, R7 in the graft; the docs and the release note follow the suites.
+  NEXT: Rewrite the failing tests (MEASURE below).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T09:29:58Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: The three red files pass, 32 of 32, the GIL off and on. The suites, the GIL off, first pass: unit 2 failed of
+    10013, component 29 of 2508 (11 files), integration 181 of 2327 (26 files). By cause: 157 staging refusals
+    ("bind_inactive refused: SpellIndex <id> keeps the binding its first version was bound with", tests that stage a
+    renamed class or another binding name - 137 bare, 20 under a Protocol); 23 in the cache-schema test, which pins
+    the version history (generation 24 is new); 3 record-version tests (two units pin 4.3.0 or read an unstamped
+    record; one integration graft hand-builds a record at 1.0.0). No failure points elsewhere.
+  EVIDENCE:
+  - context_compass/artifacts/index_keeps_its_binding_20261025/runs/green1_gil0.txt
+  - context_compass/artifacts/index_keeps_its_binding_20261025/runs/green1_gil1.txt
+  - context_compass/artifacts/index_keeps_its_binding_20261025/runs/suites_first_pass_gil0_summary.txt
+  - context_compass/artifacts/index_keeps_its_binding_20261025/runs/suites_first_pass_gil0_failures.tsv
+  IMPACT: The rewrite is the staging tests (stage each version at its index's binding, keeping what each test
+    proves), the cache-history pin and the record-version tests; then the GIL-on pass and the UX examples.
+  NEXT: Rewrite the 37 failing files, file by file.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T09:44:14Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: M0-228 consumed (melder_0, 09:08:41Z, re M1-67). D-10 landed and was rebuilt at 0.2.8270, with the asset
+    and bundle `--check` runs OK; the system-documents manifest reads 0.2.8270. So src_architecture, src_components
+    and the graph are free for this lane at its landing. The notch-fanout race task needs none of this lane's files
+    now and waits on the owner's design choice. Both designs change when `Conduit.notch_spell` runs its borrower
+    fan-out, so its fix agrees conduit.py custody with this lane before its first edit.
+  EVIDENCE:
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:22-22
+  - context_compass/tickets/tasks/completed/2026-10-10_deny_file_access_under_safe_codegen_task.md:706-714
+  - context_compass/tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:419-429
+  IMPACT: The docs pair and the graph wait only on this lane's own order (suites, then docs). conduit.py stays this
+    lane's (docstrings) until it lands, and the race fix asks first.
+  NEXT: Rewrite the parked-member test of test_conduit_component_lock_residuals.py (lock_gaps is green, 5 passed).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -731,22 +979,20 @@ this does not make independent review mandatory for every ticket.
   continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
 ## Context / Handoff Summary
-- Scope: the binding signature (address) belongs to the SpellIndex - a version is staged at its index's address
-  and a notch never moves it (the owner's direction of 2026-10-24, option A; the 2026-10-17 answer is
-  superseded). The Requirements and Acceptance above are option B's and are rewritten after the owner's calls.
-  Filed by melder_0 under EPIC-2026-10-17-correctness_defects; proven on 0.2.8251, rechecked on 0.2.8267 (Notes).
-- State: in_progress with melder_1, handoff. The research is done (FACT, MEASURE and PLAN notes of
-  2026-10-25T01:25:13Z): no existing check needs a bypass; (A) adds a way-in check and a notch refusal; the
-  refusal fails no test, the way-in check 169 that stage at other addresses; records made before (A) need a rule.
-  The meld-identity map is done (notes of 2026-10-25T02:01:57Z): every address form follows the index
-  under (A); a spell_id names one version and is refused while it is parked, by design; three door gaps and a
-  pre-existing stuck consumer (a side finding for the epic) sit outside (A).
-- Owner's word (DECISION note of 2026-10-25T02:47:38Z): (A) goes ahead, a spell_id stays exact, call 3
-  answered; the parked doors are STORY-2026-10-25-probe_and_purge_reach_every_version (lands first), the stuck
-  consumer EPIC-2026-10-25-dependency_watchers_listen_for_names.
-- Next: (1) the owner's calls 1-2 and the rename rule (DECISION note of 2026-10-25T02:47:38Z); (2) the Requirements and
-  Acceptance rewritten, patch docs for (a)-(e) of the PLAN note and his approval; (3) red tests, the fix, docs, the
-  next free notch and the rebuild last, with conduit.py custody from melder_0 before its docstrings change.
+- Scope: a SpellIndex keeps its first version's binding - the kind of spellframe and the address - and admits only a
+  version bound the same way; a notch never moves the address and refuses one another spell holds; records older than
+  5.0.0 are refused, the creation cache goes to generation 24, and the graft's merge lane files a member bound another
+  way as a shortfall (R1-R8; the owner's go and call 1, DECISION notes of 2026-10-25T08:40:04Z and 08:49:58Z).
+- State: in_progress with melder_1, implementation. Done: the Requirements and Acceptance for the strict rule; the red
+  tests (MEASURE note of 2026-10-25T08:52:07Z: 27 failed, 5 passed, the GIL off and on); the mapping (PLAN note of
+  2026-10-25T09:17:53Z); the patch docs in system_docs/patches/active/index_keeps_its_first_binding_2026_10_25/.
+- Custody (M1-67, M1-68, M1-69 of 2026-10-25T08:40:52Z): spell_index.py, bind.py, spellbook.py, lookup_container.py,
+  aetheric_frame.py, conduit.py (docstrings), record_version.py, caching_system.py, graft_runner.py, README and the
+  tests that stage under another binding; the UX examples that do are added when the suite run counts them. D-10
+  landed at 0.2.8270, so this lane notches above it; melder_0's rebuild was not yet recorded at 09:02.
+- Next: (1) the code in the mapping's order; (2) the red tests green, then the suites with the staging, record-version
+  and UX-example tests rewritten, the GIL off and on; (3) the system docs and graph, README and the user docs, the
+  release note, the notch, closure and the rebuild last.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

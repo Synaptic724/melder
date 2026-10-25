@@ -128,12 +128,15 @@ class LookupContainer:
 
     def update(self, key: Tuple[str, str], spell_id: str) -> None:
         """
-        Re-point an active signature to a new spell_id (notch promotion).
+        Re-point an active signature to a spell_id unconditionally.
 
         Contract:
-            - Unconditionally sets `key -> spell_id` under the lock. Intended
-              for notch, where the index keeps the signature but swaps the
-              active spell behind it.
+            - Unconditionally sets `key -> spell_id` under the lock, whoever
+              held it. Used to set a claim back to a value recorded earlier
+              (`Spellbook._restore_binding_key`, a refused notch on an index
+              with no active version). A notch moves its index's claim with
+              `repoint` instead, which never takes another spell's claim
+              (2026-10-25; it called this method until then).
             - Maintains the reverse map: the previously active spell_id for
               `key` (when present) is dropped before the new one is recorded.
 
@@ -150,6 +153,52 @@ class LookupContainer:
                 self._reverse.pop(previous, None)
             self._lookup[key] = spell_id
             self._reverse[spell_id] = key
+
+    def repoint(self, key: Tuple[str, str], spell_id: str, *, from_spell_id: Optional[str]) -> Optional[str]:
+        """
+        Move a signature to `spell_id` only from the spell the caller expects (a notch's claim move).
+
+        Purpose:
+            A notch moves its index's address claim from the outgoing version
+            to the incoming one (2026-10-25,
+            STORY-2026-10-17-notch_moves_signature_by_incoming_key_only). Every
+            version of an index is bound at the index's address, so the claim
+            must follow the active version and must never be taken from
+            another spell: another index's active version, or another Book's
+            spell, at the same address.
+
+        Contract:
+            - One compare-and-set under the lock. The signature is set to
+              `spell_id` when it is unclaimed, held by `from_spell_id`, or
+              already held by `spell_id` (then nothing changes); the previous
+              holder's reverse entry is dropped, as `update` drops it.
+            - Held by any other spell_id - with `from_spell_id` None, any
+              holder at all - nothing changes and that holder is returned.
+            - Maintains both maps.
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)`.
+            spell_id: The spell_id that should hold `key`.
+            from_spell_id: The spell_id the caller expects to hold `key` now
+                (the outgoing version), or None when the caller expects it
+                unclaimed (an index with no active version).
+
+        Returns:
+            Optional[str]: None when `key` now names `spell_id`; otherwise the
+                spell_id holding it, which kept it.
+
+        Threading:
+            Atomic under the container's leaf lock; calls nothing while holding it.
+        """
+        with self._lock:
+            holder = self._lookup.get(key)
+            if holder is not None and holder != spell_id and holder != from_spell_id:
+                return holder
+            if holder is not None:
+                self._reverse.pop(holder, None)
+            self._lookup[key] = spell_id
+            self._reverse[spell_id] = key
+            return None
 
     def release(self, key: Tuple[str, str]) -> None:
         """

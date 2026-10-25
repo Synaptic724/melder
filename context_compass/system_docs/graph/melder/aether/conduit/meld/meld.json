@@ -57,7 +57,7 @@
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
-    "discovers purge and probe targets through _resolve_probe_target: a spell_id reaches the version the door's Book can see, owned or borrowed, active or parked (_resolve_visible_version_by_id - the lock-free active read, then Spellbook._find_visible_version under the Book lock), any other selector the version an index has active through _resolve_spell; an instance resolves through its class; concrete doors own scope authority (0.2.PPNOTCH)",
+    "discovers purge and probe targets through _resolve_probe_target: a spell_id reaches the version the door's Book can see, owned or borrowed, active or parked (_resolve_visible_version_by_id - the lock-free active read, then Spellbook._find_visible_version under the Book lock), any other selector the version an index has active through _resolve_spell; an instance resolves through its class; concrete doors own scope authority (0.2.8269)",
     "enforces validity and dirty-root gates",
     "chooses reuse versus construction",
     "dispatches execution into CreationContext",

@@ -480,11 +480,11 @@ Direct evidence used in this pass:
 
 Current Python test inventory from direct filesystem count:
 - `unit/`: 520 `.py` files, 517 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 173 `.py` files, 171 of them `test_*.py` (143, 81)
+- `component/`: 174 `.py` files, 172 of them `test_*.py` (143, 81)
 - `integration/`: 187 `.py` files, 180 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 868 `test_*.py`
+Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 869 `test_*.py`
 modules are the count `tests_components` states.
 
 ## Core Responsibilities
@@ -623,6 +623,14 @@ modules are the count `tests_components` states.
   2026-10-16); otherwise, and with the GIL on (5 of 5), it xpasses. Neither result fails the cell, any other
   exception still fails the test, and whoever closes that task deletes the marker.
   EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:626-675
+- KNOWN GAPS HELD AS STRICT XFAIL (component conduit, 2026-10-25): the two defect tests in
+  `test_conduit_component_rebind_while_old_objects_are_alive.py` carry `xfail(strict=True, raises=AssertionError)`
+  naming STORY-2026-10-18-revalidate_on_binding_change - a `many` rebound under other disposal names has its new
+  objects disposed with the removed definition's list, and a held `unique` or `unique_per_conduit` rebound as `many`
+  fails its next meld with AttributeError. Both reproduce on every run, the GIL off and on, so they report XFAIL;
+  the cell fails when one XPASSes (the gap closed) or raises anything but AssertionError, and whoever closes S3
+  deletes the markers. `--runxfail` shows the values observed.
+  EVIDENCE: tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py:166-264
 
 ## C1 Code Map (Core Only)
 Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
@@ -929,6 +937,12 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-25 a rebind while the removed definition's objects are alive (no notch; tests and documentation only): the
+inventory is recounted (unit 520 `.py`, 517 of them `test_*.py`; component 174, 172; integration 187, 180; 869 test
+modules in the three tiers) - this lane adds one component module, catalogued in `tests_components`, whose two
+defect tests hold S3's gap as strict xfails, named under Failure Modes and Error Paths beside the meld-vs-notch
+race. No tier, conftest, declared marker or shared support module changes.
 
 2026-10-25 the release's provenance (no notch; CI, tests and documentation only): `python-publish.yml` uploads to
 PyPI by Trusted Publishing and `Release / provenance` verifies every released file's attestation after the upload,

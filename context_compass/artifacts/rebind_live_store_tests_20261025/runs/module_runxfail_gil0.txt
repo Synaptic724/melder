@@ -1,0 +1,40 @@
+FFFF......                                                               [100%]
+=================================== FAILURES ===================================
+_ test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own[root-teardown] _
+tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py:205: in test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own
+    assert second.calls == ["shutdown"], (
+E   AssertionError: the second binding declares ['shutdown'], but its object was disposed with ['close']; the first object, bound with ['close'] and still in the store at the rebind, was disposed with ['close']
+E   assert ['close'] == ['shutdown']
+E     
+E     At index 0 diff: 'close' != 'shutdown'
+E     Use -v to get more diff
+_ test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own[lesser-pool-return] _
+tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py:205: in test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own
+    assert second.calls == ["shutdown"], (
+E   AssertionError: the second binding declares ['shutdown'], but its object was disposed with ['close']; the first object, bound with ['close'] and still in the store at the rebind, was disposed with ['close']
+E   assert ['close'] == ['shutdown']
+E     
+E     At index 0 diff: 'close' != 'shutdown'
+E     Use -v to get more diff
+_ test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object[unique] _
+tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py:258: in test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object
+    assert (outcome, new_calls) == ("returned a new object", ["close"]), (
+E   AssertionError: after the rebind as `many` the next meld raised AttributeError: 'Svc' object has no attribute 'append'; Svc objects built: 2 (the first definition's and the meld's); the meld's object was disposed with [] at the root's teardown; the first definition's object was disposed with ['close']
+E   assert ("raised Attr...'append'", []) == ('returned a ...t', ['close'])
+E     
+E     At index 0 diff: "raised AttributeError: 'Svc' object has no attribute 'append'" != 'returned a new object'
+E     Use -v to get more diff
+_ test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object[unique-per-conduit] _
+tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py:258: in test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object
+    assert (outcome, new_calls) == ("returned a new object", ["close"]), (
+E   AssertionError: after the rebind as `many` the next meld raised AttributeError: 'Svc' object has no attribute 'append'; Svc objects built: 2 (the first definition's and the meld's); the meld's object was disposed with [] at the root's teardown; the first definition's object was disposed with ['close']
+E   assert ("raised Attr...'append'", []) == ('returned a ...t', ['close'])
+E     
+E     At index 0 diff: "raised AttributeError: 'Svc' object has no attribute 'append'" != 'returned a new object'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own[root-teardown]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own[lesser-pool-return]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object[unique]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object[unique-per-conduit]
+4 failed, 6 passed in 5.90s

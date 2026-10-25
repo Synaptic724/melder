@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-25T00:16:54Z
-- Updated: 2026-10-25T03:00:26Z
+- Updated: 2026-10-25T08:46:00Z
 - Target Window: set by the owner once the three decision requests are answered
 - Related Program/Initiative: the core-protection review (TASK-2026-10-08-review_core_protection_fork_aware_updates,
   completed 2026-10-10) and its governed-evolution contract (C1.4, C3.2, C6)
@@ -109,7 +109,8 @@ and every fix is described that way.
 - none: each defect is one deliverable and stays a task (Tasks).
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: TASK-2026-10-10-deny-file-access-under-safe-codegen (D-10) - `open` under safe; the posture question.
+- [x] Task: TASK-2026-10-10-deny-file-access-under-safe-codegen (D-10) - `open` under safe; the posture question.
+      Closed 2026-10-25, notched 0.2.8270.
 - [ ] Task: TASK-2026-10-10-enforce-import-policy-on-dynamic-imports (D-11) - `__import__` against the import
       lists; option A, B or both.
 - [ ] Task: TASK-2026-10-10-refuse-materializing-over-live-modules (D-20) - the generation namespace and exits
@@ -148,14 +149,16 @@ and every fix is described that way.
 
 ## Open Questions
 - Answered on 2026-10-25 (Decision Log; Notes): D-10, D-11 and D-20, each with the recommended option.
-- Put back to the owner in the patch docs: hybrid's `pathlib` route once `open` is denied (D-10), and a frame that
-  declares no generation namespace failing closed (D-20).
+- Answered: hybrid's `pathlib` route once `open` is denied (D-10) - B, `pathlib` moved to the permissive extras (the
+  owner, chat 2026-10-25, "focus on B"). Put back to the owner in the patch doc: a frame that declares no
+  generation namespace failing closed (D-20).
 
 ## Decision Log
 - 2026-10-25: the epic opened on the owner's ask; its children are the three existing tasks.
 - 2026-10-25: D-10 - deny `open` under safe, hybrid and precision (the owner).
 - 2026-10-25: D-11 - A + B, a static refusal of the name plus a runtime `__import__` wrapper (the owner).
 - 2026-10-25: D-20 - an ACL capability rule declares the namespace; filtered builtins (the owner).
+- 2026-10-25: D-10's pathlib route - B: `pathlib` becomes a permissive extra, so hybrid refuses it (the owner).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -291,6 +294,26 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T08:46:00Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: D-10 is closed, notched 0.2.8270: `open` is refused under safe, hybrid and precision and under the engine's
+    no-projection default, `pathlib` is a permissive-only import root (the owner's B), every profile's file posture
+    is pinned by tests and stated in its docstring, and the running note carries the section "Codegen rooms under the
+    safe, hybrid and precision profiles refuse `open`". Milestone 3 is one of three. The tranche moves on: D-11 is
+    ready (its blocker was D-10), D-20 waits for D-11. The running note's codegen section is the home for the D-11
+    and D-20 Breaking entries, the same subject; this epic's artifact folder keeps D-10's runs and scripts beside the
+    two tasks still to run.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-10-10_deny_file_access_under_safe_codegen_task.md:1-9
+  - release_docs/next_version_release.md:177-205
+  - context_compass/attention_board.md:121-122
+  IMPACT: One of the epic's three defects is fixed; the next fix starts from the D-10 posture.
+  NEXT: D-11 under the owner's one-by-one go: patch docs (A + B) first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -306,11 +329,11 @@ this does not make independent review mandatory for every ticket.
 
 ## Context / Handoff Summary
 Scope: the three codegen-room p1 defects - D-10 `open` under safe, D-11 `__import__` past the import lists, D-20 a
-materialize over live modules - each in its own child task. State: in_progress, melder_0 (a new session since
-2026-10-25T02:02:58Z; the earlier session's BLOCKER is lifted). Milestones 1 (all three re-measured on 0.2.8267) and 2
-(the owner's three decisions, Notes) are met. D-10: fixed, tested and documented (its Notes of 2026-10-25T02:27:56Z
-and 02:59:13Z); its hybrid pathlib row - and with it the notch, release note and rebuild - waits on the owner's A
-or B. Then D-11, then D-20.
+materialize over live modules - each in its own child task. State: in_progress, melder_0. Milestones 1 (all three
+re-measured on 0.2.8267) and 2 (the owner's three decisions, Notes) are met; milestone 3 is one of three: D-10 is
+closed, notched 0.2.8270 (Note of 2026-10-25T08:46:00Z; its rebuild runs after its closure). Next: D-11, ready, under the
+owner's one-by-one go - patch docs for A + B first - then D-20, blocked on D-11. The release note's codegen section
+takes their Breaking entries.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

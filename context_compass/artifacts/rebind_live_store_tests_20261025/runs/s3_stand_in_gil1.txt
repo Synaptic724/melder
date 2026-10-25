@@ -1,0 +1,23 @@
+FFFF......                                                               [100%]
+=================================== FAILURES ===================================
+[XPASS(strict)] OPEN: a `many` key's disposal record keeps the list of the first definition that registered the key in a store, and Creations.register_many appends later objects under it without comparing lists, so a definition cleaned up and bound again under other disposal names (the same spell_id since 0.2.8257) has its objects disposed with the removed definition's methods while that definition's objects are still in the store. STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes it. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+[XPASS(strict)] OPEN: a `many` key's disposal reco
+[XPASS(strict)] OPEN: a `many` key's disposal record keeps the list of the first definition that registered the key in a store, and Creations.register_many appends later objects under it without comparing lists, so a definition cleaned up and bound again under other disposal names (the same spell_id since 0.2.8257) has its objects disposed with the removed definition's methods while that definition's objects are still in the store. STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes it. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+[XPASS(strict)] OPEN: a `many` key's disposal reco
+[XPASS(strict)] OPEN: Creations.register_many appends to whatever the key's live slot holds, so after a `unique` or `unique_per_conduit` definition whose object is still in the store is cleaned up and bound again as `many` (the same spell_id), the next meld builds its object and then raises AttributeError ("'Svc' object has no attribute 'append'"), and that object is neither returned nor recorded. STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes it. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+[XPASS(strict)] OPEN: Creations.register_many appe
+[XPASS(strict)] OPEN: Creations.register_many appends to whatever the key's live slot holds, so after a `unique` or `unique_per_conduit` definition whose object is still in the store is cleaned up and bound again as `many` (the same spell_id), the next meld builds its object and then raises AttributeError ("'Svc' object has no attribute 'append'"), and that object is neither returned nor recorded. STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes it. STRICT ON PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes this marker.
+[XPASS(strict)] OPEN: Creations.register_many appe
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_with_the_same_disposal_methods_disposes_both_objects_with_them[root-teardown]
+PASSED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_with_the_same_disposal_methods_disposes_both_objects_with_them[lesser-pool-return]
+PASSED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_after_a_binding_without_disposal_methods_disposes_the_new_objects_with_their_own
+PASSED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_without_disposal_methods_leaves_the_new_objects_undisposed
+PASSED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_of_a_slotted_spell_never_melded_as_many_builds_and_disposes_new_objects[unique]
+PASSED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_of_a_slotted_spell_never_melded_as_many_builds_and_disposes_new_objects[unique-per-conduit]
+FAILED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own[root-teardown]
+FAILED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own[lesser-pool-return]
+FAILED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object[unique]
+FAILED test_conduit_component_rebind_while_old_objects_are_alive.py::test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object[unique-per-conduit]
+4 failed, 6 passed in 1.15s

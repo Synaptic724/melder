@@ -515,6 +515,14 @@ class GraftRunner(Cleanable):
               lands a shortfall instead of a silent no-op.
             - Each parked member retains its recorded resolution capability and, when
               managed, its recorded options (record 4.2.0).
+            - Every version of an index is bound the way its first version was
+              (2026-10-25, STORY-2026-10-17-notch_moves_signature_by_incoming_key_only):
+              a member whose binding - its hydrated spellframe's kind and the address
+              its name and recorded binding name give (`SpellIndex.signature_of`) -
+              differs from the merge target's `binding_signature` is not parked. It
+              becomes a shortfall, `member_binding_differs_from_merge_target`, checked
+              before `bind_inactive`, so it registers nothing, and the other members
+              still park.
 
         Args:
             selected_id:
@@ -529,20 +537,45 @@ class GraftRunner(Cleanable):
         Returns:
             Tuple[int, bool]: (members parked, selection adopted).
         """
+        from melder.aether.spellbook.bind.spell_index import SpellIndex
+
         parked = 0
         live_selected_id: Optional[str] = None
+        target_binding = self._merge_into_index.binding_signature
         for spell_id, entry in members.items():
             crystal = dict(entry.get("payload", {}))
             target = self._hydrate(spell_id, crystal, shortfalls)
             if target is None:
+                continue
+            spellframe = self._hydrate_spellframe(spell_id, crystal, shortfalls)
+            binding_name = crystal.get("binding_name")
+            # The member's binding against the merge target's, as bind_inactive will check it - the name as Bind
+            # takes it from the target. A target index with no binding (not built by Melder) is left to
+            # bind_inactive's check, which raises for it.
+            spell_name = str(getattr(target, "__name__", type(target).__name__))
+            member_binding = SpellIndex.signature_of(
+                spellframe=spellframe, spell_name=spell_name, binding_name=binding_name,
+            )
+            if target_binding is not None and member_binding != target_binding:
+                shortfalls.append({
+                    "member": spell_id,
+                    "reason": "member_binding_differs_from_merge_target: '{0}' was recorded with {1}, and "
+                              "the merge target keeps the binding {2}".format(
+                                  spell_name,
+                                  SpellIndex._describe_binding(
+                                      spellframe=spellframe, spell_name=spell_name, binding_name=binding_name,
+                                  ),
+                                  target_binding,
+                              ),
+                })
                 continue
             new_spell_id = host_conduit.bind_inactive(
                 spell=target,
                 spell_index=self._merge_into_index,
                 existence=str(crystal.get("existence_name", "unique")),
                 permissions=str(crystal.get("permissions_name", "create")),
-                spellframe=self._hydrate_spellframe(spell_id, crystal, shortfalls),
-                binding_name=crystal.get("binding_name"),
+                spellframe=spellframe,
+                binding_name=binding_name,
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
                 resolvable=crystal.get("resolvable", True),

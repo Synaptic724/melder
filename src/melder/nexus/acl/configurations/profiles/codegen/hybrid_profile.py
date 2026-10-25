@@ -18,11 +18,10 @@ class HybridCodegenProfileStrategy:
         open `permissive` posture. It allows core query/link/invoke/read
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
-        Files: `open` is a denied builtin (the safe tuple), and `io` and `os`
-        are not on the import allowlist, so neither route reads or writes
-        files. `pathlib` is on the allowlist, so `pathlib.Path` reads and
-        writes do run under this profile. These are policy checks in the
-        room's own process, not isolation.
+        Files: `open` is a denied builtin (the safe tuple), and `io`, `os`
+        and `pathlib` are not on the import allowlist - they are
+        permissive-only roots - so those routes are refused at validation.
+        These are policy checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.

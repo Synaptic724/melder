@@ -54,7 +54,7 @@
     "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo",
     "serves warm automatic id melds from the fast-door entry with ConduitMeld's guard ladder and both arms (plain and dict override payloads), and mints the name/class entries (_fast_input_doors) its space reads",
     "answers a managed spell's live-creation probe from the owner root's pool, as the conduit door does - a managed object is never space-local (0.2.8243)",
-    "probes and purges the exact version a spell_id names, a parked version or a borrowed copy included, through Meld._resolve_probe_target, within the lifetimes this door serves (0.2.PPNOTCH)"
+    "probes and purges the exact version a spell_id names, a parked version or a borrowed copy included, through Meld._resolve_probe_target, within the lifetimes this door serves (0.2.8269)"
    ],
    "owns_state": [
     "_spellspace",

@@ -514,7 +514,7 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 169 `test_*.py` modules among 171 `.py` files (recounted 2026-10-19)
+- 172 `test_*.py` modules among 174 `.py` files (recounted 2026-10-25)
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -527,7 +527,7 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- No harness or support module of its own; the 77 test_*.py modules in
+- No harness or support module of its own; the 80 test_*.py modules in
   tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
   conftests named in `tests_architecture.md`. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
@@ -957,11 +957,12 @@ Protects:
   only the named version for a spell_id or a source id and names what was asked when it refuses (not live,
   unsupported existence), while its index path still answers the first record of the index with a live
   object; both rooms advertise `get_spell_by_spell_id` and keep no `get_spell_by_id`
-- the codegen presets' `open` posture (0.2.8269, D-10): the compiled deny list carries `open` for safe (the
-  default profile), hybrid and every chain with the precision overlay, and not for permissive or full_access
-  (`test_frame_acl_codegen_validation_profiles.py`); the engine's no-projection default denies `__import__`
-  plus exactly the safe tuple, imports off (`test_codegen_system_unit_matrix.py`); and runtime builtins built
-  from the safe tuple carry no `open` (`test_codegen_namespace_runtime_unit_matrix.py`)
+- the codegen presets' file posture (0.2.8270, D-10): the compiled deny list carries `open` for safe (the default
+  profile), hybrid and every chain with the precision overlay, and not for permissive or full_access, and
+  `pathlib` is an allowed import root of the permissive list only
+  (`test_frame_acl_codegen_validation_profiles.py`); the engine's no-projection default denies `__import__` plus
+  exactly the safe tuple, imports off (`test_codegen_system_unit_matrix.py`); and runtime builtins built from
+  the safe tuple carry no `open` (`test_codegen_namespace_runtime_unit_matrix.py`)
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
@@ -1541,7 +1542,7 @@ Protects:
   and four threads melding while 40 notches flip the lineage never build the definition (a lookup that lands
   inside a notch's swap may raise the pre-existing KeyError, which the test accepts). Every flag check asserts
   that the registry's published set agrees with the lineage's flag
-- purge and the live-creation probes by spell_id (0.2.PPNOTCH;
+- purge and the live-creation probes by spell_id (0.2.8269;
   `test_conduit_component_probe_and_purge_reach_every_version.py`, 24 tests, 37 cases): a version a notch parked is
   probed and purged by its spell_id in the store its existence selects - `unique`, `many`, `unique_per_conduit`,
   lineage - and a notch back after its purge builds a fresh object; a parked version never built probes False and
@@ -1555,6 +1556,16 @@ Protects:
   version resolves through its address; a `unique` version with no owner store is refused with a RuntimeError; a
   split version and a transfer's moved versions are reached where they live; other selectors still name the active
   version; a Spell object is not a selector; versions staged before conjure are reached like those staged after
+- a rebind while the removed definition's objects are still alive (2026-10-25;
+  `test_conduit_component_rebind_while_old_objects_are_alive.py`, 6 tests, 10 cases): two known gaps of
+  STORY-2026-10-18-revalidate_on_binding_change held as its corrected contract under strict xfails - a `many` spell
+  cleaned up and bound again under other disposal names has its new objects disposed with their own methods, at the
+  root's teardown and at a lesser's pool return (today the store runs the removed definition's list on them, and
+  nothing raises), and a held `unique` or `unique_per_conduit` spell bound again as `many` melds a new object that
+  its scope disposes (today the meld builds the object, raises AttributeError and loses it); controls that pass: the
+  same list both times, a first or a second binding without disposal names, and a slotted definition never melded.
+  Its `Svc` records the disposal methods Melder runs on it and holds no class-level state: the spell_id digests
+  class-level values and closure cells, and the defects need the rebind to keep its spell_id
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -1570,6 +1581,7 @@ Key Files (C1):
 - `tests/component/melder/aether/conduit/test_conduit_component_managed_spell_quantity.py` (2026-10-15)
 - `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py` (2026-10-25)
+- `tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py` (2026-10-25)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -1725,14 +1737,14 @@ Protects:
   configuration (None without sharing, the bound object with it, the one the next Book adopts) and
   `Conduit.spellbook` for roots, lessers, a torn-down root and an upgraded lesser
 - what the codegen room's profiles stop around the core and what each does with files (2026-10-10, file
-  postures 0.2.8269; a characterization, not protection; 46 tests): an `import melder` statement refused under
+  postures 0.2.8270; a characterization, not protection; 46 tests): an `import melder` statement refused under
   every standard profile but full_access; hybrid refusing import statements of its denied roots; every
   profile's file posture - `open` called to write or read, or only named, refused under safe, hybrid, the
   precision overlay and the engine's default posture for a frame the room holds no projection for, and run
   under permissive and full_access; `io.open`, `os.open` and pathlib writes following each profile's import
-  list (a pathlib write runs under hybrid) - with `test_safe_profile_refuses_writing_files`, the strict xfail
-  for this gap (D-10) until 0.2.8269, passing; and one known gap held as its profiles' documented contract under
-  strict xfail, `__import__` loading roots the hybrid profile and the precision overlay deny
+  list, so only permissive and full_access run them - with `test_safe_profile_refuses_writing_files`, the
+  strict xfail for this gap (D-10) until 0.2.8270, passing; and one known gap held as its profiles' documented
+  contract under strict xfail, `__import__` loading roots the hybrid profile and the precision overlay deny
 - a capability room's lookups by spell_id (0.2.8253;
   `test_rift_spell_id_lookups_return_that_spell_integration.py`, 4 tests): in a dynamic frame open to Rift
   rooms, with PricingV1 active and PricingV2 parked on one index, the room answers PricingV1 by its spell_id,
@@ -2003,7 +2015,7 @@ Protects:
   provider; a dependency notch in the lending Book reaches the borrower's dependents; and four threads melding
   against 20 notches, held as a non-strict xfail until
   TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout (see `tests_architecture`)
-- probes and purges during notches (0.2.PPNOTCH; `test_conduit_integration_probe_and_purge_during_notches.py`, 1 test,
+- probes and purges during notches (0.2.8269; `test_conduit_integration_probe_and_purge_during_notches.py`, 1 test,
   2 cases): while one thread notches two indexes back and forth - at least 40 turns, and until each of two prober
   threads has run 20 rounds - the probers, from the lender and from a borrower whose index links follow the
   notches, probe both versions of a `unique` index (each live, each answered as itself) and purge both versions of
@@ -2959,9 +2971,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-10-01T10:23:50Z
 - path: `tests/integration/melder/aether/test_codegen_core_boundary_integration.py`
   start_line: 1
-  end_line: 455
-  loc: 455
-  verified_at: 2026-10-25T02:58:15Z
+  end_line: 456
+  loc: 456
+  verified_at: 2026-10-25T08:18:26Z
   note: codegen import gate around melder, every profile's file posture (open, io, os, pathlib; the
     no-projection default) and one strict-xfail gap (__import__).
 - path: `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
@@ -3671,7 +3683,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   loc: 788
   verified_at: 2026-10-25T03:47:32Z
   note: purge and the live-creation probes by spell_id: parked, split, borrowed and transferred versions, and the
-    refusals that stay (0.2.PPNOTCH).
+    refusals that stay (0.2.8269).
+- path: `tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py`
+  start_line: 1
+  end_line: 359
+  loc: 359
+  verified_at: 2026-10-25T08:35:07Z
+  note: a rebind while the removed definition's objects are alive: two known gaps of S3 as strict xfails
+    (another disposal list; a held slotted spell rebound as `many`) and their controls (2026-10-25).
 - path: `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
   start_line: 1
   end_line: 456
@@ -3725,7 +3744,7 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 189
   loc: 189
   verified_at: 2026-10-25T03:47:32Z
-  note: probes and purges by spell_id racing notches, from the lender and an index-link borrower (0.2.PPNOTCH).
+  note: probes and purges by spell_id racing notches, from the lender and an index-link borrower (0.2.8269).
 - path: `tests/integration/melder/crystallizer/test_managed_spell_options_record_integration.py`
   start_line: 1
   end_line: 185
@@ -3988,6 +4007,7 @@ graph TD
 - `tests/component/melder/aether/conduit/test_conduit_component_purge.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py`
 - `tests/integration/melder/conduit/test_conduit_integration_probe_and_purge_during_notches.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_rebind_while_old_objects_are_alive.py`
 - `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py`
 - `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py`
 - `tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py`
@@ -4053,7 +4073,20 @@ graph TD
 
 ## Context / Handoff Summary
 
-2026-10-25 purge and the live-creation probes by spell_id (0.2.PPNOTCH;
+2026-10-25 a rebind while the removed definition's objects are alive (no notch; tests and documentation only;
+TASK-2026-10-25-rebind_while_old_objects_are_alive_tests, on the owner's request): the Aether Component Cluster
+gains `test_conduit_component_rebind_while_old_objects_are_alive.py` (6 tests, 10 cases: two known gaps of
+STORY-2026-10-18-revalidate_on_binding_change as strict xfails - a `many` rebound under other disposal names has its
+new objects disposed with the removed definition's list, at a root's teardown and at a lesser's pool return; a held
+`unique` or `unique_per_conduit` rebound as `many` fails its next meld with AttributeError and loses the object it
+built - and four controls that pass); the core map adds it, Information Sources lists it and the key-file union
+gains one path. Counts are recounted from disk (unit 520 `.py`, 517 of them `test_*.py`; component 174, 172;
+integration 187, 180; 869 test modules in the three tiers): this lane adds one component module. The Component Test
+Suite's tier line (169 of 171, from 2026-10-19) and its aether-tree count (77) are brought to the recount (172 of
+174; 80); its spellbook-tree count (78) is left as it was, and the disk holds 80. Still unknown: the Unknowns
+section, unchanged. Map next: S3's tests when its fix lands, which takes these markers off.
+
+2026-10-25 purge and the live-creation probes by spell_id (0.2.8269;
 STORY-2026-10-25-probe_and_purge_reach_every_version): the Aether Component Cluster gains
 `test_conduit_component_probe_and_purge_reach_every_version.py` (24 tests, 37 cases: a parked version's objects
 probed and purged by its spell_id in the store and under the authority its existence selects, for every lifetime,
@@ -4080,16 +4113,17 @@ lane adds one unit module, and the count also takes in
 `test_conduit_component_probe_and_purge_reach_every_version.py` and
 `test_conduit_integration_probe_and_purge_during_notches.py`, which no cluster lists yet.
 
-2026-10-25 the codegen presets' file posture (0.2.8269; TASK-2026-10-10-deny-file-access-under-safe-codegen,
+2026-10-25 the codegen presets' file posture (0.2.8270; TASK-2026-10-10-deny-file-access-under-safe-codegen,
 defect D-10): the Aether Integration Cluster's codegen entry pins every profile's file posture in
 `test_codegen_core_boundary_integration.py` (46 tests, D-11's four strict xfails among them) - `open` called or
 named refused under safe, hybrid, the precision overlay and the engine's no-projection default and run under
-permissive and full_access; `io.open`, `os.open` and pathlib writes following each import list - and
-`test_safe_profile_refuses_writing_files` passes without the strict xfail it carried since 2026-10-10. The
-Aether/Nexus/Rift Unit Cluster protects the compiled `open` deny per preset, the no-projection default and the
-runtime builtins of the safe tuple (new tests in three existing modules, named in its entry and in Information
-Sources). The core map remeasures the integration module (455); the key-file union stays 283 paths, and this lane
-adds no module, so the counts are unchanged.
+permissive and full_access; `io.open`, `os.open` and pathlib writes following each import list, hybrid's included
+now that `pathlib` is a permissive extra - and `test_safe_profile_refuses_writing_files` passes without the strict
+xfail it carried since 2026-10-10. The Aether/Nexus/Rift Unit Cluster protects the compiled `open` deny per preset,
+`pathlib` as a permissive-only import root, the no-projection default and the runtime builtins of the safe tuple
+(new tests in three existing modules, named in its entry and in Information Sources). The core map remeasures the
+integration module (456); the key-file union stays 283 paths, and this lane adds no module, so the counts are
+unchanged.
 
 2026-10-25 the candidate's provenance (no notch; CI, tests and documentation only;
 STORY-2026-10-24-testpypi_trusted_publishing_and_provenance): the Repository Tooling Unit Cluster gains

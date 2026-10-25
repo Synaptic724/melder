@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 72b864cb1360d115cd9f89051a34f9bed531f585ee9d8c57f57b3a3af45b276f
+SOURCE FINGERPRINT: f2cc2e71e0220061bef39434cbb3cd5dfdef7962cf15d4faf3677d3937ac2ca3
 FILE COUNT: 418
 
 ================================================================================
@@ -73203,7 +73203,7 @@ END FILE: docs/expert/external-storage.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/governed-change.md
-CONTENT SHA256: f0ed52cb15c7511c26a79c6a70528f797d36d92303d50fc04e82d8b7ffb5a1ea
+CONTENT SHA256: f0877d97938c4a6d0eee0e752844124d8ca78f9a5e0ef4b7b5a739dc6d3188a2
 SOURCE ENCODING: utf-8
 ================================================================================
 # Preview, stage, and govern structural change
@@ -73233,6 +73233,10 @@ the previous spell_id restores the old version, which stayed parked. Expert 17 r
 whole loop on public calls, as does the README's sketch. A lookup by spell_id is exact:
 `get_spell_by_spell_id` returns the version that spell_id names, parked or active, and the
 version an index has active is a lookup by the index, `get_spell_by_index_id`.
+The calls that build nothing follow the same rule: `has_live_creation(spell=...)`,
+`describe_live_creation_status(spell=...)` and `purge(spell_id=...)` given a spell_id
+answer for that version, parked or active, so a parked version's objects can be
+checked or retired without a notch back; `meld` builds only the selected member.
 `notch_spell` refuses a version of another index, or one another Spellbook owns, before
 it changes anything. `add_to_spell_index` and `remove_from_spell_index` take `spell_id=`
 the same way, to move a parked candidate onto another index or out into one of its own.
@@ -74189,7 +74193,7 @@ END FILE: docs/intermediate/managed-spells.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/overrides.md
-CONTENT SHA256: 27926214cd2755f20b0c62c5dde3a0c6487d71a7919f030613d7cea3771f1a7b
+CONTENT SHA256: 6d1b1d250fa49da19c8948c39252a8e221abb79ee531ece4ec4eb9ec543d7131
 SOURCE ENCODING: utf-8
 ================================================================================
 # Flat overrides and live creation probes
@@ -74215,6 +74219,9 @@ different operations. Follow the complete script's lifetime choices first.
 The live-probe lesson checks `False` before its first meld and `True` afterward,
 then uses `describe_live_creation_status(...)` for detail. A diagnostic path can
 use these reads without using a meld merely to discover whether something is alive.
+Given a spell_id as `spell=`, both probes answer for exactly that version, also one a
+notch has parked or a copy borrowed from a linked conduit, while `meld` builds only
+the selected version.
 
 Continue to [deep overrides](../advanced/overrides.md) when the target is inside
 a dependency graph rather than a parameter of the object you are resolving.
@@ -74404,7 +74411,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: 59545e94fabcd599ab984a69dc5eb8a92a757f2f1da42796c728c4ee3e6d1f78
+CONTENT SHA256: 7840f2e0ab81ae1a68b8129ae7b07fc7c9da8bc4fe7eb038fa2891f20655e642
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -74509,9 +74516,11 @@ removed = conduit.purge("Job")
 removed = space.purge("RequestSession")
 ```
 
-Names, class/function references, spellframe/binding selectors, and explicit
-`spell_id=` work through the same discovery as `meld`. The return value is the
-number removed, or `0` when that authorized store has no matching creation.
+Names, class/function references, and spellframe/binding selectors work through the
+same discovery as `meld`, so they name the version a SpellIndex has selected. An
+explicit `spell_id=` names exactly that version, also one a notch has parked: purge
+it to retire an old version's objects without notching back to it. The return value
+is the number removed, or `0` when that authorized store has no matching creation.
 `purge_all=True` is the default: a `many` target removes its whole retained bucket.
 Only `many` objects with configured disposal are retained; untracked results are
 not affected by purge.
@@ -80712,10 +80721,10 @@ END FILE: release_docs/0.2.8265.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 3e54f1b030e8a24a406f8fabc837a6c768dd5c3b272cabba3b069f6d8b8ec1a2
+CONTENT SHA256: 71f7920a1981bb1130a83b4d3090cb8330cfc877c643c80092332a6ddbf134ad
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8268
+# Melder 0.2.8270
 
 **Unreleased**
 
@@ -80820,6 +80829,107 @@ With `generalized_singleton_specialization_enabled` (opt-in, off by default), a 
 dependency to a longer-lived object is still not specialized: the specialized path would build a new dependency on
 every warm meld, which the stored object never uses.
 
+## `purge` and the live-creation probes reach a parked version by its spell_id
+
+A notch changes which version of a SpellIndex is active; the version it parks keeps the objects it built, under its
+own spell_id. `purge(spell_id=...)`, `has_live_creation(spell=<spell_id>)` and
+`describe_live_creation_status(spell=<spell_id>)` found only the active version: for a parked one they raised
+`KeyError: '[MELD] No spell found with spell_id: <id>'`, so checking or retiring an old version's objects meant
+notching back to it first.
+
+They now answer for the exact version a spell_id names - active or parked, your Spellbook's own or a copy borrowed
+from a linked conduit - and purge that version's objects from the same store, under the same rules, as an active
+version's:
+
+```python
+class Report:
+    def __init__(self) -> None:
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+book = md.Spellbook()
+v1 = book.bind(spell=Report, existence="unique", disposal_method_names=["close"])
+root = book.conjure(dynamic=True)
+first = root.meld(spell_id=v1)
+
+
+class Report:                                     # version 2: the same name, new code
+    def __init__(self) -> None:
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+    def render(self) -> str:
+        return "v2"
+
+
+index = root.get_spell_by_spell_id(v1).spell_index
+v2 = root.bind_inactive(spell=Report, spell_index=index, existence="unique", disposal_method_names=["close"])
+root.notch_spell(spell_index=index, spell_id=v2)  # version 1 is parked; its object is kept
+second = root.meld(spell_id=v2)
+
+assert root.has_live_creation(spell=v1)           # raised KeyError before
+assert root.purge(spell_id=v1) == 1               # raised KeyError before
+assert first.closed and not second.closed         # only version 1's object was disposed
+root.meld(spell_id=v1)                            # still KeyError: meld builds the active version only
+```
+
+Every other selector is unchanged: a name, a class, a spellframe and binding name, or an object passed to `purge`
+names the version the index has active, as `meld` does - to retire a parked version's objects, pass its spell_id
+(with the default `purge_all=True`). Who may purge which store is unchanged too: a `unique` version from its owner
+root, a `unique_per_conduit_lineage` version from the lineage root, a `unique_per_conduit_cluster` version from the
+elected leader, a `many` or `unique_per_conduit` version from the conduit that holds it, a `unique_per_spell_space`
+version only through its spell space; a managed spell's purge still returns 0, and its probe reads that version's
+own pool.
+
+**Breaking change:** code that caught this `KeyError` to tell a parked version from the active one now gets an
+answer. To ask whether a spell_id is the active version, compare it with the index's:
+`conduit.get_spell_by_index_id(conduit.get_spell_by_spell_id(spell_id).spell_index.id).spell_id == spell_id`. A
+spell_id no version of the conduit carries - unknown, disposed, or another Spellbook's and not borrowed - still
+raises the same `KeyError`, and `meld(spell_id=...)` still raises it for a parked version.
+
+Also fixed: purging a `unique` version whose owner stamp failed when its Spellbook was conjured (the conjure logs that
+failure) raised `AttributeError: 'NoneType' object has no attribute 'owner_conduit_id'`. It now raises a
+`RuntimeError` that names the version and the remedy: dispose it with `cleanup_spell` and bind it again.
+
+What stays the same: every signature; `meld`, `meld_existing_spell`, `managed_spell_meld` and `SpellSpace.meld` build
+or return only the active version; a probe or purge of an active version reads what it read before; cache files and
+saved records are unchanged.
+
+## Codegen rooms under the safe, hybrid and precision profiles refuse `open`
+
+Code an agent runs in a codegen room is checked against the codegen profile of the frame it names before it runs.
+Through 0.2.8269 no profile stopped the `open` builtin, so room code under every profile read and wrote any file the
+process could reach - under `safe` too, whose posture says it denies writes - and `hybrid` also admitted
+`import pathlib`, whose `Path.write_text` writes files.
+
+**Breaking change:** under the `safe`, `hybrid` and `precision` profiles - `precision` on its own or as the overlay
+on another profile - room code that calls `open` is refused at validation, and nothing runs:
+
+```python
+# command_system: the command surface of a codegen room (rift.space.command_system) whose Rift is linked to the
+# frame "ops", and the codegen profile of "ops" is safe.
+result = command_system.execute_codegen("handle = open('notes.txt', 'w')\nhandle.write('x')", frame_name="ops")
+result["accepted"]              # False: nothing is written
+result["validation_issues"][0]  # "Builtin 'open' is not allowed in this codegen mode."
+```
+
+Code that only names it (`reader = open`) is refused with "Name 'open' is not available in the codegen namespace.",
+and `open` is no longer among the room's runtime builtins. A request naming a frame the room holds no codegen
+projection for runs under the safe posture, which denies `open` as well. Under `hybrid`, `import pathlib` is refused
+with "Import root 'pathlib' is not allowed in this codegen mode.": `pathlib`, like `io` and `os`, is now on the
+`permissive` import list only. Room code that must read or write files runs under the `permissive` or `full_access`
+profile, whose file posture stays open by design.
+
+What stays the same: `permissive` and `full_access` keep `open`, `io`, `os` and `pathlib`; every other builtin and
+import root of each profile is unchanged; a `builtin_names` allow rule in a frame's codegen capability override still
+allows `open` for that frame; and nothing cached or recorded changes. These checks run in the room's own process:
+they are policy and defence in depth, not isolation.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
@@ -80858,7 +80968,19 @@ every warm meld, which the stored object never uses.
   installation guide (`docs/beginner/install.md`) shows how to check a downloaded file with
   `pypi-attestations`, and the README links to it; the guide no longer says Melder has no runtime dependencies
   (it declares pip).
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8268.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph say what
+  a spell_id reaches through `purge` and the live-creation probes - a parked version or a borrowed copy - and that
+  purge refuses a `unique` version with no owner store; the scopes guide (`docs/intermediate/scopes.md`), the
+  live-probe section of `docs/intermediate/overrides.md` and the governed-change guide
+  (`docs/expert/governed-change.md`) say the same, and the packaged test documents describe the new tests. The
+  code-map extents of the six changed files are remeasured, and line citations into `spellbook.py`, `meld.py` and
+  `conduit.py` remapped.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  each codegen profile's file posture - `open` on the deny list `safe`, `hybrid` and `precision` share, `io`, `os` and
+  `pathlib` on the `permissive` import list only, and the safe posture of a request naming a frame with no codegen
+  projection - and the packaged test documents describe the new tests; each profile's docstring states its file
+  posture. The code-map extent of `codegen_system.py` is remeasured, and line citations into it remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8270.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

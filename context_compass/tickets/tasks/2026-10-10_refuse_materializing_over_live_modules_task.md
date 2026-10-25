@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-10T13:40:50Z
-- Updated: 2026-10-25T02:02:58Z
+- Updated: 2026-10-25T08:45:20Z
 
 ## Objective
 `materialize_codegen` publishes a SyntheticModule under any dotted-legal name - over Melder's own modules, the
@@ -294,6 +294,23 @@ every exit leave `sys.modules` and the parent package attribute as found (case R
   EVIDENCE: context_compass/tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md:217-271
   IMPACT: Nothing here changes until D-10 lands.
   NEXT: melder_0 starts this task after D-10 lands.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T08:45:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: D-10 landed (TASK-2026-10-10-deny-file-access-under-safe-codegen closed 2026-10-25, notched 0.2.8270);
+    this task stays blocked on the tranche order only and now waits for D-11, which is ready. The owner's D-20
+    answer and his go stand. D-10 left `SAFE_DENIED_BUILTIN_NAMES` naming `open`, so the room's filtered builtins
+    this task gives materialized code already leave `open` out under safe, hybrid and precision.
+  EVIDENCE:
+  - src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:108-130
+  - src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:82-109
+  - context_compass/attention_board.md:121-122
+  IMPACT: Nothing here changes until D-11 lands.
+  NEXT: melder_0 starts this task after D-11 lands.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 

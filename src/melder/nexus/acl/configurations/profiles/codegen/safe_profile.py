@@ -16,11 +16,10 @@ class SafeCodegenProfileStrategy:
         limits codegen to safe query/bind-existing operations and denies link
         mutation, local creation, invocation, writes, and dangerous capability
         escalation.
-        Files: room code gets no file access through builtins or imports.
-        `open` is a denied builtin - refused at validation whether called or
-        only named, and left out of the room's runtime builtins - and imports
-        are off, so `io`, `os` and `pathlib` are refused too. These are policy
-        checks in the room's own process, not isolation.
+        Files: `open` is a denied builtin - refused at validation whether
+        called or only named, and left out of the room's runtime builtins -
+        and imports are off, so `io`, `os` and `pathlib` are refused too.
+        These are policy checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.

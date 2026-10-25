@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 6587962223e304a2929b8cbe4684f419282ace0488151bd3b2a465ca4c2e21f8
+SOURCE FINGERPRINT: 8aff3f08d78cdc544d50b32a04b7c809fa1c40060df70c7a6a52fec85694ef79
 FILE COUNT: 585
 
 ================================================================================
@@ -612,7 +612,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 1a2f2e26c5b56c73f655dba8e346f757796a534ee6b762720c30e377e6971192
+CONTENT SHA256: 91b4ce36250325be11c6b6fcbfa876bf73e3f04f754f8d136d59f0ef27e7ef68
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +626,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8268"
+__version__ = "0.2.8270"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -199721,7 +199721,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/full_access_profi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
-CONTENT SHA256: 9912b4304b15f50dbb476edabfe8f35f2bcc4617ae0cde43237696f09ae287de
+CONTENT SHA256: 8f42c8b7ea35a6b2842ecdf61f174ac1518155d87e96c58f881d0e38701fe621
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -199744,11 +199744,10 @@ class HybridCodegenProfileStrategy:
         open `permissive` posture. It allows core query/link/invoke/read
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
-        Files: `open` is a denied builtin (the safe tuple), and `io` and `os`
-        are not on the import allowlist, so neither route reads or writes
-        files. `pathlib` is on the allowlist, so `pathlib.Path` reads and
-        writes do run under this profile. These are policy checks in the
-        room's own process, not isolation.
+        Files: `open` is a denied builtin (the safe tuple), and `io`, `os`
+        and `pathlib` are not on the import allowlist - they are
+        permissive-only roots - so those routes are refused at validation.
+        These are policy checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -200185,7 +200184,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/precision.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
-CONTENT SHA256: 3b46fb816e2804da467cc677f4e26a29169db820132ab8820bdec9027f958d1f
+CONTENT SHA256: 4f2de640537616e76d3d5f2137f49dfb52684f07dcb62188fd94fe437a615c49
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -200206,11 +200205,10 @@ class SafeCodegenProfileStrategy:
         limits codegen to safe query/bind-existing operations and denies link
         mutation, local creation, invocation, writes, and dangerous capability
         escalation.
-        Files: room code gets no file access through builtins or imports.
-        `open` is a denied builtin - refused at validation whether called or
-        only named, and left out of the room's runtime builtins - and imports
-        are off, so `io`, `os` and `pathlib` are refused too. These are policy
-        checks in the room's own process, not isolation.
+        Files: `open` is a denied builtin - refused at validation whether
+        called or only named, and left out of the room's runtime builtins -
+        and imports are off, so `io`, `os` and `pathlib` are refused too.
+        These are policy checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -200324,7 +200322,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py
-CONTENT SHA256: f1f89aad0aba4dd2c1b0e6e5fe7fc79e75e97e69513a2c32b6c1e4136a24d13e
+CONTENT SHA256: 75f16770f527a3b5f64bdba830e75ffcfa661abb0a00ce07a72a8f8889bceb35
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -200340,8 +200338,9 @@ Contract:
       module imports nothing, so a preset or the codegen engine imports it without an import cycle.
     - Import roots: `HYBRID_IMPORT_MODULE_ROOTS` is the common list, `PRECISION_IMPORT_MODULE_ROOTS`
       a narrower one, and `PERMISSIVE_IMPORT_MODULE_ROOTS` the common list plus the permissive
-      extras, sorted. `HYBRID_DENIED_IMPORT_MODULE_ROOTS` (which precision aliases) names roots the
-      compiler refuses even where an allow list admits them.
+      extras, sorted. `io`, `os` and `pathlib` are permissive extras rather than common roots, so of
+      the presets with an allow list only permissive admits them. `HYBRID_DENIED_IMPORT_MODULE_ROOTS`
+      (which precision aliases) names roots the compiler refuses even where an allow list admits them.
     - Denied builtins: `SAFE_DENIED_BUILTIN_NAMES` is the one tuple safe, hybrid and precision deny
       (`HYBRID_DENIED_BUILTIN_NAMES` and `PRECISION_DENIED_BUILTIN_NAMES` are the same object), and
       the codegen engine's no-projection default denies it plus `__import__`. `open` is on it, so
@@ -200367,7 +200366,6 @@ _COMMON_SAFE_IMPORT_MODULE_ROOTS = (
     "itertools",
     "json",
     "math",
-    "pathlib",
     "pprint",
     "re",
     "statistics",
@@ -200385,6 +200383,7 @@ _PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS = (
     "importlib",
     "io",
     "os",
+    "pathlib",
     "random",
     "shutil",
     "socket",

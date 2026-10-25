@@ -228,6 +228,13 @@ class CachingSystem(Cleanable):
     # binding changed under one spell_id misses both tiers. Every spell_id
     # moved, and a release change already cold-starts every bundle (version 9);
     # the bump records why.
+    # Version 24 retires bundles written by worlds that could hold a SpellIndex
+    # whose versions are bound at different addresses
+    # (STORY-2026-10-17-notch_moves_signature_by_incoming_key_only): every
+    # version of an index is now bound the way its first version was, so a
+    # notch never moves an index's address. A release change already
+    # cold-starts every bundle (version 9); the bump is the owner's call
+    # (2026-10-25: "notch the cache version and invalidate all the records").
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -252,6 +259,7 @@ class CachingSystem(Cleanable):
         21: "managed_spell_lease_codegen",
         22: "managed_settings_leave_spell_id",
         23: "binding_manifest_keys",
+        24: "spell_index_keeps_its_binding",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

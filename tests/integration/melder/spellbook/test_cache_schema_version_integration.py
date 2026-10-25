@@ -33,6 +33,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     21: "managed_spell_lease_codegen",
     22: "managed_settings_leave_spell_id",
     23: "binding_manifest_keys",
+    24: "spell_index_keeps_its_binding",
 }
 
 

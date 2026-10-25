@@ -1,4 +1,9 @@
-"""Behavioral contracts for Book-owned registration hooks, independent of Meld hooks."""
+"""
+Behavioral contracts for Book-owned registration hooks, independent of Meld hooks.
+
+A staged version is bound the way its index's first version was (2026-10-25), so the staging cases bind the anchor
+and the staged class under one string spellframe, 'hooks', and the default binding name.
+"""
 
 import gc
 import weakref
@@ -383,7 +388,7 @@ def test_inactive_post_observes_parked_member_on_final_index() -> None:
     Returns: None; later notch/meld must not rerun registration callbacks.
     """
     book = _make_spellbook(dynamic=True)
-    anchor_id = book.bind(spell=HookService, existence="unique")
+    anchor_id = book.bind(spell=HookService, existence="unique", spellframe="hooks")
     target_index = book.find_spell_by_spell_id(anchor_id).spell_index
     events: list[tuple[str, Spell]] = []
     fresh_indexes: list[SpellIndex] = []
@@ -404,7 +409,7 @@ def test_inactive_post_observes_parked_member_on_final_index() -> None:
     try:
         book.add_bind_hooks(activation=[activation], post=[post])
         staged_id = root.bind_inactive(
-            spell=HookAlternative, spell_index=target_index, existence="unique",
+            spell=HookAlternative, spell_index=target_index, existence="unique", spellframe="hooks",
         )
         assert [phase for phase, _spell in events] == ["activation", "post"]
         assert events[0][1] is events[1][1]
@@ -654,7 +659,7 @@ def test_conduit_bind_hook_facade_uses_the_owning_book_registry(entry: str) -> N
     Returns: None; all scopes are explicitly retired.
     """
     book = _make_spellbook(dynamic=True)
-    anchor_id = book.bind(spell=HookService, existence="unique")
+    anchor_id = book.bind(spell=HookService, existence="unique", spellframe="hooks")
     target_index = book.find_spell_by_spell_id(anchor_id).spell_index
     root = book.conjure(dynamic=True)
     references: list[object] = []
@@ -666,7 +671,7 @@ def test_conduit_bind_hook_facade_uses_the_owning_book_registry(entry: str) -> N
         )
         if entry == "inactive":
             spell_id = root.bind_inactive(
-                spell=HookAlternative, spell_index=target_index, existence="unique",
+                spell=HookAlternative, spell_index=target_index, existence="unique", spellframe="hooks",
             )
         else:
             registrar = root if entry == "conduit" else book

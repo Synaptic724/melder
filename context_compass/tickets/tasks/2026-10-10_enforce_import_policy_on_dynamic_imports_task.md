@@ -4,13 +4,13 @@
 - Task ID: TASK-2026-10-10-enforce-import-policy-on-dynamic-imports
 - Story: none; parent EPIC-2026-10-25-codegen_room_policy_defects (defect found by
   TASK-2026-10-08-review_core_protection_fork_aware_updates, completed 2026-10-10)
-- Status: blocked
+- Status: in_progress
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-10T13:40:50Z
-- Updated: 2026-10-25T02:02:58Z
+- Updated: 2026-10-25T09:39:16Z
 
 ## Objective
 Under every codegen profile that enables imports with an allow or deny list - hybrid, the precision overlay and
@@ -70,6 +70,17 @@ security boundary (review contract C6.1).
 - transition_reason: the owner's ask (chat 2026-10-24), "focus on 2 and 3 make an epic for each and investigate them",
   scheduled it under EPIC-2026-10-25-codegen_room_policy_defects; melder_0 re-measures it on 0.2.8267
   and puts the choice of A, B or both to the owner.
+
+- from_state: blocked
+- to_state: ready
+- transition_reason: D-10 landed (TASK-2026-10-10-deny-file-access-under-safe-codegen closed 2026-10-25,
+  notched 0.2.8270), which ends the tranche-order block (D-10, D-11, D-20) this task waited on; the owner's
+  A + B decision and his go of 2026-10-25 stand.
+
+- from_state: ready
+- to_state: in_progress
+- transition_reason: the owner's direction (chat 2026-10-25T09:38Z): "ok go to the next thing then turn it in
+  and move the ticket to completed" - implement A + B, land it and close the task.
 
 ## Steps / Checklist
 - [x] Re-measure on 0.2.8267 (EPIC-2026-10-25-codegen_room_policy_defects): rerun the reproducer
@@ -279,13 +290,35 @@ security boundary (review contract C6.1).
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-10-25T08:45:08Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: D-10 landed (TASK-2026-10-10-deny-file-access-under-safe-codegen closed 2026-10-25, notched 0.2.8270), so
+    this task is next in the tranche and ready; the owner's go ("go ahead and do them one by one") and his A + B
+    decision stand. What D-10 changed that this task builds on: `SAFE_DENIED_BUILTIN_NAMES` names `open` and
+    `pathlib` is a permissive extra (stdlib_import_sets.py); the core-boundary integration module holds the
+    per-profile file matrix beside this task's four strict xfails; and the running note has a codegen section,
+    "Codegen rooms under the safe, hybrid and precision profiles refuse `open`", where this task's Breaking entry
+    belongs - the same subject, what a codegen room's code may load - rather than a second section.
+  EVIDENCE:
+  - src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:52-67
+  - src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:108-130
+  - tests/integration/melder/aether/test_codegen_core_boundary_integration.py:162-199
+  - release_docs/next_version_release.md:177-205
+  IMPACT: The task starts from today's tree; its patch docs read the D-10 posture, and its note entry has a home.
+  NEXT: Start D-11: re-read its decision and the import gate at today's lines, then write the patch docs (A + B).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Scheduled 2026-10-25 under EPIC-2026-10-25-codegen_room_policy_defects (the owner's ask); in_progress, melder_0,
 investigation only. Scope unchanged: `__import__` bypasses the codegen import gate under hybrid, the precision
 overlay and permissive (Note of 2026-10-10). State: the re-measure on 0.2.8267 is planned (PLAN note); nothing run
 yet. Re-measured on 0.2.8267 (Notes): the defect reproduces unchanged, the cause holds at today's lines, the four
-strict xfails still XFAIL. Decided 2026-10-25 (DECISION note): A + B, with A static-only. Next, on the
-owner's go: patch docs, red tests, the fix, notch and rebuild.
+strict xfails still XFAIL. Decided 2026-10-25 (DECISION note): A + B, with A static-only. Ready since
+2026-10-25T08:45:08Z: D-10 landed at 0.2.8270 (PLAN note of that time). Next, under the owner's go: patch
+docs, red tests, the fix, notch and rebuild.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

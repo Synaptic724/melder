@@ -15,6 +15,11 @@ be melded would be a resolution leak, and a parked spell that did not hold its i
 would let `bind` re-mint a duplicate of a sleeping spell, which is the failure
 `EPIC-2026-06-14` named in advance.
 
+Every version of an index is bound the way its first version was (2026-10-25,
+STORY-2026-10-17-notch_moves_signature_by_incoming_key_only): the host is bound
+under the string spellframe 'parked', and the candidate is staged under it too,
+so the two share the index's address and only the active one is served there.
+
 Validation: Not run.
 """
 
@@ -91,7 +96,7 @@ def _host(frame_name: str) -> Any:
             an inactive member is folded onto.
     """
     spellbook = _dynamic_book(frame_name)
-    spellbook.bind(spell=ParkedHostService, existence="unique")
+    spellbook.bind(spell=ParkedHostService, spellframe="parked", existence="unique")
     conduit = spellbook.conjure(dynamic=True, name=f"{frame_name}-root")
     spell_index = next(iter(spellbook.spells.keys()))
     return spellbook, conduit, spell_index
@@ -115,6 +120,7 @@ def test_component_bind_inactive_returns_an_id_and_does_not_activate() -> None:
     parked_id: str = spellbook.bind_inactive(
         spell=ParkedCandidateService,
         spell_index=spell_index,
+        spellframe="parked",
         existence="unique",
     )
 
@@ -145,7 +151,8 @@ def test_component_a_parked_spell_is_not_meldable() -> None:
         off the resolution surface until `notch` promotes it.
     Contract:
         - `bind_inactive` claims no binding signature and writes no active map
-          entry, so meld must not find it.
+          entry, so a meld by its spell_id must not find it, and a meld at the
+          address it shares with the host builds the host.
         - If this fails, staging leaks into resolution and the "inert until
           notched" guarantee is words only.
     Returns:
@@ -154,17 +161,18 @@ def test_component_a_parked_spell_is_not_meldable() -> None:
         AssertionError: If the parked spell can be melded.
     """
     spellbook, conduit, spell_index = _host("parked-unmeldable")
-    spellbook.bind_inactive(
+    parked_id = spellbook.bind_inactive(
         spell=ParkedCandidateService,
         spell_index=spell_index,
+        spellframe="parked",
         existence="unique",
     )
 
-    with pytest.raises((KeyError, RuntimeError)):
-        conduit.meld(spell=ParkedCandidateService)
+    with pytest.raises(KeyError):
+        conduit.meld(spell=parked_id)
 
-    host_instance: Any = conduit.meld(spell=ParkedHostService)
-    assert host_instance is not None, (
+    host_instance: Any = conduit.meld(spellframe="parked")
+    assert isinstance(host_instance, ParkedHostService), (
         "parking a member must not disturb the index's ACTIVE selected spell"
     )
 
@@ -173,12 +181,14 @@ def test_component_bind_inactive_refuses_an_index_it_does_not_own() -> None:
     """
     Purpose:
         Ownership is the guard that keeps one Spellbook from folding members onto
-        another Spellbook's index. It is enforced deep in `_apply_add_to_index`,
-        so the public surface has to be shown to carry it.
+        another Spellbook's index. `bind_inactive` checks it before anything is
+        registered (2026-10-25; until then only `_apply_add_to_index` enforced it,
+        after the registration), so the public surface has to be shown to carry it.
     Contract:
         - Two Spellbooks on DIFFERENT frames (process-wide uniqueness refuses two
           identical bindings, so the stranger binds its own class).
-        - Passing the stranger's index must raise rather than graft across books.
+        - Passing the stranger's index must raise rather than graft across books,
+          and must leave nothing of the candidate registered.
     Returns:
         None.
     Raises:
@@ -191,12 +201,17 @@ def test_component_bind_inactive_refuses_an_index_it_does_not_own() -> None:
     stranger.conjure(dynamic=True, name="parked-stranger-root")
     foreign_index = next(iter(stranger.spells.keys()))
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="not owned by this spellbook"):
         spellbook.bind_inactive(
             spell=ParkedCandidateService,
             spell_index=foreign_index,
+            spellframe="parked",
             existence="unique",
         )
+
+    assert not any(
+        parked.spell is ParkedCandidateService for parked in spellbook._inactive_spells.values()
+    ), "a refused staging must leave nothing registered"
 
 
 def test_component_a_parked_id_blocks_a_duplicate_bind() -> None:
@@ -217,6 +232,7 @@ def test_component_a_parked_id_blocks_a_duplicate_bind() -> None:
     spellbook.bind_inactive(
         spell=ParkedCandidateService,
         spell_index=spell_index,
+        spellframe="parked",
         existence="unique",
     )
 

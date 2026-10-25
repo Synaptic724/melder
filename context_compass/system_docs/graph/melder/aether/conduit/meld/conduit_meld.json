@@ -57,8 +57,8 @@
     "mints the name/class warm entries (Meld._fast_input_doors) on the same success arms as the id entry for meld('Name') and meld(Cls) shapes; it never reads them - the public front doors do",
     "grants purge of a unique_per_conduit_cluster instance to the elected leader recorded on its cluster facade, since the team store's owner id is the cluster's (0.2.8237)",
     "routes a managed spell's purge to the caller's own store, where Creations.purge returns 0, and answers its live-creation probe from the owner store's pool (0.2.8243)",
-    "probes and purges the exact version a spell_id names, a parked version or a borrowed copy included, through Meld._resolve_probe_target, in the store and under the authority that version's existence selects (0.2.PPNOTCH)",
-    "refuses purge of a unique version with no owner store - its owner stamp failed at conjure - with a RuntimeError naming it and the remedy, before reading the store's owner id (0.2.PPNOTCH)"
+    "probes and purges the exact version a spell_id names, a parked version or a borrowed copy included, through Meld._resolve_probe_target, in the store and under the authority that version's existence selects (0.2.8269)",
+    "refuses purge of a unique version with no owner store - its owner stamp failed at conjure - with a RuntimeError naming it and the remedy, before reading the store's owner id (0.2.8269)"
    ],
    "owns_state": [],
    "phases": [

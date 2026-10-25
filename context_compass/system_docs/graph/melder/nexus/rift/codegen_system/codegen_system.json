@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
- "source_sha256": "893e92b260a507e8f02ecb05b085fa0eedce98f3a2c4abe6392ab04f4968b64f",
+ "source_sha256": "772a357a4c2db412b43c2f611e336944fbd17eb42e2d9ea7517728f7a7642a14",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.codegen_system": {
@@ -19,7 +19,7 @@
    "label": "CodegenSystem",
    "kind": "class",
    "file": "src/melder/nexus/rift/codegen_system/codegen_system.py",
-   "lineno": 46,
+   "lineno": 49,
    "bases": [
     "Cleanable"
    ],
@@ -39,13 +39,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "bf6570d4aca43595dc9d54afcd3d1745627daeb539813b0eec859cb921eec363",
+   "span_sha256": "dfe8741e7858142b49f82712d56894cc0762a79660326e783342fafd10c4d287",
    "role": "Room-owned internal codegen engine.",
    "responsibilities": [
     "builds per-call transaction contexts",
     "owns validation namespace execution and monitor collaborators",
     "validates before execution",
-    "delegates compile and execute stages for accepted requests"
+    "delegates compile and execute stages for accepted requests",
+    "runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)"
    ],
    "owns_state": [
     "_rift",
@@ -62,7 +63,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5ec511eb8a36ff8ee5accaf8ee21141f067ca7db1551d56166d3d11a1e1b100a"
+   "semantics_authored_against": "dfe8741e7858142b49f82712d56894cc0762a79660326e783342fafd10c4d287"
   }
  },
  "edges_out": [
@@ -142,6 +143,7 @@
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
+  "SAFE_DENIED_BUILTIN_NAMES": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.SAFE_DENIED_BUILTIN_NAMES",
   "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
   "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
   "CodegenCompiler": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
@@ -265,6 +267,17 @@
     "cleanup"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "relation": "uses",
+   "why": "CodegenSystem's no-projection default posture denies `__import__` plus SAFE_DENIED_BUILTIN_NAMES, read from the preset module so the default and the safe preset cannot drift apart.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

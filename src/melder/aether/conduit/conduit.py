@@ -4048,6 +4048,13 @@ class Conduit(Cleanable):
             - Only available in a dynamic environment; raises otherwise.
             - Only normal conduits may stage spells.
             - Delegates to the owning Spellbook's `bind_inactive` surface.
+            - EVERY VERSION OF AN INDEX IS BOUND THE WAY ITS FIRST VERSION WAS
+              (2026-10-25): the same kind of spellframe (none, a string category, a
+              Protocol) and the same address (spellframe and binding name,
+              case-insensitive). Stage an edited class with the index's spellframe and
+              binding_name; a renamed class or a new binding name is a new spell - bind
+              it on its own. A version bound another way, or an index another
+              Spellbook owns, is refused before anything is registered.
             - Change-control transaction admission for this staging op is owned by
               the conduit/mediator lane (wired separately); this facade performs
               the dynamic gate and delegation only, holding no transaction window.
@@ -4093,12 +4100,15 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError:
                 If the conduit is cleaned, is not normal, the dynamic environment
-                is not enabled, or there is no owning Spellbook.
+                is not enabled, or there is no owning Spellbook; from the Spellbook,
+                if `spell_index` is another Spellbook's (nothing is registered).
             TypeError:
                 If resolvable is not a bool or Bind rejects the target (a managed option of
                 the wrong type or a managed non-class included).
             ValueError:
-                If a managed option is malformed or set on another existence.
+                If a managed option is malformed or set on another existence, or the
+                version is bound another way than `spell_index`'s versions (the message
+                names both bindings and the remedy; nothing is registered).
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -5708,6 +5718,13 @@ class Conduit(Cleanable):
               refused one is parked again with no verdict kept, nothing is journaled or
               published for it, and no borrower is touched. A retry is checked, and
               refused, again.
+            - A NOTCH NEVER MOVES THE INDEX'S ADDRESS (2026-10-25): every version of an
+              index is bound at the index's address, so the switch moves the address's
+              claim from the outgoing version to the incoming one. An address another
+              spell holds - another index's active version of this Spellbook (a version
+              split off with `remove_from_spell_index` while its source still serves the
+              address) or another Spellbook's spell - refuses the notch with a
+              RuntimeError naming the holder, before anything moves.
             - After the window, every linked peer parks its copy of the outgoing version, a
               peer holding a parked copy of the incoming version (a grant of that version) has
               it made active again, and index-link borrowers move to the new one. The consumers
@@ -5741,14 +5758,17 @@ class Conduit(Cleanable):
                 SpellIndex.
             TypeError: When `spell_id` is not a string, or a string is given as `spell`.
             RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
-                Conduit has no owning Spellbook; and whatever the transaction or the
-                switch raises, including a reversal of a refused notch that fails (a
-                Melder bug; the message names both versions).
+                Conduit has no owning Spellbook; when another spell holds the index's
+                address (the message names its spell_id and the remedy; nothing moved);
+                and whatever the transaction or the switch raises, including a reversal
+                of a refused notch that fails (a Melder bug; the message names both
+                versions).
 
         Example:
-            id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
+            # ReportService edited: the same class name and binding as the index's versions.
+            id_v2 = conduit.bind_inactive(spell=ReportService, spell_index=index, existence="unique")
             conduit.notch_spell(spell_index=index, spell_id=id_v2)
-            conduit.meld(spell_id=id_v2)    # a ReportV2
+            conduit.meld(spell_id=id_v2)    # the edited ReportService
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -6066,6 +6086,11 @@ class Conduit(Cleanable):
               `get_spell_by_id` answered a parked spell_id with the index's active spell).
             - ONLY A PARKED SPELL MOVES: the Spellbook refuses an active spell (notch away
               from it first), a spell it does not own, and a `target_index` it does not own.
+            - ONLY A SPELL BOUND THE WAY THE TARGET'S VERSIONS ARE MOVES (2026-10-25): every
+              version of an index is bound the way its first version was, so a spell bound
+              with another kind of spellframe or at another address is refused
+              (ValueError) before anything moves. A version split off with
+              `remove_from_spell_index` keeps its binding and can be moved back.
             - Adds a version to the index WITHOUT making it active - selection is a
               separate `notch_spell` step, so adding is safe to do ahead of a switch.
             - The spell leaves its current index, and an index the move empties is
@@ -6088,11 +6113,14 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned, the frame is not dynamic, or the
                 Conduit has no owning Spellbook; from the Spellbook, if the spell is not
                 owned there, is active, or `target_index` is not an index it owns.
+            ValueError: From the Spellbook, inside the window, if the spell is bound
+                another way than `target_index`'s versions; nothing moves.
 
         Example:
-            id_v2 = conduit.bind_inactive(spell=ReportV2, spell_index=index, existence="unique")
-            conduit.add_to_spell_index(spell_id=id_v2, target_index=other_index)
-            conduit.notch_spell(spell_index=other_index, spell_id=id_v2)
+            # A version split off into an index of its own moves back into its index:
+            conduit.remove_from_spell_index(spell_id=id_v2, source_index=index)
+            conduit.add_to_spell_index(spell_id=id_v2, target_index=index)
+            conduit.notch_spell(spell_index=index, spell_id=id_v2)
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:

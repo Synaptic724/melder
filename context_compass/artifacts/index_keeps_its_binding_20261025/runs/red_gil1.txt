@@ -1,0 +1,771 @@
+FFF...FFFFFF.FF.FFFFFFFFFFFFFFFF                                         [100%]
+=================================== FAILURES ===================================
+__ test_index_records_the_binding_its_first_version_was_bound_with[protocol] ___
+
+spellframe = <class 'test_spellbook_component_index_keeps_its_first_binding.Greeter'>
+binding_name = 'English', expected = ('contract', 'greeter', 'english')
+
+    @pytest.mark.parametrize(
+        "spellframe, binding_name, expected",
+        [
+            (Greeter, "English", ("contract", "greeter", "english")),
+            (None, None, ("none", "report", "__default__")),
+            ("Reports", "Main", ("category", "reports", "main")),
+        ],
+        ids=["protocol", "bare", "category"],
+    )
+    def test_index_records_the_binding_its_first_version_was_bound_with(
+            spellframe: Any, binding_name: Any, expected: Tuple[str, str, str],
+    ) -> None:
+        """
+        Purpose:
+            A SpellIndex keeps the kind of spellframe and the address its first version was bound with.
+    
+        Contract:
+            - `SpellIndex.binding_signature` is (kind, frame key, binding key), normalized as every address is.
+    
+        Returns:
+            None.
+        """
+        book = _book("index-records-binding")
+        _settle_dynamic(book)
+        target = EnglishGreeter if spellframe is Greeter else _report_versions()[0]
+        spell_id = book.bind(spell=target, spellframe=spellframe, binding_name=binding_name, existence=Existence.many)
+>       assert book.find_spell_by_spell_id(spell_id).spell_index.binding_signature == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute 'binding_signature'
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:244: AttributeError
+____ test_index_records_the_binding_its_first_version_was_bound_with[bare] _____
+
+spellframe = None, binding_name = None
+expected = ('none', 'report', '__default__')
+
+    @pytest.mark.parametrize(
+        "spellframe, binding_name, expected",
+        [
+            (Greeter, "English", ("contract", "greeter", "english")),
+            (None, None, ("none", "report", "__default__")),
+            ("Reports", "Main", ("category", "reports", "main")),
+        ],
+        ids=["protocol", "bare", "category"],
+    )
+    def test_index_records_the_binding_its_first_version_was_bound_with(
+            spellframe: Any, binding_name: Any, expected: Tuple[str, str, str],
+    ) -> None:
+        """
+        Purpose:
+            A SpellIndex keeps the kind of spellframe and the address its first version was bound with.
+    
+        Contract:
+            - `SpellIndex.binding_signature` is (kind, frame key, binding key), normalized as every address is.
+    
+        Returns:
+            None.
+        """
+        book = _book("index-records-binding")
+        _settle_dynamic(book)
+        target = EnglishGreeter if spellframe is Greeter else _report_versions()[0]
+        spell_id = book.bind(spell=target, spellframe=spellframe, binding_name=binding_name, existence=Existence.many)
+>       assert book.find_spell_by_spell_id(spell_id).spell_index.binding_signature == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute 'binding_signature'
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:244: AttributeError
+__ test_index_records_the_binding_its_first_version_was_bound_with[category] ___
+
+spellframe = 'Reports', binding_name = 'Main'
+expected = ('category', 'reports', 'main')
+
+    @pytest.mark.parametrize(
+        "spellframe, binding_name, expected",
+        [
+            (Greeter, "English", ("contract", "greeter", "english")),
+            (None, None, ("none", "report", "__default__")),
+            ("Reports", "Main", ("category", "reports", "main")),
+        ],
+        ids=["protocol", "bare", "category"],
+    )
+    def test_index_records_the_binding_its_first_version_was_bound_with(
+            spellframe: Any, binding_name: Any, expected: Tuple[str, str, str],
+    ) -> None:
+        """
+        Purpose:
+            A SpellIndex keeps the kind of spellframe and the address its first version was bound with.
+    
+        Contract:
+            - `SpellIndex.binding_signature` is (kind, frame key, binding key), normalized as every address is.
+    
+        Returns:
+            None.
+        """
+        book = _book("index-records-binding")
+        _settle_dynamic(book)
+        target = EnglishGreeter if spellframe is Greeter else _report_versions()[0]
+        spell_id = book.bind(spell=target, spellframe=spellframe, binding_name=binding_name, existence=Existence.many)
+>       assert book.find_spell_by_spell_id(spell_id).spell_index.binding_signature == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute 'binding_signature'
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:244: AttributeError
+____ test_bind_inactive_refuses_another_binding_name_and_registers_nothing _____
+
+    def test_bind_inactive_refuses_another_binding_name_and_registers_nothing() -> None:
+        """
+        Purpose:
+            A version staged under another binding name than its index's is refused, and nothing of it stays behind.
+    
+        Contract:
+            - FrenchGreeter under (Greeter, 'french') on English's (Greeter, 'english') index raises ValueError naming the
+              index's binding and the version's; the Book owns no version under French's spell_id, the index holds
+              English alone, and staging French under 'english' afterwards succeeds (no spell_id collision).
+            - Before this change the version was staged and a notch to it moved the index's address to 'french'.
+    
+        Returns:
+            None.
+        """
+        book, root, english = _greeter_world("refuses-binding-name")
+        index = english.spell_index
+        french_id = Bind.spell_id_inspector(FrenchGreeter)
+    
+>       with pytest.raises(ValueError, match="keeps the binding its first version was bound with") as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:302: Failed
+____________ test_bind_inactive_refuses_a_renamed_class_bound_bare _____________
+
+    def test_bind_inactive_refuses_a_renamed_class_bound_bare() -> None:
+        """
+        Purpose:
+            A renamed class is a new spell: staged bare on the old class's index, it is refused.
+    
+        Contract:
+            - `ReportV2` bound bare on the bare `Report` index raises ValueError; the index holds its first version alone.
+    
+        Returns:
+            None.
+        """
+        book = _book("refuses-renamed-class")
+        _settle_dynamic(book)
+        first, _second = _report_versions()
+        first_id = book.bind(spell=first, existence="many")
+        root = book.conjure(dynamic=True, name="refuses-renamed-class-root")
+        index = book.find_spell_by_spell_id(first_id).spell_index
+    
+>       with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:330: Failed
+_ test_bind_inactive_refuses_the_other_kind_of_spellframe_at_the_same_address[bare] _
+
+first_frame = None, staged_frame = 'Report'
+
+    @pytest.mark.parametrize("first_frame, staged_frame", [(None, "Report"), ("Report", None)], ids=["bare", "category"])
+    def test_bind_inactive_refuses_the_other_kind_of_spellframe_at_the_same_address(
+            first_frame: Any, staged_frame: Any,
+    ) -> None:
+        """
+        Purpose:
+            The kind of spellframe is part of an index's binding: a category spelled like a bare class's name, or the
+            reverse, is another binding even at the same address.
+    
+        Contract:
+            - The edited `Report` staged with spellframe='Report' on a bare `Report` index - or bare on a 'Report'
+              category index - raises ValueError, although both normalize to ('report', '__default__').
+    
+        Returns:
+            None.
+        """
+        book = _book("refuses-other-kind")
+        _settle_dynamic(book)
+        first, second = _report_versions()
+        first_id = book.bind(spell=first, spellframe=first_frame, existence="many")
+        root = book.conjure(dynamic=True, name="refuses-other-kind-root")
+        index = book.find_spell_by_spell_id(first_id).spell_index
+    
+>       with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:359: Failed
+_ test_bind_inactive_refuses_the_other_kind_of_spellframe_at_the_same_address[category] _
+
+first_frame = 'Report', staged_frame = None
+
+    @pytest.mark.parametrize("first_frame, staged_frame", [(None, "Report"), ("Report", None)], ids=["bare", "category"])
+    def test_bind_inactive_refuses_the_other_kind_of_spellframe_at_the_same_address(
+            first_frame: Any, staged_frame: Any,
+    ) -> None:
+        """
+        Purpose:
+            The kind of spellframe is part of an index's binding: a category spelled like a bare class's name, or the
+            reverse, is another binding even at the same address.
+    
+        Contract:
+            - The edited `Report` staged with spellframe='Report' on a bare `Report` index - or bare on a 'Report'
+              category index - raises ValueError, although both normalize to ('report', '__default__').
+    
+        Returns:
+            None.
+        """
+        book = _book("refuses-other-kind")
+        _settle_dynamic(book)
+        first, second = _report_versions()
+        first_id = book.bind(spell=first, spellframe=first_frame, existence="many")
+        root = book.conjure(dynamic=True, name="refuses-other-kind-root")
+        index = book.find_spell_by_spell_id(first_id).spell_index
+    
+>       with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:359: Failed
+________ test_bind_inactive_onto_another_books_index_registers_nothing _________
+
+    def test_bind_inactive_onto_another_books_index_registers_nothing() -> None:
+        """
+        Purpose:
+            A staging refused because the index belongs to another Book leaves nothing registered.
+    
+        Contract:
+            - Book B's `bind_inactive` of FrenchGreeter onto Book A's index raises RuntimeError ("not owned"); Book B owns
+              no version under French's spell_id afterwards, and staging French on Book B's own index succeeds.
+            - Before this change the refusal came after the version was registered: Book B kept it parked in an index of
+              its own, and the retry raised "Spell ID collision detected".
+    
+        Returns:
+            None.
+        """
+        book_a, _root_a, english = _greeter_world("foreign-index")
+        book_b = _book("foreign-index")
+        spanish_id = book_b.bind(spell=SpanishGreeter, spellframe=Greeter, binding_name="spanish", existence="many")
+        root_b = book_b.conjure(dynamic=True, name="foreign-index-b")
+        french_id = Bind.spell_id_inspector(FrenchGreeter)
+    
+        with pytest.raises(RuntimeError, match="not owned by this spellbook"):
+            _stage_greeter(root_b, FrenchGreeter, "english", english.spell_index)
+    
+>       assert book_b.find_spell_by_spell_id(french_id) is None
+E       AssertionError: assert Spell(name=FrenchGreeter, binding=english, frame=Greeter, SHA256=212c7162ee01b1394e3b02b668091400b92f1e546e617200049dd47117865a34) is None
+E        +  where Spell(name=FrenchGreeter, binding=english, frame=Greeter, SHA256=212c7162ee01b1394e3b02b668091400b92f1e546e617200049dd47117865a34) = find_spell_by_spell_id('212c7162ee01b1394e3b02b668091400b92f1e546e617200049dd47117865a34')
+E        +    where find_spell_by_spell_id = <melder.aether.spellbook.spellbook.Spellbook object at 0x29750211810>.find_spell_by_spell_id
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:388: AssertionError
+_ test_add_to_spell_index_refuses_a_version_of_another_binding_and_moves_nothing _
+
+    def test_add_to_spell_index_refuses_a_version_of_another_binding_and_moves_nothing() -> None:
+        """
+        Purpose:
+            A parked version cannot be moved into an index bound another way.
+    
+        Contract:
+            - FrenchGreeter parked on the (Greeter, 'spanish') index cannot be added to English's (Greeter, 'english')
+              index: ValueError, and French stays a member of the Spanish index, which still holds it; English's index
+              holds English alone.
+    
+        Returns:
+            None.
+        """
+        book, root, english = _greeter_world("add-refuses")
+        spanish_id = root.bind(spell=SpanishGreeter, spellframe=Greeter, binding_name="spanish", existence="many")
+        spanish_index = book.find_spell_by_spell_id(spanish_id).spell_index
+        french_id = _stage_greeter(root, FrenchGreeter, "spanish", spanish_index)
+    
+>       with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:411: Failed
+___ test_notch_refuses_an_address_another_index_of_the_book_holds[compiled] ____
+
+compile_first = True
+
+    @pytest.mark.parametrize("compile_first", [True, False], ids=["compiled", "never_compiled"])
+    def test_notch_refuses_an_address_another_index_of_the_book_holds(compile_first: bool) -> None:
+        """
+        Purpose:
+            A version split off its index cannot become active while its source index still serves the address.
+    
+        Contract:
+            - Notching French's own index to French raises RuntimeError naming English's spell_id as the holder; nothing
+              moved: English's index selects English, holds the claim and serves a meld by address; French's index still
+              has no active version.
+            - Before this change a compiled French was notched active (two active spells at one address; every meld at
+              it then raised SpellbookValidationError), and a French never compiled was refused as a failed structural
+              check instead of for the taken address.
+    
+        Returns:
+            None.
+        """
+        book, root, english, french_index, french_id = _split_french(compile_first)
+    
+>       with pytest.raises(RuntimeError, match=f"is held by spell_id '{english.spell_id}'") as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:488: Failed
+_ test_notch_refuses_an_address_another_index_of_the_book_holds[never_compiled] _
+
+compile_first = False
+
+    @pytest.mark.parametrize("compile_first", [True, False], ids=["compiled", "never_compiled"])
+    def test_notch_refuses_an_address_another_index_of_the_book_holds(compile_first: bool) -> None:
+        """
+        Purpose:
+            A version split off its index cannot become active while its source index still serves the address.
+    
+        Contract:
+            - Notching French's own index to French raises RuntimeError naming English's spell_id as the holder; nothing
+              moved: English's index selects English, holds the claim and serves a meld by address; French's index still
+              has no active version.
+            - Before this change a compiled French was notched active (two active spells at one address; every meld at
+              it then raised SpellbookValidationError), and a French never compiled was refused as a failed structural
+              check instead of for the taken address.
+    
+        Returns:
+            None.
+        """
+        book, root, english, french_index, french_id = _split_french(compile_first)
+    
+>       with pytest.raises(RuntimeError, match=f"is held by spell_id '{english.spell_id}'") as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: "is held by spell_id 'c2e9c3d037108ab814e7b46a711647f40230779f9d66902034603e491e617bd7'"
+E         Actual message: "notch_spell refused: 'FrenchGreeter' (spell_id 212c7162ee01b1394e3b02b668091400b92f1e546e617200049dd47117865a34) failed its structural check, so the notch did not happen; the index still has no active version.\nSpellbook validation failed. Broken spells: FrenchGreeter.\nFrenchGreeter (frame Greeter):\n  - Multiple visible spells share the lookup address frame='greeter', binding='english'. Use a distinct spellframe or binding_name so that each registration has a unique normalized address. [DUPLICATE_SPELL_NAME]"
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:488: AssertionError
+___________ test_notch_refuses_an_address_another_books_spell_holds ____________
+
+    def test_notch_refuses_an_address_another_books_spell_holds() -> None:
+        """
+        Purpose:
+            A notch never takes an address from another Book's active spell.
+    
+        Contract:
+            - Book L's English is disposed after French was split off; Book O then binds SpanishGreeter at the same
+              address. Notching French's index active in Book L raises RuntimeError naming Spanish's spell_id; Spanish
+              keeps the claim and French stays parked.
+            - Before this change the notch stood and took the claim from Spanish: two active spells at one address, and
+              once Book L ended its teardown freed the address while Spanish still served it.
+    
+        Returns:
+            None.
+        """
+        book_l, root_l, english, french_index, french_id = _split_french(True)
+        key = english._key
+        root_l.cleanup_spell(spell=english)
+        book_o = _book("split-True")
+        spanish_id = book_o.bind(spell=SpanishGreeter, spellframe=Greeter, binding_name="english", existence="many")
+        assert book_o._aetheric_frame.get_lookup(key) == spanish_id
+    
+>       with pytest.raises(RuntimeError, match=f"is held by spell_id '{spanish_id}'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:543: Failed
+______________________ test_repoint_claims_a_free_address ______________________
+
+    def test_repoint_claims_a_free_address() -> None:
+        """
+        Purpose:
+            A free address is claimed for the incoming spell whatever spell was expected.
+    
+        Returns:
+            None.
+        """
+        container = LookupContainer()
+        key = ("greeter", "english")
+    
+>       assert container.repoint(key, "sid-new", from_spell_id="sid-old") is None
+               ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'LookupContainer' object has no attribute 'repoint'
+
+tests/unit/melder/aether/test_lookup_container_repoint.py:25: AttributeError
+____________ test_repoint_moves_an_address_from_the_expected_spell _____________
+
+    def test_repoint_moves_an_address_from_the_expected_spell() -> None:
+        """
+        Purpose:
+            An address held by the expected spell moves to the incoming one, the reverse map with it.
+    
+        Returns:
+            None.
+        """
+        container = LookupContainer()
+        key = ("greeter", "english")
+        container.claim(key, "sid-old")
+    
+>       assert container.repoint(key, "sid-new", from_spell_id="sid-old") is None
+               ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'LookupContainer' object has no attribute 'repoint'
+
+tests/unit/melder/aether/test_lookup_container_repoint.py:42: AttributeError
+___ test_repoint_refuses_an_address_another_spell_holds_and_changes_nothing ____
+
+    def test_repoint_refuses_an_address_another_spell_holds_and_changes_nothing() -> None:
+        """
+        Purpose:
+            An address held by a spell other than the expected one is refused: the holder is returned and both maps are
+            left as they were.
+    
+        Returns:
+            None.
+        """
+        container = LookupContainer()
+        key = ("greeter", "english")
+        container.claim(key, "sid-other")
+    
+>       assert container.repoint(key, "sid-new", from_spell_id="sid-old") == "sid-other"
+               ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'LookupContainer' object has no attribute 'repoint'
+
+tests/unit/melder/aether/test_lookup_container_repoint.py:61: AttributeError
+_________________ test_repoint_to_the_holder_itself_is_a_no_op _________________
+
+    def test_repoint_to_the_holder_itself_is_a_no_op() -> None:
+        """
+        Purpose:
+            Repointing an address to the spell that already holds it succeeds and changes nothing.
+    
+        Returns:
+            None.
+        """
+        container = LookupContainer()
+        key = ("greeter", "english")
+        container.claim(key, "sid-new")
+    
+>       assert container.repoint(key, "sid-new", from_spell_id="sid-old") is None
+               ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'LookupContainer' object has no attribute 'repoint'
+
+tests/unit/melder/aether/test_lookup_container_repoint.py:80: AttributeError
+______ test_signature_of_gives_the_kind_and_the_normalized_address[bare] _______
+
+spellframe = None, spell_name = 'Report', binding_name = None
+expected = ('none', 'report', '__default__')
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, expected",
+        [
+            (None, "Report", None, ("none", "report", "__default__")),
+            (None, "Report", "Main", ("none", "report", "main")),
+            ("Reports", "Report", "Main", ("category", "reports", "main")),
+            (Greeter, "EnglishGreeter", "English", ("contract", "greeter", "english")),
+        ],
+        ids=["bare", "bare_named_binding", "category", "protocol"],
+    )
+    def test_signature_of_gives_the_kind_and_the_normalized_address(
+            spellframe: Any, spell_name: str, binding_name: Any, expected: Any,
+    ) -> None:
+        """
+        Purpose:
+            The signature is the spellframe's kind and the address `Spell._key` normalizes to.
+    
+        Returns:
+            None.
+        """
+>       assert SpellIndex.signature_of(spellframe=spellframe, spell_name=spell_name, binding_name=binding_name) == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'signature_of'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:63: AttributeError
+_ test_signature_of_gives_the_kind_and_the_normalized_address[bare_named_binding] _
+
+spellframe = None, spell_name = 'Report', binding_name = 'Main'
+expected = ('none', 'report', 'main')
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, expected",
+        [
+            (None, "Report", None, ("none", "report", "__default__")),
+            (None, "Report", "Main", ("none", "report", "main")),
+            ("Reports", "Report", "Main", ("category", "reports", "main")),
+            (Greeter, "EnglishGreeter", "English", ("contract", "greeter", "english")),
+        ],
+        ids=["bare", "bare_named_binding", "category", "protocol"],
+    )
+    def test_signature_of_gives_the_kind_and_the_normalized_address(
+            spellframe: Any, spell_name: str, binding_name: Any, expected: Any,
+    ) -> None:
+        """
+        Purpose:
+            The signature is the spellframe's kind and the address `Spell._key` normalizes to.
+    
+        Returns:
+            None.
+        """
+>       assert SpellIndex.signature_of(spellframe=spellframe, spell_name=spell_name, binding_name=binding_name) == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'signature_of'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:63: AttributeError
+____ test_signature_of_gives_the_kind_and_the_normalized_address[category] _____
+
+spellframe = 'Reports', spell_name = 'Report', binding_name = 'Main'
+expected = ('category', 'reports', 'main')
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, expected",
+        [
+            (None, "Report", None, ("none", "report", "__default__")),
+            (None, "Report", "Main", ("none", "report", "main")),
+            ("Reports", "Report", "Main", ("category", "reports", "main")),
+            (Greeter, "EnglishGreeter", "English", ("contract", "greeter", "english")),
+        ],
+        ids=["bare", "bare_named_binding", "category", "protocol"],
+    )
+    def test_signature_of_gives_the_kind_and_the_normalized_address(
+            spellframe: Any, spell_name: str, binding_name: Any, expected: Any,
+    ) -> None:
+        """
+        Purpose:
+            The signature is the spellframe's kind and the address `Spell._key` normalizes to.
+    
+        Returns:
+            None.
+        """
+>       assert SpellIndex.signature_of(spellframe=spellframe, spell_name=spell_name, binding_name=binding_name) == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'signature_of'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:63: AttributeError
+____ test_signature_of_gives_the_kind_and_the_normalized_address[protocol] _____
+
+spellframe = <class 'test_spell_index_binding_signature.Greeter'>
+spell_name = 'EnglishGreeter', binding_name = 'English'
+expected = ('contract', 'greeter', 'english')
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, expected",
+        [
+            (None, "Report", None, ("none", "report", "__default__")),
+            (None, "Report", "Main", ("none", "report", "main")),
+            ("Reports", "Report", "Main", ("category", "reports", "main")),
+            (Greeter, "EnglishGreeter", "English", ("contract", "greeter", "english")),
+        ],
+        ids=["bare", "bare_named_binding", "category", "protocol"],
+    )
+    def test_signature_of_gives_the_kind_and_the_normalized_address(
+            spellframe: Any, spell_name: str, binding_name: Any, expected: Any,
+    ) -> None:
+        """
+        Purpose:
+            The signature is the spellframe's kind and the address `Spell._key` normalizes to.
+    
+        Returns:
+            None.
+        """
+>       assert SpellIndex.signature_of(spellframe=spellframe, spell_name=spell_name, binding_name=binding_name) == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'signature_of'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:63: AttributeError
+_________ test_for_binding_records_the_signature_and_the_first_member __________
+
+    def test_for_binding_records_the_signature_and_the_first_member() -> None:
+        """
+        Purpose:
+            An index built for a binding keeps that binding's signature and starts with its first member selected.
+    
+        Returns:
+            None.
+        """
+>       index = SpellIndex.for_binding("sid-first", spellframe=Greeter, spell_name="EnglishGreeter", binding_name="english")
+                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'for_binding'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:74: AttributeError
+__________ test_check_admits_a_version_bound_the_same_way[other_case] __________
+
+spellframe = <class 'test_spell_index_binding_signature.Greeter'>
+spell_name = 'FrenchGreeter', binding_name = 'ENGLISH'
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name",
+        [(Greeter, "FrenchGreeter", "ENGLISH"), (Greeter, "FrenchGreeter", "english")],
+        ids=["other_case", "same_case"],
+    )
+    def test_check_admits_a_version_bound_the_same_way(spellframe: Any, spell_name: str, binding_name: Any) -> None:
+        """
+        Purpose:
+            A version with the index's kind and address is admitted, the case of its names aside.
+    
+        Returns:
+            None.
+        """
+>       index = SpellIndex.for_binding("sid-first", spellframe=Greeter, spell_name="EnglishGreeter", binding_name="english")
+                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'for_binding'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:94: AttributeError
+__________ test_check_admits_a_version_bound_the_same_way[same_case] ___________
+
+spellframe = <class 'test_spell_index_binding_signature.Greeter'>
+spell_name = 'FrenchGreeter', binding_name = 'english'
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name",
+        [(Greeter, "FrenchGreeter", "ENGLISH"), (Greeter, "FrenchGreeter", "english")],
+        ids=["other_case", "same_case"],
+    )
+    def test_check_admits_a_version_bound_the_same_way(spellframe: Any, spell_name: str, binding_name: Any) -> None:
+        """
+        Purpose:
+            A version with the index's kind and address is admitted, the case of its names aside.
+    
+        Returns:
+            None.
+        """
+>       index = SpellIndex.for_binding("sid-first", spellframe=Greeter, spell_name="EnglishGreeter", binding_name="english")
+                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'for_binding'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:94: AttributeError
+_____ test_check_admits_refuses_a_version_bound_another_way[binding_name] ______
+
+spellframe = <class 'test_spell_index_binding_signature.Greeter'>
+spell_name = 'FrenchGreeter', binding_name = 'french'
+shown = "binding_name 'french'"
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, shown",
+        [
+            (Greeter, "FrenchGreeter", "french", "binding_name 'french'"),
+            ("Greeter", "FrenchGreeter", "english", "the string spellframe 'Greeter'"),
+            (None, "Greeter", "english", "no spellframe"),
+        ],
+        ids=["binding_name", "category_kind", "bare_kind"],
+    )
+    def test_check_admits_refuses_a_version_bound_another_way(
+            spellframe: Any, spell_name: str, binding_name: Any, shown: str,
+    ) -> None:
+        """
+        Purpose:
+            A version with another address or another kind of spellframe is refused with a ValueError that names the
+            verb, both bindings and the remedy.
+    
+        Returns:
+            None.
+        """
+>       index = SpellIndex.for_binding("sid-first", spellframe=Greeter, spell_name="EnglishGreeter", binding_name="english")
+                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'for_binding'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:119: AttributeError
+_____ test_check_admits_refuses_a_version_bound_another_way[category_kind] _____
+
+spellframe = 'Greeter', spell_name = 'FrenchGreeter', binding_name = 'english'
+shown = "the string spellframe 'Greeter'"
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, shown",
+        [
+            (Greeter, "FrenchGreeter", "french", "binding_name 'french'"),
+            ("Greeter", "FrenchGreeter", "english", "the string spellframe 'Greeter'"),
+            (None, "Greeter", "english", "no spellframe"),
+        ],
+        ids=["binding_name", "category_kind", "bare_kind"],
+    )
+    def test_check_admits_refuses_a_version_bound_another_way(
+            spellframe: Any, spell_name: str, binding_name: Any, shown: str,
+    ) -> None:
+        """
+        Purpose:
+            A version with another address or another kind of spellframe is refused with a ValueError that names the
+            verb, both bindings and the remedy.
+    
+        Returns:
+            None.
+        """
+>       index = SpellIndex.for_binding("sid-first", spellframe=Greeter, spell_name="EnglishGreeter", binding_name="english")
+                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'for_binding'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:119: AttributeError
+_______ test_check_admits_refuses_a_version_bound_another_way[bare_kind] _______
+
+spellframe = None, spell_name = 'Greeter', binding_name = 'english'
+shown = 'no spellframe'
+
+    @pytest.mark.parametrize(
+        "spellframe, spell_name, binding_name, shown",
+        [
+            (Greeter, "FrenchGreeter", "french", "binding_name 'french'"),
+            ("Greeter", "FrenchGreeter", "english", "the string spellframe 'Greeter'"),
+            (None, "Greeter", "english", "no spellframe"),
+        ],
+        ids=["binding_name", "category_kind", "bare_kind"],
+    )
+    def test_check_admits_refuses_a_version_bound_another_way(
+            spellframe: Any, spell_name: str, binding_name: Any, shown: str,
+    ) -> None:
+        """
+        Purpose:
+            A version with another address or another kind of spellframe is refused with a ValueError that names the
+            verb, both bindings and the remedy.
+    
+        Returns:
+            None.
+        """
+>       index = SpellIndex.for_binding("sid-first", spellframe=Greeter, spell_name="EnglishGreeter", binding_name="english")
+                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'SpellIndex' has no attribute 'for_binding'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:119: AttributeError
+________ test_check_admits_refuses_on_an_index_built_without_a_binding _________
+
+    def test_check_admits_refuses_on_an_index_built_without_a_binding() -> None:
+        """
+        Purpose:
+            An index built directly, without a binding, admits nothing: Melder builds every index it stages onto with
+            one, so reaching this is a Melder bug.
+    
+        Returns:
+            None.
+        """
+        index = SpellIndex("sid-first")
+    
+>       assert index.binding_signature is None
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SpellIndex' object has no attribute 'binding_signature'
+
+tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py:143: AttributeError
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/cc_res/mirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_index_records_the_binding_its_first_version_was_bound_with[protocol]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_index_records_the_binding_its_first_version_was_bound_with[bare]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_index_records_the_binding_its_first_version_was_bound_with[category]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_bind_inactive_refuses_another_binding_name_and_registers_nothing
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_bind_inactive_refuses_a_renamed_class_bound_bare
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_bind_inactive_refuses_the_other_kind_of_spellframe_at_the_same_address[bare]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_bind_inactive_refuses_the_other_kind_of_spellframe_at_the_same_address[category]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_bind_inactive_onto_another_books_index_registers_nothing
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_add_to_spell_index_refuses_a_version_of_another_binding_and_moves_nothing
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_notch_refuses_an_address_another_index_of_the_book_holds[compiled]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_notch_refuses_an_address_another_index_of_the_book_holds[never_compiled]
+FAILED tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py::test_notch_refuses_an_address_another_books_spell_holds
+FAILED tests/unit/melder/aether/test_lookup_container_repoint.py::test_repoint_claims_a_free_address
+FAILED tests/unit/melder/aether/test_lookup_container_repoint.py::test_repoint_moves_an_address_from_the_expected_spell
+FAILED tests/unit/melder/aether/test_lookup_container_repoint.py::test_repoint_refuses_an_address_another_spell_holds_and_changes_nothing
+FAILED tests/unit/melder/aether/test_lookup_container_repoint.py::test_repoint_to_the_holder_itself_is_a_no_op
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_signature_of_gives_the_kind_and_the_normalized_address[bare]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_signature_of_gives_the_kind_and_the_normalized_address[bare_named_binding]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_signature_of_gives_the_kind_and_the_normalized_address[category]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_signature_of_gives_the_kind_and_the_normalized_address[protocol]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_for_binding_records_the_signature_and_the_first_member
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_check_admits_a_version_bound_the_same_way[other_case]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_check_admits_a_version_bound_the_same_way[same_case]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_check_admits_refuses_a_version_bound_another_way[binding_name]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_check_admits_refuses_a_version_bound_another_way[category_kind]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_check_admits_refuses_a_version_bound_another_way[bare_kind]
+FAILED tests/unit/melder/spellbook/bind/test_spell_index_binding_signature.py::test_check_admits_refuses_on_an_index_built_without_a_binding
+27 failed, 5 passed, 1 warning in 0.46s

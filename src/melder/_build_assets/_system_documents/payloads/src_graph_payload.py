@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28193
-CONTENT_SHA256 = '641ffd1feffae54075c313d12324ee7ce1a89cfc8c318190ed2e5d96b5df9cbf'
+LINE_COUNT = 28207
+CONTENT_SHA256 = 'b8742a552b562242a06a73cc29104e390a0b9842f1691614a706b4c5762d29da'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `dd59467ef6c7d952701a7b01503b2637722f96b102a1c04625f357518d824fad`
+- source_sha256: `b75a681720fba78e3d3af853856e71cb487f74020685a4896e3e3ee9f6c1c0af`
 - nodes: 1
 
 ### Nodes
@@ -4451,7 +4451,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `dcff699810f9d5a557a0a23b7c769b56d2bdffac561cfbb55f8a00cbac4d8eb0`
+- source_sha256: `59f7b919421d32b42dd45a26e1817261e676424adc15a6575919fd2512b8c091`
 - nodes: 2
 
 ### Nodes
@@ -4475,7 +4475,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Runtime execution scope for spell resolution.
 - responsibilities:
   - hosts meld execution
-  - forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact
+  - forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact; a spell_id given to purge or the live-creation probes reaches any version this conduit can see, active or parked (0.2.8269)
   - forwards per-version resolvable policy through both binding facades without changing conduit state
   - owns concrete conduit-facing runtime helpers and pooled spellspace state
   - creates lesser conduits
@@ -5459,7 +5459,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `16671f8f7c1f777fbda6ddfc3350d7db5454de284d65d880c89f93d0875661aa`
+- source_sha256: `032b159577c6c13ddca51c7b4ff88fd780ee2c085b4a3bcb4a701547f0e75a34`
 - nodes: 2
 
 ### Nodes
@@ -5492,6 +5492,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - mints the name/class warm entries (Meld._fast_input_doors) on the same success arms as the id entry for meld('Name') and meld(Cls) shapes; it never reads them - the public front doors do
   - grants purge of a unique_per_conduit_cluster instance to the elected leader recorded on its cluster facade, since the team store's owner id is the cluster's (0.2.8237)
   - routes a managed spell's purge to the caller's own store, where Creations.purge returns 0, and answers its live-creation probe from the owner store's pool (0.2.8243)
+  - probes and purges the exact version a spell_id names, a parked version or a borrowed copy included, through Meld._resolve_probe_target, in the store and under the authority that version's existence selects (0.2.8269)
+  - refuses purge of a unique version with no owner store - its owner stamp failed at conjure - with a RuntimeError naming it and the remedy, before reading the store's owner id (0.2.8269)
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
 
@@ -5801,7 +5803,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `de5becea69e0d7c6a2d1bd3666402fa2c277cac8978c2c62fe767473c348ca75`
+- source_sha256: `2dea9f6f53b3d7ccb16ec8acb570bc8f1e5014228941d2c28be1db2196d5e7e2`
 - nodes: 2
 
 ### Nodes
@@ -5828,7 +5830,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Resolution runtime orchestrator.
 - responsibilities:
   - resolves target spells
-  - discovers purge bindings through inspected instance classes or explicit selectors; concrete doors own scope authority
+  - discovers purge and probe targets through _resolve_probe_target: a spell_id reaches the version the door's Book can see, owned or borrowed, active or parked (_resolve_visible_version_by_id - the lock-free active read, then Spellbook._find_visible_version under the Book lock), any other selector the version an index has active through _resolve_spell; an instance resolves through its class; concrete doors own scope authority (0.2.8269)
   - enforces validity and dirty-root gates
   - chooses reuse versus construction
   - dispatches execution into CreationContext
@@ -5888,7 +5890,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `b61050a6898139e05cc96c323ace159408f341a984f9a87818cc07448bacfd2e`
+- source_sha256: `55a7f8206f5522103fe9f412a70efe367cba6dfd792c765633465c8e208e34e8`
 - nodes: 2
 
 ### Nodes
@@ -5918,6 +5920,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
   - serves warm automatic id melds from the fast-door entry with ConduitMeld's guard ladder and both arms (plain and dict override payloads), and mints the name/class entries (_fast_input_doors) its space reads
   - answers a managed spell's live-creation probe from the owner root's pool, as the conduit door does - a managed object is never space-local (0.2.8243)
+  - probes and purges the exact version a spell_id names, a parked version or a borrowed copy included, through Meld._resolve_probe_target, within the lifetimes this door serves (0.2.8269)
 - owns_state: `_spellspace`, `_spellspace_id`, `_owner_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
@@ -5950,7 +5953,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space.py
 
-- source_sha256: `d8e56bea1485d8cc383a3c0e2aee9580344cac7578d8ebe21f6a5baef44b1a6e`
+- source_sha256: `9e3c23f3d44f6474422d77f3c44e6063372e86a2bed723fb26f34c1da8cbd98b`
 - nodes: 2
 
 ### Nodes
@@ -5975,7 +5978,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - is one leased spellspace scope on a conduit, pushed on the calling thread's stack when managed
   - refuses meld and purge while released to its pool (the _released lease flag); a destroyed space raises the cleaned RuntimeError
   - clears spellspace-scoped instances on managed exit or cleanup, finishing its pool return or destroy when a disposal method fails and then raising the store's group
-  - exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door
+  - exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door; a spell_id reaches a parked version or a borrowed copy too (0.2.8269)
   - restores temporary Meld maps after creation disposal and before manual or managed pool return
   - explicitly cleans its owned Meld runtime on permanent teardown to release callback references
   - leaves its thread stack without error when released or destroyed inside its own managed block
@@ -15848,7 +15851,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `66e4f3428dedfc1059f2c6a92d2d54469b87e5b621d47d7b73956f64ae8628e5`
+- source_sha256: `7a1a088e0ca1b388990b54b9e71436542c7cd91dbca981d1b4b8a70dab4c9a34`
 - nodes: 2
 
 ### Nodes
@@ -15898,6 +15901,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, the lineage's dependencies and topology registered again, a refused version's own key set back (_revert_refused_notch) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)
   - destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)
   - saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)
+  - answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -20506,7 +20510,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py
 
-- source_sha256: `d5cab4579298a42654b7fadee695268d3f0ac4ac52a581560f72eb2ef9e86e8f`
+- source_sha256: `cfa3ab23c2ec2e20b85c5415780c298147ecf191c26af50f43c328d21349a399`
 - nodes: 2
 
 ### Nodes
@@ -20530,6 +20534,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - enable imports without an allowlist and leave builtin/meta posture open
   - allow the broadest conduit, spell, and capability operations including recursive codegen
+  - keep an open file posture by design: `open` available and imports unrestricted (0.2.8270)
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -20545,7 +20550,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
 
-- source_sha256: `705c8db3699257b246774852b0301380e79200815bf281a7deff9f81e664bbe4`
+- source_sha256: `8f42c8b7ea35a6b2842ecdf61f174ac1518155d87e96c58f881d0e38701fe621`
 - nodes: 2
 
 ### Nodes
@@ -20567,6 +20572,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - allow core query/link/invoke/read operations
   - still deny local creation, direct mutation, and the more aggressive capability overrides
+  - deny `open` (the safe tuple) and keep `io`, `os` and `pathlib` off its import allow list, since they are permissive extras (0.2.8270)
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -20592,7 +20598,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py
 
-- source_sha256: `96c632691e166387fee67a4a1e5a5c1e0c448c712d4120a324812542bfeb687c`
+- source_sha256: `7a33c500879cc95fe11ec9d94d60155c307ab310af5304733fff0cd6cd64255b`
 - nodes: 2
 
 ### Nodes
@@ -20610,10 +20616,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py:10`
-- role: Top standard rung of the codegen posture ladder: broadest conduit and spell operations still under capability gates.
+- role: Top standard rung of the codegen posture ladder: the broadest conduit, spell and capability operations, with imports kept to an allowlist.
 - responsibilities:
   - allow the broadest set of conduit and spell operations
-  - still deny the highest-risk capability gates - mutation and unsafe reflection
+  - allow every capability gate - dynamic access, contract override, mutation, unsafe reflection, dunder access and recursive codegen - keeping only its import allowlist as the guardrail versus full_access
+  - keep an open file posture by design: `open` available and `io`, `os` and `pathlib` on its import allowlist (0.2.8270)
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -20639,7 +20646,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/precision.py
 
-- source_sha256: `5fc15816d81c3d1720c5824e0bcef0631516adbfc0e124cd3db9175a7807fd8e`
+- source_sha256: `fb730d49f6db8b6ebc3967a5802155710ac42dcfe56a28a26384c575a9a9ce7f`
 - nodes: 2
 
 ### Nodes
@@ -20662,6 +20669,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - build the precision codegen profile from explicitly-enumerated allowances (frame: query only)
   - draw its import posture from the PRECISION_* stdlib import sets rather than an open allowlist
   - exist for operators who enumerate what is permitted instead of picking a tier
+  - deny `open` (the safe tuple); its import allow list names none of `io`, `os` or `pathlib` (0.2.8270)
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -20687,7 +20695,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
 
-- source_sha256: `20c7eb9eefd956d03d8b41c96ffb3402e346e70f590fc9cf096719b872916b37`
+- source_sha256: `4f2de640537616e76d3d5f2137f49dfb52684f07dcb62188fd94fe437a615c49`
 - nodes: 2
 
 ### Nodes
@@ -20710,6 +20718,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - build a FrameACLCodegenProfile limited to safe query/bind-existing operations
   - deny link mutation, local creation, invocation, writes, and dangerous capability escalation
   - register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset
+  - hold a closed file posture (0.2.8270): `open` denied by its SAFE_DENIED_BUILTIN_NAMES rule and imports off, so `io`, `os` and `pathlib` are refused too - policy checked in the room's process, not isolation
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -20721,7 +20730,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.acl.configurations.profiles.codegen.safe_profile` | uses | `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets` | many_to_one | runtime | authored |
 
 - `melder.nexus.acl.configurations.profiles.codegen.safe_profile` -> `melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile`: This factory module constructs one reusable codegen ACL profile variant.
-- `melder.nexus.acl.configurations.profiles.codegen.safe_profile` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: The safe codegen profile factory uses the shared stdlib import-root constants.
+- `melder.nexus.acl.configurations.profiles.codegen.safe_profile` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: The safe codegen profile factory uses the shared denied-builtin tuple, SAFE_DENIED_BUILTIN_NAMES.
 
 ### Edge candidates (1, unconfirmed)
 
@@ -20735,7 +20744,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py
 
-- source_sha256: `ed1bc01965ba9388e5fef6ce6a2484af2622fa6dadbe7466a49f1165b889d7ec`
+- source_sha256: `75f16770f527a3b5f64bdba830e75ffcfa661abb0a00ce07a72a8f8889bceb35`
 - nodes: 1
 
 ### Nodes
@@ -20746,9 +20755,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:1`
 - role: Shared import-root and builtin-name constant catalog for codegen ACL profiles.
 - responsibilities:
-  - defines reusable safe, hybrid, precision, and permissive import-root sets
+  - defines the import-root allow lists the presets read - the common list hybrid uses, precision's narrower one and permissive's (the common list plus the permissive extras, sorted) - and the deny list hybrid and precision share
   - defines shared denied builtin-name sets for codegen profile factories
   - keeps codegen profile factory modules aligned on import-surface policy constants
+  - puts `open` on SAFE_DENIED_BUILTIN_NAMES, the one denied-builtin tuple safe, hybrid and precision share and the codegen engine's no-projection default reads (0.2.8270)
+  - keeps `io`, `os` and `pathlib` among the permissive extras, so permissive's is the only allow list that admits them (0.2.8270)
 - owns_state: `_COMMON_SAFE_IMPORT_MODULE_ROOTS`, `_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS`, `SAFE_DENIED_BUILTIN_NAMES`
 - phases: `runtime`
 
@@ -23090,7 +23101,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/codegen_system.py
 
-- source_sha256: `893e92b260a507e8f02ecb05b085fa0eedce98f3a2c4abe6392ab04f4968b64f`
+- source_sha256: `772a357a4c2db412b43c2f611e336944fbd17eb42e2d9ea7517728f7a7642a14`
 - nodes: 2
 
 ### Nodes
@@ -23104,7 +23115,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenSystem` (class)
 
 - id: `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem`
-- defined at: `src/melder/nexus/rift/codegen_system/codegen_system.py:46`
+- defined at: `src/melder/nexus/rift/codegen_system/codegen_system.py:49`
 - extends: `Cleanable`
 - role: Room-owned internal codegen engine.
 - responsibilities:
@@ -23112,6 +23123,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns validation namespace execution and monitor collaborators
   - validates before execution
   - delegates compile and execute stages for accepted requests
+  - runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)
 - owns_state: `_rift`, `_space`, `_validator`, `_validation_reporter`, `_namespace_builder`, `_compiler`, `_executor`, `_monitor`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `codegen_system_id`, `execute_codegen`, `execute_codegen_request`, `owner_space_id`, `report_validation_result`, `validate_codegen`, `validate_codegen_request`
@@ -23129,6 +23141,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor` | one_to_one | init,runtime,cleanup | authored |
 | `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.validation.codegen_validation_reporter.CodegenValidationReporter` | one_to_one | init,runtime,cleanup | authored |
 | `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator` | one_to_one | init,validation,runtime,cleanup | authored |
+| `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` | uses | `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` -> `melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext`: CodegenSystem creates one transaction context for each validate or execute request.
 - `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` -> `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler`: CodegenSystem owns the compiler used after accepted validation.
@@ -23138,6 +23151,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` -> `melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor`: CodegenSystem owns the monitor that publishes room-local codegen lifecycle events.
 - `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` -> `melder.nexus.rift.codegen_system.validation.codegen_validation_reporter.CodegenValidationReporter`: CodegenSystem owns the validation reporter that formats validation results for the public command surface.
 - `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` -> `melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator`: CodegenSystem owns the validator used for every codegen request.
+- `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: CodegenSystem's no-projection default posture denies `__import__` plus SAFE_DENIED_BUILTIN_NAMES, read from the preset module so the default and the safe preset cannot drift apart.
 
 ### Edge candidates (10, unconfirmed)
 

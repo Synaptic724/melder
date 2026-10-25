@@ -1,4 +1,4 @@
-# Melder 0.2.8268
+# Melder 0.2.8270
 
 **Unreleased**
 
@@ -103,6 +103,107 @@ With `generalized_singleton_specialization_enabled` (opt-in, off by default), a 
 dependency to a longer-lived object is still not specialized: the specialized path would build a new dependency on
 every warm meld, which the stored object never uses.
 
+## `purge` and the live-creation probes reach a parked version by its spell_id
+
+A notch changes which version of a SpellIndex is active; the version it parks keeps the objects it built, under its
+own spell_id. `purge(spell_id=...)`, `has_live_creation(spell=<spell_id>)` and
+`describe_live_creation_status(spell=<spell_id>)` found only the active version: for a parked one they raised
+`KeyError: '[MELD] No spell found with spell_id: <id>'`, so checking or retiring an old version's objects meant
+notching back to it first.
+
+They now answer for the exact version a spell_id names - active or parked, your Spellbook's own or a copy borrowed
+from a linked conduit - and purge that version's objects from the same store, under the same rules, as an active
+version's:
+
+```python
+class Report:
+    def __init__(self) -> None:
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+book = md.Spellbook()
+v1 = book.bind(spell=Report, existence="unique", disposal_method_names=["close"])
+root = book.conjure(dynamic=True)
+first = root.meld(spell_id=v1)
+
+
+class Report:                                     # version 2: the same name, new code
+    def __init__(self) -> None:
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+    def render(self) -> str:
+        return "v2"
+
+
+index = root.get_spell_by_spell_id(v1).spell_index
+v2 = root.bind_inactive(spell=Report, spell_index=index, existence="unique", disposal_method_names=["close"])
+root.notch_spell(spell_index=index, spell_id=v2)  # version 1 is parked; its object is kept
+second = root.meld(spell_id=v2)
+
+assert root.has_live_creation(spell=v1)           # raised KeyError before
+assert root.purge(spell_id=v1) == 1               # raised KeyError before
+assert first.closed and not second.closed         # only version 1's object was disposed
+root.meld(spell_id=v1)                            # still KeyError: meld builds the active version only
+```
+
+Every other selector is unchanged: a name, a class, a spellframe and binding name, or an object passed to `purge`
+names the version the index has active, as `meld` does - to retire a parked version's objects, pass its spell_id
+(with the default `purge_all=True`). Who may purge which store is unchanged too: a `unique` version from its owner
+root, a `unique_per_conduit_lineage` version from the lineage root, a `unique_per_conduit_cluster` version from the
+elected leader, a `many` or `unique_per_conduit` version from the conduit that holds it, a `unique_per_spell_space`
+version only through its spell space; a managed spell's purge still returns 0, and its probe reads that version's
+own pool.
+
+**Breaking change:** code that caught this `KeyError` to tell a parked version from the active one now gets an
+answer. To ask whether a spell_id is the active version, compare it with the index's:
+`conduit.get_spell_by_index_id(conduit.get_spell_by_spell_id(spell_id).spell_index.id).spell_id == spell_id`. A
+spell_id no version of the conduit carries - unknown, disposed, or another Spellbook's and not borrowed - still
+raises the same `KeyError`, and `meld(spell_id=...)` still raises it for a parked version.
+
+Also fixed: purging a `unique` version whose owner stamp failed when its Spellbook was conjured (the conjure logs that
+failure) raised `AttributeError: 'NoneType' object has no attribute 'owner_conduit_id'`. It now raises a
+`RuntimeError` that names the version and the remedy: dispose it with `cleanup_spell` and bind it again.
+
+What stays the same: every signature; `meld`, `meld_existing_spell`, `managed_spell_meld` and `SpellSpace.meld` build
+or return only the active version; a probe or purge of an active version reads what it read before; cache files and
+saved records are unchanged.
+
+## Codegen rooms under the safe, hybrid and precision profiles refuse `open`
+
+Code an agent runs in a codegen room is checked against the codegen profile of the frame it names before it runs.
+Through 0.2.8269 no profile stopped the `open` builtin, so room code under every profile read and wrote any file the
+process could reach - under `safe` too, whose posture says it denies writes - and `hybrid` also admitted
+`import pathlib`, whose `Path.write_text` writes files.
+
+**Breaking change:** under the `safe`, `hybrid` and `precision` profiles - `precision` on its own or as the overlay
+on another profile - room code that calls `open` is refused at validation, and nothing runs:
+
+```python
+# command_system: the command surface of a codegen room (rift.space.command_system) whose Rift is linked to the
+# frame "ops", and the codegen profile of "ops" is safe.
+result = command_system.execute_codegen("handle = open('notes.txt', 'w')\nhandle.write('x')", frame_name="ops")
+result["accepted"]              # False: nothing is written
+result["validation_issues"][0]  # "Builtin 'open' is not allowed in this codegen mode."
+```
+
+Code that only names it (`reader = open`) is refused with "Name 'open' is not available in the codegen namespace.",
+and `open` is no longer among the room's runtime builtins. A request naming a frame the room holds no codegen
+projection for runs under the safe posture, which denies `open` as well. Under `hybrid`, `import pathlib` is refused
+with "Import root 'pathlib' is not allowed in this codegen mode.": `pathlib`, like `io` and `os`, is now on the
+`permissive` import list only. Room code that must read or write files runs under the `permissive` or `full_access`
+profile, whose file posture stays open by design.
+
+What stays the same: `permissive` and `full_access` keep `open`, `io`, `os` and `pathlib`; every other builtin and
+import root of each profile is unchanged; a `builtin_names` allow rule in a frame's codegen capability override still
+allows `open` for that frame; and nothing cached or recorded changes. These checks run in the room's own process:
+they are policy and defence in depth, not isolation.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
@@ -141,4 +242,16 @@ every warm meld, which the stored object never uses.
   installation guide (`docs/beginner/install.md`) shows how to check a downloaded file with
   `pypi-attestations`, and the README links to it; the guide no longer says Melder has no runtime dependencies
   (it declares pip).
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8268.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph say what
+  a spell_id reaches through `purge` and the live-creation probes - a parked version or a borrowed copy - and that
+  purge refuses a `unique` version with no owner store; the scopes guide (`docs/intermediate/scopes.md`), the
+  live-probe section of `docs/intermediate/overrides.md` and the governed-change guide
+  (`docs/expert/governed-change.md`) say the same, and the packaged test documents describe the new tests. The
+  code-map extents of the six changed files are remeasured, and line citations into `spellbook.py`, `meld.py` and
+  `conduit.py` remapped.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  each codegen profile's file posture - `open` on the deny list `safe`, `hybrid` and `precision` share, `io`, `os` and
+  `pathlib` on the `permissive` import list only, and the safe posture of a request naming a frame with no codegen
+  projection - and the packaged test documents describe the new tests; each profile's docstring states its file
+  posture. The code-map extent of `codegen_system.py` is remeasured, and line citations into it remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8270.
