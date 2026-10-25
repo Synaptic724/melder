@@ -1,0 +1,190 @@
+Regression tests of TASK-2026-10-24-cache_file_write_failure_fails_meld, red run by melder_0 at 2026-10-24T19:16:22Z
+melder 0.2.8265 from a copy of the tree (/tmp/m0_mq/regress_clean/src); Python 3.14.7 free-threaded build, GIL on
+command: python -X gil=1 -m pytest <component file> <unit file> -p no:cacheprovider --tb=short -rA
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tmp/m0_mq/regress_clean
+configfile: pyproject.toml
+collected 9 items
+
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py F [ 11%]
+FFFFFFF                                                                  [ 88%]
+tests/unit/melder/utilities/test_caching_system_refused_save.py F        [100%]
+
+=================================== FAILURES ===================================
+____ test_meld_returns_its_object_when_the_cache_save_fails[rename_refused] ____
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:294: in test_meld_returns_its_object_when_the_cache_save_fails
+    first = root.meld(spell=ReportWriter)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:917: in _write_current_cache_to_disk_locked
+    temp_bundle_path.replace(bundle_path)
+~/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/pathlib/__init__.py:1091: in replace
+    os.replace(self, target)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:114: in replace
+    raise PermissionError(
+E   PermissionError: [Errno 13] Access is denied (injected; Windows reports [WinError 5]): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_once_replace/root.meldercache.tmp' -> '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_once_replace/root.meldercache'
+__ test_meld_returns_its_object_when_the_cache_save_fails[temp_write_refused] __
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:294: in test_meld_returns_its_object_when_the_cache_save_fails
+    first = root.meld(spell=ReportWriter)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:916: in _write_current_cache_to_disk_locked
+    temp_bundle_path.write_bytes(serialized_cache_data)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:126: in write_bytes
+    raise PermissionError(
+E   PermissionError: [Errno 13] Permission denied (injected; a read-only cache folder): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_once_write/root.meldercache.tmp'
+____ test_melds_keep_returning_while_every_cache_save_fails[rename_refused] ____
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:327: in test_melds_keep_returning_while_every_cache_save_fails
+    report = root.meld(spell=LateReport)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:917: in _write_current_cache_to_disk_locked
+    temp_bundle_path.replace(bundle_path)
+~/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/pathlib/__init__.py:1091: in replace
+    os.replace(self, target)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:114: in replace
+    raise PermissionError(
+E   PermissionError: [Errno 13] Access is denied (injected; Windows reports [WinError 5]): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_always_replace/root.meldercache.tmp' -> '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_always_replace/root.meldercache'
+__ test_melds_keep_returning_while_every_cache_save_fails[temp_write_refused] __
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:327: in test_melds_keep_returning_while_every_cache_save_fails
+    report = root.meld(spell=LateReport)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:916: in _write_current_cache_to_disk_locked
+    temp_bundle_path.write_bytes(serialized_cache_data)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:126: in write_bytes
+    raise PermissionError(
+E   PermissionError: [Errno 13] Permission denied (injected; a read-only cache folder): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_always_write/root.meldercache.tmp'
+_ test_first_melds_after_a_failed_conjure_save_return_their_object[rename_refused] _
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:359: in test_first_melds_after_a_failed_conjure_save_return_their_object
+    first = root.meld(spell=AutomaticService)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5084: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:917: in _write_current_cache_to_disk_locked
+    temp_bundle_path.replace(bundle_path)
+~/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/pathlib/__init__.py:1091: in replace
+    os.replace(self, target)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:114: in replace
+    raise PermissionError(
+E   PermissionError: [Errno 13] Access is denied (injected; Windows reports [WinError 5]): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_conjure_save_replace/root.meldercache.tmp' -> '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_conjure_save_replace/root.meldercache'
+_ test_first_melds_after_a_failed_conjure_save_return_their_object[temp_write_refused] _
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:359: in test_first_melds_after_a_failed_conjure_save_return_their_object
+    first = root.meld(spell=AutomaticService)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5084: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:916: in _write_current_cache_to_disk_locked
+    temp_bundle_path.write_bytes(serialized_cache_data)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:126: in write_bytes
+    raise PermissionError(
+E   PermissionError: [Errno 13] Permission denied (injected; a read-only cache folder): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_conjure_save_write/root.meldercache.tmp'
+_______________ test_managed_lease_survives_a_failed_cache_save ________________
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:395: in test_managed_lease_survives_a_failed_cache_save
+    lease = root.managed_spell_meld(spell=PooledConnection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5206: in managed_spell_meld
+    obj = self.meld(spell_id=target.spell_id, override=override)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/conduit.py:5072: in meld
+    return meld_component.meld(
+src/melder/aether/conduit/meld/conduit_meld.py:683: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:917: in _write_current_cache_to_disk_locked
+    temp_bundle_path.replace(bundle_path)
+~/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/pathlib/__init__.py:1091: in replace
+    os.replace(self, target)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:114: in replace
+    raise PermissionError(
+E   PermissionError: [Errno 13] Access is denied (injected; Windows reports [WinError 5]): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_managed/root.meldercache.tmp' -> '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_managed/root.meldercache'
+______ test_spellspace_meld_returns_its_object_when_the_cache_save_fails _______
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:429: in test_spellspace_meld_returns_its_object_when_the_cache_save_fails
+    first = space.meld(spell=SpaceSession)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/melder/aether/conduit/spell_space/spell_space.py:701: in meld
+    return self._meld.meld(
+src/melder/aether/conduit/meld/spellspace_meld.py:629: in meld
+    self._spellbook._emit_cache_file_if_required()
+src/melder/aether/spellbook/spellbook.py:1175: in _emit_cache_file_if_required
+    self._get_or_create_caching_system().emit()
+src/melder/utilities/caching_system/caching_system.py:741: in emit
+    self._write_current_cache_to_disk_locked()
+src/melder/utilities/caching_system/caching_system.py:917: in _write_current_cache_to_disk_locked
+    temp_bundle_path.replace(bundle_path)
+~/.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/pathlib/__init__.py:1091: in replace
+    os.replace(self, target)
+tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py:114: in replace
+    raise PermissionError(
+E   PermissionError: [Errno 13] Access is denied (injected; Windows reports [WinError 5]): '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_spellspace/root.meldercache.tmp' -> '/tmp/m0_mq/regress_clean/src/melder/__melder_cache__/__conjure_cache__/refused_save_spellspace/root.meldercache'
+_________________ test_refused_save_leaves_no_temp_file_behind _________________
+tests/unit/melder/utilities/test_caching_system_refused_save.py:118: in test_refused_save_leaves_no_temp_file_behind
+    assert left_in_folder == [bundle_path.name]
+E   AssertionError: assert ['root.melder...dercache.tmp'] == ['root.meldercache']
+E     
+E     Left contains one more item: 'root.meldercache.tmp'
+E     Use -v to get more diff
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/m0_mq/regress_clean/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_meld_returns_its_object_when_the_cache_save_fails[rename_refused]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_meld_returns_its_object_when_the_cache_save_fails[temp_write_refused]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_melds_keep_returning_while_every_cache_save_fails[rename_refused]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_melds_keep_returning_while_every_cache_save_fails[temp_write_refused]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_first_melds_after_a_failed_conjure_save_return_their_object[rename_refused]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_first_melds_after_a_failed_conjure_save_return_their_object[temp_write_refused]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_managed_lease_survives_a_failed_cache_save
+FAILED tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py::test_spellspace_meld_returns_its_object_when_the_cache_save_fails
+FAILED tests/unit/melder/utilities/test_caching_system_refused_save.py::test_refused_save_leaves_no_temp_file_behind
+========================= 9 failed, 1 warning in 1.56s =========================

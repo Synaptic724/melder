@@ -1,0 +1,29 @@
+F6 validation of TASK-2026-10-24-cache_file_write_failure_fails_meld (the cache-save fix), run by melder_0;
+recorded 2026-10-24T20:32:56Z. Tree: /tmp/m0_mq/fix8266 (the working tree's src with the fix, its tests, pyproject.toml and the repository files the tests read). Python 3.14.7 free-threaded build.
+command: python -X gil=0 <artifact>/probes/probe_cache_emit_failure.py (from /tmp/m0_mq/probe_run)
+
+melder 0.2.8265 from /tmp/m0_mq/fix8266/src/melder; Python 3.14.7; GIL off
+A: conjure wrote the bundle: True
+A: first meld of LateA (bound after conjure), the next replace refused once: returned LateA
+A: replaces refused: 1; LateA built 1 time(s); temp file left: False
+A: second meld of LateA: returned LateA
+A: third meld of LateA: returned LateA
+A: LateA built 1 time(s); second and third melds returned one object: True; temp file left: False
+B: meld of FirstB before the folder is made read-only: returned FirstB
+B: first meld of LateB (bound after conjure), frame folder read-only: returned LateB
+B: meld 1 of FirstB (built earlier, nothing new staged), folder read-only: returned FirstB
+B: meld 2 of FirstB (built earlier, nothing new staged), folder read-only: returned FirstB
+B: meld 3 of FirstB (built earlier, nothing new staged), folder read-only: returned FirstB
+B: meld of FirstB, folder writable again: returned FirstB
+B: FirstB built 1 time(s), LateB built 1 time(s)
+C: conjure with the conjure-cache root read-only: returned Conduit
+C: frame folder created: False
+C: first meld of FirstC, root read-only: returned FirstC
+C: second meld of FirstC, root read-only: returned FirstC
+C: meld of FirstC, root writable again: returned FirstC
+C: FirstC built 1 time(s); frame folder created: False
+D: first managed_spell_meld of PooledD (limited_quantity, limit 1), the next replace refused once: returned ManagedSpellLease
+D: replaces refused: 1; PooledD built 1 time(s)
+D: second managed_spell_meld of PooledD: raised ManagedSpellExhaustedError: [MELD] Execution failed for spell 'PooledD' (4189b3d9da4ff44547dc3d43ca93fee0fc4023a03f211af7d0d3c2c44354d80d): Managed spell 'PooledD' (limited_quantity, limit 1) has all 1 objects out. Release one with ReleaseManagedSpell().release(obj) before melding another, or bind it with a higher managed_spell_limit.
+D: PooledD built 1 time(s)
+D: root teardown: returned NoneType

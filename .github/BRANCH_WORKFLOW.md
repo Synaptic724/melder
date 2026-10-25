@@ -20,7 +20,7 @@ which checks must run; the final gate independently verifies that selection.
 | `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
 | Manual `CI` on a permanent branch | Yes | Full checks; distributions on every branch except dev |
 | Ordinary branch push | No source CI | RC pushes retain their dedicated package workflow |
-| Final publication | Yes | Fresh package validation and final tag/prod checks |
+| Final publication | No | Hygiene, asset checks, a fresh package build and final tag/prod checks; the exact tree already passed the full matrix and the release candidate |
 
 The checks enforce these contracts:
 
@@ -150,26 +150,30 @@ counts within the same OS and account for hosted hardware variation.
 CI runs only the Python releases the repository names. Each one has a manifest: a TOML file named after
 the exact release, holding `python` (that release), `freethreaded = true` and `dependencies`, the exact
 `name==version` pins installed with it (a pin may carry a `; marker`, as colorama does for Windows).
-Nothing is looked up on the network, so a new Python release, 3.15 included, runs only after a manifest
-adds it.
+Nothing is looked up on the network, so a new Python release runs only after a manifest adds it.
 
 - `.github/python/tests/` holds one manifest per release the runtime tests cover: today 3.14.0 through
-  3.14.8. A user's other dependencies can hold them on an older patch, and `>=3.14` claims that patch
-  too, so each release is its own matrix entry. The floor release from `project.requires-python`
-  (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor is refused: raising the
-  floor means deleting the retired manifests in the same change.
-- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7)
-  and the benchmark libraries' pins. Its `build_from_source` list names pins built from their source
-  distribution because no free-threaded wheel exists (dependency-injector); everything else installs as
-  a wheel. The speed release must also have a test manifest.
+  3.14.9, 3.15.0 and 3.15.1. A user's other dependencies can hold them on an older patch, and `>=3.14`
+  claims that patch too, so each release is its own matrix entry. The floor release from
+  `project.requires-python` (`>=3.14`, so 3.14.0) must have a manifest, and a manifest below the floor
+  is refused: raising the floor means deleting the retired manifests in the same change.
+- `.github/python/speed/` holds exactly one manifest: the release the three speed tests measure (3.14.7),
+  Melder's runtime dependency (pip) and the benchmark libraries' pins. Its `build_from_source` list
+  names pins built from their source distribution because no free-threaded wheel exists
+  (dependency-injector); everything else installs as a wheel. The speed release must also have a test
+  manifest.
 
 To add a release, copy the newest test manifest to `<release>.toml`, change `python`, and adjust any pin
 that does not install on that release. To move the speed tests, replace the speed manifest in one change;
 their first run afterwards is the new baseline. When Melder gains a runtime dependency, pin it in every
-test manifest; a contract test refuses a manifest that leaves one out.
+test manifest and in the speed manifest; a contract test refuses a manifest that leaves one out, and the
+installed-package probes install it beside the wheel from the test manifest's pins.
 
 Every test release runs on Linux x64, Windows x64 and macOS arm64. Each cell installs exactly its
 manifest's pins plus Melder from the checkout with `uv pip install --no-deps`, so nothing unpinned enters.
+A pin with no free-threaded wheel for a release (PyYAML on 3.15) is listed in that manifest's
+`build_from_source`, and uv builds it from its sdist; the build's own tools (setuptools, Cython) stay in
+that isolated build.
 Release-candidate installation probes run the same releases. Runtime tests and RC probes use
 `freethreaded: true`. The test driver verifies free-threading support and GIL-off state before and after
 pytest; the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
@@ -190,8 +194,9 @@ Tests, coverage and installed-package reports include OS, exact Python version a
 
 Distribution building still produces one wheel/sdist pair, on free-threaded Python 3.14.7; the full
 compatibility matrix belongs to runtime tests and RC installed-package checks. Existing full-test stages
-stay unchanged. Historical source proof refers to its recorded full-CI run, while final publication
-tests every release named by the test manifests afresh.
+stay unchanged. Historical source proof refers to its recorded full-CI run; final publication does
+not run the tests again, because it publishes only the tree that run and the release candidate
+qualified (see Final publication checks).
 
 ## Coverage reporting and README badges
 
@@ -229,16 +234,15 @@ One-time setup:
 
 This is a repository Actions secret, not an environment secret or variable. No new GitHub
 environment or id-token permission is needed. Do not reuse either PyPI token or store the token
-in the checkout. CI and final publication explicitly pass only CODECOV_TOKEN to the reusable
-workflow; only its credential check and Codecov upload steps receive it.
+in the checkout. CI explicitly passes only CODECOV_TOKEN to the reusable workflow; only its
+credential check and Codecov upload steps receive it.
 If the token is absent, a setup warning is emitted and reporting is skipped. Fork PRs retain
 their test/coverage artifacts but skip credentialed uploads.
 
-The README coverage badge tracks prod. It shows no percentage until the first prod report is
-processed. Normal final-release tests populate it; the release tag is attributed to prod only
-after the existing release gate verifies that tag against current prod HEAD. To seed the badge
-without publishing a package, run Actions -> Runtime tests -> Run workflow on prod after these
-files reach that branch. Do not run Publish Python Package merely to refresh coverage.
+The README coverage badge tracks prod. It shows no percentage until a prod report is processed.
+Final publication does not run the tests, so prod receives a report only from a manual run: after
+a release reaches prod, run Actions -> Runtime tests -> Run workflow on prod to refresh the badge.
+Publish Python Package uploads no coverage.
 
 The CI badge uses GitHub's default-branch/latest-run behavior, not a hardcoded passing label.
 Reference: https://github.com/codecov/codecov-action#usage
@@ -258,7 +262,8 @@ uv run --locked python llm_support/_builder.py --check
 `uv.lock` pins the development dependency resolution; in CI only the distribution jobs use it. Runtime
 test cells install their release's manifest pins instead (see Supported Python versions). Distribution
 jobs sync only the build group and build without isolation, using those locked tools. Their wheel
-probe still installs only the exact built wheel in a separate environment. Cache keys include the
+probe installs the exact built wheel in a separate environment beside the test-manifest pins of Melder's
+runtime dependencies, with no resolver, and `uv pip check` proves the set consistent. Cache keys include the
 lockfile or manifest and the runtime/build context. The documentation toolchain retains
 `docs/requirements.lock`. See [contributor setup](../CONTRIBUTING.md) for optional groups and
 deliberate lock updates.
@@ -337,7 +342,7 @@ or tag is required. Manual dispatch must select the same branch.
 | Boundary | Work performed |
 | --- | --- |
 | `preprod -> release_candidate` PR | Verify the previously qualified preprod tree. |
-| Merge lands on `release_candidate` | Recheck source proof, build, upload to TestPyPI, and run installed-package probes. |
+| Merge lands on `release_candidate` | Recheck source proof, build, upload to TestPyPI by Trusted Publishing, verify each file's provenance, and run installed-package probes. |
 | `release_candidate -> prod` PR | Verify exact-source RC success in the final merge-ready check. |
 
 TestPyPI publication belongs to the RC stage. The prod promotion check does not
@@ -349,41 +354,58 @@ authentic pending run. Completed failure, wrong identity, missing evidence and A
 errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
 jobs. Elapsed time never substitutes for successful exact-source qualification.
 
-The workflow reuses the package builder, uploads to TestPyPI, then checks a
+The workflow reuses the package builder, uploads to TestPyPI, verifies every uploaded file's provenance
+(`RC / provenance`, below), then checks a
 fresh installation on every no-GIL OS/release cell built from the test manifests. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
-match this run's built wheel. No editable installation or repository conftest is used.
+match this run's built wheel. Melder's runtime dependencies come from PyPI at that release's test-manifest
+pins and install beside it with `--no-deps --no-index`; `pip check` must pass before the probe runs. No
+editable installation or repository conftest is used.
 
-Configure the TestPyPI upload credential as follows:
+TestPyPI uploads by Trusted Publishing, with no stored credential (owner, 2026-10-24). Add the
+publisher before this workflow reaches `release_candidate`: on TestPyPI, the `melder` project ->
+Manage -> Publishing -> add a GitHub publisher with exactly these values.
 
 | Field | Value |
 | --- | --- |
-| Project | `melder` |
-| GitHub repository | `Synaptic724/melder` |
-| Workflow filename | `release-candidate.yml` |
-| GitHub environment | `pypitest` |
-| Environment secret name | `melder_api_token` |
-| Token issuer | `test.pypi.org` |
+| Owner | `Synaptic724` |
+| Repository name | `melder` |
+| Workflow name | `release-candidate.yml` |
+| Environment name | `pypitest` |
 
 Create `pypitest` under repository Settings -> Environments and allow deployments
-only from the branch `release_candidate`. Add the generated TestPyPI token under
-Environment secrets with the name `melder_api_token`; do not put credentials in
-Variables or repository files. Select the melder project scope when available.
-Creating the first project with token authentication may require an account-scoped
-TestPyPI token; replace it with a project-scoped token once the project exists.
+only from the branch `release_candidate`. It holds no secret. The upload job alone
+requests a short-lived OIDC token (`id-token: write`); TestPyPI exchanges it for an
+upload credential when the token's claims match the publisher above, and
+`pypa/gh-action-pypi-publish`, pinned to its commit, signs each uploaded file with
+Sigstore and uploads its PEP 740 attestation. A failed-jobs re-run of the upload
+asks for a fresh token. Once a run has published this way, the old
+`melder_api_token` environment secret can be deleted and its token revoked on
+TestPyPI: no workflow reads it. Production continues using its independent pypi
+environment and PYPI_API_TOKEN credential.
 
-This workflow uses explicit API-token authentication (`user: __token__`) and disables
-OIDC-only attestations. Only its upload job references the secret. A missing secret
-fails with a clear message rather than falling back to OIDC. A token issued by the
-production pypi.org service cannot authenticate to TestPyPI. Production continues
-using its independent pypi environment and PYPI_API_TOKEN credential.
+An `invalid-publisher` error from the upload means the publisher's values and the
+job's claims disagree; an earlier OIDC attempt failed that way, so compare all four
+values before the first run. That first run needs a version TestPyPI has never
+seen: files uploaded by a token carry no attestation, and the provenance check
+refuses them.
 
-The initial OIDC run failed with `invalid-publisher`; the owner subsequently chose
-token authentication. Adding the secret alone does not change that old workflow.
-Commit/promote this updated YAML into release_candidate to use token authentication.
-Wait for package-ready to succeed, then rerun any prod PR check that already failed
+`RC / provenance` runs after the upload and before any probe installs a file. For
+every built file it reads the provenance TestPyPI holds and requires: a provenance
+exists; its publisher is this workflow in `pypitest`; Sigstore verifies the
+attestation on the production trust root; the signing certificate names this
+repository and its owner (with their numeric ids), the workflow on
+`release_candidate`, this commit, a GitHub-hosted runner, public visibility and the
+`pypitest` environment, and, for a file this run uploaded, this run and attempt;
+and the attested statement names exactly the file and its sha256. The verifier is
+the publishing action's own signing toolchain, installed from a hash-pinned lock,
+and it must first verify a recorded genuine attestation and refuse two tampered
+copies of it, so a tool that cannot check fails the run instead of passing it.
+
+Commit and promote this workflow into release_candidate to switch. Wait for
+package-ready to succeed, then rerun any prod PR check that already failed
 while qualification was missing. The prod error includes the inspected RC run URL and status.
 
 The package version comes from `src/melder/__version__.py`; CI does not rewrite
@@ -403,19 +425,23 @@ cannot turn an rc1 wheel into a final wheel.
 TestPyPI filenames are immutable. A changed package requires a new version.
 An identical retry is verified by filename, size, and hash; a partial upload
 stages only missing files after checking the existing ones. Different remote
-bytes fail rather than being hidden by `skip-existing`. After a failed upload or
-install, **Re-run failed jobs** reuses this run's verified build: the build job
-reports the artifact it made, and the upload job verifies the files again first.
-**Re-run all jobs** builds fresh. The TestPyPI release lookup retries HTTP 429
-and 5xx answers, timeouts and failed connections up to six times, ten seconds
-apart. Download retries are bounded for index propagation; failed consumer tests
-are not retried or ignored.
+bytes fail rather than being hidden by `skip-existing`. After a failed upload,
+provenance check or install, **Re-run failed jobs** reuses this run's verified build:
+the build job reports the artifact it made, and the upload job verifies the files
+again first. A re-run that does not repeat the upload keeps its record of which
+files it uploaded in which attempt, so the provenance check still expects that
+attempt's signature. **Re-run all jobs** builds fresh. The TestPyPI release lookup
+retries HTTP 429 and 5xx answers, timeouts and failed connections up to six times,
+ten seconds apart, and the provenance lookup also retries a 404, which TestPyPI can
+answer just after an upload. Download retries are bounded for index propagation;
+failed consumer tests are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, source proof, build,
-upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
+upload, the provenance check and every selected OS/version probe succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
-source commit/tree, version, run/attempt, and both distribution hashes.
+source commit/tree, version, run/attempt, and both distribution hashes; the
+provenance report adds each file's verified signer, run and trigger.
 
 ## Final publication checks
 
@@ -426,7 +452,8 @@ workflow on prod, starts a fresh qualification chain:
    For release events, also require the live remote tag to resolve to that commit.
    Verify the prod merge's candidate parent has the same tree and successful
    TestPyPI qualification for its exact SHA. Direct/squashed prod commits refuse.
-2. Rerun hygiene, both asset checkers, and the complete runtime matrix.
+2. Rerun hygiene and both asset checkers. The runtime matrix does not run again: step 1 admits only
+   the tree that full CI and the release candidate already tested (owner, 2026-10-24).
 3. Build and inspect the wheel/sdist and smoke-test an isolated wheel install.
 4. Enter the pypi environment and download this run attempt's verified artifacts.
 5. Recheck distribution identity and candidate qualification, then the live release tag,
@@ -434,7 +461,7 @@ workflow on prod, starts a fresh qualification chain:
    tags use their peeled target; missing or moved tags refuse publication.
 
 Earlier dev/preprod success does not replace these checks. A prod movement during
-testing or environment approval refuses publication. GitHub prerelease events do
+the checks or environment approval refuses publication. GitHub prerelease events do
 not trigger final publication. All publication runs share a serialization group.
 Only the upload job uses the pypi environment and its PYPI_API_TOKEN secret.
 Production builds and validates fresh final distributions; it does not relabel

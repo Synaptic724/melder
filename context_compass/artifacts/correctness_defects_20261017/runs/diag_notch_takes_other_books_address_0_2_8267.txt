@@ -1,0 +1,46 @@
+# Can a notch in one Book take an address another Book's active spell holds? Melder 0.2.8267, public calls only
+# Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]; run at 2026-10-24T23:38:04Z by melder_1; probes/diag_notch_takes_other_books_address.py
+
+===== fresh (-X gil=0)
+case: Book O has Spanish active at 'spanish'; Book L stages French at 'spanish' on English's index
+  Book L notch to French -> French
+  Book L meld at 'spanish' -> French says 'bonjour'
+  Book O meld at 'spanish' -> Spanish says 'hola'
+  a third Book binds Italian at 'spanish' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='spanish' is held by spell_id='20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'. There is one active 
+  tear Book L's root down -> None
+  a third Book binds Italian at 'spanish' (after L's teardown) -> b7e3f81ba4b5
+  Book O meld at 'spanish' -> Spanish says 'hola'
+
+===== fresh (-X gil=1)
+case: Book O has Spanish active at 'spanish'; Book L stages French at 'spanish' on English's index
+  Book L notch to French -> French
+  Book L meld at 'spanish' -> French says 'bonjour'
+  Book O meld at 'spanish' -> Spanish says 'hola'
+  a third Book binds Italian at 'spanish' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='spanish' is held by spell_id='20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'. There is one active 
+  tear Book L's root down -> None
+  a third Book binds Italian at 'spanish' (after L's teardown) -> b7e3f81ba4b5
+  Book O meld at 'spanish' -> Spanish says 'hola'
+
+===== compiled (-X gil=0)
+case: Book O has Spanish active at 'spanish'; Book L stages French at 'spanish' on English's index (French compiled before)
+  Book L notch to French -> French
+  Book L notch back to English -> English
+  Book L notch to French -> French
+  Book L meld at 'spanish' -> French says 'bonjour'
+  Book O meld at 'spanish' -> Spanish says 'hola'
+  a third Book binds Italian at 'spanish' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='spanish' is held by spell_id='20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'. There is one active 
+  tear Book L's root down -> None
+  a third Book binds Italian at 'spanish' (after L's teardown) -> b7e3f81ba4b5
+  Book O meld at 'spanish' -> Spanish says 'hola'
+
+===== compiled (-X gil=1)
+case: Book O has Spanish active at 'spanish'; Book L stages French at 'spanish' on English's index (French compiled before)
+  Book L notch to French -> French
+  Book L notch back to English -> English
+  Book L notch to French -> French
+  Book L meld at 'spanish' -> French says 'bonjour'
+  Book O meld at 'spanish' -> Spanish says 'hola'
+  a third Book binds Italian at 'spanish' -> raises RuntimeError: Binding signature already active in this frame: frame_key='greeter', binding_name='spanish' is held by spell_id='20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'. There is one active 
+  tear Book L's root down -> None
+  a third Book binds Italian at 'spanish' (after L's teardown) -> b7e3f81ba4b5
+  Book O meld at 'spanish' -> Spanish says 'hola'

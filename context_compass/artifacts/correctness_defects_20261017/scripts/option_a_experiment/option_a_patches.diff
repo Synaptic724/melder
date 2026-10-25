@@ -1,0 +1,44 @@
+--- a/src/melder/aether/spellbook/spellbook.py
++++ b/src/melder/aether/spellbook/spellbook.py
+@@ -4170,6 +4170,12 @@
+             if outgoing is spell:
+                 # Already the active member for this index; notch is idempotent.
+                 return spell
++            # EXPERIMENT (melder_1, scratch mirror only): refuse an address held by a spell of another index.
++            _exp_holder = self._aetheric_frame.get_lookup(spell._key)
++            if _exp_holder is not None and not spell_index._has_spell_unless_cleaned(_exp_holder):
++                raise RuntimeError(
++                    "EXPERIMENT_B notch: address %r is held by spell_id %s of another index" % (spell._key, _exp_holder)
++                )
+             if outgoing is not None:
+                 # Park the outgoing active spell (off the four active maps; keeps
+                 # _spell_ids existence), then kill its fast-door so meld(old_id)
+@@ -4642,6 +4648,13 @@
+                 f"spellbook; you can only add onto an index you own."
+             )
+         binding_key = spell._key
++        # EXPERIMENT (melder_1, scratch mirror only): option (A) - the index owns the address.
++        _exp_anchor = self._spells.get(target_index) or self._inactive_spells.get(target_index.selected_spell_id)
++        if _exp_anchor is not None and _exp_anchor is not spell and _exp_anchor._key != spell._key:
++            raise RuntimeError(
++                "EXPERIMENT_A add_to_spell_index: address %r differs from the target index's address %r"
++                % (spell._key, _exp_anchor._key)
++            )
+         owner_conduit_id = spell._owner_conduit_id
+         with self._lock:
+             source_index.remove_member(spell_id)
+@@ -6012,6 +6025,14 @@
+                         "bind_inactive and notch to it."
+                     )
+ 
++                # EXPERIMENT (melder_1, scratch mirror only): option (A) - the index owns the address.
++                _exp_selected = spell_index.selected_spell_id
++                _exp_anchor = self._spells.get(spell_index) or self._inactive_spells.get(_exp_selected)
++                if _exp_anchor is not None and _exp_anchor._key != new_spell._key:
++                    raise RuntimeError(
++                        "EXPERIMENT_A bind_inactive: address %r differs from the index's address %r"
++                        % (new_spell._key, _exp_anchor._key)
++                    )
+                 self._add_hooks_to_spell(new_spell, **kwargs)
+                 # Inactive pathing: route the registration setters to the inactive
+                 # surface instead of the active one. The SpellIndex records the

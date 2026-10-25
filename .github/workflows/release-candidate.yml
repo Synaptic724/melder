@@ -62,6 +62,14 @@ jobs:
       url: https://test.pypi.org/project/melder/
     permissions:
       contents: read
+      # Trusted Publishing: this job's OIDC token is its only TestPyPI credential and signs each uploaded file's
+      # PEP 740 attestation. No other job of this workflow holds it.
+      id-token: write
+    outputs:
+      # The files this attempt staged and the attempt itself, for the provenance job: a failed-jobs re-run of a
+      # later job keeps both from the attempt that uploaded, which is the attempt the attestations name.
+      uploaded: ${{ steps.upload.outputs.uploaded }}
+      attempt: ${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -78,26 +86,18 @@ jobs:
       - name: Verify existing files and prepare an exact upload
         id: upload
         run: python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json
-      - name: Require the TestPyPI environment secret
-        if: steps.upload.outputs.upload-required == 'true'
-        env:
-          TESTPYPI_API_TOKEN: ${{ secrets.melder_api_token }}
-        run: |
-          if [ -z "$TESTPYPI_API_TOKEN" ]; then
-            echo "::error::Add melder_api_token under the pypitest environment's Secrets, not Variables."
-            exit 1
-          fi
       - name: Recheck the candidate after environment admission
         run: python .github/scripts/ci_policy.py candidate-head
-      - name: Publish missing verified files with the TestPyPI token
+      - name: Publish missing verified files by Trusted Publishing, with attestations
         if: steps.upload.outputs.upload-required == 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        # Pinned to its commit, as astral-sh/setup-uv is, because this step runs with the job's id-token. With no
+        # user or password it authenticates as this workflow's TestPyPI Trusted Publisher (release-candidate.yml,
+        # environment pypitest) and signs every file in upload/ with Sigstore.
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
-          user: __token__
-          password: ${{ secrets.melder_api_token }}
           repository-url: https://test.pypi.org/legacy/
           packages-dir: upload/
-          attestations: false
+          attestations: true
           print-hash: true
       - name: Retain upload identity
         uses: actions/upload-artifact@v7
@@ -107,9 +107,42 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+  provenance:
+    name: RC / provenance
+    needs: [build, publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.7"
+      - name: Retrieve this run's verified build
+        # The build the publish job verified and uploaded; the provenance check verifies the files again before
+        # it trusts their digests.
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: dist/
+      - name: Verify every candidate file's TestPyPI provenance before any probe installs it
+        # Five layers per file: a provenance exists, its publisher is this workflow in pypitest, Sigstore verifies
+        # it, the certificate names this repository, workflow, commit and run claim by claim, and the statement
+        # names the file's sha256. The pinned verifier first proves itself on a recorded attestation.
+        env:
+          CANDIDATE_UPLOADED: ${{ needs.publish.outputs.uploaded }}
+          CANDIDATE_PUBLISH_ATTEMPT: ${{ needs.publish.outputs.attempt }}
+        run: python .github/scripts/testpypi_provenance.py verify --report reports/provenance.json
+      - name: Retain provenance evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/provenance.json
+          if-no-files-found: error
+          retention-days: 90
+
   install:
     name: RC / installed-package / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
-    needs: [authorize, build, publish]
+    needs: [authorize, build, publish, provenance]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -143,7 +176,7 @@ jobs:
 
   package-ready:
     name: RC / package-ready
-    needs: [authorize, source-qualification, build, publish, install]
+    needs: [authorize, source-qualification, build, publish, provenance, install]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

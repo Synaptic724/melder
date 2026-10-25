@@ -1,4 +1,0 @@
-# AbstractElasticPool at 0.2.8235 (unchanged by this task); python 3.14.7t, PYTHON_GIL=0, 100000 origins, 2026-10-14T18:18:24Z
-real_two_adds: failing origins 155/100000 = 0.0015 {'at_settle_target_36': 155, 'at_settle_idle_36': 155, 'at_settle_destroyed_4': 155}
-real_one_add: failing origins 179/100000 = 0.0018 {'at_settle_target_36': 179, 'at_settle_idle_36': 179, 'at_settle_destroyed_4': 179}
-whole_two_adds: failing origins 0/100000 = 0.0000 {}

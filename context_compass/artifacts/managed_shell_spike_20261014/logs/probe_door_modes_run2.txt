@@ -1,4 +1,0 @@
-elastic, no reset: acquire+shell put_back 401 ns; acquire+ReleaseManagedSpell.release 496 ns; acquire+with managed() 1101 ns; {'mode': 'elastic', 'cou
-elastic, reset(): acquire+shell put_back 486 ns; acquire+ReleaseManagedSpell.release 586 ns; acquire+with managed() 1165 ns; {'mode': 'elastic', 'coun
-limited_quantity(4), no reset: acquire+shell put_back 382 ns; acquire+ReleaseManagedSpell.release 478 ns; acquire+with managed() 1059 ns; {'mode': 'li
-queue(4, 1.0s), no reset: acquire+shell put_back 461 ns; acquire+ReleaseManagedSpell.release 564 ns; acquire+with managed() 1196 ns; {'mode': 'queue',

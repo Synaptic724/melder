@@ -1,2 +1,0 @@
-anchors: 12 | story lines: 817 | ts: 2026-10-18T16:49:55Z
-applied: story moved, boards synced, patch archived

@@ -1,0 +1,65 @@
+probe_mixed_record_under_option_a.py on 0.2.8267 and on the (A)+(B) scratch tree, the GIL off and on (melder_1,
+2026-10-25; STORY-2026-10-17-notch_moves_signature_by_incoming_key_only); runner scripts/option_a_experiment/run_mixed_record.sh.
+The record is made on 0.2.8267 each time; restore and graft each run in a fresh process.
+
+===== record on the 0.2.8267 tree (-X gil=0)
+case record
+  recorded: English active at greeter/english, French parked on the same index at greeter/french
+  checkpoint 01M5RA72XX70CRTVS9M17QTVQT flushed; the index captured as a graft record
+[exit 0]
+
+===== restore on the 0.2.8267 tree in a fresh process (-X gil=0)
+case restore
+  restore status: complete
+  English is there at greeter/english and ACTIVE (melds)
+  French is there at greeter/french, parked (does not meld)
+[exit 0]
+
+===== graft on the 0.2.8267 tree in a fresh process (-X gil=0)
+case graft
+  graft status: complete; bound active 1; parked 1
+  English is there at greeter/english and ACTIVE (melds)
+  French is there at greeter/french, parked (does not meld)
+[exit 0]
+
+===== restore on the (A)+(B) tree in a fresh process (-X gil=0)
+case restore
+  restore raises RuntimeError: restore failed at stage 'level_1'; the partially built world was torn down (all-or-nothing). See the chained error for the cause.
+    caused by PhaseExecutionError: Phase 'level_1' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: EXPERIMENT_A bind_inactive: address ('greeter', 'french') differs from the index's address ('greeter', 'english')
+[exit 0]
+
+===== graft on the (A)+(B) tree in a fresh process (-X gil=0)
+case graft
+  graft raises RuntimeError: EXPERIMENT_A bind_inactive: address ('greeter', 'french') differs from the index's address ('greeter', 'english')
+[exit 0]
+
+===== record on the 0.2.8267 tree (-X gil=1)
+case record
+  recorded: English active at greeter/english, French parked on the same index at greeter/french
+  checkpoint 01M5RA775FH1F2FFDEARQJMR9W flushed; the index captured as a graft record
+[exit 0]
+
+===== restore on the 0.2.8267 tree in a fresh process (-X gil=1)
+case restore
+  restore status: complete
+  English is there at greeter/english and ACTIVE (melds)
+  French is there at greeter/french, parked (does not meld)
+[exit 0]
+
+===== graft on the 0.2.8267 tree in a fresh process (-X gil=1)
+case graft
+  graft status: complete; bound active 1; parked 1
+  English is there at greeter/english and ACTIVE (melds)
+  French is there at greeter/french, parked (does not meld)
+[exit 0]
+
+===== restore on the (A)+(B) tree in a fresh process (-X gil=1)
+case restore
+  restore raises RuntimeError: restore failed at stage 'level_1'; the partially built world was torn down (all-or-nothing). See the chained error for the cause.
+    caused by PhaseExecutionError: Phase 'level_1' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: EXPERIMENT_A bind_inactive: address ('greeter', 'french') differs from the index's address ('greeter', 'english')
+[exit 0]
+
+===== graft on the (A)+(B) tree in a fresh process (-X gil=1)
+case graft
+  graft raises RuntimeError: EXPERIMENT_A bind_inactive: address ('greeter', 'french') differs from the index's address ('greeter', 'english')
+[exit 0]

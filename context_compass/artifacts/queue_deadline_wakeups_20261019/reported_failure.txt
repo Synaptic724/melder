@@ -1,9 +1,0 @@
-Owner-supplied failure, macOS Python 3.14.3, run 39343965856:
-tests/unit/melder/aether/conduit/creations/test_managed_spell_quantity.py::test_queue_deadline_is_taken_once_across_wakeups
-The full pool has queue timeout 0.3; the test starts its stopwatch before creating the worker.
-The worker raises ManagedSpellExhaustedError as expected.
-The final assertion finished['at'] - started < 0.75 fails:
-334.430046791 - 333.671196333 = 0.758850458 seconds.
-1 failed, 14397 passed, 28 skipped, 18 xfailed, 2 xpassed in 420.22 seconds.
-Shutdown warning: coroutine 'coro' was never awaited.
-Reported result, not an expert_1 local execution or a hosted rerun.

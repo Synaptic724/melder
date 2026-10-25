@@ -1,5 +1,0 @@
-Failed to find real location of C:\Users\Mark\AppData\Roaming\uv\python\cpython-3.14.7+freethreaded-windows-x86_64-none\python.exe
-WROTE     src   585 files (source fingerprint moved)
-WROTE     tests 1144 files (source fingerprint moved)
-WROTE     other 409 files (source fingerprint moved)
-WROTE manifest.json

@@ -1,0 +1,44 @@
+F6 validation of TASK-2026-10-24-cache_file_write_failure_fails_meld (the cache-save fix), run by melder_0;
+recorded 2026-10-24T20:32:56Z. Tree: /tmp/m0_mq/base8265 (the same copy with caching_system.py, spellbook.py, spell.py and test_cache_runtime_verification.py at HEAD, 0.2.8265). Python 3.14.7 free-threaded build.
+command: python -X gil=1 -m pytest <melder_1's three untracked red-by-design files> -p no:cacheprovider -q --tb=no -rf
+
+FFFFFFFFFFFFFFFFFFF.....FFFFFFFF..FF                                     [100%]
+=============================== warnings summary ===============================
+src/melder/__init__.py:199
+  /tmp/m0_mq/base8265/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_scope_end_disposes_the_many_child_it_built_for_a_holder_that_outlives_it[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[unique-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-in-lesser-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[per-conduit-at-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-through-lesser]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[lineage-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_many_child_is_recorded_in_the_store_of_the_scope_that_melded_its_holder[spellspace-holder-in-root-spellspace]
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_lesser_end_disposes_the_many_child_it_built_for_a_unique_under_a_per_conduit_consumer
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_lesser_end_disposes_the_many_child_an_override_meld_built_for_a_unique
+FAILED tests/component/melder/aether/conduit/test_conduit_component_many_child_belongs_to_the_scope_that_built_it.py::test_specializer_records_the_one_many_child_of_a_captured_unique_in_the_scope_that_built_it
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_holder_purge_disposes_only_the_holder_and_its_children_wait_for_their_store
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_single_instance_purge_of_a_holder_disposes_only_the_holder
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_purge_of_a_holder_without_disposal_methods_disposes_nothing
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_spellspace_holder_purge_leaves_its_child_for_the_space_exit
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_owner_purge_of_a_unique_holder_leaves_its_many_child_open
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_a_failing_child_disposal_surfaces_at_its_store_end_not_at_the_holder_purge
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_many_purge_of_the_child_spell_disposes_every_child_its_store_recorded
+FAILED tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py::test_transfer_move_leaves_the_holders_many_child_in_the_store_that_built_it
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py::test_borrower_teardown_disposes_the_many_child_it_built_for_a_contracted_unique
+FAILED tests/integration/melder/conduit/test_conduit_integration_many_child_belongs_to_the_scope_that_built_it.py::test_member_teardown_disposes_the_many_child_it_built_for_a_cluster_holder
+29 failed, 7 passed, 1 warning in 0.94s

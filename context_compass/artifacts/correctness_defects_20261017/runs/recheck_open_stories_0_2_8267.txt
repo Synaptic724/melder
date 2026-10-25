@@ -1,0 +1,495 @@
+# Recheck of the open stories' reproducers on Melder 0.2.8267
+# Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]; run at 2026-10-24T23:09:59Z by melder_1
+# Scratch copies of the artifact probes; the only change is the 0.2.8253 rename find_spell_by_id -> find_spell_by_spell_id.
+
+===== probe_signature_claims.py (-X gil=0)
+C1 bind_inactive after conjure; the staged version shares the active version's key
+  [before]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    staged French's key == English's key: True
+  [after bind_inactive(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+    English still the index's active version: True
+
+C2 bind_inactive before conjure; same key
+  [before (no conduit yet)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after bind_inactive(French), before conjure]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after conjure]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+
+C3 index moves: remove French into its own index, then add it back
+  [healed (notch to French and back)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after add_to_spell_index(French) back]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C4 cleanup_spell of French alone in the index remove_from_spell_index minted
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after cleanup_spell(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C5 notch across keys: English (Greeter, 'greeter') -> Spanish (Greeter, 'spanish') on one index
+    after the notch: English parked: True
+  [old key after notch]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: False (index active: Spanish)
+    meld(spellframe=Greeter, binding_name='greeter') raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+  [new key after notch]
+    frame claim ('greeter', 'spanish'): Spanish
+    book address map routes it to the index: True (index active: Spanish)
+    meld(spellframe=Greeter, binding_name='spanish') -> Spanish
+    find_spell_index(Greeter, 'Spanish', 'spanish') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C6 staging in Book L a version keyed like Book O's active spell
+    before: frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+    after Book L stages French as (Greeter, 'spanish'): frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+    Spanish still active in Book O: True
+    another bind of (Greeter, 'spanish') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='spanish' is held by spell_id='35ae6000b301244b7d88b18cb8600db6b713b
+
+C7 notch French active inside its own minted index; English stays active with the same key
+    English active in its index: True; French active in the minted index: True
+  [English's index after the notch]
+    frame claim ('greeter', 'greeter'): French
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') raised SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+French (frame Greeter):
+  - Multiple visible spells share the lookup address frame='greeter', binding='greeter'. Use a distinct spellframe or binding_name so that each registration has a unique normalized address. [DUPLICATE_SPELL_NAME]
+    find_spell_index(Greeter, 'English', 'greeter') is the index: False
+
+[exit 0]
+
+===== probe_book_teardown_parked.py (-X gil=0)
+T1 control: English active alone
+    root conduit torn down
+    English (active) cleaned: True
+    English's index cleaned: True
+
+T2 English active, French parked on English's index
+    root conduit torn down
+    English (active) cleaned: True
+    French (parked) cleaned: True
+    the shared index cleaned: True
+    French.cleanup() returned; cleaned: True
+
+T3 French separated into the index remove_from_spell_index mints
+    French's index is a new one: True
+    root conduit torn down
+    French (parked) cleaned: True
+    the minted index cleaned: True
+    English's index cleaned: True
+
+T4 notch English ('greeter') -> Spanish ('spanish'), then teardown
+    before teardown, ('greeter') held by English: True
+    root conduit torn down
+    after teardown, ('greeter') held by English (its Book gone): True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+T5 a managed class with one version active and one parked, then teardown
+  CASE RAISED RuntimeError: Spell ID collision detected: this object is already registered as spell_id de9f98171d5707b339845fcc0df3076cb517f073305c07d6c0eb132c2f5e65ee. A spell_id is the SHA256 of the object's code (its methods, 
+constructor, class-level values and base classes, or an existing object's class and 
+data), and one object is one spell: registering it again - under another binding 
+name, existence or spellframe, or in another Spellbook where spell_ids are unique 
+(the process by default, the frame under per-frame spell ids) - is refused. Use the 
+spell already registered (another conduit shares it through a link or a contract), 
+or cleanup_spell it and bind it again to change how it is bound. A changed method, 
+constructor, class-level value or base class is a new spell_id: stage it with 
+bind_inactive and notch to it.
+
+[exit 0]
+
+===== probe_restore_staged_structure.py (-X gil=0)
+R1 English active and French staged under the same signature (Greeter, 'greeter')
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1, 'spell_staged': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    rebuilt Book: active=['English'] parked=['French']; frame claim ('greeter', 'greeter'): English
+
+R2 French staged under (Greeter, 'french'), then separated into its own index
+    recorded Book: active=['English'] parked=['French']
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    shortfall: {'kind': 'spell_crystal', 'key': '36a7f7be8288a021cd7bf2b4f8511357dfa7e22a041fd66d58e39522eae9c10f', 'reason': 'staged_member_anchor_index_not_rebuilt: 01M5R2V91SESGCW17BQYH4NM1E'}
+    rebuilt Book: active=['English'] parked=[]
+
+R3 as R2, then French notched active inside its own index
+    recorded Book: active=['English', 'French'] parked=[]
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 2, 'conduit': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    rebuilt Book: active=['English', 'French'] parked=[]
+
+[exit 0]
+
+===== probe_graft_parked_members.py (-X gil=0)
+G1 graft of English's index (English active, French parked)
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active', 'French': 'inactive'}
+    graft: status complete; bound 1; parked 1; shortfalls []
+    host Book: active=['English'] parked=['French']
+
+G2 graft of the index remove_from_spell_index minted (French alone, parked)
+    source Book: active=['English'] parked=['French']
+    live minted index selects: French
+    record: selected French; members {'French': 'inactive'}
+    graft: status complete; bound 1; parked 0; shortfalls []
+    host Book: active=['French'] parked=[]
+
+G3 control: graft of English's index after French was separated (English alone)
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active'}
+    graft: status complete; bound 1; parked 0; shortfalls []
+    host Book: active=['English'] parked=[]
+
+G4 graft of English's index with French staged under English's signature (Greeter, 'english')
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active', 'French': 'inactive'}
+    graft: status complete; bound 1; parked 1; shortfalls []
+    host Book: active=['English'] parked=['French']
+    host frame claim ('greeter', 'english'): English
+
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H1 (-X gil=0)
+case H1
+  lender meld English -> 'hello'
+  borrower meld Speaker -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> 'hello'
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> 'hello'
+  borrower meld Speaker (third) -> 'hello'
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H2 (-X gil=0)
+case H2
+  lender meld English -> 'hello'
+  borrower meld Speaker -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  lender meld English (first) -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker -> 'hello'
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H3 (-X gil=0)
+case H3
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> raises SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. | Whole-graph errors: | - Spell 'English' depends on spells this Spellbook cannot see (spell id 6e9578a406c6). Bind them in this Spellbook, or give this conduit access to them. [visibility_gap_dependency_filtered]
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  borrower meld Speaker (third) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H4 (-X gil=0)
+case H4
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> raises SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. | Whole-graph errors: | - Spell 'English' depends on spells this Spellbook cannot see (spell id 6e9578a406c6). Bind them in this Spellbook, or give this conduit access to them. [visibility_gap_dependency_filtered]
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  borrower meld Speaker (third) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+[exit 0]
+
+===== probe_signature_claims.py (-X gil=1)
+C1 bind_inactive after conjure; the staged version shares the active version's key
+  [before]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    staged French's key == English's key: True
+  [after bind_inactive(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+    English still the index's active version: True
+
+C2 bind_inactive before conjure; same key
+  [before (no conduit yet)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after bind_inactive(French), before conjure]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after conjure]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+
+C3 index moves: remove French into its own index, then add it back
+  [healed (notch to French and back)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after add_to_spell_index(French) back]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C4 cleanup_spell of French alone in the index remove_from_spell_index minted
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after cleanup_spell(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C5 notch across keys: English (Greeter, 'greeter') -> Spanish (Greeter, 'spanish') on one index
+    after the notch: English parked: True
+  [old key after notch]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: False (index active: Spanish)
+    meld(spellframe=Greeter, binding_name='greeter') raised KeyError: "[MELD] No spell found for frame='greeter', binding='greeter'."
+    find_spell_index(Greeter, 'English', 'greeter') raised RuntimeError: Spell not found in the spellbook.
+  [new key after notch]
+    frame claim ('greeter', 'spanish'): Spanish
+    book address map routes it to the index: True (index active: Spanish)
+    meld(spellframe=Greeter, binding_name='spanish') -> Spanish
+    find_spell_index(Greeter, 'Spanish', 'spanish') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C6 staging in Book L a version keyed like Book O's active spell
+    before: frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+    after Book L stages French as (Greeter, 'spanish'): frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+    Spanish still active in Book O: True
+    another bind of (Greeter, 'spanish') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='spanish' is held by spell_id='35ae6000b301244b7d88b18cb8600db6b713b
+
+C7 notch French active inside its own minted index; English stays active with the same key
+    English active in its index: True; French active in the minted index: True
+  [English's index after the notch]
+    frame claim ('greeter', 'greeter'): French
+    book address map routes it to the index: False (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') raised SpellbookValidationError: Spellbook validation failed. Broken spells: French.
+French (frame Greeter):
+  - Multiple visible spells share the lookup address frame='greeter', binding='greeter'. Use a distinct spellframe or binding_name so that each registration has a unique normalized address. [DUPLICATE_SPELL_NAME]
+    find_spell_index(Greeter, 'English', 'greeter') is the index: False
+
+[exit 0]
+
+===== probe_book_teardown_parked.py (-X gil=1)
+T1 control: English active alone
+    root conduit torn down
+    English (active) cleaned: True
+    English's index cleaned: True
+
+T2 English active, French parked on English's index
+    root conduit torn down
+    English (active) cleaned: True
+    French (parked) cleaned: True
+    the shared index cleaned: True
+    French.cleanup() returned; cleaned: True
+
+T3 French separated into the index remove_from_spell_index mints
+    French's index is a new one: True
+    root conduit torn down
+    French (parked) cleaned: True
+    the minted index cleaned: True
+    English's index cleaned: True
+
+T4 notch English ('greeter') -> Spanish ('spanish'), then teardown
+    before teardown, ('greeter') held by English: True
+    root conduit torn down
+    after teardown, ('greeter') held by English (its Book gone): True
+    another Book's bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+T5 a managed class with one version active and one parked, then teardown
+  CASE RAISED RuntimeError: Spell ID collision detected: this object is already registered as spell_id de9f98171d5707b339845fcc0df3076cb517f073305c07d6c0eb132c2f5e65ee. A spell_id is the SHA256 of the object's code (its methods, 
+constructor, class-level values and base classes, or an existing object's class and 
+data), and one object is one spell: registering it again - under another binding 
+name, existence or spellframe, or in another Spellbook where spell_ids are unique 
+(the process by default, the frame under per-frame spell ids) - is refused. Use the 
+spell already registered (another conduit shares it through a link or a contract), 
+or cleanup_spell it and bind it again to change how it is bound. A changed method, 
+constructor, class-level value or base class is a new spell_id: stage it with 
+bind_inactive and notch to it.
+
+[exit 0]
+
+===== probe_restore_staged_structure.py (-X gil=1)
+R1 English active and French staged under the same signature (Greeter, 'greeter')
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1, 'spell_staged': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    rebuilt Book: active=['English'] parked=['French']; frame claim ('greeter', 'greeter'): English
+
+R2 French staged under (Greeter, 'french'), then separated into its own index
+    recorded Book: active=['English'] parked=['French']
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 1, 'conduit': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    shortfall: {'kind': 'spell_crystal', 'key': '36a7f7be8288a021cd7bf2b4f8511357dfa7e22a041fd66d58e39522eae9c10f', 'reason': 'staged_member_anchor_index_not_rebuilt: 01M5R2VEYXDGXKCK2SQBBQKECQ'}
+    rebuilt Book: active=['English'] parked=[]
+
+R3 as R2, then French notched active inside its own index
+    recorded Book: active=['English', 'French'] parked=[]
+    restore status: complete; built: {'frame': 1, 'spellbook': 1, 'spell_active': 2, 'conduit': 1}
+    shortfall: {'kind': 'crystallizer', 'key': 'root', 'reason': 'crystallizer_policy_recorded_reload_is_boot_time_act'}
+    rebuilt Book: active=['English', 'French'] parked=[]
+
+[exit 0]
+
+===== probe_graft_parked_members.py (-X gil=1)
+G1 graft of English's index (English active, French parked)
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active', 'French': 'inactive'}
+    graft: status complete; bound 1; parked 1; shortfalls []
+    host Book: active=['English'] parked=['French']
+
+G2 graft of the index remove_from_spell_index minted (French alone, parked)
+    source Book: active=['English'] parked=['French']
+    live minted index selects: French
+    record: selected French; members {'French': 'inactive'}
+    graft: status complete; bound 1; parked 0; shortfalls []
+    host Book: active=['French'] parked=[]
+
+G3 control: graft of English's index after French was separated (English alone)
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active'}
+    graft: status complete; bound 1; parked 0; shortfalls []
+    host Book: active=['English'] parked=[]
+
+G4 graft of English's index with French staged under English's signature (Greeter, 'english')
+    source Book: active=['English'] parked=['French']
+    record: selected English; members {'English': 'active', 'French': 'inactive'}
+    graft: status complete; bound 1; parked 1; shortfalls []
+    host Book: active=['English'] parked=['French']
+    host frame claim ('greeter', 'english'): English
+
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H1 (-X gil=1)
+case H1
+  lender meld English -> 'hello'
+  borrower meld Speaker -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> 'hello'
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> 'hello'
+  borrower meld Speaker (third) -> 'hello'
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H2 (-X gil=1)
+case H2
+  lender meld English -> 'hello'
+  borrower meld Speaker -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  lender meld English (first) -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker -> 'hello'
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H3 (-X gil=1)
+case H3
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lender meld French -> 'bonjour!'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> raises SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. | Whole-graph errors: | - Spell 'English' depends on spells this Spellbook cannot see (spell id 6e9578a406c6). Bind them in this Spellbook, or give this conduit access to them. [visibility_gap_dependency_filtered]
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  borrower meld Speaker (third) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+[exit 0]
+
+===== probe_notch_back_lineage_dependencies.py H4 (-X gil=1)
+case H4
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  notch to French -> 'French'
+  lineage: deps ['Accent'], index topology ["accent->['Accent']"], validity valid
+  notch back to English -> 'English'
+  lineage after the notch back: deps ['Accent'], index topology [], validity gated
+  borrower meld Speaker (first) -> raises SpellbookValidationError: Spellbook validation failed. The dependency graph has errors. | Whole-graph errors: | - Spell 'English' depends on spells this Spellbook cannot see (spell id 6e9578a406c6). Bind them in this Spellbook, or give this conduit access to them. [visibility_gap_dependency_filtered]
+  lender meld English -> 'hello'
+  lineage: deps [], index topology [], validity valid
+  borrower meld Speaker (again) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+  borrower meld Speaker (third) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: Speaker. | Speaker: | - No validation error was recorded for this spell; its validity is invalid, gated or disabled.
+[exit 0]
