@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py",
- "source_sha256": "20c7eb9eefd956d03d8b41c96ffb3402e346e70f590fc9cf096719b872916b37",
+ "source_sha256": "4f2de640537616e76d3d5f2137f49dfb52684f07dcb62188fd94fe437a615c49",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.codegen.safe_profile": {
@@ -16,7 +16,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   },
   "melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy": {
    "id": "melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy",
@@ -35,18 +36,19 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "0330d18d7025d23373f2984dba0932b6d3237df9c7055e31c73a388e988c7bae",
+   "span_sha256": "67fedbf5d113495272faa1dce461a116402fa59cd40d1d68efba57f30573a48e",
    "include": true,
    "role": "Bottom rung of the codegen posture ladder: the reviewed restrictive default.",
    "responsibilities": [
     "build a FrameACLCodegenProfile limited to safe query/bind-existing operations",
     "deny link mutation, local creation, invocation, writes, and dangerous capability escalation",
-    "register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset"
+    "register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset",
+    "hold a closed file posture (0.2.8270): `open` denied by its SAFE_DENIED_BUILTIN_NAMES rule and imports off, so `io`, `os` and `pathlib` are refused too - policy checked in the room's process, not isolation"
    ],
    "phases": [
     "init"
    ],
-   "semantics_authored_against": "0330d18d7025d23373f2984dba0932b6d3237df9c7055e31c73a388e988c7bae"
+   "semantics_authored_against": "67fedbf5d113495272faa1dce461a116402fa59cd40d1d68efba57f30573a48e"
   }
  },
  "edges_out": [],
@@ -81,7 +83,7 @@
    "from": "melder.nexus.acl.configurations.profiles.codegen.safe_profile",
    "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
    "relation": "uses",
-   "why": "The safe codegen profile factory uses the shared stdlib import-root constants.",
+   "why": "The safe codegen profile factory uses the shared denied-builtin tuple, SAFE_DENIED_BUILTIN_NAMES.",
    "cardinality": "many_to_one",
    "phase": [
     "runtime"

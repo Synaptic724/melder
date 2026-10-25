@@ -156,6 +156,10 @@ class _FreshCreationsProbe:
         _ = disposal_methods
         self._disposable_creations.setdefault(spell_id, []).append(instance)
 
+    def register_slot(self, key: str, instance: Any) -> None:
+        """Stand-in for the slotted publish emitted plans call (STORY-2026-10-25-creations_store_slots_by_binding)."""
+        self._creations[key] = instance
+
 
 class _NullLock:
     """

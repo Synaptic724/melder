@@ -103,7 +103,8 @@ a probe here first; the probe's printed outcome then hardens the example.
   again under any binding_name, existence or spellframe is refused at bind
   ("Spell ID collision"), or at conjure when another Book holds it
   ("Conjure refused"). A changed class is a new spell_id: stage it with
-  bind_inactive and notch. Same-NAMED classes with different code coexist
+  bind_inactive, bound the way its index's first version was (next
+  bullet), and notch. Same-NAMED classes with different code coexist
   at different addresses (0.2.8206). Working patterns: subclass-per-role
   (24) and collection-as-spell registries (33).
   History: this bullet carried a DIVERGENCE FLAG - spell NAMES unique per
@@ -111,6 +112,18 @@ a probe here first; the probe's printed outcome then hardens the example.
   SHA, against the owner's stated intent of SHA256 content matching.
   0.2.8206 made Phase 4 check the full address and 0.2.8257 made the
   spell_id the code; the flag is closed.
+- ONE INDEX, ONE BINDING (2026-10-25): a SpellIndex keeps its first
+  version's binding for life - the spellframe's kind (none, a string
+  category or a Protocol) and the address that gives - and
+  bind_inactive and add_to_spell_index refuse a version bound any other
+  way before anything registers or moves ("keeps the binding its first
+  version was bound with"). Stage an edited class under the index's
+  spellframe and binding_name; a renamed class bound bare is another
+  address, so bind both versions under one category (17, 23, 26, 28 and
+  31). A notch never moves the address, and refuses one another spell
+  holds (RuntimeError naming the holder). Records written before
+  (record version below 5.0.0) are refused at the version gate: record
+  the world again.
 - One book conjures ONE conduit ever (RuntimeError on the second); scopes are
   lesser conduits, extra roots are extra books.
 - Unregistered meld raises one stable KeyError. Same-spell double-bind is

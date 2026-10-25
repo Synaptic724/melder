@@ -18,6 +18,10 @@ class HybridCodegenProfileStrategy:
         open `permissive` posture. It allows core query/link/invoke/read
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
+        Files: `open` is a denied builtin (the safe tuple), and `io`, `os`
+        and `pathlib` are not on the import allowlist - they are
+        permissive-only roots - so those routes are refused at validation.
+        These are policy checks in the room's own process, not isolation.
 
     Threading:
         Stateless preset construction; holds no state between builds.
@@ -69,7 +73,8 @@ class HybridCodegenProfileStrategy:
             - spell: allow resolve-existing/bind-existing/invoke-method/
               read-attribute; DENY local-create and write-attribute.
             - capability: enable imports for the hybrid module-root allowlist
-              (denying the hybrid denylist and dangerous builtins); DENY dynamic
+              (denying the hybrid denylist and dangerous builtins, `open` among
+              them); DENY dynamic
               access, mutation, contract override, unsafe reflection, dunder
               access, and recursive codegen.
             Mirrors `precision`'s allow/deny shape but with the hybrid import

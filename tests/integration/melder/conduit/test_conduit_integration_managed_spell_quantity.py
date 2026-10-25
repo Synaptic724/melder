@@ -206,21 +206,28 @@ def test_post_conjure_bind_in_a_dynamic_world_dispenses() -> None:
 
 
 def test_a_notch_dispenses_from_the_new_versions_pool() -> None:
-    """Versions coexist: after a notch melds lease from the active version's pool; the old pool keeps its objects."""
+    """
+    Versions coexist: after a notch melds lease from the active version's pool; the old pool keeps its objects.
+
+    Both versions are bound under the category "Session" - every version of an index is bound the way its first
+    version was (2026-10-25) - so a meld by the index's address, `meld(spell=Session)`, follows the notch.
+    """
     book = _dynamic_book()
     book.bind(spell=Anchor, existence=Existence.unique, permissions="create")
     root = book.conjure(dynamic=True, name="versions")
     try:
-        active_id = _bind_session(root, managed_spell_limit=16)
+        active_id = _bind_session(root, managed_spell_limit=16, spellframe="Session")
         parked_id = root.bind_inactive(
             spell=SessionNext, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
             existence=Existence.managed_spell_quantity, permissions="create", managed_spell_limit=8,
+            spellframe="Session",
         )
         old = root.meld(spell_id=active_id)
         ReleaseManagedSpell().release(old)
         parked = book._get_owned_spell(parked_id)
         root.notch_spell(spell_index=parked.spell_index, spell=parked)
-        new = root.meld(spell=SessionNext)
+        new = root.meld(spell=Session)
+        assert isinstance(new, SessionNext)
         assert new is not old
         assert (_pool(root, active_id).idle_count, _pool(root, parked_id).count) == (1, 1)
     finally:

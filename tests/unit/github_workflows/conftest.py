@@ -77,3 +77,9 @@ def runtime_matrix() -> ModuleType:
 def provenance() -> ModuleType:
     """Provide the candidate provenance check with its network, process and environment boundaries to mock."""
     return load_script("testpypi_provenance")
+
+
+@pytest.fixture
+def release_provenance() -> ModuleType:
+    """Provide the release provenance check with its network, process and environment boundaries to mock."""
+    return load_script("pypi_provenance")

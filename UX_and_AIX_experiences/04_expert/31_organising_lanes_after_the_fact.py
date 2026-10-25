@@ -37,11 +37,18 @@ GOAL: LANES ARE ORGANISED AFTER THE FACT, NOT PLANNED IN ADVANCE. Expert
       and `default_lane` resolves by well-known name - so a set that
       archived it could not serve its own default. The refusal is checked
       at the door rather than discovered later.
+
+      THE RECEIVER MOVES BY A NEW VERSION, BOUND THE WAY THE FIRST WAS.
+      Rule is bound under the string category 'Rule' - the address a
+      bare bind of Rule has - with binding name 'organise-rule', and
+      RuleV2 is staged the same way; bind_inactive refuses a version
+      bound any other way (2026-10-25).
 SURFACE EXERCISED: research_create_lane / research_attach /
                    research_detach / research_archive / research_join /
                    research_heads,
                    ResearchSet.lane_names, Conduit.bind_inactive
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import melder as md
 
@@ -81,8 +88,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=Rule, existence="unique", permissions="create",
-                   binding_name="organise-rule")
+    v1 = book.bind(spell=Rule, spellframe="Rule", existence="unique",
+                   permissions="create", binding_name="organise-rule")
     conduit = book.conjure(name="organise-root")
 
     nexus = md.Nexus()
@@ -137,10 +144,12 @@ def main() -> None:
     print("detach('forgetful') - the lane now remembers no origin")
 
     # Move the receiver so the contrast is honest, then show that a
-    # detached lane joins only as an explicit supersede.
+    # detached lane joins only as an explicit supersede. The new version
+    # is bound the way the index's first one was.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        spellframe="Rule", binding_name="organise-rule",
         existence="unique", permissions="create",
     )
     print("default moved on:", v2[:12], "...")

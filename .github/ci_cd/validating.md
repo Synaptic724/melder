@@ -47,13 +47,18 @@ Start with `CI / merge-ready`: its message lists every required job that did not
 | `RC / provenance`: "The pinned tool refused the recorded genuine attestation" | The verifier could not verify in that environment (most often Sigstore's trust root could not be fetched). **Re-run failed jobs**; if it persists, check the lock and the control ([extending.md](extending.md), "Change the provenance tool"). |
 | An RC job: "Artifact not found for name: candidate-dists-<run>-<n>" | A failed-jobs re-run of a run that started before the build reported its artifact (2026-10-06); use **Re-run all jobs**. |
 | `Publish to PyPI`: "Use Re-run all jobs: this attempt did not build the distributions" | A failed-jobs re-run of the upload; publication never reuses an earlier attempt's build. Use **Re-run all jobs**. |
+| `Publish to PyPI`: `invalid-publisher` | PyPI's Trusted Publisher and the job's OIDC claims disagree, and nothing was uploaded. Check the publisher's four values against BRANCH_WORKFLOW.md (owner `Synaptic724`, repository `melder`, workflow `python-publish.yml`, environment `pypi`), then **Re-run all jobs**. |
+| `Release / provenance`: "PyPI holds no provenance for <file>" | The files were uploaded but PyPI holds no accepted attestation for them. They are published and cannot be replaced: compare PyPI's Trusted Publisher with BRANCH_WORKFLOW.md and read the `Publish to PyPI` log before the release is announced; whether to yank it is the owner's call. |
+| `Release / provenance`: "... does not name the expected signer" or "is not the expected Trusted Publisher" | The message lists each claim with what was expected and what was found. `ReleaseProvenancePolicy` in `pypi_provenance.py` holds the expected identity; a changed workflow, environment, repository or event changes it. The files are published: find the cause before the release is announced. |
+| `Release / provenance`: a PyPI lookup, the tool's install or its trust root failed after the retries | **Re-run failed jobs**: the check runs alone again on the same build and still expects the attempt that uploaded. |
 | Prod pull request: "Candidate qualification has not passed" | The release-candidate run for that commit is pending or failed; finish or fix it, then rerun the check. |
 | The Codecov upload fails | Reporting only: it never blocks a merge. |
 
 Artifacts worth opening: `runtime-results-*` (JUnit) and `coverage-*` for each test cell,
 `runtime-python-matrix-*` (the releases a run tested), the speed tests' results folders (logs, `install.log`,
-`environment.json`), `source-qualification-*`, and the release candidate's `candidate-*` reports, among them
-`candidate-provenance-*`, which records each file's verified signer, run and trigger.
+`environment.json`), `source-qualification-*`, the release candidate's `candidate-*` reports, among them
+`candidate-provenance-*`, which records each file's verified signer, run and trigger, and a release's
+`release-provenance-*`, which records the same for every file published to PyPI.
 
 ## Environment notes for agents
 

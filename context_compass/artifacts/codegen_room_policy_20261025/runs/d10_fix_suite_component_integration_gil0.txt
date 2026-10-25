@@ -1,0 +1,24 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx tests/component tests/integration (cwd: /tmp/m0s2/d10_fix, a /tmp copy of the working tree with the D-10 fix; Python 3.14.7t)
+ran_at: 2026-10-25T02:20:24Z
+.................x...................................................... [ 22%]
+.........................sssssssssssssssssssssssssssssssssssssssssss.... [ 51%]
+...xxxx................................................................. [ 66%]
+.....................................................................X.. [ 73%]
+.....................................................................sss [ 76%]
+s....................................................................... [ 78%]
+............xxx......................................................... [ 80%]
+....x................................................................... [ 84%]
+.....................XX................................................. [ 93%]
+................................................................ss...... [ 96%]
+=========================== short test summary info ============================
+XFAIL tests/component/melder/aether/test_aether_component_process_wide_spell_id_regime.py::test_component_concurrent_conjures_across_frames_admit_at_most_one - OPEN: the conjure sweep is a PREFLIGHT, not a mutual exclusion. It reads the fra
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __import
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-socket] - OPEN: the import gate reads import statements only, and the compiler denies __import__ o
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[None-importlib] - OPEN: the import gate reads import statements only, and the compiler denies __import_
+XFAIL tests/integration/melder/aether/test_codegen_core_boundary_integration.py::test_hybrid_refuses_dynamic_imports_of_its_denied_roots[precision-subprocess] - OPEN: the import gate reads import statements only, and the compiler denies __i
+XFAIL tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_index_graft_round_trips_into_a_live_host_book - OPEN FEATURE CONFLICT - EPIC-2026-08-02-process-wide-spell-id-uniqueness. graft_runner._bind_selected
+XFAIL tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_multi_member_index_graft_parks_the_staged_members - OPEN FEATURE CONFLICT - EPIC-2026-08-02-process-wide-spell-id-uniqueness. graft_runner._bind_sele
+XFAIL tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_merge_graft_grows_an_existing_index_and_adopts_selection - OPEN FEATURE CONFLICT - EPIC-2026-08-02-process-wide-spell-id-uniqueness. graft_runner._bi
+XFAIL tests/integration/melder/live_sim/test_live_sim_automatic.py::test_live_sim_automatic_bootstrap_melds_application - This should fail as SpellContracts are not eligible in automatic.
+4708 passed, 49 skipped, 9 xfailed, 3 xpassed in 133.78s (0:02:13)
+exit: 0

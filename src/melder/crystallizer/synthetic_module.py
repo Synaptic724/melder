@@ -9,6 +9,9 @@ from importlib.machinery import ModuleSpec
 from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
+# Marks "nothing was displaced" for a publication or a parent attachment (D-20): None is a legal attribute value,
+# so a dedicated sentinel tells an absent slot from one that held None.
+_NOTHING_DISPLACED: Any = object()
 
 
 class _SyntheticModuleImportLoader(importlib.abc.Loader):
@@ -440,6 +443,10 @@ class SyntheticModule(ModuleType):
         self._physical_file_path: Optional[str] = physical_file_path
         self._materialized_directory_path: Optional[str] = materialized_directory_path
         self._published_in_sys_modules: bool = False
+        # D-20: what this module's publication and parent attachment displaced (a non-synthetic module or
+        # attribute), restored when this object gives the slot back.
+        self._displaced_module: Any = _NOTHING_DISPLACED
+        self._displaced_parent_attribute: Any = _NOTHING_DISPLACED
         self._parent_name: Optional[str] = (
             parent_name if parent_name is not None else module_name.rpartition(".")[0] or None
         )
@@ -496,9 +503,7 @@ class SyntheticModule(ModuleType):
             self._cleaned = True
             self.unregister_from_import_registry()
             self._detach_from_parent_package()
-            published_module = sys.modules.get(self.__name__)
-            if published_module is self:
-                del sys.modules[self.__name__]
+            self._release_sys_modules_slot()
             # R12 (M1): hard teardown clears the cached source lines too.
             linecache.cache.pop(self.__file__, None)
 
@@ -525,6 +530,8 @@ class SyntheticModule(ModuleType):
             del self._physical_file_path
             del self._materialized_directory_path
             del self._parent_name
+            del self._displaced_module
+            del self._displaced_parent_attribute
             del self.__loader__
             del self.__spec__
             del self._lock
@@ -872,7 +879,16 @@ class SyntheticModule(ModuleType):
         parent_module = sys.modules.get(self._parent_name)
         if parent_module is None:
             return
-        setattr(parent_module, self.__name__.rsplit(".", 1)[-1], self)
+        child_name = self.__name__.rsplit(".", 1)[-1]
+        current = getattr(parent_module, child_name, _NOTHING_DISPLACED)
+        if current is not self:
+            # D-20: remember a displaced non-synthetic attribute so detach can put it back.
+            self._displaced_parent_attribute = (
+                current
+                if current is not _NOTHING_DISPLACED and not isinstance(current, SyntheticModule)
+                else _NOTHING_DISPLACED
+            )
+        setattr(parent_module, child_name, self)
 
     def _detach_from_parent_package(self) -> None:
         """
@@ -894,9 +910,15 @@ class SyntheticModule(ModuleType):
         if hasattr(parent_module, child_name):
             try:
                 if getattr(parent_module, child_name) is self:
-                    delattr(parent_module, child_name)
+                    displaced = self._displaced_parent_attribute
+                    if displaced is _NOTHING_DISPLACED:
+                        delattr(parent_module, child_name)
+                    else:
+                        # D-20: give the parent back the attribute this attachment displaced.
+                        setattr(parent_module, child_name, displaced)
             except AttributeError:
                 pass
+        self._displaced_parent_attribute = _NOTHING_DISPLACED
 
     def execute_source(self) -> None:
         """
@@ -944,9 +966,37 @@ class SyntheticModule(ModuleType):
         """
         self.check_cleaned()
         with self._lock:
+            current = sys.modules.get(self.__name__)
+            if current is not self:
+                # D-20: remember a displaced non-synthetic module so giving the slot back restores it. A displaced
+                # SyntheticModule is crystallizer world state (it may be cleaned) and is not restored.
+                self._displaced_module = (
+                    current
+                    if current is not None and not isinstance(current, SyntheticModule)
+                    else _NOTHING_DISPLACED
+                )
             sys.modules[self.__name__] = self
             self._published_in_sys_modules = True
             self._attach_to_parent_package()
+
+    def _release_sys_modules_slot(self) -> None:
+        """
+        Give this module's `sys.modules` slot back (D-20).
+
+        Contract:
+            - Only when this exact object holds the slot: restore the non-synthetic module its publication
+              displaced, or remove the entry when it displaced nothing. The record is cleared either way.
+
+        Returns:
+            None.
+        """
+        if sys.modules.get(self.__name__) is self:
+            displaced = self._displaced_module
+            if displaced is _NOTHING_DISPLACED:
+                del sys.modules[self.__name__]
+            else:
+                sys.modules[self.__name__] = displaced
+        self._displaced_module = _NOTHING_DISPLACED
 
     def unpublish_from_sys_modules(self) -> None:
         """
@@ -965,9 +1015,7 @@ class SyntheticModule(ModuleType):
         """
         self.check_cleaned()
         with self._lock:
-            published_module = sys.modules.get(self.__name__)
-            if published_module is self:
-                del sys.modules[self.__name__]
+            self._release_sys_modules_slot()
             self._detach_from_parent_package()
             self._published_in_sys_modules = False
             # R12 (M1): an unpublished module must stop serving cached source

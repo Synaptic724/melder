@@ -1,0 +1,17 @@
+[safe] melder.aether.spellbook.bind.bind: materialized=False | unchanged=True | refusal=Module name 'melder.aether.spellbook.bind.bind' is already loaded; materialize_codegen does not replace a live module.
+[safe] melder.injected_probe: materialized=False | unchanged=True | refusal=Module name 'melder.injected_probe' is under the protected core root 'melder'.
+[safe] csv: materialized=False | unchanged=True | refusal=Module name 'csv' is already loaded; materialize_codegen does not replace a live module.
+[safe] json: materialized=False | unchanged=True | refusal=Module name 'json' is already loaded; materialize_codegen does not replace a live module.
+[safe] pytest: materialized=False | unchanged=True | refusal=Module name 'pytest' is already loaded; materialize_codegen does not replace a live module.
+[hybrid] melder.aether.spellbook.bind.bind: materialized=False | unchanged=True | refusal=Module name 'melder.aether.spellbook.bind.bind' is already loaded; materialize_codegen does not replace a live module.
+[hybrid] melder.injected_probe: materialized=False | unchanged=True | refusal=Module name 'melder.injected_probe' is under the protected core root 'melder'.
+[hybrid] csv: materialized=False | unchanged=True | refusal=Module name 'csv' is already loaded; materialize_codegen does not replace a live module.
+[hybrid] json: materialized=False | unchanged=True | refusal=Module name 'json' is already loaded; materialize_codegen does not replace a live module.
+[hybrid] pytest: materialized=False | unchanged=True | refusal=Module name 'pytest' is already loaded; materialize_codegen does not replace a live module.
+[full_access] melder.aether.spellbook.bind.bind: materialized=False | unchanged=True | refusal=Module name 'melder.aether.spellbook.bind.bind' is already loaded; materialize_codegen does not replace a live module.
+[full_access] melder.injected_probe: materialized=False | unchanged=True | refusal=Module name 'melder.injected_probe' is under the protected core root 'melder'.
+[full_access] csv: materialized=False | unchanged=True | refusal=Module name 'csv' is already loaded; materialize_codegen does not replace a live module.
+[full_access] json: materialized=False | unchanged=True | refusal=Module name 'json' is already loaded; materialize_codegen does not replace a live module.
+[full_access] pytest: materialized=False | unchanged=True | refusal=Module name 'pytest' is already loaded; materialize_codegen does not replace a live module.
+[hybrid] failed materialize raised: probe
+residue after the failed materialize: []

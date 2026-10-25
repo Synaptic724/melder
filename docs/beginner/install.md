@@ -31,8 +31,31 @@ python -m pip install melder
 py -3.14t -m pip install melder
 ```
 
-Melder has no runtime package dependencies. Application code imports the public
-namespace as `import melder as md`.
+Melder declares one runtime dependency, pip, which the install brings with it at
+the version Melder pins. Application code imports the public namespace as
+`import melder as md`.
+
+## Check a downloaded file
+
+Melder's releases are published to PyPI from this repository's release workflow,
+which signs every file it uploads: a PEP 740 attestation, recorded in Sigstore's
+public transparency log, names the repository, the workflow and the commit that
+published the file. `pypi-attestations`, a tool from PyPI's maintainers, checks a
+file against that record:
+
+```bash
+python -m pip install pypi-attestations
+pypi-attestations verify pypi --repository https://github.com/Synaptic724/melder \
+    pypi:melder-<version>-py3-none-any.whl
+```
+
+`pypi:<file name>` downloads that file from PyPI and checks it. Give a path instead
+to check a file you already have, such as one saved by
+`python -m pip download melder==<version> --no-deps`. The command prints
+`OK: <file name>` when the attestation verifies and the reason when it does not.
+Releases published before Melder moved to Trusted Publishing carry no
+attestation, and the command reports that it found none. pip does not check
+attestations when it installs a package.
 
 ## Get the runnable examples
 

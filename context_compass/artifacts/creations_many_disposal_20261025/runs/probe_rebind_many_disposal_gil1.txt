@@ -1,0 +1,25 @@
+/sessions/rcw-01lthtdmhut2saupx6mtrh56/mnt/melder_private/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.8 free-threaded=1 gil=True
+R1: first=['close'] second=['shutdown'] via_lesser=False
+   same spell_id: True; the second Spell's own list: ['shutdown']
+   record after first meld: ['close']; after second meld: ['close']; bucket: ['first', 'second']
+   disposal events when the store ended: [('second', 'close'), ('first', 'close')]
+R2: first=['close'] second=['close'] via_lesser=False
+   same spell_id: True; the second Spell's own list: ['close']
+   record after first meld: ['close']; after second meld: ['close']; bucket: ['first', 'second']
+   disposal events when the store ended: [('second', 'close'), ('first', 'close')]
+R3: first=['close'] second=['shutdown'] via_lesser=True
+   same spell_id: True; the second Spell's own list: ['shutdown']
+   record after first meld: ['close']; after second meld: ['close']; bucket: ['first', 'second']
+   disposal events when the store ended: [('second', 'close'), ('first', 'close')]
+R4: first=None second=['shutdown'] via_lesser=False
+   same spell_id: True; the second Spell's own list: ['shutdown']
+   record after first meld: None; after second meld: ['shutdown']; bucket: ['second']
+   disposal events when the store ended: [('second', 'shutdown')]
+R5: first=['close'] second=None via_lesser=False
+   same spell_id: True; the second Spell's own list: []
+   record after first meld: ['close']; after second meld: ['close']; bucket: ['first']
+   disposal events when the store ended: [('first', 'close')]

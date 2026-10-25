@@ -1,6 +1,8 @@
 import hashlib
+import importlib.metadata
+import sys
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -768,8 +770,16 @@ class CodegenCommandSystem(CommandSystem):
               `spell_crystal_id="unbound_codegen"` and
               `binding_signature="codegen_materialized"` until a bind mints
               real custody (rebuild-lane sentinel precedent).
-            - R8 no-half-published law: if module exec raises, the module is
-              torn down (cleanup) before the error propagates.
+            - Name gate (D-20): after acceptance and before anything is
+              registered, a name already in `sys.modules`, under `melder`, a
+              standard-library or installed import name, or outside the frame's
+              `materialize_modules` generation namespace is refused with a
+              `refusal` reason and `materialized: False`.
+            - Materialized source runs with the room's filtered builtins, the
+              mapping `execute_codegen` gives room code (D-20).
+            - R8 no-half-published law: if module exec raises, the module and
+              every parent shell this call created are torn down (cleanup)
+              before the error propagates, so `sys.modules` is as found.
             - Emits one full-source codegen memory record for the completed
               top-level action when room memory is enabled.
 
@@ -785,7 +795,9 @@ class CodegenCommandSystem(CommandSystem):
         Returns:
             Dict[str, object]: `materialized` flag, module identity
             (`module_name`, `source_sha256`, `module_file`), public export
-            names, and the validation payload.
+            names, and the validation payload; on a name refusal,
+            `materialized` False, `module_name`, the validation payload and
+            `refusal`.
 
         Raises:
             ValueError: If `code`, `module_name`, or `frame_name` is empty,
@@ -836,6 +848,25 @@ class CodegenCommandSystem(CommandSystem):
                             "module_name": module_name,
                             "validation": validation_payload,
                         }
+                    # D-20 name gate: refuse live, core, stdlib, installed and
+                    # out-of-namespace names before anything is registered or
+                    # published.
+                    refusal = self._refuse_materialize_name(
+                        module_name,
+                        transaction_context,
+                    )
+                    if refusal is not None:
+                        return {
+                            "materialized": False,
+                            "module_name": module_name,
+                            "validation": validation_payload,
+                            "refusal": refusal,
+                        }
+                    # D-20: materialized code runs with the room's filtered
+                    # builtins, the mapping execute_codegen gives room code.
+                    room_builtins = codegen_system.build_materialize_builtins(
+                        transaction_context,
+                    )
                     source_sha256 = hashlib.sha256(
                         code.encode("utf-8"),
                     ).hexdigest()
@@ -852,14 +883,30 @@ class CodegenCommandSystem(CommandSystem):
                         ),
                         is_package=False,
                     )
+                    module.merge_namespace({"__builtins__": room_builtins})
+                    created_parent_names = self._absent_parent_module_names(
+                        module_name,
+                        SyntheticModule,
+                    )
                     try:
                         module.materialize(install_import_hook=True)
                     except BaseException:
-                        # R8: never leave a half-published module behind.
+                        # R8 + D-20 (R6): never leave a half-published module
+                        # or a parent shell this call created behind.
                         try:
                             module.cleanup()
                         except Exception:
                             pass
+                        for parent_name in created_parent_names:
+                            with SyntheticModule._registry_lock:
+                                shell = SyntheticModule._registered_modules_by_name.get(
+                                    parent_name,
+                                )
+                            if shell is not None and not shell.cleaned:
+                                try:
+                                    shell.cleanup()
+                                except Exception:
+                                    pass
                         raise
                     export_names = sorted(
                         name
@@ -890,6 +937,134 @@ class CodegenCommandSystem(CommandSystem):
     # ------------------------------------------------------------------
     # Research surface (MutationResearch) - full: reads + organization
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _module_name_is_under(module_name: str, module_root: str) -> bool:
+        """
+        Return whether `module_name` equals `module_root` or sits under it.
+
+        Args:
+            module_name:
+                Dotted module name.
+            module_root:
+                Dotted module root.
+
+        Returns:
+            bool: True for the root itself or any `root.` descendant.
+        """
+        return module_name == module_root or module_name.startswith(module_root + ".")
+
+    @staticmethod
+    def _absent_parent_module_names(
+            module_name: str,
+            synthetic_module_type: type,
+    ) -> List[str]:
+        """
+        List the parent package names a materialize would create, deepest first (D-20).
+
+        Contract:
+            - A parent counts when it is neither in `sys.modules` nor registered as a SyntheticModule, so the
+              failure path removes exactly the shells this call created.
+
+        Args:
+            module_name:
+                Dotted module name to materialize.
+            synthetic_module_type:
+                The SyntheticModule class (passed in to keep the crystallizer import method-local).
+
+        Returns:
+            List[str]: Parent names, deepest first.
+        """
+        parts = module_name.split(".")
+        parent_names = [".".join(parts[:index]) for index in range(1, len(parts))]
+        with synthetic_module_type._registry_lock:
+            registered = set(synthetic_module_type._registered_modules_by_name)
+        return [
+            parent_name
+            for parent_name in reversed(parent_names)
+            if parent_name not in sys.modules and parent_name not in registered
+        ]
+
+    def _refuse_materialize_name(
+            self,
+            module_name: str,
+            transaction_context: Optional[CodegenTransactionContext],
+    ) -> Optional[str]:
+        """
+        Return why `materialize_codegen` refuses `module_name`, or None (D-20).
+
+        Contract:
+            - Hard refusals, under every posture: a name already in `sys.modules`; a name under the protected core
+              root; a standard-library root; an installed top-level import name.
+            - Frame refusals, from the compiled surface: a name under a denied generation root; a name under none
+              of the allowed generation roots when the frame declares any. A frame that declares none (and the
+              no-projection default) admits any new name that passes the hard refusals (the owner, 2026-10-25).
+            - Policy in the room's own process - defence in depth, not isolation.
+
+        Args:
+            module_name:
+                Dotted-identifier-legal module name.
+            transaction_context:
+                The accepted request's context; its projection carries the compiled surface.
+
+        Returns:
+            Optional[str]: The refusal reason naming the module name, or None.
+        """
+        from melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+            PROTECTED_GENERATION_MODULE_ROOTS,
+        )
+        if module_name in sys.modules:
+            return (
+                "Module name '{0}' is already loaded; materialize_codegen does not replace a "
+                "live module.".format(module_name)
+            )
+        top_root = module_name.split(".", 1)[0]
+        if top_root in PROTECTED_GENERATION_MODULE_ROOTS:
+            return "Module name '{0}' is under the protected core root '{1}'.".format(
+                module_name,
+                top_root,
+            )
+        if top_root in sys.stdlib_module_names:
+            return "Module name '{0}' is a standard-library name ('{1}').".format(
+                module_name,
+                top_root,
+            )
+        if top_root in importlib.metadata.packages_distributions():
+            return "Module name '{0}' is an installed import name ('{1}').".format(
+                module_name,
+                top_root,
+            )
+        projection = (
+            transaction_context.projection
+            if transaction_context is not None
+            else None
+        )
+        surface = (
+            getattr(projection, "compiled_access_surface", None)
+            if projection is not None
+            else None
+        )
+        if surface is None:
+            return None
+        for denied_root in getattr(surface, "denied_generation_module_roots", tuple()):
+            if self._module_name_is_under(module_name, denied_root):
+                return "Module name '{0}' is under the denied generation root '{1}'.".format(
+                    module_name,
+                    denied_root,
+                )
+        allowed_roots = getattr(surface, "generation_module_roots", None)
+        if allowed_roots is not None and not any(
+                self._module_name_is_under(module_name, allowed_root)
+                for allowed_root in allowed_roots
+        ):
+            return (
+                "Module name '{0}' is outside this frame's generation namespace "
+                "({1}).".format(
+                    module_name,
+                    ", ".join(allowed_roots) if allowed_roots else "no roots",
+                )
+            )
+        return None
 
     def _require_live_mutation_research(self) -> object:
         """

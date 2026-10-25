@@ -178,6 +178,8 @@ class _SpellStub:
         Initialize one spell stub for direct subclass contract checks.
         """
         self.spell_id = spell_id
+        # A store key without ':' is its own shelf (STORY-2026-10-25-creations_store_slots_by_binding).
+        self.store_key = spell_id
         self._resolvable = True
         self.spell_name = spell_name
         self.spellframe = "frame"

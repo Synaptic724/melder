@@ -51,6 +51,7 @@ def _make_spell(spell_id: str) -> SimpleNamespace:
     """
     return SimpleNamespace(
         spell_id=spell_id,
+        store_key=spell_id,  # its own shelf (STORY-2026-10-25-creations_store_slots_by_binding)
         spell_index=SimpleNamespace(selected_spell_id=spell_id),
         _spell_system_states=SimpleNamespace(get_local_topology=lambda spell_index: None),
         spell_name=spell_id,

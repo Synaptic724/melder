@@ -1,0 +1,15 @@
+# probe_mixed_record_under_option_a.py, the record case on 0.2.8273 (the device tree), the GIL off (melder_1, at the fix): a mixed index can no longer be built, so there is nothing to record; a 0.2.8267 record is refused by RecordVersion 5.0.0 (the owner's call 1)
+
+===== record on the 0.2.8273 tree (-X gil=0)
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG93CHZB0J18R2341AAVNF keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'english' - and 'French' (spell_id 36a7f7be8288a021cd7bf2b4f8511357dfa7e22a041fd66d58e39522eae9c10f) is bound with the Protocol spellframe Greeter and binding_name 'french'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.

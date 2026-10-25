@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/lookup_container.py",
- "source_sha256": "3400c96ff542e653380ba2d6fd21c31144dc376cbfd220092d8f1de922205232",
+ "source_sha256": "c43e572d4cd23b571b7a81b29047c982f6da78e916e49a5a87e61fbc107079a7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.lookup_container": {
@@ -31,21 +31,23 @@
     "get_sig_by_spell_id",
     "release",
     "release_by_spell_id",
+    "repoint",
     "update"
    ],
    "shape": {
-    "method_count": 9,
+    "method_count": 10,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "03a127540f0c6558765b74c406e164c4a0d7b3bb55c76d5dfbb36cc8a51bb86f",
+   "span_sha256": "78410cfac970002880e4cdebc3e361c02990b98f9050972f2a1366882f0a2f0d",
    "include": true,
    "role": "The frame-wide binding-signature uniqueness surface: one active spell per (frame_key, bind_key), replacing per-spellbook signature checks.",
    "responsibilities": [
     "hold ACTIVE signatures only, plus the inverse spell_id -> signature index so release is O(1) on notch or cleanup",
     "raise on a re-claim for a DIFFERENT spell_id and leave state unchanged",
     "serialize every read and write under one non-reentrant Lock, so the forward and reverse maps are never observed mid-update",
-    "clear both maps and drop the lock on cleanup; idempotent"
+    "clear both maps and drop the lock on cleanup; idempotent",
+    "moves a claim only from the spell it expects (repoint): claims a free signature, moves one the expected spell holds with its reverse entry, and returns the holder of one any other spell holds, changing nothing - the compare-and-set a notch moves its index's address with (2026-10-25)"
    ],
    "owns_state": [
     "_lookup",
@@ -57,7 +59,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "ba357498c03a3111318c75067dba0db5029a519417e69fdd9038be109ee3637d"
+   "semantics_authored_against": "78410cfac970002880e4cdebc3e361c02990b98f9050972f2a1366882f0a2f0d"
   }
  },
  "edges_out": [],

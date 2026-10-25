@@ -38,11 +38,11 @@ class _HeadA:
 
 
 class _MemberB:
-    """Second member of the owner's linked index."""
+    """Second member of the owner's linked index, staged under the head's binding ('linked', 'a')."""
 
 
 class _MemberC:
-    """Member staged onto the linked index while a borrower inspects its contracts."""
+    """Member staged onto the linked index, under the head's binding, while a borrower inspects its contracts."""
 
 
 @pytest.fixture(autouse=True)
@@ -197,14 +197,18 @@ def test_notch_emission_holds_off_a_concurrent_link_and_every_borrower_follows_t
     ended: the link waits for the emission, notch_spell returns normally, and both borrowers hold the new head.
     """
     owner_book = _make_book()
-    id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
+    # Every version of an index is bound the way its first version was (2026-10-25): head and member share
+    # ('linked', 'a').
+    id_a = owner_book.bind(
+        spell=_HeadA, existence=Existence.unique, permissions="create", spellframe="linked", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     b1, b2, newcomer = _conduit("b1"), _conduit("b2"), _conduit("newcomer")
     owner.link(b1)
     owner.link(b2)
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
-                               permissions="create", binding_name="b")
+                               permissions="create", spellframe="linked", binding_name="a")
     spell_b = owner_book._get_owned_spell(id_b)
     _link_index(b1, owner, index)
     _link_index(b2, owner, index)
@@ -239,13 +243,17 @@ def test_contract_inspection_holds_off_a_concurrent_member_stage(monkeypatch: py
     borrower.
     """
     owner_book = _make_book()
-    id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
+    # Every version of an index is bound the way its first version was (2026-10-25): head and members share
+    # ('linked', 'a').
+    id_a = owner_book.bind(
+        spell=_HeadA, existence=Existence.unique, permissions="create", spellframe="linked", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = _conduit("borrower")
     owner.link(borrower)
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
-                        permissions="create", binding_name="b")
+                        permissions="create", spellframe="linked", binding_name="a")
     _link_index(borrower, owner, index)
     staged: Dict[str, str] = {}
     real_has_spell = Detail.has_spell
@@ -260,7 +268,7 @@ def test_contract_inspection_holds_off_a_concurrent_member_stage(monkeypatch: py
 
     def stage() -> None:
         staged["id"] = owner.bind_inactive(spell=_MemberC, spell_index=index, existence=Existence.unique,
-                                           permissions="create", binding_name="c")
+                                           permissions="create", spellframe="linked", binding_name="a")
 
     outcome, stage_finished_mid_walk = _run_with_other_side_mid_walk(
         park_here,

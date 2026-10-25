@@ -67,8 +67,9 @@ Use these terms to choose the right boundary before choosing an API.
       The root of the mediated Rift/room access surface.
 
    Notch
-      Promote a member of a SpellIndex into its selected position. Staging a candidate
-      is a separate act; the public example documents the object-handle boundary.
+      Promote a member of a SpellIndex, named by its spell_id, into its selected
+      position. Staging a candidate is a separate act. Every member is bound the way the
+      index's first version was, so a notch moves the selection, never the address.
 
    Override
       A mapping of constructor inputs or graph socket targets supplied to meld. The
@@ -103,7 +104,9 @@ Use these terms to choose the right boundary before choosing an API.
       The category half of a spell's address inside a world. It is not an aetheric frame.
 
    SpellIndex
-      A stable index containing spell members and one current selection.
+      A stable index containing spell members and one current selection. It keeps its
+      first version's binding - the kind of spellframe and the address - and admits
+      only versions bound the same way.
 
    SpellMap
       An explicit dependency target, commonly supplied as a constructor parameter default.

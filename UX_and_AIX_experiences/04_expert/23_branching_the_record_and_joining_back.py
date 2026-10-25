@@ -50,13 +50,19 @@ GOAL: BRANCHING, AND WHY A JOIN CAN REFUSE. Research lanes are melder's
                                   readable in the joined source lane
       Residence transfers with whatever moves, and the source is marked
       joined - it accepts no further work afterwards.
+      A NEW VERSION IS BOUND THE WAY THE FIRST ONE WAS. The receiver is
+      moved by staging RuleV2 on RuleV1's index, so both are bound
+      under one string category and binding name, ('rule', 'branch'):
+      an index keeps its first version's binding, and bind_inactive
+      refuses a version bound any other way (2026-10-25).
 SURFACE EXERCISED: research_create_lane (anchored, half-anchored and
                    refused), research_heads, research_join with and
                    without force, Conduit.bind_inactive to move the
                    receiver, and the lane payload create_lane returns
                    (a lane describe() snapshot: lane_type, anchor, nodes)
-VERIFY: rides the owner's 3.14t harness; asserts are the contract. The
-        SURFACE line was corrected 2026-08-05; executable code unchanged.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract. The SURFACE line was corrected 2026-08-05, and both
+        versions moved under one binding 2026-10-25.
 """
 import melder as md
 
@@ -107,8 +113,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=RuleV1, existence="unique", permissions="create",
-                   binding_name="branch-v1")
+    v1 = book.bind(spell=RuleV1, spellframe="rule", existence="unique",
+                   permissions="create", binding_name="branch")
     conduit = book.conjure(name="branch-root")
     print("v1 recorded on the default lane:", v1[:12], "...")
 
@@ -171,10 +177,13 @@ def main() -> None:
     print("  the anchor: the only arrangement that is not a supersede")
 
     # NOW MOVE THE RECEIVER. A new version lands on the default lane, so
-    # 'stale-branch' is anchored at a point the receiver has left.
+    # 'stale-branch' is anchored at a point the receiver has left. It is
+    # bound the way v1's index was - ('rule', 'branch') - or it is refused.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        spellframe="rule",
+        binding_name="branch",
         existence="unique",
         permissions="create",
     )

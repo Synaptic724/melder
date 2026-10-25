@@ -5,7 +5,8 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       builds one, stages a second version onto it, shows that staging
       changes nothing about what resolves - which is why the swap is a
       two-step act - then takes the swap by the new version's spell_id,
-      melds it, and notches back. Everything runs on public calls.
+      melds it at the index's address, and notches back. Everything
+      runs on public calls.
 
       THE THREE VERBS
 
@@ -14,6 +15,19 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
                                       returns v2's spell_id
         conduit.notch_spell(          v2 becomes the active member
             spell_index=index, spell_id=v2_id)
+
+      EVERY VERSION IS BOUND THE WAY THE FIRST ONE WAS. An index keeps
+      its first version's binding for life: the kind of spellframe
+      (none, a string category or a Protocol) and the address that
+      gives - the spellframe's name, or a bare class's own name, and
+      the binding name. `bind_inactive` refuses a version bound any
+      other way before anything is registered, so a retry with the
+      right arguments is admitted. That is why a notch never moves the
+      address, and whoever melds by the address follows the notch. Two
+      classes cannot share a bare address, so v1 and v2 are both bound
+      under one string category, "pricing" (2026-10-25; until then a
+      version could be staged at any address and a notch moved the
+      address with it).
 
       NAME THE VERSION BY ITS SPELL_ID. A spell_id names one version,
       and the public spell_id->object lookups (`get_spell_by_spell_id`,
@@ -39,12 +53,15 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
         0. Checks the version: it must belong to the conduit's
            Spellbook and to the index you passed, or the call raises
            ValueError before anything moves.
-        1. Parks the outgoing active spell off the four active owned
+        1. Moves the address's frame claim from the outgoing version to
+           the incoming one in one compare-and-set. When another spell
+           holds the address it raises RuntimeError naming the holder,
+           and nothing moves.
+        2. Parks the outgoing active spell off the four active owned
            maps, then TEARS DOWN ITS CREATION CONTEXT so the door epoch
            bumps and the warm fast-door cannot serve the stale spell.
-        2. Promotes the parked candidate into the active maps.
-        3. Repoints the index pointer and the framewide binding
-           signature, old spell_id -> new spell_id.
+        3. Promotes the parked candidate into the active maps and
+           repoints the index pointer, old spell_id -> new spell_id.
         4. Re-registers the index gated + dirty, so revalidation
            recompiles LAZILY on the next resolve rather than inside the
            window.
@@ -54,9 +71,9 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       does, the same way `link` does in expert 16.
 
       THE OUTGOING VERSION IS NOT DESTROYED. It stays a member of the
-      lineage, parked, which is why a rollback is structurally the same
-      act as the swap - a notch back by its spell_id - rather than a
-      restore.
+      lineage, parked, with the object it built, which is why a
+      rollback is structurally the same act as the swap - a notch back
+      by its spell_id - rather than a restore.
 
       MIND THE LAYER WHEN YOU READ THE SOURCE. `_apply_notch` says
       contracted borrowers are "NOT yet fanned out HERE (owner-side
@@ -64,9 +81,10 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       and `Conduit.notch_spell` one layer up does walk the links. A
       statement read out of its scope becomes a false one.
 SURFACE EXERCISED: Conduit.bind_inactive, Conduit.notch_spell(spell_id=...),
-                   Conduit.meld, SpellIndex.selected_spell_id /
-                   spells_in_index, Conduit.get_spell_by_spell_id
-VERIFY: RUN GREEN 2026-10-17 on 3.14t, GIL off and on.
+                   Conduit.meld(spellframe=...),
+                   SpellIndex.selected_spell_id / spells_in_index,
+                   Conduit.get_spell_by_spell_id
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on.
 """
 import melder as md
 
@@ -84,10 +102,11 @@ class HotSwapPricingV2:
 def main() -> None:
     book = md.Spellbook(aetheric_frame="hotswap-world")
     v1_id = book.bind(
-        spell=HotSwapPricingV1, existence="unique", permissions="create",
+        spell=HotSwapPricingV1, spellframe="pricing",
+        existence="unique", permissions="create",
     )
     conduit = book.conjure(dynamic=True, name="hotswap-root")
-    print("v1 bound and active")
+    print("v1 bound and active under the category 'pricing'")
 
     # THE INDEX IS PUBLICLY REACHABLE from the active spell, and it is a
     # LINEAGE: a set of member ids plus exactly one selection.
@@ -98,16 +117,38 @@ def main() -> None:
     assert index.spells_in_index() == {v1_id}
     print("index: 1 member, selected =", v1_id[:12], "...")
 
-    # v1 RESOLVES. This is the world as it stands.
-    before = conduit.meld("HotSwapPricingV1")
+    # v1 RESOLVES at the index's address. This is the world as it stands.
+    before = conduit.meld(spellframe="pricing")
     assert before.rate == 100
-    print("meld -> rate", before.rate)
+    print("meld(spellframe='pricing') -> rate", before.rate)
 
-    # STAGE A CANDIDATE. It is bound, owned, and a real member of the
-    # lineage - and it changes nothing about what resolves.
+    # A VERSION BOUND ANOTHER WAY IS REFUSED. Bound bare, v2 would be
+    # addressed by its own name - another address than the index's - so
+    # bind_inactive refuses it before anything is registered.
+    try:
+        conduit.bind_inactive(
+            spell=HotSwapPricingV2,
+            spell_index=index,
+            existence="unique",
+            permissions="create",
+        )
+    except ValueError as refusal:
+        assert "keeps the binding its first version" in str(refusal)
+    else:
+        raise AssertionError("a version bound another way must be refused")
+    assert index.spells_in_index() == {v1_id}
+    print()
+    print("bind_inactive bare -> ValueError: the index keeps its first")
+    print("  version's binding, and nothing was registered")
+
+    # STAGE A CANDIDATE bound the way the index's first version was. It is
+    # bound, owned, and a real member of the lineage - and it changes
+    # nothing about what resolves. The refused try left nothing behind, so
+    # this is not a spell_id collision.
     v2_id = conduit.bind_inactive(
         spell=HotSwapPricingV2,
         spell_index=index,
+        spellframe="pricing",
         existence="unique",
         permissions="create",
     )
@@ -116,13 +157,12 @@ def main() -> None:
         "staging must NOT move the selection - preparing a swap and "
         "taking it are two different acts"
     )
-    print()
-    print("v2 staged: 2 members, selection UNCHANGED")
+    print("v2 staged under 'pricing': 2 members, selection UNCHANGED")
 
     # AND THE PARKED CANDIDATE IS INERT. The expensive half of the swap
     # has already happened - v2 is compiled, registered and owned - while
     # the old version is still the one serving traffic.
-    still = conduit.meld("HotSwapPricingV1")
+    still = conduit.meld(spellframe="pricing")
     assert still.rate == 100
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
@@ -139,29 +179,35 @@ def main() -> None:
 
     # TAKE THE SWAP. The spell_id bind_inactive returned names the version;
     # the notch resolves it inside the call and checks that it belongs to
-    # this index before anything moves.
+    # this index before anything moves. The address does not move: it now
+    # serves v2.
     promoted = conduit.notch_spell(spell_index=index, spell_id=v2_id)
     assert promoted.spell_id == v2_id
     assert index.selected_spell_id == v2_id
     assert index.spells_in_index() == {v1_id, v2_id}, (
         "a notch moves the selection; it removes no member"
     )
-    after = conduit.meld(spell_id=v2_id)
+    after = conduit.meld(spellframe="pricing")
     assert after.rate == 250
+    assert conduit.meld(spell_id=v2_id) is after
     print()
-    print("notch by spell_id: v2 selected, meld -> rate", after.rate)
+    print("notch by spell_id: v2 selected, and the address follows -")
+    print("  meld(spellframe='pricing') -> rate", after.rate)
 
     # ROLL BACK: the same verb pointed the other way, because v1 was
-    # parked, not destroyed.
+    # parked, not destroyed - and its object with it.
     conduit.notch_spell(spell_index=index, spell_id=v1_id)
     assert index.selected_spell_id == v1_id
-    back = conduit.meld(spell_id=v1_id)
+    back = conduit.meld(spellframe="pricing")
     assert back.rate == 100
-    print("notch back by spell_id: v1 selected, meld -> rate", back.rate)
+    assert back is before
+    print("notch back by spell_id: v1 selected, meld -> rate", back.rate,
+          "(v1's own object)")
 
     print()
-    print("an index is a lineage with one selection")
-    print("staging adds a member; only a notch moves the selection")
+    print("an index is a lineage with one selection and one binding")
+    print("staging adds a member bound the same way; only a notch moves")
+    print("the selection, and the address follows it")
     print("nothing is destroyed by a notch, which is why rolling back")
     print("is the same act and not a restore")
 

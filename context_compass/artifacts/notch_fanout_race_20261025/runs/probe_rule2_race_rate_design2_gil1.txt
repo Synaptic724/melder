@@ -1,0 +1,24 @@
+tree=/tmp/m0race runs=20 gil_enabled=True
+run  1: {'A': 15795} unexpected=0 final=A 0.26s
+run  2: {'A': 9443} unexpected=0 final=A 0.16s
+run  3: {'A': 15932} unexpected=0 final=A 0.19s
+run  4: {'A': 13218} unexpected=0 final=A 0.17s
+run  5: {'A': 15058} unexpected=0 final=A 0.18s
+run  6: {'A': 15343} unexpected=0 final=A 0.19s
+run  7: {'A': 16017} unexpected=0 final=A 0.19s
+run  8: {'A': 16839} unexpected=0 final=A 0.19s
+run  9: {'A': 11404} unexpected=0 final=A 0.17s
+run 10: {'A': 25370} unexpected=0 final=A 0.23s
+run 11: {'A': 31940} unexpected=0 final=A 0.25s
+run 12: {'A': 13305} unexpected=0 final=A 0.08s
+run 13: {'A': 14254} unexpected=0 final=A 0.18s
+run 14: {'A': 13547} unexpected=0 final=A 0.18s
+run 15: {'A': 11736} unexpected=0 final=A 0.17s
+run 16: {'A': 14291} unexpected=0 final=A 0.18s
+run 17: {'A': 15824} unexpected=0 final=A 0.19s
+run 18: {'A': 7676} unexpected=0 final=A 0.16s
+run 19: {'A': 10338} unexpected=0 final=A 0.17s
+run 20: {'A': 9934} unexpected=0 final=A 0.17s
+runs with an unexpected exception: 0 of 20
+melds: {'A': 297264}
+first meld after the race: {'A': 20}

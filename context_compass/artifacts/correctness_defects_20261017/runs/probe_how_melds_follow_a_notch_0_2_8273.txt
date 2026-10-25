@@ -1,0 +1,102 @@
+# Which ways of reaching a spell follow a notch? Melder 0.2.8273 (the device tree), public calls only; probes/probe_how_melds_follow_a_notch.py
+# run at 2026-10-25T12:23:21Z by melder_1, STORY-2026-10-17-notch_moves_signature_by_incoming_key_only at the fix
+
+===== same (-X gil=0)
+case same: English at (Greeter, 'greeter') -> French at (Greeter, 'greeter')
+[before the notch]
+  lender meld(spell_id=<English>)                    -> English ('hello')
+  lender meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld at (Greeter, 'greeter')                -> English ('hello')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> English ('hello')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> English ('hello')
+  borrower meld at (Greeter, 'greeter')              -> English ('hello')
+  borrower consumer injected by Protocol annotation  -> English ('hello')
+  notch to French                                    -> French
+[after the notch]
+  lender meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<French>)                     -> French ('bonjour')
+  lender meld at (Greeter, 'greeter')                -> French ('bonjour')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> French ('bonjour')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> French ('bonjour')
+  borrower meld at (Greeter, 'greeter')              -> French ('bonjour')
+  borrower consumer injected by Protocol annotation  -> French ('bonjour')
+
+===== diff (-X gil=0)
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/probe_how_melds_follow_a_notch.py", line 78, in <module>
+    incoming_id = world.bind_inactive(spell=incoming_cls, spell_index=index, spellframe=Greeter,
+                                      binding_name=incoming_name, existence="many", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG7XT5Q6V0253EQ8698WRV keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'greeter' - and 'Spanish' (spell_id 35ae6000b301244b7d88b18cb8600db6b713b6889bdb1709507825f17aa4d48e) is bound with the Protocol spellframe Greeter and binding_name 'spanish'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+===== same (-X gil=1)
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+case same: English at (Greeter, 'greeter') -> French at (Greeter, 'greeter')
+[before the notch]
+  lender meld(spell_id=<English>)                    -> English ('hello')
+  lender meld(spell_id=<French>)                     -> raises KeyError: '[MELD] No spell found with spell_id: 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd'
+  lender meld at (Greeter, 'greeter')                -> English ('hello')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> English ('hello')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> English ('hello')
+  borrower meld at (Greeter, 'greeter')              -> English ('hello')
+  borrower consumer injected by Protocol annotation  -> English ('hello')
+  notch to French                                    -> French
+[after the notch]
+  lender meld(spell_id=<English>)                    -> raises KeyError: '[MELD] No spell found with spell_id: 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f'
+  lender meld(spell_id=<French>)                     -> French ('bonjour')
+  lender meld at (Greeter, 'greeter')                -> French ('bonjour')
+  lender meld('English')  (SpellName)                -> raises KeyError: "[MELD] No spell found for frame='english', binding='__default__'."
+  lender meld('French')  (SpellName)                 -> raises KeyError: "[MELD] No spell found for frame='french', binding='__default__'."
+  lender meld(spellframe=Greeter)                    -> raises KeyError: "[MELD] No spell found for frame='greeter', binding='__default__'."
+  lender consumer injected by Protocol annotation    -> French ('bonjour')
+  lender consumer with SpellMap(Greeter, 'greeter')  -> French ('bonjour')
+  borrower meld at (Greeter, 'greeter')              -> French ('bonjour')
+  borrower consumer injected by Protocol annotation  -> French ('bonjour')
+
+===== diff (-X gil=1)
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+Traceback (most recent call last):
+  File "/tmp/cc_res/s2/probes/probe_how_melds_follow_a_notch.py", line 78, in <module>
+    incoming_id = world.bind_inactive(spell=incoming_cls, spell_index=index, spellframe=Greeter,
+                                      binding_name=incoming_name, existence="many", permissions="create")
+  File "/tmp/cc_res/uxmirror/src/melder/aether/conduit/conduit.py", line 4125, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/spellbook.py", line 6232, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cc_res/uxmirror/src/melder/aether/spellbook/bind/spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M5SG7Y692YAERYJ7TT725Q8W keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'greeter' - and 'Spanish' (spell_id 35ae6000b301244b7d88b18cb8600db6b713b6889bdb1709507825f17aa4d48e) is bound with the Protocol spellframe Greeter and binding_name 'spanish'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.

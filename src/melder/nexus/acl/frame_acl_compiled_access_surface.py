@@ -61,6 +61,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
         "_allowed_import_module_roots",
         "_denied_import_module_roots",
         "_denied_builtin_names",
+        "_static_only_denied_builtin_names",
+        "_generation_module_roots",
+        "_denied_generation_module_roots",
         "_codegen_unsafe_reflection_allowed",
         "_codegen_dunder_access_allowed",
         "_codegen_recursive_codegen_allowed",
@@ -91,6 +94,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
             allowed_import_module_roots: Tuple[str, ...] = tuple(),
             denied_import_module_roots: Tuple[str, ...] = tuple(),
             denied_builtin_names: Tuple[str, ...] = tuple(),
+            static_only_denied_builtin_names: Tuple[str, ...] = tuple(),
+            generation_module_roots: Optional[Tuple[str, ...]] = None,
+            denied_generation_module_roots: Tuple[str, ...] = tuple(),
             codegen_unsafe_reflection_allowed: bool = False,
             codegen_dunder_access_allowed: bool = False,
             codegen_recursive_codegen_allowed: bool = False,
@@ -178,6 +184,17 @@ class CompiledFrameACLAccessSurface(Cleanable):
         self._denied_builtin_names: Tuple[str, ...] = tuple(
             denied_builtin_names
         )
+        self._static_only_denied_builtin_names: Tuple[str, ...] = tuple(
+            static_only_denied_builtin_names
+        )
+        self._generation_module_roots: Optional[Tuple[str, ...]] = (
+            tuple(generation_module_roots)
+            if generation_module_roots is not None
+            else None
+        )
+        self._denied_generation_module_roots: Tuple[str, ...] = tuple(
+            denied_generation_module_roots
+        )
         self._codegen_unsafe_reflection_allowed: bool = bool(
             codegen_unsafe_reflection_allowed
         )
@@ -247,6 +264,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
             del self._allowed_import_module_roots
             del self._denied_import_module_roots
             del self._denied_builtin_names
+            del self._static_only_denied_builtin_names
+            del self._generation_module_roots
+            del self._denied_generation_module_roots
             del self._codegen_unsafe_reflection_allowed
             del self._codegen_dunder_access_allowed
             del self._codegen_recursive_codegen_allowed
@@ -374,6 +394,48 @@ class CompiledFrameACLAccessSurface(Cleanable):
         """
         self.check_cleaned()
         return self._denied_builtin_names
+
+    @property
+    def static_only_denied_builtin_names(self) -> Tuple[str, ...]:
+        """
+        Return builtin names refused by the static codegen gates but kept at run time.
+
+        Contract:
+            These names (the `__import__` builtin, wherever an import list applies) are refused by the builtin
+            gate and name resolution, but are NOT removed from the room's runtime `__builtins__`; the runtime
+            `__import__` is wrapped to check each import's root instead. Empty when no import list applies.
+
+        Returns:
+            Tuple[str, ...]: Static-only denied builtin names.
+        """
+        self.check_cleaned()
+        return self._static_only_denied_builtin_names
+
+    @property
+    def generation_module_roots(self) -> Optional[Tuple[str, ...]]:
+        """
+        Return the frame's generation namespace for `materialize_codegen` (D-20).
+
+        Contract:
+            None when the frame declares no `materialize_modules` allow rule: then any new name that passes the
+            verb's hard refusals materializes. Otherwise only names equal to or under one of these roots do.
+
+        Returns:
+            Optional[Tuple[str, ...]]: Allowed generation roots, or None when undeclared.
+        """
+        self.check_cleaned()
+        return self._generation_module_roots
+
+    @property
+    def denied_generation_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the generation roots `materialize_codegen` refuses for this frame (D-20).
+
+        Returns:
+            Tuple[str, ...]: Denied generation roots.
+        """
+        self.check_cleaned()
+        return self._denied_generation_module_roots
 
     @property
     def codegen_unsafe_reflection_allowed(self) -> bool:

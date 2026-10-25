@@ -582,3 +582,105 @@ def test_frame_acl_compiler_metadata_counts_follow_visible_entities() -> None:
 
     assert compiled_surface.metadata["visible_conduit_count"] == 1
     assert compiled_surface.metadata["visible_spell_count"] == 1
+
+
+def test_frame_acl_compiler_static_import_name_helper_matrix() -> None:
+    """
+    Verify the compiler's static-only import-name helper denies the `__import__` name exactly when imports are
+    enabled and an allow or deny import list applies, and returns an empty set otherwise (imports off, or
+    imports on with no list - full_access).
+
+    Returns:
+        None.
+    """
+    deny = FrameACLCompiler._compile_codegen_static_import_name_control
+    assert deny(True, {"json"}, {"subprocess"}) == {"__import__"}
+    assert deny(True, {"json"}, set()) == {"__import__"}
+    assert deny(True, set(), {"subprocess"}) == {"__import__"}
+    assert deny(True, set(), set()) == set()
+    assert deny(False, set(), set()) == set()
+    assert deny(False, {"json"}, {"subprocess"}) == set()
+
+
+def test_frame_acl_compiler_surface_carries_static_only_for_a_listed_posture() -> None:
+    """
+    Verify a compiled surface carries the static-only `__import__` denial for a posture with an import list
+    (permissive) and leaves it empty for one without (safe, imports off).
+
+    Returns:
+        None.
+    """
+    permissive_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="static_only_permissive",
+    )
+    permissive_configuration.set_codegen_configuration(
+        permissive_configuration.codegen_configuration.from_profile(
+            FrameACLCodegenProfile.create_permissive()
+        )
+    )
+    permissive_configuration.finalize()
+    permissive_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        permissive_configuration,
+    )
+    assert permissive_surface.static_only_denied_builtin_names == ("__import__",)
+    assert "__import__" not in permissive_surface.denied_builtin_names
+
+    safe_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="static_only_safe",
+    )
+    safe_configuration.set_codegen_configuration(
+        safe_configuration.codegen_configuration.from_profile(
+            FrameACLCodegenProfile.create_safe()
+        )
+    )
+    safe_configuration.finalize()
+    safe_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        safe_configuration,
+    )
+    assert safe_surface.static_only_denied_builtin_names == ()
+    assert "__import__" in safe_surface.denied_builtin_names
+
+
+def test_frame_acl_compiler_generation_roots_matrix() -> None:
+    """
+    Verify (D-20) the generation-namespace compile: no allow rule -> None; allow roots minus the deny union; deny
+    roots compiled on their own.
+
+    Returns:
+        None.
+    """
+    from types import SimpleNamespace
+
+    from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import FrameACLCodegenProfile
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+    from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
+
+    def compile_with(*rules):
+        configuration = SimpleNamespace(
+            codegen_configuration=SimpleNamespace(
+                capability_override_ruleset=FrameACLRuleSet("override", list(rules)),
+            ),
+        )
+        return FrameACLCompiler._compile_codegen_generation_controls(
+            FrameACLCodegenProfile.create_permissive(),
+            None,
+            configuration,
+        )
+
+    def rule(name, effect, *roots):
+        return FrameACLRule(
+            rule_name=name,
+            operation="materialize_modules",
+            effect=effect,
+            conditions={"module_roots": tuple(roots)},
+        )
+
+    assert compile_with() == (None, set())
+    assert compile_with(rule("a", "allow", "gen", "tools.gen")) == ({"gen", "tools.gen"}, set())
+    assert compile_with(rule("a", "allow", "gen", "x"), rule("d", "deny", "x")) == ({"gen"}, {"x"})
+    assert compile_with(rule("d", "deny", "secret")) == (None, {"secret"})

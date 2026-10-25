@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "dd8fb4f01094b483a4544a1ecdf5bc29d3d7c5883fe0c8026c643e3d2285bf26",
+ "source_sha256": "007de2f51874a464581b9066b933a0dddbdcc65e7094373d5aa10f24cf092eb8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -57,7 +57,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "277befe396687cecf1bc247afb18fa72d41d980335181a2ac48527ea04f22409",
+   "span_sha256": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -73,7 +73,9 @@
     "cache generation 21 retires bundles written before the managed lease codegen (0.2.8245), the explicit retirement the owner asked for whenever codegen changes (0.2.8248)",
     "cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone",
     "cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)",
-    "saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)"
+    "saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)",
+    "cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)",
+    "cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)"
    ],
    "owns_state": [
     "_id",
@@ -91,7 +93,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "277befe396687cecf1bc247afb18fa72d41d980335181a2ac48527ea04f22409"
+   "semantics_authored_against": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a"
   }
  },
  "edges_out": [

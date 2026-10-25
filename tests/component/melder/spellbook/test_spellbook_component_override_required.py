@@ -519,9 +519,13 @@ def test_notch_from_definition_to_provider_revalidates_its_consumer(
     The descriptive version is the Protocol itself (bound resolvable=False); the notched-in version is a
     concrete implementer bound under the Protocol contract (2026-10-04: a Protocol cannot be bound as a
     concrete spell, so the resolvable version at the same address is an implementer, not the Protocol).
+    Every version of an index is bound the way its first version was (2026-10-25), so the Protocol is bound
+    under its own contract, the binding its implementer is staged with.
     """
     compiler_book._aetheric_frame_configuration.with_system_caching_enabled(False)
-    definition_id = compiler_book.bind(spell=Definition, existence="unique", resolvable=False)
+    definition_id = compiler_book.bind(
+        spell=Definition, spellframe=Definition, existence="unique", resolvable=False,
+    )
     consumer_id = compiler_book.bind(spell=consumer_type, existence="many")
     index = _selected(compiler_book, definition_id).spell_index
     conduit = compiler_book.conjure(dynamic=True, name="notch-required-input")

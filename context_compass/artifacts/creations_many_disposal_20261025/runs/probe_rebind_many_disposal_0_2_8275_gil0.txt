@@ -1,0 +1,21 @@
+python 3.14.8 free-threaded=1 gil=False
+R1: first=['close'] second=['shutdown'] via_lesser=False
+   same spell_id: True; the second Spell's own list: ['shutdown']
+   record after first meld: None; after second meld: None; bucket: None
+   disposal events when the store ended: [('second', 'shutdown'), ('first', 'close')]
+R2: first=['close'] second=['close'] via_lesser=False
+   same spell_id: True; the second Spell's own list: ['close']
+   record after first meld: None; after second meld: None; bucket: None
+   disposal events when the store ended: [('second', 'close'), ('first', 'close')]
+R3: first=['close'] second=['shutdown'] via_lesser=True
+   same spell_id: True; the second Spell's own list: ['shutdown']
+   record after first meld: None; after second meld: None; bucket: None
+   disposal events when the store ended: [('second', 'shutdown'), ('first', 'close')]
+R4: first=None second=['shutdown'] via_lesser=False
+   same spell_id: True; the second Spell's own list: ['shutdown']
+   record after first meld: None; after second meld: None; bucket: None
+   disposal events when the store ended: [('second', 'shutdown')]
+R5: first=['close'] second=None via_lesser=False
+   same spell_id: True; the second Spell's own list: []
+   record after first meld: None; after second meld: None; bucket: None
+   disposal events when the store ended: [('first', 'close')]

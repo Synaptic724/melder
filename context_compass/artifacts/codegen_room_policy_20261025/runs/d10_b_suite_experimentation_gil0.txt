@@ -1,0 +1,6 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx tests/experimentation (cwd: /tmp/m0s2/d10_b, a /tmp copy of the working tree; Python 3.14.7t)
+ran_at: 2026-10-25T08:14:13Z
+............................sss......................................... [ 28%]
+...............................s........................................ [ 85%]
+250 passed, 4 skipped in 8.57s
+exit: 0

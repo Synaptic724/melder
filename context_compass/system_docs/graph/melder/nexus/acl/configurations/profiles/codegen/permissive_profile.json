@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py",
- "source_sha256": "96c632691e166387fee67a4a1e5a5c1e0c448c712d4120a324812542bfeb687c",
+ "source_sha256": "7a33c500879cc95fe11ec9d94d60155c307ab310af5304733fff0cd6cd64255b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.codegen.permissive_profile": {
@@ -16,7 +16,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   },
   "melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy": {
    "id": "melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy",
@@ -35,17 +36,18 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "38e55b1bd1a058ecc29a27411a8792da53b7be54403c5112b725ac9baf9334e5",
+   "span_sha256": "c6fcb79f25fc67828010dd85eb8e83ebff27e1619040666a42c91bde3987d69e",
    "include": true,
-   "role": "Top standard rung of the codegen posture ladder: broadest conduit and spell operations still under capability gates.",
+   "role": "Top standard rung of the codegen posture ladder: the broadest conduit, spell and capability operations, with imports kept to an allowlist.",
    "responsibilities": [
     "allow the broadest set of conduit and spell operations",
-    "still deny the highest-risk capability gates - mutation and unsafe reflection"
+    "allow every capability gate - dynamic access, contract override, mutation, unsafe reflection, dunder access and recursive codegen - keeping only its import allowlist as the guardrail versus full_access",
+    "keep an open file posture by design: `open` available and `io`, `os` and `pathlib` on its import allowlist (0.2.8270)"
    ],
    "phases": [
     "init"
    ],
-   "semantics_authored_against": "38e55b1bd1a058ecc29a27411a8792da53b7be54403c5112b725ac9baf9334e5"
+   "semantics_authored_against": "c6fcb79f25fc67828010dd85eb8e83ebff27e1619040666a42c91bde3987d69e"
   }
  },
  "edges_out": [],

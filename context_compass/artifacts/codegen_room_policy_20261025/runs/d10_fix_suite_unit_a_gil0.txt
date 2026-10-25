@@ -1,0 +1,5 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfE tests/unit/melder/aether tests/unit/melder/utilities tests/unit/melder/build_assets tests/unit/github_workflows tests/unit/llm_support tests/unit/architecture_and_design (cwd: /tmp/m0s2/d10_fix, the D-10 fix; copy holds src, tests, pyproject.toml, llm_support, .github, release_docs, architecture_and_design, README.md, .readthedocs.yaml, codecov.yml, benchmarks, context_compass/system_docs - not docs/; Python 3.14.7t)
+ran_at: 2026-10-25T02:25:09Z
+6247 passed, 3 skipped, 7 xfailed in 32.08s
+<sys>:0: RuntimeWarning: coroutine 'coro' was never awaited
+exit: 0

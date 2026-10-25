@@ -10,7 +10,8 @@ contract at all. Every `cleanup_spell` door now releases the version from every 
 before the Book disposes it, and drops the index links when the index goes with it.
 
 Each test runs in a fresh Aether: the owner binds A active (B parked on A's index where the test needs a parked
-version), the borrower links to it.
+version), the borrower links to it. A and B share one binding, spellframe 'service' and binding name 'a': every
+version of an index is bound the way its first version was (2026-10-25).
 """
 
 from typing import Iterator, List, Tuple
@@ -39,7 +40,7 @@ class _ServiceA:
 
 
 class _ServiceB:
-    """The owner's parked version on A's index."""
+    """The owner's parked version on A's index, under A's binding."""
 
     def __init__(self) -> None:
         self.tag = "B"
@@ -94,13 +95,15 @@ def _world() -> Tuple[Spellbook, Spellbook, Conduit, Conduit, str, str, str]:
     """
     owner_book = _make_book()
     borrower_book = _make_book()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     id_solo = owner_book.bind(spell=_Solo, existence=Existence.unique, permissions="create", binding_name="solo")
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(spell=_ServiceB, spell_index=index, existence=Existence.unique,
-                               permissions="create", binding_name="b")
+                               permissions="create", spellframe="service", binding_name="a")
     owner.link(borrower)
     return owner_book, borrower_book, owner, borrower, id_a, id_b, id_solo
 
@@ -188,7 +191,7 @@ def test_notch_to_a_restaged_version_after_its_cleanup_reaches_index_link_borrow
     try:
         owner.cleanup_spell(spell=owner_book._get_owned_spell(id_b))
         again = owner.bind_inactive(spell=_ServiceB, spell_index=index, existence=Existence.unique,
-                                    permissions="create", binding_name="b")
+                                    permissions="create", spellframe="service", binding_name="a")
         assert again == id_b
         owner.notch_spell(spell_index=index, spell_id=id_b)
         assert _borrowed(borrower_book, owner)[0] == [id_b]

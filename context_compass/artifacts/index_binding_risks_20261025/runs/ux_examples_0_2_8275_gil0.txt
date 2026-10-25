@@ -1,0 +1,14 @@
+# UX_and_AIX_experiences/pytest_examples on 0.2.8275, the GIL off, a /tmp copy of src + UX with no crystallizer cache folder (melder_1, 2026-10-25T14:56:38Z)
+E   AssertionError
+errors     (11): DeadReferenceError, HookExecutionError, InternalRegistrationError, ManagedSpellExhaustedError, MeldExecutionError, PhaseExecutionError ...
+/tmp/cc_res/gap1mirror/UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py:33: AssertionError
+E   AssertionError: 37_review_agent_bindings.py header is missing ['VERIFY:']
+/tmp/cc_res/gap1mirror/UX_and_AIX_experiences/pytest_examples/test_example_contract.py:98: AssertionError: 37_review_agent_bindings.py header is missing ['VERIFY:']
+E   Failed: DID NOT RAISE Exception
+E   KeyError: "[MELD] No spell found for frame='payload', binding='__default__'."
+/tmp/cc_res/gap1mirror/src/melder/aether/conduit/meld/meld.py:2358: KeyError: "[MELD] No spell found for frame='payload', binding='__default__'."
+FAILED UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py::test_beginner_example_runs_green[39_agent_inventory_pattern]
+FAILED UX_and_AIX_experiences/pytest_examples/test_example_contract.py::test_example_declares_its_surface[37_review_agent_bindings]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py::test_probe_upgrade_to_normal_keeps_creations_and_registers
+4 failed, 623 passed in 12.42s

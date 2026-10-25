@@ -43,6 +43,11 @@ pip install melder
 
 **One dependency: pip.** Nothing else comes with it. Requires Python 3.14+.
 
+Releases are published to PyPI from this repository's release workflow, which signs every file it uploads
+([PEP 740](https://peps.python.org/pep-0740/)):
+[check a download](https://melder.readthedocs.io/en/latest/beginner/install.html#check-a-downloaded-file) with
+`pypi-attestations` before you install it.
+
 Working from a clone? Use the repository's `uv.lock` and
 [locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
 
@@ -1399,14 +1404,19 @@ Foresight is half of it. The other half is the live swap — **stage → notch �
 meld**, on a running system, with the old version still sitting there:
 
 ```python
-# 1. STAGE — bind a new version as an INACTIVE member of the existing index.
-#    It is parked and unresolvable: nothing melds it, nothing sees it yet.
+# 1. STAGE — bind the edited ReportService (the candidate above, imported
+#    from the module it now lives in) as an INACTIVE member of the existing
+#    index. It is bound the way the index's first version was — bare, so
+#    addressed by its name, ReportService, at the default binding — and a
+#    version bound any other way is refused. It is parked and unresolvable:
+#    nothing melds it, nothing sees it yet.
+from reports_v2 import ReportService as EditedReportService
+
 id_v1 = index.selected_spell_id     # the version serving now
 id_v2 = conduit.bind_inactive(
-    spell=ReportServiceV2,
+    spell=EditedReportService,  # new code, the same name: a new spell_id
     spell_index=index,          # the index the current version lives in
     existence="unique",
-    binding_name="v2",
 )
 
 # 2. NOTCH — promote v2 to ACTIVE. The outgoing version parks, the index
@@ -1414,9 +1424,18 @@ id_v2 = conduit.bind_inactive(
 conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
-# 3. MELD — the very next resolution builds the NEW version.
-service = conduit.meld(spell_id=id_v2)   # → ReportServiceV2
+# 3. MELD — the very next resolution builds the NEW version, and the
+#    address follows the notch: a meld by name gets it too.
+service = conduit.meld(spell_id=id_v2)   # → the edited ReportService
+assert conduit.meld("ReportService") is service
 ```
+
+**Every version of an index is bound the way its first version was** — the
+same kind of spellframe and the same address (spellframe or class name, and
+binding name). That is why a notch never moves the address, and why
+`bind_inactive` refuses a renamed class bound bare: it would be another
+address. When versions will carry different class names, bind them all under
+one spellframe category (`spellframe="reports"`) from the first version on.
 
 And because the old member is **parked, not destroyed**, rollback is the same
 verb pointed the other way:

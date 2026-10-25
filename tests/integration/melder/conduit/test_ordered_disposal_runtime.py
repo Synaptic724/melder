@@ -113,7 +113,8 @@ def test_real_compiled_disposal_uses_established_order(
         for spell_id, value in live:
             spell = book.find_spell_by_spell_id(spell_id)
             assert spell is not None
-            raw_entry = conduit._creations._disposable_creations[spell_id]
+            # One record per binding, filed under the store key (STORY-2026-10-25-creations_store_slots_by_binding).
+            raw_entry = conduit._creations._disposable_creations[spell.store_key]
             if spell.existence is Existence.many:
                 # One record per many key (2026-10-01): the bucket plus the
                 # key's one method list.

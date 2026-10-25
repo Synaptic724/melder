@@ -105,24 +105,35 @@ def _activate_crystallizer() -> Crystallizer:
     return crystallizer
 
 
-def _tenant_book(frame: str, service: type, root_name: str) -> Tuple[Spellbook, Conduit, str]:
+def _tenant_book(
+        frame: str, service: type, root_name: str, *, spellframe: Optional[str] = None,
+) -> Tuple[Spellbook, Conduit, str]:
     """
     Build one tenant: a Book in a frame postured dynamic before its bind, one bind, one named dynamic conjure.
 
     configure_aether_frame is the public pre-settlement door the recorded lane needs: it settles the frame dynamic
     and freezes the Book's configuration, so the bind records and the conjure passes the recorded-world discipline.
+    `spellframe` is the string category the service is bound under, or None for a bare bind; a tenant whose index
+    gets a parked version passes "TenantService" (see `_park_next_version`).
     """
     book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
     book.configure_aether_frame(system_state="dynamic", disposal=None, disposal_method_names=None)
-    spell_id = book.bind(spell=service, existence="many")
+    spell_id = book.bind(spell=service, existence="many", spellframe=spellframe)
     conduit = book.conjure(name=root_name, dynamic=True)
     return book, conduit, spell_id
 
 
 def _park_next_version(book: Spellbook, conduit: Conduit, spell_id: str) -> str:
-    """Stage TenantServiceNext as a parked member of the tenant service's index; return its spell id."""
+    """
+    Stage TenantServiceNext as a parked member of the tenant service's index; return its spell id.
+
+    It is staged under the category "TenantService", the binding the tenant's index keeps: every version of an
+    index is bound the way its first version was (2026-10-25), so the tenant is built with that category.
+    """
     index = book.find_spell_by_spell_id(spell_id).spell_index
-    return conduit.bind_inactive(spell=TenantServiceNext, spell_index=index, existence="many")
+    return conduit.bind_inactive(
+        spell=TenantServiceNext, spell_index=index, existence="many", spellframe="TenantService",
+    )
 
 
 def _record(crystallizer: Crystallizer) -> str:
@@ -172,8 +183,8 @@ def test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids(cach
     """
     _install_regime(False)
     crystallizer = _activate_crystallizer()
-    book_a, conduit_a, tenant_id = _tenant_book("tenant_a", TenantService, "root_a")
-    book_b, conduit_b, tenant_id_b = _tenant_book("tenant_b", TenantService, "root_b")
+    book_a, conduit_a, tenant_id = _tenant_book("tenant_a", TenantService, "root_a", spellframe="TenantService")
+    book_b, conduit_b, tenant_id_b = _tenant_book("tenant_b", TenantService, "root_b", spellframe="TenantService")
     assert tenant_id_b == tenant_id
     next_id = _park_next_version(book_a, conduit_a, tenant_id)
     assert _park_next_version(book_b, conduit_b, tenant_id) == next_id

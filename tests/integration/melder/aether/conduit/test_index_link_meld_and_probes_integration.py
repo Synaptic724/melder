@@ -7,6 +7,9 @@ spells, existence spreads lineage-wide, and the reachable open-questions are pin
 
 Transactions are OUT OF SCOPE. Runtime: Python 3.14t; the 3.10 sandbox cannot run
 these -> user runs on 3.14t.
+
+A and B share one binding, spellframe 'service' and binding name 'a': every version of an index is bound the way
+its first version was (2026-10-25).
 """
 
 import contextlib
@@ -66,7 +69,9 @@ def _resolves(conduit: Conduit, spell_id: str) -> bool:
 def _single_linked(permission: str = "create") -> Iterator[tuple]:
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
@@ -84,14 +89,16 @@ def _single_linked(permission: str = "create") -> Iterator[tuple]:
 def _two_member_linked() -> Iterator[tuple]:
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = owner_book._get_owned_spell(id_b)
     with borrower.transaction("link", conduits=[borrower, owner]):
@@ -142,7 +149,9 @@ def test_removal_guard_allows_non_index_member_spell():
     # A spell contracted directly (NOT via an index-link) is removable normally.
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
-    sid = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    sid = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
@@ -191,12 +200,14 @@ def test_add_index_to_contract_rejects_index_not_owned_by_target():
 
 def test_bind_inactive_spell_is_not_meldable_until_notched():
     book = _make_spellbook()
-    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     conduit = book.conjure(dynamic=True, name="root")
     index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     try:
         # Parked off the resolution surface (inactive member of A's index) ->
@@ -208,7 +219,9 @@ def test_bind_inactive_spell_is_not_meldable_until_notched():
 
 def test_notch_to_already_active_is_noop():
     book = _make_spellbook()
-    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     conduit = book.conjure(dynamic=True, name="root")
     try:
         spell_a = book.find_spell_by_spell_id(id_a)
@@ -226,14 +239,16 @@ def test_transfer_multi_member_target_melds_active():
     apply_dynamic_defaults_for_spellbook_configuration(config)
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     owner_book = Spellbook(configuration=config)
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     target_book = Spellbook(configuration=config)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = owner_book._get_owned_spell(id_b)
     try:
@@ -248,7 +263,9 @@ def test_two_borrowers_unlink_one_leaves_other_linked():
     owner_book = _make_spellbook()
     b1_book = _make_spellbook()
     b2_book = _make_spellbook()
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     b1 = b1_book.conjure(dynamic=True, name="b1")
     b2 = b2_book.conjure(dynamic=True, name="b2")
@@ -277,12 +294,14 @@ def test_index_link_active_member_is_live_borrowed_copy():
 
 def test_notched_away_id_is_evicted_from_resolution():
     book = _make_spellbook()
-    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     conduit = book.conjure(dynamic=True, name="root")
     index = book.find_spell_by_spell_id(id_a).spell_index
     id_b = conduit.bind_inactive(
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = book._get_owned_spell(id_b)
     try:

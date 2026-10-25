@@ -8,7 +8,7 @@ and whether the seam ran. The post-window fan-out is patched where a notch succe
 """
 from types import SimpleNamespace
 from typing import Dict, Iterator
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -46,7 +46,8 @@ class _Lineage:
         )
         self.owned: Dict[str, SimpleNamespace] = {"v1": self.v1, "v2": self.v2, "y2": self.y2}
         spellbook_stub._get_owned_spell = MagicMock(side_effect=self.owned.get)
-        spellbook_stub._notch_spell = MagicMock(side_effect=lambda **kwargs: kwargs["spell"])
+        # Like the real Book (design 2), run the conduit's borrower fan-out hook after the switch.
+        spellbook_stub._notch_spell = MagicMock(side_effect=self._notch_and_fan_out)
         conduit._conduit_ward = MagicMock()
         self.mediator: MagicMock = spellbook_stub._transaction_mediator
 
@@ -56,6 +57,14 @@ class _Lineage:
         self.mediator.end_transaction.assert_not_called()
         self.book._notch_spell.assert_not_called()
 
+
+    @staticmethod
+    def _notch_and_fan_out(**kwargs: object) -> object:
+        """Return the notched spell after running the `after_switch` hook the conduit passes (design 2)."""
+        after_switch = kwargs.get("after_switch")
+        if callable(after_switch):
+            after_switch()
+        return kwargs["spell"]
 
 @pytest.fixture()
 def lineage(spellbook_stub: MagicMock, conduit_dynamic_normal: Conduit) -> Iterator[_Lineage]:
@@ -84,6 +93,7 @@ def test_notch_by_spell_id_resolves_the_owned_version_and_notches_it(lineage: _L
         spell_index=lineage.index,
         spell=lineage.v2,
         change_reason=SpellStateChangeReason.selected_different_spell,
+        after_switch=ANY,
     )
     assert result is lineage.v2
     metadata = lineage.mediator.start_transaction.call_args.kwargs["metadata"]
@@ -115,6 +125,7 @@ def test_notch_by_spell_passes_an_owned_member_through_unchanged(lineage: _Linea
         spell_index=lineage.index,
         spell=lineage.v2,
         change_reason=SpellStateChangeReason.selected_different_spell,
+        after_switch=ANY,
     )
     assert result is lineage.v2
 

@@ -11,6 +11,10 @@ a meld by address raised KeyError, `find_spell_index` raised, and another Book c
 now drops the route only when it routes the key to the destroyed index and releases only the claim the departing
 version holds (by spell_id), as `cleanup_and_remove_spell` already did.
 
+Since 2026-10-25 (STORY-2026-10-17-notch_moves_signature_by_incoming_key_only) every version of an index is bound the
+way its first version was, so a version is staged only under its index's key: staging under another key - another
+Book's spell's, or one no spell holds - is refused before anything is registered, and the last two tests pin that.
+
 Each test runs in a fresh Aether with its own dynamic frame and caching off, and asserts through the frame's claim
 surface, the Book's address lookups and a meld by address - the answers an agent's calls get.
 """
@@ -332,15 +336,17 @@ def test_cleanup_of_a_lone_parked_version_keeps_the_siblings_binding_signature()
     assert lender_book.find_spell_by_spell_id(french_id) is None
 
 
-def test_staging_does_not_release_another_books_binding_signature() -> None:
+def test_staging_keyed_like_another_books_spell_is_refused_and_leaves_its_claim() -> None:
     """
     Purpose:
-        Staging in one Book a version keyed like another Book's active spell leaves that spell's claim in place.
+        Staging in one Book a version keyed like another Book's active spell is refused, and that spell keeps its
+        claim.
 
     Contract:
-        - Book O binds SpanishGreeter active as (Greeter, 'spanish'); Book L stages FrenchGreeter under the same
-          signature on its own index. Book O's spell still holds the claim and a third Book's bind of the signature
-          is refused. Until 0.2.8263 Book L's staging released Book O's claim.
+        - Book O binds SpanishGreeter active as (Greeter, 'spanish'); Book L stages FrenchGreeter under that
+          signature on English's (Greeter, 'greeter') index. The staging raises ValueError (the index keeps English's
+          binding), Book O's spell still holds the claim and a third Book's bind of the signature is refused. Until
+          0.2.8263 Book L's staging released Book O's claim; until 2026-10-25 it was staged.
 
     Returns:
         None.
@@ -350,31 +356,38 @@ def test_staging_does_not_release_another_books_binding_signature() -> None:
     spanish = other_book.find_spell_by_spell_id(spanish_id)
     assert spanish is not None
 
-    _stage(lender, FrenchGreeter, "spanish", english.spell_index)
+    with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+        _stage(lender, FrenchGreeter, "spanish", english.spell_index)
 
     assert lender_book._aetheric_frame.get_lookup(spanish._key) == spanish_id
     _assert_bind_of_signature_refused(_book("s1-other-book"), ItalianGreeter, "spanish")
     _assert_english_keeps_its_signature(lender_book, lender, english)
 
 
-def test_parked_version_staged_under_its_own_key_claims_nothing() -> None:
+def test_a_parked_version_claims_nothing_and_another_key_is_refused() -> None:
     """
     Purpose:
-        A version staged under a key no active spell holds claims nothing, before and after the throwaway index
-        Bind minted for it is destroyed.
+        A parked version holds no signature of its own, and a staging under a key no spell holds is refused, leaving
+        that key unclaimed and unrouted.
 
     Contract:
-        - Staging FrenchGreeter as (Greeter, 'french') on English's index leaves ('greeter', 'french') unclaimed in
-          the frame and unrouted in the Book, and English's own claim in place: a parked version holds no signature.
+        - Staging FrenchGreeter as (Greeter, 'french') on English's (Greeter, 'greeter') index raises ValueError;
+          ('greeter', 'french') stays unclaimed in the frame and unrouted in the Book.
+        - Staged under English's key it is parked: the frame holds no signature for French's spell_id, and English
+          keeps its own claim and route.
 
     Returns:
         None.
     """
     lender_book, _other_book, lender, english = _english_world("s1-own-key")
+    french_key = ("greeter", "french")
 
-    french_id = _stage(lender, FrenchGreeter, "french", english.spell_index)
-    french = lender_book.find_spell_by_spell_id(french_id)
-    assert french is not None
-    assert lender_book._aetheric_frame.get_lookup(french._key) is None
-    assert french._key not in lender_book._lookup_spells
+    with pytest.raises(ValueError, match="keeps the binding its first version was bound with"):
+        _stage(lender, FrenchGreeter, "french", english.spell_index)
+    assert lender_book._aetheric_frame.get_lookup(french_key) is None
+    assert french_key not in lender_book._lookup_spells
+
+    french_id = _stage(lender, FrenchGreeter, "greeter", english.spell_index)
+    assert lender_book.find_spell_by_spell_id(french_id) is not None
+    assert lender_book._aetheric_frame.get_lookup_sig_by_spell_id(french_id) is None
     _assert_english_keeps_its_signature(lender_book, lender, english)

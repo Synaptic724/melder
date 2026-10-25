@@ -1,9 +1,11 @@
 import threading
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Dict, Tuple, ClassVar
+from typing import TYPE_CHECKING, Any, Optional, Dict, Tuple, ClassVar
 
 # Melder Imports
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.helpers.ulid_factory import new_ulid
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -34,6 +36,18 @@ class SpellIndex(Cleanable):
         - The index owns its member spell ids; it does NOT own lookup-map
           propagation to owning or contracted Spellbooks - that is the
           Spellbook's notch seam.
+        - THE INDEX KEEPS ITS FIRST VERSION'S BINDING (2026-10-25;
+          STORY-2026-10-17-notch_moves_signature_by_incoming_key_only, the
+          owner's rule: "if you want to use notch you gotta use the signature
+          that was used originally"). `binding_signature` is the kind of
+          spellframe the version it was built for was bound with (none, a
+          string category, a Protocol) and the address that gives (frame key
+          and binding key, case-insensitive). Every version of the index is
+          bound the same way: `check_admits` refuses any other, and the
+          Spellbook runs it before a version is staged onto the index
+          (`bind_inactive`) or moved into it (`add_to_spell_index`). So an
+          index's address never moves, a notch only changes which version
+          serves it, and a renamed class or a new binding name is a new spell.
 
     Threading:
         The selected-spell pointer is updated under lock, so a repoint is safe
@@ -78,27 +92,49 @@ class SpellIndex(Cleanable):
         "_lock",        # RLock for thread-safe reads/writes.
         "_cleaned",     # Flag for Cleanable interface.
         "_spells_in_index",    # Set of all member spell ids in this index.
+        "_binding_signature",  # (kind, frame_key, binding_key) of the first version's binding, or None.
+        "_binding_text",       # That binding as a sentence for refusals, or None.
     )
 
-    def __init__(self, initial_id: str):
+    def __init__(
+            self,
+            initial_id: str,
+            *,
+            binding_signature: Optional[Tuple[str, str, str]] = None,
+            binding_text: Optional[str] = None,
+    ):
         """
         Initialize the SpellIndex with its permanent identity and initial member.
 
         Purpose:
             Provide a stable, hashable SpellIndex identity with a mutable
-            selected-spell pointer and the set of member spell ids.
+            selected-spell pointer, the set of member spell ids and the binding
+            every version of the index is bound with.
 
         Contract:
             - The ULID identity never changes.
             - The selected-spell pointer is mutable and guarded by the lock.
             - The member set starts with the initial spell id.
+            - The binding is written once here and never changes. Melder builds
+              every index through `for_binding`, which computes both binding
+              values from the first version's spellframe, name and binding
+              name; an index built without them (`SpellIndex(initial_id)`, as
+              unit tests build them) records no binding and `check_admits`
+              refuses every version on it.
 
         Args:
             initial_id (str):
                 The SHA256 spell id this index initially selects and contains.
+            binding_signature (Optional[Tuple[str, str, str]]):
+                `(kind, frame_key, binding_key)` of the first version's binding
+                (`signature_of`), or None.
+            binding_text (Optional[str]):
+                The same binding as the sentence refusals quote
+                (`_describe_binding`), or None. Given with `binding_signature`.
 
         Threading:
-            - Initializes the internal RLock used for all mutations.
+            - Initializes the internal RLock used for all mutations. The two
+              binding values are immutable and read without the lock.
 
         Returns:
             None.
@@ -111,6 +147,145 @@ class SpellIndex(Cleanable):
         self._selected_spell_id: str = initial_id
         # The set of member spell ids this index contains.
         self._spells_in_index: set = {initial_id}
+        # The binding of the version this index was built for: every version of
+        # the index is bound the same way (`check_admits`). Write-once.
+        self._binding_signature: Optional[Tuple[str, str, str]] = binding_signature
+        self._binding_text: Optional[str] = binding_text
+
+    @classmethod
+    def for_binding(
+            cls,
+            initial_id: str,
+            *,
+            spellframe: Any,
+            spell_name: str,
+            binding_name: Optional[str],
+    ) -> SpellIndex:
+        """
+        Build the index for a version's binding, the index's first version.
+
+        Purpose:
+            The one way Melder builds an index (`Bind._bind_logic` for every
+            Spell it creates; `Spellbook._apply_remove_from_index` for a
+            version split off into an index of its own): the index records
+            the binding of its first version, and every later version must
+            be bound the same way.
+
+        Contract:
+            - The index selects and contains `initial_id`, as the
+              constructor's.
+            - `binding_signature` is `signature_of(...)` of the three values
+              and the refusal text describes them (`_describe_binding`).
+            - The values are taken as Bind accepted them: `spellframe` is
+              None, a string or a Protocol class (`Bind._classify_spellframe`
+              refuses anything else before an index is built).
+
+        Args:
+            initial_id (str): The first version's spell_id.
+            spellframe (Any): The first version's spellframe - None, a string category or a Protocol class.
+            spell_name (str): The first version's name (the class or function name Bind took).
+            binding_name (Optional[str]): The first version's binding name, as passed (None or "" for the default).
+
+        Returns:
+            SpellIndex: A new index keeping that binding.
+        """
+        return cls(
+            initial_id,
+            binding_signature=SpellIndex.signature_of(
+                spellframe=spellframe, spell_name=spell_name, binding_name=binding_name,
+            ),
+            binding_text=SpellIndex._describe_binding(
+                spellframe=spellframe, spell_name=spell_name, binding_name=binding_name,
+            ),
+        )
+
+    @staticmethod
+    def signature_of(
+            *,
+            spellframe: Any,
+            spell_name: str,
+            binding_name: Optional[str],
+    ) -> Tuple[str, str, str]:
+        """
+        Return the binding signature of a version bound with these values.
+
+        Purpose:
+            The comparable form of a binding: what kind of spellframe it was
+            bound with and the address that gives. Two versions belong on one
+            index exactly when their signatures are equal.
+
+        Contract:
+            - The kind is a `SpellframeKind` value: "none" for no spellframe,
+              "category" for a string, "contract" for anything else - the
+              Protocol class Bind accepted (`Bind._classify_spellframe`).
+            - The address is `SpellInputUtils.make_spell_key_from_parts(...)`,
+              the `(frame_key, binding_key)` `Spell._key` holds and the frame
+              claim is keyed by: the spellframe's name, or the spell's own
+              name when bound bare, and the binding name, both lowercased; an
+              empty binding name is the default binding.
+            - So the kind keeps a string category spelled like a bare class's
+              name apart from that class, and two Protocols of one name give
+              one signature, as they give one address.
+            - Pure: reads its arguments, changes nothing.
+
+        Args:
+            spellframe (Any): None, a string category or a Protocol class.
+            spell_name (str): The version's name (the address label when bound bare).
+            binding_name (Optional[str]): The binding name, or None for the default.
+
+        Returns:
+            Tuple[str, str, str]: `(kind, frame_key, binding_key)`.
+
+        Raises:
+            TypeError: Propagated from the key normalizers for a value they cannot read.
+        """
+        if spellframe is None:
+            kind = SpellframeKind.none
+        elif isinstance(spellframe, str):
+            kind = SpellframeKind.category
+        else:
+            kind = SpellframeKind.contract
+        frame_key, binding_key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spellframe, spell_name=spell_name, binding_name=binding_name,
+        )
+        return kind.value, frame_key, binding_key
+
+    @staticmethod
+    def _describe_binding(
+            *,
+            spellframe: Any,
+            spell_name: str,
+            binding_name: Optional[str],
+    ) -> str:
+        """
+        Internal
+
+        Describe a binding as the sentence a refusal quotes.
+
+        Contract:
+            - "the Protocol spellframe Greeter", "the string spellframe
+              'Reports'" or "no spellframe (bare, addressed by its own name
+              'Report')", then " and binding_name '<name>'" or " and the
+              default binding name" - the values as the caller passed them,
+              so the text names what to pass again.
+            - Pure.
+
+        Args:
+            spellframe (Any): None, a string category or a Protocol class.
+            spell_name (str): The version's name.
+            binding_name (Optional[str]): The binding name, or None for the default.
+
+        Returns:
+            str: The description.
+        """
+        if spellframe is None:
+            frame_text = f"no spellframe (bare, addressed by its own name '{spell_name}')"
+        elif isinstance(spellframe, str):
+            frame_text = f"the string spellframe '{spellframe}'"
+        else:
+            frame_text = f"the Protocol spellframe {spellframe.__name__}"
+        name_text = f"binding_name '{binding_name}'" if binding_name else "the default binding name"
+        return f"{frame_text} and {name_text}"
 
     # ------------------------------------------------------------
     # Cleanup
@@ -122,6 +297,8 @@ class SpellIndex(Cleanable):
         Contract:
             - Idempotent and lock-guarded.
             - Clears and drops the member set and the selected-spell pointer.
+            - Keeps the binding (`binding_signature`), like the id: immutable
+              values that a reader racing this cleanup must never find deleted.
             - Leaves future callers to fail through `check_cleaned()`.
 
         Returns:
@@ -450,6 +627,96 @@ class SpellIndex(Cleanable):
         with self._lock:
             members = self._spells_in_index
             return len(members) == 1 and spell_id in members
+
+    @property
+    def binding_signature(self) -> Optional[Tuple[str, str, str]]:
+        """
+        Return the binding every version of this index is bound with.
+
+        Purpose:
+            The binding of the version the index was built for: the kind of
+            spellframe (none, a string category, a Protocol) and the address it
+            gives. Every version of the index is bound the same way, so this is
+            also the address the index serves.
+
+        Contract:
+            - `(kind, frame_key, binding_key)`, as `signature_of` builds it -
+              for example ("contract", "greeter", "english") for a version bound
+              under the Protocol `Greeter` with binding name "English".
+            - None for an index built without a binding (not by Melder).
+            - Never changes; kept after cleanup, like `id`.
+
+        Threading:
+            Lock-free read of a write-once slot; safe from any thread.
+
+        Returns:
+            Optional[Tuple[str, str, str]]: The signature, or None.
+        """
+        return self._binding_signature
+
+    def check_admits(self, spell: Spell, *, verb: str) -> None:
+        """
+        Refuse a version bound another way than this index's versions.
+
+        Purpose:
+            The check that keeps every version of an index bound the way its
+            first version was (the owner's rule, 2026-10-25). The Spellbook
+            runs it before staging a version onto the index (`bind_inactive`)
+            and before moving one into it (`add_to_spell_index`), so a refusal
+            leaves nothing registered or moved.
+
+        Contract:
+            - Compares `signature_of(...)` of the version's `spellframe`,
+              `spell_name` and `binding_name` with `binding_signature`. Equal
+              admits - the case of the names aside, since the address is
+              case-insensitive. Reads those three fields and `spell_id`, and
+              nothing else; changes nothing.
+            - A different kind of spellframe is another binding even at the
+              same address, and a renamed class bound bare is another address:
+              each is a new spell, to be bound on its own.
+
+        Args:
+            spell (Spell): The version to stage or move.
+            verb (str): The calling verb, which opens the refusal message.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: "<verb> refused: SpellIndex <id> keeps the binding its
+                first version was bound with - <this index's binding> - and
+                '<name>' (spell_id <id>) is bound with <the version's>. ...",
+                with the remedy.
+            RuntimeError: If the index records no binding (built without
+                `for_binding` - a Melder bug), or has been cleaned.
+
+        Threading:
+            The binding is read without the lock; `check_cleaned()` guards the
+            call.
+        """
+        self.check_cleaned()
+        signature = self._binding_signature
+        if signature is None:
+            raise RuntimeError(
+                f"{verb} refused: SpellIndex {self._id} records no binding, so it admits no version. Melder builds "
+                "every index with the binding of its first version (SpellIndex.for_binding); an index built "
+                "without one is a Melder bug - please report it with this message."
+            )
+        candidate = SpellIndex.signature_of(
+            spellframe=spell.spellframe, spell_name=spell.spell_name, binding_name=spell.binding_name,
+        )
+        if candidate == signature:
+            return
+        version_text = SpellIndex._describe_binding(
+            spellframe=spell.spellframe, spell_name=spell.spell_name, binding_name=spell.binding_name,
+        )
+        raise ValueError(
+            f"{verb} refused: SpellIndex {self._id} keeps the binding its first version was bound with - "
+            f"{self._binding_text} - and '{spell.spell_name}' (spell_id {spell.spell_id}) is bound with "
+            f"{version_text}. Every version of an index is bound the same way, so a notch never moves its "
+            "address: stage an edited class with the index's spellframe and binding_name. A renamed class or a "
+            "new binding name is a new spell: bind it on its own."
+        )
 
     @property
     def id(self) -> str:

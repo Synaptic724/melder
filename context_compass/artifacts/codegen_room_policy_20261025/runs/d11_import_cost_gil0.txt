@@ -1,0 +1,10 @@
+measure: per-call cost of the guarded runtime __import__ for an ALLOWED root (json) vs the real __import__.
+method: build a hybrid room's runtime builtins via CodegenBuiltinsStrategy, time N calls of the guarded
+        __import__('json') against builtins.__import__('json') (both resolve the cached module).
+ran_at: 2026-10-25T10:18:36Z   Python 3.14.7t, GIL off
+N              : 2000000
+real   ns/call : 83.3
+guarded ns/call: 174.0
+delta  ns/call : 90.7 (the guard's split + two membership tests)
+denied-root refused: Import root 'subprocess' is not allowed in this codegen mode.
+exit: 0

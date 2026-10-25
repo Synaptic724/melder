@@ -59,23 +59,46 @@ def test_record_version_parses_and_defaults():
 
 def test_record_version_stamp_and_gate():
     """
-    Contract: stamp writes CURRENT under the shared key; the read gate
-    passes current/older/pre-versioning payloads and refuses a NEWER
-    major with the upgrade instruction.
+    Contract: stamp writes CURRENT (5.0.0) under the shared key; the read
+    gate passes the current major at any minor and refuses a NEWER major
+    with the upgrade instruction. An older major is refused too (next test).
     """
     stamped = RecordVersion.stamp({"anything": 1})
-    assert stamped[RecordVersion.KEY] == RecordVersion.CURRENT
+    assert stamped[RecordVersion.KEY] == RecordVersion.CURRENT == "5.0.0"
 
     RecordVersion.check_readable(stamped, "self-stamped artifact")
-    RecordVersion.check_readable({}, "pre-versioning artifact")
     RecordVersion.check_readable(
-        {"record_version": "0.9.0"}, "older artifact"
+        {"record_version": "5.7.0"}, "newer-minor artifact"
     )
 
     current_major = RecordVersion.parse(RecordVersion.CURRENT)[0]
     future = {"record_version": "{0}.0.0".format(current_major + 1)}
     with pytest.raises(ValueError, match="upgrade melder"):
         RecordVersion.check_readable(future, "future artifact")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"record_version": "0.9.0"}, {"record_version": "4.3.0"}],
+    ids=["pre_versioning", "0_9_0", "4_3_0"],
+)
+def test_record_version_refuses_every_record_older_than_5_0_0(payload):
+    """
+    Regression for the owner's call (2026-10-25: "notch the cache version
+    and invalidate all the records"): a record of a major below 5 -
+    pre-versioning ones included - cannot promise that every version of an
+    index is bound the way its first version was, so the read gate refuses
+    it, naming the record, the reason and the remedy.
+    """
+    with pytest.raises(ValueError) as refused:
+        RecordVersion.check_readable(payload, "older artifact")
+    message = str(refused.value)
+    assert message.startswith(
+        "older artifact was written by record version {0}, older than the "
+        "oldest this melder reads (5.0.0).".format(RecordVersion.of(payload))
+    )
+    assert "every version of a SpellIndex is bound the way its first version was" in message
+    assert "Record the world again with this melder" in message
 
 
 # ----------------------------------------------------------------------

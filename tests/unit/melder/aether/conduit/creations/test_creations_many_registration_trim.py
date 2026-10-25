@@ -258,7 +258,7 @@ def test_extract_restore_of_a_plain_many_key_keeps_it_plain(store: Creations) ->
     store.add_many_creations("spell-plain", first)
 
     rows = store.extract_spell_creations("spell-plain")
-    assert rows == [{"scope": "many", "disposable": False, "stored": first}]
+    assert rows == [{"key": "spell-plain", "scope": "many", "disposable": False, "stored": first}]
 
     store.restore_spell_creations("spell-plain", rows)
     assert store._creations["spell-plain"] == [first]

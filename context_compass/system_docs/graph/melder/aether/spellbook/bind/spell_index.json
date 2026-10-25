@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/spell_index.py",
- "source_sha256": "0fae4148f2b9c36c68307b72fef21c14e6974b011f7622bc09ffbb3d294fd65f",
+ "source_sha256": "2a3d87a92fe5e04d708eeb005b398b0d6539c1513cef4c9091594d6d56447c17",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.spell_index": {
@@ -11,7 +11,7 @@
    "file": "src/melder/aether/spellbook/bind/spell_index.py",
    "lineno": 1,
    "include": true,
-   "role": "Stable index identity with a mutable selected-spell pointer - the thing notch repoints.",
+   "role": "Stable index identity with a mutable selected-spell pointer and the binding all its versions share - the thing notch repoints.",
    "semantics_authored_against": "b77b5ba0916c17f8185a6960f12201a4db9e7d00d7ab6c8219e4032927e72659"
   },
   "melder.aether.spellbook.bind.spell_index.SpellIndex": {
@@ -19,49 +19,56 @@
    "label": "SpellIndex",
    "kind": "class",
    "file": "src/melder/aether/spellbook/bind/spell_index.py",
-   "lineno": 12,
+   "lineno": 14,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
     "add_member",
+    "binding_signature",
+    "check_admits",
     "cleanup",
+    "for_binding",
     "has_spell",
     "id",
     "is_empty",
     "is_sole_member",
     "remove_member",
     "selected_spell_id",
+    "signature_of",
     "spells_in_index",
     "update"
    ],
    "shape": {
-    "method_count": 12,
+    "method_count": 17,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "98d6966800489aaf0e8779a692d083379898eb00335fec220e419d1bbf329439",
-   "role": "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.",
+   "span_sha256": "3a5d1ca16fba5805b95b3651d7104b263dca4f4544f93bd2ddc7344b02eb53ed",
+   "role": "Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer, the lineage's member set and the binding its first version was bound with.",
    "responsibilities": [
     "provides hash- and equality-stable index identity (the ULID) for spell registries",
     "holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one",
     "answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks",
     "leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index",
-    "answers whether it selects a version without ever raising (_is_selected_unless_cleaned, under its lock; False once cleaned) for ReleaseManagedSpell's cold resolver (0.2.8244)"
+    "answers whether it selects a version without ever raising (_is_selected_unless_cleaned, under its lock; False once cleaned) for ReleaseManagedSpell's cold resolver (0.2.8244)",
+    "keeps the binding its first version was bound with - the spellframe's kind (none, category, contract) and the case-insensitive address - recorded by for_binding, which Bind uses for every index, and read through binding_signature; admits only a version bound the same way (check_admits: the ValueError bind_inactive and add_to_spell_index raise, naming the verb, both bindings and the remedy; an index built without a binding admits nothing); cleanup keeps the binding (2026-10-25)"
    ],
    "owns_state": [
     "_id",
     "_selected_spell_id",
     "_spells_in_index",
-    "_lock"
+    "_lock",
+    "_binding_signature",
+    "_binding_text"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "c03e0ce1aad455ae6e5f30382be9887b79017052dad7ac8cfde07116943e3a1a"
+   "semantics_authored_against": "3a5d1ca16fba5805b95b3651d7104b263dca4f4544f93bd2ddc7344b02eb53ed"
   }
  },
  "edges_out": [
@@ -78,6 +85,18 @@
    "to_label": "RLock",
    "relation": "creates",
    "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
   }
  ],
  "published_aliases": [],
@@ -85,11 +104,14 @@
   "threading": "threading",
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
   "Optional": "typing.Optional",
   "Dict": "typing.Dict",
   "Tuple": "typing.Tuple",
   "ClassVar": "typing.ClassVar",
+  "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"

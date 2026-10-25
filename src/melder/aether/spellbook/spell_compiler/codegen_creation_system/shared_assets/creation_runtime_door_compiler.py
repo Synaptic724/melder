@@ -32,7 +32,7 @@ def compile_creation_context_instance_overrides_only_executor(
     )
     return template(
         _spell=spell,
-        _spell_id=spell_id,
+        _store_key=spell.store_key,
         _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _execute_with_overrides=execute_with_overrides,
@@ -82,7 +82,7 @@ def compile_creation_context_instance_no_overrides_executor(
     )
     return template(
         _spell=spell,
-        _spell_id=spell_id,
+        _store_key=spell.store_key,
         _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _SpellSpaceScopeError=spell_space_scope_error_type,
@@ -125,7 +125,7 @@ def compile_creation_context_hooks_overrides_only_executor(
     )
     return template(
         _spell=spell,
-        _spell_id=spell_id,
+        _store_key=spell.store_key,
         _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _execute_with_overrides=execute_with_overrides,
@@ -176,7 +176,7 @@ def compile_creation_context_hooks_no_overrides_executor(
     )
     return template(
         _spell=spell,
-        _spell_id=spell_id,
+        _store_key=spell.store_key,
         _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _SpellSpaceScopeError=spell_space_scope_error_type,
@@ -451,7 +451,7 @@ def _build_no_overrides_only_template_source(
         template_callable_name="_creation_context_no_overrides_only_template",
         template_parameter_lines=[
         "        _spell,",
-        "        _spell_id,",
+        "        _store_key,",
         "        _owner_creations,",
         "        _no_overrides_executor,",
         "        _SpellSpaceScopeError,",
@@ -479,7 +479,7 @@ def _build_overrides_only_template_source(
         template_callable_name="_creation_context_overrides_only_template",
         template_parameter_lines=[
         "        _spell,",
-        "        _spell_id,",
+        "        _store_key,",
         "        _owner_creations,",
         "        _no_overrides_executor,",
         "        _execute_with_overrides,",
@@ -511,7 +511,7 @@ def _build_no_overrides_lines(
 
     Locking:
         Slotted routes (`unique_per_conduit`, `spellspace`, `lineage`,
-        `cluster`) hold the target store's `slot_guard(_spell_id)` across the
+        `cluster`) hold the target store's `slot_guard(_store_key)` across the
         recheck and the executor call; `unique` holds `_spell._lock`. The store
         lock itself is never held here - publication inside the executor takes
         it as a leaf. Holding the store lock across the build (the pre
@@ -544,7 +544,7 @@ def _build_no_overrides_lines(
     if resolve_route_key == "unique_per_conduit":
         return [
             "caller_creations = meld._conduit_creations",
-            "creation = caller_creations._creations.get(_spell_id)",
+            "creation = caller_creations._creations.get(_store_key)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -553,8 +553,8 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
-            "    creation = caller_creations._creations.get(_spell_id)",
+            "with (caller_creations._slot_guards.get(_store_key) or caller_creations.slot_guard(_store_key)):",
+            "    creation = caller_creations._creations.get(_store_key)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -573,7 +573,7 @@ def _build_no_overrides_lines(
     if resolve_route_key == "spellspace":
         return [
             "caller_creations = meld._spellspace_creations",
-            "creation = caller_creations._creations.get(_spell_id)",
+            "creation = caller_creations._creations.get(_store_key)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -582,8 +582,8 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
-            "    creation = caller_creations._creations.get(_spell_id)",
+            "with (caller_creations._slot_guards.get(_store_key) or caller_creations.slot_guard(_store_key)):",
+            "    creation = caller_creations._creations.get(_store_key)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -601,7 +601,7 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "unique":
         return [
-            "creation = _owner_creations._creations.get(_spell_id)",
+            "creation = _owner_creations._creations.get(_store_key)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -611,7 +611,7 @@ def _build_no_overrides_lines(
                 ),
             ),
             "with _spell._lock:",
-            "    creation = _owner_creations._creations.get(_spell_id)",
+            "    creation = _owner_creations._creations.get(_store_key)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -632,7 +632,7 @@ def _build_no_overrides_lines(
         # lineage-root creations read straight off the resolving meld.
         return [
             "root_creations = meld._root_creations",
-            "creation = root_creations._creations.get(_spell_id)",
+            "creation = root_creations._creations.get(_store_key)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -641,8 +641,8 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with (root_creations._slot_guards.get(_spell_id) or root_creations.slot_guard(_spell_id)):",
-            "    creation = root_creations._creations.get(_spell_id)",
+            "with (root_creations._slot_guards.get(_store_key) or root_creations.slot_guard(_store_key)):",
+            "    creation = root_creations._creations.get(_store_key)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -665,7 +665,7 @@ def _build_no_overrides_lines(
         # `leader_creations`, so emitted door bodies are unchanged (0.2.8237).
         return [
             "leader_creations = meld._cluster_creations.resolved_store()",
-            "creation = leader_creations._creations.get(_spell_id)",
+            "creation = leader_creations._creations.get(_store_key)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -674,8 +674,8 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with (leader_creations._slot_guards.get(_spell_id) or leader_creations.slot_guard(_spell_id)):",
-            "    creation = leader_creations._creations.get(_spell_id)",
+            "with (leader_creations._slot_guards.get(_store_key) or leader_creations.slot_guard(_store_key)):",
+            "    creation = leader_creations._creations.get(_store_key)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -712,7 +712,7 @@ def _build_with_overrides_lines(
 
     Locking:
         Same as `_build_no_overrides_lines`: slotted routes hold the target
-        store's `slot_guard(_spell_id)`, `unique` holds `_spell._lock`, and the
+        store's `slot_guard(_store_key)`, `unique` holds `_spell._lock`, and the
         store lock is only taken as a leaf by publication inside the executor.
 
     Contract:
@@ -742,15 +742,15 @@ def _build_with_overrides_lines(
     if resolve_route_key == "unique_per_conduit":
         return [
             "caller_creations = meld._conduit_creations",
-            "creation = caller_creations._creations.get(_spell_id)",
+            "creation = caller_creations._creations.get(_store_key)",
             "if creation is not None:",
             "    raise _MeldExecutionError(",
             "        spell_id=_spell.spell_index.selected_spell_id,",
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
-            "    creation = caller_creations._creations.get(_spell_id)",
+            "with (caller_creations._slot_guards.get(_store_key) or caller_creations.slot_guard(_store_key)):",
+            "    creation = caller_creations._creations.get(_store_key)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
@@ -769,15 +769,15 @@ def _build_with_overrides_lines(
     if resolve_route_key == "spellspace":
         return [
             "caller_creations = meld._spellspace_creations",
-            "creation = caller_creations._creations.get(_spell_id)",
+            "creation = caller_creations._creations.get(_store_key)",
             "if creation is not None:",
             "    raise _MeldExecutionError(",
             "        spell_id=_spell.spell_index.selected_spell_id,",
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
-            "    creation = caller_creations._creations.get(_spell_id)",
+            "with (caller_creations._slot_guards.get(_store_key) or caller_creations.slot_guard(_store_key)):",
+            "    creation = caller_creations._creations.get(_store_key)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
@@ -795,7 +795,7 @@ def _build_with_overrides_lines(
         ]
     if resolve_route_key == "unique":
         return [
-            "creation = _owner_creations._creations.get(_spell_id)",
+            "creation = _owner_creations._creations.get(_store_key)",
             "if creation is not None:",
             "    raise _MeldExecutionError(",
             "        spell_id=_spell.spell_index.selected_spell_id,",
@@ -803,7 +803,7 @@ def _build_with_overrides_lines(
             "        message=_existing_override_message,",
             "    )",
             "with _spell._lock:",
-            "    creation = _owner_creations._creations.get(_spell_id)",
+            "    creation = _owner_creations._creations.get(_store_key)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
@@ -824,15 +824,15 @@ def _build_with_overrides_lines(
         # straight off the resolving meld (`meld._root_creations`).
         return [
             "root_creations = meld._root_creations",
-            "creation = root_creations._creations.get(_spell_id)",
+            "creation = root_creations._creations.get(_store_key)",
             "if creation is not None:",
             "    raise _MeldExecutionError(",
             "        spell_id=_spell.spell_index.selected_spell_id,",
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with (root_creations._slot_guards.get(_spell_id) or root_creations.slot_guard(_spell_id)):",
-            "    creation = root_creations._creations.get(_spell_id)",
+            "with (root_creations._slot_guards.get(_store_key) or root_creations.slot_guard(_store_key)):",
+            "    creation = root_creations._creations.get(_store_key)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
@@ -854,15 +854,15 @@ def _build_with_overrides_lines(
         # Distinct existence, its own route.
         return [
             "leader_creations = meld._cluster_creations.resolved_store()",
-            "creation = leader_creations._creations.get(_spell_id)",
+            "creation = leader_creations._creations.get(_store_key)",
             "if creation is not None:",
             "    raise _MeldExecutionError(",
             "        spell_id=_spell.spell_index.selected_spell_id,",
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with (leader_creations._slot_guards.get(_spell_id) or leader_creations.slot_guard(_spell_id)):",
-            "    creation = leader_creations._creations.get(_spell_id)",
+            "with (leader_creations._slot_guards.get(_store_key) or leader_creations.slot_guard(_store_key)):",
+            "    creation = leader_creations._creations.get(_store_key)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(

@@ -114,7 +114,8 @@ def test_root_and_lessers_share_one_instance_in_root_store() -> None:
     root = book.conjure(name="root", dynamic=False)
     try:
         root_instance = root.meld(spell_id=spell_id)
-        assert root._creations.get_creation(spell_id) is root_instance
+        # Filed under its store key (STORY-2026-10-25-creations_store_slots_by_binding).
+        assert root._creations.get_creation(book.find_spell_by_spell_id(spell_id).store_key) is root_instance
         for _ in range(3):
             lesser = root.create_lesser_conduit()
             try:

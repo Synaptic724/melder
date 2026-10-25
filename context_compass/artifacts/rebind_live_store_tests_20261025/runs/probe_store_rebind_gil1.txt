@@ -1,0 +1,12 @@
+python 3.14.8 gil_enabled=True
+S1: same id True; teardown ok; calls per object built [['close'], ['close']]
+S2: meld raised AttributeError: 'Svc' object has no attribute 'append'; objects built 2; teardown ok; calls [['close'], []]
+S3: meld returned a Python list of 2 Svc objects (same value next meld: True); objects built 2; teardown ok; calls [['close'], ['close']]
+S4: meld returned a Python list of 1 Svc objects; objects built 1; teardown ok; calls [['close']]
+S5: meld returned the first definition's object: True; objects built 1; teardown ok; calls [['close']]
+S6: purge raised TypeError: object of type 'Svc' has no len(); teardown ok; calls [['close']]
+S7: purge returned 1; calls right after the purge [['close'], ['close']]; teardown ok
+S8: before the new spell built anything: has_live_creation -> True; describe_live_creation_status -> {'is_live': True, 'spell_id': 'a2929b79e143d61e00460c9e04c1451c37c2c1fb0c47f333722a0c963f8185d5', 'spell_name': 'Svc', 'existence': 'many', 'query_conduit_id': '01M5S6YG517VAQAGXVTXP3A9V2', 'storage_scope_kind': 'caller_conduit_many', 'storage_owner_conduit_id': '01M5S6YG517VAQAGXVTXP3A9V2', 'active_spellspace_id': None, 'creation_count': 1}; teardown ok
+S9: before the new spell built anything: has_live_creation -> False; describe_live_creation_status -> {'is_live': False, 'spell_id': 'a2929b79e143d61e00460c9e04c1451c37c2c1fb0c47f333722a0c963f8185d5', 'spell_name': 'Svc', 'existence': 'many', 'query_conduit_id': '01M5S6YG58KRZFNZX7FJRM92PQ', 'storage_scope_kind': 'caller_conduit_many', 'storage_owner_conduit_id': '01M5S6YG58KRZFNZX7FJRM92PQ', 'active_spellspace_id': None, 'creation_count': 0}; teardown ok
+S10: purged 1; teardown ok; teardown order [('dep', 2), ('user', 3, 'its dep already closed'), ('user', 1, 'its dep already closed')]
+S11: teardown ok; teardown order [('dep', 2), ('user', 3, 'its dep already closed'), ('user', 1, 'dep still open')]
