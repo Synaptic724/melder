@@ -35,16 +35,19 @@ class SpellStub:
     Minimal stand-in for the two Spell attributes `Creations.purge` reads.
 
     Contract:
-        Exposes `spell_id`, `existence` and `_lock` only; purge never reaches further.
+        Exposes `spell_id`, `store_key`, `existence` and `_lock` only; purge never reaches further. The store key
+        is the spell id itself, a key without ':' that is its own shelf
+        (STORY-2026-10-25-creations_store_slots_by_binding).
     """
 
     def __init__(self, spell_id: str, existence: Existence) -> None:
         """
         Args:
-            spell_id: Slot key used by the store.
+            spell_id: Slot key used by the store, and the shelf it is on.
             existence: Existence that selects the purge lock family.
         """
         self.spell_id: str = spell_id
+        self.store_key: str = spell_id
         self.existence: Existence = existence
         self._lock: RLock = RLock()
 

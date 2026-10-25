@@ -1,0 +1,23 @@
+command: python -X gil=1 _probes/codegen_probe2.py (cwd: /tmp copy of 0.2.8270 tree + D-11; PYTHONPATH=src:.; Python 3.14.7t)
+ran_at: 2026-10-25T10:18:17Z
+/tmp/m0d11/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+safe               __import__('subprocess') accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+safe               __import__('socket'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+safe               __import__('importlib' ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+safe               __import__('melder'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid             __import__('subprocess') accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid             __import__('socket'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid             __import__('importlib' ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid             __import__('melder'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid+precision   __import__('subprocess') accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid+precision   __import__('socket'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid+precision   __import__('importlib' ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+hybrid+precision   __import__('melder'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+permissive         __import__('subprocess') accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+permissive         __import__('socket'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+permissive         __import__('importlib' ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+permissive         __import__('melder'    ) accepted=False result=None issues=("Builtin '__import__' is not allowed in this codegen mode.",)
+exit: 0

@@ -1,0 +1,7 @@
+python 3.14.8 free-threaded=1 gil=False
+R6a: unique_per_conduit -> many; same spell_id: True; slot type before rebind: NoneType
+   second meld returned the first object: False; slot type now: NoneType
+   disposal events: [('second', 'close'), ('first', 'close')]
+R6b: unique -> many; same spell_id: True; slot type before rebind: NoneType
+   second meld returned the first object: False; slot type now: NoneType
+   disposal events: [('second', 'close'), ('first', 'close')]

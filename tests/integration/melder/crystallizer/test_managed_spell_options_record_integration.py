@@ -6,8 +6,10 @@ The crystal records the four options of a managed spell; the restore engine and 
 through bind, so each rebuilt version gets the same normalized options, and the same spell id, as the recorded one.
 An active member and a parked member are covered on both lanes; the parked member is a second version's class
 (RecordedPoolNext): one object is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code), so a version is new
-code, and its options, settings and disposal names are its binding. Managed spells are not melded here: dispensing
-arrives with STORY-2026-10-15-managed_dispense_codegen (S5).
+code, and its options, settings and disposal names are its binding. Both versions sit under the string category
+"RecordedPool" - the address a bare bind of RecordedPool has - because every version of an index is bound the way its
+first version was (2026-10-25). Managed spells are not melded here: dispensing arrives with
+STORY-2026-10-15-managed_dispense_codegen (S5).
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -116,11 +118,14 @@ def _record_world() -> tuple:
     """Bind an anchor and an active managed spell, conjure, park a second managed version; return the ids."""
     book = _dynamic_book()
     book.bind(spell=RecordedAnchor, existence=Existence.unique)
-    active_id = book.bind(spell=RecordedPool, existence=Existence.managed_spell_quantity, **ACTIVE_OPTIONS)
+    active_id = book.bind(
+        spell=RecordedPool, existence=Existence.managed_spell_quantity, spellframe="RecordedPool", **ACTIVE_OPTIONS,
+    )
     root = book.conjure(dynamic=True, name="root")
     parked_id = root.bind_inactive(
         spell=RecordedPoolNext, spell_index=book.find_spell_by_spell_id(active_id).spell_index,
-        existence=Existence.managed_spell_quantity, disposal_method_names=["flush"], **PARKED_OPTIONS,
+        existence=Existence.managed_spell_quantity, disposal_method_names=["flush"], spellframe="RecordedPool",
+        **PARKED_OPTIONS,
     )
     return book, root, active_id, parked_id
 

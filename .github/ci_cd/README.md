@@ -4,7 +4,7 @@ Read this folder before you change anything under `.github/`, change `project.re
 dependencies in `pyproject.toml`, add a Python release, a CI job or a benchmark, or diagnose a failed run. It says
 what every CI file is for, how the pieces connect, how to extend them and how to check a change before handing it
 off. Branch and release policy (which pull request may target which branch, cutting a release, the TestPyPI and
-PyPI credentials) lives in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md); this folder links to it instead of
+PyPI Trusted Publishers) lives in [BRANCH_WORKFLOW.md](../BRANCH_WORKFLOW.md); this folder links to it instead of
 repeating it.
 
 | Read | When |
@@ -39,7 +39,8 @@ push to release_candidate, or a manual run there  -->  release-candidate.yml
   Windows and macOS) -> package-ready
 
 published release, or a manual run on prod  -->  python-publish.yml
-  release-gate -> hygiene, source-assets, repo-assets -> release-build -> pypi-publish
+  release-gate -> hygiene, source-assets, repo-assets -> release-build -> pypi-publish (PyPI, by Trusted
+  Publishing, with attestations) -> pypi-provenance (every released file's attestation verified)
 ```
 
 Workflows only orchestrate. The decisions (routes, required results, Python matrices, installs, package checks)

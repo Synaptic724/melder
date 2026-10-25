@@ -168,3 +168,58 @@ def test_frame_acl_codegen_builder_remove_capability_rule_is_fluent() -> None:
     assert "builder_recursive_codegen" not in (
         next_configuration.capability_override_ruleset.rules_by_name
     )
+
+
+def test_frame_acl_codegen_builder_merges_materialize_module_roots() -> None:
+    """
+    Verify (D-20) the fluent builder merges generation-namespace roots into stable `materialize_modules` rules that
+    the validator accepts at commit.
+
+    Returns:
+        None.
+    """
+    container = _build_container()
+    builder = container.frame_acl_builder.begin_codegen_change(reason="generation")
+
+    next_configuration = (
+        builder
+        .use_profile("hybrid")
+        .allow_materialize_module_roots("codegen_generated")
+        .allow_materialize_module_roots("tools.gen")
+        .deny_materialize_module_roots("codegen_generated.secret")
+        .commit_change()
+    )
+
+    rules = next_configuration.capability_override_ruleset.rules_by_name
+
+    assert rules["builder_allow_materialize_modules"].operation == "materialize_modules"
+    assert rules["builder_allow_materialize_modules"].effect == "allow"
+    assert rules["builder_allow_materialize_modules"].conditions["module_roots"] == (
+        "codegen_generated",
+        "tools.gen",
+    )
+    assert rules["builder_deny_materialize_modules"].effect == "deny"
+    assert rules["builder_deny_materialize_modules"].conditions["module_roots"] == (
+        "codegen_generated.secret",
+    )
+
+
+def test_frame_acl_validator_rejects_malformed_materialize_module_rules() -> None:
+    """
+    Verify (D-20) a `materialize_modules` rule must declare non-empty, dotted-identifier-legal `module_roots`.
+
+    Returns:
+        None.
+    """
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+    from melder.nexus.acl.validator.frame_acl_validator import FrameACLValidator
+
+    for conditions in ({}, {"module_roots": ()}, {"module_roots": ("",)}, {"module_roots": ("not-legal",)}):
+        rule = FrameACLRule(
+            rule_name="generation",
+            operation="materialize_modules",
+            effect="allow",
+            conditions=conditions,
+        )
+        with pytest.raises(ValueError, match="materialize"):
+            FrameACLValidator._validate_materialize_module_rule_conditions(rule, "capability")

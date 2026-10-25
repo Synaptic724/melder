@@ -1114,7 +1114,13 @@ class AethericFrame(Cleanable):
 
     def update_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
         """
-        Re-point an active binding signature to a new spell_id (notch).
+        Re-point an active binding signature to a spell_id unconditionally.
+
+        Contract:
+            - Delegates to `LookupContainer.update`, which sets the signature
+              whoever held it: for setting a claim back to a recorded value
+              (`Spellbook._restore_binding_key`). A notch moves its claim with
+              `repoint_lookup` (2026-10-25; it called this method until then).
 
         Args:
             key: The binding signature `(frame_key, bind_key)`.
@@ -1124,6 +1130,31 @@ class AethericFrame(Cleanable):
             None.
         """
         self._lookup_container.update(key, spell_id)
+
+    def repoint_lookup(self, key: Tuple[str, str], spell_id: str, *, from_spell_id: Optional[str]) -> Optional[str]:
+        """
+        Move a binding signature to `spell_id` only from the spell the caller expects (a notch's claim move).
+
+        Contract:
+            - Delegates to the frame-owned `LookupContainer.repoint`: one
+              compare-and-set. The signature moves to `spell_id` when it is
+              unclaimed, held by `from_spell_id` or already held by `spell_id`;
+              held by any other spell, nothing changes and the holder is
+              returned. `Spellbook._apply_notch` refuses the notch then
+              (2026-10-25, STORY-2026-10-17-notch_moves_signature_by_incoming_key_only).
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)`.
+            spell_id: The spell_id that should hold the signature.
+            from_spell_id: The spell_id expected to hold it now, or None when it is expected unclaimed.
+
+        Returns:
+            Optional[str]: None when the signature now names `spell_id`; otherwise its holder's spell_id.
+
+        Threading:
+            The container's leaf lock only; callers hold the Book lock around it, as around `update_lookup`.
+        """
+        return self._lookup_container.repoint(key, spell_id, from_spell_id=from_spell_id)
 
     def get_lookup(self, key: Tuple[str, str]) -> Optional[str]:
         """

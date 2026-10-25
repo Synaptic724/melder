@@ -51,7 +51,7 @@ class _HeadA:
 
 
 class _MemberB:
-    """Parked member of the owner's index."""
+    """Parked member of the owner's index, staged under the head's binding ('residual', 'a')."""
 
 
 @pytest.fixture(autouse=True)
@@ -350,11 +350,15 @@ def test_second_cleanup_spell_of_a_parked_member_refuses_while_the_first_runs(
     0.2.8232 it raised "is not owned by this spellbook"), the first completes, and the index keeps its active head.
     """
     owner_book = _make_book()
-    id_a = owner_book.bind(spell=_HeadA, existence=Existence.unique, permissions="create", binding_name="a")
+    # Every version of an index is bound the way its first version was (2026-10-25): head and member share
+    # ('residual', 'a').
+    id_a = owner_book.bind(
+        spell=_HeadA, existence=Existence.unique, permissions="create", spellframe="residual", binding_name="a",
+    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(spell=_MemberB, spell_index=index, existence=Existence.unique,
-                               permissions="create", binding_name="b")
+                               permissions="create", spellframe="residual", binding_name="a")
     spell_b = owner_book._get_owned_spell(id_b)
     finish = _start_parked_disposal(monkeypatch, Spell, "cleanup", spell_b,
                                     lambda: owner.cleanup_spell(spell=spell_b))

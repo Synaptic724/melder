@@ -1,0 +1,9 @@
+python 3.14.8 free-threaded=1 gil=False
+R6a: unique_per_conduit -> many; same spell_id: True; slot type before rebind: Svc
+   second meld raised AttributeError: 'Svc' object has no attribute 'append'
+   innermost frame: register_many (creations.py:853)
+   disposal events: [('first', 'close')]
+R6b: unique -> many; same spell_id: True; slot type before rebind: Svc
+   second meld raised AttributeError: 'Svc' object has no attribute 'append'
+   innermost frame: register_many (creations.py:853)
+   disposal events: [('first', 'close')]

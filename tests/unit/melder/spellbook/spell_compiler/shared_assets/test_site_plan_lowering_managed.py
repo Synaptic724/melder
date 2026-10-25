@@ -60,6 +60,10 @@ class Store:
         """Record one disposal-bearing many instance."""
         self.registered.append((key, item))
 
+    def register_slot(self, key: str, item: Any) -> None:
+        """Publish one singleton without disposal methods."""
+        self._creations[key] = item
+
     def get_managed_quantity(self, spell_id: str) -> Optional[ManagedSpellQuantity]:
         """Return the pool held under one spell_id, as `Creations.get_managed_quantity` does."""
         return self._managed_quantities.get(spell_id)
@@ -126,6 +130,7 @@ class World:
         spell = SimpleNamespace(
             spell=self._factory(name),
             spell_id=name,
+            store_key=name,  # its own shelf (STORY-2026-10-25-creations_store_slots_by_binding)
             spell_index=SimpleNamespace(selected_spell_id=name),
             spell_name=name,
             binding_name=None,

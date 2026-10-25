@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/frame_acl_compiled_access_surface.py",
- "source_sha256": "7621c35dce13756f664c5c48896dc27caaf1b827e9b638afc3cc5aee1d85e158",
+ "source_sha256": "3fbe17c7ea9d64a13f5719a79cc8ced5982dfc688258d891f9522493094d0c96",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.frame_acl_compiled_access_surface": {
@@ -39,13 +39,16 @@
     "conduit_payload_sections_by_id",
     "configuration_id",
     "denied_builtin_names",
+    "denied_generation_module_roots",
     "denied_import_module_roots",
     "enabled_conduit_ids",
     "enabled_spell_index_ids",
     "frame_name",
     "frame_payload_fields",
+    "generation_module_roots",
     "metadata",
     "spell_payload_sections_by_key",
+    "static_only_denied_builtin_names",
     "view_profile_name",
     "view_profile_version",
     "visible_conduit_ids",
@@ -53,16 +56,18 @@
     "visible_spell_keys"
    ],
    "shape": {
-    "method_count": 26,
+    "method_count": 29,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f7f8b58faa7c3a4734d612406ce532ef8ce39e71256383903ad99b29c8c53237",
+   "span_sha256": "4e0baac812b05e154da55b7317a0db2267208e56498519ee44d2a9c06b95a154",
    "role": "Derived consumer-facing ACL access surface for one frame.",
    "responsibilities": [
     "stores derived visibility and command enablement answers",
     "stores visible conduit and spell payload-section maps",
-    "carries the compiled profile/config identity for one frame"
+    "carries the compiled profile/config identity for one frame",
+    "carries `static_only_denied_builtin_names`, the import-gate names denied at validation only and never stripped from the runtime builtins, beside `denied_builtin_names` (D-11, 0.2.8271)",
+    "carries the frame's generation namespace for materialize_codegen - `generation_module_roots` (None when undeclared) and `denied_generation_module_roots` (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_allowed_kinds",
@@ -78,7 +83,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "82cef32ab83a0f4ef501838dda12440da3bb9d8ee5e31458563c56ca1d5617ba"
+   "semantics_authored_against": "4e0baac812b05e154da55b7317a0db2267208e56498519ee44d2a9c06b95a154"
   }
  },
  "edges_out": [

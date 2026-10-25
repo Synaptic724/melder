@@ -1,0 +1,8 @@
+command: PYTHONPATH=/tmp/m0s2/d10_red/src python -X gil=0 -m pytest -p no:cacheprovider -q -rfEx UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name (cwd: /tmp/m0s2/d10_b; melder imported from /tmp/m0s2/d10_red/src, the 0.2.8267 tree before any D-10 change; Python 3.14.7t)
+ran_at: 2026-10-25T08:15:55Z
+melder from /tmp/m0s2/d10_red/src/melder/__init__.py 0.2.8267
+UX_and_AIX_experiences/pytest_examples/test_expert_probes.py:1015: Failed
+=========================== short test summary info ============================
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+1 failed in 0.15s
+exit: 1

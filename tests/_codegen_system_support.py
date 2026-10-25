@@ -141,6 +141,7 @@ def build_compiled_access_surface(
         allowed_import_module_roots: Tuple[str, ...] = tuple(),
         denied_import_module_roots: Tuple[str, ...] = tuple(),
         denied_builtin_names: Tuple[str, ...] = tuple(),
+        static_only_denied_builtin_names: Tuple[str, ...] = tuple(),
         unsafe_reflection_allowed: bool = False,
         dunder_access_allowed: bool = False,
         recursive_codegen_allowed: bool = False,
@@ -153,6 +154,7 @@ def build_compiled_access_surface(
         allowed_import_module_roots=tuple(allowed_import_module_roots),
         denied_import_module_roots=tuple(denied_import_module_roots),
         denied_builtin_names=tuple(denied_builtin_names),
+        static_only_denied_builtin_names=tuple(static_only_denied_builtin_names),
         codegen_unsafe_reflection_allowed=unsafe_reflection_allowed,
         codegen_dunder_access_allowed=dunder_access_allowed,
         codegen_recursive_codegen_allowed=recursive_codegen_allowed,
@@ -165,6 +167,7 @@ def build_codegen_projection(
         allowed_import_module_roots: Tuple[str, ...] = tuple(),
         denied_import_module_roots: Tuple[str, ...] = tuple(),
         denied_builtin_names: Tuple[str, ...] = tuple(),
+        static_only_denied_builtin_names: Tuple[str, ...] = tuple(),
         unsafe_reflection_allowed: bool = False,
         dunder_access_allowed: bool = False,
         recursive_codegen_allowed: bool = False,
@@ -178,6 +181,7 @@ def build_codegen_projection(
             allowed_import_module_roots=allowed_import_module_roots,
             denied_import_module_roots=denied_import_module_roots,
             denied_builtin_names=denied_builtin_names,
+            static_only_denied_builtin_names=static_only_denied_builtin_names,
             unsafe_reflection_allowed=unsafe_reflection_allowed,
             dunder_access_allowed=dunder_access_allowed,
             recursive_codegen_allowed=recursive_codegen_allowed,
@@ -196,6 +200,7 @@ def build_namespace_configuration(
         allow_unsafe_reflection: bool = False,
         allow_dunder_access: bool = False,
         allow_recursive_codegen: bool = False,
+        static_only_denied_builtin_names: Tuple[str, ...] = tuple(),
     ) -> CodegenNamespaceConfiguration:
     """
     Build one namespace configuration for codegen-system tests.
@@ -210,6 +215,7 @@ def build_namespace_configuration(
         allow_unsafe_reflection=allow_unsafe_reflection,
         allow_dunder_access=allow_dunder_access,
         allow_recursive_codegen=allow_recursive_codegen,
+        static_only_denied_builtin_names=static_only_denied_builtin_names,
     )
 
 

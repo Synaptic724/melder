@@ -133,6 +133,30 @@ class CodegenNamespaceBuilder(Cleanable):
             del self._builtins_strategy
         del self._lock
 
+    def build_builtins(
+            self,
+            configuration: CodegenNamespaceConfiguration,
+    ) -> Dict[str, object]:
+        """
+        Build only the room's filtered builtins mapping for one request (D-20).
+
+        Contract:
+            - The same mapping `build` places under `__builtins__`: the interpreter's builtins minus
+              `denied_builtin_names`, with the D-11 root-checking `__import__` wrapper where an import list applies.
+            - A fresh dict per call; no room objects are built.
+
+        Args:
+            configuration:
+                Namespace configuration for the request.
+
+        Returns:
+            Dict[str, object]: The builtins mapping.
+        """
+        self.check_cleaned()
+        with self._lock:
+            entries = self._builtins_strategy.build_namespace_entries(configuration)
+            return entries["__builtins__"]
+
     def build(
             self,
             configuration: CodegenNamespaceConfiguration,

@@ -170,6 +170,13 @@ class NotchTransactionStrategy(TransactionStrategy):
             conduit_ids.update(
                 devops_information_registry.list_providers_for_borrower(acting_conduit_id)
             )
+        # Design 2 (TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout): the
+        # lineage roots of the acting conduit's ward links - the peers its borrower fan-out
+        # walks - join the seal and the freeze, so every lineage the fan-out moves is parked
+        # while it runs (the registry's borrower list missed an index-link borrower, 2026-10-25).
+        for linked_root_id in metadata.get("linked_root_conduit_ids", ()):
+            if isinstance(linked_root_id, str) and linked_root_id:
+                conduit_ids.add(linked_root_id)
         binding_key = cls._resolve_binding_key(metadata=metadata)
 
         scope_keys, scope_claims = cls._seal_scope_keys(

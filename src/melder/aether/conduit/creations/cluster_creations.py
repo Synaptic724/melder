@@ -197,7 +197,7 @@ class ClusterCreations(Cleanable):
         Purpose:
             Hand the meld front door the concrete team store so the door can
             run the same get-or-create-once block the lineage route uses,
-            holding the real store's `slot_guard(spell_id)` across the build
+            holding the real store's `slot_guard(store_key)` across the build
             (the store's `_lock` is only a leaf around publish). The facade
             itself carries no lock;
             safety while a leader is bound/unbound comes from the
@@ -226,18 +226,20 @@ class ClusterCreations(Cleanable):
             )
         return self._store
 
-    def get_creation(self, spell_id: str) -> Optional[Any]:
+    def get_creation(self, key: str) -> Optional[Any]:
         """
-        Return the shared cluster instance for a spell id, or `None`.
+        Return the shared cluster instance for one store key, or `None`.
 
         Contract:
-            - Delegates to the bound store.
+            - Delegates to the bound store. `key` is the binding's store key
+              (`Spell.store_key`, `<spell_id>:<binding_hash>`;
+              STORY-2026-10-25-creations_store_slots_by_binding).
             - Raises when disabled: a `unique_per_conduit_cluster` lookup with no
               elected leader is a hard error.
 
         Args:
-            spell_id:
-                SHA256 spell id to resolve.
+            key:
+                Store key of the slot to read.
 
         Returns:
             Optional[Any]:
@@ -252,28 +254,29 @@ class ClusterCreations(Cleanable):
             raise RuntimeError(
                 "cluster_creations is disabled: no elected cluster leader."
             )
-        return self._store.get_creation(spell_id)
+        return self._store.get_creation(key)
 
     def add_creation(
             self,
-            spell_id: str,
+            key: str,
             item: object,
             *,
             has_disposal_methods: bool = False,
             disposal_methods: Optional[List[str]] = None,
     ) -> None:
         """
-        Register the shared cluster instance for a spell id into the team store.
+        Register the shared cluster instance for one store key into the team store.
 
         Contract:
-            - Delegates to the bound store, keyed by `spell_id`.
+            - Delegates to the bound store, keyed by the binding's store key
+              (`Spell.store_key`; STORY-2026-10-25-creations_store_slots_by_binding).
             - Raises when disabled: creating a `unique_per_conduit_cluster`
               instance with no elected leader is a hard error, never a silent
               drop or orphan.
 
         Args:
-            spell_id:
-                SHA256 spell id key.
+            key:
+                The store key.
             item:
                 The live instance to store.
             has_disposal_methods:
@@ -294,7 +297,7 @@ class ClusterCreations(Cleanable):
                 "cluster_creations is disabled: no elected cluster leader."
             )
         self._store.add_creation(
-            spell_id,
+            key,
             item,
             has_disposal_methods=has_disposal_methods,
             disposal_methods=disposal_methods,

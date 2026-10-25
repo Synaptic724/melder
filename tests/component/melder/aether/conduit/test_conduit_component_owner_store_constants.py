@@ -113,7 +113,7 @@ def test_automatic_world_binds_the_owner_store_and_reuses_the_service(captured_p
         assert "._owner_creations" not in source
         service_spell = spellbook._spell_id_pool[service_id]
         assert namespace["c0"] is service_spell._owner_creations
-        assert namespace["c0"]._creations[service_id] is first.service
+        assert namespace["c0"]._creations[service_spell.store_key] is first.service
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -183,7 +183,7 @@ def test_cache_full_hit_binds_the_live_worlds_owner_store(captured_plans: Dict[s
         source, namespace = captured_plans[worker_id]
         assert "._owner_creations" not in source
         assert namespace["c0"] is spellbook._spell_id_pool[service_id]._owner_creations
-        assert namespace["c0"]._creations[service_id] is first.service
+        assert namespace["c0"]._creations[spellbook._spell_id_pool[service_id].store_key] is first.service
     finally:
         conduit.cleanup()
         spellbook.cleanup()

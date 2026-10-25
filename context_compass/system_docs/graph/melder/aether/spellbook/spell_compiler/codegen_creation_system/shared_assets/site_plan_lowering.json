@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
- "source_sha256": "1c241e4b14ee9ad200ff7ad54eac544493c959e28b3b1fcaad085902580fb7e3",
+ "source_sha256": "541777c9412ed2a24539dd0aef75af8956e8412b6dd53f0b7258a2c7bff1fa69",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
@@ -158,7 +158,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3e235e9d2ca0d7553a1ce48c3dee56b930b99aa151224693383ed88d4e6ffad6",
+   "span_sha256": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb",
    "include": true,
    "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
    "responsibilities": [
@@ -171,7 +171,8 @@
     "binds an automatic world's unique-site owner store as a plan constant (owner-store constants, 2026-10-03): _owner_store_constant admits a unique site whose provider spell is owned by an automatic conduit and has an owner store; _emit_shared_hit then binds c{i} in the namespace and emits no alias line, while dynamic, unowned and meld.<store> sites keep the per-creation read and the miss keeps its c{i} parameter",
     "registers every disposal-bearing many site through many_store, the meld's innermost scope (the spellspace store, else the conduit store), at the top level and inside a shared site's miss alike (0.2.8267): a function that registers one emits the store selection (_many_store_prologue) - the plan at its top, a miss after its unresolved-input check - so a slotted holder's many children belong to the scope that built them, never to the holder's owner (0.2.8235-0.2.8265 registered them in the holder's store and, from 0.2.8238, recorded them with the holder); warm _site_plan_executor bodies are unchanged",
     "emits managed sites (0.2.8245): a leasing site (no winning key on its own parameters) has its own miss and exactly one consumer, and its lease - an inline pop of a plan-constant pool on an automatic owner, else a per-creation pool read whose miss raises the named missing-pool error - is emitted in its consumer's lease group; the miss checks unresolved inputs, reserves, builds the children and the object inside a try whose handler abandons, then adopts the disposal-bearing many children; a fresh site (a winning key on its own parameters) is built like a many step and never pooled",
-    "puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)"
+    "puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)",
+    "binds each slotted and many site's sid{i} to its Spell's store key (<spell_id>:<binding_hash>) and publishes a no-disposal slotted miss through c{i}.register_slot(sid{i}, v{i}), so a plan reads, guards and files only its own binding's slot; a leasing managed site's sid{i} stays the spell id for its pool read (0.2.8274)"
    ],
    "owns_state": [
     "_lines",
@@ -195,7 +196,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "101a1ae4482a1e8bc5d989a80e94799f3f587921633ed664afabd3113549d1b5"
+   "semantics_authored_against": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb"
   }
  },
  "edges_out": [

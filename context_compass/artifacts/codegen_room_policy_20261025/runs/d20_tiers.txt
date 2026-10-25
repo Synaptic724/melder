@@ -1,0 +1,24 @@
+D-20 tiers on a /tmp copy of the device tree (src + tests + system_docs), 2026-10-25, 3.14.7t.
+RED (tests in, source unchanged), GIL off: 29 failed, 117 passed (d20_red_gil0.txt).
+GREEN, targeted (6 files): 146 passed GIL off; 146 passed + GIL warning GIL on.
+GIL off:
+  tests/unit/melder           9249 passed, 3 skipped, 7 xfailed (2 build_assets failures in the copy without
+                              context_compass/system_docs; 60 passed once it was copied in)
+  tests/component/melder      2478 passed, 43 skipped, 1 xfailed
+  tests/integration/melder/aether            917 passed
+  tests/integration/melder/crystallizer      282 passed, 3 xfailed
+  tests/integration/melder/mutation_research  67 passed
+  tests/integration/melder/conduit           355 passed, 4 skipped, 1 xpassed
+  tests/integration/melder/spellbook         678 passed, 2 failed (test_spellbook_integration_parked_before_conjure
+                              x2: melder_3's store_key lane, M3-20; not D-20), 2 skipped, 2 xpassed
+  tests/integration/melder/live_sim          1 passed, 1 xfailed
+GIL on:
+  tests/unit/melder           9251 passed, 3 skipped, 7 xfailed, 1 warning
+  tests/component/melder      2498 passed, 23 skipped, 1 xfailed, 1 warning
+  tests/integration/melder/aether            917 passed, 1 warning
+  integration crystallizer + mutation_research + conduit  704 passed, 4 skipped, 3 xfailed, 1 xpassed, 1 warning
+Not run: tests/integration/melder/multithreading; Windows tiers; hosted CI.
+Expert examples (pytest_examples/test_expert_examples.py): 34 passed, 4 failed (02, 09, 24, 27) at
+  list_cached_checkpoint_ids; the same four fail with D-20's SyntheticModule change reverted and with the builtins
+  merge off, and 02, 09, 24 never materialize - not D-20. Every materializing example (12, 26, 29, 30, 32, 33, 36)
+  passes; 27 materializes both its modules before its checkpoint assertion.

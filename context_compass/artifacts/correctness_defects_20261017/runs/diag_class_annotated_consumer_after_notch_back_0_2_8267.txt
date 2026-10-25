@@ -1,0 +1,105 @@
+diag_class_annotated_consumer_after_notch_back.py on 0.2.8267, every case, the GIL off then on (melder_1, 2026-10-25;
+STORY-2026-10-17-notch_moves_signature_by_incoming_key_only, a side finding); runner scripts/option_a_experiment/run_class_annotated_consumer.sh.
+===== framed on the 0.2.8267 tree (-X gil=0)
+case framed
+  English greeter/greeter, French greeter/greeter
+  meld ByClass (English active)                -> English
+    validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch to French                              -> French
+  meld ByClass (French active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                        -> English
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English active again)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare on the 0.2.8267 tree (-X gil=0)
+case bare
+  English english/__default__, French french/__default__
+  meld ByClass (English active)                -> English
+    validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch to French                              -> French
+  meld ByClass (French active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                        -> English
+    validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English active again)          -> English
+  meld ByClass a second time                   -> English
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== framed_bind_later on the 0.2.8267 tree (-X gil=0)
+case framed_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at greeter/greeter
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare_bind_later on the 0.2.8267 tree (-X gil=0)
+case bare_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at english/__default__
+    validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> English
+  meld ByClass a second time                   -> English
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== framed on the 0.2.8267 tree (-X gil=1)
+case framed
+  English greeter/greeter, French greeter/greeter
+  meld ByClass (English active)                -> English
+    validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch to French                              -> French
+  meld ByClass (French active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                        -> English
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English active again)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare on the 0.2.8267 tree (-X gil=1)
+case bare
+  English english/__default__, French french/__default__
+  meld ByClass (English active)                -> English
+    validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch to French                              -> French
+  meld ByClass (French active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                        -> English
+    validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English active again)          -> English
+  meld ByClass a second time                   -> English
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== framed_bind_later on the 0.2.8267 tree (-X gil=1)
+case framed_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at greeter/greeter
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare_bind_later on the 0.2.8267 tree (-X gil=1)
+case bare_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at english/__default__
+    validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> English
+  meld ByClass a second time                   -> English
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]

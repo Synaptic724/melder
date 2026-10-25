@@ -1,0 +1,4 @@
+command: python -X gil=0 -m pytest -p no:cacheprovider -q -rfE tests/experimentation (cwd: /tmp/m0s2/d10_fix, the D-10 fix; Python 3.14.7t)
+ran_at: 2026-10-25T02:26:11Z
+250 passed, 4 skipped in 9.63s
+exit: 0

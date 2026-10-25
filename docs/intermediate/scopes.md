@@ -100,9 +100,11 @@ removed = conduit.purge("Job")
 removed = space.purge("RequestSession")
 ```
 
-Names, class/function references, spellframe/binding selectors, and explicit
-`spell_id=` work through the same discovery as `meld`. The return value is the
-number removed, or `0` when that authorized store has no matching creation.
+Names, class/function references, and spellframe/binding selectors work through the
+same discovery as `meld`, so they name the version a SpellIndex has selected. An
+explicit `spell_id=` names exactly that version, also one a notch has parked: purge
+it to retire an old version's objects without notching back to it. The return value
+is the number removed, or `0` when that authorized store has no matching creation.
 `purge_all=True` is the default: a `many` target removes its whole retained bucket.
 Only `many` objects with configured disposal are retained; untracked results are
 not affected by purge.

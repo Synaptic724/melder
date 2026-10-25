@@ -14,7 +14,8 @@ transient emitters this module owned were retired on 2026-09-26 (R2). What remai
 
 Emission semantics are a faithful port of the legacy step-plan emitter with
 one deliberate hot-path improvement: reuse reads are inlined as direct
-`creations._creations.get(spell_id)` dict reads. The existence routing the
+`creations._creations.get(store_key)` dict reads, keyed by each step's store key
+(`Spell.store_key`, STORY-2026-10-25-creations_store_slots_by_binding). The existence routing the
 legacy `_get_existing_creation` helper performed at runtime is compile-time
 constant per step, and `Creations.get_creation` is a bare dict read, so the
 two-call helper chain is pure overhead on the meld hot path.
@@ -106,7 +107,7 @@ def _append_step_resolution_source(
         existence is Existence.many and not has_disposal_methods
     )
 
-    # Step-constant aliases (spell_N / spell_id_N / disposal_methods_N /
+    # Step-constant aliases (spell_N / store_key_N / disposal_methods_N /
     # plan_step_N / step_dep_keys_N / instance_key_N) are no longer emitted
     # here as per-call body statements: they ride the executor SIGNATURE as
     # per-slot default parameters built by `_step_alias_signature_params`,
@@ -166,15 +167,15 @@ def _append_step_resolution_source(
         lines.extend([
             (
                 f"    instance_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+                f"creations_{step_index}._creations.get(store_key_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
             # Build-once under this slot's guard; `add_creation` takes the
             # store lock itself as a leaf (see Creations.slot_guard).
-            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
+            f"        with (creations_{step_index}._slot_guards.get(store_key_{step_index}) or creations_{step_index}.slot_guard(store_key_{step_index})):",
             (
                 f"            instance_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+                f"creations_{step_index}._creations.get(store_key_{step_index})"
             ),
             f"            if instance_{step_index} is None:",
         ])
@@ -207,7 +208,7 @@ def _append_step_resolution_source(
         lines.extend([
             (
                 f"    instance_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+                f"creations_{step_index}._creations.get(store_key_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
             f"        use_spell_lock_{step_index} = True",
@@ -218,7 +219,7 @@ def _append_step_resolution_source(
             f"            with spell_{step_index}._lock:",
             (
                 f"                instance_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+                f"creations_{step_index}._creations.get(store_key_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
         ])
@@ -240,10 +241,10 @@ def _append_step_resolution_source(
         )
         lines.extend([
             "        else:",
-            f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
+            f"            with (creations_{step_index}._slot_guards.get(store_key_{step_index}) or creations_{step_index}.slot_guard(store_key_{step_index})):",
             (
                 f"                instance_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+                f"creations_{step_index}._creations.get(store_key_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
         ])
@@ -272,13 +273,13 @@ def _append_step_resolution_source(
     lines.extend([
         (
             f"    instance_{step_index} = "
-            f"creations_{step_index}._creations.get(spell_id_{step_index})"
+            f"creations_{step_index}._creations.get(store_key_{step_index})"
         ),
         f"    if instance_{step_index} is None:",
-        f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
+        f"        with (creations_{step_index}._slot_guards.get(store_key_{step_index}) or creations_{step_index}.slot_guard(store_key_{step_index})):",
         (
             f"            instance_{step_index} = "
-            f"creations_{step_index}._creations.get(spell_id_{step_index})"
+            f"creations_{step_index}._creations.get(store_key_{step_index})"
         ),
         f"            if instance_{step_index} is None:",
     ])
@@ -502,12 +503,14 @@ def _append_register_source(
           for unique) around this block, never the store lock. (Before
           2026-09-25 the caller held the store lock across the whole build,
           and the disposal-bearing `many` append ran with no lock at all.)
-        - Singleton entries WITHOUT disposal methods publish with one direct
-          `_creations` store: the build lock excludes every other publisher of
-          the key and a single dict store is atomic, so no store lock and no
-          duplicate check are needed (the same reasoning as the lock-free
-          branch of `Creations.add_creation`; measured to matter on the cold
-          path). A store retired by `cleanup()` fails on its missing registry.
+        - Singleton entries WITHOUT disposal methods publish through
+          `Creations.register_slot`: one direct `_creations` store after the
+          key's first filing is recorded on its shelf. The build lock excludes
+          every other publisher of the key and a single dict store is atomic,
+          so no store lock and no duplicate check are needed (the same
+          reasoning as the lock-free branch of `Creations.add_creation`;
+          measured to matter on the cold path). A store retired by `cleanup()`
+          fails on its missing registry.
         - Singleton entries WITH disposal methods go through `add_creation`,
           and every disposal-bearing `many` append through `register_many`
           (positional; the key's disposal list is recorded once, 2026-10-01);
@@ -533,13 +536,13 @@ def _append_register_source(
     ):
         if not has_disposal_methods:
             lines.append(
-                f"{indent}creations_{step_index}._creations"
-                f"[spell_id_{step_index}] = instance_{step_index}"
+                f"{indent}creations_{step_index}.register_slot("
+                f"store_key_{step_index}, instance_{step_index})"
             )
             return
         lines.extend([
             f"{indent}creations_{step_index}.add_creation(",
-            f"{indent}    spell_id_{step_index},",
+            f"{indent}    store_key_{step_index},",
             f"{indent}    instance_{step_index},",
             *disposal_arguments,
             f"{indent})",
@@ -551,7 +554,7 @@ def _append_register_source(
         # positional hot verb takes the step's bound method list directly.
         lines.extend([
             f"{indent}creations_{step_index}.register_many(",
-            f"{indent}    spell_id_{step_index},",
+            f"{indent}    store_key_{step_index},",
             f"{indent}    instance_{step_index},",
             f"{indent}    disposal_methods_{step_index},",
             f"{indent})",
@@ -829,7 +832,7 @@ def _step_alias_hoist_lines(
     Build factory-level hoist statements for step-constant aliases.
 
     Purpose:
-        Compute hydration-constant per-step aliases (spell_N, spell_id_N,
+        Compute hydration-constant per-step aliases (spell_N, store_key_N,
         disposal_methods_N, plan_step_N, step_dep_keys_N, instance_key_N,
         target_N, creations_N for `unique`, contract_values_N, positional_N)
         exactly ONCE per hydration: the lines run in the factory body before
@@ -843,7 +846,7 @@ def _step_alias_hoist_lines(
         - Single source of truth for alias existence: the conditions here
           mirror the per-branch reads emitted by `_append_step_resolution_
           source` exactly (plan_step: generic-constructor steps only; spell:
-          inlinable OR owner-target OR non-many; spell_id: non-many OR
+          inlinable OR owner-target OR non-many; store_key: non-many OR
           register block; disposal_methods: register block with disposal;
           step_dep_keys: inlinable steps in dict mode only; target: inlinable
           steps; creations: `unique` steps; contract_values/positional: rows
@@ -906,7 +909,7 @@ def _step_alias_hoist_lines(
             )
         if existence is not Existence.many or needs_register_block:
             params.append(
-                f"spell_id_{step_index} = step_spell_ids[{step_index}]"
+                f"store_key_{step_index} = step_store_keys[{step_index}]"
             )
         if needs_register_block and has_disposal_methods:
             params.append(
@@ -1027,8 +1030,8 @@ def _build_step_bindings(
             runtime_row.spell
             for runtime_row in runtime_rows
         ),
-        "step_spell_ids": tuple(
-            runtime_row.spell.spell_id
+        "step_store_keys": tuple(
+            runtime_row.spell.store_key
             for runtime_row in runtime_rows
         ),
         "step_disposal_methods": tuple(
@@ -1543,7 +1546,7 @@ def build_specialized_no_overrides_executor(
         owner_creations = spell._owner_creations
         if owner_creations is None:
             return None
-        live_instance = owner_creations._creations.get(row["spell_id"])
+        live_instance = owner_creations._creations.get(spell.store_key)
         if live_instance is None:
             return None
         captured_spells[step_index] = spell

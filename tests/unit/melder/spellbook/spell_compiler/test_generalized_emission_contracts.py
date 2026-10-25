@@ -295,7 +295,7 @@ class TestFactorySourceShareability:
         bindings = {
             "steps": (None, None),
             "step_spells": (None, root_spell),
-            "step_spell_ids": ("u1", "root"),
+            "step_store_keys": ("u1", "root"),
             "step_disposal_methods": ((), ()),
             "step_existences": (None, None),
             "step_instance_keys": (("u1", None), ("root", None)),

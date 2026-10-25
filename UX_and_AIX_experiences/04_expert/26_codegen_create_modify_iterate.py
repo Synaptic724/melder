@@ -44,6 +44,13 @@ GOAL: THE LOOP TURNED MORE THAN ONCE - AND THE TWO BOOKS IT WRITES.
       The way to file it under a name is a different SET - a set is its
       own residence partition, so a version resident in one is simply
       unknown to another.
+
+      A STAGED VERSION IS BOUND THE WAY THE INDEX'S FIRST ONE WAS. Rate
+      is bound under the string category 'Rate' with binding name
+      'iterate-rate' - the address a bare bind of Rate has, so a meld of
+      'Rate' still finds it - and RateV2 is staged the same way. Bound
+      bare, RateV2 would be addressed by its own name, and bind_inactive
+      refuses a version bound any other way (2026-10-25).
 SURFACE EXERCISED: CodegenCommandSystem.research_preview /
                    validate_codegen / execute_codegen /
                    materialize_codegen / research_create_lane /
@@ -51,7 +58,8 @@ SURFACE EXERCISED: CodegenCommandSystem.research_preview /
                    MutationResearch.research_set / create_research_set,
                    ResearchSet.register_spell / create_lane / walk,
                    Conduit.bind_inactive
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import melder as md
 
@@ -104,8 +112,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=Rate, existence="unique", permissions="create",
-                   binding_name="iterate-rate")
+    v1 = book.bind(spell=Rate, spellframe="Rate", existence="unique",
+                   permissions="create", binding_name="iterate-rate")
     conduit = book.conjure(name="iterate-root")
     print("v1 bound - an ACTIVE world entry:", v1[:12], "...")
 
@@ -180,8 +188,10 @@ def main() -> None:
     assert index.spells_in_index() == {v1}
     assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
 
+    # Staged the way the index's first version was bound, or refused.
     staged = conduit.bind_inactive(
         spell=RateV2, spell_index=index,
+        spellframe="Rate", binding_name="iterate-rate",
         existence="unique", permissions="create",
     )
     assert index.spells_in_index() == {v1, staged}
