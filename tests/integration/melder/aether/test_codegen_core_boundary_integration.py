@@ -14,11 +14,12 @@ Purpose:
       frame the room holds no projection for, and runs under permissive and full_access; `io.open`,
       `os.open` and pathlib writes follow each profile's import list. `test_safe_profile_refuses_writing_files`
       was the strict xfail for this gap (D-10) until the safe profile denied `open`.
-    - One known gap is written as the contract its profiles document, under xfail(strict=True): the
-      hybrid profile denies subprocess, socket and importlib, yet `__import__` loads them, also with the
-      precision overlay. STRICT ON PURPOSE: when the gap is closed its test starts passing, strict turns
-      that into a failure, and whoever closed it must delete the marker. Do not loosen these assertions
-      to make them pass.
+    - The dynamic-import gap (D-11) is closed (0.2.8271): wherever a codegen posture enables imports with an
+      allow or deny list - hybrid, the precision overlay and permissive - a `__import__` call or bare
+      reference is refused at validation (the builtin gate names `__import__` on a call, name resolution on a
+      reference), and the room's runtime `__import__` is a wrapper that checks each import's root against the
+      compiled roots. full_access carries no list, so `__import__` stays usable there. Import statements of
+      allowed roots keep working (the wrapper delegates them). These were four strict xfails until the fix.
     Characterization, not protection: the profiles run in the same process as the code they check, so
     they are policy and defence in depth, not a security boundary, and a green run here does not mean
     the core is protected.
@@ -159,17 +160,6 @@ def test_safe_profile_refuses_writing_files(tmp_path: Path) -> None:
     assert not target.exists()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "OPEN: the import gate reads import statements only, and the compiler denies __import__ only "
-        "when imports are off, so __import__ loads the roots the hybrid profile (and the precision "
-        "overlay) deny. Core-protection review, Note 11. STRICT ON PURPOSE: when the gap is closed "
-        "this test passes, strict turns that into a failure, and whoever closed it deletes this "
-        "marker."
-    ),
-)
 @pytest.mark.parametrize(
     ("precision_profile_name", "module_name"),
     [
@@ -184,8 +174,9 @@ def test_hybrid_refuses_dynamic_imports_of_its_denied_roots(
         module_name: str,
 ) -> None:
     """
-    Contract (documented, not yet met): a root the hybrid profile denies cannot be loaded by a
-    `__import__` call either - the request is refused at validation.
+    Contract (D-11, criterion 1): a root the hybrid profile denies cannot be loaded by a `__import__` call
+    either - the request is refused at validation by the builtin gate, which names `__import__` (A denies the
+    `__import__` name wherever an import list applies), and nothing is loaded.
     """
     conduit, command_system = _codegen_room("hybrid", precision_profile_name)
     try:
@@ -197,6 +188,7 @@ def test_hybrid_refuses_dynamic_imports_of_its_denied_roots(
         conduit.cleanup()
 
     assert result["accepted"] is False
+    assert "Builtin '__import__' is not allowed in this codegen mode." in result["validation_issues"][0]
 
 
 def _execute_in_room(
@@ -454,3 +446,99 @@ def test_a_request_naming_a_frame_without_a_projection_cannot_open_files(
     assert payload["accepted"] is False
     assert "Builtin 'open' is not allowed in this codegen mode." in payload["validation_issues"][0]
     assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name", "accepted"),
+    [
+        ("hybrid", None, False),
+        ("hybrid", "precision", False),
+        ("permissive", None, False),
+        ("full_access", None, True),
+    ],
+)
+def test_dynamic_import_of_melder_is_refused_unless_full_access(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+        accepted: bool,
+) -> None:
+    """
+    Contract (D-11, criterion 2): `__import__('melder')` is refused under every posture that carries an import
+    list - hybrid, the precision overlay and permissive - because A denies the `__import__` name there, and is
+    accepted under full_access, which carries no list. This is validation only, so nothing is imported.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        result = command_system.validate_codegen(
+            "loaded = __import__('melder')\nresult = 1",
+            frame_name="ops",
+        )
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is accepted
+    if not accepted:
+        assert "Builtin '__import__' is not allowed in this codegen mode." in result["validation_issues"][0]
+
+
+@pytest.mark.parametrize(
+    ("profile_name", "precision_profile_name"),
+    [
+        ("hybrid", None),
+        ("hybrid", "precision"),
+        ("permissive", None),
+    ],
+)
+def test_a_bare_reference_to_dunder_import_is_refused_where_an_import_list_applies(
+        profile_name: str,
+        precision_profile_name: Optional[str],
+) -> None:
+    """
+    Contract (D-11, A): where an import list applies, naming `__import__` without calling it (`imp = __import__`)
+    is refused by name resolution, so the import callable cannot be reached under another name.
+    """
+    conduit, command_system = _codegen_room(profile_name, precision_profile_name)
+    try:
+        result = command_system.validate_codegen("imp = __import__\nresult = 1", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is False
+    assert "Name '__import__' is not available in the codegen namespace." in result["validation_issues"][0]
+
+
+def test_dynamic_import_of_an_allowed_root_is_refused_under_hybrid() -> None:
+    """
+    Contract (D-11, A): `__import__` is refused under hybrid even for an allowed root (json), because A denies the
+    name wherever an import list applies. Allowed roots are reached through import statements, not `__import__`.
+    """
+    conduit, command_system = _codegen_room("hybrid")
+    try:
+        result = command_system.validate_codegen("mod = __import__('json')\nresult = 1", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert result["accepted"] is False
+    assert "Builtin '__import__' is not allowed in this codegen mode." in result["validation_issues"][0]
+
+
+def test_dynamic_import_of_melder_runs_under_full_access() -> None:
+    """
+    Contract (D-11, criterion 2): under full_access, which carries no import list, `__import__('json')` runs and
+    returns the module - full_access installs no import wrapper and denies no name.
+    """
+    payload = _execute_in_room("full_access", None, "mod = __import__('json')\nresult = mod.dumps({'a': 1})")
+
+    assert payload["accepted"] is True
+    assert payload["result"] == '{"a": 1}'
+
+
+def test_an_allowed_import_statement_executes_under_hybrid() -> None:
+    """
+    Contract (D-11, criterion 3): an import statement of an allowed root (json under hybrid) still executes - the
+    room's runtime `__import__` wrapper delegates allowed roots to the real import - and the module is usable.
+    """
+    payload = _execute_in_room("hybrid", None, "import json\nresult = json.dumps({'a': 1})")
+
+    assert payload["accepted"] is True
+    assert payload["result"] == '{"a": 1}'

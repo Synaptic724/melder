@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
- "source_sha256": "772a357a4c2db412b43c2f611e336944fbd17eb42e2d9ea7517728f7a7642a14",
+ "source_sha256": "4ede07a12f02546dc1f2eec2ccd9bdea2232b3a554ea532c89bd18406509be20",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.codegen_system": {
@@ -25,6 +25,7 @@
    ],
    "markers": [],
    "public_methods": [
+    "build_materialize_builtins",
     "cleanup",
     "codegen_system_id",
     "execute_codegen",
@@ -35,18 +36,20 @@
     "validate_codegen_request"
    ],
    "shape": {
-    "method_count": 12,
+    "method_count": 13,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dfe8741e7858142b49f82712d56894cc0762a79660326e783342fafd10c4d287",
+   "span_sha256": "b000227f0f7c1e725994ee4af318895556a29c978bd75336a5b6ad7332a507c5",
    "role": "Room-owned internal codegen engine.",
    "responsibilities": [
     "builds per-call transaction contexts",
     "owns validation namespace execution and monitor collaborators",
     "validates before execution",
     "delegates compile and execute stages for accepted requests",
-    "runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)"
+    "runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)",
+    "reads `static_only_denied_builtin_names` off the projection's compiled surface into the namespace configuration, empty for the no-projection default, so the codegen import gate reaches every built namespace (D-11, 0.2.8271)",
+    "returns the room's filtered builtins mapping for an accepted materialize (build_materialize_builtins), the mapping execute_codegen gives room code, so a materialized module reaches what the room reaches (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_rift",
@@ -63,7 +66,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "dfe8741e7858142b49f82712d56894cc0762a79660326e783342fafd10c4d287"
+   "semantics_authored_against": "b000227f0f7c1e725994ee4af318895556a29c978bd75336a5b6ad7332a507c5"
   }
  },
  "edges_out": [

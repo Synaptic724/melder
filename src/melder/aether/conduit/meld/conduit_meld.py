@@ -775,6 +775,10 @@ class ConduitMeld(Meld):
               Spell owner's `owner_creations` for `unique`, the lineage root for
               `unique_per_conduit_lineage` and the cluster's team store for
               `unique_per_conduit_cluster` (not live while no leader is elected).
+            - Reads the resolved binding's own slot (`Spell.store_key`): the
+              object a meld of this binding returns. A removed binding's object
+              of the same spell id is never returned, though the live probes
+              count it (STORY-2026-10-25-creations_store_slots_by_binding).
 
         Args:
             spell_name:
@@ -862,7 +866,7 @@ class ConduitMeld(Meld):
             )
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
+            creation = caller_creations.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -894,7 +898,7 @@ class ConduitMeld(Meld):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            creation = store.get_creation(spell_id)
+            creation = store.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -1016,9 +1020,16 @@ class ConduitMeld(Meld):
             existing-creation object.
 
         Contract:
+            - The count is every object the selected store holds under the
+              spell id, whichever binding filed it
+              (`Creations.count_spell_creations`;
+              STORY-2026-10-25-creations_store_slots_by_binding): a class bound
+              again under another existence or other disposal names keeps its
+              spell id, and a removed binding's objects still alive there are
+              the spell's too. `is_live` is a count above 0.
             - `many` and `unique_per_conduit` read from caller-local conduit
-              storage; a `many` without disposal methods is never tracked and
-              reports 0.
+              storage; `many` objects without disposal methods are never
+              tracked, so such a binding adds 0.
             - `unique` reads the Spell owner's `owner_creations`;
               `unique_per_conduit_lineage` the lineage-root store;
               `unique_per_conduit_cluster` the cluster's team store, and is
@@ -1050,12 +1061,7 @@ class ConduitMeld(Meld):
         caller_creations = self._conduit_creations
 
         if existence is Existence.many:
-            creation_bucket = caller_creations.get_creation(spell_id)
-            creation_count = (
-                len(creation_bucket)
-                if isinstance(creation_bucket, list)
-                else 0
-            )
+            creation_count = caller_creations.count_spell_creations(spell_id)
             return {
                 "is_live": creation_count > 0,
                 "spell_id": spell_id,
@@ -1069,9 +1075,9 @@ class ConduitMeld(Meld):
             }
 
         if existence is Existence.unique_per_conduit:
-            creation = caller_creations.get_creation(spell_id)
+            creation_count = caller_creations.count_spell_creations(spell_id)
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -1079,7 +1085,7 @@ class ConduitMeld(Meld):
                 "storage_scope_kind": "caller_conduit",
                 "storage_owner_conduit_id": query_conduit_id,
                 "active_spellspace_id": None,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence in {
@@ -1112,11 +1118,11 @@ class ConduitMeld(Meld):
                 # it is a published diagnostics value.
                 storage_scope_kind = "cluster_leader"
                 storage_owner_conduit_id = None
-            creation = (
-                store.get_creation(spell_id) if store is not None else None
+            creation_count = (
+                store.count_spell_creations(spell_id) if store is not None else 0
             )
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -1124,7 +1130,7 @@ class ConduitMeld(Meld):
                 "storage_scope_kind": storage_scope_kind,
                 "storage_owner_conduit_id": storage_owner_conduit_id,
                 "active_spellspace_id": None,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence is Existence.managed_spell_quantity:

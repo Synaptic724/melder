@@ -58,6 +58,7 @@ class CodegenNamespaceConfiguration(Cleanable):
         "_allowed_import_module_roots",
         "_denied_import_module_roots",
         "_denied_builtin_names",
+        "_static_only_denied_builtin_names",
         "_allow_unsafe_reflection",
         "_allow_dunder_access",
         "_allow_recursive_codegen",
@@ -77,6 +78,7 @@ class CodegenNamespaceConfiguration(Cleanable):
             allowed_import_module_roots: Tuple[str, ...] = tuple(),
             denied_import_module_roots: Tuple[str, ...] = tuple(),
             denied_builtin_names: Tuple[str, ...] = tuple(),
+            static_only_denied_builtin_names: Tuple[str, ...] = tuple(),
             allow_unsafe_reflection: bool = False,
             allow_dunder_access: bool = False,
             allow_recursive_codegen: bool = False,
@@ -106,6 +108,9 @@ class CodegenNamespaceConfiguration(Cleanable):
                 Denied import module roots.
             denied_builtin_names:
                 Denied builtin names.
+            static_only_denied_builtin_names:
+                Builtin names refused by the static codegen gates but kept in the runtime builtins (the
+                `__import__` name wherever an import list applies).
             allow_unsafe_reflection:
                 Whether unsafe reflection helpers are allowed.
             allow_dunder_access:
@@ -142,6 +147,9 @@ class CodegenNamespaceConfiguration(Cleanable):
         self._denied_builtin_names: Tuple[str, ...] = tuple(
             denied_builtin_names
         )
+        self._static_only_denied_builtin_names: Tuple[str, ...] = tuple(
+            static_only_denied_builtin_names
+        )
         self._allow_unsafe_reflection: bool = allow_unsafe_reflection
         self._allow_dunder_access: bool = allow_dunder_access
         self._allow_recursive_codegen: bool = allow_recursive_codegen
@@ -172,6 +180,7 @@ class CodegenNamespaceConfiguration(Cleanable):
             del self._allowed_import_module_roots
             del self._denied_import_module_roots
             del self._denied_builtin_names
+            del self._static_only_denied_builtin_names
             del self._allow_unsafe_reflection
             del self._allow_dunder_access
             del self._allow_recursive_codegen
@@ -188,6 +197,7 @@ class CodegenNamespaceConfiguration(Cleanable):
             allowed_import_module_roots: Tuple[str, ...] = tuple(),
             denied_import_module_roots: Tuple[str, ...] = tuple(),
             denied_builtin_names: Tuple[str, ...] = tuple(),
+            static_only_denied_builtin_names: Tuple[str, ...] = tuple(),
             allow_unsafe_reflection: bool = False,
             allow_dunder_access: bool = False,
             allow_recursive_codegen: bool = False,
@@ -209,6 +219,9 @@ class CodegenNamespaceConfiguration(Cleanable):
                 Denied import module roots.
             denied_builtin_names:
                 Denied builtin names.
+            static_only_denied_builtin_names:
+                Builtin names refused by the static gates but kept in the runtime builtins (the `__import__`
+                name wherever an import list applies).
             allow_unsafe_reflection:
                 Whether unsafe reflection helpers are allowed.
             allow_dunder_access:
@@ -228,6 +241,7 @@ class CodegenNamespaceConfiguration(Cleanable):
             allowed_import_module_roots=allowed_import_module_roots,
             denied_import_module_roots=denied_import_module_roots,
             denied_builtin_names=denied_builtin_names,
+            static_only_denied_builtin_names=static_only_denied_builtin_names,
             allow_unsafe_reflection=allow_unsafe_reflection,
             allow_dunder_access=allow_dunder_access,
             allow_recursive_codegen=allow_recursive_codegen,
@@ -316,6 +330,23 @@ class CodegenNamespaceConfiguration(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._denied_builtin_names
+
+    @property
+    def static_only_denied_builtin_names(self) -> Tuple[str, ...]:
+        """
+        Return builtin names refused by the static codegen gates but kept at run time.
+
+        Contract:
+            These names (the `__import__` builtin, wherever an import list applies) are refused by the builtin
+            gate and name resolution, but are not removed from the room's runtime `__builtins__`; the runtime
+            `__import__` is wrapped to check each import's root. Empty when no import list applies.
+
+        Returns:
+            Tuple[str, ...]: Static-only denied builtin names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._static_only_denied_builtin_names
 
     @property
     def allow_unsafe_reflection(self) -> bool:

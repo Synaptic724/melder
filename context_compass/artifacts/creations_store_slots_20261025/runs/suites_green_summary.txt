@@ -1,0 +1,28 @@
+# Suites with the change, CPython 3.14.8 free-threaded; each line: chunk, GIL mode, pytest summary (logs in /tmp/m3d, not kept)
+final_u_aether gil=0: 4593 passed in 17.82s
+final_u_aether gil=1: 4593 passed in 18.23s
+final_u_spellbook gil=0: 2650 passed in 7.45s
+final_u_spellbook gil=1: 2650 passed in 7.64s
+final_u_rest_a gil=0: 2 failed, 2006 passed, 3 skipped, 7 xfailed in 27.20s
+final_u_rest_a gil=1: 2 failed, 2006 passed, 3 skipped, 7 xfailed in 27.14s
+final_u_rest_b gil=0: 780 passed in 16.03s
+final_u_rest_b gil=1: 780 passed in 15.72s
+final_u_rest_c gil=0: 134 passed in 57.66s
+final_u_rest_c gil=1: 134 passed in 58.65s
+final_c_conduit gil=0: 896 passed in 11.01s
+final_c_conduit gil=1: 896 passed in 10.99s
+final_c_rest gil=0: 1582 passed, 43 skipped, 1 xfailed in 23.75s
+final_c_rest gil=1: 1582 passed, 43 skipped, 1 xfailed in 23.00s
+final_i_conduit gil=0: 355 passed, 4 skipped, 1 xpassed in 8.10s
+final_i_conduit gil=1: 355 passed, 4 skipped, 1 xpassed in 8.28s
+final_i_aether gil=0: 894 passed in 19.12s
+final_i_aether gil=1: 894 passed in 19.18s
+final_i_spellbook gil=0: 680 passed, 2 skipped, 2 xpassed in 6.82s
+final_i_spellbook gil=1: 680 passed, 2 skipped, 2 xpassed in 7.73s
+final_i_crys gil=0: 282 passed, 3 xfailed in 67.43s (0:01:07)
+final_i_crys gil=1: 282 passed, 3 xfailed in 82.37s (0:01:22)
+final_i_mt gil=0: 122 passed, 1 xfailed in 9.91s
+final_i_mt gil=1: 122 passed, 1 xfailed in 10.80s
+final_x gil=0: 250 passed, 4 skipped in 20.76s
+final_x gil=1: 250 passed, 4 skipped in 21.78s
+# notes: final_u_rest_a ran in a /tmp mirror without context_compass/, so its 2 build_assets document tests fail there and pass in final_u_rest_c (the repository); final_c_rest skips the 20 agent_text_reader document tests in the mirror, which pass in the repository both GIL modes (20 passed, 23 skipped); final_i_aether deselects tests/integration/melder/aether/test_codegen_materialize_boundary_integration.py, D-20's untracked red tests (melder_0); the xpasses are the non-strict notch-race marker and two non-strict DI-fault markers.

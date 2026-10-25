@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py",
- "source_sha256": "ad4c518cc888f06eeefaeac51f0c81e3909410d3711e193be6da8bc4239e0019",
+ "source_sha256": "0c7fd0ffd14fc14fbb36f60d89f6b181a976390f793f6b2f0781062abc94379f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder": {
@@ -26,19 +26,21 @@
    "markers": [],
    "public_methods": [
     "build",
+    "build_builtins",
     "cleanup"
    ],
    "shape": {
-    "method_count": 2,
+    "method_count": 3,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "67ab468f1f0733c566c30548786e9c9a07723ba29fb98dbad4577f473afbb2c9",
+   "span_sha256": "043cadd6ebfec4b4c9e4ea1f41c0bc2405b2251f150ae128fe244336f615529a",
    "role": "Builder for live codegen namespaces.",
    "responsibilities": [
     "owns namespace entry strategies for room workstation command target builtins and control surfaces",
     "builds one live namespace from configuration and room collaborators",
-    "cleans owned strategies on teardown"
+    "cleans owned strategies on teardown",
+    "builds the builtins mapping alone (build_builtins) through its builtins strategy, for materialized code (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_room_objects_strategy",
@@ -52,7 +54,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "67ab468f1f0733c566c30548786e9c9a07723ba29fb98dbad4577f473afbb2c9"
+   "semantics_authored_against": "043cadd6ebfec4b4c9e4ea1f41c0bc2405b2251f150ae128fe244336f615529a"
   }
  },
  "edges_out": [

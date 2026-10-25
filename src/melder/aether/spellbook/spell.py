@@ -101,6 +101,10 @@ class Spell(Cleanable):
       SHA256, `binding_hash`. Built once at construction from the same arguments and kept
       after cleanup, like `spell_id`: what a spell IS is its spell_id, how it is kept is
       its binding (EPIC-2026-10-18-spell_identity_is_the_code).
+    - `store_key` is `<spell_id>:<binding_hash>`, the key every Creations store files this
+      version's objects under: two bindings of one class never share a slot, and a class
+      bound again the same way files where it did. Built with the manifest and kept after
+      cleanup (STORY-2026-10-25-creations_store_slots_by_binding).
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -127,7 +131,8 @@ class Spell(Cleanable):
     Key Concepts:
         - Each spell has a SHA256 `spell_id`: the digest of the registered object's code
           (`SpellCodeDigest`) and nothing from the bind call. How it is bound is its
-          `binding_manifest`, hashed apart as `binding_hash`.
+          `binding_manifest`, hashed apart as `binding_hash`; the two together are its
+          `store_key`, which names its objects' slot in a store.
         - `spellframe` is the category half of the address: a string category or a
           Protocol contract. `spellframe_kind` records which (or `none` for a bare
           binding) and `implemented_protocols` the Protocol bind checked the spell
@@ -318,6 +323,7 @@ class Spell(Cleanable):
         "_managed_spell_timeout_seconds",
         "_managed_spell_reset_methods",
         "binding_manifest",
+        "store_key",
     ]
     def __init__(
             self,
@@ -397,7 +403,8 @@ class Spell(Cleanable):
               the ULID describes which object you are holding.
             - The binding manifest (`binding_manifest`, `binding_hash`) is built
               last, from these same arguments: how this version is bound, hashed
-              apart from what it is. A value record, kept after cleanup.
+              apart from what it is. A value record, kept after cleanup. The
+              store key (`store_key`, `<spell_id>:<binding_hash>`) follows it.
             - The four `is_*` family flags are computed ONCE from `spell_type`
               and cover all 14 `SpellType` members with no overlap, so exactly
               one is True for the object's whole life.
@@ -608,6 +615,11 @@ class Spell(Cleanable):
             managed_spell_timeout_seconds=managed_spell_timeout_seconds,
             managed_spell_reset_methods=managed_spell_reset_methods,
         )
+        # The key every Creations store files this version's objects under: what it is and how it is bound, so
+        # a class bound again under another existence or other disposal names gets its own slot, record and shape,
+        # and bound again the same way meets its slot (STORY-2026-10-25-creations_store_slots_by_binding). Kept
+        # after cleanup, like `spell_id`; emitted plans and doors bind it as a constant.
+        self.store_key: str = f"{self.spell_id}:{self.binding_manifest.binding_hash}"
 
 
     #region Disposal
@@ -644,7 +656,8 @@ class Spell(Cleanable):
             - Deletes the disposal-name reference without clearing its list;
               creation entries may still retain that established metadata.
             - Keeps the identity data readable: `spell_id`, the address (`key`),
-              the spellframe and its kind, and `binding_manifest` / `binding_hash`.
+              the spellframe and its kind, `binding_manifest` / `binding_hash`, and
+              `store_key`, which still names the slot of the objects stores hold.
 
         Threading:
             The Book removal takes the Spellbook lock, frame locks and the Nexus

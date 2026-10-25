@@ -452,6 +452,19 @@ The most important recent integration addition is the dedicated
   EVIDENCE:
   - tests/_spell_identity_test_support.py:1-46
   - tests/component/melder/spellbook/test_spellbook_component_spell_identity.py:98-135
+- Every version a test stages on an index is bound the way the index's first version was (0.2.8273): the same
+  kind of spellframe - none, a string category or a Protocol - and the same address, the case of the names
+  aside, because `bind_inactive` and `add_to_spell_index` refuse any other binding. A bare bind addresses a class
+  by its own name, so a test whose versions are distinct classes binds every one under one category or Protocol
+  and binding name; a `version_of` version keeps the original's name and joins its index bound as the original
+  was. A notch keeps the index's address, so a version split into an index of its own goes active there only once
+  no other spell holds that address, and the tests dispose the source's active spell first. The tests that pin
+  the refusals expect ValueError naming both bindings (RuntimeError naming the holder's spell_id for a notch).
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:284-416
+  - tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py:469-547
+  - tests/integration/melder/crystallizer/test_ordered_disposal_replay.py:34-46
+  - tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py:173-179
 
 ## Source Coverage and Evidence
 Direct evidence used in this pass:
@@ -479,13 +492,15 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 520 `.py` files, 517 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 174 `.py` files, 172 of them `test_*.py` (143, 81)
-- `integration/`: 187 `.py` files, 180 of them `test_*.py` (149, 88)
+- `unit/`: 522 `.py` files, 519 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `component/`: 175 `.py` files, 173 of them `test_*.py` (143, 81)
+- `integration/`: 188 `.py` files, 181 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded); the three tiers' 869 `test_*.py`
-modules are the count `tests_components` states.
+Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded), less five untracked modules of
+lanes still in progress - four unit and component modules of STORY-2026-10-25-creations_store_slots_by_binding
+and `test_codegen_materialize_boundary_integration.py` - which their landings count; the three tiers' 873
+`test_*.py` modules are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -622,7 +637,7 @@ modules are the count `tests_components` states.
   meet the borrower's contracted copy parked by a notch, and the test xfails (2 of 5 GIL-off runs on
   2026-10-16); otherwise, and with the GIL on (5 of 5), it xpasses. Neither result fails the cell, any other
   exception still fails the test, and whoever closes that task deletes the marker.
-  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:626-675
+  EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:633-682
 - KNOWN GAPS HELD AS STRICT XFAIL (component conduit, 2026-10-25): the two defect tests in
   `test_conduit_component_rebind_while_old_objects_are_alive.py` carry `xfail(strict=True, raises=AssertionError)`
   naming STORY-2026-10-18-revalidate_on_binding_change - a `many` rebound under other disposal names has its new
@@ -648,9 +663,9 @@ constituent files.
 
 - path: `pyproject.toml`
   start_line: 1
-  end_line: 246
-  loc: 246
-  verified_at: 2026-09-30T00:32:11Z
+  end_line: 248
+  loc: 248
+  verified_at: 2026-10-25T11:55:34Z
 - path: `tests/conftest.py`
   start_line: 1
   end_line: 22
@@ -933,10 +948,23 @@ graph TD
 - `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py`
 - `tests/_spell_identity_test_support.py`
 - `tests/component/melder/spellbook/test_spellbook_component_spell_identity.py`
+- `tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py`
+- `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
+- `tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py`
 - `.gitignore`
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-10-25 every version of a SpellIndex is bound the way its first version was (0.2.8273): a new operational
+invariant says the suite stages every version at its index's binding - 36 modules across the three tiers were
+rewritten so, distinct classes bound under one category or Protocol and binding name - and that the refusals are
+pinned by ValueError naming both bindings, a notch's by RuntimeError naming the holder. The inventory is recounted
+(unit 522 `.py`, 519 of them `test_*.py`; component 175, 173; integration 188, 181; 873 test modules in the three
+tiers): this lane adds two unit modules, one component and one integration module, catalogued in
+`tests_components`, and five untracked modules of lanes in progress are left out. The xfail evidence into the
+notch-revalidation file is remapped (633-682; it read 626-675) and `pyproject.toml` is remeasured in this map
+(248). No tier, conftest, declared marker or shared support module changes.
 
 2026-10-25 a rebind while the removed definition's objects are alive (no notch; tests and documentation only): the
 inventory is recounted (unit 520 `.py`, 517 of them `test_*.py`; component 174, 172; integration 187, 180; 869 test

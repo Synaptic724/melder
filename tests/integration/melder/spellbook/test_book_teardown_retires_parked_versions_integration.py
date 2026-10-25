@@ -7,6 +7,9 @@ shared index, or alone in one `remove_from_spell_index` minted - stayed uncleane
 minted index with it, and the version's own `cleanup()` then raised "Spellbook has already been cleaned." (probe
 T2-T3, artifacts/correctness_defects_20261017/probes/probe_book_teardown_parked.py). The teardown now retires every
 parked version locally, as `cleanup_spell` retires one, and cleans the indexes only parked versions hold.
+
+French is staged under English's binding (Greeter, 'english'): every version of an index is bound the way its first
+version was (2026-10-25).
 """
 import contextlib
 from typing import Iterator, Optional, Protocol
@@ -44,7 +47,7 @@ class English:
 
 
 class French:
-    """The version staged on English's index under its own binding name."""
+    """The version staged on English's index under English's binding."""
 
     def greet(self) -> str:
         """Return the French greeting."""
@@ -164,7 +167,7 @@ def _world(frame: str, *, keep_frame: bool) -> Iterator[_World]:
     root = book.conjure(dynamic=True, name="lender")
     english = _owned(book, english_id)
     french_id = root.bind_inactive(
-        spell=French, spell_index=english.spell_index, spellframe=Greeter, binding_name="french",
+        spell=French, spell_index=english.spell_index, spellframe=Greeter, binding_name="english",
         existence=Existence.many, permissions="create",
     )
     world = _World(root, english, _owned(book, french_id), keeper)
@@ -262,7 +265,7 @@ def test_spellbook_cleanup_before_conjure_cleans_a_version_parked_before_conjure
     english = _owned(book, english_id)
     index = english.spell_index
     french_id = book.bind_inactive(
-        spell=French, spell_index=index, spellframe=Greeter, binding_name="french", existence=Existence.many,
+        spell=French, spell_index=index, spellframe=Greeter, binding_name="english", existence=Existence.many,
         permissions="create",
     )
     french = _owned(book, french_id)

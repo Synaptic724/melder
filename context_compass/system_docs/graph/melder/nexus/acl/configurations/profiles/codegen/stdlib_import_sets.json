@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py",
- "source_sha256": "75f16770f527a3b5f64bdba830e75ffcfa661abb0a00ce07a72a8f8889bceb35",
+ "source_sha256": "43e4da5eb2b9c62404db421bed1cb1d3fca345dcfe1a453dd8a3cf2968f2e42c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets": {
@@ -16,7 +16,9 @@
     "defines shared denied builtin-name sets for codegen profile factories",
     "keeps codegen profile factory modules aligned on import-surface policy constants",
     "puts `open` on SAFE_DENIED_BUILTIN_NAMES, the one denied-builtin tuple safe, hybrid and precision share and the codegen engine's no-projection default reads (0.2.8270)",
-    "keeps `io`, `os` and `pathlib` among the permissive extras, so permissive's is the only allow list that admits them (0.2.8270)"
+    "keeps `io`, `os` and `pathlib` among the permissive extras, so permissive's is the only allow list that admits them (0.2.8270)",
+    "defines IMPORT_BUILTIN_NAMES, the `__import__` name the compiler marks static-only denied wherever a preset enables imports with a list, so the validation gates refuse a `__import__` call or reference while the name stays in the runtime builtins for import statements (0.2.8271)",
+    "defines PROTECTED_GENERATION_MODULE_ROOTS (`melder`), the root materialize_codegen refuses under every posture (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_COMMON_SAFE_IMPORT_MODULE_ROOTS",

@@ -707,6 +707,10 @@ class SpellSpaceMeld(Meld):
             - Reads owner-conduit storage for conduit-owned existences.
             - Reads spell-owned shared `owner_creations` for broader-lived
               existences.
+            - Reads the resolved binding's own slot (`Spell.store_key`): the
+              object a meld of this binding returns. A removed binding's object
+              of the same spell id is never returned, though the live probes
+              count it (STORY-2026-10-25-creations_store_slots_by_binding).
 
         Args:
             spell_name:
@@ -784,8 +788,10 @@ class SpellSpaceMeld(Meld):
                 "meld_existing_spell is not supported for Existence.many."
             )
 
+        # Each read is the resolved binding's own slot (`Spell.store_key`): what a meld of
+        # it returns (STORY-2026-10-25-creations_store_slots_by_binding).
         if existence is Existence.unique_per_conduit:
-            creation = self._conduit_creations.get_creation(spell_id)
+            creation = self._conduit_creations.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -793,7 +799,7 @@ class SpellSpaceMeld(Meld):
             return creation
 
         if existence is Existence.unique_per_spell_space:
-            creation = self._spellspace_creations.get_creation(spell_id)
+            creation = self._spellspace_creations.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -825,7 +831,7 @@ class SpellSpaceMeld(Meld):
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            creation = store.get_creation(spell_id)
+            creation = store.get_creation(target_spell.store_key)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -909,6 +915,13 @@ class SpellSpaceMeld(Meld):
             current runtime storage state without creating anything.
 
         Contract:
+            - The count is every object the selected store holds under the
+              spell id, whichever binding filed it
+              (`Creations.count_spell_creations`;
+              STORY-2026-10-25-creations_store_slots_by_binding): a class bound
+              again under another existence or other disposal names keeps its
+              spell id, and a removed binding's objects still alive there are
+              the spell's too. `is_live` is a count above 0.
             - `unique_per_spell_space` and `many` read from spellspace-local
               storage. A disposal-bearing `many` melded through this door is
               registered in the space's store (the innermost scope), the only
@@ -960,13 +973,10 @@ class SpellSpaceMeld(Meld):
         if existence is Existence.many:
             # Disposal-bearing `many` melded through this door lives in the
             # space's store (every emitter picks the innermost scope), and
-            # `purge` retires it from there only, so the probe reads it there.
-            creation_bucket = self._spellspace_creations.get_creation(spell_id)
-            creation_count = (
-                len(creation_bucket)
-                if isinstance(creation_bucket, list)
-                else 0
-            )
+            # `purge` retires it from there only, so the probe reads it there:
+            # every binding's objects of the spell id
+            # (STORY-2026-10-25-creations_store_slots_by_binding).
+            creation_count = self._spellspace_creations.count_spell_creations(spell_id)
             return {
                 "is_live": creation_count > 0,
                 "spell_id": spell_id,
@@ -980,9 +990,9 @@ class SpellSpaceMeld(Meld):
             }
 
         if existence is Existence.unique_per_conduit:
-            creation = self._conduit_creations.get_creation(spell_id)
+            creation_count = self._conduit_creations.count_spell_creations(spell_id)
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -990,13 +1000,13 @@ class SpellSpaceMeld(Meld):
                 "storage_scope_kind": "owner_conduit",
                 "storage_owner_conduit_id": self._owner_conduit_id,
                 "active_spellspace_id": self._spellspace_id,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence is Existence.unique_per_spell_space:
-            creation = self._spellspace_creations.get_creation(spell_id)
+            creation_count = self._spellspace_creations.count_spell_creations(spell_id)
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -1004,7 +1014,7 @@ class SpellSpaceMeld(Meld):
                 "storage_scope_kind": "spellspace",
                 "storage_owner_conduit_id": self._owner_conduit_id,
                 "active_spellspace_id": self._spellspace_id,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence in {
@@ -1034,11 +1044,11 @@ class SpellSpaceMeld(Meld):
                 )
                 storage_scope_kind = "cluster_leader"
                 storage_owner_conduit_id = None
-            creation = (
-                store.get_creation(spell_id) if store is not None else None
+            creation_count = (
+                store.count_spell_creations(spell_id) if store is not None else 0
             )
             return {
-                "is_live": creation is not None,
+                "is_live": creation_count > 0,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
@@ -1046,7 +1056,7 @@ class SpellSpaceMeld(Meld):
                 "storage_scope_kind": storage_scope_kind,
                 "storage_owner_conduit_id": storage_owner_conduit_id,
                 "active_spellspace_id": None,
-                "creation_count": 1 if creation is not None else 0,
+                "creation_count": creation_count,
             }
 
         if existence is Existence.managed_spell_quantity:

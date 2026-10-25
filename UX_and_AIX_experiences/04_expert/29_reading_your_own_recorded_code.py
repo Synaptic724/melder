@@ -47,7 +47,8 @@ SURFACE EXERCISED: validate_codegen / materialize_codegen,
                    research_impact / research_residency /
                    research_history / research_recent,
                    Conduit.bind_inactive
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import importlib
 
@@ -161,11 +162,15 @@ def main() -> None:
     # bind lands in the already-conjured frame and publishes incrementally;
     # the second rides its spell_index as a VERSION rather than a second
     # visible spell, which is why two classes named `Pricing` never collide.
+    # It is staged under the same binding name: every version of an index
+    # is bound the way its first one was, so both share one address
+    # (2026-10-25).
     v1 = book.bind(spell=first.Pricing, existence="unique",
                    permissions="create", binding_name="well-pricing")
     v2 = conduit.bind_inactive(
         spell=second.Pricing,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        binding_name="well-pricing",
         existence="unique", permissions="create",
     )
     module_name = MODULE_V1

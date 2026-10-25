@@ -344,7 +344,8 @@ def test_a_failed_transfer_leaves_a_unique_object_with_the_owner(monkeypatch: py
     _failing_transfer(owner, target, spell_id, True, monkeypatch)
 
     assert owner.meld(spell_id=spell_id) is first
-    assert target._creations.get_creation(spell_id) is None
+    # Nothing of the spell is filed in the target, under any binding (STORY-2026-10-25-creations_store_slots_by_binding).
+    assert target._creations.count_spell_creations(spell_id) == 0
 
 
 def test_a_parked_unique_version_moved_and_notched_in_stores_its_object_in_the_target() -> None:
@@ -356,5 +357,5 @@ def test_a_parked_unique_version_moved_and_notched_in_stores_its_object_in_the_t
     target.notch_spell(spell_index=parked.spell_index, spell=parked)
     built = target.meld(spell=Keeper)
 
-    assert target._creations.get_creation(parked.spell_id) is built
-    assert owner._creations.get_creation(parked.spell_id) is None
+    assert target._creations.get_creation(parked.store_key) is built
+    assert owner._creations.count_spell_creations(parked.spell_id) == 0

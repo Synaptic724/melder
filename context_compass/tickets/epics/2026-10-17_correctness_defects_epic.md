@@ -8,7 +8,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-17T20:11:34Z
-- Updated: 2026-10-25T02:47:38Z
+- Updated: 2026-10-25T12:47:21Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness (the owner's direction, chat 2026-10-17)
 
@@ -96,8 +96,11 @@ those, and only those, keeps the core trustworthy without judging Melder by rule
   disposing a parked version drops the binding signature of the active spell keyed like it (sweep A1).
   Landed by melder_1 at 0.2.8263: `_destroy_spell_index` drops only its own route and releases only the
   departing member's claim; turned in 2026-10-19, in tickets/stories/completed/.
-- [ ] Story: STORY-2026-10-17-notch_moves_signature_by_incoming_key_only - a notch moves signatures by the
-  incoming key alone: a parked version keeps its claim, or an active spell's key is taken (sweep A1).
+- [x] Story: STORY-2026-10-17-notch_moves_signature_by_incoming_key_only - a notch moves signatures by the
+  incoming key alone: a parked version keeps its claim, or an active spell's key is taken (sweep A1). Landed by
+  melder_1 at 0.2.8273 on the owner's rule (2026-10-25): every version of an index is bound the way its first
+  version was, so a notch keeps the address and refuses one another spell holds; turned in 2026-10-25, in
+  tickets/stories/completed/.
 - [x] Story: STORY-2026-10-17-parked_cleanup_leaves_borrower_copies - cleanup_spell of a parked version leaves
   its copy and id with index-link borrowers, past their own unlink (sweep A2). Landed at 0.2.8261 by
   melder_0 (every cleanup_spell door releases the version's contracts first), then handed to melder_1 with
@@ -1482,6 +1485,40 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-25T12:26:46Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2 landed at 0.2.8273 and is turned in: every version of a SpellIndex is bound the way its first version was
+    (the owner's rule and call 1, 2026-10-25), so staging and index moves refuse another binding, a notch keeps the
+    index's address and refuses one another spell holds, records below 5.0.0 are refused and the creation cache is
+    generation 24. Its probes ran again at the fix and stay as reproducers: C5, C6 and T4 are refused at the way in,
+    C7 by the notch. The epic's open stories (S5, S11) and findings wait for the owner.
+  EVIDENCE:
+  - context_compass/tickets/stories/completed/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md:1-12
+  - context_compass/artifacts/correctness_defects_20261017/runs/probe_signature_claims_0_2_8273_gil0.txt:1-72
+  IMPACT: Sweep A1's last story is closed.
+  NEXT: The owner's word on S5, S11, the recorded-world finding and the rebind finding.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T12:47:21Z
+  AUTHOR: melder_1
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: S2's risks and gaps are labeled in EPIC-2026-10-25-index_binding_risks_and_gaps on the owner's ask (chat
+    2026-10-25): five risks of the change (RISK-1 to RISK-5) and fourteen gaps (GAP-1 to GAP-14), among them gaps 2
+    and 3 of S2's meld-identity map (GAP-2, GAP-3) and a checkpoint-retention defect measured at S2's landing
+    (GAP-1: a profile folder of earlier worlds deletes a new world's checkpoints). This epic keeps S5, S11 and its
+    open findings.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md:30-82
+  - context_compass/tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md:153-171
+  IMPACT: The change's edges have their own register; nothing moves out of this epic.
+  NEXT: The owner's word on S5, S11, the recorded-world finding and the rebind finding.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
@@ -1503,11 +1540,12 @@ this does not make independent review mandatory for every ticket.
   by melder_1 (S11, M1-47) - S9 done (0.2.8256, the
   refusal; M1-38) and S4 done (0.2.8259; M1-42); S8 done (0.2.8262; turned in
   2026-10-19); S7 done (0.2.8260; M1-44); S3 done (0.2.8261, melder_0; turned in by melder_1 2026-10-19);
-  S1 done (0.2.8263; turned in 2026-10-19); S2 and S5 go to melder_1, one at a time, on the owner's word (M1-45; the identity epic they waited for,
-  EPIC-2026-10-18-spell_identity_is_the_code, is turned in with its S3-S5 parked); S6 done; S10 withdrawn:
+  S1 done (0.2.8263; turned in 2026-10-19); S2 done (0.2.8273; turned in 2026-10-25); S5 goes to melder_1 on
+  the owner's word (M1-45; the identity epic it waited for, EPIC-2026-10-18-spell_identity_is_the_code, is
+  turned in with its S3-S5 parked); S6 done; S10 withdrawn:
   STORY-2026-10-17-staged_version_releases_active_signature (p1; done: landed at 0.2.8263, turned in 2026-10-19),
-  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2; answered: the notch moves the claim; its
-  leaked claim outlives the Book, A7),
+  STORY-2026-10-17-notch_moves_signature_by_incoming_key_only (p2; done: landed at 0.2.8273 - every version of
+  an index is bound the way its first version was - turned in 2026-10-25),
   STORY-2026-10-17-parked_cleanup_leaves_borrower_copies (p2; done: landed at 0.2.8261, turned in 2026-10-19),
   STORY-2026-10-17-minted_index_missing_from_frame_registry (p2; done: landed at 0.2.8259 with
   residency's parked verdict, turned in 2026-10-19),
@@ -1556,8 +1594,9 @@ this does not make independent review mandatory for every ticket.
 - Done since: S8 landed at 0.2.8262 and is turned in; S3 is turned in by melder_1; both on the owner's word
   (DECISION and FACT notes of 2026-10-19).
 - Done since: S1 landed at 0.2.8263 and is turned in (FACT note of 2026-10-19); the pass is rebuilt last.
-- Next: (1) S2 and S5 with melder_1, one at a time, on the owner's word, each from a failing test with its
-  own notch and the patch gate; (2) S11 on the owner's call; (3) a fourth tranche on the owner's word; (4) the
+- Done since: S2 landed at 0.2.8273 and is turned in (FACT note of 2026-10-25T12:26:46Z); the pass is rebuilt last.
+- Next: (1) S5 with melder_1 on the owner's word, from a failing test with its own notch and the patch gate;
+  (2) S11 on the owner's call; (3) a fourth tranche on the owner's word; (4) the
   owner's word on filing the recorded world settled after its binds (FACT note of 2026-10-24T23:31:58Z) and the
   rebind disposal record (FACT note of 2026-10-25T02:47:38Z); the stuck class-annotated consumer is
   EPIC-2026-10-25-dependency_watchers_listen_for_names on the owner's ask.

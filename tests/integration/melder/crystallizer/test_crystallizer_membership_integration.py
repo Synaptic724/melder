@@ -3,8 +3,14 @@ Integration tests for the SpellIndexCrystal membership seams on the REAL
 runtime: bind mints the snapshot, staging re-snapshots, notch flips the
 selection, disposal evicts, and the index-move verbs re-snapshot both sides.
 
+Every version of an index is bound the way its first version was (2026-10-25), so the staging tests bind
+BasicService under the string category "BasicService" - the address a bare bind of it has - and stage
+_StagedService under that category.
+
 Runs only on 3.14t (melder package root import chain).
 """
+from typing import Optional, Tuple
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -61,10 +67,15 @@ def reset_world_singletons():
     Conduit._aether = aether
 
 
-def _recorded_world():
+def _recorded_world(spellframe: Optional[str] = None) -> Tuple[Crystallizer, Spellbook, Conduit, str]:
     """
     Build one recorded dynamic world: activated crystallizer + frozen-config
     book + one active bind + a conjured root conduit.
+
+    Args:
+        spellframe: The string category BasicService is bound under, or None
+            for a bare bind. A test that stages a second version passes
+            "BasicService" and stages it under the same category.
 
     Returns:
         tuple: (crystallizer, book, conduit, active_spell_id).
@@ -82,6 +93,7 @@ def _recorded_world():
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
+        spellframe=spellframe,
     )
     conduit = book.conjure(dynamic=True, name="membership-root")
     return crystallizer, book, conduit, spell_id
@@ -121,13 +133,14 @@ def test_staging_and_notch_reshape_the_snapshot():
     Raises:
         AssertionError: If membership truth lags the runtime.
     """
-    crystallizer, book, conduit, spell_id = _recorded_world()
+    crystallizer, book, conduit, spell_id = _recorded_world(spellframe="BasicService")
     active_spell = book._spells_by_id[spell_id]
     staged_id = conduit.bind_inactive(
         spell=_StagedService,
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     crystallizer.create_checkpoint()
     staged_spell = book._inactive_spells[staged_id]
@@ -186,13 +199,14 @@ def test_parked_disposal_reshapes_the_surviving_shared_index():
     Raises:
         AssertionError: If the survivor snapshot is dropped or stale.
     """
-    crystallizer, book, conduit, spell_id = _recorded_world()
+    crystallizer, book, conduit, spell_id = _recorded_world(spellframe="BasicService")
     active_spell = book._spells_by_id[spell_id]
     staged_id = conduit.bind_inactive(
         spell=_StagedService,
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     staged_spell = book._inactive_spells[staged_id]
     book.cleanup_spell(spell=staged_spell)
@@ -215,13 +229,14 @@ def test_remove_from_spell_index_snapshots_both_sides():
     Raises:
         AssertionError: If either side of the split goes unrecorded.
     """
-    crystallizer, book, conduit, spell_id = _recorded_world()
+    crystallizer, book, conduit, spell_id = _recorded_world(spellframe="BasicService")
     active_spell = book._spells_by_id[spell_id]
     staged_id = conduit.bind_inactive(
         spell=_StagedService,
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     staged_spell = book._inactive_spells[staged_id]
     conduit.remove_from_spell_index(
@@ -246,13 +261,14 @@ def test_add_to_spell_index_moves_membership_between_snapshots():
     Raises:
         AssertionError: If the move leaves a stale or missing snapshot.
     """
-    crystallizer, book, conduit, spell_id = _recorded_world()
+    crystallizer, book, conduit, spell_id = _recorded_world(spellframe="BasicService")
     active_spell = book._spells_by_id[spell_id]
     staged_id = conduit.bind_inactive(
         spell=_StagedService,
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="BasicService",
     )
     staged_spell = book._inactive_spells[staged_id]
     conduit.remove_from_spell_index(

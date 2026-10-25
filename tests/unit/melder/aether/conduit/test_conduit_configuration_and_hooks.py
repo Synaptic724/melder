@@ -1313,6 +1313,7 @@ def test_register_to_creations_adds_unique_spell(
     spell = MagicMock()
     spell.existence = Existence.unique
     spell.spell_id = "spell-1"
+    spell.store_key = "spell-1:binding"
     spell.has_disposal_methods = True
     spell.disposal_method_names = ["cleanup"]
     add_creation = MagicMock()
@@ -1321,8 +1322,9 @@ def test_register_to_creations_adds_unique_spell(
 
     conduit_normal._register_to_creations(spell, instance)
 
+    # Filed under the binding's store key (STORY-2026-10-25-creations_store_slots_by_binding).
     add_creation.assert_called_once_with(
-        "spell-1",
+        "spell-1:binding",
         instance,
         has_disposal_methods=True,
         disposal_methods=["cleanup"],

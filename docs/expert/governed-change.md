@@ -19,6 +19,15 @@ reference, activation annotates the new Spell, and post observes the registered 
 member remains unchanged, and returns the candidate's spell_id. Expert 17 asserts the
 member set, unchanged selection, and unchanged resolved result.
 
+The candidate is bound the way the index's first version was: the same kind of
+spellframe (none, a string category or a Protocol) and the same address (the
+spellframe's name, or a bare class's own name, and the binding name). `bind_inactive`
+refuses any other binding before it registers anything, and `add_to_spell_index`
+refuses to move a version into an index bound another way. So a notch never moves the
+address, and a meld by the address builds whichever version is selected. Versions
+that carry different class names are bound under one spellframe category from the
+first version on; expert 17 does that and shows a bare staging refused.
+
 Promotion is `notch_spell(spell_index=..., spell_id=...)` given that spell_id: the
 candidate becomes the selected member and the next meld builds it, and a notch back by
 the previous spell_id restores the old version, which stayed parked. Expert 17 runs the
@@ -30,8 +39,11 @@ The calls that build nothing follow the same rule: `has_live_creation(spell=...)
 answer for that version, parked or active, so a parked version's objects can be
 checked or retired without a notch back; `meld` builds only the selected member.
 `notch_spell` refuses a version of another index, or one another Spellbook owns, before
-it changes anything. `add_to_spell_index` and `remove_from_spell_index` take `spell_id=`
-the same way, to move a parked candidate onto another index or out into one of its own.
+it changes anything, and it refuses an address another spell holds: a version split
+off into an index of its own keeps its binding, so it can be notched active there only
+once its old index no longer serves that address. `add_to_spell_index` and
+`remove_from_spell_index` take `spell_id=` the same way, to move a parked candidate onto
+another index bound the same way or out into one of its own.
 
 ## Keep history and code reconciliation distinct
 

@@ -455,7 +455,7 @@ Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry 
 
 ### Host-controlled exact-handle pattern
 
-The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs, syntax-checked but not runtime-executed here**; validate it in a disposable 0.2.50 world before deployment. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
+The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs**, run on 3.14t with the GIL off and on (2026-10-25); validate it in a disposable world before deployment. Both versions are bound under one spellframe category, `"price"`: every version of an index is bound the way its first version was, so a renamed class bound bare would be refused. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
 
 ```python
 import melder as md
@@ -477,14 +477,14 @@ book = md.Spellbook(aetheric_frame="version-lab")
 root = None
 try:
     book.add_bind_hooks(post=[capture])
-    old_id = book.bind(spell=PriceV1, existence="unique", permissions="create")
+    old_id = book.bind(spell=PriceV1, spellframe="price", existence="unique", permissions="create")
     root = book.conjure(dynamic=True, name="version-root")
     old_spell = versions[old_id]
     index = old_spell.spell_index
 
     new_id = root.bind_inactive(
-        spell=PriceV2, spell_index=index,
-        existence="unique", permissions="create", binding_name="v2",
+        spell=PriceV2, spell_index=index, spellframe="price",
+        existence="unique", permissions="create",
     )
     candidate = versions[new_id]  # exact object from the successful bind's hook
     assert candidate.spell_id == new_id
@@ -512,9 +512,10 @@ finally:
 **Operational limits:**
 - Selection parks the outgoing version; it is not automatic disposal, resource retirement, or a rewrite of already-held application objects. Retire versions explicitly after consumers no longer need them.
 - The architecture's “owner-side only” warning describes an internal seam, not the whole current public operation. The inspected `Conduit.notch_spell` performs the local transaction, then deactivates stale borrowed copies and emits an index-notch notification for index-linked receivers. **Do not assume all borrowers automatically gain the new version**, or that the post-transaction fan-out is one indivisible action. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
-- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success.
+- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success. A notch refused for its incoming version's structural check (0.2.8262) or for an address another spell holds (2026-10-25) moves nothing; the borrower fan-out after the transaction can still fail part-way.
+- **One index, one binding** (2026-10-25): an index keeps its first version's binding - the spellframe's kind (none, a string category, a Protocol) and the address that gives (the spellframe's name, or a bare class's own name, and the binding name). `bind_inactive` and `add_to_spell_index` refuse a version bound any other way (ValueError, nothing registered or moved), and a notch never moves the address. Stage an edited class under the index's spellframe and binding name; bind versions that carry different class names under one category from the first version on. Crystallizer records older than record version 5.0.0 are refused: record the world again. [CONDUIT]
 - Moving/separating active index members is refused; first select another member. Separating the sole member is not the retirement route. No manual edits of `selected_spell_id`.
-- Class-version fingerprints do not cover every method-body edit. Do not assume a source edit creates a new Spell ID; verify IDs, selected membership, recorded source, and behavior. Use deliberate version identities. [C: Binding][C]
+- A spell_id is the SHA256 of the object's code (since 0.2.8257): an edit to a method, the constructor, a class-level value or a base is a new spell_id; a docstring, comment or line move is not. Verify IDs, selected membership, recorded source, and behavior anyway. Use deliberate version identities. [C: Binding][C]
 
 <a id="persistence"></a>
 

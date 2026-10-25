@@ -222,11 +222,14 @@ def test_a_staged_existing_object_is_not_registered_in_the_store(staged_before_c
     family = _family("existing_object")
     world = _World(family, staged_before_conjure=staged_before_conjure)
     try:
-        store = world.root._creations._creations
-        assert world.active_id in store and world.staged_id not in store
+        # A store files objects by store key and counts a spell over every binding's slot
+        # (STORY-2026-10-25-creations_store_slots_by_binding).
+        creations = world.root._creations
+        assert creations.count_spell_creations(world.active_id) == 1
+        assert creations.count_spell_creations(world.staged_id) == 0
         world.notch_to_staged()
         assert world.root.meld(spell_id=world.staged_id) is world.staged_target
-        assert world.staged_id not in store
+        assert creations.count_spell_creations(world.staged_id) == 0
     finally:
         world.close()
 

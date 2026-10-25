@@ -235,6 +235,13 @@ class CachingSystem(Cleanable):
     # notch never moves an index's address. A release change already
     # cold-starts every bundle (version 9); the bump is the owner's call
     # (2026-10-25: "notch the cache version and invalidate all the records").
+    # Version 25 retires bundles written before the creation stores filed
+    # objects by store key (STORY-2026-10-25-creations_store_slots_by_binding):
+    # the emitted plans, doors, solo templates and specializer read and publish
+    # a slot by `Spell.store_key` (`<spell_id>:<binding_hash>`) and a slotted
+    # site without disposal methods publishes through `Creations.register_slot`.
+    # A release change already cold-starts every bundle (version 9); the bump
+    # is the owner's rule that a codegen change bumps the cache.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -260,6 +267,7 @@ class CachingSystem(Cleanable):
         22: "managed_settings_leave_spell_id",
         23: "binding_manifest_keys",
         24: "spell_index_keeps_its_binding",
+        25: "creation_store_slots_by_binding",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

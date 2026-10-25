@@ -173,6 +173,7 @@ class FrameACLValidator(Cleanable):
         "capability": {
             "enable_imports",
             "import_modules",
+            "materialize_modules",
             "builtin_names",
             "dynamic_access",
             "mutation",
@@ -1208,6 +1209,8 @@ class FrameACLValidator(Cleanable):
                     )
             if rule.operation == "import_modules":
                 self._validate_import_module_rule_conditions(rule, label)
+            if rule.operation == "materialize_modules":
+                self._validate_materialize_module_rule_conditions(rule, label)
             if rule.operation == "builtin_names":
                 self._validate_builtin_names_rule_conditions(rule, label)
 
@@ -1241,6 +1244,47 @@ class FrameACLValidator(Cleanable):
                     "Import-module rules in {0} must use non-empty module-root strings.".format(
                         label
                     )
+                )
+
+    @staticmethod
+    def _validate_materialize_module_rule_conditions(
+            rule: FrameACLRule,
+            label: str,
+    ) -> None:
+        """
+        Validate the condition payload for one generation-namespace (`materialize_modules`) ACL rule.
+
+        Contract:
+            - `module_roots` is a non-empty list or tuple of dotted-identifier-legal module roots (D-20).
+
+        Args:
+            rule:
+                Rule to validate.
+            label:
+                Human-readable validation label.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If `module_roots` is missing, empty, or holds an empty or non-dotted-legal root.
+        """
+        module_roots = rule.conditions.get("module_roots")
+        if not isinstance(module_roots, (list, tuple)) or len(module_roots) == 0:
+            raise ValueError(
+                "Generation-namespace (materialize_modules) rules in {0} must declare non-empty "
+                "'module_roots'.".format(label)
+            )
+        for module_root in module_roots:
+            if (
+                    not isinstance(module_root, str)
+                    or not module_root
+                    or not all(part.isidentifier() for part in module_root.split("."))
+            ):
+                raise ValueError(
+                    "Generation-namespace (materialize_modules) rules in {0} must use dotted-identifier-legal "
+                    "module roots; got {1!r}.".format(label, module_root)
                 )
 
     @staticmethod

@@ -50,6 +50,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
         "call_target": _call_target_for(spell),
         "spell": spell,
         "spell_id": spell.spell_id,
+        # The slot every registration files under (STORY-2026-10-25-creations_store_slots_by_binding).
+        "store_key": spell.store_key,
     }
     if has_disposal_methods:
         namespace["disposal_methods"] = _normalize_disposal_methods(
@@ -111,7 +113,7 @@ def _build_source(
     many_creations = meld._spellspace_creations
     if many_creations is None:
         many_creations = meld._conduit_creations
-    many_creations.register_many(spell_id, instance, disposal_methods)
+    many_creations.register_many(store_key, instance, disposal_methods)
     return instance
 """
         return """def _solo_no_overrides_codegen_creation_executor(meld):
@@ -123,7 +125,7 @@ def _build_source(
             return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._conduit_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
         has_disposal_methods=True,
         disposal_methods=disposal_methods,
@@ -133,7 +135,7 @@ def _build_source(
         return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._conduit_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
     )
     return instance
@@ -144,7 +146,7 @@ def _build_source(
             return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._spellspace_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
         has_disposal_methods=True,
         disposal_methods=disposal_methods,
@@ -154,7 +156,7 @@ def _build_source(
         return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._spellspace_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
     )
     return instance
@@ -176,7 +178,7 @@ def _build_source(
             return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     spell._owner_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
         has_disposal_methods=True,
         disposal_methods=disposal_methods,
@@ -186,7 +188,7 @@ def _build_source(
         return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     spell._owner_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
     )
     return instance
@@ -197,7 +199,7 @@ def _build_source(
             return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._cluster_creations.resolved_store().add_creation(
-        spell_id,
+        store_key,
         instance,
         has_disposal_methods=True,
         disposal_methods=disposal_methods,
@@ -207,7 +209,7 @@ def _build_source(
         return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._cluster_creations.resolved_store().add_creation(
-        spell_id,
+        store_key,
         instance,
     )
     return instance
@@ -218,7 +220,7 @@ def _build_source(
             return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._root_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
         has_disposal_methods=True,
         disposal_methods=disposal_methods,
@@ -228,7 +230,7 @@ def _build_source(
         return """def _solo_no_overrides_codegen_creation_executor(meld):
     instance = call_target()
     meld._root_creations.add_creation(
-        spell_id,
+        store_key,
         instance,
     )
     return instance

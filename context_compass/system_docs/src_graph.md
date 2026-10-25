@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `b75a681720fba78e3d3af853856e71cb487f74020685a4896e3e3ee9f6c1c0af`
+- source_sha256: `f447831efb1f3966449f8de9475991bfd84d5ca4d5736b3f34b9791eb9089ff4`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `af00dd18d860bb3114ed8c6eb2b14fc9e4d336b3a6f99f00d7968873324dde97`
+- source_sha256: `80998ba1c658dbc2d34e7eb65801b9ca3b765f438d43d3051053f827591b3fb7`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `ae39aee5426d1b675c533caf430186dc406504a14b6d7bfd1e02a8bd8ea8a833`
+- source_sha256: `5338d1520967365040d0968945ad5fc62be6ffe25f1f233479d8169ca6225da9`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `16c51a02a5f9da7e1955a506d5955d6e7ec83889d0caf361d99675d4a956e1e0`
+- source_sha256: `1eaac217b7e04cf0ff9d0efdad4617e3e8c5b296e3c6082259ca944eab76c9a5`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `b198eed54a24c8bdc1d9c7d14e0411483a3b985d248000f51213279fd5aee508`
+- source_sha256: `5e828871602c3065c6ebeef97d768da6d9dbf775ad97dbc568ffa97967e2c314`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `462661beaec13387b657e5114ac9666d1a48c7167716d8d6561eb143bf6e66a2`
+- source_sha256: `ab90d48096f8ec7140503b0a2f444c86504e5708f89685db69966332eeb65338`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `17f15e5ef7933d799b94f1c14cb755346cf5f1642693683ee689ec39ffa35a53`
+- source_sha256: `042d3f6839f7db7ee626b7ef693f14807d9458c83f3e1cd0e69f01bded63a97f`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `78b1b2bb71bfe8eb59ff245d366b4841db8cd00b8d643628c1bc85b2be6dc14c`
+- source_sha256: `91275f9a41a12eea5ddd6ad78e3df4d749663097170918dcc72c6e9f175a9597`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `5898721e22d3867633911d6bde02056b4e1e43047f31371a4b88382956d36ab4`
+- source_sha256: `67c4a81683b4fe39917ca69dff1fa2f8af160e640fddc3d5a44e1c06745b87bf`
 - nodes: 1
 
 ### Nodes
@@ -863,7 +863,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/aetheric_frame.py
 
-- source_sha256: `bdeb1cb70023c4fa8873f881c3e19e3faf2c012291028bf5931e51d09a4738d9`
+- source_sha256: `11815e1b10801ad494cc1697496f01c0b626b65ab230ab655df5d80f6aac1b5b`
 - nodes: 2
 
 ### Nodes
@@ -891,9 +891,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one
   - answers cleanup-safe membership probes for Aether's cross-frame sweep (False, None or an empty set once cleaned) and keeps its lock after cleanup (0.2.8231)
   - reads each conjured Book's live id set in one call, so a bind into that Book cannot tear the read (0.2.8231)
-- owns_state: `_conduits`, `_spell_registry`, `_selected_spell_registry`, `_spell_system_states`, `_dev_ops_manager`, `_devops_information_registry`, `_configuration`
+  - fronts its LookupContainer for the Books' binding-signature claims (claim_lookup, update_lookup, the releases, get_lookup), including repoint_lookup, the compare-and-set a notch moves its index's address with (2026-10-25)
+- owns_state: `_conduits`, `_spell_registry`, `_selected_spell_registry`, `_spell_system_states`, `_dev_ops_manager`, `_devops_information_registry`, `_configuration`, `_lookup_container`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `bind_frame_configuration`, `claim_lookup`, `cleanup`, `conduit_cloud`, `dev_ops_manager`, `devops_information_registry`, `find_conduit_id_for_spell`, `find_index_for_spell`, `frame_configuration`, `freeze_frame_configuration`, `get_lookup`, `get_lookup_sig_by_spell_id` (+17 more)
+- public methods: `bind_frame_configuration`, `claim_lookup`, `cleanup`, `conduit_cloud`, `dev_ops_manager`, `devops_information_registry`, `find_conduit_id_for_spell`, `find_index_for_spell`, `frame_configuration`, `freeze_frame_configuration`, `get_lookup`, `get_lookup_sig_by_spell_id` (+18 more)
 
 ### Edges out
 
@@ -3290,7 +3291,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/lookup_container.py
 
-- source_sha256: `3400c96ff542e653380ba2d6fd21c31144dc376cbfd220092d8f1de922205232`
+- source_sha256: `c43e572d4cd23b571b7a81b29047c982f6da78e916e49a5a87e61fbc107079a7`
 - nodes: 2
 
 ### Nodes
@@ -3311,9 +3312,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - raise on a re-claim for a DIFFERENT spell_id and leave state unchanged
   - serialize every read and write under one non-reentrant Lock, so the forward and reverse maps are never observed mid-update
   - clear both maps and drop the lock on cleanup; idempotent
+  - moves a claim only from the spell it expects (repoint): claims a free signature, moves one the expected spell holds with its reverse entry, and returns the holder of one any other spell holds, changing nothing - the compare-and-set a notch moves its index's address with (2026-10-25)
 - owns_state: `_lookup`, `_reverse`, `_lock`, `_cleaned`
 - phases: `runtime`, `cleanup`
-- public methods: `claim`, `cleanup`, `contains`, `contains_spell_id`, `get`, `get_sig_by_spell_id`, `release`, `release_by_spell_id`, `update`
+- public methods: `claim`, `cleanup`, `contains`, `contains_spell_id`, `get`, `get_sig_by_spell_id`, `release`, `release_by_spell_id`, `repoint`, `update`
 
 ### Edge candidates (2, unconfirmed)
 
@@ -4432,7 +4434,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `59f7b919421d32b42dd45a26e1817261e676424adc15a6575919fd2512b8c091`
+- source_sha256: `d0c89e905bb3a61a7fd8834afec14c7a62b4eab1f243fbfb0891391150b1205e`
 - nodes: 2
 
 ### Nodes
@@ -4486,6 +4488,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - after a notch's transaction, between the deactivate fan-out and the index emission, has every linked peer make its parked copy of the incoming version active again, so a version grant is active exactly while its version is (_activate_borrowed_spell, 0.2.8250)
   - answers get_spell_by_spell_id (renamed from get_spell_by_id with no alias, 0.2.8253) with exactly the spell the owner Book holds under the spell_id, active or parked, and get_spell_permissions with that version's own permissions; resolves a transfer's spell_id in two explicit steps - the member, then the spell its index has active here (_resolve_transfer_spell) - so a transfer still moves the index with its active version
   - takes a version out of every contract of its Book's root conduit before the Book disposes it: hands the root ward's _emit_spell_disposed to Spellbook._dispose_spell as release_contracts, from the root or a lesser of its lineage, and emits an index destroy with no member id when the index went too; the Spellbook's own cleanup_spell comes here once conjured (cleanup_spell, 0.2.8261)
+  - files an existing-object spell's object in its store under the spell's store key (_register_to_creations), the key emitted plans read it by, so it is filed once; one bound again under another binding while its first filing is alive is filed under both keys and disposed with each binding's list when the store ends (<<SLOTSV>>)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+67 more)
@@ -5096,7 +5099,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/cluster_creations.py
 
-- source_sha256: `ca00b4aecf283080ecdecf13bce0f0d36d0b768342a27e2c49131c42dcae5d4b`
+- source_sha256: `12766f4f8b8ce8424a993669d0818e52e26701727a5718b324bdeb9e23f3c79d`
 - nodes: 2
 
 ### Nodes
@@ -5120,6 +5123,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - refuse use while no leader is elected
   - never clean the store it points at
   - records the elected leader's id as the purge authority for the team store, whose owner id is the cluster's (0.2.8237)
+  - delegates get_creation and add_creation to the bound team store by the binding's store key (<<SLOTSV>>)
 - phases: `runtime`, `cleanup`
 - public methods: `add_creation`, `bind`, `cleanup`, `get_creation`, `is_active`, `leader_conduit_id`, `resolved_store`, `unbind`
 
@@ -5184,7 +5188,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `eb7851944fdd816fc2d094dcce0f8eef118615ff6d1547f2c1052ae68c75c2f9`
+- source_sha256: `a0a83dd811f367975ad4a5d5b68cc24842212f19c76709cb7b936687bb49134f`
 - nodes: 3
 
 ### Nodes
@@ -5207,7 +5211,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Cleanup record of one disposal-bearing many key: the key's live bucket, aliased, plus the Spell's disposal list recorded once.
 - responsibilities:
   - entries IS the key's live bucket (the same list object the registry holds), never a copy, so one append serves both views
-  - methods is the Spell-owned disposal list retained by reference at the key's first registration in the store and never matched, reordered or cleared by it; every later registration of the key appends under it, including a definition bound again under other disposal names after cleanup_spell (since 0.2.8257 the spell id covers no disposal name)
+  - methods is the Spell-owned disposal list retained by reference at the key's first registration in the store and never matched, reordered or cleared by it; every later registration of the key appends under it, and the key is a store key, which covers the disposal names and the existence, so a definition bound again another way after cleanup_spell files under another key and record (<<SLOTSV>>; from 0.2.8257 to 0.2.8273 the key was the spell id, which covers no disposal name, and such a definition appended under the removed list)
   - read by the disposal walk, purge, extract and restore in place of the former per-entry (object, methods) tuples; every entry of a key is disposal-bearing or none is, so sparse disposal metadata is impossible
 - owns_state: `entries`, `methods`
 - phases: `runtime`, `cleanup`
@@ -5215,25 +5219,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Creations` (class)
 
 - id: `melder.aether.conduit.creations.creations.Creations`
-- defined at: `src/melder/aether/conduit/creations/creations.py:68`
+- defined at: `src/melder/aether/conduit/creations/creations.py:70`
 - extends: `Cleanable`
-- role: Generic scoped live-object registry with disposal metadata kept beside it: a (object, methods) tuple per unique key, a slotted holder's included, and a ManyDisposalBucket per disposal-bearing many key.
+- role: Generic scoped live-object registry keyed by store key, one slot per binding of a spell id, with disposal metadata kept beside it - a (object, methods) tuple per unique key, a slotted holder's included, and a ManyDisposalBucket per disposal-bearing many key - and a shelf per spell id indexing its slots.
 - responsibilities:
+  - files every slot, disposal record and build guard under a store key (Spell.store_key, <spell_id>:<binding_hash>), so two bindings of one class never share a slot, record or shape; managed pools stay keyed by spell id (<<SLOTSV>>)
+  - keeps a shelf per spell id - _shelves, the store keys filed under it in first-filing order, and _slot_shapes, each key's shape - noted under the store lock before a key's first value (_note_slot) and kept across clears, deleted at cleanup; count_spell_creations counts every binding's objects for the live probes, extract and restore move the whole shelf with each row's key, and register_slot is the no-disposal slotted publish of emitted plans (<<SLOTSV>>)
   - stores raw objects in one scoped live registry and cleanup records in a separate registry: unique keys hold (object, methods), disposal-bearing many keys hold a ManyDisposalBucket that aliases the live bucket and records the key's method list once
-  - register_many(spell_id, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append, the slot's shape unchecked; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a registration that is disposal-bearing where the key's entries are not, or the reverse; neither verb compares method lists
+  - register_many(store_key, instance, disposal_methods) is the hot verb emitted plans and executors call (0.2.8216): explicit store-lock acquire/release, cleaned check, one dict read, first use creates the bucket and its record, one append, the slot's shape unchecked; add_many_creations keeps its signature, writes the same shape and refuses a non-list slot or a registration that is disposal-bearing where the key's entries are not, or the reverse; neither verb compares method lists
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes every declared method in list order even after one fails; collects one RuntimeError per failing method, chained from the raised exception, and never lets one failing object strand the rest
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
   - owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock
   - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build
-  - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
+  - purges every slot on the selected spell id's shelf, or one supplied creation from the slot that holds it, under the asking definition's build lock then the store lock, counting each slot by its recorded shape and disposing each with its own record through the shared helpers; no scope discovery or authorization
   - keeps a slotted holder an ordinary unique entry (0.2.8267): its disposal and its purge run only its own methods, and the many objects built for it stay in their spells' buckets in the store that recorded them - the meld's innermost scope - so a many purge or live-creation probe of a child's spell counts every child that store holds; the holder record of 0.2.8238-0.2.8265 is removed
   - keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent) and, when a definition bound again under the same spell_id meets the pool its earlier definition left, hands it the new Spell after releasing the store lock (ManagedSpellQuantity._rebind_spell takes the new settings, 0.2.8254), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)
   - cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)
   - registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)
-- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`
+- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`, `_slot_shapes`, `_shelves`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `discard_managed_quantity`, `ensure_managed_quantity`, `extract_spell_creations`, `get_creation`, `get_managed_quantity`, `id`, `owner_conduit_id`, `purge` (+5 more)
+- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `count_spell_creations`, `discard_managed_quantity`, `ensure_managed_quantity`, `extract_spell_creations`, `get_creation`, `get_managed_quantity`, `id`, `owner_conduit_id` (+7 more)
 
 ### Edges out
 
@@ -5440,7 +5446,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `032b159577c6c13ddca51c7b4ff88fd780ee2c085b4a3bcb4a701547f0e75a34`
+- source_sha256: `31e4d89e277edd2d9ced848c3c724af489d9c3a9534523285a9564418a13c5f7`
 - nodes: 2
 
 ### Nodes
@@ -5465,7 +5471,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - routes conduit-local unique_per_conduit and many storage through ConduitCreations
   - rejects spellspace-request spells on the conduit entry path
-  - provides reuse-only and live-creation status probes over the store each lifetime uses through this door: the conduit store for many and unique_per_conduit, the Spell owner's store for unique, the lineage root for unique_per_conduit_lineage and the elected leader for unique_per_conduit_cluster
+  - provides reuse-only and live-creation status probes over the store each lifetime uses through this door: the conduit store for many and unique_per_conduit, the Spell owner's store for unique, the lineage root for unique_per_conduit_lineage and the elected leader for unique_per_conduit_cluster; the probes count every binding's objects on the spell id's shelf there (Creations.count_spell_creations) and meld_existing_spell reads the asking binding's slot by its store key, raising "not live" while only a removed binding's object is there (<<SLOTSV>>)
   - authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
@@ -5784,7 +5790,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `2dea9f6f53b3d7ccb16ec8acb570bc8f1e5014228941d2c28be1db2196d5e7e2`
+- source_sha256: `e3e4f85416080e650dcc43313585fd445b8ae5b1c89c2b5cf44f210e63e37871`
 - nodes: 2
 
 ### Nodes
@@ -5871,7 +5877,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `55a7f8206f5522103fe9f412a70efe367cba6dfd792c765633465c8e208e34e8`
+- source_sha256: `0740734b769872e1c28d50bb6b049124718464086f64619dc73668197c0257da`
 - nodes: 2
 
 ### Nodes
@@ -5895,7 +5901,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - routes unique_per_spell_space storage through spellspace-local Creations, which also hold the disposal-bearing many objects melded through this door (the innermost scope)
   - routes conduit-owned lifetimes through owner-conduit ConduitCreations
-  - reports live-creation status from the store each lifetime uses through this door: many and unique_per_spell_space from spellspace-local Creations, unique_per_conduit from the owner conduit's, unique, lineage and cluster from their shared stores
+  - reports live-creation status from the store each lifetime uses through this door: many and unique_per_spell_space from spellspace-local Creations, unique_per_conduit from the owner conduit's, unique, lineage and cluster from their shared stores; it counts every binding's objects on the spell id's shelf (Creations.count_spell_creations), and meld_existing_spell reads the asking binding's slot by its store key (<<SLOTSV>>)
   - restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
   - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
@@ -6116,7 +6122,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `1bbfc68ae322390c3ae17056f08ddd5479f59ce821640dfebad5ed0c9581fbf3`
+- source_sha256: `1835bbc844f0c865092ea5482505deda1d601caff466470cc60f402836e45d8c`
 - nodes: 2
 
 ### Nodes
@@ -6150,6 +6156,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame
   - hands the Spell its spellframe_kind and implemented_protocols; the spell_id does not read the kind, a binding-manifest field
   - validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings, binding-manifest fields (0.2.8242, 0.2.8258); the spell_id never reads them (0.2.8254, and since 0.2.8257 nothing from the bind call does)
+  - mints every SpellIndex with SpellIndex.for_binding from the new spell's spellframe, name and binding name, so the index keeps that binding and admits only versions bound the same way (2026-10-25)
 - owns_state: `_spellbook`, `_spell_examiner`, `_lifecycle_hooks`, `_spell_code_digest`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_hooks`, `bind`, `capture_hooks`, `cleanup`, `clear_hooks`, `execute_post_hooks`, `get_hook_names`, `spell_id_inspector`
@@ -6171,7 +6178,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder._build_assets._bind_guard.bind_guard`: Bind.bind calls the module-level assert_allowed() before constructing a Spell, and that check refuses registration when the candidate's exact (module, qualname) pair is present in INTERNAL_MANIFEST - the frozenset this hand-written loader publishes. Membership is an exact match and does NOT walk the MRO, so a user subclass of an internal class carries its own qualname, misses the manifest, and binds normally.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.conduit.conduit_ward.permissions.permissions.Permissions`: Bind accepts and carries Permissions as the access policy for newly registered spells.
-- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: Bind creates a SpellIndex lineage key from the spell_id (the code digest) before constructing the Spell record.
+- `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: Bind creates a SpellIndex lineage key from the spell_id (the code digest) and the new spell's binding (SpellIndex.for_binding: the spellframe's kind and the address, which every later version of the index must share, 2026-10-25) before constructing the Spell record.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.existence.Existence`: Bind accepts Existence as the lifecycle policy for newly registered spells.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell.Spell`: Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer`: Bind owns the SpellExaminer used to build registration profiles.
@@ -6179,7 +6186,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`: Bind normalizes a managed binding's mode to a ManagedSpellMode member and hands it to the Spell as a setting, a binding-manifest field; the spell_id never reads it (0.2.8254, 0.2.8257).
 - `melder.aether.spellbook.bind.bind.Bind` -> `melder.aether.spellbook.bind.spell_code_digest.SpellCodeDigest`: Bind builds one SpellCodeDigest at init, asks it for every spell_id under its own lock (the code-object memo lives as long as Bind) and cleans it in cleanup; spell_id_inspector builds and cleans its own per call.
 
-### Edge candidates (8, unconfirmed)
+### Edge candidates (7, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -6187,7 +6194,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellExaminer`
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellCodeDigest`
 - `melder.aether.spellbook.bind.bind.Bind` creates `TypeError`
-- `melder.aether.spellbook.bind.bind.Bind` creates `SpellIndex`
 - `melder.aether.spellbook.bind.bind.Bind` creates `Spell`
 - `melder.aether.spellbook.bind.bind.Bind` creates `ValueError`
 - `melder.aether.spellbook.bind.bind.Bind` creates `HookExecutionError`
@@ -6352,7 +6358,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/spell_index.py
 
-- source_sha256: `0fae4148f2b9c36c68307b72fef21c14e6974b011f7622bc09ffbb3d294fd65f`
+- source_sha256: `2a3d87a92fe5e04d708eeb005b398b0d6539c1513cef4c9091594d6d56447c17`
 - nodes: 2
 
 ### Nodes
@@ -6361,23 +6367,24 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.bind.spell_index`
 - defined at: `src/melder/aether/spellbook/bind/spell_index.py:1`
-- role: Stable index identity with a mutable selected-spell pointer - the thing notch repoints.
+- role: Stable index identity with a mutable selected-spell pointer and the binding all its versions share - the thing notch repoints.
 
 #### `SpellIndex` (class)
 
 - id: `melder.aether.spellbook.bind.spell_index.SpellIndex`
-- defined at: `src/melder/aether/spellbook/bind/spell_index.py:12`
+- defined at: `src/melder/aether/spellbook/bind/spell_index.py:14`
 - extends: `Cleanable`
-- role: Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer and the lineage's member set.
+- role: Stable lineage identity (an immutable ULID) with a mutable selected-spell pointer, the lineage's member set and the binding its first version was bound with.
 - responsibilities:
   - provides hash- and equality-stable index identity (the ULID) for spell registries
   - holds the selected spell id and the lineage's member set; selecting an id adds it as a member and never retires the previous one
   - answers lineage membership: has_spell re-checks cleaned under its lock and raises RuntimeError for a cleaned index; _has_spell_unless_cleaned answers False for one, for walks over indexes the caller neither owns nor locks
   - leaves lookup-map propagation on a notch to the Spellbook (the notch seam), not the index
   - answers whether it selects a version without ever raising (_is_selected_unless_cleaned, under its lock; False once cleaned) for ReleaseManagedSpell's cold resolver (0.2.8244)
-- owns_state: `_id`, `_selected_spell_id`, `_spells_in_index`, `_lock`
+  - keeps the binding its first version was bound with - the spellframe's kind (none, category, contract) and the case-insensitive address - recorded by for_binding, which Bind uses for every index, and read through binding_signature; admits only a version bound the same way (check_admits: the ValueError bind_inactive and add_to_spell_index raise, naming the verb, both bindings and the remedy; an index built without a binding admits nothing); cleanup keeps the binding (2026-10-25)
+- owns_state: `_id`, `_selected_spell_id`, `_spells_in_index`, `_lock`, `_binding_signature`, `_binding_text`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_member`, `cleanup`, `has_spell`, `id`, `is_empty`, `is_sole_member`, `remove_member`, `selected_spell_id`, `spells_in_index`, `update`
+- public methods: `add_member`, `binding_signature`, `check_admits`, `cleanup`, `for_binding`, `has_spell`, `id`, `is_empty`, `is_sole_member`, `remove_member`, `selected_spell_id`, `signature_of` (+2 more)
 
 ### Edges out
 
@@ -6392,11 +6399,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.spell_index.SpellIndex` -> `melder.aether.spellbook.spellbook.Spellbook`: SpellIndex stores owner and contract Spellbook attachments so version-pointer changes can update those lookup maps.
 - `melder.aether.spellbook.bind.spell_index.SpellIndex` -> `melder.utilities.helpers.ulid_factory`: SpellIndex uses the internal ulid_factory module for stable lineage ids.
 
-### Edge candidates (1, unconfirmed)
+### Edge candidates (3, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.spellbook.bind.spell_index.SpellIndex` creates `RLock`
+- `melder.aether.spellbook.bind.spell_index.SpellIndex` creates `ValueError`
+- `melder.aether.spellbook.bind.spell_index.SpellIndex` creates `RuntimeError`
 
 <!-- END FILE: src/melder/aether/spellbook/bind/spell_index.py -->
 
@@ -6588,7 +6597,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `b953163118b8794cc5e1912717fa47a966389e5eccff9c3d4b202afbb750a11a`
+- source_sha256: `0947c1eeb0d110f74e7b7fb785114f1ad467de8eed8304fcd8df029e32f64930`
 - nodes: 2
 
 ### Nodes
@@ -6618,6 +6627,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains a managed binding's normalized options read-only per version (managed_spell_mode, limit, timeout, reset methods; None, None, None and () on other existences) and, when an owner stamp carries a store, ensures the version's pool there (_add_owned_conduit -> Creations.ensure_managed_quantity, 0.2.8242-0.2.8243)
   - a direct cleanup of the active version of an index that also holds parked versions raises the Book's refusal and leaves the spell as it was (Spellbook.cleanup_and_remove_spell, 0.2.8256)
   - saves its Book's cache on request (emit_cache_file -> bool): False when caching is off, nothing was staged since the last save or the operating system refused the save, which no longer raises (0.2.8266)
+  - carries its store key, store_key = <spell_id>:<binding_hash>, built right after the binding manifest and kept after cleanup: the key every Creations store files this version's objects, disposal record and build guard under, so two bindings of one class never share a slot and a class bound again the same way files where it did (<<SLOTSV>>)
 - owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`, `spellframe_kind`, `implemented_protocols`, `_removal_lock`, `_managed_spell_mode`, `_managed_spell_limit`, `_managed_spell_timeout_seconds`, `_managed_spell_reset_methods`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `binding_hash`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation` (+17 more)
@@ -8175,7 +8185,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py
 
-- source_sha256: `4668f3122d76947ade0b6e77e5d3621e4b2f3125114f6c31e7145db457445974`
+- source_sha256: `e2f50f8a5d1a72a9e866b2400bfb5484f2f9dacd5785e9938d476eee06b5471c`
 - nodes: 1
 
 ### Nodes
@@ -8306,7 +8316,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `1c241e4b14ee9ad200ff7ad54eac544493c959e28b3b1fcaad085902580fb7e3`
+- source_sha256: `541777c9412ed2a24539dd0aef75af8956e8412b6dd53f0b7258a2c7bff1fa69`
 - nodes: 5
 
 ### Nodes
@@ -8382,6 +8392,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - registers every disposal-bearing many site through many_store, the meld's innermost scope (the spellspace store, else the conduit store), at the top level and inside a shared site's miss alike (0.2.8267): a function that registers one emits the store selection (_many_store_prologue) - the plan at its top, a miss after its unresolved-input check - so a slotted holder's many children belong to the scope that built them, never to the holder's owner (0.2.8235-0.2.8265 registered them in the holder's store and, from 0.2.8238, recorded them with the holder); warm _site_plan_executor bodies are unchanged
   - emits managed sites (0.2.8245): a leasing site (no winning key on its own parameters) has its own miss and exactly one consumer, and its lease - an inline pop of a plan-constant pool on an automatic owner, else a per-creation pool read whose miss raises the named missing-pool error - is emitted in its consumer's lease group; the miss checks unresolved inputs, reserves, builds the children and the object inside a try whose handler abandons, then adopts the disposal-bearing many children; a fresh site (a winning key on its own parameters) is built like a many step and never pooled
   - puts every lease of a consumer back when its construction region raises (_return_leases) and returns a lost cold race's unused leases (_return_unused_leases); a plan without a managed step is byte-identical and binds none of the three helpers (0.2.8245)
+  - binds each slotted and many site's sid{i} to its Spell's store key (<spell_id>:<binding_hash>) and publishes a no-disposal slotted miss through c{i}.register_slot(sid{i}, v{i}), so a plan reads, guards and files only its own binding's slot; a leasing managed site's sid{i} stays the spell id for its pool read (<<SLOTSV>>)
 - owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`, `_index_by_key`, `_leasing`, `_fresh`, `_has_miss`, `_leases_by_consumer`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`
@@ -8602,7 +8613,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `c7f4848753006cd3700919c3471af09541bcf74938f989e987606e1dd24f4748`
+- source_sha256: `4417b9249064216e23cb9a1e656331268286e9c1eead8ba124f7a0dbfb557a9b`
 - nodes: 1
 
 ### Nodes
@@ -8638,7 +8649,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `8fd9473de34314710571a0ef9fa87353c837a36fae7f26d7f5575aebc73af17a`
+- source_sha256: `648e4b015d3e4ce08f756785abd7028a69c573626257015b900c02f68ec6f6fc`
 - nodes: 1
 
 ### Nodes
@@ -9516,7 +9527,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `7d2ea21681ca272ab69955e7cfe63960309a21899f2328a5078b946c3f191dbe`
+- source_sha256: `0aed381af1a25ad732ef1163f04318ad3c78b911113273923799f792c4e26602`
 - nodes: 1
 
 ### Nodes
@@ -9547,7 +9558,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
 
-- source_sha256: `77d9d1b67b5ddc3858fc9e4177a490f8400d586bd90960ca71c693018ee9364a`
+- source_sha256: `fb6dd13b0d282fa5b0a39831e3c78a0fb404404bf9738c35ce1ff20fdc6fe5bd`
 - nodes: 1
 
 ### Nodes
@@ -15832,7 +15843,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `7a1a088e0ca1b388990b54b9e71436542c7cd91dbca981d1b4b8a70dab4c9a34`
+- source_sha256: `09fbe477287c475fad53132e5b0b4e39b7dd56e1e264b275637284d67cac5f44`
 - nodes: 2
 
 ### Nodes
@@ -15870,7 +15881,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)
   - re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)
   - forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated (0.2.8242); they are the spell's settings, not part of its spell id (0.2.8254), and a parked managed version keeps its own
-  - parks versions with bind_inactive: one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch
+  - parks versions with bind_inactive, refusing before the hooks and any registration an index that is cleaned, owned by another Book (RuntimeError) or bound another way (SpellIndex.check_admits, ValueError; 2026-10-25): one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch
   - marks the SpellContract consumers of a changed active contracted copy's key once its Book lock is released - an add, park, reactivation, removal or clear of an active copy; never a parked copy or a change before conjure (_mark_contract_dependents_dirty in the five contracted-map mutators, 0.2.8250)
   - passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)
   - removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)
@@ -15879,10 +15890,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - registers the index remove_from_spell_index mints in the frame's spell registry as a post-conjure bind registers the index it creates (bind's guard and call, under the Book's root conduit), and the root's teardown (_unregister_conduit_spells_from_aether) unregisters the indexes that hold only parked versions with the rest, so the frame's lookups by spell_id find a version moved into an index of its own (0.2.8259)
   - retires every parked version at Book teardown with the local teardown cleanup_spell's parked branch runs (_spellbook_cleanup set, then Spell.cleanup()) and then cleans every index only parked versions hold, one remove_from_spell_index minted, after the active loop; each step best-effort and logged (_cleanup_spells, 0.2.8260)
   - routes cleanup_spell through its root conduit's cleanup_spell once conjured, and _dispose_spell calls the caller's release_contracts hook with the spell_id after its decision and refusals and before anything is invalidated or disposed, with no Book lock held; a raising hook disposes nothing and the in-flight mark is cleared (0.2.8261)
-  - refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, the lineage's dependencies and topology registered again, a refused version's own key set back (_revert_refused_notch) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)
+  - refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, its address claim with it, and the lineage's dependencies and topology registered again (_revert_refused_notch; the key it set back for a version at another address went on 2026-10-25, when every version of an index came to share its key) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)
   - destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)
   - saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)
   - answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)
+  - keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -15926,7 +15938,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.utilities.caching_system.caching_system.CachingSystem`: Spellbook owns the optional CachingSystem used for rooted-conduit spell payload persistence.
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.mutation_research.mutation_research.MutationResearch`: The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).
 
-### Edge candidates (16, unconfirmed)
+### Edge candidates (15, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -15941,7 +15953,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook.Spellbook` creates `Spellbook`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `TypeError`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `CachingSystem`
-- `melder.aether.spellbook.spellbook.Spellbook` creates `SpellIndex`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `ValueError`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `SpellbookConfiguration`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `SpellbookCreationSystem`
@@ -17679,7 +17690,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `d001fe03780b9f6479ce9d006e8f0c69cd17d5a088bcf165460068bf9777e503`
+- source_sha256: `1d7ba28dccd9322a14ece1389c59e7df16ff15d0dcd10076b84b07450e12c9e7`
 - nodes: 2
 
 ### Nodes
@@ -17714,6 +17725,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - hydrates each member's spellframe through the same rule as the restore engine (_hydrate_spellframe) at the selected, parked and merged bind sites, appending a shortfall when the recorded Protocol cannot be imported (0.2.8222)
   - replays a managed member's recorded options (record 4.2.0, SpellCrystal.managed_bind_options) at the selected, parked and merged bind sites (0.2.8242)
   - lets receiving-Book policy decide each member's binding, never its spell_id: a live spell_id differs from the recorded one only when the member's code moved since the record (0.2.8257)
+  - files a merge member recorded under another binding than the merge target's (binding_signature) as the shortfall member_binding_differs_from_merge_target before bind_inactive, naming both bindings in the words the target's refusal uses and the remedy, so nothing of it is registered and the other members still park; a recorded selection refused that way is not adopted (2026-10-25)
 - owns_state: `_record`, `_host_book (borrowed)`, `_skip_resident`, `_merge_into_index (borrowed)`, `_adopt_recorded_selection`, `_consumed`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -17725,9 +17737,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` | borrows | `melder.aether.spellbook.spellbook.Spellbook` | - | - | authored |
 | `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` | delegates_to | `melder.crystallizer.crystal_loader_system.user_world_rebuild` | - | - | authored |
+| `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` | borrows | `melder.aether.spellbook.bind.spell_index.SpellIndex` | - | - | authored |
 
 - `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` -> `melder.aether.spellbook.spellbook.Spellbook`: the runner drives the host book's public verbs only: conduit accessor, bind (selected member, fresh index), bind_inactive (parked members).
 - `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` -> `melder.crystallizer.crystal_loader_system.user_world_rebuild`: member hydration failures retry once after rebuilding absent user modules through the shared retained-text lane.
+- `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner` -> `melder.aether.spellbook.bind.spell_index.SpellIndex`: an explicit merge reads the caller's index's binding (binding_signature and its refusal text) and files each member recorded another way as a shortfall before bind_inactive, so the index admits only members bound as its first version was (2026-10-25).
 
 ### Edge candidates (3, unconfirmed)
 
@@ -18722,7 +18736,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `5c0c7d32146fa02b154a101234953569e023ca0c82a494b12b0c7346a75333f0`
+- source_sha256: `3d643ccc28d23db98afb93e89f16fcb92917a64938b2a0e0153dc05ceb63024e`
 - nodes: 2
 
 ### Nodes
@@ -18734,24 +18748,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Schema version authority for every durable crystallizer artifact.
 - responsibilities:
   - stamp outgoing payloads
-  - refuse newer-major artifacts on read
+  - refuse newer-major artifacts, and any major below 5, on read
   - uses record major 2 so older readers cannot silently ignore non-resolvable policy
 - phases: `runtime`
 
 #### `RecordVersion` (class)
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
-- defined at: `src/melder/crystallizer/persistence/record_version.py:17`
-- role: Static record-schema version authority (stamp 4.3.0; readers gate on MAJOR; absent stamps read 0.0.0).
+- defined at: `src/melder/crystallizer/persistence/record_version.py:18`
+- role: Static record-schema version authority (stamp 5.0.0; readers gate on MAJOR, from OLDEST_READABLE_MAJOR 5 to the current; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
-  - refuses newer-major payloads at the read gates
+  - refuses newer-major payloads, and payloads below OLDEST_READABLE_MAJOR, at the read gates
   - uses record major 2 so older readers cannot silently ignore non-resolvable policy
   - uses major 3 to fence older readers from named lesser child topology
   - uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)
-  - uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stay readable and hydrate frames by name
+  - uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stayed readable, hydrating frames by name, until 5.0.0
   - uses minor 4.2.0 for a managed spell's recorded options on its spell crystal (0.2.8242); 4.1 readers ignore them and a 4.1 record holds none
   - uses minor 4.3.0 for the spell crystal's binding_hash, written for every spell (0.2.8258); 4.2 readers ignore it and a 4.2 record compares no binding
+  - uses major 5.0.0 with OLDEST_READABLE_MAJOR 5 (2026-10-25): a record written before every version of a SpellIndex shared its first version's binding cannot promise it, so check_readable refuses every major below 5, pre-versioning stamps included, naming the record, the reason and the remedy (record the world again) - the owner's call to invalidate all the records
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -18767,7 +18782,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/synthetic_module.py
 
-- source_sha256: `51a28d7dd534865da97435a6a672bd43b43b0875a3fa9ade345d31f69cb55717`
+- source_sha256: `b876e40ed017cd4a5f1dfa526b5700dcdd02e80a37a77c0292646ce54e91205a`
 - nodes: 4
 
 ### Nodes
@@ -18781,7 +18796,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_SyntheticModuleImportLoader` (class)
 
 - id: `melder.crystallizer.synthetic_module._SyntheticModuleImportLoader`
-- defined at: `src/melder/crystallizer/synthetic_module.py:14`
+- defined at: `src/melder/crystallizer/synthetic_module.py:17`
 - extends: `Loader`
 - role: The create/exec half of the SyntheticModule importlib bridge - lets restored or synthesized code enter sys.modules through the normal machinery.
 - responsibilities:
@@ -18794,7 +18809,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_SyntheticModuleMetaPathFinder` (class)
 
 - id: `melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder`
-- defined at: `src/melder/crystallizer/synthetic_module.py:154`
+- defined at: `src/melder/crystallizer/synthetic_module.py:157`
 - extends: `MetaPathFinder`
 - role: The DISCOVERY half of the same bridge: sits on sys.meta_path so plain `import ...` finds registered synthetic modules.
 - responsibilities:
@@ -18807,13 +18822,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SyntheticModule` (class)
 
 - id: `melder.crystallizer.synthetic_module.SyntheticModule`
-- defined at: `src/melder/crystallizer/synthetic_module.py:227`
+- defined at: `src/melder/crystallizer/synthetic_module.py:230`
 - extends: `ModuleType`
 - role: Live in-memory module embodiment for crystallized source.
 - responsibilities:
   - stores live source text and dependency metadata for one managed module
   - supports sys.modules and importlib publication and execution
   - owns synthetic import registry and cleanup-aware module activation helpers
+  - records a non-synthetic module its publication displaces and a non-synthetic parent attribute its attachment displaces, and gives them back on unpublish, detach and cleanup while it still holds the slot; a displaced SyntheticModule is not restored (D-20, 0.2.8272)
 - owns_state: `_registered_modules_by_name`, `_source_text`, `_internal_dependency_names`, `_external_dependency_names`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `binding_signature`, `build_registered_spec`, `check_cleaned`, `cleaned`, `cleanup`, `clear_import_registry`, `create_module_for_spec`, `create_package_shell`, `describe`, `exec_registered_module`, `execute_source`, `executed_source` (+27 more)
@@ -19990,7 +20006,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/builder/frame_acl_codegen_builder.py
 
-- source_sha256: `063c979b0297eb7164a72db1cefefc9086da43c03e26e74b125704e8635e1a44`
+- source_sha256: `106cb0bba9c39bf0232ab175ab2c344edb742b59965a0526e70df58de2af7b6d`
 - nodes: 2
 
 ### Nodes
@@ -20011,9 +20027,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - borrows one active codegen draft from the generic ACL builder
   - mutates the borrowed typed codegen configuration in place through fluent capability and rule helpers
   - commits or discards the active codegen draft through the generic builder
+  - merges generation-namespace roots into stable `materialize_modules` allow and deny rules (allow_materialize_module_roots, deny_materialize_module_roots) (D-20, 0.2.8272)
 - owns_state: `_id`, `_frame_acl_builder`
 - phases: `runtime`, `cleanup`
-- public methods: `allow_builtin_names`, `allow_dunder_access`, `allow_import_module_roots`, `allow_recursive_codegen`, `allow_unsafe_reflection`, `cleanup`, `commit_change`, `deny_builtin_names`, `deny_dunder_access`, `deny_import_module_roots`, `deny_recursive_codegen`, `deny_unsafe_reflection` (+12 more)
+- public methods: `allow_builtin_names`, `allow_dunder_access`, `allow_import_module_roots`, `allow_materialize_module_roots`, `allow_recursive_codegen`, `allow_unsafe_reflection`, `cleanup`, `commit_change`, `deny_builtin_names`, `deny_dunder_access`, `deny_import_module_roots`, `deny_materialize_module_roots` (+14 more)
 
 ### Edges out
 
@@ -20725,7 +20742,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py
 
-- source_sha256: `75f16770f527a3b5f64bdba830e75ffcfa661abb0a00ce07a72a8f8889bceb35`
+- source_sha256: `43e4da5eb2b9c62404db421bed1cb1d3fca345dcfe1a453dd8a3cf2968f2e42c`
 - nodes: 1
 
 ### Nodes
@@ -20741,6 +20758,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keeps codegen profile factory modules aligned on import-surface policy constants
   - puts `open` on SAFE_DENIED_BUILTIN_NAMES, the one denied-builtin tuple safe, hybrid and precision share and the codegen engine's no-projection default reads (0.2.8270)
   - keeps `io`, `os` and `pathlib` among the permissive extras, so permissive's is the only allow list that admits them (0.2.8270)
+  - defines IMPORT_BUILTIN_NAMES, the `__import__` name the compiler marks static-only denied wherever a preset enables imports with a list, so the validation gates refuse a `__import__` call or reference while the name stays in the runtime builtins for import statements (0.2.8271)
+  - defines PROTECTED_GENERATION_MODULE_ROOTS (`melder`), the root materialize_codegen refuses under every posture (D-20, 0.2.8272)
 - owns_state: `_COMMON_SAFE_IMPORT_MODULE_ROOTS`, `_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS`, `SAFE_DENIED_BUILTIN_NAMES`
 - phases: `runtime`
 
@@ -21470,7 +21489,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/frame_acl_compiled_access_surface.py
 
-- source_sha256: `7621c35dce13756f664c5c48896dc27caaf1b827e9b638afc3cc5aee1d85e158`
+- source_sha256: `3fbe17c7ea9d64a13f5719a79cc8ced5982dfc688258d891f9522493094d0c96`
 - nodes: 2
 
 ### Nodes
@@ -21491,9 +21510,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stores derived visibility and command enablement answers
   - stores visible conduit and spell payload-section maps
   - carries the compiled profile/config identity for one frame
+  - carries `static_only_denied_builtin_names`, the import-gate names denied at validation only and never stripped from the runtime builtins, beside `denied_builtin_names` (D-11, 0.2.8271)
+  - carries the frame's generation namespace for materialize_codegen - `generation_module_roots` (None when undeclared) and `denied_generation_module_roots` (D-20, 0.2.8272)
 - owns_state: `_allowed_kinds`, `_allowed_commands`, `_frame_payload_fields`, `_visible_conduit_ids`, `_visible_spell_keys`, `_enabled_conduit_ids`, `_enabled_spell_index_ids`
 - phases: `refresh`, `runtime`, `cleanup`
-- public methods: `allowed_commands`, `allowed_import_module_roots`, `allowed_kinds`, `cleanup`, `codegen_dunder_access_allowed`, `codegen_imports_enabled`, `codegen_profile_name`, `codegen_profile_version`, `codegen_recursive_codegen_allowed`, `codegen_unsafe_reflection_allowed`, `command_frame_enabled`, `conduit_payload_sections_by_id` (+14 more)
+- public methods: `allowed_commands`, `allowed_import_module_roots`, `allowed_kinds`, `cleanup`, `codegen_dunder_access_allowed`, `codegen_imports_enabled`, `codegen_profile_name`, `codegen_profile_version`, `codegen_recursive_codegen_allowed`, `codegen_unsafe_reflection_allowed`, `command_frame_enabled`, `conduit_payload_sections_by_id` (+17 more)
 
 ### Edges out
 
@@ -21513,7 +21534,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/frame_acl_compiler.py
 
-- source_sha256: `8b4fc90c56f6d0272f63d071a20d7dd521ef754120c58565f6bc25d119fd7ea5`
+- source_sha256: `bd37748fb982dc9be463b841fcd7e5b6598f19494225fc02f8e2ad2ee2061453`
 - nodes: 2
 
 ### Nodes
@@ -21527,13 +21548,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `FrameACLCompiler` (class)
 
 - id: `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler`
-- defined at: `src/melder/nexus/acl/frame_acl_compiler.py:24`
+- defined at: `src/melder/nexus/acl/frame_acl_compiler.py:25`
 - extends: `Cleanable`
 - role: Compiler from descriptor truth and typed ACL config into a consumer-facing access surface.
 - responsibilities:
   - compiles typed ACL configuration against descriptor truth
   - derives visible and enabled access sets
   - creates the consumer-facing compiled access surface
+  - compiles `static_only_denied_builtin_names` - `set(IMPORT_BUILTIN_NAMES)` when imports are on and an allow or deny list applies, empty otherwise - onto the compiled surface, so a `__import__` call or reference is refused at validation while import statements keep `__import__` (D-11, 0.2.8271)
+  - compiles `materialize_modules` rules into `generation_module_roots` (None when no allow rule; else the allow roots intersected across allow-bearing rulesets minus the denied union) and `denied_generation_module_roots` (D-20, 0.2.8272)
 - owns_state: `_profile_builder`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `compile_frame_access_surface`
@@ -21546,10 +21569,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` | creates | `melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface` | one_to_one | refresh | authored |
 | `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` | borrows | `melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration` | one_to_one | refresh | authored |
 | `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` | borrows | `melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor` | one_to_one | refresh | authored |
+| `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` | uses | `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets` | many_to_one | runtime | authored |
 
 - `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` -> `melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface`: FrameACLCompiler creates the derived consumer-facing access surface for one frame.
 - `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` -> `melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration`: FrameACLCompiler reads the typed ACL bundle while compiling derived access answers.
 - `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` -> `melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor`: FrameACLCompiler reads descriptor truth while compiling ACL access surfaces.
+- `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: FrameACLCompiler reads IMPORT_BUILTIN_NAMES to mark the `__import__` name static-only denied on the compiled surface wherever a preset enables imports with a list.
 
 ### Edge candidates (3, unconfirmed)
 
@@ -21817,7 +21842,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/validator/frame_acl_validator.py
 
-- source_sha256: `787ba58b3298d389728dd61d49f4acf7b2260c3b20777f7e257773b07bd9eeb6`
+- source_sha256: `a9cb7d9dbbbca8bb71819e88946968067be62551a0fcf18a7d12acd9bb4529a4`
 - nodes: 2
 
 ### Nodes
@@ -21838,6 +21863,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates typed ACL configuration for one frame
   - checks descriptor payload contracts against ACL requirements
   - validates selector-aware spell rules against published descriptor records
+  - accepts the `materialize_modules` capability operation and requires its `module_roots` to be non-empty and dotted-identifier legal (D-20, 0.2.8272)
 - owns_state: `_frame_name`, `_profile_builder`, `_last_validated_configuration_id`
 - phases: `validation`, `refresh`, `cleanup`
 - public methods: `cleanup`, `frame_name`, `last_validated_configuration_id`, `validate_configuration`, `validate_configuration_against_descriptor`
@@ -22825,7 +22851,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus.py
 
-- source_sha256: `cc0e89ec077f77acf136721e4d86e9dc5fcde5120db18e46b360a3631d7c6934`
+- source_sha256: `d98e825a39690950515fcff4382d6cf308c546d191a89c7c54b1f48e15573ecc`
 - nodes: 2
 
 ### Nodes
@@ -23082,7 +23108,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/codegen_system.py
 
-- source_sha256: `772a357a4c2db412b43c2f611e336944fbd17eb42e2d9ea7517728f7a7642a14`
+- source_sha256: `4ede07a12f02546dc1f2eec2ccd9bdea2232b3a554ea532c89bd18406509be20`
 - nodes: 2
 
 ### Nodes
@@ -23105,9 +23131,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates before execution
   - delegates compile and execute stages for accepted requests
   - runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)
+  - reads `static_only_denied_builtin_names` off the projection's compiled surface into the namespace configuration, empty for the no-projection default, so the codegen import gate reaches every built namespace (D-11, 0.2.8271)
+  - returns the room's filtered builtins mapping for an accepted materialize (build_materialize_builtins), the mapping execute_codegen gives room code, so a materialized module reaches what the room reaches (D-20, 0.2.8272)
 - owns_state: `_rift`, `_space`, `_validator`, `_validation_reporter`, `_namespace_builder`, `_compiler`, `_executor`, `_monitor`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `cleanup`, `codegen_system_id`, `execute_codegen`, `execute_codegen_request`, `owner_space_id`, `report_validation_result`, `validate_codegen`, `validate_codegen_request`
+- public methods: `build_materialize_builtins`, `cleanup`, `codegen_system_id`, `execute_codegen`, `execute_codegen_request`, `owner_space_id`, `report_validation_result`, `validate_codegen`, `validate_codegen_request`
 
 ### Edges out
 
@@ -23418,7 +23446,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py
 
-- source_sha256: `ad4c518cc888f06eeefaeac51f0c81e3909410d3711e193be6da8bc4239e0019`
+- source_sha256: `0c7fd0ffd14fc14fbb36f60d89f6b181a976390f793f6b2f0781062abc94379f`
 - nodes: 2
 
 ### Nodes
@@ -23439,9 +23467,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns namespace entry strategies for room workstation command target builtins and control surfaces
   - builds one live namespace from configuration and room collaborators
   - cleans owned strategies on teardown
+  - builds the builtins mapping alone (build_builtins) through its builtins strategy, for materialized code (D-20, 0.2.8272)
 - owns_state: `_room_objects_strategy`, `_workstation_strategy`, `_command_strategy`, `_target_strategy`, `_builtins_strategy`, `_control_strategy`
 - phases: `runtime`, `cleanup`
-- public methods: `build`, `cleanup`
+- public methods: `build`, `build_builtins`, `cleanup`
 
 ### Edges out
 
@@ -23484,7 +23513,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py
 
-- source_sha256: `9be3db72c3101b007592e1018ac6a4c229a7130be4572c6e636c2f67cf848d62`
+- source_sha256: `0f221fc54f33c06f41c332a96bc56cfbb0ebc4d13b9957344f66e5992746e19a`
 - nodes: 2
 
 ### Nodes
@@ -23505,9 +23534,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - defines which stable room names are exposed
   - stores import and builtin policy for the namespace
   - keeps policy separate from the live namespace object
+  - carries `static_only_denied_builtin_names` from the compiled surface to the builtin-policy, name-resolution and builtins strategies (D-11, 0.2.8271)
 - owns_state: `_frame_name`, `_include_viewer`, `_include_workstation`, `_include_command`, `_include_codegen`, `_imports_enabled`, `_allowed_import_module_roots`, `_denied_import_module_roots`, `_denied_builtin_names`, `_allow_unsafe_reflection`, `_allow_dunder_access`, `_allow_recursive_codegen`, `_metadata`
 - phases: `runtime`, `cleanup`
-- public methods: `allow_dunder_access`, `allow_recursive_codegen`, `allow_unsafe_reflection`, `allowed_import_module_roots`, `cleanup`, `create_default`, `denied_builtin_names`, `denied_import_module_roots`, `exposed_names`, `frame_name`, `imports_enabled`, `metadata`
+- public methods: `allow_dunder_access`, `allow_recursive_codegen`, `allow_unsafe_reflection`, `allowed_import_module_roots`, `cleanup`, `create_default`, `denied_builtin_names`, `denied_import_module_roots`, `exposed_names`, `frame_name`, `imports_enabled`, `metadata` (+1 more)
 
 ### Edges out
 
@@ -23528,7 +23558,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py
 
-- source_sha256: `4875bd8c91cfd618a560055f0b102e2fc3ec485a11e4ae741080236c2002c554`
+- source_sha256: `a459ca7b4446d29fd1ee9e773c9b3ca6068ac58180c92153c36b13059e2296da`
 - nodes: 2
 
 ### Nodes
@@ -23542,12 +23572,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenBuiltinsStrategy` (class)
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy`
-- defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:13`
+- defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:17`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for Python builtins.
 - responsibilities:
   - builds the __builtins__ mapping from the current namespace configuration
   - applies the compiled builtin denylist for one request
+  - installs a runtime `__import__` wrapper when imports are on and an import list applies, raising ImportError for a denied or unlisted root and delegating an allowed root to the real import; full_access and safe install none (D-11, 0.2.8271)
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -23559,16 +23590,19 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | uses | `melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration` | one_to_one | runtime | authored |
 | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | one_to_one | runtime,cleanup | authored |
+| `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | uses | `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration`: CodegenBuiltinsStrategy reads CodegenNamespaceConfiguration when building the builtins namespace mapping.
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.utilities.general_base.cleanable.Cleanable`: CodegenBuiltinsStrategy inherits the explicit cleanup lifecycle from Cleanable.
+- `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: CodegenBuiltinsStrategy reads IMPORT_BUILTIN_NAMES to replace the room's runtime `__import__` with a root-checking wrapper wherever an import list applies.
 
-### Edge candidates (2, unconfirmed)
+### Edge candidates (3, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` creates `RLock`
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` creates `TypeError`
+- `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` creates `ImportError`
 
 <!-- END FILE: src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py -->
 
@@ -24151,7 +24185,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py
 
-- source_sha256: `cb5f6095c8a97d9e669ea81d92465c669672f54141644a3b53241c08e07e2c63`
+- source_sha256: `57f47ce6601cee4004b9561ab9aebd9ccbf7b0230db104dff040d32ed4cda29a`
 - nodes: 2
 
 ### Nodes
@@ -24170,6 +24204,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Builtins-policy validation strategy.
 - responsibilities:
   - blocks denied builtin usage in the selected codegen posture
+  - refuses a call of any name in `denied_builtin_names` united with `static_only_denied_builtin_names`, so a `__import__` call is refused wherever an import list applies (D-11, 0.2.8271)
 - owns_state: `_lock`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -24243,7 +24278,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py
 
-- source_sha256: `55ad4e8ee81686b0a431827de9fe4e1109b2a07acb15613c5bd1967af181a092`
+- source_sha256: `2bb2674391d334569aaabc651c2d447a3d766e6515342315845350d997dffd1a`
 - nodes: 2
 
 ### Nodes
@@ -24262,6 +24297,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Name-resolution validation strategy.
 - responsibilities:
   - validates load-time ast.Name usage against the namespace configuration contract
+  - drops `denied_builtin_names` united with `static_only_denied_builtin_names` from the allowed builtin names, so a bare `__import__` reference is refused wherever an import list applies (D-11, 0.2.8271)
 - owns_state: `_lock`, `_ALWAYS_ALLOWED_NAME_NODES`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -24428,7 +24464,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `1098778744b7a349ac5ad463200e062545e6ecdd7b4f144c2d0b689702dff93d`
+- source_sha256: `d55f2798c145fd30683b3ac904a27ddb14ede129995ce2fafff748d2ada34500`
 - nodes: 2
 
 ### Nodes
@@ -24442,7 +24478,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenCommandSystem` (class)
 
 - id: `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem`
-- defined at: `src/melder/nexus/rift/command_system/codegen_command_system.py:25`
+- defined at: `src/melder/nexus/rift/command_system/codegen_command_system.py:27`
 - extends: `CommandSystem`
 - role: Codegen-room command facade over the internal engine.
 - responsibilities:
@@ -24451,6 +24487,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emits full-source codegen room-memory records for top-level codegen actions
   - owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal
   - uses lesser-aware authorized named lookup without expanding room capabilities
+  - refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)
@@ -24463,10 +24500,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` | borrows | `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem` | one_to_one | runtime | authored |
 | `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` | specializes | `melder.nexus.rift.command_system.command_system.CommandSystem` | many_to_one | runtime | authored |
 | `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` | borrows | `melder.mutation_research.mutation_research.MutationResearch` | many_to_one | runtime | authored |
+| `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` | uses | `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` -> `melder.nexus.rift.codegen_system.codegen_system.CodegenSystem`: CodegenCommandSystem holds the attached room-owned CodegenSystem and delegates validate/execute requests into it.
 - `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` -> `melder.nexus.rift.command_system.command_system.CommandSystem`: CodegenCommandSystem is the codegen-room specialization of the shared command surface.
 - `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` -> `melder.mutation_research.mutation_research.MutationResearch`: Codegen rooms expose the full 34-command research family - record reads, organization (typed create_lane), campaign context, nine foresight commands (incl. the crystal-well module dossier / part reads / part diff w/ radius and research_preview), the three synthesis verbs, and the eight composition commands (register/recompose + view/diff/impact/footprint/drift/history) - through a non-constructing peek; ADVERTISED in list_supported_command_methods.
+- `melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: CodegenCommandSystem reads PROTECTED_GENERATION_MODULE_ROOTS for materialize_codegen's name gate.
 
 ### Edge candidates (4, unconfirmed)
 
@@ -24741,7 +24780,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/static_frame_viewer.py
 
-- source_sha256: `dec73f9ca965776b6a71716f3bf9c7f61b484d5f8be84b3c43eff2312d8c0d3a`
+- source_sha256: `ea935ef640ea4b162c83ca94ba7b3cdfa71e4fbcbf5e2f3479d659305eef1386`
 - nodes: 2
 
 ### Nodes
@@ -26105,7 +26144,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `dd8fb4f01094b483a4544a1ecdf5bc29d3d7c5883fe0c8026c643e3d2285bf26`
+- source_sha256: `007de2f51874a464581b9066b933a0dddbdcc65e7094373d5aa10f24cf092eb8`
 - nodes: 2
 
 ### Nodes
@@ -26140,6 +26179,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 22 retires bundles written while a managed spell's settings were part of its spell_id (managed_settings_leave_spell_id, 0.2.8254): every managed spell_id moved once, so the ids those bundles were keyed by are gone
   - cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)
   - saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)
+  - cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)
+  - cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_refused_save_logged`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)

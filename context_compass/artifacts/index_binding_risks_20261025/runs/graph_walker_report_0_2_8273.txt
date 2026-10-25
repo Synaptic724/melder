@@ -1,0 +1,13 @@
+# graph_walker.py --report on the device tree at 0.2.8273 (melder_1, 2026-10-25T12:44:33Z); read-only
+  593 descriptors, 1236 nodes
+
+  state               count   share
+  ------------------ ------   -----
+  AUTHORED             1013    82.0%
+  SEMANTICS_STALE       208    16.8%
+  UNSEMANTIC              9     0.7%
+  RETIRED                 6     0.5%
+
+  SEMANTICS_STALE - re-read the source, then --accept:
+    melder.__architecture__  (src/melder/__architecture__.py)
+    melder.__author__  (src/melder/__author__.py)

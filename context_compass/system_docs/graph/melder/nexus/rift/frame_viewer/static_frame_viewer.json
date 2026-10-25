@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/static_frame_viewer.py",
- "source_sha256": "dec73f9ca965776b6a71716f3bf9c7f61b484d5f8be84b3c43eff2312d8c0d3a",
+ "source_sha256": "ea935ef640ea4b162c83ca94ba7b3cdfa71e4fbcbf5e2f3479d659305eef1386",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.static_frame_viewer": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "81ea639cded15e6fb1972823df7f38742feb783b3ea6cf061a0d3dafa1af8b59",
+   "span_sha256": "d0df9b1ca6f29dfa58f7068b769a2ec66a39e7c0ce54554af5241cd13f6f8f91",
    "role": "Static-room viewer specialization.",
    "responsibilities": [
     "filters spell-facing visibility down to already-live spells",

@@ -491,10 +491,15 @@ def test_a_grant_of_a_parked_version_becomes_active_when_the_lender_notches_to_i
 
 
 def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, SpellIndex, type, type]:
-    """One Book: Dep, P(dep) and Q(p), all `many`; by class (PClass, QClass over Dep) or by IDep (PChain, QChain)."""
+    """
+    One Book: Dep, P(dep) and Q(p), all `many`; by class (PClass, QClass over Dep) or by IDep (PChain, QChain).
+
+    By class, Dep is bound under the category "Dep" - the address a bare bind gives it - so its next version can be
+    staged under the same binding: every version of an index is bound the way its first version was (2026-10-25).
+    """
     book, _ = _books(frame)
     if by_class:
-        dep_id = book.bind(spell=Dep, existence=Existence.many, permissions="create")
+        dep_id = book.bind(spell=Dep, existence=Existence.many, permissions="create", spellframe="Dep")
         p_cls, q_cls = PClass, QClass
     else:
         dep_id = book.bind(spell=DepA, spellframe=IDep, binding_name="dep", existence=Existence.many,
@@ -509,7 +514,9 @@ def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, S
 def _notch_dep(book: Spellbook, root: Conduit, index: SpellIndex, *, by_class: bool = False) -> None:
     """Stage the dependency's next version (DepB under IDep, or Dep2 by class) and notch to it."""
     if by_class:
-        new_id = root.bind_inactive(spell=Dep2, spell_index=index, existence=Existence.many, permissions="create")
+        new_id = root.bind_inactive(
+            spell=Dep2, spell_index=index, existence=Existence.many, permissions="create", spellframe="Dep",
+        )
     else:
         new_id = root.bind_inactive(spell=DepB, spell_index=index, spellframe=IDep, binding_name="dep",
                                     existence=Existence.many, permissions="create")

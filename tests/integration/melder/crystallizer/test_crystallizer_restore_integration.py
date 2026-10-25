@@ -4,6 +4,10 @@ recorded world into checkpoints, simulate a fresh boot (singleton reset +
 cache reload), and unfold it through Crystallizer.load_checkpoint - plus
 the all-or-nothing rollback contract on injected failure.
 
+A world that stages RestoreBeta on RestoreAlpha's index binds both under the string category "RestoreAlpha" - the
+address a bare bind of RestoreAlpha has - because every version of an index is bound the way its first version was
+(2026-10-25); a merge target is bound that way too.
+
 Runs only on 3.14t (melder package root import chain).
 """
 import pytest
@@ -218,6 +222,7 @@ def test_round_trip_restores_staged_member_and_selection(cache_root):
         spell=RestoreAlpha,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     conduit = book.conjure(dynamic=True, name="root")
     active_spell = book._spells_by_id[active_id]
@@ -226,6 +231,7 @@ def test_round_trip_restores_staged_member_and_selection(cache_root):
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     checkpoint_id = crystallizer.create_checkpoint()
     crystallizer.flush_checkpoint(checkpoint_id)
@@ -567,6 +573,7 @@ def test_post_notch_selection_restores_without_an_extra_notch(cache_root):
         spell=RestoreAlpha,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     conduit = book.conjure(dynamic=True, name="root")
     active_spell = book._spells_by_id[active_id]
@@ -575,6 +582,7 @@ def test_post_notch_selection_restores_without_an_extra_notch(cache_root):
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     staged_spell = book._inactive_spells[staged_id]
     conduit.notch_spell(
@@ -1743,7 +1751,7 @@ def test_multi_member_index_graft_parks_the_staged_members(cache_root):
     crystallizer = _activate_crystallizer()
     source_book = _dynamic_book()
     active_id = source_book.bind(
-        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create", spellframe="RestoreAlpha",
     )
     source_conduit = source_book.conjure(dynamic=True, name="graft-multi")
     active_spell = source_book._spells_by_id[active_id]
@@ -1752,6 +1760,7 @@ def test_multi_member_index_graft_parks_the_staged_members(cache_root):
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
 
     record = crystallizer.capture_index_graft(active_spell.spell_index.id)
@@ -1829,7 +1838,7 @@ def test_merge_graft_grows_an_existing_index_and_adopts_selection(
     crystallizer = _activate_crystallizer()
     source_book = _dynamic_book()
     active_id = source_book.bind(
-        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create", spellframe="RestoreAlpha",
     )
     source_conduit = source_book.conjure(dynamic=True, name="graft-merge-src")
     active_spell = source_book._spells_by_id[active_id]
@@ -1838,6 +1847,7 @@ def test_merge_graft_grows_an_existing_index_and_adopts_selection(
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     record = crystallizer.capture_index_graft(active_spell.spell_index.id)
 
@@ -1854,7 +1864,7 @@ def test_merge_graft_grows_an_existing_index_and_adopts_selection(
         configuration=host_configuration,
     )
     resident_id = host_book.bind(
-        spell=RestoreGamma, existence=Existence.unique, permissions="create"
+        spell=RestoreGamma, existence=Existence.unique, permissions="create", spellframe="RestoreAlpha",
     )
     host_book.conjure(dynamic=True, name="graft-merge-host")
     target_index = host_book.find_spell_by_spell_id(resident_id).spell_index
@@ -2644,6 +2654,7 @@ def test_staged_member_world_restores_identically_on_both_drivers(
         spell=RestoreAlpha,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     conduit = book.conjure(dynamic=True, name="root")
     active_spell = book._spells_by_id[active_id]
@@ -2652,6 +2663,7 @@ def test_staged_member_world_restores_identically_on_both_drivers(
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     checkpoint_id = crystallizer.create_checkpoint()
     crystallizer.flush_checkpoint(checkpoint_id)
@@ -3071,6 +3083,7 @@ def test_full_vocabulary_world_restores_identically_on_both_drivers(
         spell=RestoreAlpha,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     conduit_a = book_a.conjure(dynamic=True, name="alpha")
     active_spell = book_a._spells_by_id[granted_id]
@@ -3079,6 +3092,7 @@ def test_full_vocabulary_world_restores_identically_on_both_drivers(
         spell_index=active_spell.spell_index,
         existence=Existence.unique,
         permissions="create",
+        spellframe="RestoreAlpha",
     )
     book_b = _dynamic_book()
     book_b.bind(

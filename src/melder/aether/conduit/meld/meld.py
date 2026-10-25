@@ -579,7 +579,9 @@ class Meld(Cleanable, ABC):
         Contract:
             - Concrete doors use `_resolve_purge_spell` for shared discovery.
             - Each door authorizes and selects its existing creation store.
-            - Creations owns the removal locks and recorded disposal work.
+            - Creations owns the removal locks and recorded disposal work, and
+              retires every binding's slot of the spell id in that store, each
+              with its own record (STORY-2026-10-25-creations_store_slots_by_binding).
             - Discovery never creates an instance or compiles a dependency graph.
 
         Args:
@@ -702,6 +704,11 @@ class Meld(Cleanable, ABC):
               answered for; every other selector resolves as `meld(...)` does, to
               the version an index has active.
             - Inspects current live runtime storage only.
+            - Counts every binding's objects of the spell id in the relevant
+              runtime scope: a class bound again under another existence or
+              other disposal names keeps its spell id, and a removed binding's
+              objects still alive there make the spell live
+              (STORY-2026-10-25-creations_store_slots_by_binding).
             - Never creates, registers, or mutates runtime objects.
             - Returns `False` when the spell resolves correctly but has no live
               creation in the relevant runtime scope.
@@ -762,7 +769,10 @@ class Meld(Cleanable, ABC):
               parked (`_resolve_probe_target`), so a version a notch parked is
               answered for; every other selector resolves as `meld(...)` does, to
               the version an index has active.
-            - Inspects current live runtime storage only.
+            - Inspects current live runtime storage only. `creation_count`
+              counts every binding's objects of the spell id in the selected
+              store (`Creations.count_spell_creations`), and `is_live` is a
+              count above 0.
             - Never creates, registers, or mutates runtime objects.
             - Reports enough caller-context metadata that higher-level tooling
               can tell whether the answer came from conduit-local, spellspace-

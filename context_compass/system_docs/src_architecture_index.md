@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-25T08:18:51Z |
-| line_count | 4909 |
+| generated_at | 2026-10-25T12:39:51Z |
+| line_count | 5241 |
 | line_ending | lf |
-| content_sha256 | `e861a9ce34804aacb50f4e32eb713e171e9ad54b6ff3db2b283e62faa1b17819` |
+| content_sha256 | `3ecabd788a25f546b1ec0049f4d73d5f707cff5bc9f4df244d56f43db33a535d` |
 | sections | 61 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -37,54 +37,54 @@ which you did.
 | 120-143 | 2 | DO NOT ASSUME / Unknowns Gate |
 | 144-206 | 2 | Unknowns |
 | 207-222 | 2 | System Context (C4) |
-| 223-324 | 2 | Glossary and Core Terms |
-| 325-485 | 2 | System Boundary and External Interfaces |
-| 486-534 | 2 | Architecture Summary (C4) |
-| 535-580 | 2 | Entrypoints and Runtime Guardrails |
-| 581-666 | 2 | Boot and Configuration Sequence |
-| 667-1009 | 2 | Data Flows and Sequences |
-| 668-674 | 3 | Data Flows and Sequences > Sequence: Import to Ready |
-| 675-681 | 3 | Data Flows and Sequences > Sequence: Spellbook Initialization |
-| 682-698 | 3 | Data Flows and Sequences > Sequence: Bind Spell |
-| 699-735 | 3 | Data Flows and Sequences > Sequence: Conjure Conduit |
-| 736-769 | 3 | Data Flows and Sequences > Sequence: Meld Resolution |
-| 770-815 | 3 | Data Flows and Sequences > Sequence: Meld-Time Validation Gate |
-| 816-830 | 3 | Data Flows and Sequences > Sequence: Create Lesser Conduit |
-| 831-844 | 3 | Data Flows and Sequences > Sequence: Upgrade Lesser to Normal |
-| 845-854 | 3 | Data Flows and Sequences > Sequence: Link and Sever Conduits |
-| 855-875 | 3 | Data Flows and Sequences > Sequence: Transfer Spell Ownership |
-| 876-953 | 3 | Data Flows and Sequences > Sequence: SpellIndex Mutation Entry |
-| 954-962 | 3 | Data Flows and Sequences > Sequence: Change-Control Revalidation |
-| 963-973 | 3 | Data Flows and Sequences > Sequence: SpellSpace Usage |
-| 974-1009 | 3 | Data Flows and Sequences > Sequence: Cleanup |
-| 1010-1032 | 2 | Runtime Type Names (Concrete, No Interface Layer) |
-| 1033-1042 | 2 | Extension Points |
-| 1043-2202 | 2 | Operational Invariants |
-| 2203-2844 | 2 | Failure Modes and Error Paths |
-| 2845-3017 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
-| 2852-2903 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
-| 2904-2944 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
-| 2945-2994 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
-| 2995-3017 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
-| 3018-4056 | 2 | C1 Code Map (Core Only) |
-| 4057-4397 | 2 | Diagrams |
-| 4058-4072 | 3 | Diagrams > Creation Cache Compatibility |
-| 4073-4091 | 3 | Diagrams > Named Scope Discovery and Replay |
-| 4092-4108 | 3 | Diagrams > Pooled Hook Lifecycle |
-| 4109-4124 | 3 | Diagrams > Bind Lifecycle |
-| 4125-4138 | 3 | Diagrams > Scoped Purge |
-| 4139-4157 | 3 | Diagrams > Registration Capability Foundation |
-| 4158-4177 | 3 | Diagrams > Unresolved Input Resolution |
-| 4178-4195 | 3 | Diagrams > Override Key-Set Plans |
-| 4196-4212 | 3 | Diagrams > Conduit Lookup Coverage |
-| 4213-4235 | 3 | Diagrams > Frame Lookups |
-| 4236-4260 | 3 | Diagrams > Scope Exit and Pool Return |
-| 4261-4289 | 3 | Diagrams > Managed Lease and Release |
-| 4290-4306 | 3 | Diagrams > ASCII Context Diagram (C4) |
-| 4307-4323 | 3 | Diagrams > Mermaid Context Diagram (C4) |
-| 4324-4335 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
-| 4336-4353 | 3 | Diagrams > Mermaid Meld Flow |
-| 4354-4373 | 3 | Diagrams > Mermaid Conduit Upgrade |
-| 4374-4397 | 3 | Diagrams > Ordered Disposal Data Flow |
-| 4398-4564 | 2 | Information Sources |
-| 4565-4909 | 2 | Context / Handoff Summary |
+| 223-330 | 2 | Glossary and Core Terms |
+| 331-501 | 2 | System Boundary and External Interfaces |
+| 502-551 | 2 | Architecture Summary (C4) |
+| 552-597 | 2 | Entrypoints and Runtime Guardrails |
+| 598-683 | 2 | Boot and Configuration Sequence |
+| 684-1038 | 2 | Data Flows and Sequences |
+| 685-691 | 3 | Data Flows and Sequences > Sequence: Import to Ready |
+| 692-698 | 3 | Data Flows and Sequences > Sequence: Spellbook Initialization |
+| 699-719 | 3 | Data Flows and Sequences > Sequence: Bind Spell |
+| 720-756 | 3 | Data Flows and Sequences > Sequence: Conjure Conduit |
+| 757-790 | 3 | Data Flows and Sequences > Sequence: Meld Resolution |
+| 791-836 | 3 | Data Flows and Sequences > Sequence: Meld-Time Validation Gate |
+| 837-851 | 3 | Data Flows and Sequences > Sequence: Create Lesser Conduit |
+| 852-865 | 3 | Data Flows and Sequences > Sequence: Upgrade Lesser to Normal |
+| 866-875 | 3 | Data Flows and Sequences > Sequence: Link and Sever Conduits |
+| 876-896 | 3 | Data Flows and Sequences > Sequence: Transfer Spell Ownership |
+| 897-982 | 3 | Data Flows and Sequences > Sequence: SpellIndex Mutation Entry |
+| 983-991 | 3 | Data Flows and Sequences > Sequence: Change-Control Revalidation |
+| 992-1002 | 3 | Data Flows and Sequences > Sequence: SpellSpace Usage |
+| 1003-1038 | 3 | Data Flows and Sequences > Sequence: Cleanup |
+| 1039-1061 | 2 | Runtime Type Names (Concrete, No Interface Layer) |
+| 1062-1071 | 2 | Extension Points |
+| 1072-2375 | 2 | Operational Invariants |
+| 2376-3116 | 2 | Failure Modes and Error Paths |
+| 3117-3296 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
+| 3125-3176 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
+| 3177-3217 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
+| 3218-3270 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
+| 3271-3296 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
+| 3297-4335 | 2 | C1 Code Map (Core Only) |
+| 4336-4677 | 2 | Diagrams |
+| 4337-4351 | 3 | Diagrams > Creation Cache Compatibility |
+| 4352-4370 | 3 | Diagrams > Named Scope Discovery and Replay |
+| 4371-4387 | 3 | Diagrams > Pooled Hook Lifecycle |
+| 4388-4403 | 3 | Diagrams > Bind Lifecycle |
+| 4404-4418 | 3 | Diagrams > Scoped Purge |
+| 4419-4437 | 3 | Diagrams > Registration Capability Foundation |
+| 4438-4457 | 3 | Diagrams > Unresolved Input Resolution |
+| 4458-4475 | 3 | Diagrams > Override Key-Set Plans |
+| 4476-4492 | 3 | Diagrams > Conduit Lookup Coverage |
+| 4493-4515 | 3 | Diagrams > Frame Lookups |
+| 4516-4540 | 3 | Diagrams > Scope Exit and Pool Return |
+| 4541-4569 | 3 | Diagrams > Managed Lease and Release |
+| 4570-4586 | 3 | Diagrams > ASCII Context Diagram (C4) |
+| 4587-4603 | 3 | Diagrams > Mermaid Context Diagram (C4) |
+| 4604-4615 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
+| 4616-4633 | 3 | Diagrams > Mermaid Meld Flow |
+| 4634-4653 | 3 | Diagrams > Mermaid Conduit Upgrade |
+| 4654-4677 | 3 | Diagrams > Ordered Disposal Data Flow |
+| 4678-4845 | 2 | Information Sources |
+| 4846-5241 | 2 | Context / Handoff Summary |

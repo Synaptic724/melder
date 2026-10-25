@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "1bbfc68ae322390c3ae17056f08ddd5479f59ce821640dfebad5ed0c9581fbf3",
+ "source_sha256": "1835bbc844f0c865092ea5482505deda1d601caff466470cc60f402836e45d8c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3ec903810cb7341d56eb3f5ee73abb74ef9afcad1be5e194786dae274bd64080",
+   "span_sha256": "79f6332ef89112713a6d4216198595d482b7bd09a4425ed0c6d46f647f1b64bf",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
@@ -57,7 +57,8 @@
     "classifies the spellframe before the structural check (_classify_spellframe): None -> SpellframeKind.none, str -> category, a typing.Protocol -> contract with the Protocol recorded; any other class or object is refused with a TypeError naming the two valid forms (0.2.8222, Breaking)",
     "validates binding policy and spellframe semantics, running the direct-public-member Protocol check only for a contract frame",
     "hands the Spell its spellframe_kind and implemented_protocols; the spell_id does not read the kind, a binding-manifest field",
-    "validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings, binding-manifest fields (0.2.8242, 0.2.8258); the spell_id never reads them (0.2.8254, and since 0.2.8257 nothing from the bind call does)"
+    "validates and normalizes a managed binding's four options once (_normalize_managed_options: classes only, the mode defaulting to elastic, the limit, the queue-only timeout and callable reset names; every refusal before a Spell or index exists) and hands the normalized values to the Spell as its settings, binding-manifest fields (0.2.8242, 0.2.8258); the spell_id never reads them (0.2.8254, and since 0.2.8257 nothing from the bind call does)",
+    "mints every SpellIndex with SpellIndex.for_binding from the new spell's spellframe, name and binding name, so the index keeps that binding and admits only versions bound the same way (2026-10-25)"
    ],
    "owns_state": [
     "_spellbook",
@@ -70,7 +71,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3ec903810cb7341d56eb3f5ee73abb74ef9afcad1be5e194786dae274bd64080"
+   "semantics_authored_against": "79f6332ef89112713a6d4216198595d482b7bd09a4425ed0c6d46f647f1b64bf"
   }
  },
  "edges_out": [
@@ -103,12 +104,6 @@
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
    "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to_label": "SpellIndex",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -202,7 +197,7 @@
    "from": "melder.aether.spellbook.bind.bind.Bind",
    "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
    "relation": "creates",
-   "why": "Bind creates a SpellIndex lineage key from the spell_id (the code digest) before constructing the Spell record.",
+   "why": "Bind creates a SpellIndex lineage key from the spell_id (the code digest) and the new spell's binding (SpellIndex.for_binding: the spellframe's kind and the address, which every later version of the index must share, 2026-10-25) before constructing the Spell record.",
    "cardinality": "one_to_many",
    "phase": [
     "init",

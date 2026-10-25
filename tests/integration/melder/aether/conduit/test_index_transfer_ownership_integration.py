@@ -10,6 +10,9 @@ Modeled on `tests/integration/melder/conduit/test_conduit_integration_transfer_o
 Transactions are OUT OF SCOPE. Runtime: Python 3.14t; the 3.10 sandbox cannot run
 these -> user runs on 3.14t (the multi-member setup shares the notch-harness
 assumptions -- validate those first).
+
+In the multi-member setup A and B share one binding, spellframe 'service' and binding name 'a': every version of an
+index is bound the way its first version was (2026-10-25).
 """
 
 import pytest
@@ -67,17 +70,19 @@ def _single_member_transfer_ready():
 
 
 def _multi_member_transfer_ready():
-    """owner index has 2 members (A active, B inactive); target ready."""
+    """owner index has 2 members (A active, B inactive), both under ('service', 'a'); target ready."""
     config = _config()
     owner_book = Spellbook(configuration=config)
-    id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
+    id_a = owner_book.bind(
+        spell=_ServiceA, existence=Existence.unique, permissions="create", spellframe="service", binding_name="a",
+    )
     target_book = Spellbook(configuration=config)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
     index = owner_book.find_spell_by_spell_id(id_a).spell_index
     id_b = owner.bind_inactive(  # index = {A, B}
         spell=_ServiceB, spell_index=index, existence=Existence.unique,
-        permissions="create", binding_name="b",
+        permissions="create", spellframe="service", binding_name="a",
     )
     spell_b = owner_book._get_owned_spell(id_b)
     return owner_book, target_book, owner, target, id_a, id_b, index

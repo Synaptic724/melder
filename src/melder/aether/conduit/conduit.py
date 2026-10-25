@@ -1743,8 +1743,10 @@ class Conduit(Cleanable):
           constructed instance (existing-object spells).
         - These spells are treated as **singletons** for this Conduit and
           must use `Existence.unique`.
-        - The instance is registered under `spell.spell_id` via
-          `Creations.add_creation(...)`.
+        - The instance is registered under `spell.store_key` (its binding's
+          slot, `<spell_id>:<binding_hash>`) via `Creations.add_creation(...)`:
+          the key emitted plans read an existing-object dependency by, so the
+          object is filed once (STORY-2026-10-25-creations_store_slots_by_binding).
         - Disposal metadata from the spell is forwarded only when the retained
           entry actually needs explicit disposal tracking.
 
@@ -1765,9 +1767,8 @@ class Conduit(Cleanable):
                 "registered into Creations."
             )
 
-        spell_id: str = spell.spell_id
         self._creations.add_creation(
-            spell_id,
+            spell.store_key,
             instance,
             has_disposal_methods=spell.has_disposal_methods,
             disposal_methods=spell.disposal_method_names,

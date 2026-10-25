@@ -520,9 +520,11 @@ class GraftRunner(Cleanable):
               a member whose binding - its hydrated spellframe's kind and the address
               its name and recorded binding name give (`SpellIndex.signature_of`) -
               differs from the merge target's `binding_signature` is not parked. It
-              becomes a shortfall, `member_binding_differs_from_merge_target`, checked
-              before `bind_inactive`, so it registers nothing, and the other members
-              still park.
+              becomes a shortfall, `member_binding_differs_from_merge_target`, whose
+              reason names both bindings in the words `bind_inactive`'s refusal uses
+              and the remedy (graft without `merge_into_index`, or merge into an index
+              bound that way). It is checked before `bind_inactive`, so it registers
+              nothing, and the other members still park.
 
         Args:
             selected_id:
@@ -542,6 +544,9 @@ class GraftRunner(Cleanable):
         parked = 0
         live_selected_id: Optional[str] = None
         target_binding = self._merge_into_index.binding_signature
+        # The words the target's own refusal uses for its binding (`SpellIndex.check_admits`); set with the
+        # signature by `SpellIndex.for_binding`, so it is present whenever the signature is.
+        target_text = self._merge_into_index._binding_text
         for spell_id, entry in members.items():
             crystal = dict(entry.get("payload", {}))
             target = self._hydrate(spell_id, crystal, shortfalls)
@@ -559,13 +564,15 @@ class GraftRunner(Cleanable):
             if target_binding is not None and member_binding != target_binding:
                 shortfalls.append({
                     "member": spell_id,
-                    "reason": "member_binding_differs_from_merge_target: '{0}' was recorded with {1}, and "
-                              "the merge target keeps the binding {2}".format(
+                    "reason": "member_binding_differs_from_merge_target: '{0}' was recorded with {1}, but "
+                              "every version of the merge target is bound with {2}. Graft without "
+                              "merge_into_index to give it an index of its own, or merge it into an index "
+                              "bound that way.".format(
                                   spell_name,
                                   SpellIndex._describe_binding(
                                       spellframe=spellframe, spell_name=spell_name, binding_name=binding_name,
                                   ),
-                                  target_binding,
+                                  target_text,
                               ),
                 })
                 continue

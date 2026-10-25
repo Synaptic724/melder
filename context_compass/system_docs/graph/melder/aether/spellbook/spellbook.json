@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "7a1a088e0ca1b388990b54b9e71436542c7cd91dbca981d1b4b8a70dab4c9a34",
+ "source_sha256": "09fbe477287c475fad53132e5b0b4e39b7dd56e1e264b275637284d67cac5f44",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -56,11 +56,11 @@
     "transaction"
    ],
    "shape": {
-    "method_count": 149,
+    "method_count": 150,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8a3a82f9ab940269f9db1dc69caa905170c38fd962049e4be4bf8dd2de9d7176",
+   "span_sha256": "29b8ddb983d2cf0f4e55e832de1251e03e62faeca21376b044944b7f1737b570",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -83,7 +83,7 @@
     "inspects objects holding its lock only for its own spells and asks the frames with no lock held, over a one-call copy of the frame's conduits (inspect_spell, 0.2.8232)",
     "re-checks under its lock a Book torn down while a removal waited for it (cleanup_and_remove_spell): a spell the teardown cleaned returns, anything else raises the cleaned-Book RuntimeError (0.2.8233)",
     "forwards a managed binding's four options through bind and bind_inactive to Bind, where they are validated (0.2.8242); they are the spell's settings, not part of its spell id (0.2.8254), and a parked managed version keeps its own",
-    "parks versions with bind_inactive: one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch",
+    "parks versions with bind_inactive, refusing before the hooks and any registration an index that is cleaned, owned by another Book (RuntimeError) or bound another way (SpellIndex.check_admits, ValueError; 2026-10-25): one parked after conjure is stamped by bind_inactive itself with the owner stamp an active bind uses, one parked before conjure by SpellbookCreationSystem.define_conduit_into_spells at conjure with the same stamp and nothing else (0.2.8248), so either melds after a notch",
     "marks the SpellContract consumers of a changed active contracted copy's key once its Book lock is released - an add, park, reactivation, removal or clear of an active copy; never a parked copy or a change before conjure (_mark_contract_dependents_dirty in the five contracted-map mutators, 0.2.8250)",
     "passes each selected version's binding key to register_index at bind and notch, and after a notch's registration marks everything downstream of the notched lineage (mark_dependents_for_revalidation, 0.2.8250)",
     "removes a borrowed copy by the spell_id it is given: the active copy only when that copy's own spell_id is it, otherwise the parked copy, raising RuntimeError when it holds neither - never by index membership, so an index unlink after a notch completes in any member order (_remove_contracted_spell, 0.2.8251)",
@@ -92,10 +92,11 @@
     "registers the index remove_from_spell_index mints in the frame's spell registry as a post-conjure bind registers the index it creates (bind's guard and call, under the Book's root conduit), and the root's teardown (_unregister_conduit_spells_from_aether) unregisters the indexes that hold only parked versions with the rest, so the frame's lookups by spell_id find a version moved into an index of its own (0.2.8259)",
     "retires every parked version at Book teardown with the local teardown cleanup_spell's parked branch runs (_spellbook_cleanup set, then Spell.cleanup()) and then cleans every index only parked versions hold, one remove_from_spell_index minted, after the active loop; each step best-effort and logged (_cleanup_spells, 0.2.8260)",
     "routes cleanup_spell through its root conduit's cleanup_spell once conjured, and _dispose_spell calls the caller's release_contracts hook with the spell_id after its decision and refusals and before anything is invalidated or disposed, with no Book lock held; a raising hook disposes nothing and the in-flight mark is cleared (0.2.8261)",
-    "refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, the lineage's dependencies and topology registered again, a refused version's own key set back (_revert_refused_notch) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)",
+    "refuses a notch whose incoming version fails its structural check with nothing moved: _notch_spell runs phases 1-4 for a version never compiled once it is active, inside the held window (_check_notched_version), and on a failure puts the structure back before it raises - the seam run back toward the outgoing version, its address claim with it, and the lineage's dependencies and topology registered again (_revert_refused_notch; the key it set back for a version at another address went on 2026-10-25, when every version of an index came to share its key) - with SpellbookValidationError prefaced by the refusal line; a standing notch journals its promotion after the check (0.2.8262)",
     "destroys an index a parked member left empty without touching another spell's binding signature: _destroy_spell_index drops the Book route only when it routes the key to that index and releases only the departing member's frame claim, by spell_id, so staging, an index move back and a lone parked disposal keep the active version's claim and route (0.2.8263)",
     "saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)",
-    "answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)"
+    "answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)",
+    "keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)"
    ],
    "owns_state": [
     "_bind",
@@ -112,7 +113,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "8a3a82f9ab940269f9db1dc69caa905170c38fd962049e4be4bf8dd2de9d7176"
+   "semantics_authored_against": "29b8ddb983d2cf0f4e55e832de1251e03e62faeca21376b044944b7f1737b570"
   }
  },
  "edges_out": [
@@ -187,12 +188,6 @@
   {
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to_label": "CachingSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook.Spellbook",
-   "to_label": "SpellIndex",
    "relation": "creates",
    "confidence": "candidate"
   },

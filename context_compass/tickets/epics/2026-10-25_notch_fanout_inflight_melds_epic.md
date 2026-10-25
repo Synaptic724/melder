@@ -99,7 +99,7 @@ against no provider or an internal RuntimeError.
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: re-measured - both probes, the race test and the in-Book probe run on 0.2.8267 (task Notes).
-- [ ] Milestone 2: decided - the owner chooses the design (this epic's Notes).
+- [x] Milestone 2: decided - the owner chooses the design (this epic's Notes).
 - [ ] Milestone 3: fixed - the task lands with its patch docs, tests, measurements, notch and rebuild.
 
 ## Stories (Required to Complete)
@@ -144,6 +144,7 @@ against no provider or an internal RuntimeError.
 
 ## Decision Log
 - 2026-10-25: the epic opened on the owner's ask; its child is melder_1's existing backlog task.
+- 2026-10-25: design 2 - the borrower fan-out runs inside the notch's frozen window (the owner).
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -205,6 +206,22 @@ this does not make independent review mandatory for every ticket.
   NEXT: Ask the owner.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-10-25T11:22:22Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's decision (chat 2026-10-25T11:17Z, answering the DECISION_REQUEST): design 2 - run the
+    borrower fan-out inside the notch's frozen window, so a borrower meld already past its gate is ordered
+    against the park and the reactivation. melder_0 implements it after D-20 lands (the owner's same message:
+    "finish the D-20 and its epic"); conduit.py custody is agreed with melder_1 (S2) before the first edit, and
+    the patch docs come before any src/ edit.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-10-25_notch_fanout_inflight_melds_epic.md:191-207
+  IMPACT: The design question is closed; the fix is scheduled behind D-20.
+  NEXT: After D-20: ask melder_1 for conduit.py, then the patch docs for design 2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

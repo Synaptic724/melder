@@ -1,0 +1,76 @@
+# probe_signature_claims.py on 0.2.8273 (the device tree), -X gil=1, through scripts/run_with_alias.py (find_spell_by_id, renamed at 0.2.8253, aliased); melder_1 at the fix, 2026-10-25T12:24:13Z
+/tmp/cc_res/uxmirror/src/melder/__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+C1 bind_inactive after conjure; the staged version shares the active version's key
+  [before]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    staged French's key == English's key: True
+  [after bind_inactive(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+    English still the index's active version: True
+
+C2 bind_inactive before conjure; same key
+  [before (no conduit yet)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after bind_inactive(French), before conjure]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after conjure]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+
+C3 index moves: remove French into its own index, then add it back
+  [healed (notch to French and back)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after add_to_spell_index(French) back]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C4 cleanup_spell of French alone in the index remove_from_spell_index minted
+  [after remove_from_spell_index(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+  [after cleanup_spell(French)]
+    frame claim ('greeter', 'greeter'): English
+    book address map routes it to the index: True (index active: English)
+    meld(spellframe=Greeter, binding_name='greeter') -> English
+    find_spell_index(Greeter, 'English', 'greeter') is the index: True
+    another bind of (Greeter, 'greeter') refused: Binding signature already active in this frame: frame_key='greeter', binding_name='greeter' is held by spell_id='677a47a3c52107a430b423e6676496133f626
+
+C5 notch across keys: English (Greeter, 'greeter') -> Spanish (Greeter, 'spanish') on one index
+  CASE RAISED ValueError: bind_inactive refused: SpellIndex 01M5SG70ZDZDQK61PZQX1Y1PD0 keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'greeter' - and 'Spanish' (spell_id 35ae6000b301244b7d88b18cb8600db6b713b6889bdb1709507825f17aa4d48e) is bound with the Protocol spellframe Greeter and binding_name 'spanish'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+C6 staging in Book L a version keyed like Book O's active spell
+    before: frame claim ('greeter', 'spanish'): Spanish (Book O, active)
+  CASE RAISED ValueError: bind_inactive refused: SpellIndex 01M5SG70ZM6H442AJ9358XXC2C keeps the binding its first version was bound with - the Protocol spellframe Greeter and binding_name 'greeter' - and 'French' (spell_id 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd) is bound with the Protocol spellframe Greeter and binding_name 'spanish'. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+
+C7 notch French active inside its own minted index; English stays active with the same key
+  CASE RAISED RuntimeError: notch_spell refused: the address of SpellIndex 01M5SG70ZZQYW5GTRY1RFAGCCX - the Protocol spellframe Greeter and binding_name 'greeter' - is held by spell_id '677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f' ('English'), the active version of another index of this Spellbook, so the notch did not happen and nothing moved. A version split off with remove_from_spell_index goes active only once its address is free: move it back into that index with add_to_spell_index and notch there, or dispose that index's versions with cleanup_spell first.
+

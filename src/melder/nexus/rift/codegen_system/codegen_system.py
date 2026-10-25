@@ -344,6 +344,42 @@ class CodegenSystem(Cleanable):
             self._monitor.on_execution_finished(context, execution_result)
             return context, execution_result
 
+    def build_materialize_builtins(
+            self,
+            transaction_context: CodegenTransactionContext,
+    ) -> Dict[str, object]:
+        """
+        Return the room's filtered builtins mapping for an accepted materialize (D-20).
+
+        Purpose:
+            Let `materialize_codegen` run materialized source with exactly what `execute_codegen` gives room code,
+            so a materialized module cannot reach what the room cannot (the owner's decision, 2026-10-25).
+
+        Args:
+            transaction_context:
+                The accepted request's transaction context; its namespace configuration is built from the frame's
+                projection (or the safe no-projection default) when absent.
+
+        Returns:
+            Dict[str, object]: The builtins mapping.
+
+        Raises:
+            TypeError:
+                If `transaction_context` is None.
+        """
+        self.check_cleaned()
+        if transaction_context is None:
+            raise TypeError("transaction_context cannot be None.")
+        with self._lock:
+            namespace_configuration = transaction_context.namespace_configuration
+            if namespace_configuration is None:
+                namespace_configuration = self._build_default_namespace_configuration(
+                    frame_name=transaction_context.frame_name,
+                    projection=transaction_context.projection,
+                )
+                transaction_context.set_namespace_configuration(namespace_configuration)
+            return self._namespace_builder.build_builtins(namespace_configuration)
+
     def report_validation_result(
             self,
             validation_result: CodegenValidationResult,
@@ -426,6 +462,9 @@ class CodegenSystem(Cleanable):
               `SAFE_DENIED_BUILTIN_NAMES`, `open` among them. The tuple is
               read from the profile module, not copied, so this default and
               the safe profile cannot drift apart.
+            - The static-only denied set (the `__import__` name wherever an import list applies) comes from the
+              projection's compiled surface; with no projection it is empty, because imports are off and
+              `__import__` is already a denied builtin.
             - Pure: builds a new configuration per call and mutates nothing.
 
         Args:
@@ -445,6 +484,9 @@ class CodegenSystem(Cleanable):
         denied_builtin_names: Tuple[str, ...] = (
             ("__import__",) + SAFE_DENIED_BUILTIN_NAMES
         )
+        # No projection -> imports off -> no import list applies, so the static-only
+        # denied set is empty; `__import__` is already in denied_builtin_names above.
+        static_only_denied_builtin_names: Tuple[str, ...] = tuple()
         allow_unsafe_reflection = False
         allow_dunder_access = False
         if projection is not None:
@@ -457,6 +499,9 @@ class CodegenSystem(Cleanable):
                 compiled_access_surface.denied_import_module_roots
             )
             denied_builtin_names = compiled_access_surface.denied_builtin_names
+            static_only_denied_builtin_names = (
+                compiled_access_surface.static_only_denied_builtin_names
+            )
             allow_unsafe_reflection = (
                 compiled_access_surface.codegen_unsafe_reflection_allowed
             )
@@ -474,6 +519,7 @@ class CodegenSystem(Cleanable):
             allowed_import_module_roots=allowed_import_module_roots,
             denied_import_module_roots=denied_import_module_roots,
             denied_builtin_names=denied_builtin_names,
+            static_only_denied_builtin_names=static_only_denied_builtin_names,
             allow_unsafe_reflection=allow_unsafe_reflection,
             allow_dunder_access=allow_dunder_access,
             allow_recursive_codegen=allow_recursive_codegen,

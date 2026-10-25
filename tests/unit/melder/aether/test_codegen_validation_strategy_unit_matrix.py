@@ -517,3 +517,67 @@ def test_unit_codegen_validator_matrix(
 
     assert result.accepted is accepted
     assert result.reason == reason
+
+
+@pytest.mark.parametrize(
+    ("static_only", "accepted"),
+    [
+        (("__import__",), False),
+        ((), True),
+    ],
+)
+def test_unit_codegen_builtin_policy_strategy_static_only_import_name(
+        static_only: tuple,
+        accepted: bool,
+) -> None:
+    strategy = CodegenBuiltinPolicyStrategy()
+    code = "loaded = __import__('json')\nresult = 1"
+    context = _context(
+        code,
+        imports_enabled=True,
+        allowed_import_module_roots=("json",),
+        static_only_denied_builtin_names=static_only,
+    )
+
+    result = strategy.validate(context, ast.parse(code, mode="exec"))
+
+    if accepted:
+        assert result is None
+    else:
+        assert result is not None
+        assert result.accepted is False
+        assert "Builtin '__import__' is not allowed in this codegen mode." in (
+            result.validation_issues[0]
+        )
+
+
+@pytest.mark.parametrize(
+    ("static_only", "accepted"),
+    [
+        (("__import__",), False),
+        ((), True),
+    ],
+)
+def test_unit_codegen_name_resolution_strategy_static_only_import_name(
+        static_only: tuple,
+        accepted: bool,
+) -> None:
+    strategy = CodegenNameResolutionStrategy()
+    code = "imp = __import__\nresult = 1"
+    context = _context(
+        code,
+        imports_enabled=True,
+        allowed_import_module_roots=("json",),
+        static_only_denied_builtin_names=static_only,
+    )
+
+    result = strategy.validate(context, ast.parse(code, mode="exec"))
+
+    if accepted:
+        assert result is None
+    else:
+        assert result is not None
+        assert result.accepted is False
+        assert "Name '__import__' is not available in the codegen namespace." in (
+            result.validation_issues[0]
+        )

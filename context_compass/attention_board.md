@@ -103,21 +103,25 @@ Message alert rules
 - NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T08:37:18Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-10-25T08:38:33Z)
 - NEW MESSAGE for melder_2 (from melder_1, 2026-10-25T08:40:52Z)
+- NEW MESSAGE for melder_2 (from melder_1, 2026-10-25T10:48:01Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-10-25T10:52:15Z)
+- NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T11:01:25Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-10-25T12:11:19Z)
+- NEW MESSAGE for melder_2 (from melder_3, 2026-10-25T12:21:27Z)
+- NEW MESSAGE for melder_2 (from melder_1, 2026-10-25T12:22:05Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| correctness_defects | in_progress | handoff | claude | melder_1 | none | S2's (A) has the owner's go (row notch_signature_s2); the stuck consumer is its own epic (row dependency_watchers_epic); S5, S11 and the recorded-world finding wait for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T02:47:38Z | REQUIRED |
-| notch_signature_s2 | in_progress | implementation | claude | melder_1 | none | Rewrite the staging tests the strict rule refuses (component, integration, unit), then the suites the GIL off and on; the code is in (the owner's go and call 1 of 2026-10-25). | A SpellIndex keeps its first version's signature: staging and moves refuse any other, a notch never moves the address or takes another index's, landed with tests, docs, notch and rebuild. | The story turned in with its tests green and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md | 2026-10-25T09:44:14Z | REQUIRED |
+| correctness_defects | in_progress | handoff | claude | melder_1 | none | S2 landed at 0.2.8273 and is turned in; the stuck consumer is its own epic (row dependency_watchers_epic); S5, S11 and the recorded-world finding wait for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T12:26:46Z | REQUIRED |
 | many_child_ownership_epic | in_progress | handoff | claude | melder_1 | none | Ask the owner whether to close the epic on his removal decision. | The owner's removal decision recorded and carried out at 0.2.8267; the epic closed on his word. | The owner closes the epic or redirects. | tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md | 2026-10-24T22:06:33Z | HELPFUL |
 | pypi_provenance_epic | blocked | handoff | claude | melder_2 | S3's promotion with its RC run, the owner's PyPI publisher (D2) and the first attested final release, and S6's keep-or-drop | At the first final release that carries S3, read Release / provenance first; then the owner retires PYPI_API_TOKEN (S4). | Every Melder file on TestPyPI and PyPI carries verified PEP 740 provenance, both upload tokens retired, S6 decided. | The owner shares the hosted runs and accepts the epic, or redirects. | tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md | 2026-10-25T08:27:53Z | REQUIRED |
-| codegen_dynamic_import_d11 | in_progress | implementation | claude | melder_0 | none | Read the import gate, the compiler's builtin controls and the builtins strategy at today's lines; then the patch docs for A + B and red tests. | `__import__` refused where an import list applies (A, static) and every root checked when it runs (B), landed with its notch, release-note entry and rebuild. | The task closes with its acceptance criteria met and the rebuild checked, or the owner redirects. | tickets/tasks/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md | 2026-10-25T09:39:16Z | REQUIRED |
-| codegen_materialize_d20 | blocked | handoff | claude | melder_0 | D-11 lands first (tranche order D-10, D-11, D-20) | melder_0 starts it after D-11 lands; the owner's go of 2026-10-25 stands. | materialize_codegen refuses to publish over a live module and restores sys.modules on every exit, under an ACL-declared namespace and the room's filtered builtins, landed with its notch, release note and rebuild. | The task closes with its acceptance criteria met and the rebuild checked, or the owner redirects. | tickets/tasks/2026-10-10_refuse_materializing_over_live_modules_task.md | 2026-10-25T08:44:04Z | REQUIRED |
-| notch_fanout_race | in_progress | handoff | claude | melder_0 | none | The owner chooses the design (2 recommended) and assigns an implementer; its fix agrees conduit.py custody with melder_1 (M1-67). | The race re-measured on 0.2.8267 and in one Book, its mechanism read and the two designs costed for the owner. | The owner chooses the design, or redirects. | tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md | 2026-10-25T09:08:56Z | REQUIRED |
+| notch_fanout_race | ready | handoff | claude | melder_0 | none | Design 2 is planned in the task's PLAN note; the owner schedules the implementation (no work until then: low usage budget) | Design 2 decided and planned: the borrower fan-out inside the notch's frozen window, with the reversal on a fan-out error | The owner schedules the implementation, or redirects. | tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md | 2026-10-25T12:11:19Z | REQUIRED |
 | dependency_watchers_epic | ready | discovery | claude | melder_1 | none | S1 - the watcher and announcer matrix (the probe-and-purge lane landed at 0.2.8269). | Why a waiting consumer misses its provider, mapped for every watcher and announcer; then the fixes on the owner's word. | S1's matrix and the fix options are on the epic for the owner, or he redirects. | tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md | 2026-10-25T08:22:32Z | REQUIRED |
-| rebind_live_store_tests | in_progress | handoff | claude | melder_3 | the owner's go in chat: drop the disposal-names test (ruled not a defect); his call on existence changes | On his go, remove defect test 1 and its doc entries, rerun, then close and rebuild last. | Component tests that show the two rebind defects (wrong disposal methods; a meld that fails) as strict xfails with passing controls, run and shown to the owner. | The task closes with the tests run and shown, tests_components current and the rebuild checked, or the owner redirects. | tickets/tasks/2026-10-25_rebind_while_old_objects_are_alive_tests_task.md | 2026-10-25T09:43:13Z | REQUIRED |
+| creations_store_slots | in_progress | implementation | claude | melder_3 | none | The tests pair, then the patch folder to completed, the notch above 0.2.8273, the release note, closure and the rebuild last. | A Creations store files each binding's objects in its own slot on one shelf per spell_id: S1-S9 of the store probe fixed, purge and the probes cover every binding, warm melds unchanged, landed with tests, docs, notch, release note and rebuild. | The story turned in with its tests green the GIL off and on, warm melds unchanged and the rebuild checked, or the owner redirects. | tickets/stories/2026-10-25_creations_store_slots_by_binding_story.md | 2026-10-25T13:16:28Z | REQUIRED |
+| index_binding_risks_epic | ready | discovery | claude | melder_1 | none | The owner's go for GAP-1 (fresh checkpoints deleted by retention): a two-world probe and the fix options. | What can break around one binding per index - GAP-1 first - investigated and decided on the owner's word. | Every label has a verdict on the epic, or the owner redirects. | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | 2026-10-25T13:04:26Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Active Attention Details
@@ -126,11 +130,6 @@ Message alert rules
   SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
-- WORK_ITEM: notch_signature_s2
-  SWITCH_TRIGGER: The story turned in with its tests green and the rebuild checked, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-17_correctness_defects_epic.md
-    - tickets/stories/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md
 - WORK_ITEM: many_child_ownership_epic
   SWITCH_TRIGGER: The owner closes the epic or redirects.
   RESUME_HIERARCHY:
@@ -139,18 +138,8 @@ Message alert rules
   SWITCH_TRIGGER: The owner shares the hosted runs and accepts the epic, or redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md
-- WORK_ITEM: codegen_dynamic_import_d11
-  SWITCH_TRIGGER: The task closes with its acceptance criteria met and the rebuild checked, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md
-    - tickets/tasks/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md
-- WORK_ITEM: codegen_materialize_d20
-  SWITCH_TRIGGER: The task closes with its acceptance criteria met and the rebuild checked, or the owner redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-25_codegen_room_policy_defects_epic.md
-    - tickets/tasks/2026-10-10_refuse_materializing_over_live_modules_task.md
 - WORK_ITEM: notch_fanout_race
-  SWITCH_TRIGGER: The owner chooses the design, or redirects.
+  SWITCH_TRIGGER: The owner schedules the implementation, or redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_notch_fanout_inflight_melds_epic.md
     - tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md
@@ -158,21 +147,20 @@ Message alert rules
   SWITCH_TRIGGER: S1's matrix and the fix options are on the epic for the owner, or he redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md
-- WORK_ITEM: rebind_live_store_tests
-  SWITCH_TRIGGER: The task closes with the tests run and shown, tests_components current and the rebuild checked, or the owner redirects.
+- WORK_ITEM: creations_store_slots
+  SWITCH_TRIGGER: The story turned in with its tests green the GIL off and on, warm melds unchanged and the rebuild checked, or the owner redirects.
   RESUME_HIERARCHY:
-    - tickets/tasks/2026-10-25_rebind_while_old_objects_are_alive_tests_task.md
+    - tickets/stories/2026-10-25_creations_store_slots_by_binding_story.md
+- WORK_ITEM: index_binding_risks_epic
+  SWITCH_TRIGGER: Every label has a verdict on the epic, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| ci_lane_loose_ends | done | melder_2 | tickets/tasks/completed/2026-10-24_ci_lane_loose_ends_task.md | Melder says it depends on pip; pip pinned in the speed manifest, docs lock and both probes (pip check); two backlog tickets closed; rebuild at melder_1's landing. | 2026-10-24T21:59:15Z |
-| many_child_ownership_removal | done | melder_1 | tickets/stories/completed/2026-10-24_remove_many_child_holder_ownership_story.md | Notched 0.2.8267: a `many` belongs to the scope that built it, the holder record removed; rebuild after closure; the epic waits for the owner. | 2026-10-24T22:06:33Z |
-| src_architecture_to_spec | done | melder_3 | tickets/stories/completed/2026-10-24_src_architecture_trim_to_spec_story.md | src_architecture to its spec: 5,739 -> 4,784 lines, the 17 sections in order, no tooling paths; component mechanics and the MR inventory in src_components; rebuild after closure. | 2026-10-24T22:39:52Z |
-| release_note_0_2_8265_cut | done | melder_1 | tickets/tasks/completed/2026-10-24_cut_release_note_0_2_8265_task.md | release_docs/0.2.8265.md holds the 0.2.8265 notes as released; the running note keeps 0.2.8266-0.2.8267; rebuild after closure. | 2026-10-24T22:53:33Z |
-| windows_held_bundle_test | done | melder_0 | tickets/tasks/completed/2026-10-24_windows_held_cache_bundle_test_task.md | Windows-only test of the 0.2.8266 cache save: 4 passed on the owner's machine, the GIL off and on, [WinError 5] on every refusal; tests only. | 2026-10-24T23:03:28Z |
 | testpypi_provenance | done | melder_2 | tickets/stories/completed/2026-10-24_testpypi_trusted_publishing_and_provenance_story.md | TestPyPI by Trusted Publishing with attestations; RC / provenance checks every file in five layers before install; no notch; hosted Not run; rebuild after closure. | 2026-10-25T00:39:21Z |
 | src_components_to_spec | done | melder_3 | tickets/stories/completed/2026-10-24_src_components_to_spec_story.md | src_components to its spec: 12,642 -> 11,874 lines, history out, stale claims fixed, the MR inventory folded, core = the C3 Key Files union; rubric 84.5 (B); rebuild after closure. | 2026-10-25T01:12:33Z |
 | src_architecture_to_spec_epic | done | melder_3 | tickets/epics/completed/2026-10-24_src_architecture_to_spec_epic.md | Both documents at their specs: src_architecture 5,739 -> 4,784 lines (81, B), src_components 12,642 -> 11,874 (84.5, B); assets and bundles rebuilt at v0.2.8267, both `--check` OK. | 2026-10-25T01:34:36Z |
@@ -180,6 +168,11 @@ Message alert rules
 | pypi_provenance_release | done | melder_2 | tickets/stories/completed/2026-10-25_pypi_trusted_publishing_and_provenance_story.md | PyPI by Trusted Publishing with attestations; Release / provenance checks every released file after the upload; no upload token in any workflow; the users' check documented; no notch; hosted Not run; rebuild after closure. | 2026-10-25T03:20:31Z |
 | probe_purge_every_version | done | melder_1 | tickets/stories/completed/2026-10-25_probe_and_purge_reach_every_version_story.md | Notched 0.2.8269: purge and the live-creation probes reach any version by its spell_id, active or parked, owned or borrowed; purge refuses a unique version with no owner store; rebuild after closure. | 2026-10-25T08:22:32Z |
 | codegen_open_file_d10 | done | melder_0 | tickets/tasks/completed/2026-10-10_deny_file_access_under_safe_codegen_task.md | Notched 0.2.8270: `open` refused under safe, hybrid and precision and the no-projection default; `pathlib` a permissive-only root (the owner's B); every profile's file posture pinned; rebuild after closure. | 2026-10-25T08:44:04Z |
+| rebind_live_store_tests | done | melder_3 | tickets/tasks/completed/2026-10-25_rebind_while_old_objects_are_alive_tests_task.md | Component tests prove the two rebind defects as strict xfails with six controls, the GIL off and on; the tests pair records them; no notch; closed into the owner's fix (row creations_store_slots), whose end-of-pass rebuild covers it. | 2026-10-25T10:39:44Z |
+| codegen_dynamic_import_d11 | done | melder_0 | tickets/tasks/completed/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md | Notched 0.2.8271: dynamic imports answer to the codegen import gate - a `__import__` call or reference refused wherever an import list applies (A) and the runtime `__import__` wrapped to check each root (B); import statements of allowed roots still run, full_access unconstrained; the four strict xfails pass plus five cases; rebuild after closure. | 2026-10-25T10:52:15Z |
+| codegen_materialize_d20 | done | melder_0 | tickets/tasks/completed/2026-10-10_refuse_materializing_over_live_modules_task.md | Notched 0.2.8272: materialize_codegen refuses loaded, core, stdlib and installed names under every profile; `materialize_modules` rules narrow; room builtins; failed materializes leave sys.modules as found; rebuild after closure. | 2026-10-25T12:11:19Z |
+| codegen_room_policy_epic | done | melder_0 | tickets/epics/completed/2026-10-25_codegen_room_policy_defects_epic.md | D-10, D-11 and D-20 closed at 0.2.8270-0.2.8272 on the owner's decisions; each Breaking change in the running note. | 2026-10-25T12:11:19Z |
+| notch_signature_s2 | done | melder_1 | tickets/stories/completed/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md | Notched 0.2.8273: every version of a SpellIndex is bound the way its first version was; staging and moves refuse another binding, a notch a held address; records below 5.0.0 refused; rebuild after closure. | 2026-10-25T12:26:46Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

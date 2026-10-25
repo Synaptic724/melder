@@ -1,0 +1,49 @@
+# warm-meld benchmark, interleaved rounds, -X gil=1 (bench_warm_melds.py); before = snapshot of the tree at 0.2.8271 without this change, after = the tree with it
+## round 1 before
+melder 0.2.8271 from /tmp/m3d/src_before/melder/__init__.py; python 3.14.8; gil=True; calls=20000 repeats=9
+unique_warm      min    175.2 ns  median    183.7 ns
+upc_warm         min    180.8 ns  median    187.0 ns
+many_disposal    min    304.2 ns  median    342.1 ns
+plan_shared      min    273.1 ns  median    283.3 ns
+space_cycle      min    783.0 ns  median    793.8 ns
+unique_by_class  min    175.0 ns  median    178.6 ns
+## round 1 after
+melder 0.2.8272 from /tmp/m3d/mirror/src/melder/__init__.py; python 3.14.8; gil=True; calls=20000 repeats=9
+unique_warm      min    173.0 ns  median    177.8 ns
+upc_warm         min    179.8 ns  median    184.1 ns
+many_disposal    min    305.7 ns  median    346.5 ns
+plan_shared      min    277.5 ns  median    283.1 ns
+space_cycle      min    794.0 ns  median    800.9 ns
+unique_by_class  min    170.1 ns  median    175.2 ns
+## round 2 before
+melder 0.2.8271 from /tmp/m3d/src_before/melder/__init__.py; python 3.14.8; gil=True; calls=20000 repeats=9
+unique_warm      min    176.7 ns  median    181.9 ns
+upc_warm         min    180.0 ns  median    187.6 ns
+many_disposal    min    322.0 ns  median    340.9 ns
+plan_shared      min    276.0 ns  median    280.3 ns
+space_cycle      min    769.7 ns  median    788.3 ns
+unique_by_class  min    172.9 ns  median    181.0 ns
+## round 2 after
+melder 0.2.8272 from /tmp/m3d/mirror/src/melder/__init__.py; python 3.14.8; gil=True; calls=20000 repeats=9
+unique_warm      min    174.5 ns  median    178.6 ns
+upc_warm         min    178.6 ns  median    188.5 ns
+many_disposal    min    313.1 ns  median    343.2 ns
+plan_shared      min    275.9 ns  median    282.5 ns
+space_cycle      min    786.3 ns  median    803.3 ns
+unique_by_class  min    174.0 ns  median    180.4 ns
+## round 3 before
+melder 0.2.8271 from /tmp/m3d/src_before/melder/__init__.py; python 3.14.8; gil=True; calls=20000 repeats=9
+unique_warm      min    174.9 ns  median    182.7 ns
+upc_warm         min    180.4 ns  median    182.5 ns
+many_disposal    min    308.9 ns  median    333.2 ns
+plan_shared      min    266.3 ns  median    274.8 ns
+space_cycle      min    764.9 ns  median    778.1 ns
+unique_by_class  min    177.1 ns  median    183.9 ns
+## round 3 after
+melder 0.2.8272 from /tmp/m3d/mirror/src/melder/__init__.py; python 3.14.8; gil=True; calls=20000 repeats=9
+unique_warm      min    174.3 ns  median    183.0 ns
+upc_warm         min    178.9 ns  median    182.6 ns
+many_disposal    min    297.1 ns  median    331.2 ns
+plan_shared      min    267.6 ns  median    277.6 ns
+space_cycle      min    786.9 ns  median    820.9 ns
+unique_by_class  min    175.2 ns  median    177.9 ns

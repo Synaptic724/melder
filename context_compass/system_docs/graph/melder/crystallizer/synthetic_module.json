@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/synthetic_module.py",
- "source_sha256": "51a28d7dd534865da97435a6a672bd43b43b0875a3fa9ade345d31f69cb55717",
+ "source_sha256": "b876e40ed017cd4a5f1dfa526b5700dcdd02e80a37a77c0292646ce54e91205a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.synthetic_module": {
@@ -19,7 +19,7 @@
    "label": "_SyntheticModuleImportLoader",
    "kind": "class",
    "file": "src/melder/crystallizer/synthetic_module.py",
-   "lineno": 14,
+   "lineno": 17,
    "bases": [
     "Loader"
    ],
@@ -52,7 +52,7 @@
    "label": "_SyntheticModuleMetaPathFinder",
    "kind": "class",
    "file": "src/melder/crystallizer/synthetic_module.py",
-   "lineno": 154,
+   "lineno": 157,
    "bases": [
     "MetaPathFinder"
    ],
@@ -83,7 +83,7 @@
    "label": "SyntheticModule",
    "kind": "class",
    "file": "src/melder/crystallizer/synthetic_module.py",
-   "lineno": 227,
+   "lineno": 230,
    "bases": [
     "ModuleType"
    ],
@@ -130,16 +130,17 @@
     "update_source_text"
    ],
    "shape": {
-    "method_count": 47,
+    "method_count": 48,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3fec02ade6b18f768d5009e7be4f9fec79adeab7ace5d3cfa46718c482f0da0b",
+   "span_sha256": "8170abe3a39ca0a5c5f93ddc019ab47cda634d3dd31b5f032a99f8965e8e1851",
    "role": "Live in-memory module embodiment for crystallized source.",
    "responsibilities": [
     "stores live source text and dependency metadata for one managed module",
     "supports sys.modules and importlib publication and execution",
-    "owns synthetic import registry and cleanup-aware module activation helpers"
+    "owns synthetic import registry and cleanup-aware module activation helpers",
+    "records a non-synthetic module its publication displaces and a non-synthetic parent attribute its attachment displaces, and gives them back on unpublish, detach and cleanup while it still holds the slot; a displaced SyntheticModule is not restored (D-20, 0.2.8272)"
    ],
    "owns_state": [
     "_registered_modules_by_name",
@@ -152,7 +153,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3fec02ade6b18f768d5009e7be4f9fec79adeab7ace5d3cfa46718c482f0da0b"
+   "semantics_authored_against": "8170abe3a39ca0a5c5f93ddc019ab47cda634d3dd31b5f032a99f8965e8e1851"
   }
  },
  "edges_out": [

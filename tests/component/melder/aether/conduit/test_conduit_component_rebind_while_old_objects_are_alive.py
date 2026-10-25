@@ -3,36 +3,28 @@ Component tests: a spell bound again while its removed definition's objects are 
 
 Since 0.2.8257 a spell_id is the SHA256 of the object's code, and since 0.2.8258 the existence and the disposal names
 are fields of the binding manifest, not of the spell_id. So `cleanup_spell` followed by a `bind` of the same class
-under another existence or other disposal names keeps the spell_id, and the new definition registers its objects
-under the key the removed one used. `cleanup_spell` disposes no creation (owner ruling, 2026-10-03): the removed
-definition's objects stay alive in the stores that recorded them, and the new definition meets them there.
+under another existence or other disposal names keeps the spell_id. `cleanup_spell` disposes no creation (owner
+ruling, 2026-10-03): the removed definition's objects stay alive in the stores that recorded them.
 
-Two defects follow. TASK-2026-10-25-creations_many_disposal_docstrings measured both on 0.2.8267 with the GIL off
-and on, and TASK-2026-10-25-rebind_while_old_objects_are_alive_tests wrote these tests for the owner, who asked to
-see them proved ("prove it make tests to show me", chat 2026-10-25).
+TASK-2026-10-25-rebind_while_old_objects_are_alive_tests wrote these tests for the owner ("prove it make tests to
+show me", chat 2026-10-25) as strict xfails of two defects. While a store filed objects by spell_id, the new
+definition met what the removed one left: its objects were disposed with the removed definition's methods, silently,
+or - after a slotted existence - its meld built an object, then failed with AttributeError and lost it.
+STORY-2026-10-25-creations_store_slots_by_binding fixed both and took the markers off: a store files objects by
+`Spell.store_key` (`<spell_id>:<binding_hash>`), so each binding has its own slot and disposal record.
 
 What these tests assert:
-    - Wrong disposal methods, silently (strict xfail): a `many` spell bound with ["close"], melded, cleaned up and
-      bound again with ["shutdown"] while the first object is still in the store. The new object must be disposed
-      with `shutdown` when its scope ends - at the root's teardown and at a lesser's pool return. Today the store
-      keeps the first registration's list for the key and runs `close` on it; nothing raises.
-    - A meld that fails (strict xfail): a `unique` or `unique_per_conduit` spell melded, cleaned up and bound
-      again as `many` while its object is still held in the store. The next meld must return a new object, which
-      the scope disposes with its own list. Today that meld builds the object, then raises AttributeError
-      ("'Svc' object has no attribute 'append'") from the store's registration, and the object is lost: never
-      returned, never disposed.
-    - Controls (green today), which bound each defect: the same disposal list both times; a first binding with no
-      disposal names, or a second one with none; a slotted definition that was never melded.
+    - Another binding's own disposal methods: a `many` spell bound with ["close"], melded, cleaned up and bound
+      again with ["shutdown"] while the first object is still in the store. The new object is disposed with
+      `shutdown` when its scope ends - at the root's teardown and at a lesser's pool return.
+    - A meld after a held slotted spell is bound again as `many`: a `unique` or `unique_per_conduit` spell melded,
+      cleaned up and bound again as `many` while its object is still held in the store. The next meld returns a new
+      object, which the scope disposes with its own list.
+    - Controls: the same disposal list both times; a first binding with no disposal names, or a second one with
+      none; a slotted definition that was never melded.
 
-Both defects are the gap STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes - "a
-changed one retires the old entry" - so each defect test asserts the corrected contract under xfail(strict=True).
-STRICT ON PURPOSE: when S3 closes a defect its test passes, strict turns that into a failure, and whoever closed
-it deletes the marker. Each assertion names its symptom alone - the new object's disposal calls, the meld's outcome
-- so a fix that handles the removed definition's objects another way still turns its test green. Do not loosen
-them to make them pass.
-
-Seeing the failures: a default run reports the two defect tests as XFAIL; `pytest -rxX` lists them with their
-reasons; `pytest --runxfail` runs them as ordinary tests, and each fails on the values it observed.
+The rest of the store's contract after a rebind - purge, the probes, `meld_existing_spell`, an ownership transfer -
+is in `test_conduit_component_store_slots_by_binding.py`.
 
 The tests read the stores through behaviour only: every `Svc` records the disposal methods Melder runs on it, and
 `Journal` records every construction, so an object a meld built but never returned can still be checked.
@@ -163,19 +155,6 @@ def _lesser_pool_return(root: Conduit) -> Tuple[Conduit, Callable[[], None]]:
     return scope, scope.cleanup
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "OPEN: a `many` key's disposal record keeps the list of the first definition that registered the key in a "
-        "store, and Creations.register_many appends later objects under it without comparing lists, so a "
-        "definition cleaned up and bound again under other disposal names (the same spell_id since 0.2.8257) has "
-        "its objects disposed with the removed definition's methods while that definition's objects are still in "
-        "the store. STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes it. STRICT ON "
-        "PURPOSE: when the gap is closed this test passes, strict turns that into a failure, and whoever closed it "
-        "deletes this marker."
-    ),
-)
 @pytest.mark.parametrize(
     "scope",
     [
@@ -185,12 +164,14 @@ def _lesser_pool_return(root: Conduit) -> Tuple[Conduit, Callable[[], None]]:
 )
 def test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_own(scope: ScopeRoute) -> None:
     """
-    DEFECT, wrong disposal methods: an object bound with ["shutdown"] is disposed with `shutdown`.
+    Another binding's own disposal methods: an object bound with ["shutdown"] is disposed with `shutdown`.
 
-    The first definition is bound with ["close"] and melded, so the scope's store records the key with ["close"]
-    and keeps the object; the definition is cleaned up and the class bound again with ["shutdown"] under the same
-    spell_id; the next meld's object must be disposed with `shutdown` when the scope ends. Today it is disposed with
-    `close`, the removed definition's method, and nothing raises.
+    The first definition is bound with ["close"] and melded, so the scope's store files its object under its store
+    key with ["close"]; the definition is cleaned up and the class bound again with ["shutdown"] under the same
+    spell_id, another store key; the next meld's object is disposed with `shutdown` when the scope ends. While the
+    store filed objects by spell_id it was disposed with `close`, the removed definition's method, silently (fixed by
+    STORY-2026-10-25-creations_store_slots_by_binding; the owner ruled the case the user's own doing, and the fix
+    gives it this answer).
     """
     frame = "rebind-other-disposal"
     root = _world(frame)
@@ -210,19 +191,6 @@ def test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_
         root.cleanup()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "OPEN: Creations.register_many appends to whatever the key's live slot holds, so after a `unique` or "
-        "`unique_per_conduit` definition whose object is still in the store is cleaned up and bound again as `many` "
-        "(the same spell_id), the next meld builds its object and then raises AttributeError (\"'Svc' object has "
-        "no attribute 'append'\"), and that object is neither returned nor recorded. "
-        "STORY-2026-10-18-revalidate_on_binding_change (S3, parked by the owner) closes it. STRICT ON PURPOSE: "
-        "when the gap is closed this test passes, strict turns that into a failure, and whoever closed it deletes "
-        "this marker."
-    ),
-)
 @pytest.mark.parametrize(
     "existence",
     [
@@ -232,13 +200,14 @@ def test_rebind_with_other_disposal_methods_disposes_the_new_objects_with_their_
 )
 def test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_object(existence: Existence) -> None:
     """
-    DEFECT, a meld that fails: after a slotted definition is bound again as `many`, the next meld returns a new object.
+    A meld after a held slotted spell is bound again as `many`: the next meld returns a new object.
 
-    The first definition is slotted and melded, so the root's store holds its object in the key's slot; the
-    definition is cleaned up and the class bound again as `many` with ["close"] under the same spell_id. The next
-    meld must return a new object - never the old one - and the root's teardown must dispose it with `close`. Today
-    the meld builds the object, then raises AttributeError from the store's registration: the object is never
-    returned and never disposed.
+    The first definition is slotted and melded, so the root's store holds its object in its key's slot; the
+    definition is cleaned up and the class bound again as `many` with ["close"] under the same spell_id, another
+    store key. The next meld returns a new object - never the old one - and the root's teardown disposes it with
+    `close`. While the store filed objects by spell_id the meld built the object, then raised AttributeError from the
+    store's registration, and the object was never returned nor disposed (fixed by
+    STORY-2026-10-25-creations_store_slots_by_binding).
     """
     frame = "rebind-slotted-to-many"
     root = _world(frame)
@@ -273,9 +242,9 @@ def test_rebind_of_a_held_slotted_spell_as_many_returns_and_disposes_the_new_obj
 )
 def test_rebind_with_the_same_disposal_methods_disposes_both_objects_with_them(scope: ScopeRoute) -> None:
     """
-    CONTROL (green today): when the second binding declares the same list, the record it joins is right for it.
+    CONTROL: when the second binding declares the same list, both objects are disposed with it.
 
-    Also pins the precondition both defects need: the rebind keeps the spell_id.
+    Also pins the precondition the rebind cases need: the rebind keeps the spell_id.
     """
     frame = "rebind-same-disposal"
     root = _world(frame)
@@ -294,8 +263,8 @@ def test_rebind_with_the_same_disposal_methods_disposes_both_objects_with_them(s
 
 def test_rebind_after_a_binding_without_disposal_methods_disposes_the_new_objects_with_their_own() -> None:
     """
-    CONTROL (green today): a `many` without disposal methods is recorded nowhere, so the store holds no record for
-    the key at the rebind and the new definition writes it with its own list.
+    CONTROL: a `many` without disposal methods is recorded nowhere, and the new definition's objects are disposed
+    with its own list.
     """
     frame = "rebind-from-no-disposal"
     root = _world(frame)
@@ -313,9 +282,8 @@ def test_rebind_after_a_binding_without_disposal_methods_disposes_the_new_object
 
 def test_rebind_without_disposal_methods_leaves_the_new_objects_undisposed() -> None:
     """
-    CONTROL (green today): an object whose binding declares no disposal methods is recorded nowhere and never
-    disposed, even though the removed definition's record for the key is still in the store; the first object is
-    disposed with its own list.
+    CONTROL: an object whose binding declares no disposal methods is recorded nowhere and never disposed, while
+    the removed definition's object is still in the store; the first object is disposed with its own list.
     """
     frame = "rebind-to-no-disposal"
     root = _world(frame)
@@ -340,9 +308,8 @@ def test_rebind_without_disposal_methods_leaves_the_new_objects_undisposed() -> 
 )
 def test_rebind_of_a_slotted_spell_never_melded_as_many_builds_and_disposes_new_objects(existence: Existence) -> None:
     """
-    CONTROL (green today): a slotted definition that was never melded left nothing in the store, so its key has no
-    slot when the class is bound again as `many`; each meld returns a new object, and the root's teardown disposes
-    each with its list. The meld fails only when the old object is still held.
+    CONTROL: a slotted definition that was never melded left nothing in the store; when the class is bound again
+    as `many`, each meld returns a new object, and the root's teardown disposes each with its list.
     """
     frame = "rebind-unmelded-slotted"
     root = _world(frame)

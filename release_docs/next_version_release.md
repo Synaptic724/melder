@@ -1,4 +1,4 @@
-# Melder 0.2.8270
+# Melder 0.2.8273
 
 **Unreleased**
 
@@ -204,6 +204,148 @@ import root of each profile is unchanged; a `builtin_names` allow rule in a fram
 allows `open` for that frame; and nothing cached or recorded changes. These checks run in the room's own process:
 they are policy and defence in depth, not isolation.
 
+## Codegen rooms refuse dynamic imports under the safe, hybrid and precision profiles
+
+A codegen room reaches other modules through import statements, checked against the codegen profile of the frame it
+names. The `__import__` builtin is the other door: `__import__('subprocess')` loads a module with no import
+statement. Through 0.2.8270 `__import__` was a live builtin under every profile that enables imports - `hybrid`,
+`precision` and `permissive` - so room code could load any importable module, including roots those profiles' import
+lists deny or omit (`subprocess`, `socket`, `importlib`, and `melder` itself).
+
+**Breaking change:** wherever a codegen profile enables imports with an allow or deny list - `hybrid`, `precision` on
+its own or as the overlay, and `permissive` - room code that calls or names `__import__` is refused at validation,
+and nothing runs:
+
+```python
+# command_system: the command surface of a codegen room whose Rift is linked to the frame "ops",
+# and the codegen profile of "ops" is hybrid.
+result = command_system.execute_codegen("mod = __import__('subprocess')", frame_name="ops")
+result["accepted"]              # False: nothing is imported
+result["validation_issues"][0]  # "Builtin '__import__' is not allowed in this codegen mode."
+```
+
+Code that only names it (`imp = __import__`) is refused with "Name '__import__' is not available in the codegen
+namespace.", and at run time the room's `__import__` is a wrapper that raises `ImportError` naming the root ("Import
+root '<root>' is not allowed in this codegen mode.") for a denied or unlisted root. The refusal covers every root,
+the profile's allowed roots included: an allowed root is reached through an import statement (`import json`), not
+through `__import__('json')`. A request naming a frame the room holds no codegen projection for runs under the safe
+posture, where imports are off and `__import__` is already denied.
+
+What stays the same: `full_access` carries no import list, so it keeps `__import__` usable; `safe` already ran with
+imports off; an import statement of an allowed root still executes under `hybrid`, `precision` and `permissive`;
+every other builtin and import root of each profile is unchanged; and nothing cached or recorded changes. These
+checks run in the room's own process: they are policy and defence in depth, not isolation.
+
+## `materialize_codegen` no longer replaces a live module
+
+`materialize_codegen` turns accepted room code into a real module under the name you give it. Through 0.2.8271 it
+published under any dotted-legal name - over Melder's own modules, the standard library and installed packages - under
+every codegen profile, so one materialize could replace `melder.aether.spellbook.bind.bind`, `csv` or `pytest` for the
+rest of the process. A materialize whose code raised, and the cleanup of a materialized module, left the displaced name
+missing from `sys.modules` instead of putting the original back.
+
+**Breaking change:** under every codegen profile, `materialize_codegen` refuses a module name that is already loaded,
+any name under `melder`, a standard-library name and an installed package's import name - imported yet or not - before
+anything is registered or published. The answer is a payload, like a validation refusal:
+
+```python
+result = command_system.materialize_codegen("Bind = None", module_name="csv", frame_name="ops")
+result["materialized"]  # False: csv is untouched
+result["refusal"]       # "Module name 'csv' is already loaded; materialize_codegen does not replace a live module."
+```
+
+A new name nobody has claimed (`build_worker`, `policy_v2`) materializes as before. A frame can narrow that with
+codegen rules - `allow_materialize_module_roots("codegen_generated")` on its codegen change admits only names under
+those roots, `deny_materialize_module_roots(...)` refuses names under them. Materialized code now runs with the room's
+filtered builtins, the same ones `execute_codegen` gives room code, so a builtin the profile denies (`open` under
+`safe`, `hybrid` and `precision`) is missing inside the module too, and its imports pass the room's import gate. A
+materialize whose code raises leaves `sys.modules` exactly as it was, parent packages included.
+
+What stays the same: every signature; a new name materializes as it did; no standard profile declares a generation
+namespace; the crystallizer's restore, rebuild and graft lanes are unchanged; and nothing cached or recorded changes. To
+iterate on one name, clean the materialized module first or use a new name. These checks run in the room's own process:
+they are policy and defence in depth, not isolation.
+
+## Every version of a SpellIndex is bound the way its first version was
+
+A SpellIndex holds the versions of one spell: `bind` creates it, `bind_inactive` stages a new version on it,
+`notch_spell` makes another version active, and `add_to_spell_index` and `remove_from_spell_index` move parked
+versions between indexes. Through 0.2.8272 a version could be staged under any binding - another binding name, another
+spellframe or none - so a notch could move the index to another address: a meld by the old address no longer found
+it while the parked version kept that address, a version split off with `remove_from_spell_index` could be notched
+active at an address its source index still served (two active spells at one address), and a notch could take the
+address of another Spellbook's active spell.
+
+**Breaking change:** an index keeps the binding of its first version - the kind of spellframe (none, a string
+category or a Protocol) and the address that gives (the spellframe and the binding name, compared without case) -
+and every version staged or moved onto it must be bound the same way. `bind_inactive` and `add_to_spell_index`
+refuse any other binding with a `ValueError` naming both bindings, before anything is registered or moved:
+
+```python
+from typing import Protocol
+
+import melder as md
+
+
+class Greeter(Protocol):
+    def greet(self) -> str: ...
+
+
+class EnglishGreeter:
+    def greet(self) -> str:
+        return "hello"
+
+
+class FrenchGreeter:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+book = md.Spellbook()
+english = book.bind(spell=EnglishGreeter, spellframe=Greeter, binding_name="greeter", existence="many")
+root = book.conjure(dynamic=True)
+index = root.get_spell_by_spell_id(english).spell_index
+
+root.bind_inactive(spell=FrenchGreeter, spell_index=index, spellframe=Greeter, binding_name="french",
+                   existence="many")
+# ValueError: bind_inactive refused: SpellIndex <id> keeps the binding its first version was bound with - the
+# Protocol spellframe Greeter and binding_name 'greeter' - and 'FrenchGreeter' (spell_id <id>) is bound with the
+# Protocol spellframe Greeter and binding_name 'french'. ...
+
+french = root.bind_inactive(spell=FrenchGreeter, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                            existence="many")
+root.notch_spell(spell_index=index, spell_id=french)
+root.meld(spellframe=Greeter, binding_name="greeter").greet()  # "bonjour": the address follows the notch
+```
+
+A renamed class, a new binding name or another kind of spellframe makes a new spell: bind it with `bind`, on an
+index of its own. An edited class that keeps its name stages as before when it is bound the way its first version
+was - bare, or with the same spellframe and binding name. When the versions of a spell will be classes with
+different names, bind every one, the first included, under one spellframe and binding name.
+
+**Breaking change:** a notch never moves an index's address, and `notch_spell` refuses an address another spell
+holds - the active version of another index of the same Spellbook (a version split off with
+`remove_from_spell_index` while its source index still serves the address) or another Spellbook's active spell -
+with a `RuntimeError` naming the holder's spell_id and the remedy; nothing moves. The split version's index can be
+notched active once the address is free.
+
+**Breaking change:** crystallizer records are version 5.0.0, and every reader of a record - a cached checkpoint, a
+formation, an index graft - refuses a record of an older major, an unstamped one included, with a `ValueError`
+naming the record, the reason and the remedy: record the world again with this Melder. A record made before this
+change cannot promise that every version of an index shares its binding. The creation cache moves to generation 24,
+so a cache bundle written before loads cold once.
+
+**Breaking change:** a graft into an existing index (`merge_into_index`) parks only the recorded members bound the
+way that index is; any other member is reported as the shortfall `member_binding_differs_from_merge_target`,
+naming both bindings and the remedy, and nothing of it is registered - graft the record without `merge_into_index`
+to give the members an index of their own.
+
+Also fixed: `bind_inactive` onto an index another Spellbook owns raised `RuntimeError` but left the version
+registered in the calling Spellbook, so a retry was refused as a duplicate spell_id; now nothing is registered.
+
+What stays the same: every signature; versions bound the way their index is stage, notch, move and meld as before;
+a meld by spell_id, purge and the live-creation probes answer as before.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
@@ -254,4 +396,24 @@ they are policy and defence in depth, not isolation.
   `pathlib` on the `permissive` import list only, and the safe posture of a request naming a frame with no codegen
   projection - and the packaged test documents describe the new tests; each profile's docstring states its file
   posture. The code-map extent of `codegen_system.py` is remeasured, and line citations into it remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8270.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  the codegen import gate - the `__import__` name denied at validation wherever a profile's import list applies, held
+  in the new `static_only_denied_builtin_names` field beside the denied builtins and never stripped from the runtime
+  builtins, and the runtime `__import__` wrapper that checks each import's root - and the packaged test documents
+  describe the new tests. The code-map extents of `nexus.py`, `static_frame_viewer.py`, `codegen_system.py`,
+  `codegen_namespace_configuration.py`, `frame_acl_compiled_access_surface.py` and `frame_acl_compiler.py` are
+  remeasured.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  `materialize_codegen`'s name gate, the `materialize_modules` codegen rule and its compiled fields, the room's builtins
+  for materialized code, and SyntheticModule giving back the module or attribute it displaced; the packaged test
+  documents describe the new tests. The code-map extents of the eight changed files are remeasured.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  an index keeping its first version's binding - `SpellIndex.binding_signature` and `check_admits`, the refusals of
+  `bind_inactive`, `add_to_spell_index` and `notch_spell`, the address claim moved by compare-and-set
+  (`LookupContainer.repoint`), record version 5.0.0 and the graft merge's shortfall - and the packaged test
+  documents describe the new tests and the suite's rule. The README's stage -> notch -> meld walk-through, the
+  governed-change guide (`docs/expert/governed-change.md`), the glossary (`docs/reference/glossary.md`) and the
+  agent operations guide (`agents/MELDER_AGENT_OPERATIONS.md`) say how to bind a version so a notch can swap it in,
+  and six expert UX examples bind their versions that way. The code-map extents of the changed files are
+  remeasured, and line citations into `spellbook.py`, `conduit.py` and `bind.py` remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8273.

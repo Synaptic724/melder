@@ -10,6 +10,10 @@ refused, another Book could bind the same spell_id, and MutationResearch residen
 V2-V3, artifacts/minted_index_registry_20261018/probes/). The index is now registered as a post-conjure `bind`
 registers the index it creates, it leaves the registry with the rest at its root's teardown, and residency reads its
 version parked until a notch makes it active (the owner's word, 2026-10-18).
+
+Every version of an index is bound the way its first version was (2026-10-25): French is staged under English's
+binding, keeps it in the index it is moved into, and goes active there only once English no longer holds the address,
+so the cases that notch French active dispose English first.
 """
 import contextlib
 from typing import TYPE_CHECKING, Iterator, List, Optional, Protocol, Tuple
@@ -49,7 +53,7 @@ class English:
 
 
 class French:
-    """The version staged on English's index under its own binding name, then moved into an index of its own."""
+    """The version staged on English's index under English's binding, then moved into an index of its own."""
 
     def greet(self) -> str:
         """Return the French greeting."""
@@ -115,8 +119,8 @@ def _owned(book: Spellbook, spell_id: str) -> Spell:
 
 def _bind_french(book: Spellbook) -> str:
     """
-    Bind French in `book` at the address it holds in the lender's Book - same class, spellframe, binding name and
-    existence, so the same spell_id.
+    Bind French in `book` under (Greeter, 'french'), an address no spell holds, so the only refusal it can meet is the
+    spell_id collision: a spell_id is French's code whatever the binding (0.2.8257).
 
     Args:
         book: The Book that binds.
@@ -166,6 +170,14 @@ class _Lender:
         self.lender.remove_from_spell_index(spell_id=self.french.spell_id, source_index=self.index)
         return self.french.spell_index
 
+    def free_the_address(self) -> None:
+        """
+        Dispose English, the sole member of its index once French is moved out, so the address the two share is free:
+        a split version keeps its binding, and its index goes active only once no other spell holds the address
+        (2026-10-25).
+        """
+        self.lender.cleanup_spell(spell=self.english)
+
     def peer(self, name: str, *, frame: Optional[str] = None) -> Tuple[Spellbook, Conduit]:
         """
         Conjure a root holding one plain spell, torn down with the world.
@@ -187,7 +199,7 @@ class _Lender:
 @contextlib.contextmanager
 def _lender(frame: str) -> Iterator[_Lender]:
     """
-    English active on the lender's index and French parked on it under its own binding name, in a dynamic frame with
+    English active on the lender's index and French parked on it under English's binding, in a dynamic frame with
     caching off.
 
     Args:
@@ -203,7 +215,7 @@ def _lender(frame: str) -> Iterator[_Lender]:
     lender = book.conjure(dynamic=True, name="lender")
     english = _owned(book, english_id)
     french_id = lender.bind_inactive(
-        spell=French, spell_index=english.spell_index, spellframe=Greeter, binding_name="french",
+        spell=French, spell_index=english.spell_index, spellframe=Greeter, binding_name="english",
         existence=Existence.many, permissions="create",
     )
     world = _Lender(frame, book, lender, english, _owned(book, french_id))
@@ -246,12 +258,19 @@ def test_a_version_notched_active_in_its_own_index_is_found_by_spell_id() -> Non
     it and the Conduit's spell_id lookups raised "not found in any conduit".
 
     Contract:
-        - The frame finds French in its index, the lookups answer French and the lender, and both versions meld.
+        - While English holds the address the two share, the notch is refused and English still melds (a split version
+          keeps its binding, 2026-10-25).
+        - Once English is disposed, French notched active in its index is found there, the lookups answer French and
+          the lender, and French melds.
     """
     with _lender("found_active") as world:
         french_id = world.french.spell_id
         minted = world.separate()
 
+        with pytest.raises(RuntimeError, match="is held by spell_id"):
+            world.lender.notch_spell(spell_index=minted, spell_id=french_id)
+        assert isinstance(world.lender.meld(spell_id=world.english.spell_id), English)
+        world.free_the_address()
         world.lender.notch_spell(spell_index=minted, spell_id=french_id)
 
         assert minted.selected_spell_id == french_id
@@ -259,7 +278,6 @@ def test_a_version_notched_active_in_its_own_index_is_found_by_spell_id() -> Non
         assert world.lender.get_spell_by_spell_id(french_id) is world.french
         assert world.lender.get_conduit_by_spell_id(french_id) is world.lender
         assert isinstance(world.lender.meld(spell_id=french_id), French)
-        assert isinstance(world.lender.meld(spell_id=world.english.spell_id), English)
 
 
 @pytest.mark.parametrize("notched", [False, True], ids=["parked", "notched_active"])
@@ -270,7 +288,8 @@ def test_a_version_in_its_own_index_can_be_granted_by_spell_id(notched: bool) ->
     active.
 
     Contract:
-        - The grant proceeds, and the borrower's copy of French is parked or active as French is on the lender.
+        - The grant proceeds, and the borrower's copy of French is parked or active as French is on the lender (French
+          is notched active once English, disposed, no longer holds the address).
     """
     with _lender("granted_" + ("active" if notched else "parked")) as world:
         borrower_book, borrower = world.peer("borrower")
@@ -278,6 +297,7 @@ def test_a_version_in_its_own_index_can_be_granted_by_spell_id(notched: bool) ->
         french_id = world.french.spell_id
         minted = world.separate()
         if notched:
+            world.free_the_address()
             world.lender.notch_spell(spell_index=minted, spell_id=french_id)
 
         with borrower.transaction("link", conduits=[borrower, world.lender]):
@@ -295,12 +315,14 @@ def test_a_version_notched_active_in_its_own_index_can_be_transferred_by_spell_i
     in any conduit." for French notched active in the index it was moved into.
 
     Contract:
-        - The transfer proceeds: the target's Book owns French and the frame names the target as French's conduit.
+        - The transfer proceeds: the target's Book owns French and the frame names the target as French's conduit
+          (French is notched active once English, disposed, no longer holds the address).
     """
     with _lender("transferred") as world:
         target_book, target = world.peer("target")
         french_id = world.french.spell_id
         minted = world.separate()
+        world.free_the_address()
         world.lender.notch_spell(spell_index=minted, spell_id=french_id)
 
         world.lender.transfer_spell_ownership(spell=french_id, target_conduit=target)
@@ -391,8 +413,9 @@ def test_residency_reads_a_separated_version_parked_then_active_after_a_notch() 
 
     Contract:
         - French parked on English's index reads parked there (control, probe V1).
-        - Moved into an index of its own it reads parked in that index; notched active there it reads active in it;
-          English reads active in its own index throughout.
+        - Moved into an index of its own it reads parked in that index, while English reads active in its own index;
+          notched active there once English is disposed (a split version goes active only once its address is free,
+          2026-10-25) it reads active in it.
     """
     with _lender("residency") as world:
         research = world.lender.mutation_research
@@ -402,9 +425,10 @@ def test_residency_reads_a_separated_version_parked_then_active_after_a_notch() 
 
         minted = world.separate()
         parked = research.residency_view(french_id)
+        english = research.residency_view(world.english.spell_id)
+        world.free_the_address()
         world.lender.notch_spell(spell_index=minted, spell_id=french_id)
         active = research.residency_view(french_id)
-        english = research.residency_view(world.english.spell_id)
 
         assert (parked["runtime"], parked["frame_name"], parked["index_id"]) == ("parked", "residency", minted.id)
         assert (active["runtime"], active["frame_name"], active["index_id"]) == ("active", "residency", minted.id)

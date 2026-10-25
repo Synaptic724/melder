@@ -373,3 +373,40 @@ def test_unit_codegen_system_default_posture_without_projection_denies_what_safe
     assert configuration.denied_builtin_names == ("__import__",) + SAFE_DENIED_BUILTIN_NAMES
     assert "open" in configuration.denied_builtin_names
     assert configuration.imports_enabled is False
+
+
+def test_unit_codegen_system_default_posture_has_empty_static_only_denied_builtins() -> None:
+    """
+    Contract (D-11): with no projection the default posture carries no static-only denied builtins - imports
+    are off there, so `__import__` is already a denied runtime builtin rather than a static-only name.
+    """
+    system = CodegenSystem(rift=DetachedRiftProjectionOwner(), space=CodegenSpaceDouble())
+
+    configuration = system._build_default_namespace_configuration(
+        frame_name="ops",
+        projection=None,
+    )
+
+    assert configuration.static_only_denied_builtin_names == ()
+    assert "__import__" in configuration.denied_builtin_names
+
+
+def test_unit_codegen_system_projection_posture_carries_static_only_denied_builtins() -> None:
+    """
+    Contract (D-11): with a projection the default-config builder threads the compiled static-only denied
+    builtins through to the namespace configuration unchanged.
+    """
+    system = CodegenSystem(rift=DetachedRiftProjectionOwner(), space=CodegenSpaceDouble())
+    projection = build_codegen_projection(
+        imports_enabled=True,
+        allowed_import_module_roots=("json",),
+        denied_import_module_roots=("subprocess",),
+        static_only_denied_builtin_names=("__import__",),
+    )
+
+    configuration = system._build_default_namespace_configuration(
+        frame_name="ops",
+        projection=projection,
+    )
+
+    assert configuration.static_only_denied_builtin_names == ("__import__",)

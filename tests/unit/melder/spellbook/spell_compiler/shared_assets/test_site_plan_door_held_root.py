@@ -96,6 +96,10 @@ class RecordingStore:
         """Record one disposal-bearing many registration (the hot verb emitted plans call)."""
         self._events.append(("register_many", key))
 
+    def register_slot(self, key: str, item: Any) -> None:
+        """Publish one slotted object without disposal methods, as the plans' former inline store did: no event."""
+        self._creations[key] = item
+
 
 class ClusterFacade:
     """The `_cluster_creations` stand-in: resolves to one fixed leader store."""
@@ -138,6 +142,7 @@ def logging_spell(spell_id: str, events: List[Event], existence: Existence,
     return SimpleNamespace(
         spell=construct,
         spell_id=spell_id,
+        store_key=spell_id,  # its own shelf (STORY-2026-10-25-creations_store_slots_by_binding)
         spell_index=SimpleNamespace(selected_spell_id=spell_id),
         spell_name=spell_id,
         is_class_spell=True,

@@ -4,13 +4,13 @@
 - Task ID: TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout
 - Story: none; parent EPIC-2026-10-25-notch_fanout_inflight_melds (split off
   TASK-2026-10-16-recheck_contract_consumers_when_provider_changes by the owner's decision of 2026-10-16)
-- Status: in_progress
+- Status: ready
 - Owner: user
 - Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p1
 - Created: 2026-10-16T15:54:20Z
-- Updated: 2026-10-25T09:08:41Z
+- Updated: 2026-10-25T13:02:02Z
 
 ## Objective
 A meld of a borrower's spell that is in flight while the lender's `notch_spell` parks and reactivates the borrower's
@@ -56,6 +56,11 @@ notch and the rebuild.
 - transition_reason: the owner's ask (chat 2026-10-24), "focus on 2 and 3 make an epic for each and investigate them",
   scheduled it under EPIC-2026-10-25-notch_fanout_inflight_melds; melder_0 re-measures it on 0.2.8267
   and puts the design choice to the owner.
+
+- from_state: in_progress
+- to_state: ready
+- transition_reason: design 2 decided and planned (PLAN note); the owner holds implementation until he schedules
+  it (chat 2026-10-25T12:08Z: "just design it but don't do any work on the notch_fanout race").
 
 ## Steps / Checklist
 - [x] Re-run probe_rule2_race_rate.py and diag_race_kinds.py on 0.2.8267
@@ -430,6 +435,50 @@ this does not make independent review mandatory for every ticket.
   NEXT: The owner chooses the design (2 recommended) and assigns an implementer.
   REREAD: REQUIRED
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-10-25T11:22:22Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The owner's decision (chat 2026-10-25T11:17Z, answering the DECISION_REQUEST): design 2 - run the
+    borrower fan-out inside the notch's frozen window, so a borrower meld already past its gate is ordered
+    against the park and the reactivation. melder_0 implements it after D-20 lands (the owner's same message:
+    "finish the D-20 and its epic"); conduit.py custody is agreed with melder_1 (S2) before the first edit, and
+    the patch docs come before any src/ edit.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:365-380
+  IMPACT: The design question is closed; the fix is scheduled behind D-20.
+  NEXT: After D-20: ask melder_1 for conduit.py, then the patch docs for design 2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-10-25T12:10:50Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: PLAN
+  CLAIM: Design 2 implementation plan, recorded for whoever implements it; the owner (chat 2026-10-25T12:08Z): "just
+    design it but don't do any work on the notch_fanout race". (1) In `Conduit.notch_spell`, move the borrower fan-
+    out (`_deactivate_borrowed_spell`, `_activate_borrowed_spell`, `ConduitWard._emit_index_notch`) to run before
+    `end_transaction(success=True)`, while `NotchTransactionStrategy` holds the sealed footprint and the borrowers'
+    CreationGates are quiesced (`on_start`) - the freeze `on_end` releases. (2) A fan-out error inside the window:
+    undo the switch with the Spellbook's existing refused-notch reversal, end the transaction failed and re-raise,
+    so a notch either stands with every borrower moved or leaves everything as it was. (3) Lock audit before the
+    edit: a thread holding a borrower Book's lock while melding on a sealed conduit would park at the frozen gate
+    while the fan-out waits for that lock - prove no such path (or take the Book lock inside the gate order) and pin
+    it with a test. (4) Order changes to carry: the commit hooks (structural validator, dirty marker) then run after
+    the fan-out; the 0.2.8231 threading note on `_emit_index_notch`; src_architecture's notch sequence. (5) Tests:
+    the existing race test (-k racing) and probe_rule2_race_rate.py / diag_race_kinds.py must show 0 of the four
+    failure kinds over 20+ runs with the GIL off; a symptom-named test that a meld racing a notch returns the
+    outgoing or the incoming version, never a raw-default consumer; the fan-out-error reversal test. Measure park
+    time per notch (rule 2: 0.2-0.5 ms per 200 dependents). (6) Custody: conduit.py is shared - melder_1 (S2) and
+    melder_3 (store slots, with melder_1's OK) touch it; agree custody first, patch docs before src. No src/ or test
+    edit has been made for this task.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md:304-360
+  IMPACT: The design is complete and handed off; implementation waits for the owner to schedule it.
+  NEXT: The owner schedules the implementation (any agent); it starts with the lock audit and the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Scheduled 2026-10-25 under EPIC-2026-10-25-notch_fanout_inflight_melds (the owner's ask); in_progress, melder_0

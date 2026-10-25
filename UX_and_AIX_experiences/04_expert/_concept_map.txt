@@ -351,12 +351,19 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      notch_spell (repoint the selection) -> meld -> notch back. ALL
      THREE VERBS ARE USER SURFACE: notch_spell takes the spell_id
      bind_inactive returned (`spell_id=`) and resolves the exact version
-     inside the call - a lookup by a parked spell_id still resolves to
-     the ACTIVE member, which is why the version is named by its
-     spell_id (owner ruling 2026-10-16; until then the verb took only
-     the parked OBJECT and the lesson stopped at staging). A version of
-     another index, or of another Spellbook, is refused before anything
-     moves.
+     inside the call, which is why the version is named by its spell_id
+     (owner ruling 2026-10-16; until then the verb took only the parked
+     OBJECT and the lesson stopped at staging); since 0.2.8253 a lookup
+     by a parked spell_id answers that parked version too, where it
+     answered the ACTIVE member. A version of another index, or of
+     another Spellbook, is refused before anything moves.
+     EVERY VERSION IS BOUND THE WAY THE FIRST ONE WAS (2026-10-25): an
+     index keeps its first version's binding - the spellframe's kind
+     and the address - and bind_inactive refuses any other before it
+     registers anything, so a notch never moves the address and a meld
+     by the address follows the notch. The lesson binds both versions
+     under the category 'pricing', melds by it, and shows the bare
+     staging refused.
      WHAT STAGING BUYS: the expensive, failure-prone half of a swap -
      compiling, registering and owning the new version - happens while
      the old version is still serving, because a parked candidate is
@@ -1285,6 +1292,18 @@ NAMED SCOPE DISCOVERY AND REPLAY (2026-09-23)
   38 named_scopes_in_nexus_and_restore: capability name forwarding, explicit
      membership refresh, named pooled reuse, required unnamed ancestry and
      successful structural replay with fresh identities/application values.
+
+EVERY VERSION OF AN INDEX IS BOUND THE WAY ITS FIRST ONE WAS (2026-10-25)
+  17, 23, 26, 28, 29 and 31 staged a version bound another way than
+  its index's first one - a renamed class bound bare, or the same class
+  at the default binding name - and bind_inactive now refuses that
+  before anything is registered. Each binds its versions under one
+  spellframe and binding name instead: 17 under the category 'pricing',
+  melding by it so the address is seen to follow the notch, with the
+  bare staging shown refused; 23 under ('rule', 'branch'); 26, 28 and
+  31 under a category named like the first class - the address its
+  bare bind has, so melds by its name still resolve; 29 under the first
+  version's binding name.
 
 REMAINING / NOT YET AUTHORED
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up

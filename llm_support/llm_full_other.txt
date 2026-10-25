@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: f2cc2e71e0220061bef39434cbb3cd5dfdef7962cf15d4faf3677d3937ac2ca3
+SOURCE FINGERPRINT: ee5f10fd59fd73a0c371f7f285b754768b78fae114675a314079453e22011531
 FILE COUNT: 418
 
 ================================================================================
@@ -8777,7 +8777,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: dca460ee822bb467b09a31f6be1c9f3489a8b4c652f98fa0ff38f399c39d6df1
+CONTENT SHA256: cc7316777d3161c396293085cd1b6d61d3d726ccb714bbf0c19f6791edcd5e55
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -10186,14 +10186,19 @@ Foresight is half of it. The other half is the live swap — **stage → notch �
 meld**, on a running system, with the old version still sitting there:
 
 ```python
-# 1. STAGE — bind a new version as an INACTIVE member of the existing index.
-#    It is parked and unresolvable: nothing melds it, nothing sees it yet.
+# 1. STAGE — bind the edited ReportService (the candidate above, imported
+#    from the module it now lives in) as an INACTIVE member of the existing
+#    index. It is bound the way the index's first version was — bare, so
+#    addressed by its name, ReportService, at the default binding — and a
+#    version bound any other way is refused. It is parked and unresolvable:
+#    nothing melds it, nothing sees it yet.
+from reports_v2 import ReportService as EditedReportService
+
 id_v1 = index.selected_spell_id     # the version serving now
 id_v2 = conduit.bind_inactive(
-    spell=ReportServiceV2,
+    spell=EditedReportService,  # new code, the same name: a new spell_id
     spell_index=index,          # the index the current version lives in
     existence="unique",
-    binding_name="v2",
 )
 
 # 2. NOTCH — promote v2 to ACTIVE. The outgoing version parks, the index
@@ -10201,9 +10206,18 @@ id_v2 = conduit.bind_inactive(
 conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
-# 3. MELD — the very next resolution builds the NEW version.
-service = conduit.meld(spell_id=id_v2)   # → ReportServiceV2
+# 3. MELD — the very next resolution builds the NEW version, and the
+#    address follows the notch: a meld by name gets it too.
+service = conduit.meld(spell_id=id_v2)   # → the edited ReportService
+assert conduit.meld("ReportService") is service
 ```
+
+**Every version of an index is bound the way its first version was** — the
+same kind of spellframe and the same address (spellframe or class name, and
+binding name). That is why a notch never moves the address, and why
+`bind_inactive` refuses a renamed class bound bare: it would be another
+address. When versions will carry different class names, bind them all under
+one spellframe category (`spellframe="reports"`) from the first version on.
 
 And because the old member is **parked, not destroyed**, rollback is the same
 verb pointed the other way:
@@ -22654,7 +22668,7 @@ END FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py
-CONTENT SHA256: 33f6cf979ed059c88f915cfb8938a12287b3a4a6e25e6ebf8c6aae19f4ffda52
+CONTENT SHA256: 162bc77416a4a553c42d8e46955f3a0c7c3fa48512b4e5fa2af735a3c9bbb255
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -22664,7 +22678,8 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       builds one, stages a second version onto it, shows that staging
       changes nothing about what resolves - which is why the swap is a
       two-step act - then takes the swap by the new version's spell_id,
-      melds it, and notches back. Everything runs on public calls.
+      melds it at the index's address, and notches back. Everything
+      runs on public calls.
 
       THE THREE VERBS
 
@@ -22673,6 +22688,19 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
                                       returns v2's spell_id
         conduit.notch_spell(          v2 becomes the active member
             spell_index=index, spell_id=v2_id)
+
+      EVERY VERSION IS BOUND THE WAY THE FIRST ONE WAS. An index keeps
+      its first version's binding for life: the kind of spellframe
+      (none, a string category or a Protocol) and the address that
+      gives - the spellframe's name, or a bare class's own name, and
+      the binding name. `bind_inactive` refuses a version bound any
+      other way before anything is registered, so a retry with the
+      right arguments is admitted. That is why a notch never moves the
+      address, and whoever melds by the address follows the notch. Two
+      classes cannot share a bare address, so v1 and v2 are both bound
+      under one string category, "pricing" (2026-10-25; until then a
+      version could be staged at any address and a notch moved the
+      address with it).
 
       NAME THE VERSION BY ITS SPELL_ID. A spell_id names one version,
       and the public spell_id->object lookups (`get_spell_by_spell_id`,
@@ -22698,12 +22726,15 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
         0. Checks the version: it must belong to the conduit's
            Spellbook and to the index you passed, or the call raises
            ValueError before anything moves.
-        1. Parks the outgoing active spell off the four active owned
+        1. Moves the address's frame claim from the outgoing version to
+           the incoming one in one compare-and-set. When another spell
+           holds the address it raises RuntimeError naming the holder,
+           and nothing moves.
+        2. Parks the outgoing active spell off the four active owned
            maps, then TEARS DOWN ITS CREATION CONTEXT so the door epoch
            bumps and the warm fast-door cannot serve the stale spell.
-        2. Promotes the parked candidate into the active maps.
-        3. Repoints the index pointer and the framewide binding
-           signature, old spell_id -> new spell_id.
+        3. Promotes the parked candidate into the active maps and
+           repoints the index pointer, old spell_id -> new spell_id.
         4. Re-registers the index gated + dirty, so revalidation
            recompiles LAZILY on the next resolve rather than inside the
            window.
@@ -22713,9 +22744,9 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       does, the same way `link` does in expert 16.
 
       THE OUTGOING VERSION IS NOT DESTROYED. It stays a member of the
-      lineage, parked, which is why a rollback is structurally the same
-      act as the swap - a notch back by its spell_id - rather than a
-      restore.
+      lineage, parked, with the object it built, which is why a
+      rollback is structurally the same act as the swap - a notch back
+      by its spell_id - rather than a restore.
 
       MIND THE LAYER WHEN YOU READ THE SOURCE. `_apply_notch` says
       contracted borrowers are "NOT yet fanned out HERE (owner-side
@@ -22723,9 +22754,10 @@ GOAL: LINEAGES, AND A HOT SWAP TAKEN END TO END. An index is a
       and `Conduit.notch_spell` one layer up does walk the links. A
       statement read out of its scope becomes a false one.
 SURFACE EXERCISED: Conduit.bind_inactive, Conduit.notch_spell(spell_id=...),
-                   Conduit.meld, SpellIndex.selected_spell_id /
-                   spells_in_index, Conduit.get_spell_by_spell_id
-VERIFY: RUN GREEN 2026-10-17 on 3.14t, GIL off and on.
+                   Conduit.meld(spellframe=...),
+                   SpellIndex.selected_spell_id / spells_in_index,
+                   Conduit.get_spell_by_spell_id
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on.
 """
 import melder as md
 
@@ -22743,10 +22775,11 @@ class HotSwapPricingV2:
 def main() -> None:
     book = md.Spellbook(aetheric_frame="hotswap-world")
     v1_id = book.bind(
-        spell=HotSwapPricingV1, existence="unique", permissions="create",
+        spell=HotSwapPricingV1, spellframe="pricing",
+        existence="unique", permissions="create",
     )
     conduit = book.conjure(dynamic=True, name="hotswap-root")
-    print("v1 bound and active")
+    print("v1 bound and active under the category 'pricing'")
 
     # THE INDEX IS PUBLICLY REACHABLE from the active spell, and it is a
     # LINEAGE: a set of member ids plus exactly one selection.
@@ -22757,16 +22790,38 @@ def main() -> None:
     assert index.spells_in_index() == {v1_id}
     print("index: 1 member, selected =", v1_id[:12], "...")
 
-    # v1 RESOLVES. This is the world as it stands.
-    before = conduit.meld("HotSwapPricingV1")
+    # v1 RESOLVES at the index's address. This is the world as it stands.
+    before = conduit.meld(spellframe="pricing")
     assert before.rate == 100
-    print("meld -> rate", before.rate)
+    print("meld(spellframe='pricing') -> rate", before.rate)
 
-    # STAGE A CANDIDATE. It is bound, owned, and a real member of the
-    # lineage - and it changes nothing about what resolves.
+    # A VERSION BOUND ANOTHER WAY IS REFUSED. Bound bare, v2 would be
+    # addressed by its own name - another address than the index's - so
+    # bind_inactive refuses it before anything is registered.
+    try:
+        conduit.bind_inactive(
+            spell=HotSwapPricingV2,
+            spell_index=index,
+            existence="unique",
+            permissions="create",
+        )
+    except ValueError as refusal:
+        assert "keeps the binding its first version" in str(refusal)
+    else:
+        raise AssertionError("a version bound another way must be refused")
+    assert index.spells_in_index() == {v1_id}
+    print()
+    print("bind_inactive bare -> ValueError: the index keeps its first")
+    print("  version's binding, and nothing was registered")
+
+    # STAGE A CANDIDATE bound the way the index's first version was. It is
+    # bound, owned, and a real member of the lineage - and it changes
+    # nothing about what resolves. The refused try left nothing behind, so
+    # this is not a spell_id collision.
     v2_id = conduit.bind_inactive(
         spell=HotSwapPricingV2,
         spell_index=index,
+        spellframe="pricing",
         existence="unique",
         permissions="create",
     )
@@ -22775,13 +22830,12 @@ def main() -> None:
         "staging must NOT move the selection - preparing a swap and "
         "taking it are two different acts"
     )
-    print()
-    print("v2 staged: 2 members, selection UNCHANGED")
+    print("v2 staged under 'pricing': 2 members, selection UNCHANGED")
 
     # AND THE PARKED CANDIDATE IS INERT. The expensive half of the swap
     # has already happened - v2 is compiled, registered and owned - while
     # the old version is still the one serving traffic.
-    still = conduit.meld("HotSwapPricingV1")
+    still = conduit.meld(spellframe="pricing")
     assert still.rate == 100
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
@@ -22798,29 +22852,35 @@ def main() -> None:
 
     # TAKE THE SWAP. The spell_id bind_inactive returned names the version;
     # the notch resolves it inside the call and checks that it belongs to
-    # this index before anything moves.
+    # this index before anything moves. The address does not move: it now
+    # serves v2.
     promoted = conduit.notch_spell(spell_index=index, spell_id=v2_id)
     assert promoted.spell_id == v2_id
     assert index.selected_spell_id == v2_id
     assert index.spells_in_index() == {v1_id, v2_id}, (
         "a notch moves the selection; it removes no member"
     )
-    after = conduit.meld(spell_id=v2_id)
+    after = conduit.meld(spellframe="pricing")
     assert after.rate == 250
+    assert conduit.meld(spell_id=v2_id) is after
     print()
-    print("notch by spell_id: v2 selected, meld -> rate", after.rate)
+    print("notch by spell_id: v2 selected, and the address follows -")
+    print("  meld(spellframe='pricing') -> rate", after.rate)
 
     # ROLL BACK: the same verb pointed the other way, because v1 was
-    # parked, not destroyed.
+    # parked, not destroyed - and its object with it.
     conduit.notch_spell(spell_index=index, spell_id=v1_id)
     assert index.selected_spell_id == v1_id
-    back = conduit.meld(spell_id=v1_id)
+    back = conduit.meld(spellframe="pricing")
     assert back.rate == 100
-    print("notch back by spell_id: v1 selected, meld -> rate", back.rate)
+    assert back is before
+    print("notch back by spell_id: v1 selected, meld -> rate", back.rate,
+          "(v1's own object)")
 
     print()
-    print("an index is a lineage with one selection")
-    print("staging adds a member; only a notch moves the selection")
+    print("an index is a lineage with one selection and one binding")
+    print("staging adds a member bound the same way; only a notch moves")
+    print("the selection, and the address follows it")
     print("nothing is destroyed by a notch, which is why rolling back")
     print("is the same act and not a restore")
 
@@ -23908,7 +23968,7 @@ END FILE: UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_r
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py
-CONTENT SHA256: ce0941bf3d4767dcce053bb38759bceee15434f553485d00e064bffd51b4ae0c
+CONTENT SHA256: 958e603170d8f9d82cddb5dc5e4d21b44fa97bf999222f7af8eed5221b6edd9a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -23963,13 +24023,19 @@ GOAL: BRANCHING, AND WHY A JOIN CAN REFUSE. Research lanes are melder's
                                   readable in the joined source lane
       Residence transfers with whatever moves, and the source is marked
       joined - it accepts no further work afterwards.
+      A NEW VERSION IS BOUND THE WAY THE FIRST ONE WAS. The receiver is
+      moved by staging RuleV2 on RuleV1's index, so both are bound
+      under one string category and binding name, ('rule', 'branch'):
+      an index keeps its first version's binding, and bind_inactive
+      refuses a version bound any other way (2026-10-25).
 SURFACE EXERCISED: research_create_lane (anchored, half-anchored and
                    refused), research_heads, research_join with and
                    without force, Conduit.bind_inactive to move the
                    receiver, and the lane payload create_lane returns
                    (a lane describe() snapshot: lane_type, anchor, nodes)
-VERIFY: rides the owner's 3.14t harness; asserts are the contract. The
-        SURFACE line was corrected 2026-08-05; executable code unchanged.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract. The SURFACE line was corrected 2026-08-05, and both
+        versions moved under one binding 2026-10-25.
 """
 import melder as md
 
@@ -24020,8 +24086,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=RuleV1, existence="unique", permissions="create",
-                   binding_name="branch-v1")
+    v1 = book.bind(spell=RuleV1, spellframe="rule", existence="unique",
+                   permissions="create", binding_name="branch")
     conduit = book.conjure(name="branch-root")
     print("v1 recorded on the default lane:", v1[:12], "...")
 
@@ -24084,10 +24150,13 @@ def main() -> None:
     print("  the anchor: the only arrangement that is not a supersede")
 
     # NOW MOVE THE RECEIVER. A new version lands on the default lane, so
-    # 'stale-branch' is anchored at a point the receiver has left.
+    # 'stale-branch' is anchored at a point the receiver has left. It is
+    # bound the way v1's index was - ('rule', 'branch') - or it is refused.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        spellframe="rule",
+        binding_name="branch",
         existence="unique",
         permissions="create",
     )
@@ -24563,7 +24632,7 @@ END FILE: UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
-CONTENT SHA256: fcf9d4fa1c682533d82b71d43d94592b30c4d9095f7dc3124e64623a4b647cd0
+CONTENT SHA256: e39313987421d7aa050eac344a234f791f2e15ca8ba0c53ac9cdf89c8681cbfe
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -24612,6 +24681,13 @@ GOAL: THE LOOP TURNED MORE THAN ONCE - AND THE TWO BOOKS IT WRITES.
       The way to file it under a name is a different SET - a set is its
       own residence partition, so a version resident in one is simply
       unknown to another.
+
+      A STAGED VERSION IS BOUND THE WAY THE INDEX'S FIRST ONE WAS. Rate
+      is bound under the string category 'Rate' with binding name
+      'iterate-rate' - the address a bare bind of Rate has, so a meld of
+      'Rate' still finds it - and RateV2 is staged the same way. Bound
+      bare, RateV2 would be addressed by its own name, and bind_inactive
+      refuses a version bound any other way (2026-10-25).
 SURFACE EXERCISED: CodegenCommandSystem.research_preview /
                    validate_codegen / execute_codegen /
                    materialize_codegen / research_create_lane /
@@ -24619,7 +24695,8 @@ SURFACE EXERCISED: CodegenCommandSystem.research_preview /
                    MutationResearch.research_set / create_research_set,
                    ResearchSet.register_spell / create_lane / walk,
                    Conduit.bind_inactive
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import melder as md
 
@@ -24672,8 +24749,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=Rate, existence="unique", permissions="create",
-                   binding_name="iterate-rate")
+    v1 = book.bind(spell=Rate, spellframe="Rate", existence="unique",
+                   permissions="create", binding_name="iterate-rate")
     conduit = book.conjure(name="iterate-root")
     print("v1 bound - an ACTIVE world entry:", v1[:12], "...")
 
@@ -24748,8 +24825,10 @@ def main() -> None:
     assert index.spells_in_index() == {v1}
     assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
 
+    # Staged the way the index's first version was bound, or refused.
     staged = conduit.bind_inactive(
         spell=RateV2, spell_index=index,
+        spellframe="Rate", binding_name="iterate-rate",
         existence="unique", permissions="create",
     )
     assert index.spells_in_index() == {v1, staged}
@@ -25034,7 +25113,7 @@ END FILE: UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runt
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py
-CONTENT SHA256: 9b7ce20c8971b35661f51d8c2ef6544badb18697314a68dfb34ee93c87fa28c7
+CONTENT SHA256: 3122fbc4edde9f2a3f892e2ee46e736441fc59c4779fae916f67dd6bf2153e87
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -25076,14 +25155,20 @@ GOAL: NO FILE, NO DATABASE, NO DRIVER - A PYTHON STRING. Merge two
       purpose - `bind_inactive` declares its version into `default`
       automatically, and single residence means that id then lives in
       exactly one lane, so registering it onto a branch would raise the
-      rediscovery signal instead (expert 26 shows that refusal).
+      rediscovery signal instead (expert 26 shows that refusal). And the
+      staged version is bound the way the index's first one was: Policy
+      under the string category 'Policy' - the address a bare bind of
+      Policy has - with binding name 'wire-policy', and PolicyV2 the
+      same; bind_inactive refuses a version bound any other way
+      (2026-10-25).
 SURFACE EXERCISED: md.ResearchSet.from_payload, ResearchSet.describe /
                    lane_names / walk / set_id /
                    network_snapshot_shas, research_create_lane /
                    research_join / research_heads,
                    Conduit.bind_inactive, and the mesh quartet
                    (with_store_handler / with_fetch_handler)
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import json
 
@@ -25141,8 +25226,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=Policy, existence="unique", permissions="create",
-                   binding_name="wire-policy")
+    v1 = book.bind(spell=Policy, spellframe="Policy", existence="unique",
+                   permissions="create", binding_name="wire-policy")
     conduit = book.conjure(name="wire-root")
 
     nexus = md.Nexus()
@@ -25179,10 +25264,12 @@ def main() -> None:
     print("join('wire-clean') accepted - an empty line is a legal line;")
     print("  what makes it clean is the ANCHOR agreeing with the tip")
 
-    # Now move the receiver, so the second branch is provably stale.
+    # Now move the receiver, so the second branch is provably stale. The
+    # new version is bound the way the index's first one was.
     v2 = conduit.bind_inactive(
         spell=PolicyV2,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        spellframe="Policy", binding_name="wire-policy",
         existence="unique", permissions="create",
     )
     print("v2 staged; the default lane moved on:", v2[:12], "...")
@@ -25260,7 +25347,7 @@ END FILE: UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_strin
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py
-CONTENT SHA256: 175c2ad6ca7daeabe07b6420c15f22abbf64a17718296c976f8ae7ab866a1aea
+CONTENT SHA256: 7723e6c720e21f720a07ae2531147dc9ad95c5d3e3c79cd6b3a07cb5aa954f1f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -25312,7 +25399,8 @@ SURFACE EXERCISED: validate_codegen / materialize_codegen,
                    research_impact / research_residency /
                    research_history / research_recent,
                    Conduit.bind_inactive
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import importlib
 
@@ -25426,11 +25514,15 @@ def main() -> None:
     # bind lands in the already-conjured frame and publishes incrementally;
     # the second rides its spell_index as a VERSION rather than a second
     # visible spell, which is why two classes named `Pricing` never collide.
+    # It is staged under the same binding name: every version of an index
+    # is bound the way its first one was, so both share one address
+    # (2026-10-25).
     v1 = book.bind(spell=first.Pricing, existence="unique",
                    permissions="create", binding_name="well-pricing")
     v2 = conduit.bind_inactive(
         spell=second.Pricing,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        binding_name="well-pricing",
         existence="unique", permissions="create",
     )
     module_name = MODULE_V1
@@ -25822,7 +25914,7 @@ END FILE: UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_worksho
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py
-CONTENT SHA256: f6854d2e34fb40aba3b83f1f4662b0d7e2f81940208beeb6f5c9d8c52bc157f5
+CONTENT SHA256: ab6d9e4c20c344e623b06d61cd028bcf117e8f2e843ccb1d60c8361ad4d711e7
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -25864,11 +25956,18 @@ GOAL: LANES ARE ORGANISED AFTER THE FACT, NOT PLANNED IN ADVANCE. Expert
       and `default_lane` resolves by well-known name - so a set that
       archived it could not serve its own default. The refusal is checked
       at the door rather than discovered later.
+
+      THE RECEIVER MOVES BY A NEW VERSION, BOUND THE WAY THE FIRST WAS.
+      Rule is bound under the string category 'Rule' - the address a
+      bare bind of Rule has - with binding name 'organise-rule', and
+      RuleV2 is staged the same way; bind_inactive refuses a version
+      bound any other way (2026-10-25).
 SURFACE EXERCISED: research_create_lane / research_attach /
                    research_detach / research_archive / research_join /
                    research_heads,
                    ResearchSet.lane_names, Conduit.bind_inactive
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+VERIFY: RUN GREEN 2026-10-25 on 3.14t, GIL off and on; asserts are the
+        contract.
 """
 import melder as md
 
@@ -25908,8 +26007,8 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=Rule, existence="unique", permissions="create",
-                   binding_name="organise-rule")
+    v1 = book.bind(spell=Rule, spellframe="Rule", existence="unique",
+                   permissions="create", binding_name="organise-rule")
     conduit = book.conjure(name="organise-root")
 
     nexus = md.Nexus()
@@ -25964,10 +26063,12 @@ def main() -> None:
     print("detach('forgetful') - the lane now remembers no origin")
 
     # Move the receiver so the contrast is honest, then show that a
-    # detached lane joins only as an explicit supersede.
+    # detached lane joins only as an explicit supersede. The new version
+    # is bound the way the index's first one was.
     v2 = conduit.bind_inactive(
         spell=RuleV2,
         spell_index=conduit.get_spell_by_spell_id(v1).spell_index,
+        spellframe="Rule", binding_name="organise-rule",
         existence="unique", permissions="create",
     )
     print("default moved on:", v2[:12], "...")
@@ -27566,7 +27667,7 @@ END FILE: UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
-CONTENT SHA256: 4e80580cebb129c0155b95b9cacde787ba7989d3195d6526616836f18e1582b3
+CONTENT SHA256: 49c3301f0342088915cb2ef341462e243201df2dfc3cf15a405303ed6d2ccfda
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 04_expert (README tier: BLUE Expert)
@@ -27922,12 +28023,19 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      notch_spell (repoint the selection) -> meld -> notch back. ALL
      THREE VERBS ARE USER SURFACE: notch_spell takes the spell_id
      bind_inactive returned (`spell_id=`) and resolves the exact version
-     inside the call - a lookup by a parked spell_id still resolves to
-     the ACTIVE member, which is why the version is named by its
-     spell_id (owner ruling 2026-10-16; until then the verb took only
-     the parked OBJECT and the lesson stopped at staging). A version of
-     another index, or of another Spellbook, is refused before anything
-     moves.
+     inside the call, which is why the version is named by its spell_id
+     (owner ruling 2026-10-16; until then the verb took only the parked
+     OBJECT and the lesson stopped at staging); since 0.2.8253 a lookup
+     by a parked spell_id answers that parked version too, where it
+     answered the ACTIVE member. A version of another index, or of
+     another Spellbook, is refused before anything moves.
+     EVERY VERSION IS BOUND THE WAY THE FIRST ONE WAS (2026-10-25): an
+     index keeps its first version's binding - the spellframe's kind
+     and the address - and bind_inactive refuses any other before it
+     registers anything, so a notch never moves the address and a meld
+     by the address follows the notch. The lesson binds both versions
+     under the category 'pricing', melds by it, and shows the bare
+     staging refused.
      WHAT STAGING BUYS: the expensive, failure-prone half of a swap -
      compiling, registering and owning the new version - happens while
      the old version is still serving, because a parked candidate is
@@ -28857,6 +28965,18 @@ NAMED SCOPE DISCOVERY AND REPLAY (2026-09-23)
      membership refresh, named pooled reuse, required unnamed ancestry and
      successful structural replay with fresh identities/application values.
 
+EVERY VERSION OF AN INDEX IS BOUND THE WAY ITS FIRST ONE WAS (2026-10-25)
+  17, 23, 26, 28, 29 and 31 staged a version bound another way than
+  its index's first one - a renamed class bound bare, or the same class
+  at the default binding name - and bind_inactive now refuses that
+  before anything is registered. Each binds its versions under one
+  spellframe and binding name instead: 17 under the category 'pricing',
+  melding by it so the address is seen to follow the notch, with the
+  bare staging shown refused; 23 under ('rule', 'branch'); 26, 28 and
+  31 under a category named like the first class - the address its
+  bare bind has, so melds by its name still resolve; 29 under the first
+  version's binding name.
+
 REMAINING / NOT YET AUTHORED
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
     recipe riding the bind signature into checkpoints.
@@ -28866,7 +28986,7 @@ END FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/AGENTS.md
-CONTENT SHA256: 6e0772fe6c3bd0f72bc7c5539e337e941470eb565ee6f57f2f0dc3ae0d40101a
+CONTENT SHA256: f4b260b4f7154ebd824510ebf114e768545eb7957acbab17d62015f50d03c64b
 SOURCE ENCODING: utf-8
 ================================================================================
 # UX_and_AIX_experiences (AGENTS.md)
@@ -28974,7 +29094,8 @@ a probe here first; the probe's printed outcome then hardens the example.
   again under any binding_name, existence or spellframe is refused at bind
   ("Spell ID collision"), or at conjure when another Book holds it
   ("Conjure refused"). A changed class is a new spell_id: stage it with
-  bind_inactive and notch. Same-NAMED classes with different code coexist
+  bind_inactive, bound the way its index's first version was (next
+  bullet), and notch. Same-NAMED classes with different code coexist
   at different addresses (0.2.8206). Working patterns: subclass-per-role
   (24) and collection-as-spell registries (33).
   History: this bullet carried a DIVERGENCE FLAG - spell NAMES unique per
@@ -28982,6 +29103,18 @@ a probe here first; the probe's printed outcome then hardens the example.
   SHA, against the owner's stated intent of SHA256 content matching.
   0.2.8206 made Phase 4 check the full address and 0.2.8257 made the
   spell_id the code; the flag is closed.
+- ONE INDEX, ONE BINDING (2026-10-25): a SpellIndex keeps its first
+  version's binding for life - the spellframe's kind (none, a string
+  category or a Protocol) and the address that gives - and
+  bind_inactive and add_to_spell_index refuse a version bound any other
+  way before anything registers or moves ("keeps the binding its first
+  version was bound with"). Stage an edited class under the index's
+  spellframe and binding_name; a renamed class bound bare is another
+  address, so bind both versions under one category (17, 23, 26, 28 and
+  31). A notch never moves the address, and refuses one another spell
+  holds (RuntimeError naming the holder). Records written before
+  (record version below 5.0.0) are refused at the version gate: record
+  the world again.
 - One book conjures ONE conduit ever (RuntimeError on the second); scopes are
   lesser conduits, extra roots are extra books.
 - Unregistered meld raises one stable KeyError. Same-spell double-bind is
@@ -33913,7 +34046,7 @@ END FILE: agents.md
 ================================================================================
 ================================================================================
 BEGIN FILE: agents/MELDER_AGENT_OPERATIONS.md
-CONTENT SHA256: 4a1d8516c2496c43b7089c723bc236f290a19d407d9f7b7c80022ae5ddcb3761
+CONTENT SHA256: a32a8c87397e5aa61da686950bd4ee6680e6a3b61c279d49668fa64060764f4d
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder — Agent Operating Cheat Sheet
@@ -34373,7 +34506,7 @@ Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry 
 
 ### Host-controlled exact-handle pattern
 
-The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs, syntax-checked but not runtime-executed here**; validate it in a disposable 0.2.50 world before deployment. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
+The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs**, run on 3.14t with the GIL off and on (2026-10-25); validate it in a disposable world before deployment. Both versions are bound under one spellframe category, `"price"`: every version of an index is bound the way its first version was, so a renamed class bound bare would be refused. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
 
 ```python
 import melder as md
@@ -34395,14 +34528,14 @@ book = md.Spellbook(aetheric_frame="version-lab")
 root = None
 try:
     book.add_bind_hooks(post=[capture])
-    old_id = book.bind(spell=PriceV1, existence="unique", permissions="create")
+    old_id = book.bind(spell=PriceV1, spellframe="price", existence="unique", permissions="create")
     root = book.conjure(dynamic=True, name="version-root")
     old_spell = versions[old_id]
     index = old_spell.spell_index
 
     new_id = root.bind_inactive(
-        spell=PriceV2, spell_index=index,
-        existence="unique", permissions="create", binding_name="v2",
+        spell=PriceV2, spell_index=index, spellframe="price",
+        existence="unique", permissions="create",
     )
     candidate = versions[new_id]  # exact object from the successful bind's hook
     assert candidate.spell_id == new_id
@@ -34430,9 +34563,10 @@ finally:
 **Operational limits:**
 - Selection parks the outgoing version; it is not automatic disposal, resource retirement, or a rewrite of already-held application objects. Retire versions explicitly after consumers no longer need them.
 - The architecture's “owner-side only” warning describes an internal seam, not the whole current public operation. The inspected `Conduit.notch_spell` performs the local transaction, then deactivates stale borrowed copies and emits an index-notch notification for index-linked receivers. **Do not assume all borrowers automatically gain the new version**, or that the post-transaction fan-out is one indivisible action. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
-- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success.
+- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success. A notch refused for its incoming version's structural check (0.2.8262) or for an address another spell holds (2026-10-25) moves nothing; the borrower fan-out after the transaction can still fail part-way.
+- **One index, one binding** (2026-10-25): an index keeps its first version's binding - the spellframe's kind (none, a string category, a Protocol) and the address that gives (the spellframe's name, or a bare class's own name, and the binding name). `bind_inactive` and `add_to_spell_index` refuse a version bound any other way (ValueError, nothing registered or moved), and a notch never moves the address. Stage an edited class under the index's spellframe and binding name; bind versions that carry different class names under one category from the first version on. Crystallizer records older than record version 5.0.0 are refused: record the world again. [CONDUIT]
 - Moving/separating active index members is refused; first select another member. Separating the sole member is not the retirement route. No manual edits of `selected_spell_id`.
-- Class-version fingerprints do not cover every method-body edit. Do not assume a source edit creates a new Spell ID; verify IDs, selected membership, recorded source, and behavior. Use deliberate version identities. [C: Binding][C]
+- A spell_id is the SHA256 of the object's code (since 0.2.8257): an edit to a method, the constructor, a class-level value or a base is a new spell_id; a docstring, comment or line move is not. Verify IDs, selected membership, recorded source, and behavior anyway. Use deliberate version identities. [C: Binding][C]
 
 <a id="persistence"></a>
 
@@ -73047,7 +73181,7 @@ END FILE: docs/expert/bind-hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/codegen.md
-CONTENT SHA256: 15862032033ce406ddec9ef1d0aa9cb2ce479511dce74277d2a52e4c11aad3cd
+CONTENT SHA256: b68452c2928a768cb0b33124f6c15a99b77f37debcc955e52cbf12ec39891f6e
 SOURCE ENCODING: utf-8
 ================================================================================
 ---
@@ -73071,7 +73205,7 @@ Python objects: a tokenizer, counter, reporter, and a population of independent 
 | --- | --- |
 | `validate_codegen` | `accepted`, the selected frame, and any validation issues |
 | `execute_codegen` | The execution payload, including `result` and error information |
-| `materialize_codegen` | `materialized` and the named module's publication result |
+| `materialize_codegen` | `materialized` and the named module's publication result; `refusal` when the name is already loaded, under `melder`, a standard-library or installed name, or outside the frame's `materialize_modules` roots |
 | Import | The generated module's real classes |
 | Bind and meld | Objects managed through the normal registration and lifetime rules |
 
@@ -73203,7 +73337,7 @@ END FILE: docs/expert/external-storage.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/governed-change.md
-CONTENT SHA256: f0877d97938c4a6d0eee0e752844124d8ca78f9a5e0ef4b7b5a739dc6d3188a2
+CONTENT SHA256: 681c97b05bbc20ad134e78dcae3f2ce44c14fda7c7e9896c5286fec209039ecb
 SOURCE ENCODING: utf-8
 ================================================================================
 # Preview, stage, and govern structural change
@@ -73227,6 +73361,15 @@ reference, activation annotates the new Spell, and post observes the registered 
 member remains unchanged, and returns the candidate's spell_id. Expert 17 asserts the
 member set, unchanged selection, and unchanged resolved result.
 
+The candidate is bound the way the index's first version was: the same kind of
+spellframe (none, a string category or a Protocol) and the same address (the
+spellframe's name, or a bare class's own name, and the binding name). `bind_inactive`
+refuses any other binding before it registers anything, and `add_to_spell_index`
+refuses to move a version into an index bound another way. So a notch never moves the
+address, and a meld by the address builds whichever version is selected. Versions
+that carry different class names are bound under one spellframe category from the
+first version on; expert 17 does that and shows a bare staging refused.
+
 Promotion is `notch_spell(spell_index=..., spell_id=...)` given that spell_id: the
 candidate becomes the selected member and the next meld builds it, and a notch back by
 the previous spell_id restores the old version, which stayed parked. Expert 17 runs the
@@ -73238,8 +73381,11 @@ The calls that build nothing follow the same rule: `has_live_creation(spell=...)
 answer for that version, parked or active, so a parked version's objects can be
 checked or retired without a notch back; `meld` builds only the selected member.
 `notch_spell` refuses a version of another index, or one another Spellbook owns, before
-it changes anything. `add_to_spell_index` and `remove_from_spell_index` take `spell_id=`
-the same way, to move a parked candidate onto another index or out into one of its own.
+it changes anything, and it refuses an address another spell holds: a version split
+off into an index of its own keeps its binding, so it can be notched active there only
+once its old index no longer serves that address. `add_to_spell_index` and
+`remove_from_spell_index` take `spell_id=` the same way, to move a parked candidate onto
+another index bound the same way or out into one of its own.
 
 ## Keep history and code reconciliation distinct
 
@@ -74965,7 +75111,7 @@ END FILE: docs/reference/downloads.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/reference/glossary.md
-CONTENT SHA256: da21e33eabd163373c44118dbcda79e5789048e1fd3952381adfdc0cafca0d36
+CONTENT SHA256: 3582c6a38655f107180f1964356b993cb030d37399fdccb1e28b2610214e7119
 SOURCE ENCODING: utf-8
 ================================================================================
 # Glossary
@@ -75037,8 +75183,9 @@ Use these terms to choose the right boundary before choosing an API.
       The root of the mediated Rift/room access surface.
 
    Notch
-      Promote a member of a SpellIndex into its selected position. Staging a candidate
-      is a separate act; the public example documents the object-handle boundary.
+      Promote a member of a SpellIndex, named by its spell_id, into its selected
+      position. Staging a candidate is a separate act. Every member is bound the way the
+      index's first version was, so a notch moves the selection, never the address.
 
    Override
       A mapping of constructor inputs or graph socket targets supplied to meld. The
@@ -75073,7 +75220,9 @@ Use these terms to choose the right boundary before choosing an API.
       The category half of a spell's address inside a world. It is not an aetheric frame.
 
    SpellIndex
-      A stable index containing spell members and one current selection.
+      A stable index containing spell members and one current selection. It keeps its
+      first version's binding - the kind of spellframe and the address - and admits
+      only versions bound the same way.
 
    SpellMap
       An explicit dependency target, commonly supplied as a constructor parameter default.
@@ -80721,10 +80870,10 @@ END FILE: release_docs/0.2.8265.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 71f7920a1981bb1130a83b4d3090cb8330cfc877c643c80092332a6ddbf134ad
+CONTENT SHA256: d474a72c5a1751b93dce3d249865854163e878ff94747311923beb046be3bcbb
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8270
+# Melder 0.2.8273
 
 **Unreleased**
 
@@ -80930,6 +81079,148 @@ import root of each profile is unchanged; a `builtin_names` allow rule in a fram
 allows `open` for that frame; and nothing cached or recorded changes. These checks run in the room's own process:
 they are policy and defence in depth, not isolation.
 
+## Codegen rooms refuse dynamic imports under the safe, hybrid and precision profiles
+
+A codegen room reaches other modules through import statements, checked against the codegen profile of the frame it
+names. The `__import__` builtin is the other door: `__import__('subprocess')` loads a module with no import
+statement. Through 0.2.8270 `__import__` was a live builtin under every profile that enables imports - `hybrid`,
+`precision` and `permissive` - so room code could load any importable module, including roots those profiles' import
+lists deny or omit (`subprocess`, `socket`, `importlib`, and `melder` itself).
+
+**Breaking change:** wherever a codegen profile enables imports with an allow or deny list - `hybrid`, `precision` on
+its own or as the overlay, and `permissive` - room code that calls or names `__import__` is refused at validation,
+and nothing runs:
+
+```python
+# command_system: the command surface of a codegen room whose Rift is linked to the frame "ops",
+# and the codegen profile of "ops" is hybrid.
+result = command_system.execute_codegen("mod = __import__('subprocess')", frame_name="ops")
+result["accepted"]              # False: nothing is imported
+result["validation_issues"][0]  # "Builtin '__import__' is not allowed in this codegen mode."
+```
+
+Code that only names it (`imp = __import__`) is refused with "Name '__import__' is not available in the codegen
+namespace.", and at run time the room's `__import__` is a wrapper that raises `ImportError` naming the root ("Import
+root '<root>' is not allowed in this codegen mode.") for a denied or unlisted root. The refusal covers every root,
+the profile's allowed roots included: an allowed root is reached through an import statement (`import json`), not
+through `__import__('json')`. A request naming a frame the room holds no codegen projection for runs under the safe
+posture, where imports are off and `__import__` is already denied.
+
+What stays the same: `full_access` carries no import list, so it keeps `__import__` usable; `safe` already ran with
+imports off; an import statement of an allowed root still executes under `hybrid`, `precision` and `permissive`;
+every other builtin and import root of each profile is unchanged; and nothing cached or recorded changes. These
+checks run in the room's own process: they are policy and defence in depth, not isolation.
+
+## `materialize_codegen` no longer replaces a live module
+
+`materialize_codegen` turns accepted room code into a real module under the name you give it. Through 0.2.8271 it
+published under any dotted-legal name - over Melder's own modules, the standard library and installed packages - under
+every codegen profile, so one materialize could replace `melder.aether.spellbook.bind.bind`, `csv` or `pytest` for the
+rest of the process. A materialize whose code raised, and the cleanup of a materialized module, left the displaced name
+missing from `sys.modules` instead of putting the original back.
+
+**Breaking change:** under every codegen profile, `materialize_codegen` refuses a module name that is already loaded,
+any name under `melder`, a standard-library name and an installed package's import name - imported yet or not - before
+anything is registered or published. The answer is a payload, like a validation refusal:
+
+```python
+result = command_system.materialize_codegen("Bind = None", module_name="csv", frame_name="ops")
+result["materialized"]  # False: csv is untouched
+result["refusal"]       # "Module name 'csv' is already loaded; materialize_codegen does not replace a live module."
+```
+
+A new name nobody has claimed (`build_worker`, `policy_v2`) materializes as before. A frame can narrow that with
+codegen rules - `allow_materialize_module_roots("codegen_generated")` on its codegen change admits only names under
+those roots, `deny_materialize_module_roots(...)` refuses names under them. Materialized code now runs with the room's
+filtered builtins, the same ones `execute_codegen` gives room code, so a builtin the profile denies (`open` under
+`safe`, `hybrid` and `precision`) is missing inside the module too, and its imports pass the room's import gate. A
+materialize whose code raises leaves `sys.modules` exactly as it was, parent packages included.
+
+What stays the same: every signature; a new name materializes as it did; no standard profile declares a generation
+namespace; the crystallizer's restore, rebuild and graft lanes are unchanged; and nothing cached or recorded changes. To
+iterate on one name, clean the materialized module first or use a new name. These checks run in the room's own process:
+they are policy and defence in depth, not isolation.
+
+## Every version of a SpellIndex is bound the way its first version was
+
+A SpellIndex holds the versions of one spell: `bind` creates it, `bind_inactive` stages a new version on it,
+`notch_spell` makes another version active, and `add_to_spell_index` and `remove_from_spell_index` move parked
+versions between indexes. Through 0.2.8272 a version could be staged under any binding - another binding name, another
+spellframe or none - so a notch could move the index to another address: a meld by the old address no longer found
+it while the parked version kept that address, a version split off with `remove_from_spell_index` could be notched
+active at an address its source index still served (two active spells at one address), and a notch could take the
+address of another Spellbook's active spell.
+
+**Breaking change:** an index keeps the binding of its first version - the kind of spellframe (none, a string
+category or a Protocol) and the address that gives (the spellframe and the binding name, compared without case) -
+and every version staged or moved onto it must be bound the same way. `bind_inactive` and `add_to_spell_index`
+refuse any other binding with a `ValueError` naming both bindings, before anything is registered or moved:
+
+```python
+from typing import Protocol
+
+import melder as md
+
+
+class Greeter(Protocol):
+    def greet(self) -> str: ...
+
+
+class EnglishGreeter:
+    def greet(self) -> str:
+        return "hello"
+
+
+class FrenchGreeter:
+    def greet(self) -> str:
+        return "bonjour"
+
+
+book = md.Spellbook()
+english = book.bind(spell=EnglishGreeter, spellframe=Greeter, binding_name="greeter", existence="many")
+root = book.conjure(dynamic=True)
+index = root.get_spell_by_spell_id(english).spell_index
+
+root.bind_inactive(spell=FrenchGreeter, spell_index=index, spellframe=Greeter, binding_name="french",
+                   existence="many")
+# ValueError: bind_inactive refused: SpellIndex <id> keeps the binding its first version was bound with - the
+# Protocol spellframe Greeter and binding_name 'greeter' - and 'FrenchGreeter' (spell_id <id>) is bound with the
+# Protocol spellframe Greeter and binding_name 'french'. ...
+
+french = root.bind_inactive(spell=FrenchGreeter, spell_index=index, spellframe=Greeter, binding_name="greeter",
+                            existence="many")
+root.notch_spell(spell_index=index, spell_id=french)
+root.meld(spellframe=Greeter, binding_name="greeter").greet()  # "bonjour": the address follows the notch
+```
+
+A renamed class, a new binding name or another kind of spellframe makes a new spell: bind it with `bind`, on an
+index of its own. An edited class that keeps its name stages as before when it is bound the way its first version
+was - bare, or with the same spellframe and binding name. When the versions of a spell will be classes with
+different names, bind every one, the first included, under one spellframe and binding name.
+
+**Breaking change:** a notch never moves an index's address, and `notch_spell` refuses an address another spell
+holds - the active version of another index of the same Spellbook (a version split off with
+`remove_from_spell_index` while its source index still serves the address) or another Spellbook's active spell -
+with a `RuntimeError` naming the holder's spell_id and the remedy; nothing moves. The split version's index can be
+notched active once the address is free.
+
+**Breaking change:** crystallizer records are version 5.0.0, and every reader of a record - a cached checkpoint, a
+formation, an index graft - refuses a record of an older major, an unstamped one included, with a `ValueError`
+naming the record, the reason and the remedy: record the world again with this Melder. A record made before this
+change cannot promise that every version of an index shares its binding. The creation cache moves to generation 24,
+so a cache bundle written before loads cold once.
+
+**Breaking change:** a graft into an existing index (`merge_into_index`) parks only the recorded members bound the
+way that index is; any other member is reported as the shortfall `member_binding_differs_from_merge_target`,
+naming both bindings and the remedy, and nothing of it is registered - graft the record without `merge_into_index`
+to give the members an index of their own.
+
+Also fixed: `bind_inactive` onto an index another Spellbook owns raised `RuntimeError` but left the version
+registered in the calling Spellbook, so a retry was refused as a duplicate spell_id; now nothing is registered.
+
+What stays the same: every signature; versions bound the way their index is stage, notch, move and meld as before;
+a meld by spell_id, purge and the live-creation probes answer as before.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
@@ -80980,7 +81271,27 @@ they are policy and defence in depth, not isolation.
   `pathlib` on the `permissive` import list only, and the safe posture of a request naming a frame with no codegen
   projection - and the packaged test documents describe the new tests; each profile's docstring states its file
   posture. The code-map extent of `codegen_system.py` is remeasured, and line citations into it remapped.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8270.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  the codegen import gate - the `__import__` name denied at validation wherever a profile's import list applies, held
+  in the new `static_only_denied_builtin_names` field beside the denied builtins and never stripped from the runtime
+  builtins, and the runtime `__import__` wrapper that checks each import's root - and the packaged test documents
+  describe the new tests. The code-map extents of `nexus.py`, `static_frame_viewer.py`, `codegen_system.py`,
+  `codegen_namespace_configuration.py`, `frame_acl_compiled_access_surface.py` and `frame_acl_compiler.py` are
+  remeasured.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  `materialize_codegen`'s name gate, the `materialize_modules` codegen rule and its compiled fields, the room's builtins
+  for materialized code, and SyntheticModule giving back the module or attribute it displaced; the packaged test
+  documents describe the new tests. The code-map extents of the eight changed files are remeasured.
+- The packaged system documents (`melder.__architecture__`, `melder.__components__`) and the packaged graph describe
+  an index keeping its first version's binding - `SpellIndex.binding_signature` and `check_admits`, the refusals of
+  `bind_inactive`, `add_to_spell_index` and `notch_spell`, the address claim moved by compare-and-set
+  (`LookupContainer.repoint`), record version 5.0.0 and the graft merge's shortfall - and the packaged test
+  documents describe the new tests and the suite's rule. The README's stage -> notch -> meld walk-through, the
+  governed-change guide (`docs/expert/governed-change.md`), the glossary (`docs/reference/glossary.md`) and the
+  agent operations guide (`agents/MELDER_AGENT_OPERATIONS.md`) say how to bind a version so a notch can swap it in,
+  and six expert UX examples bind their versions that way. The code-map extents of the changed files are
+  remeasured, and line citations into `spellbook.py`, `conduit.py` and `bind.py` remapped.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8273.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

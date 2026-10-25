@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py",
- "source_sha256": "9be3db72c3101b007592e1018ac6a4c229a7130be4572c6e636c2f67cf848d62",
+ "source_sha256": "0f221fc54f33c06f41c332a96bc56cfbb0ebc4d13b9957344f66e5992746e19a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration": {
@@ -36,19 +36,21 @@
     "exposed_names",
     "frame_name",
     "imports_enabled",
-    "metadata"
+    "metadata",
+    "static_only_denied_builtin_names"
    ],
    "shape": {
-    "method_count": 12,
+    "method_count": 13,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cc75d6b33f24dd0b96f7b10b2704533cf7ecc52bbd8822771668fdfbe23ae7ea",
+   "span_sha256": "c7136433291fb5905dd9b9006951d1b24d10abff3be890f2026b26203b87af8c",
    "role": "Namespace exposure policy for one codegen request.",
    "responsibilities": [
     "defines which stable room names are exposed",
     "stores import and builtin policy for the namespace",
-    "keeps policy separate from the live namespace object"
+    "keeps policy separate from the live namespace object",
+    "carries `static_only_denied_builtin_names` from the compiled surface to the builtin-policy, name-resolution and builtins strategies (D-11, 0.2.8271)"
    ],
    "owns_state": [
     "_frame_name",
@@ -69,7 +71,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "cc75d6b33f24dd0b96f7b10b2704533cf7ecc52bbd8822771668fdfbe23ae7ea"
+   "semantics_authored_against": "c7136433291fb5905dd9b9006951d1b24d10abff3be890f2026b26203b87af8c"
   }
  },
  "edges_out": [
