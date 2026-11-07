@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
- "source_sha256": "b9134ea328a310fdcc180c26f248007acc378f006d42e3b262dd960c953c7f0c",
+ "source_sha256": "1fad2f0a1998a02c5f41ba5fbc9e0c5c77565b43915afe506212276ed194d3d1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.restore_engine": {
@@ -98,7 +98,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "824e650c11c17d6557a72179ad226ced86044fc4eca7802c8e7bd8f1106a9cd6",
+   "span_sha256": "70ee69e689b59edcb30268a37b82f015b23afc5f19ad15b21aa7f26ab42a9b4f",
    "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
    "responsibilities": [
     "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
@@ -114,7 +114,8 @@
     "stage 1 installs the recorded spell-id regime, files a shortfall when a fixed live regime differs, and refuses a record binding one spell id in two frames under process-wide ids",
     "stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book",
     "hydrates each crystal's spellframe before the active and staged binds (_hydrate_spellframe): imports the recorded Protocol for a contract, passes the recorded name for a category, and on an import failure binds the name as a category and files a spell_crystal shortfall naming the Protocol and the spell (0.2.8222)",
-    "replays a managed spell's recorded options through the active and staged binds (record 4.2.0, SpellCrystal.managed_bind_options), so it rebinds with its own options and spell id (0.2.8242)"
+    "replays a managed spell's recorded options through the active and staged binds (record 4.2.0, SpellCrystal.managed_bind_options), so it rebinds with its own options and spell id (0.2.8242)",
+    "final CLEANED and legacy cleaned journal names skip Nexus and MutationResearch reconstruction with the original shortfalls; raw later-wins fold and record-major admission are unchanged"
    ],
    "owns_state": [
     "folded stores",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py",
- "source_sha256": "df44d6f64a9f420a86fcee22249da9c9548dbadfaf657cb10531059915540b76",
+ "source_sha256": "87ec85474e7727b05f85632817f1c8252a2e49f1aaff2b0a31a517911cb02947",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "2dcf660177498f9d595a01db4c2fcf91ef37095297ff63a5be80a8945258ce4b",
+   "span_sha256": "f3b6e61419709ef26de44b74fa05c0f873033b0bec6e511e70f1c6d40fc5e8df",
    "include": true,
    "role": "Release half of the standalone contract-mutation pair and inverse of the grant, with matching claim modes because a release mutates the surfaces a grant does.",
    "responsibilities": [

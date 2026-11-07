@@ -12,19 +12,19 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 def test_change_transaction_type_values_remain_stable() -> None:
     """
     Purpose:
-        Verify transaction-type string values stay stable.
+        Verify transaction-type string values match their declared names.
     Contract:
-        - Enum values are the canonical payload values used by runtime callers.
+        - Enum values exactly match their declared names.
     Returns:
         None.
     Raises:
         AssertionError: If transaction type values drift.
     """
-    assert ChangeTransactionType.BIND.value == "bind"
-    assert ChangeTransactionType.LINK.value == "link"
-    assert ChangeTransactionType.TRANSFER_OWNERSHIP.value == "transfer_ownership"
-    assert ChangeTransactionType.MUTATION.value == "mutation"
-    assert ChangeTransactionType.CLUSTER_LINK.value == "cluster_link"
+    assert ChangeTransactionType.BIND.value == "BIND"
+    assert ChangeTransactionType.LINK.value == "LINK"
+    assert ChangeTransactionType.TRANSFER_OWNERSHIP.value == "TRANSFER_OWNERSHIP"
+    assert ChangeTransactionType.MUTATION.value == "MUTATION"
+    assert ChangeTransactionType.CLUSTER_LINK.value == "CLUSTER_LINK"
 
 
 def test_change_control_transaction_request_defaults_are_empty_and_immutable() -> None:

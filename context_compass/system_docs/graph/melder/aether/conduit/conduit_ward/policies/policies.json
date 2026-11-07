@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
- "source_sha256": "ef26ed45eee03c0a7e63daf239c86102d4d1e11d50a80717d78bebfae64b1bd6",
+ "source_sha256": "e0af7c1792b2bd2b668e34b7cafcc78d139b9c811f73095c5374c87690f8e623",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.policies.policies": {
@@ -25,18 +25,18 @@
    "label": "Policies",
    "kind": "enum",
    "file": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cee7409ced10256fb1bffd589cbb3f18999b8615a6f2189f3658230eac919518",
+   "span_sha256": "b85b62eba44c5b418b7c0aa04d9855d1a9d8273add0d42f3b2e7348c27fee711",
    "role": "Runtime policy mode enum for conduit-to-conduit contracting.",
    "responsibilities": [
     "labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes"
@@ -58,8 +58,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

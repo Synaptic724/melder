@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class SystemState(Enum):
+class SystemState(StrEnum):
     """
     High-level runtime posture for a spellbook/system.
+
+    Values exactly match member names. Historical numeric values 1 and 2
+    remain readable by value, including in older enum pickle payloads.
 
     `SystemState` selects how aggressively the runtime is allowed to perform
     dynamic behaviors.
@@ -50,5 +54,23 @@ class SystemState(Enum):
         allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and
         lesser-to-normal upgrade. Set it on SpellbookConfiguration.
     """
-    automatic = auto()
-    dynamic = auto()
+    automatic = "automatic"
+    dynamic = "dynamic"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SystemState]:
+        """
+        Resolve a historical numeric posture to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, SystemState] = {
+            1: cls.automatic,
+            2: cls.dynamic,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

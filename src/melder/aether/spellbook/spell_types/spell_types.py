@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class SpellType(Enum):
+class SpellType(StrEnum):
     """
     Canonical runtime binding-family classification for bound spells.
+
+    Values exactly match member names. Historical numeric values 1-14 remain
+    readable by value, including in older enum pickle payloads.
 
     `SpellType` is the normalized runtime label produced by the binding layer
     after `Bind` and the spell-examiner profile machinery inspect what kind of
@@ -74,28 +78,58 @@ class SpellType(Enum):
         Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
     # Class-based construction spell families.
-    SPELL = auto()
-    SPELL_WITH_SPELLFRAME = auto()
-    SPELL_WITH_BINDING_NAME = auto()
-    SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
+    SPELL = "SPELL"
+    SPELL_WITH_SPELLFRAME = "SPELL_WITH_SPELLFRAME"
+    SPELL_WITH_BINDING_NAME = "SPELL_WITH_BINDING_NAME"
+    SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME = "SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME"
 
     # Existing-object spell families. These bind an already-created object
     # rather than planning a new construction DAG for it.
-    EXISTING_CREATION = auto()
-    EXISTING_CREATION_WITH_SPELLFRAME = auto()
-    EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
+    EXISTING_CREATION = "EXISTING_CREATION"
+    EXISTING_CREATION_WITH_SPELLFRAME = "EXISTING_CREATION_WITH_SPELLFRAME"
+    EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME = "EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME"
 
     # Method/function spell families.
-    METHOD = auto()
-    METHOD_WITH_BINDING_NAME = auto()
-    METHOD_WITH_SPELLFRAME = auto()
-    METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
+    METHOD = "METHOD"
+    METHOD_WITH_BINDING_NAME = "METHOD_WITH_BINDING_NAME"
+    METHOD_WITH_SPELLFRAME = "METHOD_WITH_SPELLFRAME"
+    METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = "METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME"
 
     # Lambda-style method families.
-    LAMBDA_METHOD_WITH_BINDING_NAME = auto()
-    LAMBDA_METHOD_WITH_SPELLFRAME = auto()
-    LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = auto()
+    LAMBDA_METHOD_WITH_BINDING_NAME = "LAMBDA_METHOD_WITH_BINDING_NAME"
+    LAMBDA_METHOD_WITH_SPELLFRAME = "LAMBDA_METHOD_WITH_SPELLFRAME"
+    LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME = "LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME"
 
     def __str__(self) -> str:
         """Return the stable enum member name used throughout the runtime."""
         return self.name
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SpellType]:
+        """
+        Resolve a historical numeric spell type to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, SpellType] = {
+            1: cls.SPELL,
+            2: cls.SPELL_WITH_SPELLFRAME,
+            3: cls.SPELL_WITH_BINDING_NAME,
+            4: cls.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            5: cls.EXISTING_CREATION,
+            6: cls.EXISTING_CREATION_WITH_SPELLFRAME,
+            7: cls.EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            8: cls.METHOD,
+            9: cls.METHOD_WITH_BINDING_NAME,
+            10: cls.METHOD_WITH_SPELLFRAME,
+            11: cls.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            12: cls.LAMBDA_METHOD_WITH_BINDING_NAME,
+            13: cls.LAMBDA_METHOD_WITH_SPELLFRAME,
+            14: cls.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

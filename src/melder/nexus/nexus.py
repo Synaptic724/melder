@@ -335,7 +335,7 @@ class Nexus(Cleanable):
             # Aether full-teardown lane the crystallizer is already cleaned
             # (frames -> crystallizer -> MR -> Nexus), so this skips there.
             if not self._crystallizer.cleaned and self._crystallizer.activated:
-                self._crystallizer.emit_nexus_state(RecordedUnitState.cleaned)
+                self._crystallizer.emit_nexus_state(RecordedUnitState.CLEANED)
             for rift in self._rifts_by_id.values():
                 rift.cleanup()
             if self._configuration is not None:

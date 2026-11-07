@@ -395,7 +395,8 @@ def test_component_conduit_begin_transaction_transfer_registers_live_registry_se
         )
         assert len(sessions) == 1
         session = sessions[0]
-        assert str(session.request.request_type) == "transfer_ownership"
+        assert session.request.request_type is ChangeTransactionType.TRANSFER_OWNERSHIP
+        assert str(session.request.request_type) == "TRANSFER_OWNERSHIP"
         assert set(session.request.conduit_ids) == {owner.id, target.id}
         assert session.staged.binding_keys == (spell.key,)
         assert session.staged.metadata["target_conduit_id"] == target.id
@@ -450,7 +451,8 @@ def test_component_conduit_transfer_transaction_context_clears_live_registry_ses
                 owner_id=owner.id,
             )
             assert len(sessions) == 1
-            assert str(sessions[0].request.request_type) == "transfer_ownership"
+            assert sessions[0].request.request_type is ChangeTransactionType.TRANSFER_OWNERSHIP
+            assert str(sessions[0].request.request_type) == "TRANSFER_OWNERSHIP"
         assert registry.list_live_transactions_for_identity(
             owner_kind="conduit",
             owner_id=owner.id,

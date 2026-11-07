@@ -1253,7 +1253,7 @@ class SpellSystemStates(Cleanable):
         if callback is not None:
             callback(
                 index_id,
-                SpellValidity.cleaned,
+                SpellValidity.CLEANED,
             )
         removed_state.cleanup()
         return removed_state

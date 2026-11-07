@@ -232,7 +232,7 @@ def test_retirement_fires_no_resolution_callback_and_keeps_the_structural_patter
     assert len(risk_manager.resolution) == resolution_calls_after_seed
     assert [validity for _, validity in risk_manager.structural] == [
         SpellValidity.gated,
-        SpellValidity.cleaned,
+        SpellValidity.CLEANED,
         SpellValidity.gated,
     ]
 

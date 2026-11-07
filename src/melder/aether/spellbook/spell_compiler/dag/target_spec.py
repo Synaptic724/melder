@@ -1,15 +1,18 @@
 from dataclasses import dataclass
-from enum import Enum, auto
-from typing import Tuple, ClassVar
+from enum import StrEnum
+from typing import Optional, Tuple, ClassVar
 
 
 
 # Melder Imports
-class TargetSpecKind(Enum):
+class TargetSpecKind(StrEnum):
     """
     Internal
 
-    Represents the three supported targeting modes for overrides:
+    Represents the three supported targeting modes for overrides.
+
+    Values exactly match member names. Historical numeric values 1-3 remain
+    readable by value, including in older enum pickle payloads:
 
     * PATH -> explicit param path: "a>b>c".
     * UNIQUE -> unique-by-name wildcard: "*repo".
@@ -28,9 +31,28 @@ class TargetSpecKind(Enum):
         access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name),
         BROADCAST (**name). Classifies how an override key targets DAG sockets.
     """
-    PATH = auto()
-    UNIQUE = auto()
-    BROADCAST = auto()
+    PATH = "PATH"
+    UNIQUE = "UNIQUE"
+    BROADCAST = "BROADCAST"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[TargetSpecKind]:
+        """
+        Resolve a historical numeric target kind to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, TargetSpecKind] = {
+            1: cls.PATH,
+            2: cls.UNIQUE,
+            3: cls.BROADCAST,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None
 
 
 @dataclass(frozen=True, slots=True)

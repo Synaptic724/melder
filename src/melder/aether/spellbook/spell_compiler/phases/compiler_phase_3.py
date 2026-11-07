@@ -910,9 +910,10 @@ class CompilerPhase3:
             spellmap_key: Tuple[str, str] = spellmap.canonical_key
             return spellmap_key
 
-        if dep.di_shape in (
-                ParameterDIShape.SINGLE_BY_ANNOTATION,
-                ParameterDIShape.COLLECTION_BY_ANNOTATION,
+        di_shape = dep.di_shape
+        if (
+                di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+                or di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
         ):
             if dep.target_annotation is None:
                 return None

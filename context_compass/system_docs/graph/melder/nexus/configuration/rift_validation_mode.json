@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_validation_mode.py",
- "source_sha256": "3d4021a01aa8db6698c4218aca28f8ca066167117250bbae3051b8999b6d61a5",
+ "source_sha256": "0e85fe0f2b1087a5dc95c74bbc305c931a7392e4d0837b1f8a1cede0fecd9bcb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_validation_mode": {
@@ -28,7 +28,7 @@
    "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -36,7 +36,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1a0c2174d0813b982c2ecce2e7930f4ac6c755ff9b7c4d3a13afb5cf7add0c8c",
+   "span_sha256": "ab75adfbe61f5e371509b22ec727129a69f9c0c696abe7b8b1524a81449960ea",
    "role": "Validation posture enum for Rift execution.",
    "responsibilities": [
     "labels strict, relaxed, and unsafe Rift validation modes"
@@ -56,7 +56,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum"
+  "StrEnum": "enum.StrEnum"
  },
  "collapse_candidate": null
 }

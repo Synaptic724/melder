@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28251
-CONTENT_SHA256 = '27540dca0c370467cd8f2ac228a8fd0d1568b26f35bdec0c6c1d7f639b460007'
+LINE_COUNT = 28259
+CONTENT_SHA256 = '1fc5d6c81bb448705c22f0b6e2e3a61dd9249d3a2013b4efc37e65781037b61b'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `d971abdd11eb1861758982f496705d2764335c0aaf719fe79c17ab6723e97f01`
+- source_sha256: `032483e5bce47f6aa0ab2c7bd5b2bf4e0e48a8aefb0e97f11b5590cde3fbe09c`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `80998ba1c658dbc2d34e7eb65801b9ca3b765f438d43d3051053f827591b3fb7`
+- source_sha256: `d4b1d867c55552291a2c89cd32ca975e3da18a1d83e847b08dafe79e3251ce3b`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `5338d1520967365040d0968945ad5fc62be6ffe25f1f233479d8169ca6225da9`
+- source_sha256: `4412836ae4d90c9bc653ba8af1a0c83c1c5e1e8bf76b35a1048621a148fb0a72`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `1eaac217b7e04cf0ff9d0efdad4617e3e8c5b296e3c6082259ca944eab76c9a5`
+- source_sha256: `f2db44c63d1f2a4966a27bc273795694be9e97ab47375b40baea65d93eb7ef79`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `5e828871602c3065c6ebeef97d768da6d9dbf775ad97dbc568ffa97967e2c314`
+- source_sha256: `044fe711d29cc02fbfe84ee39c6e45c22c22f77ca39716287094de1a42cb066b`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `ab90d48096f8ec7140503b0a2f444c86504e5708f89685db69966332eeb65338`
+- source_sha256: `5164229da64a36f5a897b295103e91a1e067aed3ec283bf4dd3c9c51c062958d`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `042d3f6839f7db7ee626b7ef693f14807d9458c83f3e1cd0e69f01bded63a97f`
+- source_sha256: `23ecf1cbcb360965f01a65976e210c22911afd4e43f008f51382d80cf906cdc6`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `91275f9a41a12eea5ddd6ad78e3df4d749663097170918dcc72c6e9f175a9597`
+- source_sha256: `343050fde5625537408f3c00e671c2f203de58b9529597ae862eee71cb94297e`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `67c4a81683b4fe39917ca69dff1fa2f8af160e640fddc3d5a44e1c06745b87bf`
+- source_sha256: `d1dd78178dba65217b97e81c495d8f9cb6e90b516a8bfa73dccefd5e9d721df5`
 - nodes: 1
 
 ### Nodes
@@ -959,7 +959,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/aetheric_frame_configuration.py
 
-- source_sha256: `13422bd30c3c9e0a74eedbecfe5c6423be2cf7df4f9b0c31c0eb5296949b8294`
+- source_sha256: `cec874456d682ca5a5691907942f2bd97541bfc8c9ecaf01a4f527e78d1bebc6`
 - nodes: 2
 
 ### Nodes
@@ -1066,7 +1066,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
 
-- source_sha256: `a0a542f56f33ae893596b63b344ecc91207119cfb3073c50795c3694792ba01e`
+- source_sha256: `3f6fbfcd5f9c62e984a67a230016baab02f4e12ca5e6628c890f0ca3c8e7d777`
 - nodes: 2
 
 ### Nodes
@@ -1087,6 +1087,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - tracks pending changes and dirty roots by conduit
   - owns change-control transaction, conflict, embargo, and orchestrator managers
   - coordinates revalidation hooks for dirty roots
+  - validates bind/notch structural commits for member, exact-name and legacy string forms while retaining the enum-notch compiled-member shortcut
 - owns_state: `_pending_changes`, `_component_of_by_conduit`, `_dirty_roots_by_conduit`, `_transaction_manager`, `_conflict_manager`, `_embargo_manager`, `_orchestrator`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `abort_request`, `admit_request`, `cleanup`, `clear_pending_change`, `commit_request`, `conflict_manager`, `describe`, `devops_information_registry`, `disable_change_control`, `embargo_manager`, `enable_change_control`, `get_pending_change` (+22 more)
@@ -1170,7 +1171,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py
 
-- source_sha256: `5798cbfeb3243f2de1a4cee4df32a25dea6efe820077295e26fd46511a242b24`
+- source_sha256: `455082e9cafff2b18c78559a0fda4eb3fa2f565d93ce0a7d7bbaf85e5905b017`
 - nodes: 5
 
 ### Nodes
@@ -1184,7 +1185,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ClaimMode` (enum)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:18`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:21`
 - markers: `StrEnum`
 - role: Enum of scope-key claim strengths for admission gating.
 - responsibilities:
@@ -1192,11 +1193,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - lets the admission gate admit share-compatible work in parallel while serializing true structural overlap
 - owns_state: `EXCLUSIVE`, `SHARED`, `INTENT`
 - phases: `runtime`
+- public methods: `wire_value`
 
 #### `ChangeControlEmbargoRecord` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:71`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:108`
 - role: One row of the moded lock table: an immutable record of one request-owned scope claim.
 - responsibilities:
   - tie one normalized scope key to the request holding it and the mode it is held in
@@ -1207,7 +1209,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `AcquisitionDecision` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:126`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:163`
 - role: The result type of the admission gate: the immutable outcome of one all-or-nothing scope acquisition.
 - responsibilities:
   - report acquired=True only when EVERY requested claim was granted atomically
@@ -1218,7 +1220,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ChangeControlEmbargoManager` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:175`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:212`
 - extends: `Cleanable`
 - role: Scope-key embargo registry for transaction-driven gating.
 - responsibilities:
@@ -1251,7 +1253,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py
 
-- source_sha256: `7690680704f62deb6b45a2b82443cdf0c8e9412d3f4a95375acfa5b23670bee0`
+- source_sha256: `7635361b27315b8182f9a4d08868f841ec85537d8e1ba874e952ab456ca792ef`
 - nodes: 2
 
 ### Nodes
@@ -1265,7 +1267,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ChangeControlOrchestrator` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:37`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:38`
 - extends: `Cleanable`
 - role: Serialized control-plane coordinator for change-control requests.
 - responsibilities:
@@ -1348,7 +1350,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py
 
-- source_sha256: `500c4fce517684cb3bdd2beb9067836286c64c2e7fc7d318546daece6d2b1b09`
+- source_sha256: `d6e5c64ad712cfebe590ca556a4ae6a2eda60f552695889835ef2d75942e97e3`
 - nodes: 2
 
 ### Nodes
@@ -1384,7 +1386,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py
 
-- source_sha256: `3b8c0fcf24bd5d2882d519f1c945c6753e0006bae42d857b62dbd663c13db5dc`
+- source_sha256: `b50f6e2107fec03ea06e82a74bec69e8a02eafdeb9784bd96ac0228f4cc3702d`
 - nodes: 2
 
 ### Nodes
@@ -1420,7 +1422,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py
 
-- source_sha256: `2a480b37dc64b03baf02218ef4e068fb3a0a2b548c300334922177d8d82fe54d`
+- source_sha256: `5073693459a994a364eed43e7493f2711b963ac9baa7c4bc26439c104ad9a0c2`
 - nodes: 2
 
 ### Nodes
@@ -1469,7 +1471,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_join_transaction_strategy.py
 
-- source_sha256: `006a0a7280d2429a7b730db0e1abfc3c41e53bf0cfb2ae6e723c5f6be160973c`
+- source_sha256: `098088c0dd2c6925a0bbfe4aa26b2258022b58e6e596db01952442b35767e215`
 - nodes: 2
 
 ### Nodes
@@ -1511,7 +1513,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_leave_transaction_strategy.py
 
-- source_sha256: `2a3fd9b60995bde38106cc5931fc579bd2065f517c7f3afe64e4fd14b94b5c3e`
+- source_sha256: `b2c8ed5bc2bfeb7b4766ffc91342d985380f9c7367d39ed0a58419aa035d27f8`
 - nodes: 2
 
 ### Nodes
@@ -1553,7 +1555,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py
 
-- source_sha256: `5ee7c19dea74c2673e4a7d6c2efb3a39e7d0056067e491a78f829cda8262054d`
+- source_sha256: `e4d2a40db9d972a38d44d45074333e5581f280871121befdd3690eeae9540a92`
 - nodes: 2
 
 ### Nodes
@@ -1603,7 +1605,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py
 
-- source_sha256: `1e72f1e06fc1df6770068dcaee77716943dc4da3ee832f874ebdebe59983fd71`
+- source_sha256: `1f6841c214b0daa62f8f8f66e5c0868c6886d1836e95487277ef7760aa990f6e`
 - nodes: 2
 
 ### Nodes
@@ -1639,7 +1641,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py
 
-- source_sha256: `c89a41ab624c428f05710ed4c09c1720d94b57e2e79af9fc557893f7543728d2`
+- source_sha256: `a68d60158087efb5f204d55985d267259b90a4b14ce0ba6031b779a288701eb3`
 - nodes: 2
 
 ### Nodes
@@ -1675,7 +1677,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py
 
-- source_sha256: `4d6fe3a506343145f7fb6da080bcffc2c14056491884630b957aee5545adbc9f`
+- source_sha256: `d45c7196e0ac19bfcf7fe4024225ec5ed5b3d4498dc6fc247c0f3129b97c3046`
 - nodes: 2
 
 ### Nodes
@@ -1725,7 +1727,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py
 
-- source_sha256: `c60a53f4ccc1c68b98f54389d493dff677ae39b2d2a1bd62404d82cb8649d2b0`
+- source_sha256: `633a6c2c0e3b2514bef920c9070b8a6ea0ac0bdf5e073e688921fb1b74bf8b9f`
 - nodes: 2
 
 ### Nodes
@@ -1762,7 +1764,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py
 
-- source_sha256: `48b3c4af601d78de624517580b8601033df8a8f1f79e2344cb5c8f75a7cdebf2`
+- source_sha256: `8851a4eec5527d5bf42697cd3f1f6fa7834c614e232f9ac6e3165ea173b5c8e7`
 - nodes: 2
 
 ### Nodes
@@ -1798,7 +1800,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py
 
-- source_sha256: `df44d6f64a9f420a86fcee22249da9c9548dbadfaf657cb10531059915540b76`
+- source_sha256: `87ec85474e7727b05f85632817f1c8252a2e49f1aaff2b0a31a517911cb02947`
 - nodes: 2
 
 ### Nodes
@@ -1834,7 +1836,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py
 
-- source_sha256: `bff4efb777500eb6c16a166ce54a7e8341cf3b34ec0a6ed8eb8ce3a76a9e3ac8`
+- source_sha256: `f6d0e6540908560c0110ce245007250943321fd24fdac13479f99ce9a7f098ba`
 - nodes: 2
 
 ### Nodes
@@ -1848,7 +1850,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TransactionStrategy` (abstract)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py:20`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py:23`
 - markers: `ABC`
 - role: Abstract contract for mediator-registered transaction strategy classes.
 - responsibilities:
@@ -1965,7 +1967,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py
 
-- source_sha256: `7806685f89bdf2fef3877a5e2ef71fb3732e3978567cb40aff64dc8e73b47146`
+- source_sha256: `06015e866a22f863644dede1c35d64ac6d96b137224d6af83731aea027ea1b56`
 - nodes: 2
 
 ### Nodes
@@ -2001,7 +2003,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py
 
-- source_sha256: `92d2f4a03203463a3da3223e450e8e84f7b5d7fa04cf6313f1a3c9d1a7070f29`
+- source_sha256: `d9ae8bf404c6d342b0d33f0e13fc99d70d1a093e4356ef0836095864ce56e4e7`
 - nodes: 2
 
 ### Nodes
@@ -2053,7 +2055,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py
 
-- source_sha256: `d37f41768ea519b5be249692b34accf6148a2c1044811e4a611a625e2811ff23`
+- source_sha256: `b2c9e41533a26f644a438ec804bed3fdc1fafabc05bfc8563c87a558bfa18a17`
 - nodes: 2
 
 ### Nodes
@@ -2102,7 +2104,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py
 
-- source_sha256: `42785ad21008f2724633820744aeacb223c268faaeaf7af7b5d9e31303ae889f`
+- source_sha256: `966560238bced350e48c3d1860c36efd4f5cd4f773d081639df959ad218bc7ff`
 - nodes: 2
 
 ### Nodes
@@ -2226,7 +2228,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py
 
-- source_sha256: `0aba680529cdf0ef518595219b1577eb830b45499bdc447cbed4b11f66f3c0df`
+- source_sha256: `e60f25ce498c7e865014de70344403f37faf79ca5c885ebe7b49e44e3ba6ea68`
 - nodes: 4
 
 ### Nodes
@@ -2247,11 +2249,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - labels bind, link, transfer ownership, mutation, and cluster link transactions
 - owns_state: `BIND`, `LINK`, `TRANSFER_OWNERSHIP`, `MUTATION`, `CLUSTER_LINK`
 - phases: `runtime`
+- public methods: `wire_value`
 
 #### `ChangeControlTransactionRequest` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:81`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:134`
 - role: Immutable pre-admission transaction request payload.
 - responsibilities:
   - stores normalized scope, binding, and contract metadata for one mutation request
@@ -2262,7 +2265,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ChangeControlAdmissionResult` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:176`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:229`
 - role: Immutable admission decision payload for one transaction request.
 - responsibilities:
   - stores the admitted verdict plus conflict and embargo evidence for one request
@@ -2678,7 +2681,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py
 
-- source_sha256: `966bdce0c44d82ca1ce50a275e4df1550ef9b80cfd5de4d3acc753b1dbaed631`
+- source_sha256: `ee16afc4c61647354732910eb4bfcd228db799705cc44c4f65ef753ba9d6d7e0`
 - nodes: 2
 
 ### Nodes
@@ -2692,8 +2695,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `IncidentSeverity` (enum)
 
 - id: `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py:4`
+- markers: `StrEnum`
 - role: Severity enum for incident records.
 - responsibilities:
   - labels informational through critical incident urgency levels
@@ -2706,7 +2709,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py
 
-- source_sha256: `c1e1d14ef86ac8df0ebc1926ea0f15366a7b521bf0ebbc4836ad10ffdf5e281f`
+- source_sha256: `00a2a597fc8a914981cfae6f916b9b71b0f0f0056c08d29561cc2a3e1c96db28`
 - nodes: 2
 
 ### Nodes
@@ -2720,8 +2723,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `IncidentStatus` (enum)
 
 - id: `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py:4`
+- markers: `StrEnum`
 - role: Lifecycle status enum for incidents.
 - responsibilities:
   - labels open, acknowledged, resolved, and suppressed incident lifecycle states
@@ -2905,7 +2908,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py
 
-- source_sha256: `6474edaaab00d4b3cbcf7b360c4e74a13e9b4067bfcd5152d726efa2cfca08e8`
+- source_sha256: `87cff7036dfc83211f5208d3a651846cdb90ea3a67f30de6080fae61b2cbc6fe`
 - nodes: 2
 
 ### Nodes
@@ -2919,7 +2922,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TransactionActivityViewStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py:16`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py:19`
 - extends: `DevopsInformationStrategy`
 - role: Registry-backed dev-ops information strategy for live transaction activity views.
 - responsibilities:
@@ -2999,7 +3002,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
 
-- source_sha256: `873a7b87c9e0d1aca9d0b2a2c4e2f8f7025f982b80baac463843e76612b4d950`
+- source_sha256: `11c6d2e39a0d92e6fdb1364c7810caf498378fd1bda9a951a1df10b45d99d11a`
 - nodes: 3
 
 ### Nodes
@@ -3109,7 +3112,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
 
-- source_sha256: `b1d65c14117e13587113e8d9ed161aa9993156b4e24d9afe4d49d53546e8d630`
+- source_sha256: `d52e9121da31eebddea658038bb14b08de1574ca528d891b0a9f72a554344fe0`
 - nodes: 2
 
 ### Nodes
@@ -3123,8 +3126,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellState` (enum)
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py:4`
-- markers: `Enum`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py:5`
+- markers: `StrEnum`
 - role: Fine-grained state-flag enum for one spell lineage.
 - responsibilities:
   - labels topology, contract, mutation, ops and capability state flags for a lineage
@@ -3138,7 +3141,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py
 
-- source_sha256: `24e60a9186eac62d891562942b78e60fe361fe00839249c3133e7d0a27e49edd`
+- source_sha256: `ed907efac8109f1c06f40cfef2baa0d7fa642227e8d5ffde77d311a270970273`
 - nodes: 2
 
 ### Nodes
@@ -3152,8 +3155,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellStateChangeReason` (enum)
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py:4`
+- markers: `StrEnum`
 - role: Coarse latest-transition reason enum for one lineage.
 - responsibilities:
   - labels the latest event that changed a lineage state or validity posture
@@ -3166,7 +3169,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py
 
-- source_sha256: `f6ca049174cdaf889bf53d56e641c011ee9e6899a20c89e4f76930414935c8c4`
+- source_sha256: `03a219f16b73131ebf1d2030cdf3f28b0c15539a45626475847e7d034b483d6f`
 - nodes: 2
 
 ### Nodes
@@ -3217,7 +3220,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `f8d8a0cc53bffbbfe3368b6df4395494cef108ce4bec75c75a047b36e6f209fb`
+- source_sha256: `1ad5ada142631e58197ebf0ac815015bfcd4406404c0c2d5a6edb7d9c766db20`
 - nodes: 2
 
 ### Nodes
@@ -3283,7 +3286,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py
 
-- source_sha256: `49bf6a23f0078ab04bdd097b3683815438629b84a24c3ca3b704cbdf984489c2`
+- source_sha256: `f36e68d2066f7d9cbe2663d7e160f24c8f3265c0054eb4f76af5f9610494c0bc`
 - nodes: 2
 
 ### Nodes
@@ -3297,12 +3300,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellValidity` (enum)
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py:4`
+- markers: `StrEnum`
 - role: Coarse validity gate enum for structural and resolution state.
 - responsibilities:
-  - labels unknown, valid, gated, invalid, disabled, and cleaned validity states
-- owns_state: `unknown`, `valid`, `gated`, `invalid`, `disabled`, `cleaned`
+  - labels unknown, valid, gated, invalid, disabled, and CLEANED validity states with exact-name strings; historical ordinals 1-6 remain readable
+- owns_state: `unknown`, `valid`, `gated`, `invalid`, `disabled`, `CLEANED`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py -->
@@ -3394,7 +3397,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/admission_result.py
 
-- source_sha256: `661455999e201618d79e1a87b7f3c75ec8304180bbe626019691e37e4160d29b`
+- source_sha256: `40128e22b2b88faeea6ee98946ecd3d8f2c74ecd66da7ea3bd31c2ffa1450142`
 - nodes: 3
 
 ### Nodes
@@ -3413,13 +3416,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Machine-readable codes for WHY a request was refused, so callers branch without parsing rendered evidence lines.
 - responsibilities:
   - describe the CLASS of refusal, leaving the specific contended scopes and holders to travel separately on the result
-  - keep values stable - they travel into logs and stored evidence
+  - use exact member names as values; accept historical lowercase values and retain lowercase verdict descriptions
 - phases: `runtime`
 
 #### `AdmissionResult` (class)
 
 - id: `melder.aether.aetheric_mediator.admission_result.AdmissionResult`
-- defined at: `src/melder/aether/aetheric_mediator/admission_result.py:52`
+- defined at: `src/melder/aether/aetheric_mediator/admission_result.py:77`
 - extends: `Cleanable`
 - role: The immutable verdict for one admission attempt - EVIDENCE, NOT A BOOL.
 - responsibilities:
@@ -3449,7 +3452,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/claim_mode.py
 
-- source_sha256: `0b3a8cd625f9c3b7f742218adb2603035cc603b50c28e863cff0950d70cbb3de`
+- source_sha256: `51881fd73fa2629ab174ec29bcffb662d18686fb2dc9823691da94def6a4597a`
 - nodes: 3
 
 ### Nodes
@@ -3471,11 +3474,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - SHARED ('s'): coexists with other SHARED claims only
   - INTENT ('ix'): the HIERARCHICAL PARENT-SCOPE MARKER - hold ix on the parent while holding x on the child, so disjoint children proceed in parallel while a whole-unit writer is excluded
 - phases: `init`, `runtime`
+- public methods: `wire_value`
 
 #### `ClaimCompatibility` (class)
 
 - id: `melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility`
-- defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:72`
+- defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:104`
 - role: The static compatibility matrix: may `requested` be granted on a scope already held under `held`?
 - responsibilities:
   - exclude EXCLUSIVE against everything, in both directions
@@ -3496,7 +3500,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/claim_table.py
 
-- source_sha256: `725a1918511a1f0cc02b28c2e291b257b0eddc5e5d7382177dddb91031dcc9aa`
+- source_sha256: `453747759b2abae359d38c4cd365dba593a04caad4a2e98ffaa9fca2692840f8`
 - nodes: 4
 
 ### Nodes
@@ -3616,7 +3620,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/information_registry.py
 
-- source_sha256: `3c5388cf28b9584c7b2473a1c004656b9e404ae8ec27b6e7e30a6493d7f717bd`
+- source_sha256: `59bef531f2d723da80c0c7ad1867f5134fd4d601019f8dd0aa7d2bfe40739c9b`
 - nodes: 3
 
 ### Nodes
@@ -3630,7 +3634,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `FactRecord` (class)
 
 - id: `melder.aether.aetheric_mediator.information_registry.FactRecord`
-- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:27`
+- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:28`
 - extends: `Cleanable`
 - role: One 'this region was last changed by this reporter at this time' baseline.
 - responsibilities:
@@ -3643,7 +3647,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `InformationRegistry` (class)
 
 - id: `melder.aether.aetheric_mediator.information_registry.InformationRegistry`
-- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:157`
+- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:158`
 - extends: `Cleanable`
 - role: The reporting surface: answers 'what is happening right now', 'has this region changed since I last looked', and 'is this subsystem running' - all without touching live subsystem state.
 - responsibilities:
@@ -3729,7 +3733,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/participation.py
 
-- source_sha256: `c4b26186822ef46fd376de02b27cb3c6fc4f8fd2f786739260f6c5743f763cb7`
+- source_sha256: `f45840ccdbe38765b3e82563affbfc183ae992eb0b59ff6f2f027f4d632b23d1`
 - nodes: 3
 
 ### Nodes
@@ -3759,7 +3763,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ParticipationConditions` (class)
 
 - id: `melder.aether.aetheric_mediator.participation.ParticipationConditions`
-- defined at: `src/melder/aether/aetheric_mediator/participation.py:130`
+- defined at: `src/melder/aether/aetheric_mediator/participation.py:161`
 - role: The declared key set for subsystem basic conditions, owned by the PLANE rather than by the subsystems, plus the pure selector that filters caller-controlled metadata down to it.
 - responsibilities:
   - Declare the five keys a subsystem may announce: parallel_enabled, worker_count, drain_timeout_seconds, max_active_units, policy_version
@@ -3774,7 +3778,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/scope_keys.py
 
-- source_sha256: `e0de7620be84e491d9e9273c0ead958e77f5ffa2ff416f8e89afa3c9588ef6dc`
+- source_sha256: `19bea944a03ae6fe5aca99c2fab64a3c7e4fbaf68dad7fa4e9bd2af7873a1c87`
 - nodes: 3
 
 ### Nodes
@@ -3788,7 +3792,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ScopePrefix` (enum)
 
 - id: `melder.aether.aetheric_mediator.scope_keys.ScopePrefix`
-- defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:16`
+- defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:17`
 - markers: `StrEnum`
 - role: The CLOSED vocabulary of scope-key namespaces - the levels this plane can isolate at, as a type rather than loose strings.
 - responsibilities:
@@ -3799,7 +3803,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ScopeKey` (class)
 
 - id: `melder.aether.aetheric_mediator.scope_keys.ScopeKey`
-- defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:56`
+- defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:84`
 - role: The only sanctioned way to build a scope key, because a typo in a hand-written key does not fail loudly - it silently claims the wrong thing.
 - responsibilities:
   - build FLAT, NAMESPACED keys - one string space with a subsystem or level prefix, keeping acquisition O(requested scopes) dict operations
@@ -3820,7 +3824,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/staged_transaction.py
 
-- source_sha256: `f698b9bd64c09a65043e02087bb9cf3d52d2e0f5ea9bed46707ed027589a1200`
+- source_sha256: `a165746e0c46bfb3e4f7345334a473ad6ffca27e8967999ff9b83911e0ece1ae`
 - nodes: 2
 
 ### Nodes
@@ -4166,7 +4170,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategy_builder.py
 
-- source_sha256: `b77e1d27a74d26132c3e5179f46fff1c8b7ce8c087494f415154590a683045c9`
+- source_sha256: `3759a1f1e4076d955d062ad3685450601a1bfb8de7f0cdd87cb99b2e966bf8e7`
 - nodes: 2
 
 ### Nodes
@@ -4213,7 +4217,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_request.py
 
-- source_sha256: `ef2cd287be3a7cd88ed77234db2cf1b764ea579f610cc889e5552737893b09cd`
+- source_sha256: `6b476d67fdc048c0c30c0c360e5c6c00b4260a7fa2c3cde97255fa31fed65356`
 - nodes: 3
 
 ### Nodes
@@ -4274,7 +4278,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_session.py
 
-- source_sha256: `c52214127d25cd6ba680b2081fa8e91403c57b6d6f75c15ad6537b752e147ee5`
+- source_sha256: `def623a3207776e521b73d5b335da823f3ceaaab7c566220f617f9d8d4d364dc`
 - nodes: 5
 
 ### Nodes
@@ -4299,7 +4303,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SessionStatus` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.SessionStatus`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:64`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:91`
 - markers: `StrEnum`
 - role: The lifecycle state of one session, in which BROKEN is a DISTINCT TERMINAL STATE and deliberately not a flavour of ABORTED.
 - responsibilities:
@@ -4310,7 +4314,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_RollbackAction` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_session._RollbackAction`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:93`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:155`
 - extends: `Cleanable`
 - role: One registered inverse paired with a description - the owner of the single most dangerous reference in this package, a caller-supplied closure.
 - responsibilities:
@@ -4324,7 +4328,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TransactionSession` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.TransactionSession`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:180`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:242`
 - extends: `Cleanable`
 - role: One live transaction span owned by exactly one root thread: everything true about a transaction between admission and its terminal state.
 - responsibilities:
@@ -4361,7 +4365,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_strategy.py
 
-- source_sha256: `242fb47d8af12974dac2f2b9be94a04dca2141715461afa090d4257195f2828f`
+- source_sha256: `1845b87a81c2a0d0471af92d6cd2c829e39f3d163d172e3ea263227d201616c4`
 - nodes: 2
 
 ### Nodes
@@ -4394,7 +4398,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_type.py
 
-- source_sha256: `e78b23419a2961efa8a55516849863d9df679977622ff3f77b5167646eb4d13e`
+- source_sha256: `31c29d70fc9cefe3a8ecd558c8f7419fb57d8647c3f8e44be1053e66e8f225ed`
 - nodes: 2
 
 ### Nodes
@@ -4408,14 +4412,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TransactionType` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_type.TransactionType`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_type.py:15`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_type.py:16`
 - markers: `StrEnum`
 - role: The CLOSED set of top-level operations the plane admits, so admission, dispatch, activity indexes and logs all key on one stable vocabulary.
 - responsibilities:
   - name every structural operation that can claim scopes at world level
   - stay closed: wanting to pass a non-member string is the signal a STRATEGY is missing, not a reason to widen the type
-  - keep values stable - they travel into request payloads, admission evidence and logs
+  - use exact member names as values; wire_value preserves lowercase reporting tokens and old lowercase values remain readable
 - phases: `init`, `runtime`
+- public methods: `wire_value`
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/transaction_type.py -->
 
@@ -4454,7 +4459,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `b0e3638380902fb0aafb938140f2209149fd1ebca3fb21784947d68fa7ad7a16`
+- source_sha256: `f510b432bdd3d08791bceacb591f9cdad75e3d7c0c3cb92ce63c9030a1dc4fd8`
 - nodes: 2
 
 ### Nodes
@@ -4685,7 +4690,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_state/conduit_state.py
 
-- source_sha256: `32f325d3fb04a0e653521a2e2cb3abcd09dd47b9888fe06fe870ceb31e4b5429`
+- source_sha256: `65a253cb2648c012aa151e9d5d33323a55b08996484ee373e965f7e235d1b53d`
 - nodes: 2
 
 ### Nodes
@@ -4702,12 +4707,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ConduitState` (enum)
 
 - id: `melder.aether.conduit.conduit_state.conduit_state.ConduitState`
-- defined at: `src/melder/aether/conduit/conduit_state/conduit_state.py:4`
-- markers: `Enum`
+- defined at: `src/melder/aether/conduit/conduit_state/conduit_state.py:5`
+- markers: `StrEnum`
 - role: Lifecycle classification enum for conduit instances.
 - responsibilities:
-  - distinguishes normal, lesser, and cleaned conduit states
-- owns_state: `normal`, `lesser`, `cleaned`
+  - distinguishes normal, lesser, pooled_lesser, and CLEANED with exact-name string values and historical ordinal readers
+  - resolve accepts case-insensitive declared names; string rendering stays lowercase
+- owns_state: `normal`, `lesser`, `pooled_lesser`, `CLEANED`
 - phases: `runtime`
 - public methods: `resolve`
 
@@ -4723,7 +4729,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `59e5b9ce535185bcd2bddb2550d9daaa5454542785a62056076995bdcb21f1f8`
+- source_sha256: `ccc0cdba73f5d5b5d84e713081f3354d929372aaa4c7c198dc2626b1feeff99e`
 - nodes: 2
 
 ### Nodes
@@ -4858,7 +4864,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py
 
-- source_sha256: `023a7ea6ac1f9d25a0a011bd7f17e61391481a7f1210d3f7abd76c02bb872d0f`
+- source_sha256: `bfce6791c0337932985d5ed24c96dc6d071fc74ff8eef40fa5b9310d6aa29aaf`
 - nodes: 2
 
 ### Nodes
@@ -4875,8 +4881,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ContractTypes` (enum)
 
 - id: `melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes`
-- defined at: `src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py:4`
+- markers: `StrEnum`
 - role: Perspective enum for contract detail entries.
 - responsibilities:
   - labels whether a contract detail is initiated or received from one ward perspective
@@ -4889,7 +4895,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/contract/detail_reason.py
 
-- source_sha256: `a70dde69008286a2fec06b418f8d928baf4411677c7daf4781eac91b8835a7f9`
+- source_sha256: `150411dc00a51e8e1f0b19345f544ef62cf4eff5d96fc0c91a55314e9ee47d25`
 - nodes: 2
 
 ### Nodes
@@ -4906,8 +4912,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `DetailReason` (enum)
 
 - id: `melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason`
-- defined at: `src/melder/aether/conduit/conduit_ward/contract/detail_reason.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/conduit/conduit_ward/contract/detail_reason.py:4`
+- markers: `StrEnum`
 - role: Reason enum for why one contract detail exists.
 - responsibilities:
   - labels root, dependency, manual, and other contract-detail causes
@@ -4990,7 +4996,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/permissions/permissions.py
 
-- source_sha256: `600d09dc6aad57c22fc891e6886cdb7547a873f164edf45312b642327540c342`
+- source_sha256: `a16c85a63ba0fd1f0a374cd5705ef7a014e656084527394a6316940fc3381902`
 - nodes: 2
 
 ### Nodes
@@ -5007,8 +5013,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Permissions` (enum)
 
 - id: `melder.aether.conduit.conduit_ward.permissions.permissions.Permissions`
-- defined at: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py:4`
+- markers: `StrEnum`
 - role: Capability ceiling enum for spell lineage exposure.
 - responsibilities:
   - labels read, create, and block capability levels for local and contracted lineages
@@ -5021,7 +5027,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/policies/policies.py
 
-- source_sha256: `ef26ed45eee03c0a7e63daf239c86102d4d1e11d50a80717d78bebfae64b1bd6`
+- source_sha256: `e0af7c1792b2bd2b668e34b7cafcc78d139b9c811f73095c5374c87690f8e623`
 - nodes: 2
 
 ### Nodes
@@ -5038,8 +5044,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Policies` (enum)
 
 - id: `melder.aether.conduit.conduit_ward.policies.policies.Policies`
-- defined at: `src/melder/aether/conduit/conduit_ward/policies/policies.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/conduit/conduit_ward/policies/policies.py:4`
+- markers: `StrEnum`
 - role: Runtime policy mode enum for conduit-to-conduit contracting.
 - responsibilities:
   - labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes
@@ -5811,7 +5817,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `e3e4f85416080e650dcc43313585fd445b8ae5b1c89c2b5cf44f210e63e37871`
+- source_sha256: `d7301724dea303cf158efdb8b3a1695ceb010993df56751f6de485439c576db5`
 - nodes: 2
 
 ### Nodes
@@ -6143,7 +6149,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `1835bbc844f0c865092ea5482505deda1d601caff466470cc60f402836e45d8c`
+- source_sha256: `d29b3d2692f62fd9e9a8887123ffa78853241e4d80d12ba1ace78250fdef0f89`
 - nodes: 2
 
 ### Nodes
@@ -6157,7 +6163,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Bind` (class)
 
 - id: `melder.aether.spellbook.bind.bind.Bind`
-- defined at: `src/melder/aether/spellbook/bind/bind.py:128`
+- defined at: `src/melder/aether/spellbook/bind/bind.py:129`
 - extends: `Cleanable`
 - role: Spell registration gateway for one Spellbook.
 - responsibilities:
@@ -6487,7 +6493,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/configuration/system_state.py
 
-- source_sha256: `6c011368031d1f9dc21db7c9706ed87cf523f0828589e05a9322b23f51948dcb`
+- source_sha256: `c4e4b52a83774d335907d1e8d0a28b8b12c5ee0ad8b24a3928982a8572b8ce21`
 - nodes: 2
 
 ### Nodes
@@ -6501,8 +6507,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SystemState` (enum)
 
 - id: `melder.aether.spellbook.configuration.system_state.SystemState`
-- defined at: `src/melder/aether/spellbook/configuration/system_state.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/spellbook/configuration/system_state.py:4`
+- markers: `StrEnum`
 - role: High-level runtime posture enum for a spellbook/system.
 - responsibilities:
   - labels automatic and dynamic runtime posture modes
@@ -6515,7 +6521,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/existence/existence.py
 
-- source_sha256: `e7857a53637d5bde2e51d5fba11341163adc12c86768c8b79a5b0eb585b8a14c`
+- source_sha256: `1c296d0392d37309cfde622392e9e68ba55370d4e71f5f9bb4af7eba1427509b`
 - nodes: 2
 
 ### Nodes
@@ -6529,8 +6535,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Existence` (enum)
 
 - id: `melder.aether.spellbook.existence.existence.Existence`
-- defined at: `src/melder/aether/spellbook/existence/existence.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/spellbook/existence/existence.py:4`
+- markers: `StrEnum`
 - role: Lifecycle mode enum for a spell binding.
 - responsibilities:
   - labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes
@@ -6544,7 +6550,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/existence/managed_spell_mode.py
 
-- source_sha256: `565aaa0bb67eb46571a2bfec118638c31a8d60e61993113089f469cf2d257137`
+- source_sha256: `07b56bb937eec0f9eac86526f8e310049200b309d91d71f8d5ab0244ce993261`
 - nodes: 2
 
 ### Nodes
@@ -6561,8 +6567,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManagedSpellMode` (enum)
 
 - id: `melder.aether.spellbook.existence.managed_spell_mode.ManagedSpellMode`
-- defined at: `src/melder/aether/spellbook/existence/managed_spell_mode.py:4`
-- markers: `Enum`
+- defined at: `src/melder/aether/spellbook/existence/managed_spell_mode.py:5`
+- markers: `StrEnum`
 - role: Pool policy of a managed spell, chosen at bind with managed_spell_mode: what a lease does when no idle object is waiting.
 - responsibilities:
   - elastic: a miss always builds; managed_spell_limit is the most idle objects kept (default 256), trimmed like the kernel pools' idle objects; never refuses
@@ -6955,7 +6961,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py
 
-- source_sha256: `a6cdd379b592a7f68d8880a95ffc3055fa322d3ddb70e707368f05a433ab9763`
+- source_sha256: `400b871c0426abaccdac3ea06663eaef6b9d186e4be07aeafed44204238b048a`
 - nodes: 4
 
 ### Nodes
@@ -7553,7 +7559,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py
 
-- source_sha256: `af0b12de5c823907a5cae46b55959e13764ed8b6c435c6b6685306f41e37c8fb`
+- source_sha256: `4b120d6ba2cb2de579d0748d92cbd0cf8d07d66c9d1802cde9628e91450bbcce`
 - nodes: 2
 
 ### Nodes
@@ -8337,7 +8343,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `541777c9412ed2a24539dd0aef75af8956e8412b6dd53f0b7258a2c7bff1fa69`
+- source_sha256: `d3f869611b5eca352caa3f004dd50f985e181752217d0f55c14ea0e4dafe251b`
 - nodes: 5
 
 ### Nodes
@@ -11178,7 +11184,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 
-- source_sha256: `1fac29b4dafa14239f079fb3a73395860712a43474b46521ca8fe6250a1c7c45`
+- source_sha256: `a8f8a60f882cda30b64edac0081ae05a26d46d5da8acc0e1a7b05e169311cee1`
 - nodes: 2
 
 ### Nodes
@@ -11192,8 +11198,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SocketKind` (enum)
 
 - id: `melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind`
-- defined at: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:5`
-- markers: `Enum`
+- defined at: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:6`
+- markers: `StrEnum`
 - role: Enum classifying the kind of socket represented by a DAG edge.
 - responsibilities:
   - labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED and UNRESOLVED_INPUT categories
@@ -11208,7 +11214,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/target_spec.py
 
-- source_sha256: `6b478f1e4c5136377fb8e7dcc2ae7d0d6de74aae05bccfdceb3917de89c74ff5`
+- source_sha256: `c335532ed2e343cd4be2b83352dbef429ea64bd7ccdc8cd5c4320953fcf2d945`
 - nodes: 3
 
 ### Nodes
@@ -11223,7 +11229,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:8`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Enum of supported override targeting modes.
 - responsibilities:
   - labels path, unique, and broadcast targeting semantics
@@ -11233,7 +11239,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TargetSpec` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec`
-- defined at: `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:37`
+- defined at: `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:59`
 - role: Parsed representation of one override target key.
 - responsibilities:
   - stores parsed override path or parameter targeting data
@@ -11509,7 +11515,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `53752a0e51495e9995629a9b71029475b1f747f160bb0cf68c751c520ec2cacf`
+- source_sha256: `c16ce258ddb1173f2ab67c4e3177f0290f316c6e80afc83451ee0d76abb90332`
 - nodes: 2
 
 ### Nodes
@@ -11905,7 +11911,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py
 
-- source_sha256: `6fdaf22b3b30fbb4476b1a88d87b74eaf33cbf4fba9982d4bdf9b3664a16e9ac`
+- source_sha256: `c1c217503c6f847c6b4441ce9652f49dd6a6080d603237121fb48de675e1a2b1`
 - nodes: 2
 
 ### Nodes
@@ -11919,7 +11925,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SharedCompilerExecutions` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions`
-- defined at: `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:17`
+- defined at: `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:18`
 - role: Shared static execution helper surface for compiler phases.
 - responsibilities:
   - owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases
@@ -12347,7 +12353,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `64f05f72d8a4e8ae46955605846ba10f2a656e913593e13c57ec76598337e30a`
+- source_sha256: `8eb3d0333d520bc731ff971c5117bde0cec1779878553308c8989eb1f74f43f8`
 - nodes: 2
 
 ### Nodes
@@ -12801,7 +12807,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
 
-- source_sha256: `64f8585bbffe3415971b514568d0ea9a014a38dc73e008f81912074bc31f07c8`
+- source_sha256: `e129b889810ffff0a94806b3bd1819ee11477826772a478572b5171bc46ac5e5`
 - nodes: 8
 
 ### Nodes
@@ -12816,7 +12822,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:10`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Enum classifying the raw binding shape of a candidate.
 - responsibilities:
   - labels class, callable, instance, and other binding kinds
@@ -12826,7 +12832,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:23`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:47`
 - extends: `Cleanable`
 - role: Base binding-time profile for raw registration candidates.
 - responsibilities:
@@ -12839,7 +12845,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ClassBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:67`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:91`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of a class candidate - enough to reason about protocol compatibility and produce diagnostics; the spell_id is the class's code digest (SpellCodeDigest), never read from it.
 - responsibilities:
@@ -12855,7 +12861,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CallableParameterBindingSummary` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:235`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:259`
 - role: The minimal binding-time view of one callable parameter, for diagnostics.
 - responsibilities:
   - record the parameter's name, kind, default repr and annotation repr (truncated display text)
@@ -12866,7 +12872,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CallableBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:270`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:294`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of a function, method or lambda spell candidate.
 - responsibilities:
@@ -12880,7 +12886,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `InstanceBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:391`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:415`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.
 - responsibilities:
@@ -12893,7 +12899,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `OtherBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:450`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:474`
 - extends: `SpellBindingProfile`
 - role: Fallback profile for candidates that fit none of the normal shapes.
 - responsibilities:
@@ -13166,7 +13172,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py
 
-- source_sha256: `20f6e8da36cda8be8be0235550b8c25a58ee164879dd8f1f99358d0da764cb6c`
+- source_sha256: `c08b36faab67a3ea7462c7d431409baafec12937afbea5fcca29ac0e0571fff1`
 - nodes: 2
 
 ### Nodes
@@ -13180,8 +13186,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ParameterDIShape` (enum)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py:4`
+- markers: `StrEnum`
 - role: Enum classifying how one parameter is satisfied during resolution.
 - responsibilities:
   - labels the current IGNORE, PLAIN, SINGLE_BY_ANNOTATION, COLLECTION_BY_ANNOTATION, SPELLMAP_DEFAULT, SPELL_CONTRACT categories
@@ -13241,7 +13247,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements.py
 
-- source_sha256: `996ac98d938ad1955b99ad5df641dc13a12368f53a5de78727caece0b3f005b6`
+- source_sha256: `b436f7ec8994f40c56f875901bb854cf7e7d777e43cf8752dff464caa6ea87b9`
 - nodes: 2
 
 ### Nodes
@@ -13783,7 +13789,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py
 
-- source_sha256: `cb2b19ceb3afe44a5ff03f74ce367b24b6074ae5946a93f5e35f8502f6d7ad75`
+- source_sha256: `6779446f63705529a59e621cfab5a63637d6e263cd9beacee81b77ea7ad3639e`
 - nodes: 3
 
 ### Nodes
@@ -13798,7 +13804,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:8`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: The severity bucket for system-level validation diagnostics.
 - responsibilities:
   - separate the errors that gate resolution from the warnings that only inform review
@@ -13807,7 +13813,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SystemDiagnostic` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:14`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:38`
 - extends: `Cleanable`
 - role: System-level validation diagnostic.
 - responsibilities:
@@ -15072,7 +15078,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
 
-- source_sha256: `087c45af1a73fd01b8e863876d05ca6662999a538341499127c4e90461dfa21d`
+- source_sha256: `6c0f342a553b2ef2c8221dc2062513660336e41b8dcf875ee73b444f82c33a65`
 - nodes: 2
 
 ### Nodes
@@ -15446,7 +15452,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
 
-- source_sha256: `4a31565aa60fbf18e22c95860d398d6d98dfda2dbf65ab8415809747b556c76d`
+- source_sha256: `6f90bfe5698b40ddb4f3463942844542b0ae0a45f94423ee15b55056d2f5593e`
 - nodes: 2
 
 ### Nodes
@@ -15787,7 +15793,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_types/spell_types.py
 
-- source_sha256: `38bcf0cf262047c15885ba771208c02234e26d3b15aba62a0f672dbc8a097147`
+- source_sha256: `4c7cbc97ececb66ec49351bcb3787f40658bd1687e288fb1fb9584dc8a9c4347`
 - nodes: 2
 
 ### Nodes
@@ -15801,8 +15807,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellType` (enum)
 
 - id: `melder.aether.spellbook.spell_types.spell_types.SpellType`
-- defined at: `src/melder/aether/spellbook/spell_types/spell_types.py:3`
-- markers: `Enum`
+- defined at: `src/melder/aether/spellbook/spell_types/spell_types.py:4`
+- markers: `StrEnum`
 - role: Canonical runtime binding-family classification enum for bound spells.
 - responsibilities:
   - labels class, existing-creation, method, and lambda spell families
@@ -15864,7 +15870,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `a3a953b7069fbde2cddc71ff0db85a883fd8d0796e051d594e4658efe6a36b36`
+- source_sha256: `6d84948d7373c9f0503374f37ec0b7ff20b94babea1276cae9ba32fe2c52d06e`
 - nodes: 2
 
 ### Nodes
@@ -16060,7 +16066,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py
 
-- source_sha256: `b793da1e67b6986d62562f2d1680322d21ec7d00475474b5e8f34555afcfa8f9`
+- source_sha256: `57d20f45ddb6e4bdcdca58e44b38659082d5d58d42b05c30afbec6f2833d5ab2`
 - nodes: 2
 
 ### Nodes
@@ -16078,7 +16084,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind`
 - defined at: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py:4`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: The kind of spellframe a Spell was bound under: none (no frame), category (a string label), contract (a typing.Protocol the spell was checked against).
 - responsibilities:
   - names the three frame kinds Bind._classify_spellframe assigns; value == name so crystals carry the name
@@ -17882,7 +17888,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `b9134ea328a310fdcc180c26f248007acc378f006d42e3b262dd960c953c7f0c`
+- source_sha256: `1fad2f0a1998a02c5f41ba5fbc9e0c5c77565b43915afe506212276ed194d3d1`
 - nodes: 3
 
 ### Nodes
@@ -17935,6 +17941,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book
   - hydrates each crystal's spellframe before the active and staged binds (_hydrate_spellframe): imports the recorded Protocol for a contract, passes the recorded name for a category, and on an import failure binds the name as a category and files a spell_crystal shortfall naming the Protocol and the spell (0.2.8222)
   - replays a managed spell's recorded options through the active and staged binds (record 4.2.0, SpellCrystal.managed_bind_options), so it rebinds with its own options and spell id (0.2.8242)
+  - final CLEANED and legacy cleaned journal names skip Nexus and MutationResearch reconstruction with the original shortfalls; raw later-wins fold and record-major admission are unchanged
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -18412,7 +18419,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/recorded_unit_state.py
 
-- source_sha256: `559c4771a52ede5d345ca69913b7c680d9f5f37ce0f4e4afbb28c92db0558d54`
+- source_sha256: `c3e3930f16612621ff2ea11cdc31a21e89a501421362028a6ee307251d3fc550`
 - nodes: 2
 
 ### Nodes
@@ -18429,11 +18436,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RecordedUnitState` (enum)
 
 - id: `melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState`
-- defined at: `src/melder/crystallizer/crystals/recorded_unit_state.py:4`
-- markers: `Enum`
+- defined at: `src/melder/crystallizer/crystals/recorded_unit_state.py:5`
+- markers: `StrEnum`
 - role: Recorded lifecycle state for state-switch tracked singletons such as Nexus and MutationResearch.
 - responsibilities:
-  - distinguish enabled / disabled / cleaned without evicting the twin
+  - distinguish enabled / disabled / CLEANED without evicting the twin; CLEANED has value CLEANED and accepts the old cleaned value
 - phases: `runtime`, `cleanup`
 
 <!-- END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py -->
@@ -19360,7 +19367,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/mutation_research.py
 
-- source_sha256: `5bee6950e19b25fe715620300ad20e71e6cc92804286cecc78fa94e2c693cb71`
+- source_sha256: `5895d301fffb3f3923b0bb038ff00f23db75820b7b583a1b01326d19ffa246cd`
 - nodes: 2
 
 ### Nodes
@@ -19600,7 +19607,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/research_set/research_lane.py
 
-- source_sha256: `2df4ff9aa8edbc57758b4e3bd5dc6419c9da19fbac9b48242e2e4d0b6ba2c732`
+- source_sha256: `67db07ba9308c5fe068fe8ae2a67390de8260bd2f6783fbe47212e57f3f80070`
 - nodes: 4
 
 ### Nodes
@@ -19619,7 +19626,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.research_lane.LaneState`
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:49`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Lifecycle vocabulary for a lane: open, joined or archived.
 - responsibilities:
   - name the terminal states a lane can reach
@@ -19628,8 +19635,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `LaneType` (enum)
 
 - id: `melder.mutation_research.research_set.research_lane.LaneType`
-- defined at: `src/melder/mutation_research/research_set/research_lane.py:96`
-- markers: `Enum`
+- defined at: `src/melder/mutation_research/research_set/research_lane.py:101`
+- markers: `StrEnum`
 - role: Policy vocabulary classifying a lane as development, experiment, production or test.
 - responsibilities:
   - carry the type the join gate enforces when armed
@@ -19638,7 +19645,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ResearchLane` (class)
 
 - id: `melder.mutation_research.research_set.research_lane.ResearchLane`
-- defined at: `src/melder/mutation_research/research_set/research_lane.py:144`
+- defined at: `src/melder/mutation_research/research_set/research_lane.py:154`
 - extends: `Cleanable`
 - role: One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).
 - responsibilities:
@@ -19854,7 +19861,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/research_set/transition_entry.py
 
-- source_sha256: `a9d0e76bc78c048cca1a0a0fab5fd2eb8cbb6e6f723e4d0d45c35559587690c2`
+- source_sha256: `4a22766938f1003c078b09c3bb0db2d59338e1e6c974f2a80842f12182e5d185`
 - nodes: 3
 
 ### Nodes
@@ -19873,7 +19880,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.transition_entry.TransitionAct`
 - defined at: `src/melder/mutation_research/research_set/transition_entry.py:9`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Vocabulary of world-entry acts; deliberately contains no rollback act.
 - responsibilities:
   - name lane_created, registered, staged, promoted, attached, detached, joined, archived, restored
@@ -19882,7 +19889,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TransitionEntry` (class)
 
 - id: `melder.mutation_research.research_set.transition_entry.TransitionEntry`
-- defined at: `src/melder/mutation_research/research_set/transition_entry.py:83`
+- defined at: `src/melder/mutation_research/research_set/transition_entry.py:88`
 - extends: `Cleanable`
 - role: Immutable forward-only journal event; TransitionAct vocabulary is world-entry only (no checkout/rollback acts).
 - responsibilities:
@@ -22104,7 +22111,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/nexus_configuration.py
 
-- source_sha256: `7b9a0405f35433ead9b89e2d9bc0dc834df96da1f57da24543417c1bbc7c3441`
+- source_sha256: `f31045351ad3cb8abef0cdd307c500635e6e14fbbd057de6974c3d0e584a685e`
 - nodes: 2
 
 ### Nodes
@@ -22201,7 +22208,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/nexus_frame_mode.py
 
-- source_sha256: `c78acdae8d9fe916c2be144aec7f42f890cbbd34cff0578894a12699f549e72c`
+- source_sha256: `e625bc121f27b4e116259f93ad01122a01e11326abf86874f779a440bdec6e30`
 - nodes: 2
 
 ### Nodes
@@ -22219,7 +22226,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.nexus_frame_mode.NexusFrameMode`
 - defined at: `src/melder/nexus/configuration/nexus_frame_mode.py:5`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Topology mode enum for Nexus-assigned internal frames.
 - responsibilities:
   - labels single, indexed, and one-per-workspace Nexus frame allocation modes
@@ -22232,7 +22239,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_access_mode.py
 
-- source_sha256: `b4d4c2438ae67f683142efd4ef1237360430185cea0c310a48d6a6e8f8cb8b68`
+- source_sha256: `bae7591ac571d8dffa6fa06bba04f04759df058453e3dd5be6c4755a6f8f24c0`
 - nodes: 2
 
 ### Nodes
@@ -22250,7 +22257,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_access_mode.RiftAccessMode`
 - defined at: `src/melder/nexus/configuration/rift_access_mode.py:5`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: System-level policy enum for direct Rift retrieval.
 - responsibilities:
   - labels open, token-required, and system-only Rift access modes
@@ -22263,7 +22270,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_configuration.py
 
-- source_sha256: `dfbd3cf426712ee53c26f7fd00da5265483d5d2a57bea1cf09e2fefc27f5a6e8`
+- source_sha256: `1cff4ac9f5b28d67767abe3f6ab22d61cdd158d3704aaa4b313b8af2f2b7dd43`
 - nodes: 2
 
 ### Nodes
@@ -22281,7 +22288,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RiftConfiguration` (class)
 
 - id: `melder.nexus.configuration.rift_configuration.RiftConfiguration`
-- defined at: `src/melder/nexus/configuration/rift_configuration.py:11`
+- defined at: `src/melder/nexus/configuration/rift_configuration.py:12`
 - extends: `Cleanable`
 - role: Per-Rift configuration object used to build one live Rift.
 - responsibilities:
@@ -22317,7 +22324,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_creation_mode.py
 
-- source_sha256: `0547c46c1f72ef77bbef4cf1ec5f0d9c58ebec25966c3a7ccc8610b212fd5857`
+- source_sha256: `e8000216e2ad46951bd7bb738a0e0b325ce7cdfabcd192c11c171a5464541bee`
 - nodes: 2
 
 ### Nodes
@@ -22335,7 +22342,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_creation_mode.RiftCreationMode`
 - defined at: `src/melder/nexus/configuration/rift_creation_mode.py:5`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: System-level policy enum for Rift creation/programming.
 - responsibilities:
   - labels open, token-required, and prebuilt-only Rift creation modes
@@ -22348,7 +22355,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_space_type.py
 
-- source_sha256: `f4086d1685c31b0463d196fb0db5fc1827cc097975374762e06d898133ce30d5`
+- source_sha256: `9a3e8bdd52017aaf103df1c20614c58aab9720bb5df962d76642b9235dc420b2`
 - nodes: 2
 
 ### Nodes
@@ -22366,11 +22373,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_space_type.RiftSpaceType`
 - defined at: `src/melder/nexus/configuration/rift_space_type.py:5`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Enum of supported top-level Rift room types.
 - responsibilities:
-  - labels static, capability, codegen, and legacy dynamic room types
-- owns_state: `static`, `capability`, `codegen`, `dynamic`
+  - labels static, capability and codegen Rift room types
+- owns_state: `static`, `capability`, `codegen`
 - phases: `runtime`
 
 <!-- END FILE: src/melder/nexus/configuration/rift_space_type.py -->
@@ -22379,7 +22386,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_validation_mode.py
 
-- source_sha256: `3d4021a01aa8db6698c4218aca28f8ca066167117250bbae3051b8999b6d61a5`
+- source_sha256: `0e85fe0f2b1087a5dc95c74bbc305c931a7392e4d0837b1f8a1cede0fecd9bcb`
 - nodes: 2
 
 ### Nodes
@@ -22397,7 +22404,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_validation_mode.RiftValidationMode`
 - defined at: `src/melder/nexus/configuration/rift_validation_mode.py:5`
-- markers: `Enum`
+- markers: `StrEnum`
 - role: Validation posture enum for Rift execution.
 - responsibilities:
   - labels strict, relaxed, and unsafe Rift validation modes
@@ -22873,7 +22880,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus.py
 
-- source_sha256: `d98e825a39690950515fcff4382d6cf308c546d191a89c7c54b1f48e15573ecc`
+- source_sha256: `b62d5e8397ba99a6ffaba6c54f4bd150e09422e32b1e2e99d0383957def1e4b9`
 - nodes: 2
 
 ### Nodes
@@ -27194,7 +27201,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/general_helpers.py
 
-- source_sha256: `dfcad5ec2937d9d77dada5310eb8502589ed6fe574d52b2c87655fcebd7961e3`
+- source_sha256: `2c69eccc9ac472b4c6316dafc41bea830c50daa6cfc4419bf18f5d758dcf7cb5`
 - nodes: 3
 
 ### Nodes
@@ -27215,15 +27222,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/helpers/general_helpers.py:13`
 - role: Stateless enum normalization helper.
 - responsibilities:
-  - converts raw strings into concrete enum members
-  - rejects invalid or incompatible enum inputs early
+  - resolves declared enum names and aliases case-insensitively, preserving existing lowercase-key precedence
+  - returns requested-family members unchanged and refuses foreign enum inputs, including StrEnum
+  - keeps type-sensitive validation results in the existing bounded 64-entry cache
 - phases: `init`, `runtime`
 - public methods: `convert_enum_and_check`
 
 #### `SpellInputUtils` (class)
 
 - id: `melder.utilities.helpers.general_helpers.SpellInputUtils`
-- defined at: `src/melder/utilities/helpers/general_helpers.py:112`
+- defined at: `src/melder/utilities/helpers/general_helpers.py:128`
 - role: Canonical spell-key normalization helper.
 - responsibilities:
   - normalizes frame keys and binding names into canonical lowercase lookup keys

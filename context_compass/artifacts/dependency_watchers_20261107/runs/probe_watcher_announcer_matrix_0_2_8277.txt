@@ -1,0 +1,1143 @@
+probe_watcher_announcer_matrix.py on 0.2.8277, every cell, the GIL off then on (melder_0,
+2026-11-07T09:06:14Z; STORY-2026-10-25-map_dependency_watchers_and_announcers); interpreter:
+3.14.7 free-threaded build: 1.
+===== A1 (-X gil=0)
+cell A1 (melder 0.2.8277, GIL off): single class English | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A2 (-X gil=0)
+cell A2 (melder 0.2.8277, GIL off): single class English | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A3 (-X gil=0)
+cell A3 (melder 0.2.8277, GIL off): single class English | provider Protocol frame (Greeter,'greeter') | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A4 (-X gil=0)
+cell A4 (melder 0.2.8277, GIL off): single class English | existing object bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (bare)                      -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A5 (-X gil=0)
+cell A5 (melder 0.2.8277, GIL off): single class English | existing object category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (category)                  -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A6 (-X gil=0)
+cell A6 (melder 0.2.8277, GIL off): single Protocol Greeter | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A7 (-X gil=0)
+cell A7 (melder 0.2.8277, GIL off): single name 'English' | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byname'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A8 (-X gil=0)
+cell A8 (melder 0.2.8277, GIL off): single name 'English' | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byname'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A9 (-X gil=0)
+cell A9 (melder 0.2.8277, GIL off): single name 'English' | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byname'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A10 (-X gil=0)
+cell A10 (melder 0.2.8277, GIL off): single Protocol Greeter | provider category named 'greeter' (no match) | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (category_greeter)            -> ok, at greeter/__default__
+    [diag] watch ['greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== B1 (-X gil=0)
+cell B1 (melder 0.2.8277, GIL off): collection list[English] | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B2 (-X gil=0)
+cell B2 (melder 0.2.8277, GIL off): collection list[English] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM45'] -> ['01M6TM45']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: MISS - live []; fresh [English]
+[exit 0]
+
+===== B3 (-X gil=0)
+cell B3 (melder 0.2.8277, GIL off): collection list[English] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: MISS - live []; fresh [English]
+[exit 0]
+
+===== B4 (-X gil=0)
+cell B4 (melder 0.2.8277, GIL off): collection list[Greeter] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> ['ListByProtocol']
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['listbyprotocol'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B5 (-X gil=0)
+cell B5 (melder 0.2.8277, GIL off): collection list['langs'] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== C1 (-X gil=0)
+cell C1 (melder 0.2.8277, GIL off): single class English | index under Protocol frame | notch away to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByClass']
+    [diag] watch ['greeter'] -> []
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== C2 (-X gil=0)
+cell C2 (melder 0.2.8277, GIL off): single class English | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByClass']
+    [diag] watch ['langs'] -> []
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== C3 (-X gil=0)
+cell C3 (melder 0.2.8277, GIL off): single Protocol Greeter | index under Protocol frame | notch to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByProtocol']
+    [diag] watch ['greeter'] -> []
+  meld the consumer (French active)                        -> French
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ByProtocol']
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== C4 (-X gil=0)
+cell C4 (melder 0.2.8277, GIL off): collection list[English] | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> [English]
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ListByClass']
+    [diag] watch ['langs'] -> []
+  meld the consumer (French active)                        -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> []
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: MISS - live []; fresh [English]
+[exit 0]
+
+===== C5 (-X gil=0)
+cell C5 (melder 0.2.8277, GIL off): single name 'English' | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByName']
+    [diag] watch ['langs'] -> []
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['byname'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== C6 (-X gil=0)
+cell C6 (melder 0.2.8277, GIL off): collection list['langs'] | index under category 'langs' | notch to French and back
+  meld the consumer (English active)                       -> [English]
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ListByLabel']
+    [diag] watch ['langs'] -> ['ListByLabel']
+  meld the consumer (French active)                        -> [French]
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ListByLabel']
+    [diag] watch ['langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== I1 (-X gil=0)
+cell I1 (melder 0.2.8277, GIL off): single class English | index under 'langs' | remove_from_spell_index / add_to_spell_index of a parked one
+  meld the consumer (English active, French parked)        -> English
+  remove_from_spell_index(French)                          -> ok
+  meld the consumer                                        -> English
+  add_to_spell_index(French, back into English's index)    -> ok
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== I2 (-X gil=0)
+cell I2 (melder 0.2.8277, GIL off): single class English | French active under 'langs' | bind_inactive English, notch to it
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  bind_inactive English onto the 'langs' index             -> ok
+  meld the consumer (English parked)                       -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch to English                                         -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== E1 (-X gil=0)
+cell E1 (melder 0.2.8277, GIL off): single class English, resolved | a second English (category) arrives | bind after conjure
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+  VERDICT: MISS - live English; fresh raises SpellbookValidationError
+[exit 0]
+
+===== D1 (-X gil=0)
+cell D1 (melder 0.2.8277, GIL off): single class English, AMBIGUOUS | one competitor disposed | cleanup_spell
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  dispose + bind the consumer again (compile it AMBIGUOUS) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] consumer validity invalid; sockets [('AMBIGUOUS_INPUT', ('english', '__default__'))]
+  meld the consumer (two providers)                        -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] consumer validity invalid; sockets [('AMBIGUOUS_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, one provider left)              -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises SpellbookValidationError; fresh English
+[exit 0]
+
+===== D2 (-X gil=0)
+cell D2 (melder 0.2.8277, GIL off): collection list[English], two members | one disposed | cleanup_spell
+  meld the consumer (two members)                          -> [Edited.English, English]
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46', 'ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM46'] -> ['01M6TM46']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== D3 (-X gil=0)
+cell D3 (melder 0.2.8277, GIL off): single class English, resolved (bare) | provider disposed | cleanup_spell
+  meld the consumer                                        -> English
+  cleanup_spell(English)                                   -> ok
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47', 'ByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises RuntimeError: RootResolutionBlueprint has already been cleaned. 
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises RuntimeError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== F1 (-X gil=0)
+cell F1 (melder 0.2.8277, GIL off): OVERRIDE_REQUIRED Protocol Greeter (definition bound resolvable=False) | provider Protocol frame
+  meld the consumer (no provider yet)                      -> raises TypeError: ByProtocol.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== F2 (-X gil=0)
+cell F2 (melder 0.2.8277, GIL off): OVERRIDE_REQUIRED class English (definition bound resolvable=False) | Edited.English category
+  meld the consumer (no provider yet)                      -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+  dispose + bind the consumer again, meld (FRESH)          -> Edited.English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises TypeError; fresh Edited.English
+[exit 0]
+
+===== G1 (-X gil=0)
+cell G1 (melder 0.2.8277, GIL off): single class English in a borrower | owner's English bare | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== G2 (-X gil=0)
+cell G2 (melder 0.2.8277, GIL off): single class English in a borrower | owner's English Protocol frame | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== G3 (-X gil=0)
+cell G3 (melder 0.2.8277, GIL off): single class English in a borrower | owner's English category | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== G4 (-X gil=0)
+cell G4 (melder 0.2.8277, GIL off): single class English in a borrower, resolved to the borrowed copy | remove_spell_from_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  (arrival: live English, fresh English; the consumer is now compiled against the borrowed copy)
+  borrower.remove_spell_from_contract(English, owner)      -> True
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, contract removed)               -> English
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live English; fresh raises UnresolvedInputError
+[exit 0]
+
+===== H1 (-X gil=0)
+cell H1 (melder 0.2.8277, GIL off): single class English in the target | owner's English bare | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== H2 (-X gil=0)
+cell H2 (melder 0.2.8277, GIL off): single class English in the target | owner's English Protocol frame | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== H3 (-X gil=0)
+cell H3 (melder 0.2.8277, GIL off): single class English, resolved at home | English transferred away | transfer_spell_ownership
+  meld the consumer at home                                -> English
+  home.transfer_spell_ownership(English -> other)          -> ok
+    [diag] edge  ['English'] -> ['English', 'ByClass']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== P1a (-X gil=0)
+cell P1a (melder 0.2.8277, GIL off): Phase 4 binding-key cycle: CycZ under category 'cycb' (CycA's annotated name) | conjure
+  conjure (CycZ under category 'cycb')                     -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: CycA, CycZ. codes=['BINDING_RESOLUTION_CYCLE']
+  VERDICT: MISS - conjure raises SpellbookValidationError; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+
+===== P1b (-X gil=0)
+cell P1b (melder 0.2.8277, GIL off): Phase 4 binding-key cycle control: CycZ under category 'zz' | conjure
+  conjure (CycZ under category 'zz')                       -> ok
+  meld CycA                                                -> CycB
+  meld CycZ                                                -> CycA
+  VERDICT: OK - conjure ok; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+
+===== A1 (-X gil=1)
+cell A1 (melder 0.2.8277, GIL on): single class English | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A2 (-X gil=1)
+cell A2 (melder 0.2.8277, GIL on): single class English | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A3 (-X gil=1)
+cell A3 (melder 0.2.8277, GIL on): single class English | provider Protocol frame (Greeter,'greeter') | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A4 (-X gil=1)
+cell A4 (melder 0.2.8277, GIL on): single class English | existing object bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (bare)                      -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A5 (-X gil=1)
+cell A5 (melder 0.2.8277, GIL on): single class English | existing object category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (category)                  -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM47'] -> ['01M6TM47']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A6 (-X gil=1)
+cell A6 (melder 0.2.8277, GIL on): single Protocol Greeter | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A7 (-X gil=1)
+cell A7 (melder 0.2.8277, GIL on): single name 'English' | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byname'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A8 (-X gil=1)
+cell A8 (melder 0.2.8277, GIL on): single name 'English' | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byname'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A9 (-X gil=1)
+cell A9 (melder 0.2.8277, GIL on): single name 'English' | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byname'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== A10 (-X gil=1)
+cell A10 (melder 0.2.8277, GIL on): single Protocol Greeter | provider category named 'greeter' (no match) | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (category_greeter)            -> ok, at greeter/__default__
+    [diag] watch ['greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== B1 (-X gil=1)
+cell B1 (melder 0.2.8277, GIL on): collection list[English] | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B2 (-X gil=1)
+cell B2 (melder 0.2.8277, GIL on): collection list[English] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: MISS - live []; fresh [English]
+[exit 0]
+
+===== B3 (-X gil=1)
+cell B3 (melder 0.2.8277, GIL on): collection list[English] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: MISS - live []; fresh [English]
+[exit 0]
+
+===== B4 (-X gil=1)
+cell B4 (melder 0.2.8277, GIL on): collection list[Greeter] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> ['ListByProtocol']
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbyprotocol'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B5 (-X gil=1)
+cell B5 (melder 0.2.8277, GIL on): collection list['langs'] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== C1 (-X gil=1)
+cell C1 (melder 0.2.8277, GIL on): single class English | index under Protocol frame | notch away to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByClass']
+    [diag] watch ['greeter'] -> []
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== C2 (-X gil=1)
+cell C2 (melder 0.2.8277, GIL on): single class English | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByClass']
+    [diag] watch ['langs'] -> []
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== C3 (-X gil=1)
+cell C3 (melder 0.2.8277, GIL on): single Protocol Greeter | index under Protocol frame | notch to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByProtocol']
+    [diag] watch ['greeter'] -> []
+  meld the consumer (French active)                        -> French
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ByProtocol']
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== C4 (-X gil=1)
+cell C4 (melder 0.2.8277, GIL on): collection list[English] | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> [English]
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ListByClass']
+    [diag] watch ['langs'] -> []
+  meld the consumer (French active)                        -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> []
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: MISS - live []; fresh [English]
+[exit 0]
+
+===== C5 (-X gil=1)
+cell C5 (melder 0.2.8277, GIL on): single name 'English' | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByName']
+    [diag] watch ['langs'] -> []
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byname'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== C6 (-X gil=1)
+cell C6 (melder 0.2.8277, GIL on): collection list['langs'] | index under category 'langs' | notch to French and back
+  meld the consumer (English active)                       -> [English]
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ListByLabel']
+    [diag] watch ['langs'] -> ['ListByLabel']
+  meld the consumer (French active)                        -> [French]
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ListByLabel']
+    [diag] watch ['langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== I1 (-X gil=1)
+cell I1 (melder 0.2.8277, GIL on): single class English | index under 'langs' | remove_from_spell_index / add_to_spell_index of a parked one
+  meld the consumer (English active, French parked)        -> English
+  remove_from_spell_index(French)                          -> ok
+  meld the consumer                                        -> English
+  add_to_spell_index(French, back into English's index)    -> ok
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM48'] -> ['01M6TM48']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== I2 (-X gil=1)
+cell I2 (melder 0.2.8277, GIL on): single class English | French active under 'langs' | bind_inactive English, notch to it
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  bind_inactive English onto the 'langs' index             -> ok
+  meld the consumer (English parked)                       -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch to English                                         -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== E1 (-X gil=1)
+cell E1 (melder 0.2.8277, GIL on): single class English, resolved | a second English (category) arrives | bind after conjure
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+  VERDICT: MISS - live English; fresh raises SpellbookValidationError
+[exit 0]
+
+===== D1 (-X gil=1)
+cell D1 (melder 0.2.8277, GIL on): single class English, AMBIGUOUS | one competitor disposed | cleanup_spell
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  dispose + bind the consumer again (compile it AMBIGUOUS) -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] consumer validity invalid; sockets [('AMBIGUOUS_INPUT', ('english', '__default__'))]
+  meld the consumer (two providers)                        -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] consumer validity invalid; sockets [('AMBIGUOUS_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, one provider left)              -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['AMBIGUOUS_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises SpellbookValidationError; fresh English
+[exit 0]
+
+===== D2 (-X gil=1)
+cell D2 (melder 0.2.8277, GIL on): collection list[English], two members | one disposed | cleanup_spell
+  meld the consumer (two members)                          -> [Edited.English, English]
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49', 'ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== D3 (-X gil=1)
+cell D3 (melder 0.2.8277, GIL on): single class English, resolved (bare) | provider disposed | cleanup_spell
+  meld the consumer                                        -> English
+  cleanup_spell(English)                                   -> ok
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49', 'ByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises RuntimeError: RootResolutionBlueprint has already been cleaned. 
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises RuntimeError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== F1 (-X gil=1)
+cell F1 (melder 0.2.8277, GIL on): OVERRIDE_REQUIRED Protocol Greeter (definition bound resolvable=False) | provider Protocol frame
+  meld the consumer (no provider yet)                      -> raises TypeError: ByProtocol.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== F2 (-X gil=1)
+cell F2 (melder 0.2.8277, GIL on): OVERRIDE_REQUIRED class English (definition bound resolvable=False) | Edited.English category
+  meld the consumer (no provider yet)                      -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+  dispose + bind the consumer again, meld (FRESH)          -> Edited.English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises TypeError; fresh Edited.English
+[exit 0]
+
+===== G1 (-X gil=1)
+cell G1 (melder 0.2.8277, GIL on): single class English in a borrower | owner's English bare | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== G2 (-X gil=1)
+cell G2 (melder 0.2.8277, GIL on): single class English in a borrower | owner's English Protocol frame | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== G3 (-X gil=1)
+cell G3 (melder 0.2.8277, GIL on): single class English in a borrower | owner's English category | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['langs'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== G4 (-X gil=1)
+cell G4 (melder 0.2.8277, GIL on): single class English in a borrower, resolved to the borrowed copy | remove_spell_from_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  (arrival: live English, fresh English; the consumer is now compiled against the borrowed copy)
+  borrower.remove_spell_from_contract(English, owner)      -> True
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, contract removed)               -> English
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live English; fresh raises UnresolvedInputError
+[exit 0]
+
+===== H1 (-X gil=1)
+cell H1 (melder 0.2.8277, GIL on): single class English in the target | owner's English bare | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== H2 (-X gil=1)
+cell H2 (melder 0.2.8277, GIL on): single class English in the target | owner's English Protocol frame | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6TM49'] -> ['01M6TM49']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== H3 (-X gil=1)
+cell H3 (melder 0.2.8277, GIL on): single class English, resolved at home | English transferred away | transfer_spell_ownership
+  meld the consumer at home                                -> English
+  home.transfer_spell_ownership(English -> other)          -> ok
+    [diag] edge  ['English'] -> ['ByClass', 'English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6TM4A'] -> ['01M6TM4A']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== P1a (-X gil=1)
+cell P1a (melder 0.2.8277, GIL on): Phase 4 binding-key cycle: CycZ under category 'cycb' (CycA's annotated name) | conjure
+  conjure (CycZ under category 'cycb')                     -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: CycA, CycZ. codes=['BINDING_RESOLUTION_CYCLE']
+  VERDICT: MISS - conjure raises SpellbookValidationError; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+
+===== P1b (-X gil=1)
+cell P1b (melder 0.2.8277, GIL on): Phase 4 binding-key cycle control: CycZ under category 'zz' | conjure
+  conjure (CycZ under category 'zz')                       -> ok
+  meld CycA                                                -> CycB
+  meld CycZ                                                -> CycA
+  VERDICT: OK - conjure ok; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+

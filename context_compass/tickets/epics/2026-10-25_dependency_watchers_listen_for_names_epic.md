@@ -4,13 +4,13 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-10-25-dependency_watchers_listen_for_names
-- Status: ready
+- Status: in_progress
 - Owner: Mark (owner)
-- Agent Name: melder_1
+- Agent Name: melder_0
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-25T02:26:33Z
-- Updated: 2026-10-25T02:26:33Z
+- Updated: 2026-11-07T08:53:20Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: Melder runtime correctness - structure that is wrong or stuck (the owner, 2026-10-14)
 
@@ -76,10 +76,10 @@ right once, for every socket kind, is the durable fix rather than a patch per ev
 - Out of scope: meld-door discovery, the creation stores, the notch's signature handling.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: the owner asked for this epic (chat 2026-10-25); the bug reproduces on 0.2.8267 and the first
-  story is defined.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: S1 started (melder_0, on the owner's certification, chat 2026-11-07) once the probe-and-purge
+  story had landed (0.2.8269), as the first Note required.
 
 ## Success Metrics
 - S1's matrix covers every cell of socket kind x annotation kind x provider binding shape x change event, each
@@ -157,6 +157,7 @@ this does not make independent review mandatory for every ticket.
 
 ## Contribution Attribution
 - Ticket/Work Author(s): melder_1 (synaptic_python_developer); prose and evidence; filed 2026-10-25T02:26:33Z.
+  melder_0 (synaptic_python_developer); runs S1 from 2026-11-07T08:53:20Z.
 - Published By: UNKNOWN (a local ticket file; not published)
 - Independent Review: none yet
 
@@ -180,6 +181,35 @@ this does not make independent review mandatory for every ticket.
   NEXT: Start S1 when the probe-and-purge story lands.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+- DATETIME: 2026-11-07T08:53:20Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: S1 is running: melder_0 took the lane on the owner's certification (chat 2026-11-07), after the
+    probe-and-purge story landed (0.2.8269) as the first Note required. The board row now routes to the S1 story;
+    the tranche order is unchanged - S1's matrix and a DECISION_REQUEST here, then fix stories on the owner's word.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md:140-155
+  - context_compass/attention_board.md:110-110
+  IMPACT: The epic is in progress; program direction holds.
+  NEXT: S1's matrix and root cause on the story, then the DECISION_REQUEST with costed options here.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+- DATETIME: 2026-11-07T10:07:37Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: The measured miss this epic was filed for is decided: the owner chose the Autofac-strict model (chat
+    2026-11-07) - a spell under a spellframe is reached through the frame, never by its class - which removes the
+    key split by construction; it runs as EPIC-2026-11-07-spellframe_hides_the_concrete_class (GitHub #208). S1
+    measured five more misses (a transfer marking the source Book; a disposed competitor; a removed contract; a
+    resolved socket not watched; the Phase 4 binding-key cycle heuristic); they stay here, one at a time.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md:140-330
+  IMPACT: This epic's acceptance criterion for the reproducer moves to the new epic; the other misses remain here.
+  NEXT: The owner's word on H1/H2 (the transfer's Book scope).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
@@ -197,9 +227,10 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: why a consumer waiting on a provider misses the provider's arrival when it is bound under a spellframe, for
   every watcher and announcer; then the fixes. Filed 2026-10-25T02:26:33Z on the owner's ask.
-- State: ready, melder_1. Known: the UNRESOLVED_INPUT case (Problem); unknown: the other watchers (S1).
-- Next: (1) S1 after the probe-and-purge story lands; (2) its matrix and a DECISION_REQUEST for the owner; (3) the
-  fix stories on his word.
+- State: in_progress, melder_0 (S1 started 2026-11-07T08:53:20Z). Known: the UNRESOLVED_INPUT case (Problem);
+  unknown: the other watchers (S1).
+- Next: (1) S1's code reading and matrix probe (running); (2) its matrix and a DECISION_REQUEST for the owner; (3)
+  the fix stories on his word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

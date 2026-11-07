@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/claim_mode.py",
- "source_sha256": "0b3a8cd625f9c3b7f742218adb2603035cc603b50c28e863cff0950d70cbb3de",
+ "source_sha256": "51881fd73fa2629ab174ec29bcffb662d18686fb2dc9823691da94def6a4597a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.claim_mode": {
@@ -24,13 +24,15 @@
    "markers": [
     "StrEnum"
    ],
-   "public_methods": [],
+   "public_methods": [
+    "wire_value"
+   ],
    "shape": {
-    "method_count": 0,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e1ccfe5d42fc232a89e5bd735ffd2a4a501bd26a404e791171e1ddd60a7b57ce",
+   "span_sha256": "857576944956ad5e9a345b2fa48de6462851ea477de1469f951224521e0a648b",
    "include": true,
    "role": "The access posture one holder requests over one scope key - and the vocabulary the whole plane turns on.",
    "responsibilities": [
@@ -49,7 +51,7 @@
    "label": "ClaimCompatibility",
    "kind": "class",
    "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
-   "lineno": 72,
+   "lineno": 104,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -90,6 +92,7 @@
   "StrEnum": "enum.StrEnum",
   "ClassVar": "typing.ClassVar",
   "FrozenSet": "typing.FrozenSet",
+  "Optional": "typing.Optional",
   "Tuple": "typing.Tuple"
  },
  "collapse_candidate": null

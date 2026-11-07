@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
- "source_sha256": "0aba680529cdf0ef518595219b1577eb830b45499bdc447cbed4b11f66f3c0df",
+ "source_sha256": "e60f25ce498c7e865014de70344403f37faf79ca5c885ebe7b49e44e3ba6ea68",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request": {
@@ -24,13 +24,15 @@
    "markers": [
     "StrEnum"
    ],
-   "public_methods": [],
+   "public_methods": [
+    "wire_value"
+   ],
    "shape": {
-    "method_count": 0,
+    "method_count": 3,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5d58de41ab5662aa2681bcc5983593ed8cb0af2f8815e57f804ac87c2264d9b6",
+   "span_sha256": "84572745014e081b34775c7192243d8460b0568cab09bc90536c67095e96df45",
    "role": "Enum of supported change-control transaction kinds.",
    "responsibilities": [
     "labels bind, link, transfer ownership, mutation, and cluster link transactions"
@@ -52,7 +54,7 @@
    "label": "ChangeControlTransactionRequest",
    "kind": "class",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
-   "lineno": 81,
+   "lineno": 134,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -86,7 +88,7 @@
    "label": "ChangeControlAdmissionResult",
    "kind": "class",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
-   "lineno": 176,
+   "lineno": 229,
    "bases": [],
    "markers": [],
    "public_methods": [],

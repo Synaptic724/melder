@@ -278,7 +278,7 @@ def test_conduit_begin_transaction_appends_explicit_conduit_ids_for_non_link_req
     conduit_dynamic_normal.begin_transaction("bind", conduit_ids=["peer-1"])
 
     spellbook_stub.begin_transaction.assert_called_once_with(
-        "bind",
+        ChangeTransactionType.BIND,
         conduit_id=conduit_dynamic_normal._id,
         scope_keys=None,
         scope_hashes=None,
@@ -325,7 +325,7 @@ def test_end_binding_transaction_delegates_for_normal_conduit(
     conduit_dynamic_normal.end_transaction("bind")
 
     spellbook_stub.end_transaction.assert_called_once_with(
-        "bind",
+        ChangeTransactionType.BIND,
         success=True,
     )
 
@@ -388,7 +388,7 @@ def test_conduit_transaction_context_ends_on_exception(
             raise RuntimeError("boom")
 
     spellbook_stub.begin_transaction.assert_called_once_with(
-        "bind",
+        ChangeTransactionType.BIND,
         conduit_id=conduit_dynamic_normal._id,
         scope_keys=None,
         scope_hashes=None,
@@ -396,7 +396,7 @@ def test_conduit_transaction_context_ends_on_exception(
         metadata=None,
     )
     spellbook_stub.end_transaction.assert_called_once_with(
-        "bind",
+        ChangeTransactionType.BIND,
         success=False,
     )
 

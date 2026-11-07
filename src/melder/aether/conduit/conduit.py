@@ -1639,7 +1639,7 @@ class Conduit(Cleanable):
 
     def _transaction_blocked_for_current_posture(
             self,
-            transaction_name: Optional[ChangeTransactionType],
+            transaction_name: Optional[Union[str, ChangeTransactionType]],
     ) -> bool:
         """
         Internal
@@ -1653,29 +1653,30 @@ class Conduit(Cleanable):
         """
         if not transaction_name:
             return False
+        transaction_token = ChangeTransactionType._comparison_token(transaction_name)
         frame_configuration = self._spellbook._aetheric_frame_configuration
         if frame_configuration is None:
-            return transaction_name != ChangeTransactionType.BIND and not self.__dynamic_environment__
-        if transaction_name == ChangeTransactionType.BIND:
+            return transaction_token != "bind" and not self.__dynamic_environment__
+        if transaction_token == "bind":
             return self._bind_family_blocked_for_current_posture()
         if frame_configuration.disable_all_transactions_after_conjure:
             return True
-        if transaction_name == ChangeTransactionType.LINK:
+        if transaction_token == "link":
             return (
                 frame_configuration.disable_linking
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == ChangeTransactionType.TRANSFER_OWNERSHIP:
+        if transaction_token == "transfer_ownership":
             return (
                 frame_configuration.disable_transfer_of_ownership
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == ChangeTransactionType.CLUSTER_LINK:
+        if transaction_token == "cluster_link":
             return (
                 frame_configuration.disable_conduit_cluster
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == ChangeTransactionType.MUTATION:
+        if transaction_token == "mutation":
             return (
                 frame_configuration.disable_mutations
                 or frame_configuration.system_state is not SystemState.dynamic
@@ -3481,7 +3482,7 @@ class Conduit(Cleanable):
 
     def begin_transaction(
             self,
-            transaction_type: ChangeTransactionType,
+            transaction_type: Union[str, ChangeTransactionType],
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -3509,7 +3510,7 @@ class Conduit(Cleanable):
             - Link and transfer transactions require dynamic mode.
         Args:
             transaction_type:
-                Transaction type string value (e.g. "bind", "link").
+                A member, its exact name, or its historical lowercase value.
             conduit_ids:
                 Optional list of conduits participating in non-link requests.
                 Link transactions require explicit conduit objects.
@@ -3550,7 +3551,7 @@ class Conduit(Cleanable):
         mediator = self._get_required_transaction_mediator()
         existing_request = mediator.get_active_request()
 
-        request_type_value = transaction_type
+        request_type_value = ChangeTransactionType._comparison_token(transaction_type)
 
         dynamic_only = {
             "link",
@@ -3592,7 +3593,7 @@ class Conduit(Cleanable):
                 if conduit._id not in conduit_values:
                     conduit_values.append(conduit._id)
 
-        if request_type_value == ChangeTransactionType.LINK:
+        if request_type_value == "link":
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
@@ -3612,7 +3613,7 @@ class Conduit(Cleanable):
                 metadata=link_metadata,
             )
             return
-        if request_type_value == ChangeTransactionType.UNLINK:
+        if request_type_value == "unlink":
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
@@ -3632,7 +3633,7 @@ class Conduit(Cleanable):
                 metadata=unlink_metadata,
             )
             return
-        if request_type_value == ChangeTransactionType.BIND:
+        if request_type_value == "bind":
             self._spellbook.begin_transaction(
                 ChangeTransactionType.BIND,
                 conduit_id=self._id,
@@ -3642,7 +3643,7 @@ class Conduit(Cleanable):
                 metadata=metadata,
             )
             return
-        if request_type_value == ChangeTransactionType.TRANSFER_OWNERSHIP:
+        if request_type_value == "transfer_ownership":
             transfer_metadata = dict(metadata) if metadata is not None else {}
             transfer_metadata.setdefault(
                 "origin_surface",
@@ -3685,7 +3686,7 @@ class Conduit(Cleanable):
 
     def end_transaction(
             self,
-            transaction_type: Optional[ChangeTransactionType] = None,
+            transaction_type: Optional[Union[str, ChangeTransactionType]] = None,
             *,
             success: bool = True,
     ) -> None:
@@ -3718,7 +3719,7 @@ class Conduit(Cleanable):
         if self._conduit_state is not ConduitState.normal:
             self._logger.error("end_transaction called when conduit is not normal", "end_transaction")
             raise RuntimeError("Only normal conduits can end change transactions.")
-        if transaction_type == ChangeTransactionType.BIND:
+        if ChangeTransactionType._comparison_token(transaction_type) == "bind":
             self._spellbook.end_transaction(ChangeTransactionType.BIND, success=success)
             return
         self._get_required_transaction_mediator().end_transaction(
@@ -3729,7 +3730,7 @@ class Conduit(Cleanable):
     @contextmanager
     def transaction(
             self,
-            transaction_type: ChangeTransactionType,
+            transaction_type: Union[str, ChangeTransactionType],
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -3754,7 +3755,7 @@ class Conduit(Cleanable):
             - Link and transfer transactions require dynamic mode.
         Args:
             transaction_type:
-                Transaction type string value (e.g. "bind", "link").
+                A member, its exact name, or its historical lowercase value.
             conduit_ids:
                 Optional list of conduits participating in non-link requests.
                 Link transactions require explicit conduit objects.
@@ -6937,7 +6938,7 @@ class Conduit(Cleanable):
                 "Call begin_transaction('link') on the borrower and include both "
                 "borrower and peer conduits."
             )
-        if request.request_type not in (
+        if ChangeTransactionType._comparison_token(request.request_type) not in (
                 "link",
                 "cluster_link",
                 "cluster_join",

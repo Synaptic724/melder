@@ -5,6 +5,9 @@ from threading import Condition, RLock
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -25,7 +28,8 @@ class ClaimMode(StrEnum):
         serializing true structural overlap.
 
     Contract:
-        - Values are stable because they travel in request payloads and logs.
+        - Values match member names. Historical x/s/ix tokens remain available
+          through `wire_value` and stay readable in requests and old pickles.
         - `EXCLUSIVE` ("x") is the default and matches pre-mode semantics: no
           other claim of any mode may coexist on the same scope key.
         - `SHARED` ("s") permits coexistence with other `SHARED` claims only.
@@ -62,9 +66,42 @@ class ClaimMode(StrEnum):
         access: internal. Claim modes for scope-key acquisition. Melder kernel machinery: read
         it to understand the runtime, do not drive it directly.
     """
-    EXCLUSIVE = "x"
-    SHARED = "s"
-    INTENT = "ix"
+    EXCLUSIVE = "EXCLUSIVE"
+    SHARED = "SHARED"
+    INTENT = "INTENT"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ClaimMode]:
+        """
+        Resolve the exact historical short claim tokens.
+
+        Args:
+            value: A value not already matched by the enum constructor.
+
+        Returns:
+            Optional[ClaimMode]: The legacy mode, or None for unknown values.
+        """
+        if value == "x":
+            return cls.EXCLUSIVE
+        if value == "s":
+            return cls.SHARED
+        if value == "ix":
+            return cls.INTENT
+        return None
+
+    @property
+    def wire_value(self) -> str:
+        """
+        Return the historical short code used in claims and evidence.
+
+        Returns:
+            str: x, s, or ix for the corresponding mode.
+        """
+        if self is ClaimMode.EXCLUSIVE:
+            return "x"
+        if self is ClaimMode.SHARED:
+            return "s"
+        return "ix"
 
 
 @dataclass(frozen=True)
@@ -396,7 +433,7 @@ class ChangeControlEmbargoManager(Cleanable):
                         continue
                     if not self._modes_compatible(record.mode, mode):
                         blocking.append(
-                            (scope_key, record.owner_request_id, record.mode.value)
+                            (scope_key, record.owner_request_id, record.mode.wire_value)
                         )
             if blocking:
                 return AcquisitionDecision(
@@ -872,9 +909,13 @@ class ChangeControlEmbargoManager(Cleanable):
         self.open_embargo(
             scope_keys=scope_keys,
             reason_tag=(
-                request.request_type.value
-                if hasattr(request.request_type, "value")
-                else str(request.request_type)
+                request.request_type.wire_value
+                if isinstance(request.request_type, ChangeTransactionType)
+                else (
+                    request.request_type.value
+                    if hasattr(request.request_type, "value")
+                    else str(request.request_type)
+                )
             ),
             owner_request_id=request.request_id,
         )

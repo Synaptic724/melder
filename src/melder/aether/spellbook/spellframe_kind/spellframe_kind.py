@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SpellframeKind(Enum):
+class SpellframeKind(StrEnum):
     """
     What kind of thing a spell's `spellframe` is.
 
@@ -28,6 +28,10 @@ class SpellframeKind(Enum):
           spells recorded under it, and a collection of it gathers them.
         - Any other object offered as a spellframe is refused at bind
           (TypeError); there is no fourth kind.
+
+        - Names and values match. Members compare as strings, including equal-valued
+          members of other StrEnum families; callers needing family identity must check
+          the concrete enum type.
 
     Threading:
         Immutable enum members; safe to read from any thread.

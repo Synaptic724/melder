@@ -183,7 +183,7 @@ def test_unregister_index_triggers_risk_manager(
 
     Contract:
     - register_index notifies with SpellValidity.gated.
-    - unregister_index notifies with SpellValidity.cleaned.
+    - unregister_index notifies with SpellValidity.CLEANED.
     """
     risk_manager = MagicMock()
     states_manager.set_risk_manager(risk_manager)
@@ -193,7 +193,7 @@ def test_unregister_index_triggers_risk_manager(
 
     calls = risk_manager.on_structural_validity_change.call_args_list
     assert calls[0] == call("idx-1", SpellValidity.gated)
-    assert calls[-1] == call("idx-1", SpellValidity.cleaned)
+    assert calls[-1] == call("idx-1", SpellValidity.CLEANED)
     assert len(calls) == 2
 
 def test_unregister_index_marks_dependents_gated(

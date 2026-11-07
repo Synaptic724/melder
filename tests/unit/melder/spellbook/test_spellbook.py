@@ -1662,7 +1662,7 @@ def test_end_transaction_guard_and_abort_paths(monkeypatch):
             mediator_state["session"]
             if (
                 mediator_state["session"] is not None
-                and kwargs.get("transaction_type") == "bind"
+                and kwargs.get("transaction_type") is spellbook_module.ChangeTransactionType.BIND
                 and mediator_state["session"].request.request_type == "bind"
             )
             else None
@@ -2680,7 +2680,7 @@ def test_check_system_state_dynamic_policy_rejected_when_dynamic_disabled():
     with pytest.raises(RuntimeError) as excinfo:
         SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, dynamic=False)
     message = str(excinfo.value)
-    assert "policy=Policies.whitelist_all" in message
+    assert "policy=whitelist_all" in message
     assert "allowed=default" in message
 
 

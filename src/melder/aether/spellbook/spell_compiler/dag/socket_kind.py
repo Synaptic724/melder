@@ -1,12 +1,16 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Any, Optional
 
 
 
-class SocketKind(Enum):
+class SocketKind(StrEnum):
     """
     Internal
 
     Classify the socket kind represented by a DAG edge.
+
+    Values exactly match member names. Historical numeric values 1-5 remain
+    readable by value and are projected explicitly for numeric compiler rows.
 
     This enum now covers only the live compiler socket families:
 
@@ -51,8 +55,48 @@ class SocketKind(Enum):
         AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).
     """
 
-    NORMAL = auto()
-    SPELL_CONTRACT = auto()
-    OVERRIDE_REQUIRED = auto()
-    UNRESOLVED_INPUT = auto()
-    AMBIGUOUS_INPUT = auto()
+    NORMAL = "NORMAL"
+    SPELL_CONTRACT = "SPELL_CONTRACT"
+    OVERRIDE_REQUIRED = "OVERRIDE_REQUIRED"
+    UNRESOLVED_INPUT = "UNRESOLVED_INPUT"
+    AMBIGUOUS_INPUT = "AMBIGUOUS_INPUT"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SocketKind]:
+        """
+        Resolve a historical numeric socket kind to its original member.
+
+        Values equal to the old integers remain readable; unknown or unhashable
+        inputs return None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, SocketKind] = {
+            1: cls.NORMAL,
+            2: cls.SPELL_CONTRACT,
+            3: cls.OVERRIDE_REQUIRED,
+            4: cls.UNRESOLVED_INPUT,
+            5: cls.AMBIGUOUS_INPUT,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None
+
+    @classmethod
+    def _legacy_code(cls, value: Any) -> Any:
+        """
+        Return the historical integer for a SocketKind used in compiler rows.
+
+        Other value-bearing objects retain their prior .value behavior; a missing
+        .value raises AttributeError for the caller's existing fallback to handle.
+        """
+        if value is cls.NORMAL:
+            return 1
+        if value is cls.SPELL_CONTRACT:
+            return 2
+        if value is cls.OVERRIDE_REQUIRED:
+            return 3
+        if value is cls.UNRESOLVED_INPUT:
+            return 4
+        if value is cls.AMBIGUOUS_INPUT:
+            return 5
+        return value.value

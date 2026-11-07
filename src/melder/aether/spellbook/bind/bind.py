@@ -1,6 +1,7 @@
 import inspect
 import threading
 import math
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
 
 if TYPE_CHECKING:
@@ -1086,8 +1087,9 @@ class Bind(Cleanable):
         Resolve a managed binding's mode.
 
         Contract:
-            - None -> `ManagedSpellMode.elastic`; a member -> itself; a string -> the member of that name,
-              matched lowercased (as Existence and Permissions names are).
+            - None -> `ManagedSpellMode.elastic`; a member -> itself; a non-enum string -> the member of that
+              name, matched lowercased (as Existence and Permissions names are).
+            - Foreign enum members are not treated as plain strings, even when string-backed.
 
         Args:
             managed_spell_mode: A `ManagedSpellMode`, its name, or None.
@@ -1103,7 +1105,7 @@ class Bind(Cleanable):
             return ManagedSpellMode.elastic
         if isinstance(managed_spell_mode, ManagedSpellMode):
             return managed_spell_mode
-        if isinstance(managed_spell_mode, str):
+        if isinstance(managed_spell_mode, str) and not isinstance(managed_spell_mode, Enum):
             mode = ManagedSpellMode.__members__.get(managed_spell_mode.lower())
             if mode is None:
                 raise ValueError(

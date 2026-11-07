@@ -284,8 +284,8 @@ def test_bind_post_conjure_claims_spellbook_and_cluster_intent() -> None:
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:cluster:cluster-1"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:cluster:cluster-1"] == "ix"
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
 
@@ -418,8 +418,8 @@ def test_link_claims_only_owning_spellbooks_intent() -> None:
 
     scope_claims = dict(plan["scope_claims"])
     assert set(scope_claims) == {"scope:spellbook:spellbook-1", "scope:spellbook:spellbook-2"}
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
 
 
 def test_link_includes_all_named_peers() -> None:
@@ -505,8 +505,8 @@ def test_unlink_claims_owning_spellbooks_intent_conduits_exclusive() -> None:
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
     assert plan["metadata"]["unlink_mode"] == "conduit_unlink"

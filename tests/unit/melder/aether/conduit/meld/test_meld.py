@@ -2265,7 +2265,7 @@ def test_gated_validation_required_returns_true_for_unknown_or_gated(
 
 @pytest.mark.parametrize(
     "validity",
-    [SpellValidity.invalid, SpellValidity.disabled, SpellValidity.cleaned],
+    [SpellValidity.invalid, SpellValidity.disabled, SpellValidity.CLEANED],
 )
 def test_gated_validation_required_raises_for_invalid_or_disabled_or_cleaned(
     validity: SpellValidity,
@@ -2477,7 +2477,7 @@ def test_ensure_lineage_resolvable_raises_for_cleaned_state() -> None:
         - Cleaned validity raises without attempting revalidation.
     """
     meld = _make_meld()
-    state = _SystemStateStub(validity=SpellValidity.cleaned)
+    state = _SystemStateStub(validity=SpellValidity.CLEANED)
     spell = _SpellStub(spell_id="spell-1", system_state=state)
     with pytest.raises(SpellbookValidationError):
         meld._ensure_lineage_resolvable(spell)
@@ -2485,7 +2485,7 @@ def test_ensure_lineage_resolvable_raises_for_cleaned_state() -> None:
 
 @pytest.mark.parametrize(
     "validity",
-    [SpellValidity.invalid, SpellValidity.disabled, SpellValidity.cleaned],
+    [SpellValidity.invalid, SpellValidity.disabled, SpellValidity.CLEANED],
 )
 def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
     validity: SpellValidity,

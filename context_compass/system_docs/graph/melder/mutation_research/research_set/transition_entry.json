@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/transition_entry.py",
- "source_sha256": "a9d0e76bc78c048cca1a0a0fab5fd2eb8cbb6e6f723e4d0d45c35559587690c2",
+ "source_sha256": "4a22766938f1003c078b09c3bb0db2d59338e1e6c974f2a80842f12182e5d185",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.transition_entry": {
@@ -29,7 +29,7 @@
    "lineno": 9,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "78dc4721083cfa00f47b1f56ff61d3c2fa18a4e7dfbf66677af410d38af86bd8",
+   "span_sha256": "b93f56ac62159537c647521b50c4a0fb19dc735abc9b072898ad6a296114f33b",
    "include": true,
    "role": "Vocabulary of world-entry acts; deliberately contains no rollback act.",
    "responsibilities": [
@@ -53,7 +53,7 @@
    "label": "TransitionEntry",
    "kind": "class",
    "file": "src/melder/mutation_research/research_set/transition_entry.py",
-   "lineno": 83,
+   "lineno": 88,
    "bases": [
     "Cleanable"
    ],
@@ -79,7 +79,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0f2d42cba95ca9848b5a0c2efe85eb776302c47e26aa5968239252cfbd5783d9",
+   "span_sha256": "682649dba02b49e55e896196748c45c75ed618afd47ddfa4a42423ca364c242e",
    "role": "Immutable forward-only journal event; TransitionAct vocabulary is world-entry only (no checkout/rollback acts).",
    "responsibilities": [
     "records act, subject lane, from/to identity, actor, campaign stamp, reason",

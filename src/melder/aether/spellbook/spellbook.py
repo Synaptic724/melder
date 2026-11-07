@@ -5345,7 +5345,7 @@ class Spellbook(Cleanable):
 
     def begin_transaction(
             self,
-            transaction_type: ChangeTransactionType,
+            transaction_type: Union[str, ChangeTransactionType],
             *,
             conduit_id: str | None = None,
             conduit_ids: Iterable[str] | None = None,
@@ -5372,7 +5372,7 @@ class Spellbook(Cleanable):
             - Scan is not a transaction type; it must run inside a bind transaction.
         Args:
             transaction_type:
-                Transaction type enum or string value (e.g. "bind", "link").
+                A member, its exact name, or its historical lowercase value.
             conduit_id:
                 Optional initiator conduit id for logging. Defaults to the
                 conjured conduit id when available.
@@ -5408,7 +5408,7 @@ class Spellbook(Cleanable):
         self.check_cleaned()
         request_type = transaction_type
         mediator = self._get_required_transaction_mediator()
-        if request_type == ChangeTransactionType.BIND:
+        if ChangeTransactionType._comparison_token(request_type) == "bind":
             if self._bind_family_disabled_for_current_posture():
                 self._logger.error(
                     "Bind-family transaction denied by current frame posture",
@@ -5487,7 +5487,7 @@ class Spellbook(Cleanable):
 
     def end_transaction(
             self,
-            transaction_type: ChangeTransactionType | None = None,
+            transaction_type: Optional[Union[str, ChangeTransactionType]] = None,
             *,
             success: bool = True,
     ) -> None:
@@ -5524,12 +5524,12 @@ class Spellbook(Cleanable):
             transaction_type=ChangeTransactionType.BIND,
         )
         if transaction_type is not None:
-            expected_type = transaction_type
-            if bind_session is not None and expected_type != ChangeTransactionType.BIND:
+            expected_type = ChangeTransactionType._comparison_token(transaction_type)
+            if bind_session is not None and expected_type != "bind":
                 raise RuntimeError(
                     "[SPELLBOOK] Active change transaction does not match the requested type."
                 )
-            if expected_type == ChangeTransactionType.BIND and bind_session is not None:
+            if expected_type == "bind" and bind_session is not None:
                 mediator.end_transaction_for_identity(
                     identity=self._transaction_identity,
                     transaction_type=ChangeTransactionType.BIND,
@@ -5554,8 +5554,8 @@ class Spellbook(Cleanable):
             raise RuntimeError("[SPELLBOOK] Active transaction session could not be resolved.")
 
         if transaction_type is not None:
-            expected_type = transaction_type
-            if request.request_type != expected_type:
+            expected_type = ChangeTransactionType._comparison_token(transaction_type)
+            if ChangeTransactionType._comparison_token(request.request_type) != expected_type:
                 raise RuntimeError(
                     "[SPELLBOOK] Active change transaction does not match the requested type."
                 )
@@ -5569,7 +5569,7 @@ class Spellbook(Cleanable):
     @contextmanager
     def transaction(
             self,
-            transaction_type: ChangeTransactionType,
+            transaction_type: Union[str, ChangeTransactionType],
             *,
             conduit_id: str | None = None,
             conduit_ids: Iterable[str] | None = None,
@@ -5592,7 +5592,7 @@ class Spellbook(Cleanable):
             - Bind transactions open/close the binding transaction window.
         Args:
             transaction_type:
-                Transaction type enum or string value (e.g. "bind", "link").
+                A member, its exact name, or its historical lowercase value.
             conduit_id:
                 Optional initiator conduit id for logging.
             conduit_ids:

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
- "source_sha256": "20f6e8da36cda8be8be0235550b8c25a58ee164879dd8f1f99358d0da764cb6c",
+ "source_sha256": "c08b36faab67a3ea7462c7d431409baafec12937afbea5fcca29ac0e0571fff1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape": {
@@ -19,18 +19,18 @@
    "label": "ParameterDIShape",
    "kind": "enum",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "978d0126c49a6ae234b7ef287b9264240ec5751631f7abc5ec5d7ef15b46e359",
+   "span_sha256": "ab8f34bd48485531e7718e782cf7001f9e7cd6144aee98b586a843de81c6f882",
    "role": "Enum classifying how one parameter is satisfied during resolution.",
    "responsibilities": [
     "labels the current IGNORE, PLAIN, SINGLE_BY_ANNOTATION, COLLECTION_BY_ANNOTATION, SPELLMAP_DEFAULT, SPELL_CONTRACT categories"
@@ -54,8 +54,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

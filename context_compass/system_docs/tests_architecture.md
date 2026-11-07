@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-10-25T14:22:13Z
+- Updated: 2026-11-01T13:44:23Z
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -422,7 +422,44 @@ The most important recent integration addition is the dedicated
 4. parametrized integration tests assert matrix expectations and cleanup the
    harness.
 
+### Flow: Cached Terminal State Round Trip
+1. `_record_world` configures hosted Nexus/MR, records lifecycle acts and seals/flushes a checkpoint.
+2. `_terminal_name_fixture` verifies real major-5 JSON and chronology, adapting only the terminal
+   spelling when legacy input is requested.
+3. `_reboot_world` tears down normally and boots a fresh world with test references rebound.
+4. Public `reload_cached_checkpoint` applies record admission; `load_checkpoint` selects the real driver.
+5. Assertions check the plan, no rebuilt terminal roots, exact shortfalls and unconfigured fresh hosts;
+   live-state controls check rebuilt configuration and research organization.
+
+
 ## Operational Invariants
+- String-backed enum tests pin captured old protocol-4 pickle payloads, exact values and family boundaries;
+  real Nexus checkpoint cache/reload and MutationResearch replay prove those recorded fixtures remain usable.
+  Binding-signature and real protocol-frame restore/graft tests exercise the SpellframeKind boundary.
+  Mediator tests assert stable lowercase participant/session projections and the literal world/frame
+  keys while checking a real frame-create plan against an existing world claim. AdmissionReason tests
+  pin exact uppercase values and JSON, old lowercase pickles and lowercase verdict descriptions.
+  Managed-mode and flag tests check foreign-family boundaries; direct mediator commits assert that
+  canonical BIND cannot skip structural failure. All 29 focused files passed 377 cases in each GIL
+  mode; those overlapping results are not a whole-suite claim.
+  EVIDENCE: `tests/unit/melder/aether/test_nexus_rift_enum_strings_657.py`,
+  `tests/integration/melder/crystallizer/test_nexus_config_enum_persistence_657.py`,
+  `tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py`,
+  `tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py`,
+  `tests/unit/melder/mutation_research/research_set/test_research_enum_strings_657.py`,
+  `tests/unit/melder/aether/aetheric_mediator/test_scope_prefix_strings_657.py`,
+  `tests/unit/melder/aether/aetheric_mediator/test_admission_reason_strings_657.py`,
+  `tests/unit/melder/spellbook/bind/test_lifetime_enums_strenum_657.py`,
+  `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_state_strenum_657.py` and
+  `tests/unit/melder/aether/dev_ops/change_control_manager/test_devops_transaction_type_strenum_657.py`.
+- Native enum-name tests distinguish Python attributes, declared-name input and stored values
+  (0.2.8276). Cached-state cases record actual Nexus/MR lifecycle acts, seal/flush major-5 JSON,
+  reboot and reload/load through public admission. Only the terminal spelling is adapted for legacy
+  input. Both real drivers must suppress cleaned roots; enabled/disabled controls rebuild and
+  unsupported majors refuse. Fixtures own reset and I/O isolation, without mocking replay.
+  EVIDENCE: `tests/unit/melder/test_cleaned_enum_contracts_656.py`,
+  `tests/unit/melder/utilities/helpers/test_general_helpers.py` and
+  `tests/integration/melder/crystallizer/test_cleaned_record_names_656.py`.
 - Cluster admission regressions coordinate real threads at the admission/write boundaries (0.2.8265),
   forcing competing empty reads on the old code while retaining real membership and share operations.
   They require one success and seven exclusivity refusals across same-cluster and two-cluster races;
@@ -504,13 +541,13 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 525 `.py` files, 522 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
+- `unit/`: 526 `.py` files, 523 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
 - `component/`: 176 `.py` files, 174 of them `test_*.py` (143, 81)
-- `integration/`: 189 `.py` files, 182 of them `test_*.py` (149, 88)
+- `integration/`: 190 `.py` files, 183 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
-Recounted 2026-10-25 with `rg --files tests/<tier> -g '*.py'` (pycache excluded), every module on disk counted;
-the three tiers' 878 `test_*.py` modules are the count `tests_components` states.
+Recounted 2026-11-01 with `rg --files tests/<tier> -g '*.py'` (pycache excluded), every module on disk counted;
+the three tiers' 880 `test_*.py` modules are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -648,8 +685,115 @@ the three tiers' 878 `test_*.py` modules are the count `tests_components` states
   EVIDENCE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py:633-660
 
 ## C1 Code Map (Core Only)
+- path: `tests/unit/melder/spellbook/bind/test_lifetime_enums_strenum_657.py`
+  start_line: 1
+  end_line: 62
+  loc: 62
+  verified_at: 2026-11-02T12:10:12Z
+- path: `tests/component/melder/aether/conduit/test_transaction_type_compatibility_657.py`
+  start_line: 1
+  end_line: 207
+  loc: 207
+  verified_at: 2026-11-02T12:02:57Z
+- path: `tests/unit/melder/spellbook/spell_compiler/test_socket_kind_strenum_657.py`
+  start_line: 1
+  end_line: 129
+  loc: 129
+  verified_at: 2026-11-02T12:02:57Z
+- path: `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_state_strenum_657.py`
+  start_line: 1
+  end_line: 75
+  loc: 75
+  verified_at: 2026-11-02T12:02:57Z
+- path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_devops_transaction_type_strenum_657.py`
+  start_line: 1
+  end_line: 214
+  loc: 214
+  verified_at: 2026-11-02T12:29:20Z
+- path: `tests/unit/melder/aether/aetheric_mediator/test_claim_mode_strenum_657.py`
+  start_line: 1
+  end_line: 96
+  loc: 96
+  verified_at: 2026-11-02T12:02:57Z
+- path: `tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py`
+  start_line: 1
+  end_line: 3153
+  loc: 3153
+  verified_at: 2026-11-01T23:27:10Z
+- path: `tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py`
+  start_line: 1
+  end_line: 283
+  loc: 283
+  verified_at: 2026-11-01T23:27:10Z
+- path: `tests/unit/melder/aether/test_nexus_rift_enum_strings_657.py`
+  start_line: 1
+  end_line: 127
+  loc: 127
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/aether/test_nexus_configuration_enums_657.py`
+  start_line: 1
+  end_line: 110
+  loc: 110
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/integration/melder/crystallizer/test_nexus_config_enum_persistence_657.py`
+  start_line: 1
+  end_line: 98
+  loc: 98
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind_strenum_657.py`
+  start_line: 1
+  end_line: 117
+  loc: 117
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/mutation_research/research_set/test_research_enum_strings_657.py`
+  start_line: 1
+  end_line: 179
+  loc: 179
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/aether/aetheric_mediator/test_participation_enum_strings_657.py`
+  start_line: 1
+  end_line: 114
+  loc: 114
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/aether/aetheric_mediator/test_session_enum_strings_657.py`
+  start_line: 1
+  end_line: 170
+  loc: 170
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/aether/aetheric_mediator/test_scope_prefix_strings_657.py`
+  start_line: 1
+  end_line: 101
+  loc: 101
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/aether/aetheric_mediator/test_admission_reason_strings_657.py`
+  start_line: 1
+  end_line: 112
+  loc: 112
+  verified_at: 2026-11-02T12:02:57Z
+- path: `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
+  start_line: 1
+  end_line: 1148
+  loc: 1148
+  verified_at: 2026-11-01T23:25:22Z
+- path: `tests/unit/melder/utilities/helpers/test_general_helpers.py`
+  start_line: 1
+  end_line: 204
+  loc: 204
+  verified_at: 2026-11-01T13:44:23Z
+
+- path: `tests/unit/melder/test_cleaned_enum_contracts_656.py`
+  start_line: 1
+  end_line: 76
+  loc: 76
+  verified_at: 2026-11-02T12:02:57Z
+
+- path: `tests/integration/melder/crystallizer/test_cleaned_record_names_656.py`
+  start_line: 1
+  end_line: 170
+  loc: 170
+  verified_at: 2026-11-01T13:44:23Z
 Core here is the harness and entrypoint surfaces this document names - the runner configuration, the
-conftests, the shared support modules, the benches, the mock corpus and the CI driver: 37 paths, every one of
+conftests, the shared support modules, the benches, the mock corpus, CI driver and native enum/cache contract surfaces: 40 paths, every one of
 them in the core set of `tests_components` (the deduplicated union of its `Key Files (C1)` lists, 282 paths on
 2026-10-19; corrected 2026-10-15 - this paragraph called this map that union). Every range below was MEASURED
 from disk on 2026-08-02, not carried
@@ -905,6 +1049,27 @@ graph TD
 ```
 
 ## Information Sources
+- `tests/unit/melder/spellbook/bind/test_lifetime_enums_strenum_657.py`
+- `tests/component/melder/aether/conduit/test_transaction_type_compatibility_657.py`
+- `tests/unit/melder/spellbook/spell_compiler/test_socket_kind_strenum_657.py`
+- `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_state_strenum_657.py`
+- `tests/unit/melder/aether/dev_ops/change_control_manager/test_devops_transaction_type_strenum_657.py`
+- `tests/unit/melder/aether/aetheric_mediator/test_claim_mode_strenum_657.py`
+- `tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py`
+- `tests/integration/melder/crystallizer/test_restore_spellframe_kind_integration.py`
+- `tests/unit/melder/aether/test_nexus_rift_enum_strings_657.py`
+- `tests/unit/melder/aether/test_nexus_configuration_enums_657.py`
+- `tests/integration/melder/crystallizer/test_nexus_config_enum_persistence_657.py`
+- `tests/unit/melder/spellbook/spellframe_kind/test_spellframe_kind_strenum_657.py`
+- `tests/unit/melder/mutation_research/research_set/test_research_enum_strings_657.py`
+- `tests/unit/melder/aether/aetheric_mediator/test_participation_enum_strings_657.py`
+- `tests/unit/melder/aether/aetheric_mediator/test_session_enum_strings_657.py`
+- `tests/unit/melder/aether/aetheric_mediator/test_scope_prefix_strings_657.py`
+- `tests/unit/melder/aether/aetheric_mediator/test_admission_reason_strings_657.py`
+- `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
+- `tests/unit/melder/utilities/helpers/test_general_helpers.py`
+- `tests/unit/melder/test_cleaned_enum_contracts_656.py`
+- `tests/integration/melder/crystallizer/test_cleaned_record_names_656.py`
 - `tests/unit/melder/aether/test_conduit_cloud.py`
 - `tests/integration/melder/aether/test_aether_integration_cluster_transactions_concurrency.py`
 - `pyproject.toml`
@@ -959,6 +1124,16 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+String-backed enum verification now covers old pickles, native family boundaries, real cached
+records, binding/graft and scope-key contention. The selected 832-test run is bounded; whole-suite
+coverage and unobserved external serializers are not established by it.
+
+2026-11-01 native-name verification (0.2.8276; value assertions updated for 0.2.8277): enum
+cases pin names, order, current values, historical inputs and native case/family input; helper cases isolate cache behavior and foreign
+StrEnum refusal. Real cached-state cases own normal reset/reboot and temporary filesystem custody,
+record actual lifecycle acts and use public reload/load for both drivers. They assert terminal
+shortfalls and zero rebuilds, with live-state and major-admission controls. The three mapped test
+surfaces and their measured ranges are current; earlier unrelated unknowns and history remain.
 
 2026-10-25 a store files each binding's objects apart (0.2.8274;
 STORY-2026-10-25-creations_store_slots_by_binding, on the owner's go): a new operational invariant says a test

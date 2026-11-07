@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/transaction_request.py",
- "source_sha256": "ef2cd287be3a7cd88ed77234db2cf1b764ea579f610cc889e5552737893b09cd",
+ "source_sha256": "6b476d67fdc048c0c30c0c360e5c6c00b4260a7fa2c3cde97255fa31fed65356",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.transaction_request": {
@@ -73,7 +73,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "791190d3ebd351436804bb7723d0a1c1b519d28ba45a81826a42d34d66dc7c39",
+   "span_sha256": "45fa0df14aac669925b2876b79cb4a0369ac8c553e271e124d701395d3ea58da",
    "include": true,
    "role": "The immutable pre-admission record, FROZEN BEFORE ADMISSION so acquisition reads a fixed snapshot.",
    "responsibilities": [

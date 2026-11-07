@@ -1620,7 +1620,7 @@ class RestoreEngine(Cleanable):
         report-only shortfalls are RETIRED):
             - No recorded MR twin: NO-OP (a world without research stays
               without it).
-            - Folded lifecycle "cleaned" is later-wins truth: honest
+            - Folded lifecycle "CLEANED"/legacy "cleaned": later-wins; honest
               shortfall, no rebuild (the world sealed AFTER its MR died).
             - The configuration rebuilds through the RELOAD lane
               (MutationResearchConfiguration.load_recorded_dictionary;
@@ -1645,7 +1645,7 @@ class RestoreEngine(Cleanable):
         """
         if self._mutation_research_payload is None:
             return
-        if self._mutation_research_state_name == "cleaned":
+        if self._mutation_research_state_name in ("cleaned", "CLEANED"):
             self._report.add_shortfall(
                 "mutation_research", "root",
                 "mutation_research_recorded_but_cleaned_before_seal_"
@@ -1718,7 +1718,7 @@ class RestoreEngine(Cleanable):
               reloaded configurations, so the rebuilt root re-records.
             - The folded lifecycle state is later-wins truth: a final
               "disabled" replays enable-then-disable (both acts are the
-              recorded history); a final "cleaned" skips the rebuild with
+              recorded history); a final "CLEANED" or legacy "cleaned" skips the rebuild with
               an honest report (the world sealed AFTER its Nexus died).
             - A Nexus that is ALREADY active (a live-world load) is
               deactivated first: an active Nexus refuses reconfiguration
@@ -1731,7 +1731,7 @@ class RestoreEngine(Cleanable):
         """
         if self._nexus_payload is None:
             return
-        if self._nexus_state_name == "cleaned":
+        if self._nexus_state_name in ("cleaned", "CLEANED"):
             self._report.add_shortfall(
                 "nexus", "root",
                 "nexus_recorded_but_cleaned_before_seal_not_rebuilt",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/existence/managed_spell_mode.py",
- "source_sha256": "565aaa0bb67eb46571a2bfec118638c31a8d60e61993113089f469cf2d257137",
+ "source_sha256": "07b56bb937eec0f9eac86526f8e310049200b309d91d71f8d5ab0244ce993261",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.existence.managed_spell_mode": {
@@ -26,18 +26,18 @@
    "label": "ManagedSpellMode",
    "kind": "enum",
    "file": "src/melder/aether/spellbook/existence/managed_spell_mode.py",
-   "lineno": 4,
+   "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3844194be57e6051613eb93bb5d0a2c1dcded3fc23a3ad460263a3c44be80342",
+   "span_sha256": "7e5a3158d42f18aeb8a60fd7385b9ea3ab04e413c2d6206ce18c9910f39b9224",
    "include": true,
    "role": "Pool policy of a managed spell, chosen at bind with managed_spell_mode: what a lease does when no idle object is waiting.",
    "responsibilities": [
@@ -62,8 +62,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

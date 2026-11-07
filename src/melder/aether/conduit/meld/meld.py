@@ -1254,7 +1254,7 @@ class Meld(Cleanable, ABC):
 
         - `valid` -> safe to continue without structural rerun
         - `unknown` / `gated` -> structural rerun required
-        - `invalid` / `disabled` / `cleaned` -> hard validation failure
+        - `invalid` / `disabled` / `CLEANED` -> hard validation failure
         - dirty root under change-control -> hard runtime block
 
         Raises:
@@ -1298,11 +1298,11 @@ class Meld(Cleanable, ABC):
         if validity is SpellValidity.unknown or validity is SpellValidity.gated:
             return True
 
-        # invalid / disabled / cleaned -> hard block, no attempt to resolve
+        # invalid / disabled / CLEANED -> hard block, no attempt to resolve
         if (
                 validity is SpellValidity.invalid
                 or validity is SpellValidity.disabled
-                or validity is SpellValidity.cleaned
+                or validity is SpellValidity.CLEANED
         ):
             if state is not None and SpellState.transfer_in_progress in state.flags:
                 raise SpellbookValidationError([spell])
@@ -1343,7 +1343,7 @@ class Meld(Cleanable, ABC):
         if (
             resolution_validity is SpellValidity.invalid
             or resolution_validity is SpellValidity.disabled
-            or resolution_validity is SpellValidity.cleaned
+            or resolution_validity is SpellValidity.CLEANED
         ):
             raise SpellbookValidationError([spell])
 
@@ -1359,7 +1359,7 @@ class Meld(Cleanable, ABC):
                 if (
                         resolution_validity is SpellValidity.invalid
                         or resolution_validity is SpellValidity.disabled
-                        or resolution_validity is SpellValidity.cleaned
+                        or resolution_validity is SpellValidity.CLEANED
                 ):
                     raise SpellbookValidationError([spell])
 
@@ -1392,7 +1392,7 @@ class Meld(Cleanable, ABC):
             - For a `valid` SpellIndex, True exactly when its effective verdict for
               the resolution conduit (`_get_resolution_validity`) is `unknown`
               or `gated`, the verdicts `_ensure_resolution_resolvable` rebuilds.
-            - False otherwise: an `invalid`, `disabled` or `cleaned` SpellIndex or
+            - False otherwise: an `invalid`, `disabled` or `CLEANED` SpellIndex or
               verdict fails without compiling, and a valid spell with a valid
               verdict compiles nothing, so the gate stays two state reads.
             - Reads state only and mutates nothing.
@@ -1432,7 +1432,7 @@ class Meld(Cleanable, ABC):
               or the registry's downstream walk left it so.
             - A spell with no registered state is not stale: Phase 5 drops an id
               without a registered state from a plan's scope.
-            - `invalid`, `disabled` and `cleaned` are not stale either; the
+            - `invalid`, `disabled` and `CLEANED` are not stale either; the
               compiling pass reports them as it always has.
             - Reads state only.
 

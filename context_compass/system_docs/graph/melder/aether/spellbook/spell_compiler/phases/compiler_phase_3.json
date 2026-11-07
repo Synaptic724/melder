@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "53752a0e51495e9995629a9b71029475b1f747f160bb0cf68c751c520ec2cacf",
+ "source_sha256": "c16ce258ddb1173f2ab67c4e3177f0290f316c6e80afc83451ee0d76abb90332",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -33,7 +33,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "ddf8745b8f23336fb1d78a952965674dd79eea3f62c6e6da22ac6b4c04c41a67",
+   "span_sha256": "afcebccb48272c8055a369a9413fa3a5310656b609aecd348ac807ccad2f7389",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",

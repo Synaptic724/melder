@@ -140,20 +140,20 @@ class RemoveSpellOrIndexFromContractTransactionStrategy(TransactionStrategy):
                 owner_id=conduit_id,
             )
             scope_keys.add(conduit_scope)
-            scope_claims.append((conduit_scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((conduit_scope, ClaimMode.EXCLUSIVE.wire_value))
             scope_keys.add(ward_scope)
-            scope_claims.append((ward_scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((ward_scope, ClaimMode.EXCLUSIVE.wire_value))
         if spellbook_id is not None:
             spellbook_scope = transaction_manager.make_scope_key_spellbook(spellbook_id)
             scope_keys.add(spellbook_scope)
-            scope_claims.append((spellbook_scope, ClaimMode.INTENT.value))
+            scope_claims.append((spellbook_scope, ClaimMode.INTENT.wire_value))
         if binding_key is not None:
             binding_scope = transaction_manager.make_scope_key_binding(
                 binding_key[0],
                 binding_key[1],
             )
             scope_keys.add(binding_scope)
-            scope_claims.append((binding_scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((binding_scope, ClaimMode.EXCLUSIVE.wire_value))
         scope_keys.update(metadata.get("scope_keys", ()))
 
         normalized_metadata = dict(metadata)

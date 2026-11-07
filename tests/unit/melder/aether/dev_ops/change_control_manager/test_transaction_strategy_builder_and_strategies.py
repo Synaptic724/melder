@@ -330,8 +330,8 @@ def test_bind_transaction_strategy_builds_post_conjure_plan_with_cluster_scope()
     # Claim modes: spellbook + clusters are INTENT (parallel member binds),
     # conduit/ward stay EXCLUSIVE (absent from scope_claims).
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:cluster:cluster-1"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:cluster:cluster-1"] == "ix"
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
 
@@ -538,8 +538,8 @@ def test_link_transaction_strategy_claims_spellbooks_intent_and_conduits_exclusi
         "scope:spellbook:spellbook-1",
         "scope:spellbook:spellbook-2",
     }
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
 
 
 def test_unlink_transaction_strategy_claims_spellbooks_intent_and_conduits_exclusive() -> None:
@@ -612,8 +612,8 @@ def test_unlink_transaction_strategy_claims_spellbooks_intent_and_conduits_exclu
         "scope:spellbook:spellbook-1",
         "scope:spellbook:spellbook-2",
     }
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
     assert plan["metadata"]["unlink_mode"] == "conduit_unlink"
@@ -734,8 +734,8 @@ def test_cluster_link_transaction_strategy_builds_cluster_and_spellbook_scopes()
     # Claim modes: member spellbooks are INTENT; cluster + conduits + wards
     # stay EXCLUSIVE (absent from scope_claims).
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
     assert "scope:cluster:cluster-1" not in scope_claims
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
@@ -897,9 +897,9 @@ def test_notch_transaction_strategy_seals_spellbook_conduit_binding_exclusive() 
 
     scope_claims = dict(plan["scope_claims"])
     binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims[binding_scope] == "x"
     assert plan["metadata"]["index_mode"] == "notch"
 
 
@@ -943,11 +943,11 @@ def test_add_to_index_transaction_strategy_seals_both_sides_exclusive() -> None:
 
     scope_claims = dict(plan["scope_claims"])
     binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "x"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "x"
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-2"] == "x"
+    assert scope_claims[binding_scope] == "x"
     assert plan["metadata"]["index_mode"] == "add_to_index"
 
 
@@ -988,9 +988,9 @@ def test_remove_from_index_transaction_strategy_seals_spellbook_conduit_binding_
 
     scope_claims = dict(plan["scope_claims"])
     binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims[binding_scope] == "x"
     assert plan["metadata"]["index_mode"] == "remove_from_index"
 
 
@@ -1092,8 +1092,8 @@ def test_elect_cluster_leader_strategy_seals_member_conduits_exclusive() -> None
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-2"] == "x"
     assert plan["conduit_ids"] == ("conduit-1", "conduit-2")
     assert plan["metadata"]["cluster_leader_mode"] == "elect"
 
@@ -1124,8 +1124,8 @@ def test_unelect_cluster_leader_strategy_seals_member_conduits_exclusive() -> No
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-2"] == "x"
     assert plan["metadata"]["cluster_leader_mode"] == "unelect"
 
 

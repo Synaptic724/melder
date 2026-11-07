@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-10-25T14:22:13Z |
-| line_count | 1183 |
+| generated_at | 2026-11-02T12:29:39Z |
+| line_count | 1358 |
 | line_ending | lf |
-| content_sha256 | `44c8c141328486fba2f98f6e455f61758ec914fda6f58489e5e3778b97074a92` |
-| sections | 32 |
+| content_sha256 | `f504b924fb5528df64b80e44e319243386b8ba5e8a4373315fcf57ae3181f6f1` |
+| sections | 33 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -39,23 +39,24 @@ which you did.
 | 257-303 | 2 | Architecture Summary (C4) |
 | 304-335 | 2 | Entrypoints and Runtime Guardrails |
 | 336-359 | 2 | Boot and Configuration Sequence |
-| 360-424 | 2 | Data Flows and Sequences |
+| 360-434 | 2 | Data Flows and Sequences |
 | 361-369 | 3 | Data Flows and Sequences > Flow: Standard Pytest Run |
 | 370-381 | 3 | Data Flows and Sequences > Flow: CI Runtime Qualification |
 | 382-392 | 3 | Data Flows and Sequences > Flow: Singleton Reset And Re-Boot |
 | 393-404 | 3 | Data Flows and Sequences > Flow: Concurrent-Writer Stand-In |
 | 405-410 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
 | 411-424 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
-| 425-480 | 2 | Operational Invariants |
-| 481-514 | 2 | Source Coverage and Evidence |
-| 515-537 | 2 | Core Responsibilities |
-| 538-558 | 2 | C3 Components Overview |
-| 559-597 | 2 | C2 Subcomponents Overview |
-| 598-605 | 2 | Open Questions |
-| 606-649 | 2 | Failure Modes and Error Paths |
-| 650-850 | 2 | C1 Code Map (Core Only) |
-| 851-906 | 2 | Diagrams |
-| 852-878 | 3 | Diagrams > ASCII Diagram (C4) |
-| 879-906 | 3 | Diagrams > Mermaid Diagram (C4) |
-| 907-960 | 2 | Information Sources |
-| 961-1183 | 2 | Context / Handoff Summary |
+| 425-434 | 3 | Data Flows and Sequences > Flow: Cached Terminal State Round Trip |
+| 435-517 | 2 | Operational Invariants |
+| 518-551 | 2 | Source Coverage and Evidence |
+| 552-574 | 2 | Core Responsibilities |
+| 575-595 | 2 | C3 Components Overview |
+| 596-634 | 2 | C2 Subcomponents Overview |
+| 635-642 | 2 | Open Questions |
+| 643-686 | 2 | Failure Modes and Error Paths |
+| 687-994 | 2 | C1 Code Map (Core Only) |
+| 995-1050 | 2 | Diagrams |
+| 996-1022 | 3 | Diagrams > ASCII Diagram (C4) |
+| 1023-1050 | 3 | Diagrams > Mermaid Diagram (C4) |
+| 1051-1125 | 2 | Information Sources |
+| 1126-1358 | 2 | Context / Handoff Summary |

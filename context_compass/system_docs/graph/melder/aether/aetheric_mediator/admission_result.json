@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/admission_result.py",
- "source_sha256": "661455999e201618d79e1a87b7f3c75ec8304180bbe626019691e37e4160d29b",
+ "source_sha256": "40128e22b2b88faeea6ee98946ecd3d8f2c74ecd66da7ea3bd31c2ffa1450142",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.admission_result": {
@@ -26,28 +26,28 @@
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "180649c6d052f757ed7e50c45bb70cda89212d72c992389b669e753800042d40",
+   "span_sha256": "758e667236c2234a500a10894807a510b00358934977528478ff9f720cbb17b1",
    "include": true,
    "role": "Machine-readable codes for WHY a request was refused, so callers branch without parsing rendered evidence lines.",
    "responsibilities": [
     "describe the CLASS of refusal, leaving the specific contended scopes and holders to travel separately on the result",
-    "keep values stable - they travel into logs and stored evidence"
+    "use exact member names as values; accept historical lowercase values and retain lowercase verdict descriptions"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "180649c6d052f757ed7e50c45bb70cda89212d72c992389b669e753800042d40"
+   "semantics_authored_against": "758e667236c2234a500a10894807a510b00358934977528478ff9f720cbb17b1"
   },
   "melder.aether.aetheric_mediator.admission_result.AdmissionResult": {
    "id": "melder.aether.aetheric_mediator.admission_result.AdmissionResult",
    "label": "AdmissionResult",
    "kind": "class",
    "file": "src/melder/aether/aetheric_mediator/admission_result.py",
-   "lineno": 52,
+   "lineno": 77,
    "bases": [
     "Cleanable"
    ],
@@ -67,7 +67,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "49c86b3210a36ebed687b05f10043d680cf9717db4de2c112adb1d8c08e1b533",
+   "span_sha256": "9f8197d61c66ad8e0d5f5e27d250a0d09764f91bbe2c8f6f53f5f8b2a995c15a",
    "include": true,
    "role": "The immutable verdict for one admission attempt - EVIDENCE, NOT A BOOL.",
    "responsibilities": [
@@ -112,7 +112,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Enum": "enum.Enum",
   "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
  },

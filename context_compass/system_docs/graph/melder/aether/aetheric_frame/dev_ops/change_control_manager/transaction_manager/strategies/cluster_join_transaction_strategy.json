@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_join_transaction_strategy.py",
- "source_sha256": "006a0a7280d2429a7b730db0e1abfc3c41e53bf0cfb2ae6e723c5f6be160973c",
+ "source_sha256": "098088c0dd2c6925a0bbfe4aa26b2258022b58e6e596db01952442b35767e215",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "96fe4d8f66630b08409332df7da3fb3112b30972bb39442eedadeea6fc6ab8ec",
+   "span_sha256": "712e672adeae11842806c0ca0dd3e1cede04c51d018f53ea2b32594bf5efd1df",
    "include": true,
    "role": "Scope isolation for a conduit's ENTRY into a cluster, treated as one link over every involved conduit because joining fans out share contracts to all members.",
    "responsibilities": [

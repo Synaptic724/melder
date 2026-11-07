@@ -620,7 +620,7 @@ def test_internal_helpers_cover_unknown_and_safe_paths() -> None:
 
     assert risk_manager._resolve_lineage_id(cleaned_spell) is None
     assert risk_manager._resolve_lineage_id_from_spell_id("missing") is None
-    assert risk_manager._get_structural_validity(cleaned_spell) is SpellValidity.cleaned
+    assert risk_manager._get_structural_validity(cleaned_spell) is SpellValidity.CLEANED
 
     spell._state = None
     assert risk_manager._get_structural_validity(spell) is SpellValidity.unknown

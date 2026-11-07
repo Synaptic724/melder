@@ -1,14 +1,17 @@
 # Epic: pypi_provenance_attestations - every Melder file on TestPyPI and PyPI carries verified provenance
 
+- Completed: 2026-11-07T07:54:24Z
+- Summary: Closed done on the owner's word (chat 2026-11-07; closed by melder_0): melder_2 finished it - Trusted Publishing with PEP 740 provenance for TestPyPI and PyPI (S1+S2 at 982698ecc; S3 with S4's code and S5 at 1dd4470e7). The owner-owed steps in the handoff (S3's promotion, the PyPI publisher, retiring `PYPI_API_TOKEN`, S6) are his and were not re-verified here.
+
 ## Metadata
 - Epic ID: EPIC-2026-10-24-pypi_provenance_attestations
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-24T22:21:35Z
-- Updated: 2026-10-25T15:43:10Z
+- Updated: 2026-11-07T07:54:24Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: integrity of the published package (the owner's request, chat 2026-10-24, 16:16 MDT)
 
@@ -78,6 +81,9 @@ until both indexes have published with attestations.
   them; the epic gives the exact values); hosted runs ("Not run" until seen).
 
 ## State Transition Event
+- from_state: in_progress
+- to_state: done
+- transition_reason (2026-11-07, melder_0): the owner's word (chat 2026-11-07): "wait I never said close as unfinished but melder_2 finished pypy_provincnace and many_child_ownership is done too you can close those 2 not sure about the other ones"
 - from_state: ready
 - to_state: in_progress
 - transition_reason: the owner's go (chat 2026-10-24: "why don't you just check to see how deep it goes bro I don't
@@ -635,10 +641,25 @@ this does not make independent review mandatory for every ticket.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-11-07T07:54:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Closed done on the owner's word (chat 2026-11-07): melder_2 finished the epic. The owner-owed steps the
+    handoff lists (S3's promotion with its RC run, the PyPI Trusted Publisher, retiring PYPI_API_TOKEN, S6) stay
+    his and were not re-verified by melder_0.
+  EVIDENCE:
+  - context_compass/tickets/epics/completed/2026-10-24_pypi_provenance_attestations_epic.md:673-692
+  IMPACT: The epic moves to epics/completed/; its board row and detail entry come off and a closed anchor goes on.
+  NEXT: None; the epic is closed.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Criteria, required tests/reviews and delegated acceptance or reserved-owner disposition recorded
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+Closed on the owner's directive (2026-11-07, quoted in the State Transition Event); the boxes rest on his word and were not re-verified by melder_0.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -649,6 +670,8 @@ this does not make independent review mandatory for every ticket.
   continuation. Current scope/state/decisions/handoff stay coherent at material transitions.
 
 ## Context / Handoff Summary
+Closed 2026-11-07T07:54:24Z by melder_0 on the owner's word: melder_2 finished it (his account); the owner-owed steps below are his.
+
 - Scope: PEP 740 provenance for every Melder upload to TestPyPI and PyPI, through Trusted Publishing, verified in the
   release candidate before anything depends on it; then the tokens retired. State: in_progress, melder_2.
 - Decisions: D3 deepest check, D4 S6 in the epic, D5 S1+S2 one story, D6 the pinned tool, D7 the pinned action,

@@ -250,7 +250,7 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
 
     expected_digest = SharedCompilerExecutions.hash_codegen_signature(
         spell_rows,
-        (("spell-1", (("svc", ("dep",), SocketKind.NORMAL.value, 0, "POSITIONAL_OR_KEYWORD", False, False, ()),)),),
+        (("spell-1", (("svc", ("dep",), 1, 0, "POSITIONAL_OR_KEYWORD", False, False, ()),)),),
         SystemState.dynamic,
         (("peer", "frame", "binding", "dep"),),
     )

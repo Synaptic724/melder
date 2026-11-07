@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 
 
 
-class NexusFrameMode(Enum):
+class NexusFrameMode(StrEnum):
     """
     Internal
 
@@ -21,6 +21,11 @@ class NexusFrameMode(Enum):
         one_per_workspace:
             Each workspace receives its own dedicated Nexus-assigned internal
             frame.
+
+    Contract:
+        Member names and values are unchanged strings. Members compare as strings,
+        including equal-valued members of other StrEnum families. Callers that need
+        family identity must validate the concrete enum type.
 
     Threading:
         Immutable enum members; safe to read from any thread.

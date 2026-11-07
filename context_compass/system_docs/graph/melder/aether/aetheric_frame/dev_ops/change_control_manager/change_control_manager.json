@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py",
- "source_sha256": "a0a542f56f33ae893596b63b344ecc91207119cfb3073c50795c3694792ba01e",
+ "source_sha256": "3f6fbfcd5f9c62e984a67a230016baab02f4e12ca5e6628c890f0ca3c8e7d777",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager": {
@@ -65,12 +65,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8e2b235f317bc66e9408c7729849bb960c4e70cb9d7373582c600ea9ddd20d87",
+   "span_sha256": "404678115dd1277795f9a15f250bd1d071b037a1664610e892431c85c9643c33",
    "role": "Frame-level change-control registry and admission surface.",
    "responsibilities": [
     "tracks pending changes and dirty roots by conduit",
     "owns change-control transaction, conflict, embargo, and orchestrator managers",
-    "coordinates revalidation hooks for dirty roots"
+    "coordinates revalidation hooks for dirty roots",
+    "validates bind/notch structural commits for member, exact-name and legacy string forms while retaining the enum-notch compiled-member shortcut"
    ],
    "owns_state": [
     "_pending_changes",
@@ -86,7 +87,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "91b43eb8e144e7df8887b5d03907112354e82d426d6211d81c28ef4879dbc6fc"
+   "semantics_authored_against": "404678115dd1277795f9a15f250bd1d071b037a1664610e892431c85c9643c33"
   }
  },
  "edges_out": [

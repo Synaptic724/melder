@@ -1,63 +1,62 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/configuration/rift_space_type.py",
- "source_sha256": "f4086d1685c31b0463d196fb0db5fc1827cc097975374762e06d898133ce30d5",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.configuration.rift_space_type": {
-   "id": "melder.nexus.configuration.rift_space_type",
-   "label": "rift_space_type",
-   "kind": "module",
-   "file": "src/melder/nexus/configuration/rift_space_type.py",
-   "lineno": 1,
-   "include": true,
-   "role": "The room-posture vocabulary selecting which primary room a Rift programs.",
-   "responsibilities": [
-    "distinguish static / capability / codegen room behaviour"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "d114e2940962e945a84e7c555d74669e376f417327f086d473422206396ca1f0"
+  "schema_version": 1,
+  "source": "src/melder/nexus/configuration/rift_space_type.py",
+  "source_sha256": "9a3e8bdd52017aaf103df1c20614c58aab9720bb5df962d76642b9235dc420b2",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.configuration.rift_space_type": {
+      "id": "melder.nexus.configuration.rift_space_type",
+      "label": "rift_space_type",
+      "kind": "module",
+      "file": "src/melder/nexus/configuration/rift_space_type.py",
+      "lineno": 1,
+      "include": true,
+      "role": "The room-posture vocabulary selecting which primary room a Rift programs.",
+      "responsibilities": [
+        "distinguish static / capability / codegen room behaviour"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "d114e2940962e945a84e7c555d74669e376f417327f086d473422206396ca1f0"
+    },
+    "melder.nexus.configuration.rift_space_type.RiftSpaceType": {
+      "id": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+      "label": "RiftSpaceType",
+      "kind": "enum",
+      "file": "src/melder/nexus/configuration/rift_space_type.py",
+      "lineno": 5,
+      "bases": [],
+      "markers": [
+        "StrEnum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "57d5f3cbfaf00a9068bac7315be3a38481db130ae791118b114dd7a563c19cc5",
+      "role": "Enum of supported top-level Rift room types.",
+      "responsibilities": [
+        "labels static, capability and codegen Rift room types"
+      ],
+      "owns_state": [
+        "static",
+        "capability",
+        "codegen"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "57d5f3cbfaf00a9068bac7315be3a38481db130ae791118b114dd7a563c19cc5"
+    }
   },
-  "melder.nexus.configuration.rift_space_type.RiftSpaceType": {
-   "id": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-   "label": "RiftSpaceType",
-   "kind": "enum",
-   "file": "src/melder/nexus/configuration/rift_space_type.py",
-   "lineno": 5,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "48c0c4dcc8700da0245950e8486d31028ff0c0fcd039893fc66645d294396be1",
-   "role": "Enum of supported top-level Rift room types.",
-   "responsibilities": [
-    "labels static, capability, codegen, and legacy dynamic room types"
-   ],
-   "owns_state": [
-    "static",
-    "capability",
-    "codegen",
-    "dynamic"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "17ea39fed41af71b9fa0ddd03324adfb511e37b298a425d104057e27a7189271"
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "StrEnum": "enum.StrEnum"
+  },
+  "collapse_candidate": null
 }

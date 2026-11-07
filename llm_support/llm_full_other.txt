@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 5f2f2b1ddf0215010bec1d53a8a180c347881710b253a1e0cf6e7eb70718c875
-FILE COUNT: 418
+SOURCE FINGERPRINT: f788c4fee2957a76e6bd3cc974b7f757a250a42ff07b4a4d918c5605fe1957c1
+FILE COUNT: 419
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -80869,8 +80869,8 @@ Membership checking and registration now finish together before sharing starts.
 END FILE: release_docs/0.2.8265.md
 ================================================================================
 ================================================================================
-BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 7d23df7ddfb36af7cd1f903ae52e444d0fdd93a132b559c256e02315eb17436e
+BEGIN FILE: release_docs/0.2.8275.md
+CONTENT SHA256: 4e790525877d88c703497865d7a5084cdc23623110c8c210e8d2cefa21896102
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder 0.2.8275
@@ -81396,6 +81396,70 @@ What stays the same: every signature, notches inside one Spellbook, warm melds, 
   describe the new tests and the race test's removed xfail. The code-map extents of `conduit.py`, `spellbook.py`,
   `conduit_ward.py` and the notch transaction strategy are remeasured.
 - Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8275.
+================================================================================
+END FILE: release_docs/0.2.8275.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: 5f7a30e616de4dfcd0531759890eb1f2fea75825f9eed7b001b4711e7815a8b8
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.8277
+
+**Unreleased**
+
+## Canonical terminal enum names with compatible record reads
+
+**Breaking change:** use `SpellValidity.CLEANED`, `ConduitState.CLEANED` and
+`RecordedUnitState.CLEANED` instead of their former `.cleaned` Python attributes. There is no
+lowercase Python alias. These enums now use string values matching their member names:
+`RecordedUnitState.CLEANED.value` is `"CLEANED"`, and the formerly numeric `SpellValidity` and
+`ConduitState` values are strings. `str(ConduitState.CLEANED)` still returns `"cleaned"` under
+its existing diagnostic contract.
+
+Native enum-name lookup accepts uppercase, lowercase and mixed-case declared names, including aliases.
+It preserves existing lowercase-key precedence and requested-family member identity. Unknown names,
+values used as names and foreign enum members are refused; a cached raw string cannot authorize an
+equal foreign `StrEnum` member.
+
+New Nexus and MutationResearch lifecycle journal keys, payloads and summaries use `"CLEANED"`.
+Restore recognizes both that name and legacy `"cleaned"` within admitted record-major-5 artifacts,
+so either terminal name suppresses reconstruction and reports the existing named shortfall.
+Journal chronology, enabled/disabled replay, record-major admission and ownership transfer stay as before.
+
+## String-backed enum compatibility
+
+**Breaking change:** the migrated native enum families now use `StrEnum` values that exactly match
+member names, including their case. For example, `AdmissionReason.WAIT_TIMEOUT.value` is
+`"WAIT_TIMEOUT"`; a lowercase member name retains its lowercase spelling. String-enum members compare
+equal to their string values and to equal-valued members of other string-enum families. Check the
+concrete type when a boundary must distinguish families or when using members as dictionary/set keys.
+
+Direct `.value` and default string/JSON representations can therefore change, including from an
+integer to a string. Selected compatibility readers accept tested historical numeric inputs and
+old pickle payloads; `SocketKind` continues to emit its historical integer compiler rows. Migrate
+external code that directly stores or compares old enum values; external serializers have not been
+exhaustively checked.
+
+The established record projections remain at their boundaries: Nexus configuration writes plain
+member names; research records retain their established strings; admission descriptions, participant
+rows, aetheric session descriptions/errors and scope keys retain their historical lowercase tokens;
+and claim modes retain `x`, `s` and `ix` wire tokens. Old lowercase admission and selected
+transaction tokens remain readable. DevOps `TransactionSession.describe()` returns the stored request
+type directly: an enum member now renders with its exact uppercase value, while a raw lowercase input
+remains lowercase. Exact `BIND` and `NOTCH` strings also reach the existing structural commit
+validation gate. The legacy raw `"dynamic"` configuration alias still selects `codegen`.
+
+Bind now rejects a foreign enum family passed as a managed-spell mode, even when its value matches a
+valid mode. Non-`SpellState` additions to state flags are ignored instead of retained. Supported typed
+flags and ownership-transfer behavior remain covered by the focused tests.
+
+## Packaging and documentation
+
+The source and test maps, their indexes and the source graph reflect the selected enum changes.
+Generated assets are rebuilt and verified for the current version.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8277.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategy_builder.py",
- "source_sha256": "b77e1d27a74d26132c3e5179f46fff1c8b7ce8c087494f415154590a683045c9",
+ "source_sha256": "3759a1f1e4076d955d062ad3685450601a1bfb8de7f0cdd87cb99b2e966bf8e7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategy_builder": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "299373cc124aa14200f72e1dd95a73d9e4ed9be19f9f5040cd357a4925f1bc0a",
+   "span_sha256": "4cb882733cc33f4519681474d37c1968ba4e919a516fb9946b3363bbb4463504",
    "include": true,
    "role": "The registry resolving a transaction type to its strategy class - the one way to answer 'who decides what this transaction claims'.",
    "responsibilities": [

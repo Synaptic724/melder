@@ -518,7 +518,7 @@ class TransactionRequest(Cleanable):
                     "scope_claims values must be ClaimMode; scope {0!r} got "
                     "{1!r}.".format(scope_key, mode)
                 )
-            normalized.append((scope_key, mode.value))
+            normalized.append((scope_key, mode.wire_value))
         normalized.sort(key=lambda pair: pair[0])
         return TransactionRequest(
             request_id=request_id,
@@ -558,7 +558,7 @@ class TransactionRequest(Cleanable):
 
     def describe(self) -> str:
         """
-        Render this request as one diagnostic line.
+        Render this request as one diagnostic line using the historical type token.
 
         Returns:
             str: The type, submitter, request id, and each scope with its mode.
@@ -568,7 +568,7 @@ class TransactionRequest(Cleanable):
             for scope_key, mode_value in self.scope_claims
         )
         return "{0} by {1}:{2} [{3}] claiming {4}".format(
-            self.transaction_type.value,
+            self.transaction_type.wire_value,
             self.submitter_kind,
             self.submitter_id,
             self.request_id,

@@ -95,10 +95,10 @@ def test_matrix_matches_devops_semantics_exactly():
 
 
 def test_claim_mode_survives_string_apis():
-    """StrEnum members travel into payloads and logs as plain strings."""
-    assert ClaimMode.EXCLUSIVE == "x"
+    """Members expose exact names while old claim tokens remain readable."""
+    assert ClaimMode.EXCLUSIVE == "EXCLUSIVE"
     assert ClaimMode("ix") is ClaimMode.INTENT
-    assert "mode={0}".format(ClaimMode.SHARED.value) == "mode=s"
+    assert "mode={0}".format(ClaimMode.SHARED.value) == "mode=SHARED"
 
 
 def test_compatibility_rejects_non_modes():
@@ -182,7 +182,7 @@ def test_reentry_is_a_noop_and_never_an_upgrade():
         assert table.try_acquire(who, {"s1": ClaimMode.SHARED}) == ()
         assert table.try_acquire(who, {"s1": ClaimMode.EXCLUSIVE}) == ()
         granted = table.describe()["scopes"]["s1"]
-        assert granted[0][1] == ClaimMode.SHARED.value
+        assert granted[0][1] == "s"
     finally:
         table.cleanup()
 
@@ -583,7 +583,8 @@ def test_leave_broken_runs_nothing_and_returns_residue():
 def test_broken_is_distinct_from_aborted():
     """Collapsing the two would erase whether repair work exists."""
     assert SessionStatus.BROKEN is not SessionStatus.ABORTED
-    assert SessionStatus.BROKEN.value == "broken"
+    assert SessionStatus.BROKEN.value == "BROKEN"
+    assert SessionStatus("broken") is SessionStatus.BROKEN
 
 
 def test_rollback_action_requires_a_description():

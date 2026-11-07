@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_access_mode.py",
- "source_sha256": "b4d4c2438ae67f683142efd4ef1237360430185cea0c310a48d6a6e8f8cb8b68",
+ "source_sha256": "bae7591ac571d8dffa6fa06bba04f04759df058453e3dd5be6c4755a6f8f24c0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_access_mode": {
@@ -28,7 +28,7 @@
    "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -36,7 +36,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "01cbfd46fed3cf07b67afa4344a5b923e36d25ec9f80d060605bab35e0fe1743",
+   "span_sha256": "20c4e5869a4ec82113db6529c7a56b3d091d61bc217ba913c55e29776a48028c",
    "role": "System-level policy enum for direct Rift retrieval.",
    "responsibilities": [
     "labels open, token-required, and system-only Rift access modes"
@@ -56,7 +56,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum"
+  "StrEnum": "enum.StrEnum"
  },
  "collapse_candidate": null
 }

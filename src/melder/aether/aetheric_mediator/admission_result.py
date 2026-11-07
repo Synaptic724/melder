@@ -9,8 +9,8 @@ say which scope stopped it and who held that scope, or the caller cannot retry
 intelligently and an operator cannot see why anything is stuck.
 """
 
-from enum import StrEnum
-from typing import Tuple
+from enum import Enum, StrEnum
+from typing import Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -24,7 +24,9 @@ class AdmissionReason(StrEnum):
         rendered human-facing evidence lines.
 
     Contract:
-        - Values are stable; they travel into logs and stored evidence.
+        - Values exactly match their uppercase member names. Historical lowercase
+          values remain readable by value, and verdict descriptions retain those
+          lowercase codes for logs and stored evidence.
         - Codes describe the CLASS of refusal. The specific contended scopes
           and holders travel separately on the result, so one code can carry
           many concrete blocks.
@@ -42,11 +44,34 @@ class AdmissionReason(StrEnum):
         these rather than parsing evidence strings.
     """
 
-    SCOPE_CONTENDED = "scope_contended"
-    WAIT_TIMEOUT = "wait_timeout"
-    PLANE_CLEANED = "plane_cleaned"
-    NO_STRATEGY = "no_strategy"
-    INVALID_REQUEST = "invalid_request"
+    SCOPE_CONTENDED = "SCOPE_CONTENDED"
+    WAIT_TIMEOUT = "WAIT_TIMEOUT"
+    PLANE_CLEANED = "PLANE_CLEANED"
+    NO_STRATEGY = "NO_STRATEGY"
+    INVALID_REQUEST = "INVALID_REQUEST"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[AdmissionReason]:
+        """
+        Resolve an exact historical lowercase reason value.
+
+        Canonical uppercase values are handled by the ordinary enum lookup.
+        The five previous lowercase strings remain readable, including in old
+        enum pickle payloads. When this hook is called, other enum families
+        and unknown values return None so construction raises ValueError.
+        A foreign string enum equal to a canonical value may match before the
+        missing-value hook, as with ordinary StrEnum lookup.
+        """
+        if isinstance(value, Enum) or not isinstance(value, str):
+            return None
+        legacy_values = {
+            "scope_contended": cls.SCOPE_CONTENDED,
+            "wait_timeout": cls.WAIT_TIMEOUT,
+            "plane_cleaned": cls.PLANE_CLEANED,
+            "no_strategy": cls.NO_STRATEGY,
+            "invalid_request": cls.INVALID_REQUEST,
+        }
+        return legacy_values.get(value)
 
 
 class AdmissionResult(Cleanable):
@@ -300,12 +325,16 @@ class AdmissionResult(Cleanable):
         """
         Render this verdict as one diagnostic line.
 
+        Contract:
+            Refusal codes retain their historical lowercase spelling for logs
+            and stored evidence even though enum values use uppercase names.
+
         Returns:
             str: `"admitted"`, or a refusal naming its codes and evidence.
         """
         if self.admitted:
             return "admitted"
-        codes = ", ".join(reason.value for reason in self.reasons)
+        codes = ", ".join(reason.name.lower() for reason in self.reasons)
         if not self.evidence:
             return "refused [{0}]".format(codes)
         return "refused [{0}]: {1}".format(codes, "; ".join(self.evidence))

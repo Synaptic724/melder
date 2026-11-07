@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class Existence(Enum):
+class Existence(StrEnum):
     """
     Lifecycle mode for a spell binding.
+
+    Values exactly match member names. Historical numeric values 1-7 remain
+    readable by value, including in older enum pickle payloads.
 
     `Existence` answers the core runtime question for a spell binding:
     "where does instance reuse stop and where does fresh construction begin?"
@@ -61,7 +65,7 @@ class Existence(Enum):
         released back explicitly). Pass it to Spellbook.bind(...). Method/lambda/existing-object
         bindings must use unique.
     """
-    unique = auto()
+    unique = "unique"
     """
     One instance per **Aetheric Frame**.
 
@@ -73,7 +77,7 @@ class Existence(Enum):
     - Ideal for global services within a single system (e.g., config, orchestrators).
     """
 
-    unique_per_conduit = auto()
+    unique_per_conduit = "unique_per_conduit"
     """
     One instance per **conduit**.
 
@@ -82,7 +86,7 @@ class Existence(Enum):
     - Suitable for conduit-local caching or services.
     """
 
-    many = auto()
+    many = "many"
     """
     A new instance is created **every time** the spell is cast.
 
@@ -91,7 +95,7 @@ class Existence(Enum):
     - Best for stateless or short-lived services.
     """
 
-    unique_per_conduit_cluster = auto()
+    unique_per_conduit_cluster = "unique_per_conduit_cluster"
     """
     Shared instance across a **conduit cluster** via contracts.
 
@@ -100,7 +104,7 @@ class Existence(Enum):
     - There is no per-cluster instance key; sharing is contract-scoped.
     """
 
-    unique_per_conduit_lineage = auto()
+    unique_per_conduit_lineage = "unique_per_conduit_lineage"
     """
     One instance per **conduit lineage tree**.
 
@@ -109,7 +113,7 @@ class Existence(Enum):
     - Useful for inheritance-based sharing across dynamic creation trees.
     """
 
-    unique_per_spell_space = auto()
+    unique_per_spell_space = "unique_per_spell_space"
     """
     One instance per **spell space**.
 
@@ -119,7 +123,7 @@ class Existence(Enum):
     - Spell spaces are versioned and resettable.
     """
 
-    managed_spell_quantity = auto()
+    managed_spell_quantity = "managed_spell_quantity"
     """
     Objects **leased** from a pool owned by the binding's **root conduit**.
 
@@ -163,3 +167,26 @@ class Existence(Enum):
 
         """
         return self.name
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[Existence]:
+        """
+        Resolve a historical numeric lifetime to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, Existence] = {
+            1: cls.unique,
+            2: cls.unique_per_conduit,
+            3: cls.many,
+            4: cls.unique_per_conduit_cluster,
+            5: cls.unique_per_conduit_lineage,
+            6: cls.unique_per_spell_space,
+            7: cls.managed_spell_quantity,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

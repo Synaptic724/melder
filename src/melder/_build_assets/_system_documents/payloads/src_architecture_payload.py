@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 5260
-CONTENT_SHA256 = '33a833e00a2f7b9c00e47e1e60952f03de9dd0e8cecf13a480b45c9ec2e1e654'
+LINE_COUNT = 5398
+CONTENT_SHA256 = '58b49fe00ba65437e42ff405ea4143aba0858e0c142876676a4e8b349a8ffb17'
 
 TEXT = """# Src Architecture (C4)
 
@@ -79,7 +79,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-25T14:22:13Z
+- Updated: 2026-11-01T13:44:23Z
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -435,13 +435,13 @@ External interfaces are Python APIs:
   another way (ValueError) before anything is registered or moved, and a notch, which never moves the index's
   address, refuses an address another spell holds (RuntimeError) with nothing moved.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5678, 5813 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5842-6060 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5679, 5823 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5871-6089 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6062, 6160 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6183, 6258 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4704 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4742 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6091, 6189 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6212, 6287 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4712 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4750 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -560,7 +560,7 @@ index before anything moves; the two index moves take a spell_id the same way (0
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262). Every version of an index is bound the way its first version was, so a notch moves which version
 serves the index's address, never the address, and refuses an address another spell holds (0.2.8273).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, remeasured 2026-10-25 at 0.2.8273);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, remeasured 2026-10-25 at 0.2.8273);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -595,7 +595,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
   Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
   `ProtocolCrafter` remain importable and usable while being unbindable.
 - The only live enforcement call site is
-  `src/melder/aether/spellbook/bind/bind.py:726` (in `Bind._bind_logic`) -
+  `src/melder/aether/spellbook/bind/bind.py:727` (in `Bind._bind_logic`) -
   `assert_allowed(spell, context="bind")`, a direct call to the
   module-level function. Identity resolution is factored into the pure helper
   `_internal_identity_of(candidate)` in the same module.
@@ -986,15 +986,15 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4169-4430 (`_apply_notch`, `_refuse_taken_address`)
-   - src/melder/aether/spellbook/spellbook.py:4742-4847
-   - src/melder/aether/spellbook/spellbook.py:4962-5082
+   - src/melder/aether/spellbook/spellbook.py:4177-4438 (`_apply_notch`, `_refuse_taken_address`)
+   - src/melder/aether/spellbook/spellbook.py:4750-4855
+   - src/melder/aether/spellbook/spellbook.py:4970-5090
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
-   - src/melder/aether/conduit/conduit.py:5678-5840
-   - src/melder/aether/conduit/conduit.py:5842-6060
-   - src/melder/aether/conduit/conduit.py:6062-6271
-   - src/melder/aether/conduit/conduit.py:6352-6381
-   - src/melder/aether/conduit/conduit.py:6383-6426
+   - src/melder/aether/conduit/conduit.py:5679-5869
+   - src/melder/aether/conduit/conduit.py:5871-6089
+   - src/melder/aether/conduit/conduit.py:6091-6300
+   - src/melder/aether/conduit/conduit.py:6411-6440
+   - src/melder/aether/conduit/conduit.py:6442-6485
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1070,7 +1070,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5627-5629 (the check and the raise)
+  - src/melder/aether/conduit/conduit.py:5628-5630 (the check and the raise)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
   - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
@@ -1089,6 +1089,53 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- String-backed enum compatibility: the five Nexus/Rift modes, SpellframeKind and the three
+  research lane/transition enums retain their existing names and string values as StrEnum members.
+  String and same-valued cross-family equality is intentional. Nexus and Rift configuration reject
+  foreign enum families at their typed boundaries; Nexus records plain member names, and research
+  payload readers preserve their established foreign-family failure or fallback behavior.
+  ParticipationState, OutcomePolicy, SessionStatus and ScopePrefix have uppercase name-matching
+  values. Exact former lowercase values remain readable by value and old pickle. Participant rows,
+  session descriptions/errors and scope-key builders retain their historical lowercase strings;
+  frame-create claims still conflict on the existing world key. The fallback rejects foreign enum
+  families for old values; ordinary enum lookup still handles equal canonical values. Other selected
+  enums, including formerly numeric ones, now use exact member-name strings. Tested historical inputs
+  remain readable; SocketKind projects historical integer compiler rows. DevOps bind, posture, contract
+  and structural-commit checks recognize legacy, canonical and member forms. Only the actual NOTCH
+  member takes the compiled-member shortcut; raw notch spellings use the historical string path.
+  Its session describe returns the stored request type, so an enum renders uppercase while a raw
+  lowercase input stays lowercase. Bind now
+  rejects foreign managed-mode enums; SpellSystemState ignores non-family flag writes and returns
+  false for non-family probes. These are intentional input-boundary changes.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:SocketKind._legacy_code`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:ChangeTransactionType._comparison_token`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.begin_transaction`,
+  `src/melder/aether/conduit/conduit.py:Conduit._require_link_transaction_for_contract`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._default_structural_validator`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py:TransactionSession.describe`,
+  `src/melder/aether/spellbook/bind/bind.py:Bind._normalize_managed_mode` and
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py:SpellSystemState.update_flags`.
+  EVIDENCE: `src/melder/nexus/configuration/nexus_configuration.py:NexusConfiguration._convert_property_value_if_needed`,
+  `src/melder/mutation_research/research_set/research_lane.py:ResearchLane.from_payload`,
+  `src/melder/mutation_research/research_set/transition_entry.py:TransitionEntry.from_payload`,
+  `src/melder/aether/aetheric_mediator/information_registry.py:InformationRegistry._render_participant_locked`,
+  `src/melder/aether/aetheric_mediator/transaction_session.py:TransactionSession.describe` and
+  `src/melder/aether/aetheric_mediator/scope_keys.py:ScopeKey`.
+- Terminal Python attributes are `SpellValidity.CLEANED`, `ConduitState.CLEANED` and
+  `RecordedUnitState.CLEANED` (0.2.8276), with no lowercase Python aliases. Names and order stay;
+  values now match member names. Historical numeric validity/conduit values and the recorded
+  lowercase `"cleaned"` value remain readable.
+  Native declared-name lookup is case-insensitive, includes aliases, keeps an existing lowercase-key
+  answer first and rejects foreign enums even after an equal raw string warmed its type-sensitive
+  bounded cache. Conduit string rendering stays lowercase. Nexus/MR cleanup emits the canonical
+  member; the passive profile journals and captures its name. Both restore drivers recognize final
+  `"CLEANED"` and legacy `"cleaned"`, report the existing shortfall and skip reconstruction before
+  configuration. Raw later-wins chronology, disabled replay, public verbs and major-5 admission stay.
+  EVIDENCE: `src/melder/utilities/helpers/general_helpers.py:EnumHelpers.convert_enum_and_check`,
+  `src/melder/crystallizer/persistence/persistence_profile.py:PersistenceProfile.record_nexus_state`,
+  `PersistenceProfile.record_mutation_research_state`, `PersistenceProfile.capture_segment_since`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._replay_nexus` and
+  `RestoreEngine._replay_mutation_research`.
 - A store files each binding's objects apart, on one shelf per spell_id (2026-10-25, 0.2.8274;
   STORY-2026-10-25-creations_store_slots_by_binding, on the owner's go in chat, 2026-10-25: "yeah go ahead and
   implement this, it makes sense", for the shelf/slot design he was shown): a Creations store files an object, its
@@ -2344,10 +2391,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7792-7835
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7822-7834,
-    effective-mode return :7835; remeasured 2026-10-25 at 0.2.8273)
-  - src/melder/aether/spellbook/spellbook.py:8048
+  - src/melder/aether/spellbook/spellbook.py:7800-7843
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7830-7842,
+    effective-mode return :7843; remeasured 2026-10-25 at 0.2.8273)
+  - src/melder/aether/spellbook/spellbook.py:8056
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2376,7 +2423,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   frame twin is missing from a bundle - without the frame there is nothing to
   ask.
   EVIDENCE:
-  - src/melder/aether/spellbook/configuration/system_state.py:32-49
+  - src/melder/aether/spellbook/configuration/system_state.py:SystemState
   - src/melder/aether/spellbook/spellbook_creation_system.py:1288-1335
 - Method/lambda spells must use `Existence.unique`, because a method or lambda
   has no stable identity to share: two resolutions of a non-unique existence
@@ -3327,6 +3374,73 @@ shortfall honesty, R-A covenant) are unchanged.
 
 
 ## C1 Code Map (Core Only)
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py`
+  start_line: 1
+  end_line: 290
+  loc: 290
+  verified_at: 2026-11-02T12:02:57Z
+- path: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
+  start_line: 1
+  end_line: 102
+  loc: 102
+  verified_at: 2026-11-02T12:02:57Z
+- path: `src/melder/nexus/configuration/rift_access_mode.py`
+  start_line: 1
+  end_line: 52
+  loc: 52
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/rift_creation_mode.py`
+  start_line: 1
+  end_line: 53
+  loc: 53
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/nexus_frame_mode.py`
+  start_line: 1
+  end_line: 58
+  loc: 58
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/rift_space_type.py`
+  start_line: 1
+  end_line: 68
+  loc: 68
+  verified_at: 2026-11-01T23:31:59Z
+- path: `src/melder/nexus/configuration/rift_validation_mode.py`
+  start_line: 1
+  end_line: 53
+  loc: 53
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/nexus_configuration.py`
+  start_line: 1
+  end_line: 1962
+  loc: 1962
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/rift_configuration.py`
+  start_line: 1
+  end_line: 573
+  loc: 573
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/aether/aetheric_mediator/participation.py`
+  start_line: 1
+  end_line: 245
+  loc: 245
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/utilities/helpers/general_helpers.py`
+  start_line: 1
+  end_line: 502
+  loc: 502
+  verified_at: 2026-11-01T13:44:23Z
+
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py`
+  start_line: 1
+  end_line: 111
+  loc: 111
+  verified_at: 2026-11-02T12:02:57Z
+
+- path: `src/melder/crystallizer/crystals/recorded_unit_state.py`
+  start_line: 1
+  end_line: 86
+  loc: 86
+  verified_at: 2026-11-02T12:02:57Z
 
 Ranges are MEASURED, never estimated: `start_line`/`end_line` are the file's own extent and `loc` is its line count,
 read from disk at `verified_at`. A directory is never an entry; it is expanded into its modules. `note` is a short
@@ -3437,9 +3551,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1545
-  loc: 1545
-  verified_at: 2026-10-25T11:29:20Z
+  end_line: 1547
+  loc: 1547
+  verified_at: 2026-11-02T12:02:57Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/spell_code_digest.py`
   start_line: 1
@@ -3455,9 +3569,9 @@ Spellbook and binding:
   note: `BindingManifest`: a spell's binding as a value record and its SHA256, the binding hash (0.2.8258).
 - path: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py`
   start_line: 1
-  end_line: 47
-  loc: 47
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 51
+  loc: 51
+  verified_at: 2026-11-01T23:23:03Z
   note: `SpellframeKind` - none / category / contract, the kind a binding records (0.2.8222).
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -3479,21 +3593,21 @@ Spellbook and binding:
   note: spell metadata and hooks.
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
-  end_line: 165
-  loc: 165
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 192
+  loc: 192
+  verified_at: 2026-11-02T12:02:57Z
   note: existence modes.
 - path: `src/melder/aether/spellbook/existence/managed_spell_mode.py`
   start_line: 1
-  end_line: 91
-  loc: 91
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 114
+  loc: 114
+  verified_at: 2026-11-02T12:02:57Z
   note: `ManagedSpellMode`: elastic, limited_quantity, queue (0.2.8242).
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
-  end_line: 101
-  loc: 101
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 135
+  loc: 135
+  verified_at: 2026-11-02T12:02:57Z
   note: spell type classification.
 
 Configuration and hooks:
@@ -3542,9 +3656,9 @@ Configuration and hooks:
   note: properties, hooks, freeze.
 - path: `src/melder/aether/spellbook/configuration/system_state.py`
   start_line: 1
-  end_line: 54
-  loc: 54
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 76
+  loc: 76
+  verified_at: 2026-11-02T12:02:57Z
   note: automatic vs dynamic.
 - path: `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py`
   start_line: 1
@@ -3593,9 +3707,9 @@ SpellCompiler and validation:
   note: phase 6 validation.
 - path: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
   start_line: 1
-  end_line: 70
-  loc: 70
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 96
+  loc: 96
+  verified_at: 2026-11-02T12:02:57Z
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
@@ -3648,14 +3762,14 @@ Aether and frames:
   start_line: 1
   end_line: 1636
   loc: 1636
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: the record: custody keyed by custody key (per frame under per-frame spell ids,
     0.2.8214), journal and checkpoint capture.
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
   end_line: 3178
   loc: 3178
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: staged restore driver.
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
@@ -3683,7 +3797,7 @@ Aether and frames:
   start_line: 1
   end_line: 4005
   loc: 4005
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: hosted mutation-research root owned by Aether (ResearchSet registry + composition emission).
 - path: `src/melder/mutation_research/research_set/grouped_research_node.py`
   start_line: 1
@@ -3705,9 +3819,9 @@ Aether and frames:
   note: `ResearchJournal`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_lane.py`
   start_line: 1
-  end_line: 988
-  loc: 988
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1016
+  loc: 1016
+  verified_at: 2026-11-01T23:23:03Z
   note: `ResearchLane` with `LaneState` and `LaneType`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_node.py`
   start_line: 1
@@ -3729,9 +3843,9 @@ Aether and frames:
   note: `ResidenceRegistry`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/transition_entry.py`
   start_line: 1
-  end_line: 551
-  loc: 551
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 564
+  loc: 564
+  verified_at: 2026-11-01T23:23:03Z
   note: `TransitionEntry` with `TransitionAct`, part of the formal research record.
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
@@ -3763,15 +3877,15 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: serialized admission decision point.
 - path: `src/melder/aether/aetheric_mediator/transaction_session.py`
   start_line: 1
-  end_line: 1035
-  loc: 1035
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1099
+  loc: 1099
+  verified_at: 2026-11-01T23:23:03Z
   note: live transaction span, joins, inverses, outcome policy.
 - path: `src/melder/aether/aetheric_mediator/information_registry.py`
   start_line: 1
-  end_line: 1057
-  loc: 1057
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1063
+  loc: 1063
+  verified_at: 2026-11-02T12:02:57Z
   note: fact baselines plus live activity indexes.
 - path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
   start_line: 1
@@ -3793,21 +3907,21 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: claimant identity; caller-owned, borrowed by the plane.
 - path: `src/melder/aether/aetheric_mediator/claim_mode.py`
   start_line: 1
-  end_line: 174
-  loc: 174
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 206
+  loc: 206
+  verified_at: 2026-11-02T12:02:57Z
   note: claim vocabulary and the static compatibility matrix.
 - path: `src/melder/aether/aetheric_mediator/scope_keys.py`
   start_line: 1
-  end_line: 171
-  loc: 171
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 199
+  loc: 199
+  verified_at: 2026-11-01T23:23:03Z
   note: canonical scope-key builders over the `ScopePrefix` vocabulary.
 - path: `src/melder/aether/aetheric_mediator/transaction_type.py`
   start_line: 1
-  end_line: 94
-  loc: 94
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 124
+  loc: 124
+  verified_at: 2026-11-02T12:02:57Z
   note: closed transaction vocabulary (PROVISIONAL membership).
 - path: `src/melder/aether/aetheric_mediator/transaction_request.py`
   start_line: 1
@@ -3823,15 +3937,15 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: post-admission record consumed by commit hooks and reporting.
 - path: `src/melder/aether/aetheric_mediator/admission_result.py`
   start_line: 1
-  end_line: 311
-  loc: 311
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 340
+  loc: 340
+  verified_at: 2026-11-02T12:02:57Z
   note: admission verdict; evidence, never a bare bool.
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
   end_line: 3589
   loc: 3589
-  verified_at: 2026-10-25T12:02:52Z
+  verified_at: 2026-11-01T13:44:23Z
   note: public AR singleton root.
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
@@ -4130,9 +4244,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8011
-  loc: 8011
-  verified_at: 2026-10-25T14:22:13Z
+  end_line: 8012
+  loc: 8012
+  verified_at: 2026-11-02T12:02:57Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -4142,27 +4256,27 @@ Conduit runtime:
   note: root-owned lesser pool.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
-  end_line: 94
-  loc: 94
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 119
+  loc: 119
+  verified_at: 2026-11-02T12:02:57Z
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
   end_line: 4063
   loc: 4063
-  verified_at: 2026-10-25T14:22:13Z
+  verified_at: 2026-11-01T13:44:23Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
-  end_line: 75
-  loc: 75
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 100
+  loc: 100
+  verified_at: 2026-11-02T12:02:57Z
   note: policy enum.
 - path: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
   start_line: 1
-  end_line: 65
-  loc: 65
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 86
+  loc: 86
+  verified_at: 2026-11-02T12:02:57Z
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
@@ -4197,7 +4311,7 @@ Resolution and creations:
   start_line: 1
   end_line: 2501
   loc: 2501
-  verified_at: 2026-10-25T12:41:30Z
+  verified_at: 2026-11-01T13:44:23Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -4266,7 +4380,7 @@ Control plane:
   start_line: 1
   end_line: 2052
   loc: 2052
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: lineage registry.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
@@ -4276,27 +4390,27 @@ Control plane:
   note: lineage state.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py`
   start_line: 1
-  end_line: 93
-  loc: 93
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 127
+  loc: 127
+  verified_at: 2026-11-02T12:02:57Z
   note: lineage flags.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py`
   start_line: 1
-  end_line: 99
-  loc: 99
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 146
+  loc: 146
+  verified_at: 2026-11-02T12:02:57Z
   note: change reasons.
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
-  end_line: 1683
-  loc: 1683
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1686
+  loc: 1686
+  verified_at: 2026-11-02T12:29:20Z
   note: change control.
 - path: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
   start_line: 1
   end_line: 751
   loc: 751
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: risk gating.
 
 Utilities:
@@ -4708,6 +4822,20 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 `binding_changes` (0.2.8258).
 
 ## Information Sources
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py`
+- `src/melder/nexus/configuration/rift_access_mode.py`
+- `src/melder/nexus/configuration/rift_creation_mode.py`
+- `src/melder/nexus/configuration/nexus_frame_mode.py`
+- `src/melder/nexus/configuration/rift_space_type.py`
+- `src/melder/nexus/configuration/rift_validation_mode.py`
+- `src/melder/nexus/configuration/rift_configuration.py`
+- `src/melder/mutation_research/research_set/research_lane.py`
+- `src/melder/mutation_research/research_set/transition_entry.py`
+- `src/melder/aether/aetheric_mediator/participation.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py`
+- `src/melder/aether/conduit/conduit_state/conduit_state.py`
+- `src/melder/crystallizer/crystals/recorded_unit_state.py`
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py`
@@ -4876,6 +5004,16 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+String-backed enum compatibility: selected native families use exact member-name string values.
+Historical readers and selected persisted, claim and diagnostic projections retain their contracts;
+direct values and some direct diagnostics change. Start at Operational Invariants and
+the String Enum Value and Persistence Compatibility component; unknown external consumers stay unknown.
+
+2026-11-01 terminal names (0.2.8276; representation updated in 0.2.8277): three canonical CLEANED
+Python attributes initially retained bases and values; their values now match their names. Native declared-name lookup preserves case and family contracts;
+canonical lifecycle emission and admitted legacy cleaned reads preserve terminal intent. The source
+and test maps describe their own boundaries; real public cache tests cover both drivers, live-state
+controls and unsupported-major refusal. Ownership/transfer contracts and other unknowns stay.
 
 2026-10-25 a lender's notch moves its borrowers inside its frozen window (0.2.8275; TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout,
 design 2): the race of an in-flight borrower meld against the notch's fan-out is closed - the borrowers' lineages are

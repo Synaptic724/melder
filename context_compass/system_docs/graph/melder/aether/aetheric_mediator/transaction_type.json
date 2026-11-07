@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/transaction_type.py",
- "source_sha256": "e78b23419a2961efa8a55516849863d9df679977622ff3f77b5167646eb4d13e",
+ "source_sha256": "31c29d70fc9cefe3a8ecd558c8f7419fb57d8647c3f8e44be1053e66e8f225ed",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.transaction_type": {
@@ -19,37 +19,40 @@
    "label": "TransactionType",
    "kind": "enum",
    "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
-   "lineno": 15,
+   "lineno": 16,
    "bases": [],
    "markers": [
     "StrEnum"
    ],
-   "public_methods": [],
+   "public_methods": [
+    "wire_value"
+   ],
    "shape": {
-    "method_count": 0,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "816646e731e90fe477a2d70d655a5e9359576cdefb4536ba8a98c6f030175975",
+   "span_sha256": "f4de58e29173008ae045a7c520e0997356de5fb737116a819200a635df563d26",
    "include": true,
    "role": "The CLOSED set of top-level operations the plane admits, so admission, dispatch, activity indexes and logs all key on one stable vocabulary.",
    "responsibilities": [
     "name every structural operation that can claim scopes at world level",
     "stay closed: wanting to pass a non-member string is the signal a STRATEGY is missing, not a reason to widen the type",
-    "keep values stable - they travel into request payloads, admission evidence and logs"
+    "use exact member names as values; wire_value preserves lowercase reporting tokens and old lowercase values remain readable"
    ],
    "phases": [
     "init",
     "runtime"
    ],
-   "semantics_authored_against": "816646e731e90fe477a2d70d655a5e9359576cdefb4536ba8a98c6f030175975"
+   "semantics_authored_against": "f4de58e29173008ae045a7c520e0997356de5fb737116a819200a635df563d26"
   }
  },
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "StrEnum": "enum.StrEnum"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

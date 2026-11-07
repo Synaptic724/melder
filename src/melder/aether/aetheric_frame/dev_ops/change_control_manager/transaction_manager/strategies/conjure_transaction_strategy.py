@@ -127,7 +127,7 @@ class ConjureTransactionStrategy(TransactionStrategy):
             "conduit_ids": tuple(),
             "scope_keys": tuple(sorted(scope_keys)),
             "scope_claims": (
-                (spellbook_scope, ClaimMode.EXCLUSIVE.value),
+                (spellbook_scope, ClaimMode.EXCLUSIVE.wire_value),
             ),
             "scope_hashes": tuple(metadata.get("scope_hashes", ())),
             "binding_keys": tuple(),

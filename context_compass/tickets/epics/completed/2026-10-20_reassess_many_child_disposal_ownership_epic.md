@@ -1,14 +1,17 @@
 # Epic: Explore disposal ownership of Many dependencies, including possible removal
 
+- Completed: 2026-11-07T07:54:24Z
+- Summary: Closed done on the owner's word (chat 2026-11-07; closed by melder_0): his removal decision - a `many` dependency belongs to the scope that built it, and a holder's cleanup runs only its own disposal - landed at 0.2.8267 through STORY-2026-10-24-remove_many_child_holder_ownership.
+
 ## Metadata
 - Epic ID: EPIC-2026-10-20-reassess_many_child_disposal_ownership
-- Status: in_progress
+- Status: done
 - Owner: Mark (architecture and policy decision)
 - Agent Name: melder_1 (executor since 2026-10-24; expert_1 authored revision 1)
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-10-20T21:59:39Z
-- Updated: 2026-10-24T22:09:11Z
+- Updated: 2026-11-07T07:54:24Z
 - Revision: 1
 - Target Window: Unscheduled; no investigation or implementation batch activated.
 - Related Program/Initiative: Melder runtime ownership and lifecycle design.
@@ -85,6 +88,9 @@ references and application disposal would leave the user's responsibility unclea
   attention/mailbox/artifact boards and all unrelated work byte-for-byte.
 
 ## State Transition Event
+- from_state: in_progress
+- to_state: done
+- transition_reason (2026-11-07, melder_0): the owner's word (chat 2026-11-07): "wait I never said close as unfinished but melder_2 finished pypy_provincnace and many_child_ownership is done too you can close those 2 not sure about the other ones"
 - from_state: draft
 - to_state: in_progress
 - transition_reason (2026-10-24, melder_1): the owner chose removal (DECISION note of 2026-10-24T19:58:35Z);
@@ -462,11 +468,25 @@ before authorizing product changes. Release timing, code pushes and publication 
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-11-07T07:54:24Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Closed done on the owner's word (chat 2026-11-07, in the State Transition Event): the removal he decided on
+    2026-10-24 landed at 0.2.8267 and was turned in; the only open step was his word on closing the epic.
+  EVIDENCE:
+  - context_compass/tickets/epics/completed/2026-10-20_reassess_many_child_disposal_ownership_epic.md:498-514
+  IMPACT: The epic moves to epics/completed/; its board row and detail entry come off and a closed anchor goes on.
+  NEXT: None; the epic is closed.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Exploration walkthrough delivered and owner disposition recorded.
-- [ ] All epic criteria and applicable required evidence/review satisfied.
-- [ ] Actual child/routing disposition reconciled under the then-current authorized scope.
+- [x] Exploration walkthrough delivered and owner disposition recorded.
+- [x] All epic criteria and applicable required evidence/review satisfied.
+- [x] Actual child/routing disposition reconciled under the then-current authorized scope.
 Ticket authoring is delivered separately; these unchecked boxes keep the exploration open.
+Closed on the owner's directive (2026-11-07, quoted in the State Transition Event); the boxes rest on his word and were not re-verified by melder_0.
 
 ## Noting Behavior
 - Record cross-workstream findings, alternative tradeoffs, decisions and remaining boundaries.
@@ -475,6 +495,8 @@ Ticket authoring is delivered separately; these unchecked boxes keep the explora
 - Child evidence may be linked if actual children are authorized later; do not invent their IDs.
 
 ## Context / Handoff Summary
+Closed 2026-11-07T07:54:24Z by melder_0 on the owner's word: the removal landed at 0.2.8267; nothing is left open under the epic.
+
 Current (2026-10-24T22:09:11Z, melder_1): the owner decided removal - a `many` dependency belongs to the scope that
 built it, and a holder's cleanup runs only its own disposal (DECISION note of 2026-10-24T19:58:35Z) - and
 STORY-2026-10-24-remove_many_child_holder_ownership carried it out at 0.2.8267 (turned in; FACT note above).

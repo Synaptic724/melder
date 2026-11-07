@@ -788,8 +788,8 @@ class ChangeControlManager(Cleanable):
         Phase 1-4 validation before commit completes. It is intentionally
         conservative:
 
-        - only the generalized structural-commit set participates: bind, plus
-          notch (whose staged binding key names the promoted member)
+        - bind and notch enter for enum members, exact names, or old lowercase strings;
+          only the actual notch member takes the compiled-member shortcut below
         - unconjured or unavailable spellbooks short-circuit to no-op
         - spells that already have Phase 4 results are skipped
         - notch additionally skips members that already carry a phase-5 root
@@ -809,9 +809,8 @@ class ChangeControlManager(Cleanable):
         path can fail loudly instead of accepting a broken staged mutation.
         """
         
-        if staged.request_type not in (
-            ChangeTransactionType.BIND,
-            ChangeTransactionType.NOTCH,
+        if ChangeTransactionType._comparison_token(staged.request_type) not in (
+                "bind", "notch",
         ):
             return
         if not staged.binding_keys:
@@ -1045,9 +1044,13 @@ class ChangeControlManager(Cleanable):
                 owner_request_id=request_id,
                 scope_keys=scope_keys,
                 reason_tag=(
-                    staged.request_type.value
-                    if hasattr(staged.request_type, "value")
-                    else str(staged.request_type)
+                    staged.request_type.wire_value
+                    if isinstance(staged.request_type, ChangeTransactionType)
+                    else (
+                        staged.request_type.value
+                        if hasattr(staged.request_type, "value")
+                        else str(staged.request_type)
+                    )
                 ),
             )
         return True

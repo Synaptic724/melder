@@ -19,7 +19,7 @@
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Monthly downloads](https://api.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 [![Lifetime downloads](https://api.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
-[![GitHub stars](https://img.shields.io/github/stars/Synaptic724/melder)](https://github.com/Synaptic724/melder)
+[![Stars](https://img.shields.io/github/stars/Synaptic724/melder?style=social)](https://github.com/Synaptic724/melder/stargazers)
 
 [![CI](https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg)](https://github.com/Synaptic724/melder/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg)](https://codecov.io/gh/Synaptic724/melder)
