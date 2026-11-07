@@ -75,7 +75,7 @@ Disposition values
 | tickets/stories/2026-10-19_notch_back_keeps_outgoing_dependencies_story.md | artifacts/failed_notch_refusal_20261018/probes/probe_notch_back_lineage_dependencies.py | defect_reproducer | ready | retain_as_reference | Cases H1-H4 (a notch back leaves the outgoing version's dependencies on the lineage; a borrower's consumer melding first is refused for good) with their runs on 0.2.8260 (runs/probe_notch_back_lineage_dependencies_0_2_8260_gil0.txt, _gil1.txt); re-run at the fix. | 2026-10-19T12:13:27Z | REQUIRED |
 | tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md | artifacts/correctness_defects_20261017/probes/diag_class_annotated_consumer_after_notch_back.py | defect_reproducer | active | retain_as_reference | The stuck class-annotated consumer (a notch back or a later bind under a spellframe) with its run (runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt); the epic's S1 starts from it and its fix story re-runs it. | 2026-10-25T02:47:38Z | REQUIRED |
 | tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md | artifacts/dependency_watchers_20261107/ | investigation_evidence | active | retain_as_reference | The S1 matrix probe and runner (probes/), the reproducer re-run, the 39-cell matrix and the D3 repeats on 0.2.8277 (runs/); re-run the matrix at the fix. | 2026-11-07T09:30:32Z | REQUIRED |
-| tickets/tasks/2026-11-07_inventory_class_resolution_of_framed_spells_task.md | artifacts/dependency_watchers_20261107/probes/strict_class_match_plugin.py | measurement_probe | active | retain_as_reference | The strict-rule probe plugins (class match; explicit-spell SpellMap), the suite runner and the comparer; their runs are runs/suite_strict_class_match_* and runs/examples_*; T2 re-runs them before and after. | 2026-11-07T10:35:36Z | REQUIRED |
+| tickets/epics/2026-11-07_spellframe_hides_the_concrete_class_epic.md | artifacts/dependency_watchers_20261107/probes/strict_class_match_plugin.py | measurement_probe | active | retain_as_reference | Re-associated from T2 (completed 2026-11-07): the probe plugins (mode 2 = the landed rule), the suite runner and comparer, and c4_world_probe.py; runs 0.2.8277 (before) and *_0_2_8278* (after: suite, examples, matrix, interface check, C4 world). | 2026-11-07T15:06:23Z | REQUIRED |
 | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | artifacts/index_binding_risks_20261025/ | measurement_evidence | active | retain_as_reference | GAP-1's measurement script and its runs and the UX runs (GAP-10), on 0.2.8273 and 0.2.8275; the graph census belonged to GAP-12, dropped; each investigation runs its measurement again. | 2026-10-25T14:58:20Z | HELPFUL |
 <!-- END USER-DEFINED: active_artifacts -->
 
@@ -83,6 +83,7 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-11-07_class_annotation_selects_only_bare_spells_task.md | system_docs/patches/completed/class_lookup_bare_spells_2026_11_07/ | promote_to_documentation | Merged into src_architecture and src_components (indexes regenerated); kept in patches/completed/ as the lane's record. | 2026-11-07T15:06:23Z |
 <!-- END USER-DEFINED: cleared_artifacts -->
 
 ## Notes

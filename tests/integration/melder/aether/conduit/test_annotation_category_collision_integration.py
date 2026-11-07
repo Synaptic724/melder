@@ -11,6 +11,15 @@ records the kind (`Spell.spellframe_kind`) so Phase 3 reads it instead of inferr
 
 Repaired 2026-10-04 (annotation_kind_matching): the four defect cases below ran under xfail(strict=True) until
 then; the guards pin what the repair must keep, and the new cases pin the ruled contract and collection rules.
+
+Narrowed 2026-11-07 (EPIC-2026-11-07-spellframe_hides_the_concrete_class, the owner's Autofac reading): a class
+lookup - a class annotation, a string naming a class, `list[Class]`, `SpellMap(Class)` - reaches a spell only when it
+is bound bare, with no spellframe and the default binding, existing objects alike; a spellframe or a binding name
+hides the class, and the spell is reached through its frame (`list["label"]`, a Protocol annotation,
+`SpellMap(spellframe=..., binding_name=...)`, `meld(spellframe=..., binding_name=...)`). So the collision guards bind
+the real Spectrum bare, where a class lookup still finds it, and the cases built on the reported shape - a Spectrum,
+a manager, a config or a ScanProfile filed under a category - now pin that the class consumer stays unresolved (an
+override supplies it), that two framed spells of one class are no ambiguity, and that the frame reaches each of them.
 """
 
 import sys
@@ -20,8 +29,7 @@ from typing import Any, Protocol, Type
 
 import pytest
 
-from melder import Aether, Cleanable, Conduit, Spellbook
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder import Aether, Cleanable, Conduit, Spellbook, SpellMap
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
 
@@ -43,7 +51,10 @@ def reset_melder() -> Iterator[None]:
 
 
 class Spectrum(Cleanable):
-    """The host object a consumer annotates; bound as a unique at ("spectrum", "Spectrum")."""
+    """
+    The host object a consumer annotates; bound as a unique at ("spectrum", "Spectrum") - the reported shape, which
+    hides it from class lookups since 2026-11-07 - or bare, where a class lookup finds it.
+    """
 
     def __init__(self) -> None:
         """No collaborators."""
@@ -91,6 +102,25 @@ class CenterWithString(Cleanable):
 
     def __init__(self, *, spectrum: "Spectrum") -> None:
         """Hold the borrowed host."""
+        super().__init__()
+        self.spectrum = spectrum
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum
+
+
+class CenterWithSpellMap(Cleanable):
+    """
+    Consumer that asks for the host by its address - the frame-addressed SpellMap through which a class filed under a
+    category is injected since 2026-11-07, when the class annotation no longer reaches it.
+    """
+
+    def __init__(self, *, spectrum: Spectrum = SpellMap(spellframe="spectrum", binding_name="Spectrum")) -> None:
+        """Hold the host found at ("spectrum", "Spectrum")."""
         super().__init__()
         self.spectrum = spectrum
 
@@ -210,11 +240,20 @@ def _consumer_with_unbound_annotation(class_name: str, param_name: str, annotati
     ],
 )
 def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shared_category: bool) -> None:
-    """The reported four-case matrix: Spectrum resolves whether or not Toolbox shares the "spectrum" category."""
+    """
+    The reported four-case matrix, with the real provider bound bare: Spectrum resolves whether or not Toolbox shares
+    the "spectrum" category.
+
+    Since 2026-11-07 a class lookup reaches Spectrum only when it is bound bare - no spellframe, the default binding -
+    and its address frame is then "spectrum", the category's own name. The guard of the 2026-10-03 report (a category
+    named like the type made every member a candidate: an ambiguity beside the real provider) therefore binds the
+    real provider bare; the reported shape itself, Spectrum filed at ("spectrum", "Spectrum"), is pinned by
+    `test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category`.
+    """
     root = _dynamic_root("annotation-category-matrix")
     try:
-        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
-                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        # bare: filed at ("spectrum", "Spectrum") it is hidden from the class lookup (2026-11-07)
+        root.bind(spell=Spectrum, existence="unique_per_conduit", disposal_method_names=["cleanup"])
         root.bind(spell=Toolbox, existence="unique_per_conduit",
                   spellframe="spectrum" if shared_category else "tooling",
                   binding_name="Toolbox", disposal_method_names=["cleanup"])
@@ -228,11 +267,17 @@ def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shar
 
 
 def test_type_checking_only_string_annotation_selects_the_spectrum_provider() -> None:
-    """A string annotation whose name is unbound at runtime resolves exactly as the class object does."""
+    """
+    A string annotation whose name is unbound at runtime resolves exactly as the class object does: Spectrum, bound
+    bare, beside a Toolbox in the "spectrum" category.
+
+    Bare since 2026-11-07, the one address a class lookup - the string's type part as much as the class object -
+    reaches; filed under the category, Spectrum leaves the unbound string unresolved exactly as it leaves the class
+    object (`test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category`).
+    """
     root = _dynamic_root("annotation-category-unbound-string")
     try:
-        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
-                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Spectrum, existence="unique_per_conduit", disposal_method_names=["cleanup"])
         root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="Toolbox", disposal_method_names=["cleanup"])
         root.bind(spell=_center_with_unbound_string_annotation(), existence="many",
@@ -243,11 +288,63 @@ def test_type_checking_only_string_annotation_selects_the_spectrum_provider() ->
         root.cleanup()
 
 
+@pytest.mark.parametrize("annotation", ["class", "string", "unbound_string"])
+@pytest.mark.parametrize(
+    "shared_category",
+    [
+        False,
+        True,
+    ],
+)
+def test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category(annotation: str,
+                                                                              shared_category: bool) -> None:
+    """
+    The reported shape under the class-lookup rule (2026-11-07): Spectrum filed at ("spectrum", "Spectrum"), Toolbox
+    in that category or in "tooling".
+
+    Contract:
+        - `spectrum: Spectrum` - the class object, its name as a string, or a string unbound at runtime - is an
+          unresolved input: the category and the binding name hide Spectrum from the class lookup, and Toolbox, a
+          member of a category spelled like the type, is no candidate either. The consumer binds without an
+          AMBIGUOUS_PROVIDER refusal, and its meld raises UnresolvedInputError instead of injecting anything.
+        - Spectrum is reached through its address: `meld(spellframe="spectrum", binding_name="Spectrum")` builds it,
+          a frame-addressed `SpellMap` (`CenterWithSpellMap`) injects that same unique, and an override supplies it to
+          the class consumer.
+    """
+    root = _dynamic_root("annotation-category-reported-shape")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Toolbox, existence="unique_per_conduit",
+                  spellframe="spectrum" if shared_category else "tooling",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        if annotation == "class":
+            consumer = CenterWithClass
+        elif annotation == "string":
+            consumer = CenterWithString
+        else:
+            consumer = _center_with_unbound_string_annotation()
+        root.bind(spell=consumer, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="command_center", binding_name="center")
+        host = root.meld(spellframe="spectrum", binding_name="Spectrum")
+        assert isinstance(host, Spectrum)
+        root.bind(spell=CenterWithSpellMap, existence="many", spellframe="command_center",
+                  binding_name="by_address", disposal_method_names=["cleanup"])
+        assert root.meld(spellframe="command_center", binding_name="by_address").spectrum is host
+        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": host})
+        assert center.spectrum is host
+    finally:
+        root.cleanup()
+
+
 def test_lone_category_member_is_not_injected_for_a_type_annotation() -> None:
     """With no Spectrum bound, a Toolbox in category "spectrum" is NOT handed to `spectrum: Spectrum`.
 
     The parameter is an unresolved input: the meld refuses without an override and takes the supplied
-    object with one. Today the Toolbox is injected silently.
+    object with one. Until 2026-10-04 the Toolbox was injected silently; since 2026-11-07 a class lookup
+    reaches only a spell bound bare, so a category member is never a candidate for a type annotation.
     """
     root = _dynamic_root("annotation-category-lone-member")
     try:
@@ -348,7 +445,14 @@ class Gatherer(Cleanable):
 
 
 def test_collection_annotations_gather_the_group_their_kind_names() -> None:
-    """`list[Spectrum]` gathers that class, `list["spectrum"]` the category's members, `list[IService]` the contract's."""
+    """
+    `list[Spectrum]` gathers that class bound bare, `list["spectrum"]` the category's members, `list[IService]` the
+    contract's.
+
+    Spectrum is filed under the category here, so since 2026-11-07 the class list gathers nothing - the category hides
+    Spectrum from a class lookup, a collection as much as a single socket - and Spectrum is gathered through its
+    category instead, beside Toolbox; neither list takes the other's group.
+    """
     root = _dynamic_root("annotation-category-collections")
     try:
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
@@ -360,34 +464,46 @@ def test_collection_annotations_gather_the_group_their_kind_names() -> None:
         root.bind(spell=Gatherer, existence="many", spellframe="consumers", binding_name="gatherer",
                   disposal_method_names=["cleanup"])
         gatherer = root.meld(spellframe="consumers", binding_name="gatherer")
-        assert [type(item).__name__ for item in gatherer.spectra] == ["Spectrum"]
+        assert [type(item).__name__ for item in gatherer.spectra] == []
         assert sorted(type(item).__name__ for item in gatherer.members) == ["Spectrum", "Toolbox"]
         assert [type(item).__name__ for item in gatherer.services] == ["Impl"]
     finally:
         root.cleanup()
 
 
-def test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity() -> None:
+def test_two_framed_providers_of_the_annotated_type_leave_the_class_lookup_unresolved() -> None:
     """
-    GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity - the second a version of
-    Spectrum (its name, other code), since one class is one spell. Since 2026-10-04 it is refused through the
-    readable validation report (AMBIGUOUS_PROVIDER) naming both addresses and the remedies, at the late bind in a
-    dynamic world.
+    Two spells of the annotated TYPE at distinct framed addresses - the second a version of Spectrum (its name, other
+    code), since one class is one spell - are no ambiguity for `spectrum: Spectrum` since 2026-11-07: each spellframe
+    hides its Spectrum from the class lookup, so neither is a candidate.
+
+    From 2026-10-04 to 2026-11-07 the pair was a real ambiguity, refused through the readable validation report
+    (AMBIGUOUS_PROVIDER) naming both addresses and the remedies, at the late bind in a dynamic world. Now the late
+    bind of the consumer is accepted, its meld raises UnresolvedInputError naming the override remedy, each version is
+    reached through its own address, and an override supplies the one wanted. Two providers that both answer a class
+    lookup would both be bound bare, at one address, which bind refuses (one active spell per signature per frame;
+    TASK-2026-11-07-spellframe_ambiguity_validation_check part (b) checks the other paths); the report itself stays
+    pinned for a Protocol frame with two implementations
+    (test_spellbook_integration_resolution_contract.py::test_type_hint_di_ambiguous_frame_raises).
     """
     root = _dynamic_root("annotation-category-type-ambiguity")
     try:
+        mirror = version_of(Spectrum, mirror=True)
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="primary", disposal_method_names=["cleanup"])
-        root.bind(spell=version_of(Spectrum, mirror=True), existence="unique_per_conduit", spellframe="mirror",
+        root.bind(spell=mirror, existence="unique_per_conduit", spellframe="mirror",
                   binding_name="secondary", disposal_method_names=["cleanup"])
-        with pytest.raises(SpellbookValidationError) as excinfo:
-            root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
-                      binding_name="center", disposal_method_names=["cleanup"])
-        text = str(excinfo.value)
-        assert "[AMBIGUOUS_PROVIDER]" in text
-        assert "Spectrum at (spellframe='spectrum', binding_name='primary')" in text
-        assert "Spectrum at (spellframe='mirror', binding_name='secondary')" in text
-        assert "SpellMap(spellframe=..., binding_name=...)" in text and "override={'spectrum': ...}" in text
+        root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        with pytest.raises(UnresolvedInputError) as excinfo:
+            root.meld(spellframe="command_center", binding_name="center")
+        assert "override={'spectrum': ...}" in str(excinfo.value)
+        primary = root.meld(spellframe="spectrum", binding_name="primary")
+        secondary = root.meld(spellframe="mirror", binding_name="secondary")
+        assert type(primary) is Spectrum
+        assert type(secondary) is mirror
+        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": secondary})
+        assert center.spectrum is secondary
     finally:
         root.cleanup()
 
@@ -417,13 +533,19 @@ class MCPScanner:
         self.profile = profile
 
 
-def test_two_same_named_classes_in_two_categories_are_reported_with_both_addresses() -> None:
+def test_two_same_named_classes_in_two_categories_leave_the_class_consumer_unresolved() -> None:
     """
     The MelderOps composition: Agents' ScanProfile under "agents" and Utilities' ScanProfile under
     "artificial_intelligence_tools", and `MCPScanner.profile: ScanProfile`. A class annotation keys by the
-    class NAME (so a TYPE_CHECKING string and the class object agree), so the two are one type key; conjure
-    refuses MCPScanner through the readable report naming both addresses and the SpellMap remedy, not with a
-    compiler RuntimeError.
+    class NAME (so a TYPE_CHECKING string and the class object agree), so the two are one type key; until 2026-11-07
+    conjure refused MCPScanner through the readable report naming both addresses and the SpellMap remedy
+    (AMBIGUOUS_PROVIDER), not with a compiler RuntimeError.
+
+    Since then each category - and each binding name - hides its ScanProfile from the class lookup, so neither is a
+    candidate: conjure is accepted, MCPScanner's meld raises UnresolvedInputError naming the override remedy, each
+    ScanProfile is reached through its own address, and an override supplies the one MCPScanner needs.
+    TASK-2026-11-07-spellframe_ambiguity_validation_check part (a) is to refuse such a consumer at conjure with an
+    error naming where the class is bound; until it lands the socket is an unresolved input.
     """
     aether = Aether(); Spellbook._aether = aether; Conduit._aether = aether
     book = Spellbook(aetheric_frame="annotation-category-same-named-classes")
@@ -432,14 +554,20 @@ def test_two_same_named_classes_in_two_categories_are_reported_with_both_address
     book.bind(spell=ScanProfileFromTools, existence="unique", spellframe="artificial_intelligence_tools",
               binding_name="ScanProfile")
     book.bind(spell=MCPScanner, existence="many")
-    with pytest.raises(SpellbookValidationError) as excinfo:
-        book.conjure(name="root")
-    text = str(excinfo.value)
-    assert "Broken spells: MCPScanner" in text
-    assert "ScanProfile at (spellframe='agents', binding_name='ScanProfile')" in text
-    assert "ScanProfile at (spellframe='artificial_intelligence_tools', binding_name='ScanProfile')" in text
-    assert "[AMBIGUOUS_PROVIDER]" in text
-    book.cleanup()
+    root = book.conjure(name="root")
+    try:
+        with pytest.raises(UnresolvedInputError) as excinfo:
+            root.meld(MCPScanner)
+        assert "override={'profile': ...}" in str(excinfo.value)
+        agents_profile = root.meld(spellframe="agents", binding_name="ScanProfile")
+        tools_profile = root.meld(spellframe="artificial_intelligence_tools", binding_name="ScanProfile")
+        assert type(agents_profile) is ScanProfileFromAgents
+        assert type(tools_profile) is ScanProfileFromTools
+        scanner = root.meld(MCPScanner, override={"profile": tools_profile})
+        assert scanner.profile is tools_profile
+    finally:
+        root.cleanup()
+        book.cleanup()
 
 
 def test_guard_explicit_address_selection_is_unchanged() -> None:
@@ -544,9 +672,13 @@ class CommandCenter(Cleanable):
 def test_many_category_members_never_become_providers_for_the_type() -> None:
     """
     MelderOps shape: the host class, two named existing objects, two managers and a function spell all live in
-    the "spectrum" category; `CommandCenter.spectrum: Spectrum` resolves the host alone, the managers' typed
-    inputs resolve the existing objects by their classes, and melding the center with the host supplied by
-    override (as Spectrum.configure does) injects exactly that object.
+    the "spectrum" category. Since 2026-11-07 the category hides every member from the class lookup, existing
+    objects alike, so no member is a provider for any class annotation - not for `CommandCenter.spectrum: Spectrum`
+    or `CommandCenter.manager: ManagerA`, not for the managers' typed inputs, which until then resolved the existing
+    objects by their classes. Without overrides the manager and the center refuse to meld (UnresolvedInputError);
+    every member is reached through its address, and melding the manager with the existing objects, then the center
+    with the host and that manager, supplied by override (as Spectrum.configure supplies the host), injects exactly
+    those objects. The manager stays the conduit's one unique.
     """
     root = _dynamic_root("annotation-category-melderops-shape")
     try:
@@ -564,14 +696,22 @@ def test_many_category_members_never_become_providers_for_the_type() -> None:
         root.bind(spell=CommandCenter, existence="many", spellframe="command_center",
                   binding_name="center", disposal_method_names=["cleanup"])
         host = root.meld(spellframe="spectrum", binding_name="Spectrum")
-        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": host})
+        # the manager's typed inputs are existing objects filed under the category: hidden from their classes
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="spectrum", binding_name="ManagerA")
+        manager = root.meld(spellframe="spectrum", binding_name="ManagerA",
+                            override={"spectrum_config": spectrum_config, "iris": iris})
+        center = root.meld(spellframe="command_center", binding_name="center",
+                           override={"spectrum": host, "manager": manager})
         assert center.spectrum is host
         assert isinstance(center.manager, ManagerA)
+        assert center.manager is manager
         assert center.manager.spectrum_config is spectrum_config
         assert center.manager.iris is iris
-        # without the override the host still resolves by its type, not by the category
-        second = root.meld(spellframe="command_center", binding_name="center")
-        assert isinstance(second.spectrum, Spectrum)
-        assert second.manager is center.manager
+        # without the override the host no longer resolves by its type (2026-11-07): the category hides it, as it
+        # hides every member, so the center refuses to meld; the manager is still the one unique at its address
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="command_center", binding_name="center")
+        assert root.meld(spellframe="spectrum", binding_name="ManagerA") is center.manager
     finally:
         root.cleanup()

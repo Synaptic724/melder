@@ -523,15 +523,37 @@ def test_b2_provider_bound_under_own_class_only_leaves_frame_hint_unresolved() -
 # =========================================================================== #
 # B3 / B5 - SpellMap default and callable spells
 # =========================================================================== #
-def test_b3_spellmap_matches_target_under_any_binding() -> None:
-    """B3 characterization: SpellMap(Class) with no binding_name matches that class under ANY binding, so a binding-only registration still resolves."""
+def test_b3_spellmap_without_binding_name_fails_conjure_on_binding_only_registration() -> None:
+    """B3 characterization: SpellMap(Class) with no binding_name is a class lookup that reaches only the default binding (2026-11-07, the owner's rulings E2-E3; before, it matched the class under ANY binding), so a binding-only registration fails conjure with "SpellMap default could not be resolved"; SpellMap(Class, binding_name=...) reaches it by its name (test_b3_spellmap_with_binding_name_resolves_binding_only_registration)."""
     spellbook = _make_spellbook()
-    conduit = None
     try:
         spellbook.bind(spell=Config, existence=Existence.unique, permissions="create", binding_name="named")
         spellbook.bind(spell=NeedsConfigViaMap, existence=Existence.unique, permissions="create")
+        with pytest.raises(PhaseExecutionError, match="SpellMap default could not be resolved"):
+            spellbook.conjure(name="root")
+    finally:
+        spellbook.cleanup()
+
+
+def test_b3_spellmap_with_binding_name_resolves_binding_only_registration() -> None:
+    """B3 behavior: SpellMap(Class, binding_name=...) is the named class lookup (2026-11-07) - it resolves a binding-only registration by its name, which the plain SpellMap(Class) no longer reaches."""
+    spellbook = _make_spellbook()
+    conduit = None
+
+    class NeedsNamedConfigViaMap:
+        """B3 consumer (SpellMap default naming the binding): the named class lookup that reaches Config bound under 'named'."""
+
+        def __init__(self, config: object = SpellMap(Config, binding_name="named")) -> None:
+            """Keep the Config the named SpellMap default resolves."""
+            self.config = config
+
+    try:
+        spellbook.bind(spell=Config, existence=Existence.unique, permissions="create", binding_name="named")
+        spellbook.bind(spell=NeedsNamedConfigViaMap, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell=NeedsConfigViaMap).config, Config)
+        instance = conduit.meld(spell=NeedsNamedConfigViaMap)
+        assert isinstance(instance.config, Config)
+        assert instance.config is conduit.meld(spell=Config, binding_name="named")
     finally:
         if conduit is not None:
             conduit.cleanup()

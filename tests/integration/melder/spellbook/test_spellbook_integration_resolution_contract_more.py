@@ -9,7 +9,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
 
 
@@ -1291,21 +1291,30 @@ def test_bind_rejects_module_as_spell() -> None:
         )
 
 
-def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
+def test_type_hint_di_concrete_class_bound_only_under_binding_names_is_unresolved() -> None:
     """
     Purpose:
-        Validate ambiguous type-hint DI for one concrete class fails at build.
+        Validate type-hint DI for one concrete class does not reach the class bound
+        under binding names: the socket is unresolved, not ambiguous.
     Contract:
         - One class is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code):
           binding _Repo again under another binding name is refused, so the second
           provider is a version of _Repo - its name, other code - under 'secondary'.
-        - A consumer whose constructor type-hints the concrete class then has
-          two single-DI candidates, and Phase 3 rejects the ambiguity at
-          conjure with disambiguation guidance.
+        - A binding name hides the class from a class annotation (2026-11-07, the
+          owner's rulings E2-E3; Autofac's rule that a declared service hides the
+          component's own type), so a consumer whose constructor type-hints the
+          concrete class has no single-DI candidate. Before, both named bindings
+          were candidates and the ambiguity was refused at conjure
+          (AMBIGUOUS_PROVIDER) with disambiguation guidance.
+        - Conjure therefore succeeds; melding the consumer raises
+          UnresolvedInputError naming the 'repo' parameter and the _Repo type unless
+          an override supplies the value, and each binding is still reached by its
+          name.
     Returns:
         None.
     Raises:
-        AssertionError: If the ambiguous conjure does not raise.
+        AssertionError: If the class annotation reaches a named binding, or a
+            binding is not reached by its name.
     """
     class _Repo:
         """
@@ -1330,7 +1339,8 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     class _Consumer:
         """
         Purpose:
-            Provide a consumer that type-hints the ambiguous concrete class.
+            Provide a consumer that type-hints the concrete class, which is bound
+            only under binding names (formerly the ambiguous case).
         Contract:
             Stores the injected repository for assertions.
         """
@@ -1351,6 +1361,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
+    secondary = version_of(_Repo, provider="secondary")
     spellbook.bind(
         spell=_Repo,
         existence=Existence.unique,
@@ -1358,7 +1369,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         binding_name="primary",
     )
     spellbook.bind(
-        spell=version_of(_Repo, provider="secondary"),
+        spell=secondary,
         existence=Existence.unique,
         permissions="create",
         binding_name="secondary",
@@ -1368,13 +1379,21 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
-    with pytest.raises(SpellbookValidationError) as excinfo:
-        spellbook.conjure(name="ambiguous-concrete", dynamic=False)
-    text = str(excinfo.value)
-    assert "[AMBIGUOUS_PROVIDER]" in text
-    assert "_Repo at (spellframe=None, binding_name='primary')" in text
-    assert "_Repo at (spellframe=None, binding_name='secondary')" in text
+    # 2026-10-04: the ambiguity was refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    # 2026-11-07: neither named binding answers the class annotation any more, so nothing is ambiguous:
+    # conjure succeeds and the socket is an unresolved input the meld must supply.
+    conduit = spellbook.conjure(name="named-concrete", dynamic=False)
+    try:
+        with pytest.raises(UnresolvedInputError) as excinfo:
+            conduit.meld(spell=_Consumer)
+        assert excinfo.value.param_name == "repo"
+        assert excinfo.value.expected_type == _Repo.__qualname__
+        primary = conduit.meld(spell=_Repo, binding_name="primary")
+        assert type(primary) is _Repo
+        assert type(conduit.meld(spell=_Repo, binding_name="secondary")) is secondary
+        assert conduit.meld(spell=_Consumer, override={"repo": primary}).repo is primary
+    finally:
+        conduit.cleanup()
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:

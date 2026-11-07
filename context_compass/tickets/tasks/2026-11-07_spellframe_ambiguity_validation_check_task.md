@@ -11,15 +11,17 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-11-07T10:03:26Z
-- Updated: 2026-11-07T10:22:44Z
+- Updated: 2026-11-07T15:06:23Z
 
 ## Objective
 The owner's check (chat 2026-11-07): "a phase 4 or phase 6 check to see if multiple spells are bound with a
 spellframe without a binding_name and that should help the user situation". His rule (chat 2026-11-07, "lets do
-3"): (a) after T2, a consumer annotated with a class bound only under a spellframe is refused at conjure by a
-Phase 4 error that names the frame - and its binding names - to ask by; (b) two spells at one address stay refused
-on every path - two spells under one spellframe with no binding_name, and two spells of one name with neither -
-with a check added wherever a path admits one. Each reports through the readable validation report with its remedy.
+3"): (a) after T2, a consumer annotated with a class that is bound only under a spellframe or only under a binding
+name (T2's rule, E2/E3) is refused at conjure by a Phase 4 error that names where it is bound - frame and binding
+names - and the lookup to use, and a `SpellMap(spell=X)` that misses X for the same reason names it the same way;
+(b) two spells at one address stay refused on every path - two spells under one spellframe with no binding_name,
+and two spells of one name with neither - with a check added wherever a path admits one. Each reports through the
+readable validation report with its remedy.
 
 ## Ticket Contract
 - ENTRY_GATE: the owner's rule (Notes, 2026-11-07); a board row routes here; T2 landed, for part (a).
@@ -45,9 +47,13 @@ with a check added wherever a path admits one. Each reports through the readable
 ## Steps / Checklist
 - [x] The owner confirms the situation and the severity (DECISION note, 2026-11-07T10:22:44Z).
 - [ ] Part (a): the Phase 4 strategy, with a rich docstring, over what Phase 3 records for a class annotation that
-      only framed spells match; the error names each frame and binding name to ask by.
+      only framed or named spells match; the error names each frame and binding name and the lookup to use
+      (a Protocol annotation, `SpellMap(spellframe=..., binding_name=...)`, `SpellMap(Class, binding_name=...)`).
+- [ ] Part (a): the SpellMap miss (Phase 3's "could not be resolved") names where X is bound when it is bound
+      under a spellframe or a binding name.
 - [ ] Part (b): read each path's address refusal; regression tests for both shapes on every path; a check where one
-      is missing.
+      is missing; the stale example probe `test_probe_two_visible_spells_may_not_share_a_name` (it asserts the
+      pre-0.2.8206 rule) brought to the current rule.
 - [ ] Component tests for the flagged and the unflagged shapes; docs; release note; notch; rebuild last.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -158,13 +164,50 @@ this does not make independent review mandatory for every ticket.
   NEXT: T1's inventory first (it reads the matchers part (a) builds on); part (b) after T1.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-11-07T11:57:30Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Part (a) widens with T2's rule, under the owner's licence for this task ("you can add these or extend various
+    features for this, if we don't already have it you can place it where you need to"): since a binding name hides
+    a class from class lookups too (E2/E3, chat 2026-11-07), the error covers a class bound only under a binding
+    name, and Phase 3's SpellMap miss names where X is bound. Today such a consumer fails at meld with
+    UnresolvedInputError "nothing registered provides it", which misleads when the class is registered under a frame
+    or a name. Part (b) adds the stale example probe T1 found failing on 0.2.8277.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-11-07_inventory_class_resolution_of_framed_spells_task.md:409-426
+  - context_compass/system_docs/src_architecture.md:2913-2919
+  - UX_and_AIX_experiences/pytest_examples/test_expert_probes.py:992-1026
+  IMPACT: Part (a) reads both kinds of hidden candidate; the SpellMap message is a Phase 3 change.
+  NEXT: After T2: part (b) first (independent of T2), then part (a).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-11-07T15:06:23Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: FACT
+  CLAIM: T2 landed (0.2.8278, uncommitted), so part (a) is unblocked; part (b) stays first. Two messages part (a)
+    should cover, found by T2's system-docs merge on 0.2.8278 (measured): EmptyCollectionStrategy's remedy "Bind at
+    least one implementation under its frame" misleads for a required `list[Class]` left empty because the class is
+    bound only under a spellframe or a binding name (automatic worlds refuse with `collection_socket_no_providers`);
+    and UnresolvedInputError says "nothing registered provides it" for a class registered under a frame or a name.
+    Part (a)'s error and the SpellMap miss should name where the class is bound and the lookup to use, for these
+    shapes too (within the owner's licence for this task: "you can add these or extend various features").
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-11-07_class_annotation_selects_only_bare_spells_task.md:1-12
+  - release_docs/next_version_release.md:27-33
+  IMPACT: Part (a)'s scope names the collection refusal and the meld-time message beside the single-socket error.
+  NEXT: Part (b): read each path's address refusal and pin both duplicate-address shapes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
-- Scope: the owner's rule - (a) a Phase 4 error for a consumer annotated with a class bound only under a spellframe,
-  naming the frame to ask by; (b) two spells at one address refused on every path, checked where missing.
-- State: ready, melder_0. Part (a) waits for T2; part (b) can run after T1.
-- Next: (1) T1's inventory; (2) part (b): the paths and their tests; (3) part (a) after T2; release note, notch,
-  rebuild last.
+- Scope: the owner's rule - (a) a Phase 4 error for a consumer annotated with a class bound only under a spellframe
+  or a binding name, naming where it is bound and the lookup to use (and the SpellMap miss likewise); (b) two
+  spells at one address refused on every path, checked where missing, the stale example probe fixed.
+- State: ready, melder_0. T1 and T2 are done (T2 as 0.2.8278, uncommitted), so both parts are unblocked; part (a)
+  also covers the collection refusal and the meld-time message (Notes 2026-11-07T15:06:23Z).
+- Next: (1) part (b): the paths and their tests; (2) part (a); release note, notch, rebuild last.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

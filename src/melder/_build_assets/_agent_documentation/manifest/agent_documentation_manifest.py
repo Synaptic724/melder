@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8277"
-SOURCE_SHA256 = "534eabf3c2a84363ad1b757fcda2527ce3017dcdc0bbcb7ba49f8d2410136a0d"
+BUILT_FOR_VERSION = "0.2.8278"
+SOURCE_SHA256 = "0558c0624141f6e6eb7a41843d2d8936d4bd740e39b5afc5eb87353e301233f7"
 MARKED_COUNT = 469
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
@@ -147,7 +147,7 @@ AGENT_METADATA = {
     ('melder.aether.conduit.creations.release_managed_spell', 'ReleaseManagedSpell'): ('public', "access: public. Give managed objects back: `ReleaseManagedSpell().release(obj)` returns an object leased from a managed_spell_quantity pool (its resets run, it is reused by the next lease); `managed(obj)` gives a lease for a `with` block; `release_all(objects)`; `describe(cls)` shows each pool's mode, count and idle objects. Pass spell_id= or conduit= only when one class is managed by several pools. In a hot loop bind it once: `release = ReleaseManagedSpell().release`."),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('internal', 'access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('public', 'access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it as a constructor default when the provider will arrive from another conduit. Requires at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic.'),
-    ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or frame-only with spell=None. Zero or multiple matches raise at build time."),
+    ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo) for MyRepo bound bare, SpellMap(MyRepo, binding_name='primary') for MyRepo bound bare under that name, or SpellMap(spellframe=ILogic, binding_name='primary') for a spell filed under a frame. Zero or multiple matches raise at build time."),
     ('melder.aether.conduit.meld.creation_context.creation_context', 'CreationContext'): ('internal', 'access: internal. Spell-bound runtime executor context. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.creation_context.creation_context_builder', 'CreationContextBuilder'): ('internal', 'access: internal. Build spell-bound `CreationContext` objects from phase-11 creation inputs. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.creation_context.creation_context_factory', 'CreationContextFactory'): ('internal', 'access: internal. Produce spell-shaped `CreationContext` instances. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),

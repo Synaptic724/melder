@@ -31,9 +31,15 @@ if TYPE_CHECKING:
 
 
 class RepeatedValueConsumer:
-    """Two required parameters must retain the same registered instance."""
+    """
+    Two required parameters must retain the same registered instance.
 
-    def __init__(self, left: SuppliedValue, right: SuppliedValue) -> None:
+    Both parameters name IExistingValue, the contract the value is framed under: since 2026-11-07 the
+    value's class reaches only an object bound bare (no spellframe, the default binding), so the Protocol
+    keeps both edges on the one framed existing value.
+    """
+
+    def __init__(self, left: IExistingValue, right: IExistingValue) -> None:
         """Retain both references without constructing or taking ownership of the value."""
         self.left = left
         self.right = right
@@ -58,8 +64,13 @@ class LinkedValueConsumer:
         self.value = value
 
 
-def build_value_consumer(value: SuppliedValue) -> ValueConsumer:
-    """A function provider may itself require an existing object as a dependency."""
+def build_value_consumer(value: IExistingValue) -> ValueConsumer:
+    """
+    A function provider may itself require an existing object as a dependency.
+
+    The parameter names IExistingValue, the contract the value is framed under: since 2026-11-07 the
+    value's class reaches only an object bound bare (no spellframe, the default binding).
+    """
     return ValueConsumer(value)
 
 
@@ -82,9 +93,17 @@ def test_existing_provider_can_be_injected_into_function(instance_book: Spellboo
 
 
 def test_existing_provider_typechecking_annotation_does_not_raise_nameerror(instance_book: Spellbook) -> None:
-    """Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure."""
+    """
+    Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure.
+
+    The value is bound bare, at its class's address. The annotation must stay the TYPE_CHECKING-only
+    class name `ExistingValue` - that unevaluable name is the subject - and since 2026-11-07 a class name
+    resolves only to an object bound bare (no spellframe, the default binding), never to one framed
+    under IExistingValue. Naming the Protocol instead would use a name this module imports at runtime and
+    stop exercising the deferred annotation.
+    """
     supplied = SuppliedValue("deferred-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
+    instance_book.bind(spell=supplied, existence="unique")
     target = instance_book.bind(spell=DeferredValueConsumer, existence="many")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.value is supplied

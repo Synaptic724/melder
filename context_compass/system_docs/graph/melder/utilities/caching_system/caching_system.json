@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "007de2f51874a464581b9066b933a0dddbdcc65e7094373d5aa10f24cf092eb8",
+ "source_sha256": "68741c7541c9b2c2e30bdfee2b0bae9b6758a7b54a3f5bb0f0f865985554c8da",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -57,7 +57,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a",
+   "span_sha256": "01480dc908a7fa82db70cdadcd51fea0779ab910b196ddc00e47d999ced45ddd",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -75,7 +75,8 @@
     "cache generation 23 retires bundles keyed by the spell_id before it became the code digest; the structural key (payload format 2) and the world stamp carry each spell's binding hash beside its spell_id, so a binding changed under one spell_id misses both tiers (binding_manifest_keys, 0.2.8258)",
     "saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)",
     "cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)",
-    "cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)"
+    "cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)",
+    "cache generation 26 retires bundles whose structural rows were resolved while a class lookup reached a spell bound under a spellframe or a binding name: a class annotation, list[Class] and SpellMap(spell=Class) now reach only a spell bound bare, so a replayed phase 3 row could hold a match the rule refuses (class_lookup_bare_spells, 2026-11-07, 0.2.8278; the owner's point 11)"
    ],
    "owns_state": [
     "_id",
@@ -93,7 +94,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3f492b26ed1fd590323f18f57bca1858f7dd8ce3725e122433b6124b7a69969a"
+   "semantics_authored_against": "01480dc908a7fa82db70cdadcd51fea0779ab910b196ddc00e47d999ced45ddd"
   }
  },
  "edges_out": [

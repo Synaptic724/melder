@@ -198,15 +198,16 @@ def test_iter_all_spells_uses_live_spell_id_pool_order() -> None:
 @pytest.mark.parametrize(
     ("spell_type", "annotation_kind", "binding_name", "candidate_binding_name", "require_class_spell", "expected"),
     [
-        (SpellType.SPELL, "type", None, None, True, True),
-        (SpellType.SPELL, "type", "alpha", "beta", True, False),
+        (SpellType.SPELL, "type", None, None, True, False),
+        (SpellType.SPELL, "contract", "alpha", "beta", True, False),
         (SpellType.SPELL, "contract", None, None, True, True),
-        (SpellType.SPELL, "type_name", None, None, True, True),
+        (SpellType.SPELL, "type_name", None, None, True, False),
         (SpellType.SPELL, "contract_name", None, None, True, True),
         (SpellType.SPELL, "other", None, None, True, False),
         (SpellType.SPELL, "other_name", None, None, True, False),
-        (SpellType.METHOD, "type", None, None, True, False),
-        (SpellType.METHOD, "type", None, None, False, True),
+        (SpellType.METHOD, "contract", None, None, True, False),
+        (SpellType.METHOD, "contract", None, None, False, True),
+        (SpellType.METHOD, "type", None, None, False, False),
     ],
 )
 def test_matches_annotation_cases(
@@ -217,7 +218,14 @@ def test_matches_annotation_cases(
         require_class_spell: bool,
         expected: bool,
 ) -> None:
-    """A single socket matches a contract-framed spell by its type, by its Protocol, or by either name."""
+    """
+    A single socket matches a contract-framed spell by its Protocol, as the class or by name, never by its type.
+
+    The spellframe hides the concrete class from class lookups (2026-11-07, `_answers_class_lookup`): the type, as
+    the class or by name, no longer selects the spell - before, it did. The binding-name filter and the
+    `require_class_spell` exclusion of METHOD spells are shown on the Protocol match, which the frame keeps; a
+    METHOD spell's type stays hidden even when methods are allowed.
+    """
     phase = CompilerPhase3()
 
     class _FrameContract(Protocol):
@@ -313,7 +321,13 @@ def test_annotation_kind_classifies_contracts_types_and_names() -> None:
 
 
 def test_matches_annotation_supports_forward_ref_strings_and_contract_names() -> None:
-    """A string names the spell's type or its Protocol contract, never a different name."""
+    """
+    A string, or a ForwardRef, names a framed spell's Protocol contract, never its type or a different name.
+
+    A single string annotation's type part is a class lookup (2026-11-07, `_answers_class_lookup`): the spellframe
+    hides the framed spell's type name, while its contract name still reaches it. The same type name, as a string or
+    a ForwardRef, still reaches a spell of that name bound bare under the default binding.
+    """
     phase = CompilerPhase3()
 
     class _FrameContract(Protocol):
@@ -325,11 +339,20 @@ def test_matches_annotation_supports_forward_ref_strings_and_contract_names() ->
         spellframe=_FrameContract,
         spell_name="CandidateSpell",
     )
+    bare = _make_spell_stub(
+        "bare",
+        spell_obj=object(),
+        spellframe=None,
+        spell_name="CandidateSpell",
+    )
 
-    assert phase._matches_annotation("CandidateSpell", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("CandidateSpell", None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation(typing.ForwardRef("CandidateSpell"), None, candidate, require_class_spell=True) is False
     assert phase._matches_annotation("_FrameContract", None, candidate, require_class_spell=True) is True
     assert phase._matches_annotation(typing.ForwardRef("_FrameContract"), None, candidate, require_class_spell=True) is True
     assert phase._matches_annotation("Unrelated", None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation("CandidateSpell", None, bare, require_class_spell=True) is True
+    assert phase._matches_annotation(typing.ForwardRef("CandidateSpell"), None, bare, require_class_spell=True) is True
 
 
 def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_name() -> None:
@@ -358,7 +381,13 @@ def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_n
 
 
 def test_matches_annotation_never_reads_a_string_category_as_a_type_or_contract() -> None:
-    """A spell under a string category answers to its own type; the category's name reaches it only as a collection label."""
+    """
+    A spell under a string category is hidden from class lookups; the category's name reaches it only as a collection label.
+
+    The category hides the spell's own type, as the class or by name, single socket or collection (2026-11-07,
+    `_answers_class_lookup`; before, the type reached it). The category's name never makes it a provider of a
+    class spelled the same way, and never reaches a single socket.
+    """
     phase = CompilerPhase3()
 
     class Service:
@@ -378,20 +407,28 @@ def test_matches_annotation_never_reads_a_string_category_as_a_type_or_contract(
     assert phase._spell_type_key(candidate) == "impl"
     assert phase._spell_label_key(candidate) == "service"
     assert phase._spell_contract_keys(candidate) == ()
-    # single socket: the type, by object or by name - never the category
-    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=True) is True
-    assert phase._matches_annotation("Impl", None, candidate, require_class_spell=True) is True
+    assert phase._answers_class_lookup(candidate) is False
+    # single socket: neither the type, by object or by name (the category hides it), nor the category
+    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation("Impl", None, candidate, require_class_spell=True) is False
     assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is False
     assert phase._matches_annotation("service", None, candidate, require_class_spell=True) is False
-    # collection: the label by name, the type by class - not the category by a class spelled like it
+    # collection: the label by name only - not the type by class (hidden), not the category by a class spelled like it
     assert phase._matches_annotation("service", None, candidate, require_class_spell=False, collection=True) is True
-    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=False, collection=True) is True
+    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=False, collection=True) is False
     assert phase._matches_annotation(Service, None, candidate, require_class_spell=False, collection=True) is False
     assert phase._matches_annotation("impl", None, candidate, require_class_spell=False, collection=True) is False
 
 
-def test_matches_annotation_contract_spell_is_reached_by_type_contract_and_their_names() -> None:
-    """A spell under a Protocol answers to its type, to the Protocol (object or name), and as a collection to both groups."""
+def test_matches_annotation_contract_spell_is_reached_by_its_contract_never_by_its_type() -> None:
+    """
+    A spell under a Protocol answers to the Protocol (object or name), single or as a collection, never to its type.
+
+    The Protocol spellframe hides the concrete class from class lookups (2026-11-07, `_answers_class_lookup`;
+    Autofac's rule that a declared service hides the component's own type): `x: Impl`, `x: "Impl"` and
+    `list[Impl]` no longer select it - before, they did - while `x: IService`, `x: "IService"`,
+    `list[IService]` and `list["iservice"]` still do.
+    """
     phase = CompilerPhase3()
 
     class IService(Protocol):
@@ -408,30 +445,50 @@ def test_matches_annotation_contract_spell_is_reached_by_type_contract_and_their
     assert candidate.spellframe_kind is SpellframeKind.contract
     assert phase._spell_contract_keys(candidate) == ("iservice",)
     assert phase._spell_label_key(candidate) == "iservice"
-    for annotation in (Impl, "Impl", IService, "IService"):
+    assert phase._answers_class_lookup(candidate) is False
+    for annotation in (IService, "IService"):
         assert phase._matches_annotation(annotation, None, candidate, require_class_spell=True) is True, annotation
+    for annotation in (Impl, "Impl"):
+        assert phase._matches_annotation(annotation, None, candidate, require_class_spell=True) is False, annotation
     assert phase._matches_annotation(Other, None, candidate, require_class_spell=True) is False
-    for annotation in (IService, "iservice", Impl):
+    for annotation in (IService, "iservice"):
         assert phase._matches_annotation(annotation, None, candidate, require_class_spell=False, collection=True) is True, annotation
-    assert phase._matches_annotation("impl", None, candidate, require_class_spell=False, collection=True) is False
+    for annotation in (Impl, "impl"):
+        assert phase._matches_annotation(annotation, None, candidate, require_class_spell=False, collection=True) is False, annotation
 
 
 @pytest.mark.parametrize(
     ("annotation_name", "collection", "expected"),
     [
-        ("Impl", False, ["Impl"]),
+        ("Impl", False, []),
         ("IService", False, ["Impl"]),
-        ("Spectrum", False, ["Spectrum"]),
-        ("Toolbox", False, ["Toolbox"]),
+        ("Spectrum", False, []),
+        ("Toolbox", False, []),
         ("spectrum_label", False, []),
-        ("Spectrum", True, ["Spectrum"]),
+        ("Spectrum", True, []),
         ("spectrum_label", True, ["Spectrum", "Toolbox"]),
         ("IService", True, ["Impl"]),
-        ("Impl", True, ["Impl"]),
+        ("Impl", True, []),
+        ("impl", False, []),
+        ("iservice", False, ["Impl"]),
+        ("Plain", False, ["Plain"]),
+        ("Plain", True, ["Plain"]),
+        ("plain", False, ["Plain"]),
+        ("Named", False, []),
+        ("Named", True, []),
+        ("named", False, []),
+        ("named", True, ["Named"]),
     ],
 )
 def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, collection: bool, expected: list[str]) -> None:
-    """The three-bucket index returns exactly what the scan returns, in pool order, for every annotation and socket kind."""
+    """
+    The three-bucket index returns exactly what the scan returns, in pool order, for every annotation and socket kind.
+
+    Only Plain, bound bare under the default binding, answers a class lookup - a class, `list[Class]` or a single
+    string's type part (2026-11-07, `_answers_class_lookup`): it alone is in `by_type`. Spectrum and Toolbox under
+    a category, Impl under a Protocol and Named bound bare under a binding name are reached only through their
+    Protocol (as the class or by name) or their label - before, their class reached them as well.
+    """
     phase = CompilerPhase3()
 
     class IService(Protocol):
@@ -446,13 +503,21 @@ def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, 
     class Toolbox:
         pass
 
-    objects = {"Impl": Impl, "IService": IService, "Spectrum": Spectrum, "Toolbox": Toolbox}
+    class Plain:
+        """Bound bare under the default binding: the one spell here a class lookup reaches."""
+
+    class Named:
+        """Bound bare under a binding name: hidden from class lookups, still a member of its own label."""
+
+    objects = {"Impl": Impl, "IService": IService, "Spectrum": Spectrum, "Toolbox": Toolbox, "Plain": Plain, "Named": Named}
     annotation: Any = objects.get(annotation_name, annotation_name)
     root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
     pool = {
         "spectrum": _make_spell_stub("spectrum", spell_obj=Spectrum, spellframe="spectrum_label", spell_name="Spectrum", binding_name="Spectrum"),
         "toolbox": _make_spell_stub("toolbox", spell_obj=Toolbox, spellframe="spectrum_label", spell_name="Toolbox", binding_name="Toolbox"),
         "impl": _make_spell_stub("impl", spell_obj=Impl, spellframe=IService, spell_name="Impl"),
+        "plain": _make_spell_stub("plain", spell_obj=Plain, spellframe=None, spell_name="Plain"),
+        "named": _make_spell_stub("named", spell_obj=Named, spellframe=None, spell_name="Named", binding_name="v1"),
     }
     spellbook = SimpleNamespace(_spell_id_pool=pool)
     dep = _make_dependency(
@@ -474,8 +539,8 @@ def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, 
     assert [candidate.spell_name for candidate in scanned.values()] == expected
     assert list(indexed.items()) == list(scanned.items())
     assert set(index) == {"by_type", "by_label", "by_contract", "by_definition"}
-    assert sorted(index["by_type"]) == ["impl", "spectrum", "toolbox"]
-    assert sorted(index["by_label"]) == ["iservice", "spectrum_label"]
+    assert sorted(index["by_type"]) == ["plain"]
+    assert sorted(index["by_label"]) == ["iservice", "named", "plain", "spectrum_label"]
     assert sorted(index["by_contract"]) == ["iservice"]
     assert index["by_definition"] == {}
 
@@ -514,6 +579,90 @@ def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
     assert index["by_contract"] == {}
 
 
+@pytest.mark.parametrize("existing_object", [False, True])
+@pytest.mark.parametrize(
+    ("placement", "answers"),
+    [
+        ("bare", True),
+        ("bare_empty_binding_name", True),
+        ("bare_written_default_binding_name", True),
+        ("bare_named", False),
+        ("category", False),
+        ("protocol", False),
+    ],
+)
+def test_class_lookup_reaches_only_a_bare_default_binding_spell_on_scan_and_index(
+        placement: str,
+        answers: bool,
+        existing_object: bool,
+) -> None:
+    """
+    A class lookup reaches a spell only when it is bound bare: no spellframe and the default binding.
+
+    The owner's rulings E1-E3 (2026-11-07; Autofac's rule that a declared service hides the component's own type):
+    a class annotation, a single string annotation's type part and `list[Class]` all follow
+    `_answers_class_lookup`, on the scan path (`_matches_annotation`) and the index path (`by_type`) alike, so
+    both return the same candidates. None, "" and "__default__" all name the default binding, so those bare spells
+    answer; a binding name, a string category or a Protocol hides the class, and the label bucket still holds the
+    spell under its address label. An existing object follows the same rule through its class.
+    """
+    phase = CompilerPhase3()
+
+    class IService(Protocol):
+        pass
+
+    class Service:
+        """The class every lookup in this test names; bound, or its instance bound, at one placement."""
+
+    spellframe: Any = None
+    binding_name: Optional[str] = None
+    if placement == "bare_empty_binding_name":
+        binding_name = ""
+    elif placement == "bare_written_default_binding_name":
+        binding_name = SpellInputUtils.DEFAULT_BINDING_NAME
+    elif placement == "bare_named":
+        binding_name = "v1"
+    elif placement == "category":
+        spellframe = "services"
+    elif placement == "protocol":
+        spellframe = IService
+    candidate = _make_spell_stub(
+        "svc",
+        spell_obj=Service() if existing_object else Service,
+        spellframe=spellframe,
+        spell_name="Service",
+        binding_name=binding_name,
+    )
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    spellbook = SimpleNamespace(_spell_id_pool={"svc": candidate})
+    index = phase._build_candidate_index(spellbook)
+    expected = [candidate] if answers else []
+
+    assert phase._answers_class_lookup(candidate) is answers
+    assert ("service" in index["by_type"]) is answers
+    assert [entry[2] for entry in index["by_label"][phase._spell_label_key(candidate)]] == [candidate]
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is answers
+    assert phase._matches_annotation("Service", None, candidate, require_class_spell=True) is answers
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=False, collection=True) is answers
+    for annotation, collection in ((Service, False), ("Service", False), (Service, True)):
+        dep = _make_dependency(
+            spell_id="root",
+            param_name="service",
+            position=0,
+            di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION if collection else ParameterDIShape.SINGLE_BY_ANNOTATION,
+            target_annotation=annotation,
+            is_collection=collection,
+        )
+        if collection:
+            scanned = phase._resolve_collection_by_annotation(spellbook, dep)
+            indexed = phase._resolve_collection_by_annotation(spellbook, dep, index)
+        else:
+            scanned = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+            indexed = phase._resolve_single_by_annotation(root_spell, spellbook, dep, index)
+        assert list(scanned.values()) == expected, (annotation, collection)
+        assert list(indexed.items()) == list(scanned.items()), (annotation, collection)
+
+
 def test_protocol_definition_is_a_candidate_for_its_own_annotation_until_an_implementer_exists() -> None:
     """A Protocol bound resolvable=False matches `x: Proto` (OVERRIDE_REQUIRED); a recorded implementer wins over it."""
     phase = CompilerPhase3()
@@ -545,6 +694,55 @@ def test_protocol_definition_is_a_candidate_for_its_own_annotation_until_an_impl
     named = _make_dependency(spell_id="root", param_name="repo", position=0,
                              di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation="IRepo")
     assert list(phase._resolve_single_by_annotation(root_spell, only_definition, named).values()) == [definition]
+
+
+@pytest.mark.parametrize("placement", ["binding_name", "spellframe"])
+def test_protocol_definition_hidden_from_class_lookups_is_still_a_candidate_for_its_protocol(placement: str) -> None:
+    """
+    The Protocol - as the class, a string or a ForwardRef - reaches its definition whatever the definition's binding.
+
+    A Protocol bound resolvable=False under a binding name or under a spellframe offers no type key (2026-11-07,
+    `_answers_class_lookup`), so it is absent from `by_type`. Its definition key is not gated by that rule: `x: Proto`
+    reads it through `by_definition`, and a single socket naming the Protocol - `x: "Proto"`, or the ForwardRef a
+    `TYPE_CHECKING`-only import leaves - is a contract lookup that finds the definition exactly as the Protocol object
+    does, on the scan and the index path alike. Only a Protocol definition keeps that key on a name: a concrete class
+    bound at the same placement is not found by its string name.
+    """
+    phase = CompilerPhase3()
+
+    class IRepo(Protocol):
+        pass
+
+    class Repo:
+        """A concrete class bound at the same placement: its name is a class lookup, which the placement hides."""
+
+    spellframe: Optional[str] = "repos" if placement == "spellframe" else None
+    binding_name: Optional[str] = "described" if placement == "binding_name" else None
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    definition = _make_spell_stub("def", spell_obj=IRepo, spellframe=spellframe, spell_name="IRepo",
+                                  binding_name=binding_name, resolvable=False)
+    concrete = _make_spell_stub("repo", spell_obj=Repo, spellframe=spellframe, spell_name="Repo",
+                                binding_name=binding_name)
+    spellbook = SimpleNamespace(_spell_id_pool={"def": definition, "repo": concrete})
+    index = phase._build_candidate_index(spellbook)
+
+    assert phase._answers_class_lookup(definition) is False
+    assert phase._answers_class_lookup(concrete) is False
+    assert index["by_type"] == {}
+    assert sorted(index["by_definition"]) == ["irepo"]
+    for annotation, expected in (
+            (IRepo, [definition]),
+            ("IRepo", [definition]),
+            (typing.ForwardRef("IRepo"), [definition]),
+            ("Repo", []),
+            (typing.ForwardRef("Repo"), []),
+    ):
+        dep = _make_dependency(spell_id="root", param_name="repo", position=0,
+                               di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation=annotation)
+        scanned = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+        indexed = phase._resolve_single_by_annotation(root_spell, spellbook, dep, index)
+        assert list(scanned.values()) == expected, annotation
+        assert list(indexed.items()) == list(scanned.items()), annotation
 
 
 @pytest.mark.parametrize(
@@ -1144,6 +1342,136 @@ def test_resolve_spellmap_default_none_and_empty_binding_name_select_the_default
     spellbook = SimpleNamespace(_spell_id_pool={"default": default, "named": named})
     resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
     assert list(resolved.values()) == [default]
+
+
+def _class_lookup_spellmap_pool(provider: Any) -> tuple[dict[str, Any], Any]:
+    """
+    One provider at four addresses: bare and under the category "agents", each under the default binding and "v1".
+
+    A stub-only pool (Bind registers one object once): it puts side by side every placement a `SpellMap(spell=...)`
+    could reach, so a lookup that reached more than the one address it names would raise "resolved to multiple
+    candidates" instead of returning a single stub.
+
+    Args:
+        provider: The object every stub binds, the `spell` a SpellMap names.
+
+    Returns:
+        tuple[dict[str, Any], Any]: The stubs by placement ("bare", "named", "framed", "framed_named") and a
+        spellbook stand-in whose pool holds them in that order.
+    """
+    stubs = {
+        "bare": _make_spell_stub("bare", spell_obj=provider, spellframe=None, spell_name="Provider"),
+        "named": _make_spell_stub("named", spell_obj=provider, spellframe=None, spell_name="Provider",
+                                  binding_name="v1"),
+        "framed": _make_spell_stub("framed", spell_obj=provider, spellframe="agents", spell_name="Provider"),
+        "framed_named": _make_spell_stub("framed_named", spell_obj=provider, spellframe="agents",
+                                         spell_name="Provider", binding_name="v1"),
+    }
+    return stubs, SimpleNamespace(_spell_id_pool=dict(stubs))
+
+
+@pytest.mark.parametrize(("written", "expected"), [
+    (None, "bare"), ("", "bare"), ("v1", "named"), ("V1", "named"),
+])
+def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_reaches_only_the_bare_spell(
+        written: Optional[str],
+        expected: str,
+) -> None:
+    """
+    `SpellMap(spell=X)` with no spellframe is a class lookup: it reaches only X bound with no spellframe.
+
+    The owner's rulings E2-E3 (2026-11-07): with no binding name (None or "") it selects X under the default
+    binding; with `binding_name` it selects X bound bare under that name, compared case-insensitively. X under a
+    spellframe is never selected, whatever its binding - it is reached through `SpellMap(X, spellframe=...)`.
+    Before, X matched at every address here, and this pool raised "resolved to multiple candidates".
+    """
+    provider = object()
+    stubs, spellbook = _class_lookup_spellmap_pool(provider)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(provider, binding_name=written))
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [stubs[expected]]
+
+
+@pytest.mark.parametrize(("spellframe", "bound_as", "written"), [
+    ("agents", None, None),
+    ("agents", "v1", "v1"),
+    ("IProvider", None, None),
+    (None, "v1", None),
+    (None, None, "v1"),
+])
+def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name(
+        spellframe: Optional[str],
+        bound_as: Optional[str],
+        written: Optional[str],
+) -> None:
+    """
+    `SpellMap(spell=X)` with no spellframe raises "could not be resolved" when X is bound only elsewhere.
+
+    The owner's rulings E2-E3 (2026-11-07): X under a spellframe - a string category or a Protocol ("IProvider"
+    stands for the Protocol defined here) - is refused whatever binding name the SpellMap writes, even the one X is
+    bound under; X bound bare under a binding name is refused when the SpellMap writes none, and X under the
+    default binding when it writes another name. Before, every case but the last resolved to X; the last raised
+    then as it does now.
+    """
+    class IProvider(Protocol):
+        """Contract frame."""
+
+    provider = object()
+    frame: Any = IProvider if spellframe == "IProvider" else spellframe
+    only = _make_spell_stub("only", spell_obj=provider, spellframe=frame, spell_name="Provider",
+                            binding_name=bound_as)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(provider, binding_name=written))
+    with pytest.raises(RuntimeError, match="could not be resolved"):
+        CompilerPhase3()._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool={"only": only}), dep)
+
+
+def test_resolve_spellmap_default_explicit_spell_with_its_spellframe_is_unchanged() -> None:
+    """
+    `SpellMap(spell=X, spellframe=F, ...)` names the frame, so the class-lookup rule (2026-11-07) leaves it as it was.
+
+    It reaches X under F only - never X bound bare or under another frame: with a binding name, X at that name;
+    with none, X under F at any binding, as before. The no-binding-name case matters here: the default-binding
+    filter of the plain class lookup must not reach a SpellMap that names its frame.
+    """
+    class IProvider(Protocol):
+        """Contract frame."""
+
+    provider = object()
+    bare = _make_spell_stub("bare", spell_obj=provider, spellframe=None, spell_name="Provider")
+    named = _make_spell_stub("named", spell_obj=provider, spellframe=None, spell_name="Provider", binding_name="v1")
+    framed_named = _make_spell_stub("framed_named", spell_obj=provider, spellframe="agents", spell_name="Provider",
+                                    binding_name="v1")
+    contract = _make_spell_stub("contract", spell_obj=provider, spellframe=IProvider, spell_name="Provider")
+    spellbook = SimpleNamespace(_spell_id_pool={"bare": bare, "named": named, "framed_named": framed_named,
+                                                "contract": contract})
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    phase = CompilerPhase3()
+
+    def _resolve(spellmap: SpellMap) -> list[Any]:
+        """
+        Resolve one SpellMap default over this test's pool through Phase 3's SPELLMAP_DEFAULT path.
+
+        Args:
+            spellmap: The descriptor the consumer's parameter carries.
+
+        Returns:
+            list[Any]: The selected stubs in pool order; Phase 3's RuntimeError propagates on a miss.
+        """
+        dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                               di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=spellmap)
+        return list(phase._resolve_spellmap_default(root_spell, spellbook, dep).values())
+
+    assert _resolve(SpellMap(provider, spellframe="agents", binding_name="v1")) == [framed_named]
+    assert _resolve(SpellMap(provider, spellframe="Agents")) == [framed_named]
+    assert _resolve(SpellMap(provider, spellframe=IProvider)) == [contract]
+    with pytest.raises(RuntimeError, match="could not be resolved"):
+        _resolve(SpellMap(provider, spellframe=IProvider, binding_name="v1"))
 
 
 def test_spellmap_frame_matching_folds_case_for_categories_only() -> None:

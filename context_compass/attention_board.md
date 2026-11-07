@@ -108,7 +108,9 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | correctness_defects | in_progress | handoff | claude | melder_1 | none | S2 landed at 0.2.8273 and is turned in; the stuck consumer is its own epic (row dependency_watchers_epic); S5, S11 and the recorded-world finding wait for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T12:26:46Z | REQUIRED |
 | dependency_watchers_epic | ready | handoff | claude | melder_0 | none | The key split moved to row spellframe_hides_class_epic (the owner's option B); S1's other misses (H1/H2, D1, G4, E1, P1a) wait for his word, one at a time. | Why a waiting consumer misses its provider, mapped for every watcher and announcer; then the fixes on the owner's word. | S1's matrix and the fix options are on the epic for the owner, or he redirects. | tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md | 2026-11-07T10:03:26Z | REQUIRED |
-| spellframe_hides_class_epic | in_progress | discovery | claude | melder_0 | none | T1 - inventory every matcher, test, doc and example that resolves a framed spell by class (read-only). | Class injection agrees with the class meld door - a framed spell is reached through its frame - plus the owner's Phase 4/6 spellframe check. | The strict model and the check landed and accepted, or the owner redirects. | tickets/tasks/2026-11-07_inventory_class_resolution_of_framed_spells_task.md | 2026-11-07T10:22:44Z | REQUIRED |
+| spellframe_hides_class_epic | ready | implementation | claude | melder_0 | none | T2 done as 0.2.8278 (uncommitted; commit on the owner's word); next T3 part (b): pin both duplicate-address shapes on every path and fix the stale example probe; then T3(a). | Class lookups agree with the class meld door - a spellframe or a binding name hides a class (Autofac) - plus the owner's Phase 4 check. | The rule and the check landed and accepted, or the owner redirects. | tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | 2026-11-07T15:06:23Z | REQUIRED |
+| license_metadata_to_apache | in_progress | implementation | claude | melder_0 | none | Bring NOTICE, pyproject, __license__.py and its test, both READMEs to Apache-2.0; release-note line, notch 0.2.8279; graph descriptor; rebuild last. | Every license statement agrees with the owner's Apache-2.0 LICENSE. | No AGPL statement outside history; checks OK, or the owner redirects. | tickets/tasks/2026-11-07_license_metadata_to_apache_task.md | 2026-11-07T15:31:12Z | REQUIRED |
+| dependabot_ci_requirements | in_progress | implementation | claude | melder_0 | none | Read .github/ci_cd/README.md, then bump the provenance pins (PyJWT, urllib3, pyasn1, dnspython, cryptography) and setuptools through each file's tooling; validate. | The 26 open Dependabot alerts' pins at or above their patched versions. | Every named pin bumped and tests/unit/github_workflows green, or the owner redirects. | tickets/tasks/2026-11-07_dependabot_ci_requirements_task.md | 2026-11-07T15:31:12Z | REQUIRED |
 | index_binding_risks_epic | ready | discovery | claude | melder_1 | none | Parked on the owner's word (2026-10-25): every open label documented; investigations wait for his go, GAP-1 first. | What can break around one binding per index - GAP-1 first - investigated and decided on the owner's word. | Every label has a verdict on the epic, or the owner redirects. | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | 2026-10-25T14:58:20Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
@@ -123,15 +125,23 @@ Message alert rules
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md
     - tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md
+- WORK_ITEM: license_metadata_to_apache
+  SWITCH_TRIGGER: No AGPL statement outside history; checks OK, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-11-07_license_metadata_to_apache_task.md
+- WORK_ITEM: dependabot_ci_requirements
+  SWITCH_TRIGGER: Every named pin bumped and tests/unit/github_workflows green, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-11-07_dependabot_ci_requirements_task.md
 - WORK_ITEM: index_binding_risks_epic
   SWITCH_TRIGGER: Every label has a verdict on the epic, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md
 - WORK_ITEM: spellframe_hides_class_epic
-  SWITCH_TRIGGER: The strict model and the check landed and accepted, or the owner redirects.
+  SWITCH_TRIGGER: The rule and the check landed and accepted, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-11-07_spellframe_hides_the_concrete_class_epic.md
-    - tickets/tasks/2026-11-07_inventory_class_resolution_of_framed_spells_task.md
+    - tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
@@ -142,6 +152,8 @@ Message alert rules
 | pypi_provenance_epic | done | melder_2 | tickets/epics/completed/2026-10-24_pypi_provenance_attestations_epic.md | Closed on the owner's word 2026-11-07 (by melder_0; melder_2 finished it): Trusted Publishing with PEP 740 provenance for TestPyPI and PyPI; the owner-owed steps stay his. | 2026-11-07T07:54:24Z |
 | board_cleanup_20261107 | done | melder_0 | tickets/tasks/completed/2026-11-07_strip_old_board_state_task.md | Boards stripped to live state on the owner's word (55 KB -> 26 KB); two epics closed done on his picks; finished tickets' artifact rows dropped, files kept. | 2026-11-07T07:54:59Z |
 | readme_stars_badge_gh191 | done | melder_0 | tickets/tasks/completed/2026-11-07_readme_stars_badge_gh191_task.md | README stars badge in the social style linking to stargazers (GitHub #191); one line, no notch; running-note line added. | 2026-11-07T08:03:29Z |
+| spellframe_epic_t1_inventory | done | melder_0 | tickets/tasks/completed/2026-11-07_inventory_class_resolution_of_framed_spells_task.md | T1 of the spellframe epic: Phase 3's change list, 106 tests in 20 files, the owner's E1-E3 on Autofac's model; read-only, no notch. | 2026-11-07T11:57:30Z |
+| spellframe_epic_t2_class_lookup | done | melder_0 | tickets/tasks/completed/2026-11-07_class_annotation_selects_only_bare_spells_task.md | T2: a class lookup reaches only a bare spell (Autofac); notched 0.2.8278, release note Breaking; 106 tests + C4 moved to the new rule; cache gen 26; uncommitted. | 2026-11-07T15:06:23Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

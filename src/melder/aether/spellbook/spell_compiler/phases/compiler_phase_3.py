@@ -74,13 +74,26 @@ class CompilerPhase3:
     Contract:
         - Slot-only phase surface with no explicit `__init__`.
         - Directly ports the canonical `SpellCrafter` phase-3 behavior.
-        - Annotation matching is by address key (2026-10-03): a DI annotation
-          names `normalize_frame_key(annotation)`, and a spell is a candidate
-          when that key is its address frame key (spellframe, else its own
-          name) or its type key (`spell_name`; an existing object's class
-          name). No identity comparison: a spellframe is a category or a
-          shape label, never a type, and a `TYPE_CHECKING`-only annotation
-          (a string at runtime) resolves exactly as the class object does.
+        - Annotation matching is by annotation kind (2026-10-04; it superseded
+          the 2026-10-03 address-key rule, which compared an annotation with a
+          spell's address frame key as well as its type key): a DI annotation
+          names `normalize_frame_key(annotation)`, and the table in
+          `_spell_keys_for` decides which spell keys that key is compared
+          against - a class with type keys, a Protocol with the contracts bind
+          recorded, a name with type and contract keys on a single socket and
+          with address labels on a collection. No identity comparison: a
+          `TYPE_CHECKING`-only annotation (a string at runtime) resolves
+          exactly as the class object does.
+        - A class lookup reaches only a spell bound bare - no spellframe and
+          the default binding (`_answers_class_lookup`; 2026-11-07, the owner's
+          rulings E1-E3: Autofac's rule that a declared service hides the
+          component's own type). That holds for a class annotation, a single
+          string annotation's type part, `list[Class]` and `SpellMap(spell=X)`
+          without a spellframe, existing objects alike, so injection and the
+          class meld door give one answer. A spell bound under a spellframe is
+          reached through the frame - Melder's interface dict, keyed by
+          binding name - and a bare spell bound under a binding name through
+          that name.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -278,6 +291,45 @@ class CompilerPhase3:
         return SpellInputUtils.normalize_frame_key(spell_obj.spell_name)
 
     @staticmethod
+    def _answers_class_lookup(spell_obj: Spell) -> bool:
+        """
+        Return True when `spell_obj` answers a class lookup: bound bare, with no spellframe and the default binding.
+
+        Contract (2026-11-07, the owner's rulings E1-E3; Autofac's rule that a
+        declared service hides the component's own type):
+            - A spellframe is the spell's interface - Melder's interface dict,
+              keyed by binding name - so a spell bound under one (a string
+              category or a Protocol) is reached through the frame (a Protocol
+              annotation, `list[Protocol]`, `list["label"]`,
+              `SpellMap(spellframe=..., binding_name=...)`,
+              `meld(spellframe=..., binding_name=...)`), never by its class.
+            - A binding name is a declared name, so a bare spell bound under one
+              is reached by that name (`SpellMap(Class, binding_name=...)`,
+              `meld(Class, binding_name=...)`), never by its class alone.
+            - An existing object follows the same rule: its class is what a
+              class lookup names.
+            - The class meld door resolves a class only at its bare,
+              default-binding address, so this keeps injection and the door one
+              rule; and a class annotation's dependency key (its name, default
+              binding) is then the address of every spell it can match.
+            - Reads only bind-time fields (spellframe, binding name), which are
+              pass-invariant; takes no lock.
+
+        Args:
+            spell_obj: The candidate spell.
+
+        Returns:
+            bool: True when the spell has no spellframe and its binding name
+            normalizes to the default binding.
+        """
+        if spell_obj.spellframe is not None:
+            return False
+        return (
+            SpellInputUtils.normalize_binding_name(spell_obj.binding_name)
+            == SpellInputUtils.DEFAULT_BINDING_NAME
+        )
+
+    @staticmethod
     def _spell_label_key(spell_obj: Spell) -> str:
         """
         Return the spell's address label: the frame key of its address.
@@ -357,14 +409,24 @@ class CompilerPhase3:
         Return the spell keys an annotation of `annotation_kind` is compared against.
 
         The matching table (single socket | collection):
-            - type:     type key                      | type key
+            - type:     type key*                     | type key*
             - contract: contract keys + definition    | contract keys + definition
-            - name:     type + contract               | label key
+            - name:     type key* + contract keys     | label key
+                        + definition
         "definition" is the type key of a spell that is itself a Protocol (bound
-        `resolvable=False` as the contract's description). A category label is
-        reachable only through a collection written as a name (`list["storage"]`),
-        never through a single socket, and a class annotation never reads a frame
-        of any kind.
+        `resolvable=False` as the contract's description). * The type key is
+        offered only by a spell that answers a class lookup
+        (`_answers_class_lookup`: no spellframe, the default binding;
+        2026-11-07): a spell bound under a spellframe or a binding name offers
+        no type key, so a class annotation, `list[Class]` and a single string
+        annotation's type part never reach it, while its contract keys and its
+        label stay reachable. A Protocol definition keeps its definition key on
+        a single name socket whatever its binding: a string naming the Protocol
+        is a contract lookup and finds the definition exactly as the Protocol
+        object does (for a bare definition the definition key is its type key).
+        A category label is reachable only through a collection written as a
+        name (`list["storage"]`), never through a single socket, and a class
+        annotation never reads a frame of any kind.
 
         Args:
             annotation_kind: One of the `_KIND_*` constants.
@@ -372,10 +434,13 @@ class CompilerPhase3:
             collection: True when resolving a COLLECTION_BY_ANNOTATION socket.
 
         Returns:
-            Tuple[str, ...]: The keys to compare the annotation key against.
+            Tuple[str, ...]: The keys to compare the annotation key against;
+            empty when the spell cannot answer an annotation of this kind.
         """
         if annotation_kind == self._KIND_TYPE:
-            return (self._spell_type_key(spell_obj),)
+            if self._answers_class_lookup(spell_obj):
+                return (self._spell_type_key(spell_obj),)
+            return ()
         if annotation_kind == self._KIND_CONTRACT:
             definition_key = self._spell_definition_key(spell_obj)
             if definition_key is None:
@@ -383,7 +448,14 @@ class CompilerPhase3:
             return self._spell_contract_keys(spell_obj) + (definition_key,)
         if collection:
             return (self._spell_label_key(spell_obj),)
-        return (self._spell_type_key(spell_obj),) + self._spell_contract_keys(spell_obj)
+        if self._answers_class_lookup(spell_obj):
+            return (self._spell_type_key(spell_obj),) + self._spell_contract_keys(spell_obj)
+        definition_key = self._spell_definition_key(spell_obj)
+        if definition_key is None:
+            return self._spell_contract_keys(spell_obj)
+        # A name may stand for a contract: a Protocol's own definition answers it
+        # whatever its binding, as `by_definition` answers the Protocol object.
+        return self._spell_contract_keys(spell_obj) + (definition_key,)
 
     def _matches_annotation(
             self,
@@ -405,10 +477,14 @@ class CompilerPhase3:
               annotation compares with the spell's type key; a Protocol
               annotation with the Protocols bind recorded on the spell; a string
               with the type or contract keys on a single socket and with the
-              address label on a collection. A spell under a string category is
-              therefore reached by its type or, in a collection, by the category's
-              name - never does the category's name make it a provider of a
-              class spelled the same way.
+              address label on a collection. Only a spell bound bare - no
+              spellframe, the default binding - offers its type key
+              (`_answers_class_lookup`, 2026-11-07). A spell under a string
+              category is therefore reached, in a collection, by the category's
+              name and never by its class - and never does the category's name
+              make it a provider of a class spelled the same way; a spell under
+              a Protocol is reached by the Protocol; a bare spell under a
+              binding name by that name (SpellMap or meld), not here.
             - `binding_name`, when given, must equal the spell's binding name.
             - `require_class_spell=True` excludes METHOD/LAMBDA spell kinds.
 
@@ -485,12 +561,17 @@ class CompilerPhase3:
             - Entries are `(pool_position, spell_index, spell_obj)` so a bucket
               can be re-sorted into `_spell_id_pool` iteration order, keeping
               collection-injection order identical to the scan implementation.
-            - Each spell is appended once to `by_type` and once to `by_label`
-              (the two may be the same key for a bare binding), once per
-              recorded contract to `by_contract`, and - when the bound object
-              is itself a Protocol - once to `by_definition` under its type key.
-            - Keys are strings, so bucket membership equals scan membership for
-              every pool; no equality guard is needed.
+            - Each spell that answers a class lookup (`_answers_class_lookup`:
+              no spellframe, the default binding; 2026-11-07) is appended once
+              to `by_type`; a spell bound under a spellframe or a binding name
+              is not, exactly as `_spell_keys_for` offers it no type key.
+              Every spell is appended once to `by_label` (the same key as its
+              `by_type` key for a bare binding), once per recorded contract to
+              `by_contract`, and - when the bound object is itself a Protocol -
+              once to `by_definition` under its type key.
+            - Keys are strings and both paths apply the same predicate, so
+              bucket membership equals scan membership for every pool; no
+              equality guard is needed.
 
         Returns:
             Dict[str, Any]: `{"by_type": {...}, "by_label": {...}, "by_contract": {...},
@@ -504,7 +585,8 @@ class CompilerPhase3:
         for index, spell_obj in self._iter_all_spells(spellbook):
             entry = (position, index, spell_obj)
             position += 1
-            by_type.setdefault(self._spell_type_key(spell_obj), []).append(entry)
+            if self._answers_class_lookup(spell_obj):
+                by_type.setdefault(self._spell_type_key(spell_obj), []).append(entry)
             by_label.setdefault(self._spell_label_key(spell_obj), []).append(entry)
             for key in self._spell_contract_keys(spell_obj):
                 by_contract.setdefault(key, []).append(entry)
@@ -560,8 +642,14 @@ class CompilerPhase3:
         Returns:
             Tuple[Optional[List[...]], ...]: One bucket for a type or a
             collection-name lookup; the contract and definition buckets for a
-            Protocol; the type and contract buckets for a single-socket name.
-            A missing bucket is None.
+            Protocol; the type, contract and definition buckets for a
+            single-socket name. A missing bucket is None. `by_type` holds only
+            spells that answer a class lookup (`_build_candidate_index`), so a
+            type lookup and a single name's type part never see a spell bound
+            under a spellframe or a binding name (2026-11-07); the definition
+            bucket keeps a Protocol definition reachable by a name whatever its
+            binding, as `_spell_keys_for` does on the scan path (a bare
+            definition sits in both buckets under one key and is seen once).
         """
         key = self._annotation_key(annotation)
         kind = self._annotation_kind(annotation)
@@ -571,7 +659,11 @@ class CompilerPhase3:
             return (candidate_index["by_contract"].get(key), candidate_index["by_definition"].get(key))
         if collection:
             return (candidate_index["by_label"].get(key),)
-        return (candidate_index["by_type"].get(key), candidate_index["by_contract"].get(key))
+        return (
+            candidate_index["by_type"].get(key),
+            candidate_index["by_contract"].get(key),
+            candidate_index["by_definition"].get(key),
+        )
 
     def _indexed_annotation_candidates(
             self,
@@ -587,9 +679,10 @@ class CompilerPhase3:
         Contract:
             - Reads the bucket(s) `_index_buckets_for` selects for the
               annotation's kind and socket shape; membership equals scan
-              membership because both sides use the same keys and the same
-              table (2026-10-04). An entry present in two buckets (a name that
-              is both a type key and a contract key of one spell) is seen once.
+              membership because both sides use the same keys, the same table
+              (2026-10-04) and the same class-lookup predicate (2026-11-07). An
+              entry present in two buckets (a name that is both a type key and
+              a contract key of one spell) is seen once.
             - `binding_name` filtering is omitted because both annotation
               resolvers pass None today (scan applies the filter only when a
               binding name is present).
@@ -636,14 +729,18 @@ class CompilerPhase3:
         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
         spell.
 
-        A class annotation selects spells of that class, a Protocol annotation
-        the spells bind recorded under it, a string either by name - never the
-        members of a string category (2026-10-04, `_spell_keys_for`).
+        A class annotation selects spells of that class bound bare - no
+        spellframe, the default binding (2026-11-07, `_answers_class_lookup`) -
+        a Protocol annotation the spells bind recorded under it, a string either
+        by name - never the members of a string category (2026-10-04,
+        `_spell_keys_for`).
         Prefer matching resolvable providers. Only when none exist may a single
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
         When nothing matches at all, the mapping is empty: the caller records an
-        UNRESOLVED_INPUT socket, which the constructing meld must supply. When
+        UNRESOLVED_INPUT socket, which the constructing meld must supply - also
+        when the class is registered, but only under a spellframe or a binding
+        name, which a class lookup does not reach. When
         several match, every candidate is returned (2026-10-04): the caller
         records an AMBIGUOUS_INPUT socket and Phase 4 refuses the spell with
         AMBIGUOUS_PROVIDER, naming the candidates and their addresses - the
@@ -717,7 +814,8 @@ class CompilerPhase3:
             asked for "all of them": `list[Proto]` gathers the spells recorded
             under that Protocol, `list["label"]` the members of that category
             (or the bare spells named so), `list[Cls]` the spells of that class
-            (2026-10-04, `_spell_keys_for`). Non-resolvable definitions are
+            bound bare - no spellframe, the default binding (2026-10-04 and
+            2026-11-07, `_spell_keys_for`). Non-resolvable definitions are
             excluded after the existing matching and ordering decisions.
             
             Returns:
@@ -813,6 +911,16 @@ class CompilerPhase3:
             method compared it with the spell's raw one, so a binding name with
             a capital letter never resolved.
 
+        Class lookup (2026-11-07, the owner's rulings E2-E3):
+            `SpellMap(spell=X)` with no spellframe is a class lookup and follows
+            `_answers_class_lookup`: it reaches only an X bound with no
+            spellframe - with no binding_name given, only X under the default
+            binding; with `binding_name=b`, only X bound bare under `b` (the
+            named class lookup). Before, it reached X under any spellframe or
+            binding name. `SpellMap(spell=X, spellframe=F, ...)` and the
+            frame-addressed `SpellMap(spellframe=F, binding_name=b)` are
+            unchanged: the frame is named, so the interface dict is read.
+
         Args:
             spell:
                 Consuming spell owning the dependency.
@@ -846,11 +954,22 @@ class CompilerPhase3:
                 if spell_obj.spell is not explicit_spell:
                     continue
 
-                if frame is not None and not self._spellmap_frame_matches(spell_obj.spellframe, frame):
+                if frame is not None:
+                    if not self._spellmap_frame_matches(spell_obj.spellframe, frame):
+                        continue
+                elif spell_obj.spellframe is not None:
+                    # No spellframe named: a class lookup, which never reaches a
+                    # spell bound under a spellframe (2026-11-07).
                     continue
 
-                if (binding_name is not None
-                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) != binding_key):
+                spell_binding_key = SpellInputUtils.normalize_binding_name(spell_obj.binding_name)
+                if binding_name is not None:
+                    if spell_binding_key != binding_key:
+                        continue
+                elif frame is None and spell_binding_key != SpellInputUtils.DEFAULT_BINDING_NAME:
+                    # Neither spellframe nor binding_name named: the plain class
+                    # lookup reaches only the default binding (2026-11-07); a
+                    # named one is reached with `SpellMap(X, binding_name=...)`.
                     continue
 
                 candidates[index] = spell_obj

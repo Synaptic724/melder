@@ -922,6 +922,11 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         Validate explicit SpellMap defaults raise when duplicates exist.
     Contract:
         - run_phase_local_frame raises when explicit spell resolves to multiple matches.
+        - The two duplicates are pool stubs bound bare under the default binding: `SpellMap(BasicService)`
+          is a class lookup, which reaches only BasicService bound with no spellframe under the default
+          binding (2026-11-07, the owner's rulings E2-E3). Stubs under a spellframe (the class itself, which
+          bind has refused as a spellframe since 0.2.8222) or under binding names are skipped, so the
+          default would be unresolved rather than ambiguous.
     Returns:
         None.
     Raises:
@@ -961,15 +966,11 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         spell_id="candidate-a",
         spell=BasicService,
         spell_name="BasicService-A",
-        spellframe=BasicService,
-        binding_name="primary-a",
     )
     candidate_b = _SpellCandidateStub(
         spell_id="candidate-b",
         spell=BasicService,
         spell_name="BasicService-B",
-        spellframe=BasicService,
-        binding_name="primary-b",
     )
     spellbook._spell_id_pool[candidate_a.spell_index.selected_spell_id] = candidate_a
     spellbook._spell_id_pool[candidate_b.spell_index.selected_spell_id] = candidate_b

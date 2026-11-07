@@ -75,5 +75,5 @@ The canonical diagram sources and generated assets follow the
 
 ## Current License
 
-Melder is licensed under GNU AGPL v3 or later (`AGPL-3.0-or-later`). See the repository
+Melder is licensed under the Apache License 2.0 (`Apache-2.0`). See the repository
 [LICENSE](../LICENSE) and [NOTICE](../NOTICE).

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: f788c4fee2957a76e6bd3cc974b7f757a250a42ff07b4a4d918c5605fe1957c1
+SOURCE FINGERPRINT: e2cee92c13192148b697fd1e687b34b85384476e49335a6a713306a9de673a74
 FILE COUNT: 419
 
 ================================================================================
@@ -8777,7 +8777,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: cc7316777d3161c396293085cd1b6d61d3d726ccb714bbf0c19f6791edcd5e55
+CONTENT SHA256: 1bf953bba2affc1654ce178e2f38c694b084a68e32f0909c28485523898a0571
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -8801,7 +8801,7 @@ SOURCE ENCODING: utf-8
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Monthly downloads](https://api.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 [![Lifetime downloads](https://api.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
-[![GitHub stars](https://img.shields.io/github/stars/Synaptic724/melder)](https://github.com/Synaptic724/melder)
+[![Stars](https://img.shields.io/github/stars/Synaptic724/melder?style=social)](https://github.com/Synaptic724/melder/stargazers)
 
 [![CI](https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg)](https://github.com/Synaptic724/melder/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg)](https://codecov.io/gh/Synaptic724/melder)
@@ -9232,18 +9232,31 @@ book.bind(spell=EmailHandler, existence="unique",
           spellframe=Handler, binding_name="email")
 ```
 
+A spellframe is the spell's **interface**: think of it as a dict keyed by
+`binding_name`. Bound under a frame, a spell is reached **through the frame** —
+a `Handler` annotation, `list[Handler]`, `SpellMap(spellframe=Handler,
+binding_name="email")` or `meld(spellframe=Handler, binding_name="email")` —
+and never by its own class: `handler: EmailHandler` and `meld(EmailHandler)`
+do not find this `EmailHandler`, just as a service registered under an
+interface hides its own type in Autofac. Like a dict, `meld(spellframe=Handler)`
+with no `binding_name` reads the default slot (a `KeyError` when every member is
+named), while a `Handler` annotation selects the frame's single implementation
+and refuses several with `AMBIGUOUS_PROVIDER`.
+
 ## 🟢 Dependency Injection
 <sub>**Beginner → Intermediate.** Annotations, explicit targets, collections.</sub>
 
 Annotate a constructor parameter. Melder builds the graph.
 
-What an annotation selects depends on what it is. A **class** selects the spells of that type — a class
-bound bare, or an existing object of that class — and nothing else: a category that happens to share the
-class's name does not turn its members into providers. A **Protocol** selects the spells bound under it as
-their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at runtime, resolves by name to a
-type or a contract, never to a string category. `list[...]` gathers the group the annotation's kind names:
-every spell of the class, every implementer of the Protocol, or — for a string — every member of the
-category or type of that name.
+What an annotation selects depends on what it is. A **class** selects only the spell of that class bound
+**bare** — no `spellframe` and no `binding_name`, the class itself or an existing object of it — which is
+exactly what `meld(TheClass)` returns. A spell bound under a spellframe is reached through its frame, and a
+spell bound under a binding name through that name (`SpellMap(TheClass, binding_name=...)`); a category that
+happens to share the class's name does not turn its members into providers either. A **Protocol** selects
+the spells bound under it as their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at
+runtime, resolves by name to a bare type or a contract, never to a string category. `list[...]` gathers the
+group the annotation's kind names: the bare spell of the class, every implementer of the Protocol, or — for
+a string — every member of the category or type of that name.
 
 ```python
 import melder as md
@@ -9289,8 +9302,13 @@ class Consumer:
 ```
 
 `SpellMap` takes the full address: a concrete spell, a `spellframe`, a
-`binding_name`, or a combination. It obeys an **exactly-one law** — a target
-that matches zero spells or several fails at `conjure()`, not at runtime.
+`binding_name`, or a combination. `SpellMap(PrimaryStore)` is a class lookup:
+it reaches `PrimaryStore` bound bare under the default binding;
+`SpellMap(PrimaryStore, binding_name="primary")` reaches it bound bare under
+that name; a store bound under a spellframe is named through the frame,
+`SpellMap(spellframe=Store, binding_name="primary")`. It obeys an
+**exactly-one law** — a target that matches zero spells or several fails at
+`conjure()`, not at runtime.
 When a single Protocol-annotated parameter has several registered implementations,
 `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
 report that lists every candidate's address and the fix — a `SpellMap`
@@ -11404,7 +11422,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py
-CONTENT SHA256: 77605ce25139d5cdd14386407db0b24779ff2f0d9d7526d3ecbf7f1879be6a3c
+CONTENT SHA256: c9cdc630cb841ec0ef03431616a068c76daf92027b7ab51b9963bac3cab890e8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -11412,9 +11430,11 @@ TIER: beginner (25)
 GOAL: Spellframes are CATEGORIES. Organize one world's spells by the
       resolution ideas your app already has - "repositories",
       "notifiers" - and (category, name) becomes the full address.
-      The addressing FEELS like a two-level dict, but frames are NOT
-      dicts: they are grouping and contract keys. A string frame
-      groups; a Protocol frame also VALIDATES what binds under it
+      A frame IS an interface dict keyed by binding_name: a member is
+      looked up through its frame - [category][name] - and never by
+      its own class alone (a class lookup reaches only a spell bound
+      bare; owner ruling 2026-11-07). A string frame groups; a
+      Protocol frame also VALIDATES what binds under it
       (intermediate tier).
       Seed for later: when a category needs its own OWNER and its own
       resolution conditions, the category graduates into a whole
@@ -28986,7 +29006,7 @@ END FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/AGENTS.md
-CONTENT SHA256: f4b260b4f7154ebd824510ebf114e768545eb7957acbab17d62015f50d03c64b
+CONTENT SHA256: 2219ab126dce3bab2e5fae347f6e68ddbe362c107a879778993ce3b7b5f8deec
 SOURCE ENCODING: utf-8
 ================================================================================
 # UX_and_AIX_experiences (AGENTS.md)
@@ -29004,8 +29024,9 @@ Layout:
                     no spellspaces. Existences: unique, many, unique_per_conduit
                     ONLY (lineage/spellspace -> tier 02; cluster -> tier 03).
                     DESIGN PRINCIPLE: teach a 4B-model agent with a 64k window
-                    to be USEFUL - shared/fresh/scoped, dict-style frame ADDRESSING (frames are
-                    grouping/contract keys, not dicts), typed
+                    to be USEFUL - shared/fresh/scoped, dict-style frame ADDRESSING (a frame is
+                    the interface dict, keyed by binding_name; its members are reached through
+                    the frame, never by their own class - owner ruling 2026-11-07), typed
                     melds, Protocols, one bootstrap function. Fun and simple
                     beats complete.
 - 02_intermediate/  linking + dynamic mode + configurations (owner fence:
@@ -34046,7 +34067,7 @@ END FILE: agents.md
 ================================================================================
 ================================================================================
 BEGIN FILE: agents/MELDER_AGENT_OPERATIONS.md
-CONTENT SHA256: a32a8c87397e5aa61da686950bd4ee6680e6a3b61c279d49668fa64060764f4d
+CONTENT SHA256: a61b7a29ef2413c2fb727706364b05a5ac5116989eb8ff4c9f70f931f40fb44d
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder — Agent Operating Cheat Sheet
@@ -34162,9 +34183,9 @@ finally:
 
 | Parameter | Meaning |
 |---|---|
-| `store: Store` without a default | Infer a required provider. |
+| `store: Store` without a default | Infer a required provider: the `Store` bound **bare** (no `spellframe`, no `binding_name`). A class annotation never reaches a Store bound under a spellframe or a binding name - ask through the frame (a Protocol annotation, a frame `SpellMap`) or the name (`md.SpellMap(Store, binding_name=...)`). |
 | `store: Store = ordinary_value` | Keep the Python default; **ordinary defaults suppress inferred DI**. |
-| `store = md.SpellMap(Store)` | Explicit local DI selector. |
+| `store = md.SpellMap(Store)` | Explicit local DI selector for `Store` bound bare under the default binding; `md.SpellMap(Store, binding_name="primary")` selects a bare `Store` bound under that name. |
 | `store = md.SpellMap(spellframe=StoreProtocol, binding_name="primary")` | Explicit category/role; exactly one provider must match. |
 | `handlers: list[HandlerProtocol]` | Collection DI over matching providers; do not invent an ordering guarantee. |
 | `store = md.SpellContract(spellframe=StoreProtocol, binding_name="primary")` | Intentional late socket, for a dynamic world; wire provider/link/grant before using it. |
@@ -81401,12 +81422,62 @@ END FILE: release_docs/0.2.8275.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 5f7a30e616de4dfcd0531759890eb1f2fea75825f9eed7b001b4711e7815a8b8
+CONTENT SHA256: 89cb471243e9c8f3908f9ff81c24871a54ff6ed1d6afff9d26f1b0a6e68a4c46
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8277
+# Melder 0.2.8278
 
 **Unreleased**
+
+## A class lookup reaches only a spell bound bare
+
+**Breaking change:** a constructor parameter annotated with a class, `list[ThatClass]`, a single string
+annotation naming the class, and `SpellMap(ThatClass)` now reach a spell only when it is bound bare - with
+no `spellframe` and no `binding_name` - the rule `meld(ThatClass)` has always followed. A class bound under a
+spellframe is reached through the frame, and one bound under a binding name through that name. An existing
+object bound under a spellframe or a binding name follows the same rule.
+
+```python
+book.bind(spell=English, existence="unique", spellframe=Greeter, binding_name="english")
+
+
+class Host:
+    def __init__(self, greeter: English) -> None:  # no longer resolves this English
+        self.greeter = greeter
+
+
+class FramedHost:
+    def __init__(self, greeter: Greeter) -> None:  # resolves it, through the frame
+        self.greeter = greeter
+```
+
+A single parameter that relied on the old matching keeps conjuring: it becomes an unresolved input, and
+melding the consumer raises `UnresolvedInputError` naming the parameter unless the meld supplies it with
+`override=`. A required `list[ThatClass]` that is left empty refuses at `conjure()` in an automatic world
+(`collection_socket_no_providers`), as any empty required collection does, and a dynamic world injects `[]`.
+A `SpellMap(ThatClass)` that no longer matches fails at `conjure()` with "SpellMap default could not be
+resolved".
+
+How to upgrade:
+
+1. A class bound under a Protocol: annotate the Protocol (`greeter: Greeter`) or use
+   `SpellMap(spellframe=Greeter, binding_name="english")`.
+2. A class bound under a string category spelled as its own name (`spellframe="English"`): drop the
+   spellframe. A bare class is addressed by its own name, so its address does not change.
+3. A bare class bound with a binding name: use `SpellMap(English, binding_name="v1")`, or drop the binding
+   name.
+4. `SpellMap(English)` aimed at a framed or named English: add its `spellframe` and `binding_name`.
+
+What stays the same: Protocol annotations, `list[Protocol]`, `list["category"]`, frame-addressed `SpellMap`s,
+every meld door, `SpellContract`, and ambiguity - two implementations of one Protocol still refuse with
+`AMBIGUOUS_PROVIDER`. A spellframe is the spell's interface, a dict keyed by binding name:
+`meld(spellframe=Greeter)` with no binding name reads the default slot, while a `Greeter` annotation selects
+the frame's single implementation.
+
+Why: `meld(English)` refused an English bound under a frame while `greeter: English` injected it - two
+answers to one question - and a consumer compiled before its framed provider arrived waited under the class
+name while the provider announced its frame, so it never picked the provider up. One rule removes both.
+Creation-cache bundles written before are cold once (cache generation 26).
 
 ## Canonical terminal enum names with compatible record reads
 
@@ -81459,7 +81530,13 @@ flags and ownership-transfer behavior remain covered by the focused tests.
 The source and test maps, their indexes and the source graph reflect the selected enum changes.
 Generated assets are rebuilt and verified for the current version.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8277.
+The README's GitHub stars badge uses the social style and links to the stargazers page (GitHub issue #191).
+
+The README's Spellframes, Dependency Injection and `SpellMap` passages, beginner lesson 25, the examples'
+`AGENTS.md` and the agent operations guide's constructor table state the class-lookup rule and the
+spellframe as an interface dict.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8278.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

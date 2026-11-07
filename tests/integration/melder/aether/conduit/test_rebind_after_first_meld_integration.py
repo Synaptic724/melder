@@ -111,7 +111,7 @@ class ContractConsumer(Cleanable):
 
 
 class Consumer(Cleanable):
-    """Depends on the provider class by annotation."""
+    """Depends on the provider class by annotation, which reaches Provider only when it is bound bare (2026-11-07)."""
 
     def __init__(self, p: Provider) -> None:
         """Hold the injected provider."""
@@ -239,19 +239,23 @@ def test_dependent_consumer_is_rebuilt_against_the_replacement_class() -> None:
 
 
 def test_dependent_consumer_survives_a_same_class_rebind_of_its_dependency() -> None:
-    """GUARD (green before the repair): same class, same id - the consumer's next meld builds a live provider."""
+    """
+    GUARD (green before the repair): same class, same id - the consumer's next meld builds a live provider.
+
+    Provider is bound bare, which is the address ("provider", default binding) its earlier category "provider" gave
+    it, so `meld(spellframe="provider")` still reaches it; bare is what `Consumer`'s class annotation reaches, because
+    a class lookup never reaches a spell bound under a spellframe (2026-11-07).
+    """
     frame = "rebind-matrix-m2b"
     book, root, peer, scope = _world(frame)
     try:
-        provider_id = root.bind(spell=Provider, existence="many", spellframe="provider",
-                                disposal_method_names=["cleanup"])
+        provider_id = root.bind(spell=Provider, existence="many", disposal_method_names=["cleanup"])
         root.bind(spell=Consumer, existence="many", spellframe="consumers",
                   binding_name="consumer", disposal_method_names=["cleanup"])
         first = scope.meld(spellframe="consumers", binding_name="consumer")
         definition = root.get_spell_by_spell_id(provider_id, frame)
         root.cleanup_spell(spell=definition)
-        again = root.bind(spell=Provider, existence="many", spellframe="provider",
-                          disposal_method_names=["cleanup"])
+        again = root.bind(spell=Provider, existence="many", disposal_method_names=["cleanup"])
         assert again == provider_id
         second = scope.meld(spellframe="consumers", binding_name="consumer")
         assert second is not first and second.p is not first.p and not second.p.cleaned

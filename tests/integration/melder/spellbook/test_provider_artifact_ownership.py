@@ -6,12 +6,13 @@ lookup, so an earlier diagnostic lookup cannot repair a later failing prefix.
 """
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spellbook import Spellbook
 from tests._spell_identity_test_support import version_of
 
@@ -28,9 +29,21 @@ class RetainedProvider:
 
 
 class ProviderConsumer:
-    """Borrow a required provider instance without acquiring its lifecycle."""
+    """Borrow a required provider instance without acquiring its lifecycle.
 
-    def __init__(self, provider: RetainedProvider) -> None:
+    The provider is bound under the string category "providers" as "retained", so the parameter names that
+    address with a frame-addressed SpellMap: since 2026-11-07 a spellframe or a binding name hides a spell
+    from class lookups, and a `RetainedProvider` annotation would reach only a provider bound bare (no
+    spellframe, the default binding). The SpellMap keeps the same dependency edge - a borrower resolves it
+    to the provider spell its read contract imported, a same-book consumer to the local provider spell.
+    """
+
+    def __init__(
+            self,
+            provider: Union[RetainedProvider, SpellMap] = SpellMap(
+                spellframe="providers", binding_name="retained",
+            ),
+    ) -> None:
         """Retain the injected provider for identity and state assertions."""
         self.provider = provider
 

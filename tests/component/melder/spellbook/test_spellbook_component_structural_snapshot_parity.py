@@ -32,7 +32,7 @@ from melder.utilities.custom_exceptions.unresolved_input_error import Unresolved
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
 from tests.mocks.spellbook.contract_classes import ContractConsumerPrimary, ContractServicePrimary
 from tests.mocks.spellbook.protocols import IService
-from tests.mocks.spellbook.structural_snapshot_classes import Car, Engine, EngineAlternative, Radio, Wheel
+from tests.mocks.spellbook.structural_snapshot_classes import Car, Engine, Radio, Wheel
 
 FRAME = "structural-parity"
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -114,12 +114,15 @@ def _bind_world(book: Spellbook) -> Dict[str, str]:
     """
     Bind Engine (unique), Wheel (many), Car (many) and Radio (unique); return the ids by class name.
 
-    Engine is bound under the string category 'Engine' - the address a bare bind gives it, so `meld(spell=Engine)`
-    still reaches it - because every version of an index is bound the way its first version was (2026-10-25): the
-    notch event stages EngineAlternative under that binding. The child process binds it the same way.
+    Engine is bound bare (no spellframe, the default binding), the only binding a class lookup reaches (2026-11-07):
+    Car's and Dashboard's `engine: Engine` reach it, and `meld(spell=Engine)` reaches it at its own name. Until
+    2026-11-07 it was bound under the string category 'Engine' - the same address - so the notch event could stage the
+    renamed EngineAlternative under that binding; a spellframe now hides Engine from class lookups. Every version of
+    an index is bound the way its first version was (2026-10-25), so the notch event stages an edited Engine
+    (`_edited_engine`) under this bare binding. The child process binds it the same way.
     """
     return {
-        "Engine": book.bind(spell=Engine, existence="unique", permissions="create", spellframe="Engine"),
+        "Engine": book.bind(spell=Engine, existence="unique", permissions="create"),
         "Wheel": book.bind(spell=Wheel, existence="many", permissions="create"),
         "Car": book.bind(spell=Car, existence="many", permissions="create"),
         "Radio": book.bind(spell=Radio, existence="unique", permissions="create"),
@@ -177,34 +180,54 @@ def _event_post_conjure_bind(book: Spellbook, conduit: Conduit, ids: Dict[str, s
     return (type(dashboard.radio).__name__, type(dashboard.engine).__name__, type(car.engine).__name__, len(car.wheels))
 
 
+def _edited_engine() -> type:
+    """
+    Return an edited Engine: a class of Engine's name with new code, so a new spell_id at Engine's bare address.
+
+    Every version of an index is bound the way its first version was (2026-10-25), and Engine is bound bare, so a
+    version staged into its index is a class named Engine bound bare - an edited Engine; a renamed class such as
+    EngineAlternative is a new spell, refused there. Its `__qualname__` (`_edited_engine.<locals>.Engine`) tells it
+    from Engine in an event outcome, and every call builds the same code, so both worlds stage the same spell_id.
+    """
+
+    class Engine:  # the edited class keeps its name
+        """Edited Engine version staged into Engine's index by the notch event."""
+
+    return Engine
+
+
 def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     """
-    Meld Car, stage an alternative Engine into Engine's index under Engine's binding (the category 'Engine'), notch
-    it, meld the new member and Car, then notch back to Engine and meld Car again.
+    Meld Car, stage an edited Engine (`_edited_engine`) into Engine's index under Engine's binding (bare), notch it,
+    meld the new member and Car, then notch back to Engine and meld Car again.
 
     Rule 2 (D2, 2026-10-16): a notch marks every spell that depends on the notched one, so Car's next meld rechecks
-    its structure against the version now active. A class annotation selects its own type (the kind rule), so
-    `engine: Engine` does not select EngineAlternative: that meld raises the UnresolvedInputError a first meld would
-    raise, and after the notch back Car builds with Engine again. Before rule 2 the after-notch meld silently built
-    the old Engine, and a dependent melded first after a provider notch failed with "generalized manifest references
-    unknown spell_id". Cold and hydrated worlds must end alike either way.
+    its structure against the version now active. A class annotation selects its own type bound bare (the kind rule;
+    2026-11-07), and the edited Engine is a class of that name bound bare, so the after-notch meld builds the edited
+    Engine, and after the notch back Car builds with Engine again. The outcome names each class by `__qualname__`, so
+    an after-notch meld that built the old Engine shows in it; an UnresolvedInputError there is recorded rather than
+    raised, so the two worlds compare either way. Until 2026-11-07 this event staged the renamed EngineAlternative
+    under the category 'Engine' and the after-notch meld raised the UnresolvedInputError a first meld would raise,
+    since `engine: Engine` did not select EngineAlternative; a category now hides Engine from Car, and a bare index
+    admits no renamed class. Before rule 2 the after-notch meld silently built the old Engine, and a dependent melded
+    first after a provider notch failed with "generalized manifest references unknown spell_id". Cold and hydrated
+    worlds must end alike either way.
     """
     before = conduit.meld(spell=Car)
     engine_index = book.find_spell_by_spell_id(ids["Engine"]).spell_index
-    staged_id = conduit.bind_inactive(
-        spell=EngineAlternative, spell_index=engine_index, existence="unique", spellframe="Engine",
-    )
+    staged_id = conduit.bind_inactive(spell=_edited_engine(), spell_index=engine_index, existence="unique")
     conduit.notch_spell(spell_index=engine_index, spell_id=staged_id)
     member = conduit.meld(spell_id=staged_id)
     staged_is_active = book.find_spell_by_spell_id(staged_id).spell_id == staged_id
     try:
-        after: Any = type(conduit.meld(spell=Car).engine).__name__
+        after: Any = type(conduit.meld(spell=Car).engine).__qualname__
     except UnresolvedInputError as error:
         after = (type(error).__name__, "engine" in str(error))
     conduit.notch_spell(spell_index=engine_index, spell_id=ids["Engine"])
     back = conduit.meld(spell=Car)
     return (
-        type(before.engine).__name__, type(member).__name__, staged_is_active, after, type(back.engine).__name__,
+        type(before.engine).__qualname__, type(member).__qualname__, staged_is_active, after,
+        type(back.engine).__qualname__,
     )
 
 
@@ -316,7 +339,7 @@ configuration.with_system_cache_root_path(Path({fragment!r}))
 book = Spellbook(aetheric_frame={frame!r})
 book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
 ids = [
-    book.bind(spell=Engine, existence="unique", permissions="create", spellframe="Engine"),
+    book.bind(spell=Engine, existence="unique", permissions="create"),
     book.bind(spell=Wheel, existence="many", permissions="create"),
     book.bind(spell=Car, existence="many", permissions="create"),
     book.bind(spell=Radio, existence="unique", permissions="create"),

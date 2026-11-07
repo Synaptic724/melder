@@ -1,0 +1,685 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [  0%]
+........................................................................ [  0%]
+........................................................................ [  1%]
+........................................................................ [  1%]
+........................................................................ [  2%]
+........................................................................ [  2%]
+........................................................................ [  3%]
+........................................................................ [  3%]
+........................................................................ [  4%]
+........................................................................ [  4%]
+........................................................................ [  5%]
+........................................................................ [  5%]
+........................................................................ [  5%]
+........................................................................ [  6%]
+....................................................................F... [  6%]
+........................................................................ [  7%]
+........................................................................ [  7%]
+...............................F.........................F.............. [  8%]
+........................................................................ [  8%]
+........................................................................ [  9%]
+........................................................................ [  9%]
+........................................................................ [ 10%]
+.........................F.............................................. [ 10%]
+........................................................................ [ 11%]
+........................................................................ [ 11%]
+........................................................................ [ 11%]
+........................................................................ [ 12%]
+........................................................................ [ 12%]
+........................................................................ [ 13%]
+........................................................................ [ 13%]
+........................................................................ [ 14%]
+...............................................ss......ss....ss....ss... [ 14%]
+ss.....ss........s.ss.s...ss....ss.s..ss................................ [ 15%]
+............................F........................................... [ 15%]
+........................................................................ [ 16%]
+........................................................................ [ 16%]
+................................................................F....... [ 16%]
+........................................................................ [ 17%]
+........................................................................ [ 17%]
+...............................x........................................ [ 18%]
+........................................................................ [ 18%]
+........................................................................ [ 19%]
+........................................................................ [ 19%]
+........................................................................ [ 20%]
+........................................................................ [ 20%]
+........................................................................ [ 21%]
+........................................X.......X....................... [ 21%]
+........................................................................ [ 22%]
+...................................................................s.s.. [ 22%]
+.s...................................................................... [ 22%]
+..................................................s..................... [ 23%]
+........................................................................ [ 23%]
+........................................................................ [ 24%]
+........................................................................ [ 24%]
+.....................................................s.s................ [ 25%]
+........................................................................ [ 25%]
+........................................................................ [ 26%]
+........................................................................ [ 26%]
+........................................................................ [ 27%]
+........................................................................ [ 27%]
+........................................................................ [ 27%]
+........................................................................ [ 28%]
+........................................................................ [ 28%]
+..................................s..................................... [ 29%]
+........................................................................ [ 29%]
+........................................................................ [ 30%]
+........................................................................ [ 30%]
+........................................................................ [ 31%]
+........................................................................ [ 31%]
+........................................................................ [ 32%]
+........................................................................ [ 32%]
+........................................................................ [ 33%]
+........................................................................ [ 33%]
+........................................................................ [ 33%]
+........................................................................ [ 34%]
+........................................................................ [ 34%]
+........................................................................ [ 35%]
+........................................................................ [ 35%]
+........................................................................ [ 36%]
+........................................................................ [ 36%]
+........................................................................ [ 37%]
+........................................................................ [ 37%]
+........................................................................ [ 38%]
+........................................................................ [ 38%]
+........................................................................ [ 39%]
+........................................................................ [ 39%]
+........................................................................ [ 39%]
+........................................................................ [ 40%]
+........................................................................ [ 40%]
+........................................................................ [ 41%]
+........................................................................ [ 41%]
+........................................................................ [ 42%]
+........................................................................ [ 42%]
+........................................................................ [ 43%]
+........................................................................ [ 43%]
+........................................................................ [ 44%]
+........................................................................ [ 44%]
+........................................................................ [ 44%]
+........................................................................ [ 45%]
+........................................................................ [ 45%]
+........................................................................ [ 46%]
+........................................................................ [ 46%]
+........................................................................ [ 47%]
+........................................................................ [ 47%]
+........................................................................ [ 48%]
+........................................................................ [ 48%]
+........................................................................ [ 49%]
+........................................................................ [ 49%]
+........................................................................ [ 50%]
+........................................................................ [ 50%]
+........................................................................ [ 50%]
+........................................................................ [ 51%]
+........................................................................ [ 51%]
+........................................................................ [ 52%]
+........................................................................ [ 52%]
+........................................................................ [ 53%]
+........................................................................ [ 53%]
+........................................................................ [ 54%]
+........................................................................ [ 54%]
+........................................................................ [ 55%]
+........................................................................ [ 55%]
+........................................................................ [ 55%]
+........................................................................ [ 56%]
+........................................................................ [ 56%]
+........................................................................ [ 57%]
+........................................................................ [ 57%]
+........................................................................ [ 58%]
+........................................................................ [ 58%]
+........................................................................ [ 59%]
+........................................................................ [ 59%]
+........................................................................ [ 60%]
+........................................................................ [ 60%]
+........................................................................ [ 61%]
+........................................................................ [ 61%]
+........................................................................ [ 61%]
+........................................................................ [ 62%]
+........................................................................ [ 62%]
+........................................................................ [ 63%]
+........................................................................ [ 63%]
+........................................................................ [ 64%]
+........................................................................ [ 64%]
+........................................................................ [ 65%]
+........................................................................ [ 65%]
+........................................................................ [ 66%]
+........................................................................ [ 66%]
+........................................................................ [ 66%]
+........................................................................ [ 67%]
+........................................................................ [ 67%]
+........................................................................ [ 68%]
+........................................................................ [ 68%]
+..........F............................................................. [ 69%]
+........................................................................ [ 69%]
+........................................................................ [ 70%]
+........................................................................ [ 70%]
+........................................................................ [ 71%]
+........................................................................ [ 71%]
+........................................................................ [ 72%]
+........................................................................ [ 72%]
+........................................................................ [ 72%]
+........................................................................ [ 73%]
+........................................................................ [ 73%]
+........................................................................ [ 74%]
+........................................................................ [ 74%]
+........................................................................ [ 75%]
+........................................................................ [ 75%]
+........................................................................ [ 76%]
+........................................................................ [ 76%]
+........................................................................ [ 77%]
+........................................................................ [ 77%]
+........................................................................ [ 78%]
+........................................................................ [ 78%]
+........................................................................ [ 78%]
+........................................................................ [ 79%]
+........................................................................ [ 79%]
+........................................................................ [ 80%]
+........................................................................ [ 80%]
+........................................................................ [ 81%]
+........................................................................ [ 81%]
+........................................................................ [ 82%]
+........................................................................ [ 82%]
+........................................................................ [ 83%]
+........................................................................ [ 83%]
+........................................................................ [ 83%]
+.................................................................F...... [ 84%]
+........................................................................ [ 84%]
+........................................................................ [ 85%]
+........................................................................ [ 85%]
+........................................................................ [ 86%]
+........................................................................ [ 86%]
+........................................................................ [ 87%]
+.........................................................x....x......x.. [ 87%]
+.x............................................................x......... [ 88%]
+.......x.............s....................s............................x [ 88%]
+........................................................................ [ 89%]
+........................................................................ [ 89%]
+........................................................................ [ 89%]
+........................................................................ [ 90%]
+........................................................................ [ 90%]
+...................s.................................................... [ 91%]
+........................................................................ [ 91%]
+........................................................................ [ 92%]
+........................................................................ [ 92%]
+........................................................................ [ 93%]
+........................................................................ [ 93%]
+........................................................................ [ 94%]
+........................................................................ [ 94%]
+................F....................................................... [ 94%]
+........................................................................ [ 95%]
+........................................................................ [ 95%]
+...........................FF........................................... [ 96%]
+........................................................................ [ 96%]
+........................................................................ [ 97%]
+........................................................................ [ 97%]
+........................................................................ [ 98%]
+.................................................xx.x................... [ 98%]
+........................................................................ [ 99%]
+................................................x....................... [ 99%]
+..................................................................       [100%]
+================================== FAILURES ===================================
+_____ test_disjoint_frames_run_in_parallel_and_whole_world_excludes_them ______
+[gw0] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+plane = <melder.aether.aetheric_mediator.mediator.Mediator object at 0x0000026BA328EB60>
+
+    def test_disjoint_frames_run_in_parallel_and_whole_world_excludes_them(plane):
+        """
+        The LoadGate re-expression, end to end.
+    
+        Two disjoint frame loads coexist on one world via INTENT; a whole-world
+        load is excluded while they hold, then admits once they clear.
+        """
+        first = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("one"),
+            metadata={"frame": "A"},
+        )
+        second = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("two"),
+            metadata={"frame": "B"},
+        )
+        assert first is not second
+    
+        with pytest.raises(RuntimeError) as excinfo:
+            plane.begin(
+                transaction_type=TransactionType.CHECKPOINT_LOAD,
+                submitter=_who("whole"),
+            )
+>       assert AdmissionReason.WAIT_TIMEOUT.value in str(excinfo.value)
+E       AssertionError: assert 'WAIT_TIMEOUT' in 'transaction checkpoint_load by crystallizer:whole [3ccbce98f8c148a1913324c04d43776d] claiming world=x was refused: re...ended, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)'
+E        +  where 'WAIT_TIMEOUT' = <AdmissionReason.WAIT_TIMEOUT: 'WAIT_TIMEOUT'>.value
+E        +    where <AdmissionReason.WAIT_TIMEOUT: 'WAIT_TIMEOUT'> = AdmissionReason.WAIT_TIMEOUT
+E        +  and   'transaction checkpoint_load by crystallizer:whole [3ccbce98f8c148a1913324c04d43776d] claiming world=x was refused: re...ended, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)' = str(RuntimeError('transaction checkpoint_load by crystallizer:whole [3ccbce98f8c148a1913324c04d43776d] claiming world=x wa...nded, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)'))
+E        +    where RuntimeError('transaction checkpoint_load by crystallizer:whole [3ccbce98f8c148a1913324c04d43776d] claiming world=x wa...nded, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)') = <ExceptionInfo RuntimeError('transaction checkpoint_load by crystallizer:whole [3ccbce98f8c148a1913324c04d43776d] clai...t_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)') tblen=2>.value
+
+tests\component\melder\aether\aetheric_mediator\test_aetheric_mediator_component.py:377: AssertionError
+_ test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks _
+[gw4] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks() -> None:
+        """
+        Purpose:
+            Validate the live mediator surface does NOT reach into the Spellbook for
+            bind start/end. Spellbook-local bind state is owned by the Spellbook
+            itself (begin_transaction / end_transaction); the mediator owns only the
+            change-control envelope, so the strategy hooks must never touch the object.
+        Contract:
+            - Pre-conjure bind uses spellbook-owned identity.
+            - The mediator/strategy path never calls the spellbook local bind hooks.
+        Returns:
+            None.
+        Raises:
+            AssertionError: If the mediator surface reaches into spellbook-local hooks.
+        """
+        frame = _make_frame("component-tx-surface-pre-conjure")
+        try:
+            identity, spellbook = _register_spellbook_identity(
+                frame,
+                spellbook_id="spellbook-1",
+                conjured=False,
+            )
+            mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
+    
+            session = mediator.start_transaction(
+                identity=identity,
+                transaction_type=ChangeTransactionType.BIND,
+                metadata={},
+            )
+    
+>           assert session.request.request_type.value == "bind"
+E           AssertionError: assert 'BIND' == 'bind'
+E             
+E             [0m[91m- bind[39;49;00m[90m[39;49;00m
+E             [92m+ BIND[39;49;00m[90m[39;49;00m
+
+tests\component\melder\aether\dev_ops\change_control_manager\test_transaction_surface_component.py:135: AssertionError
+________________ test_commit_stamps_freshness_before_releasing ________________
+[gw0] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+plane = <melder.aether.aetheric_mediator.mediator.Mediator object at 0x0000026BA328D2E0>
+
+    def test_commit_stamps_freshness_before_releasing(plane):
+        """`apply_commit_delta` must run while claims are still held."""
+        session = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("one"),
+            metadata={"frame": "A"},
+        )
+        session.leave()
+        plane.commit(session)
+    
+        fact = plane.reporting.get_fact(ScopeKey.frame("A"))
+        assert fact is not None
+>       assert fact["fact_family"] == TransactionType.FORMATION_LOAD.value
+E       AssertionError: assert 'formation_load' == 'FORMATION_LOAD'
+E         
+E         [0m[91m- FORMATION_LOAD[39;49;00m[90m[39;49;00m
+E         [92m+ formation_load[39;49;00m[90m[39;49;00m
+
+tests\component\melder\aether\aetheric_mediator\test_aetheric_mediator_component.py:450: AssertionError
+_____________ test_racing_lifecycle_edges_never_leave_a_torn_row ______________
+[gw0] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+plane = <melder.aether.aetheric_mediator.mediator.Mediator object at 0x0000026BA3287700>
+
+    def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
+        """
+        THE INVARIANT THE EXCLUSIVE CLAIM IS FOR. State and conditions move together
+        or not at all.
+    
+        Writers race activate against deactivate on ONE subsystem while a reader
+        checks, continuously, that the two halves of a row agree: `emits` must be
+        True EXACTLY when the state is ACTIVE.
+    
+        THE READER TAKES ONE RENDERED ROW, AND THE FIRST VERSION OF THIS TEST DID
+        NOT - it called `participation_state(...)` and then `is_participating(...)`,
+        which is TWO lock acquisitions with a window between them. It failed
+        immediately, reporting `(ACTIVE, False)`. That was a real finding about the
+        API and a bug in the test rather than in the plane: each verb is internally
+        consistent, but the registry cannot make two separate calls consistent with
+        each other, because nothing is held across them. A caller that needs both
+        halves must take them from ONE read, which is exactly what
+        `describe_participants()` builds under a single acquisition.
+    
+        So the assertion below is the honest one, and the trap the first version
+        fell into is now written into the contract on both verbs.
+        """
+        failures = []
+        reads = []
+        bookkeeping = threading.RLock()
+        # A COUNTDOWN, not a flag. An earlier version set a single Event in each
+        # writer's `finally`, so the FIRST writer to finish stopped the reader and
+        # the row was only sampled during the opening moments of the race. The
+        # reader must outlive every writer or it is watching an empty room.
+        running = threading.Semaphore(0)
+        remaining = {"writers": THREADS}
+    
+        def writer(index):
+            """Build one worker that hammers one lifecycle edge."""
+            transaction_type = (
+                TransactionType.SUBSYSTEM_ACTIVATE if index % 2 == 0
+                else TransactionType.SUBSYSTEM_DEACTIVATE
+            )
+            metadata = {"subsystem_name": "crystallizer"}
+            if index % 2 == 0:
+                metadata["worker_count"] = index
+    
+            def worker(barrier):
+                identity = Identity(kind="subsystem", identity_id=f"w-{index}")
+                try:
+                    barrier.wait()
+                    for _ in range(ROUNDS):
+                        _drive(plane, identity, transaction_type, metadata)
+                finally:
+                    identity.cleanup()
+                    with bookkeeping:
+                        remaining["writers"] -= 1
+                    running.release()
+            return worker
+    
+        def reader(barrier):
+            """Assert the row is self-consistent, continuously, while it moves."""
+            barrier.wait()
+            checks = 0
+            while True:
+                with bookkeeping:
+                    if remaining["writers"] == 0:
+                        break
+                for row in plane.reporting.describe_participants():
+                    if row["emits"] != (
+                            row["state"] == ParticipationState.ACTIVE.value
+                    ):
+                        with bookkeeping:
+                            failures.append(row)
+                checks += 1
+            with bookkeeping:
+                reads.append(checks)
+    
+        _run([writer(index) for index in range(THREADS)] + [reader])
+    
+>       assert not failures, (
+            "torn participant row observed {0} time(s); first: {1}".format(
+                len(failures), failures[0]
+            )
+        )
+E       AssertionError: torn participant row observed 32828 time(s); first: {'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 4}, 'reporter': 'ce1b04c65a344c4ba65833669d796db1', 'announced_at': 1794061667.5845904, 'state_changed_at': 1794061667.5845904}
+E       assert not [{'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 4}, ...}, {'subsy.....}, {'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 4}, ...}, ...]
+
+tests\component\melder\aether\aetheric_mediator\test_aetheric_mediator_concurrency_component.py:462: AssertionError
+______________ test_the_read_is_not_a_memo_of_the_last_argument _______________
+[gw1] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_the_read_is_not_a_memo_of_the_last_argument() -> None:
+        """
+        A string goes in, a `Policies` MEMBER comes out. The reader resolves
+        through the ward rather than echoing what the caller passed.
+        """
+        conduit = _conduit("policy-resolved", dynamic=True)
+        conduit.set_new_policy("block_all")
+        observed = conduit.policy
+        assert isinstance(observed, Policies)
+>       assert not isinstance(observed, str)
+E       AssertionError: assert not True
+E        +  where True = isinstance(<Policies.block_all: 'block_all'>, str)
+
+tests\component\melder\aether\conduit\test_conduit_component_policy_reader.py:113: AssertionError
+__ test_change_control_transfer_transaction_registers_live_registry_session ___
+[gw13] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_change_control_transfer_transaction_registers_live_registry_session() -> None:
+        """
+        Purpose:
+            Validate transfer transactions are mirrored through the live dev-ops registry.
+        Contract:
+            - A conduit-side transfer transaction creates one live session visible
+              by conduit identity and type.
+            - The staged metadata retains the target conduit and stable spell lineage.
+        Returns:
+            None.
+        Raises:
+            AssertionError: If the live transfer-session mirror is incorrect.
+        """
+        frame_name = "frame-cc-transfer-registry"
+        configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+        owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+        target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+        spell_id = owner_book.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        target = target_book.conjure(dynamic=True, name="target")
+        change_control = Aether()._get_change_control_manager(frame_name)
+        registry = change_control.devops_information_registry()
+        assert registry is not None
+        spell = _get_local_spell_by_version_id(owner_book, spell_id)
+        assert spell is not None
+    
+        owner.begin_transaction(
+            "transfer_ownership",
+            metadata=owner._build_transfer_transaction_metadata(
+                spell=spell_id,
+                target_conduit=target,
+                move_creations=False,
+                include_dependencies=False,
+                force_unshare=True,
+                invalidate_after_transfer=True,
+                mark_dependencies_dirty=False,
+            ),
+        )
+        try:
+            sessions = registry.list_live_transactions_for_identity(
+                owner_kind="conduit",
+                owner_id=owner.id,
+            )
+            assert len(sessions) == 1
+            session = sessions[0]
+>           assert str(session.request.request_type) == "transfer_ownership"
+E           AssertionError: assert 'TRANSFER_OWNERSHIP' == 'transfer_ownership'
+E             
+E             [0m[91m- transfer_ownership[39;49;00m[90m[39;49;00m
+E             [92m+ TRANSFER_OWNERSHIP[39;49;00m[90m[39;49;00m
+
+tests\integration\melder\aether\test_aether_integration_change_control_transactions.py:1148: AssertionError
+___________________ test_recorded_unit_state_enum_contract ____________________
+[gw14] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_recorded_unit_state_enum_contract():
+        """
+        Purpose:
+            Verify the state-switch enum's public shape.
+        Contract:
+            Exactly three members (enabled/disabled/cleaned); each member's
+            value equals its name (describe consumers read stable strings).
+        Returns:
+            None.
+        Raises:
+            AssertionError: If the enum shape drifts.
+        """
+>       assert {member.name for member in RecordedUnitState} == {
+            "enabled", "disabled", "cleaned",
+        }
+E       AssertionError: assert {'CLEANED', '...d', 'enabled'} == {'cleaned', '...d', 'enabled'}
+E         
+E         Extra items in the left set:
+E         [0m[33m'[39;49;00m[33mCLEANED[39;49;00m[33m'[39;49;00m[90m[39;49;00m
+E         Extra items in the right set:
+E         [0m[33m'[39;49;00m[33mcleaned[39;49;00m[33m'[39;49;00m[90m[39;49;00m
+E         Use -v to get more diff
+
+tests\unit\melder\crystallizer\test_crystallizer_gates.py:139: AssertionError
+________ test_generated_build_assets_are_stamped_for_the_live_version _________
+[gw13] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_generated_build_assets_are_stamped_for_the_live_version() -> None:
+        """
+        Purpose:
+            THE contract the old literal pin was reaching for. Melder ships
+            generated build assets whose `BUILT_FOR_VERSION` must track
+            `__version__`, and one of them - the internal-bind manifest - IS the
+            enforced registration policy read by `bind.py` at import. A version bump
+            that leaves an asset stamped for the previous release means the shipped
+            wheel enforces a stale class list, silently.
+    
+            This is not hypothetical: the manifest was found stamped 0.1.0 while the
+            package read 0.1.1.
+        Contract:
+            Every generated asset's `BUILT_FOR_VERSION` equals `melder.__version__`.
+            If this fails, regenerate:
+                python src/melder/_build_assets/_build_asset_runner.py
+        """
+        import re
+        from pathlib import Path
+    
+        import melder
+        from melder.__version__ import __version__
+    
+        # Generated manifests live under `_build_assets/<asset>/manifest/` and stamp
+        # BARE constants - the annotations moved out when the loaders were split
+        # from the data. Both details have moved once already, and each time the
+        # glob or the pattern silently matched NOTHING, turning this gate into a
+        # no-op that still reported green. Hence the explicit emptiness assertion
+        # below: this test must fail loudly when it stops finding assets, not pass
+        # vacuously.
+        #
+        # Keyed by FILE, not by asset directory. An asset may emit more than one
+        # manifest module - `_system_documents` emits three, splitting the eager
+        # navigable surface from its deferred index and graph adjacency - and
+        # keying by directory collapsed those into a single entry while the
+        # comparison counted files. That made the gate read "3 of 5 stamped" when
+        # all five were stamped, and would equally have hidden ONE unstamped file
+        # behind a stamped sibling in the same directory.
+        assets_root = Path(melder.__file__).parent / "_build_assets"
+        manifests = sorted(assets_root.glob("*/manifest/*.py"))
+        stamped = {}
+        for generated in manifests:
+            match = re.search(
+                r'^BUILT_FOR_VERSION\s*=\s*"([^"]+)"',
+                generated.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            if match:
+                stamped[generated.relative_to(assets_root).as_posix()] = match.group(1)
+    
+        assert stamped, (
+            "no generated build assets carried a BUILT_FOR_VERSION stamp - the glob or "
+            "the pattern has drifted from the generated layout, so this gate is inert"
+        )
+        unstamped = [
+            generated.relative_to(assets_root).as_posix()
+            for generated in manifests
+            if generated.relative_to(assets_root).as_posix() not in stamped
+        ]
+        assert not unstamped, f"generated manifests carrying no version stamp: {unstamped}"
+        drifted = {name: v for name, v in stamped.items() if v != __version__}
+>       assert not drifted, f"assets stamped for the wrong version: {drifted} (package is {__version__})"
+E       AssertionError: assets stamped for the wrong version: {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8277', '_bind_guard/manifest/bind_guard_manifest.py': '0.2.8277', '_system_documents/manifest/graph_adjacency_manifest.py': '0.2.8277', '_system_documents/manifest/system_documents_index.py': '0.2.8277', '_system_documents/manifest/system_documents_manifest.py': '0.2.8277'} (package is 0.2.8278)
+E       assert not {'_agent_documentation/manifest/agent_documentation_manifest.py': '0.2.8277', '_bind_guard/manifest/bind_guard_manifes...fest/graph_adjacency_manifest.py': '0.2.8277', '_system_documents/manifest/system_documents_index.py': '0.2.8277', ...}
+
+tests\unit\melder\test_package_version_metadata.py:84: AssertionError
+_ test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error _
+[gw6] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error() -> None:
+        """C4: Dep notched to its subclass, which `dep: Dep` does not select: Q fails as a first meld would."""
+        book, root, index, _, q_cls = _chain("c4", by_class=True)
+        try:
+>           assert root.meld(spell=q_cls).p.dep.tag() == "d1"
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\melder\conduit\test_conduit_integration_notch_revalidation.py:570: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\conduit\conduit.py:5086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:629: in meld
+    instance = self._execute_admitted(
+src\melder\aether\conduit\meld\meld.py:965: in _execute_admitted
+    return creation_context._no_overrides_instance_executor(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\many_only\hydration\many_only_hydrator.py:180: in _cold_no_overrides_instance_door
+    return hydrated.no_overrides_instance_executor(caller_creations)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<creation_context_no_overrides_only_template:many:0:0>:11: in _creation_context_execute_no_overrides_only
+    ???
+<melder_site_plan_executor>:2: in _site_plan_executor
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+spell = <[AttributeError("'melder.aether.spellbook.spell.Spell' object has no attribute 'spell'") raised in repr()] Spell object at 0x31e4e836e00>
+param_names = ('dep',)
+
+    @staticmethod
+    def raise_unresolved_input(spell: Spell, param_names: Tuple[str, ...]) -> None:
+        """
+        Raise today's `UnresolvedInputError` for a site the plan is about to build (S4a, B6).
+    
+        Contract:
+            Emitted before anything under the site is constructed, so the
+            error has no TypeError cause (`UnresolvedInputError.for_unsupplied`,
+            the same decision the solo lane's call target makes).
+    
+        Args:
+            spell: The consumer whose unresolved inputs have no winning key.
+            param_names: Those parameters, in signature order.
+    
+        Raises:
+            UnresolvedInputError: Always.
+        """
+>       raise UnresolvedInputError.for_unsupplied(spell, param_names)
+E       melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError: [MELD] Execution failed for spell 'PClass' (1c7e3c5406677351571e28a5036c18c361d1b2e424c6b89a3f88d9d3773fd08e) at node 1c7e3c5406677351571e28a5036c18c361d1b2e424c6b89a3f88d9d3773fd08e (parameter 'dep'): PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply it with override={'dep': ...} when melding PClass, a path key ending in '>dep' (or '**dep') when PClass is built as a dependency, or bind a provider for Dep.
+
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\shared_assets\site_plan_lowering.py:409: UnresolvedInputError
+__________ test_nexus_cleanup_records_cleaned_while_the_record_lives __________
+[gw7] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+>   ???
+E   AssertionError: assert 'CLEANED' == 'cleaned'
+E     
+E     [0m[91m- cleaned[39;49;00m[90m[39;49;00m
+E     [92m+ CLEANED[39;49;00m[90m[39;49;00m
+
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py:253: AssertionError
+__________ test_mutation_research_lifecycle_records_all_three_states __________
+[gw7] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+>   ???
+E   AssertionError: assert 'CLEANED' == 'cleaned'
+E     
+E     [0m[91m- cleaned[39;49;00m[90m[39;49;00m
+E     [92m+ CLEANED[39;49;00m[90m[39;49;00m
+
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py:285: AssertionError
+=================================== XPASSES ===================================
+=========================== short test summary info ===========================
+XFAIL tests/component/melder/aether/test_aether_component_process_wide_spell_id_regime.py::test_component_concurrent_conjures_across_frames_admit_at_most_one - OPEN: the conjure sweep is a PREFLIGHT, not a mutual exclusion. It reads the frame set under the Spellbook lock while the write lands later under the FRAME lock inside Conduit.__init__, so every thread can pass before any thread registers. Closing it needs the atomic check-and-set in AethericFrame.register_conduit_spells - STORY-2026-08-02-aether-unified-spell-id-set. STRICT ON PURPOSE: when that story lands this test starts passing, xfail(strict) turns that into a FAILURE, and whoever fixed it is told to delete this marker. Do NOT loosen the assertion below to make this green.
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_normalize_task_rejects_coroutines
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_validate_callable_rejects_coroutines
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_normalize_many_rejects_coroutine_in_iterable
+XFAIL tests/unit/melder/utilities/helpers/test_package_core.py::TestPackageThreadSafety::test_is_valid_callable_with_package
+XFAIL tests/unit/melder/utilities/helpers/test_package_decorators.py::TestPackDecorators::test_async_decorated_function_rejected
+XFAIL tests/unit/melder/utilities/helpers/test_package_wrapping.py::TestPackage::test_package_rejects_coroutine
+XFAIL tests/unit/melder/utilities/helpers/test_pack_testing.py::TestPackageAdvancedScenarios::test_call_fallback_fills_missing_positional_args
+XFAIL tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_index_graft_round_trips_into_a_live_host_book - OPEN FEATURE CONFLICT - EPIC-2026-08-02-process-wide-spell-id-uniqueness. graft_runner._bind_selected (graft_runner.py:404) rebinds a LIVE Existence.unique spell into a host book on ANOTHER frame while the SOURCE book still holds it. Under process-wide uniqueness that is two spells wearing one spell_id, which is exactly what the regime forbids. THE TEST IS NOT WRONG - the graft lane is, and the fix is a design call: either the graft RELEASES the source claim first (a move, not a copy), or custody transfer is carved out of the regime explicitly. Marked rather than deleted because this is real shipped behaviour with real coverage. STRICT: whichever way it is ruled, this starts passing and the marker must come off.
+XFAIL tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_multi_member_index_graft_parks_the_staged_members - OPEN FEATURE CONFLICT - EPIC-2026-08-02-process-wide-spell-id-uniqueness. graft_runner._bind_selected (graft_runner.py:404) rebinds a LIVE Existence.unique spell into a host book on ANOTHER frame while the SOURCE book still holds it. Under process-wide uniqueness that is two spells wearing one spell_id, which is exactly what the regime forbids. THE TEST IS NOT WRONG - the graft lane is, and the fix is a design call: either the graft RELEASES the source claim first (a move, not a copy), or custody transfer is carved out of the regime explicitly. Marked rather than deleted because this is real shipped behaviour with real coverage. STRICT: whichever way it is ruled, this starts passing and the marker must come off.
+XFAIL tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py::test_merge_graft_grows_an_existing_index_and_adopts_selection - OPEN FEATURE CONFLICT - EPIC-2026-08-02-process-wide-spell-id-uniqueness. graft_runner._bind_selected (graft_runner.py:404) rebinds a LIVE Existence.unique spell into a host book on ANOTHER frame while the SOURCE book still holds it. Under process-wide uniqueness that is two spells wearing one spell_id, which is exactly what the regime forbids. THE TEST IS NOT WRONG - the graft lane is, and the fix is a design call: either the graft RELEASES the source claim first (a move, not a copy), or custody transfer is carved out of the regime explicitly. Marked rather than deleted because this is real shipped behaviour with real coverage. STRICT: whichever way it is ruled, this starts passing and the marker must come off.
+XFAIL tests/integration/melder/live_sim/test_live_sim_automatic.py::test_live_sim_automatic_bootstrap_melds_application - This should fail as SpellContracts are not eligible in automatic.
+XPASS tests/integration/melder/spellbook/test_spellbook_integration_di_validation_faults.py::test_fault_b_spellmap_override_should_suppress_shape_error - Fault B: annotation guard ignores SPELLMAP_DEFAULT di_shape
+XPASS tests/integration/melder/spellbook/test_spellbook_integration_di_validation_faults.py::test_fault_b_plain_list_of_ints_should_not_warn - Fault B: plain list[int] still draws a DI annotation warning
+SKIPPED [11] tests\component\melder\utilities\test_agent_text_reader_component.py:83: readable_src_graph.json not present in this checkout
+SKIPPED [12] tests\component\melder\utilities\test_agent_text_reader_component.py:83: src_graph.json not present in this checkout
+SKIPPED [1] tests\experimentation\test_dynamic_bind_conjure_order_cache_speed_experiment.py:180: Opt-in cache timing: set MELDER_BIND_ORDER_CACHE_SPEEDTEST=1 and run alone.
+SKIPPED [1] tests\experimentation\test_dynamic_bind_conjure_order_cache_speed_experiment.py:269: Separate opt-in reproduction of the old interpreter profiling stall.
+SKIPPED [1] tests\experimentation\test_dynamic_bind_conjure_order_speed_experiment.py:293: Opt-in timing experiment: set MELDER_BIND_ORDER_SPEEDTEST=1 and run this file alone.
+SKIPPED [1] tests\experimentation\test_melder_creation_overrides_performance.py:434: Opt-in performance experiment
+SKIPPED [1] tests\integration\melder\spellbook\test_spellbook_integration_resolution_contract_extra.py:720: SpellIndex.update reserved for mutation pipeline; not used in current runtime.
+SKIPPED [1] tests\integration\melder\spellbook\test_spellbook_integration_resolution_contract_extra.py:779: SpellIndex.update reserved for mutation pipeline; not used in current runtime.
+SKIPPED [1] tests\integration\melder\spellbook\test_spellbook_integration_resolution_contract_ticket_coverage.py:131: Coverage gate requires full integration collection; missing 1 expected tests.
+SKIPPED [1] tests\unit\melder\utilities\helpers\test_package_wrapping.py:166: Skipping test for missing arguments fallback behavior
+SKIPPED [1] tests\unit\melder\utilities\interfaces\test_interface_inheritance.py:27: got empty parameter set for (interface_type, implementation_type)
+SKIPPED [1] tests\unit\melder\build_assets\test_build_asset_runner.py:455: melder already imported by another test in this session
+11 failed, 15632 passed, 33 skipped, 12 xfailed, 2 xpassed in 729.41s (0:12:09)

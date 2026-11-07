@@ -9,8 +9,9 @@ Purpose:
     `CompilerPhase3._resolve_spellmap_default` matches `SpellMap(spell=X)` without a
     spellframe by identity (`spell_obj.spell is X`) wherever X is bound, while `meld(X)`
     refuses an X bound under a spellframe. With MELDER_PROBE_STRICT_SPELLMAP=1 this plugin
-    makes that branch skip spells bound under a spellframe; every other SpellMap shape
-    (a spellframe given, or `spell=None`) runs the shipped code.
+    makes that branch skip spells bound under a spellframe; MELDER_PROBE_STRICT_SPELLMAP=2 (the
+    Autofac reading, 2026-11-07) also skips spells with a binding name when the SpellMap names none.
+    Every other SpellMap shape (a spellframe given, or `spell=None`) runs the shipped code.
 
 Usage (from the repository root; load the cache redirect of strict_class_match_plugin too):
     PYTHONPATH=context_compass/artifacts/dependency_watchers_20261107/probes \
@@ -43,14 +44,18 @@ class StrictSpellMapProbe:
         thread, before and after every test; the replacement keeps no state.
     """
 
-    def __init__(self, enabled: bool) -> None:
+    def __init__(self, enabled: bool, require_default_binding: bool = False) -> None:
         """
         Prepare the probe.
 
         Args:
             enabled: True to install the strict rule.
+            require_default_binding: True (MELDER_PROBE_STRICT_SPELLMAP="2", the Autofac reading) to
+                make `SpellMap(spell=X)` with no binding name match only an X bound with no binding
+                name, as an unkeyed Autofac lookup never reaches a keyed registration.
         """
         self._enabled: bool = enabled
+        self._require_default_binding: bool = require_default_binding
         self._owner: Any = None
         self._original: Any = None
 
@@ -62,6 +67,7 @@ class StrictSpellMapProbe:
         from melder.utilities.helpers.general_helpers import SpellInputUtils
 
         original = CompilerPhase3.__dict__["_resolve_spellmap_default"]
+        require_default_binding = self._require_default_binding
 
         def strict_resolve_spellmap_default(phase_self: Any, spell: Any, spellbook: Any, dep: Any) -> Dict[Any, Any]:
             """`SpellMap(spell=X)` with no spellframe reaches only an X bound with no spellframe."""
@@ -76,6 +82,10 @@ class StrictSpellMapProbe:
                     continue
                 if (binding_name is not None
                         and SpellInputUtils.normalize_binding_name(spell_obj.binding_name) != binding_key):
+                    continue
+                if (binding_name is None and require_default_binding
+                        and SpellInputUtils.normalize_binding_name(spell_obj.binding_name)
+                        != SpellInputUtils.DEFAULT_BINDING_NAME):
                     continue
                 candidates[index] = spell_obj
             if not candidates:
@@ -106,7 +116,12 @@ class StrictSpellMapProbe:
         Returns:
             str: One header line.
         """
-        mode = "strict" if self._enabled else "as shipped"
+        if not self._enabled:
+            mode = "as shipped"
+        elif self._require_default_binding:
+            mode = "strict, bare and unnamed only when no binding name is given (Autofac reading)"
+        else:
+            mode = "strict, bare only"
         return f"strict_spellmap_plugin: explicit-spell SpellMap {mode}"
 
     def pytest_unconfigure(self, config: pytest.Config) -> None:
@@ -128,6 +143,7 @@ def pytest_configure(config: pytest.Config) -> None:
     Args:
         config: The pytest configuration.
     """
-    probe = StrictSpellMapProbe(enabled=os.environ.get("MELDER_PROBE_STRICT_SPELLMAP") == "1")
+    mode = os.environ.get("MELDER_PROBE_STRICT_SPELLMAP")
+    probe = StrictSpellMapProbe(enabled=mode in ("1", "2"), require_default_binding=mode == "2")
     probe.apply()
     config.pluginmanager.register(probe, "melder_strict_spellmap_probe")

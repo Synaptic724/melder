@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 5398
-CONTENT_SHA256 = '58b49fe00ba65437e42ff405ea4143aba0858e0c142876676a4e8b349a8ffb17'
+LINE_COUNT = 5535
+CONTENT_SHA256 = '389ac25f087ae7305e51151d5ef49bc3210c38e105253d54cd891e716c601eb0'
 
 TEXT = """# Src Architecture (C4)
 
@@ -79,7 +79,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-11-01T13:44:23Z
+- Updated: 2026-11-07T14:15:36Z
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -320,6 +320,11 @@ Dependencies include:
   `clear_mutation_override()`, emitting the `mutation_contract_set` /
   `mutation_contract_cleared` change reasons.
 - ParameterDIShape: Phase 1 classification of how a parameter should resolve.
+- Class lookup: a request that names a class - a class annotation, `list[Class]`, the type part of a single string
+  annotation, `SpellMap(spell=Class)` without a spellframe. It reaches a spell only when the spell is bound bare: no
+  spellframe and the default binding, an existing object through its class (0.2.8278). A spell bound under a
+  spellframe is reached through the frame - Melder's interface dict, keyed by binding name - and a bare spell bound
+  under a binding name through that name (`SpellMap(Class, binding_name=...)`, `meld(Class, binding_name=...)`).
 - Unresolved input: a single typed constructor parameter that no registered spell provides. It compiles as
   an UNRESOLVED_INPUT socket; the constructing meld supplies it by override, and `UnresolvedInputError`
   names it when a construction would go without it (2026-09-26).
@@ -1089,6 +1094,52 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A class lookup reaches only a spell bound bare (2026-11-07, 0.2.8278;
+  TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class,
+  on the owner's rulings in chat, 2026-11-07: "do what autofac would do ... thats our compass", then "ok yes to all
+  your statements" for the thirteen points he was shown): a class lookup - a class annotation on a single or a
+  `list[...]` socket, the type part of a single string annotation (a `TYPE_CHECKING` name) and `SpellMap(spell=X)`
+  without a spellframe - reaches a spell only when it is bound bare, with no spellframe and a binding name that
+  normalizes to the default binding (`CompilerPhase3._answers_class_lookup`); an existing object answers through its
+  class the same way. This is Autofac's rule that a declared service hides the component's own type: a spellframe is
+  the spell's interface - Melder's interface dict, keyed by binding name - so a spell bound under one is reached
+  through the frame (a Protocol annotation, `list[Protocol]`, `list["label"]`, `SpellMap(spellframe=F,
+  binding_name=b)`, `meld(spellframe=F, binding_name=b)`), and a bare spell bound under a binding name through that
+  name (`SpellMap(X, binding_name=b)`, `meld(X, binding_name=b)`). In Phase 3's matching table a spell offers its
+  type key only when it answers a class lookup, so a class annotation and `list[Class]` skip a framed or named spell;
+  a single string annotation still reaches such a spell through the Protocol it records (its contract keys), and a
+  Protocol's own definition through its definition key whatever its binding - a name may stand for a contract, and
+  definition matching is unchanged. `_build_candidate_index` files only answering spells in `by_type` and the index
+  path reads `by_type`, `by_contract` and `by_definition` for a single-socket name, so the scan and the index paths
+  read one predicate and keep equal membership. `_resolve_spellmap_default`'s explicit-spell branch without a
+  spellframe skips an X bound under any spellframe and, with no binding_name given, an X bound under a binding name;
+  `SpellMap(X, binding_name=b)` reaches X bound bare under b; `SpellMap(X, spellframe=F, ...)` and the frame-only
+  form are unchanged. A single socket left with no candidate compiles UNRESOLVED_INPUT, like any missing provider; a
+  required `list[Class]` left empty meets the existing empty-collection rule; a SpellMap that finds none raises the
+  existing RuntimeError at conjure (Failure Modes, Breaking 0.2.8278). A class annotation's watch key
+  (`_dependency_key_for_dep`: its name and the default binding) is now the address of every provider it can match,
+  so a waiting consumer and an announced bind, notch or grant agree by construction and S1's key split cannot occur
+  for class annotations (Failure Modes, Fixed in 0.2.8278). Kept, as dict behaviour: `meld(spellframe=F)` with no
+  binding name reads the frame's default slot (KeyError when every member is named) while an `F` annotation selects
+  the frame's single implementation; ambiguity stays an error (AMBIGUOUS_PROVIDER); there is no AsSelf-style option;
+  a conjure-time error naming where a hidden class is bound is part (a) of
+  TASK-2026-11-07-spellframe_ambiguity_validation_check, not this change. Not changed: Bind and addresses; the meld
+  doors, which look a spell up by address - `meld(X)` reads X's name and the default binding, the address a bare X
+  holds and also the address of an X bound under a string category spelled as X's own name, which a class annotation
+  no longer reaches (the upgrade drops that spellframe; the address stays); SpellContract (`canonical_key`); Protocol,
+  definition and label matching. Locks: none added - the predicate reads only bind-time fields (spellframe, binding
+  name), which are pass-invariant, and takes no lock; the candidate index stays pass-scoped in the resolution pass
+  cache. The creation cache is generation 26 (`class_lookup_bare_spells`): neither a structural payload's key nor the
+  world stamp moves when the matching rule changes, so a same-release bundle could replay a phase 3 row matched under
+  the old rule; the release change already cold-starts every older bundle (generation 9), and the bump records why,
+  as generations 18 and 20 did for the earlier matching rules.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
+  `CompilerPhase3._spell_keys_for`, `CompilerPhase3._build_candidate_index`, `CompilerPhase3._index_buckets_for`,
+  `CompilerPhase3._resolve_spellmap_default`, `CompilerPhase3._dependency_key_for_dep`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._resolve_spell`,
+  `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.structural_key`,
+  `StructuralSnapshot.world_stamp` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 - String-backed enum compatibility: the five Nexus/Rift modes, SpellframeKind and the three
   research lane/transition enums retain their existing names and string values as StrEnum members.
   String and same-valued cross-family equality is intentional. Nexus and Rift configuration reject
@@ -2136,8 +2187,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`,
   `CompilerPhase3._spellmap_frame_matches` and
   `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.annotation_refs`.
-- Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below): a spellframe is a
-  string category or a `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
+- Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below; SUPERSEDED in
+  part at 0.2.8278 by the first entry above: a class annotation, `list[Class]` and a single string's type part select
+  only spells bound with no spellframe and the default binding, so "spells of that type (a class bound bare, an
+  existing object of that class)" below now means those bound so, an existing object included; `by_type` files only
+  such spells, and a single string reaches a Protocol's own definition through its definition key; the kind rule,
+  Protocol and category matching and the four buckets stand): a spellframe is a string category or a
+  `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
   (`SpellframeKind.none` / `category` / `contract`) and the Protocol on the Spell (`spellframe_kind`,
   `implemented_protocols`) and raises `TypeError` for a concrete class or any other object. Phase 3 reads the
   annotation's kind: a class annotation selects spells of that type (a class bound bare, an existing object of
@@ -2315,7 +2371,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   before constructing the object that owns the socket (key-set plans and the solo call target, 2026-09-26);
   a stored object never demands the
   input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
-  never refuses these parameters.
+  never refuses these parameters. Since 0.2.8278 a class registered only under a spellframe or a binding name is no
+  match for a class annotation (a class lookup reaches only a spell bound bare; the first entry above), so its
+  consumer compiles this socket too, and for a class annotation the kept key (its name, the default binding) is the
+  address of every provider that can match it.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`.
 - Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
@@ -2454,6 +2513,48 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
+- Breaking (0.2.8278): a consumer annotated with a class - `greeter: English`, `list[English]`, or a single string
+  annotation naming the class (a `TYPE_CHECKING` import) - no longer resolves an English bound under a spellframe or
+  under a binding name, an existing object alike; only an English bound bare (no spellframe, the default binding)
+  answers it. A single socket left with no candidate compiles UNRESOLVED_INPUT: conjure succeeds (the socket is listed
+  only by `conjure(validation_warnings=True)`), and melding the consumer raises UnresolvedInputError (a
+  MeldExecutionError) unless the meld supplies the parameter - "[MELD] Execution failed for spell 'Host' (<spell_id>)
+  at node <spell_id> (parameter 'greeter'): Host.greeter expects English, but nothing registered provides it and this
+  meld did not supply it. Supply it with override={'greeter': ...} when melding Host, ... or bind a provider for
+  English." The text says nothing registered provides it even when English is registered under a frame or a name;
+  part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check is where conjure learns to name where it is
+  bound. A required `list[English]` left with no member refuses its spell at conjure in an automatic world with
+  SpellbookValidationError "... is a required list[...] dependency, but no provider is wired into it. ...
+  [collection_socket_no_providers]" and injects `[]` in a dynamic one. A class consumer that two same-named classes
+  under two categories, or a bare and a framed one, made AMBIGUOUS_PROVIDER at conjure now compiles UNRESOLVED_INPUT,
+  or resolves the bare one. `SpellMap(English)` - no spellframe - reaches only an English bound bare under the
+  default binding, and `SpellMap(English, binding_name="v1")` only an English bound bare under "v1"; a miss refuses
+  at conjure with PhaseExecutionError (a RuntimeError) "Phase 'local_frame' encountered 1 error(s). Resolution
+  pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter
+  'greeter' on spell 'Host'. SpellMap=<SpellMap spell=<class '...English'> spellframe=None binding_name=None
+  override=None>." How to upgrade: (1) a class bound under a Protocol - annotate the Protocol (`greeter: Greeter`) or
+  use `SpellMap(spellframe=Greeter, binding_name="english")`; (2) a class bound under a string category spelled as
+  its own name (`spellframe="English"`) - drop the spellframe: a bare class is addressed by its own name, so its
+  address does not change; (3) a bare class bound with a binding name - `SpellMap(English, binding_name="v1")`, or
+  drop the binding name; (4) `SpellMap(English)` aimed at a framed or named English - add its `spellframe` and
+  `binding_name`. Unchanged: Protocol annotations, `list[Protocol]`, `list["category"]`, a string naming a Protocol,
+  frame-addressed SpellMaps, every meld door, SpellContract, and AMBIGUOUS_PROVIDER for two implementations of one
+  Protocol. A creation-cache bundle written before is cold once (generation 26).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
+  `CompilerPhase3._resolve_spellmap_default`,
+  `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`,
+  `src/melder/utilities/custom_exceptions/phase_execution_error.py:PhaseExecutionError` and
+  `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:EmptyCollectionStrategy.run`.
+- Fixed in 0.2.8278: a consumer annotated with a class and compiled before its provider - bound under a spellframe -
+  arrived waited under the class name (`_dependency_key_for_dep`: the annotation's name and the default binding)
+  while the provider's bind, notch or contract grant announced its frame, so it was never re-resolved: its melds
+  raised UnresolvedInputError while a fresh conjure of the same world resolved it (S1's key split,
+  EPIC-2026-10-25-dependency_watchers_listen_for_names). A class lookup now reaches only a bare spell, whose address
+  is that watch key, so the live and the fresh world agree by construction: a framed provider is no provider for the
+  class, and a bare one announces the key its consumer waits under. S1's other misses stay on that epic.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
+  `CompilerPhase3._dependency_key_for_dep` and
+  `tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py`.
 - Breaking (0.2.8274): a class bound again under another binding after `cleanup_spell` - another existence, other
   disposal names, any other binding field - no longer meets the removed definition's objects in a store: its first
   meld builds a new object (a slotted rebind returned the removed definition's object, or its Python list), and its
@@ -2797,7 +2898,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   annotation the kind rule does not select it for), SpellbookValidationError naming a dependency whose refreshed
   structure is broken or not valid. Before, one built before the notch went on building the old version, and one
   never built raised RuntimeError "many_only manifest references unknown spell_id '<the old version id>'" on
-  every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused.
+  every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused. Since
+  0.2.8278 the parenthetical case cannot arise for a class annotation, nor for a single string annotation's type
+  part: a class lookup reaches only a spell bound bare (the first operational invariant), and every version of an
+  index is bound the way its first version was (0.2.8273), so such an annotation selects every version of a bare
+  index - all carry the class's name - and no version of a framed or named one; a string's contract part reads the
+  Protocol every version of a framed index records alike.
   EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch` and
   `src/melder/aether/conduit/meld/meld.py:Meld._refresh_stale_dependencies`.
 - Fixed in 0.2.8250: a contract consumer whose borrowed provider changed without a notch of the owner's index kept
@@ -3126,7 +3232,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   bind only one provider of this type. [AMBIGUOUS_PROVIDER]" - and a consumer late-bound into a dynamic world is
   refused at that bind and at its melds. Before 0.2.8224 this was a `RuntimeError("SpellCrafter Phase 3: multiple DI
   candidates ...")` out of the compiler, never reaching the report. Ambiguity stays an error by owner ruling
-  (2026-10-04): never a warning, never an input the meld picks.
+  (2026-10-04): never a warning, never an input the meld picks. Since 0.2.8278 the example's two ScanProfiles, each
+  bound under a string category, no longer answer a `ScanProfile` annotation (a class lookup reaches only a spell
+  bound bare; the first operational invariant): that `profile` parameter compiles UNRESOLVED_INPUT instead, and the
+  message stands for the candidates a lookup still reaches - two implementations of one Protocol, for instance.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`.
 - An override key that names no socket, a UNIQUE key that matches more than one, or equal-rank keys with
@@ -3669,6 +3778,13 @@ Configuration and hooks:
 
 SpellCompiler and validation:
 
+- path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
+  start_line: 1
+  end_line: 1438
+  loc: 1438
+  verified_at: 2026-11-07T14:17:07Z
+  note: phase 3: resolves each constructor socket to provider spells (annotation matching by kind, the class-lookup
+    predicate, SpellMap defaults) and records the local topology, UNRESOLVED_INPUT and AMBIGUOUS_INPUT sockets.
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
   start_line: 1
   end_line: 729
@@ -4321,9 +4437,9 @@ Resolution and creations:
   note: compiled execution lanes and runtime dispatch.
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
   start_line: 1
-  end_line: 359
-  loc: 359
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 369
+  loc: 369
+  verified_at: 2026-11-07T14:17:07Z
   note: SpellMap descriptor.
 - path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
@@ -4417,9 +4533,9 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 1138
-  loc: 1138
-  verified_at: 2026-10-25T11:29:20Z
+  end_line: 1148
+  loc: 1148
+  verified_at: 2026-11-07T14:17:07Z
   note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence.
 
 - path: `src/melder/utilities/general_base/abstract_elastic_pool.py`
@@ -4822,6 +4938,8 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 `binding_changes` (0.2.8258).
 
 ## Information Sources
+- `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py`
+- `src/melder/utilities/custom_exceptions/phase_execution_error.py`
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py`
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py`
 - `src/melder/nexus/configuration/rift_access_mode.py`
@@ -5004,6 +5122,25 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+2026-11-07 a class lookup reaches only a spell bound bare (0.2.8278;
+TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class, on
+the owner's rulings "do what autofac would do ... thats our compass" and "ok yes to all your statements"; patch
+class_lookup_bare_spells_2026_11_07): a class annotation, `list[Class]`, a single string annotation's type part and
+`SpellMap(spell=Class)` without a spellframe reach a spell only when it is bound with no spellframe and the default
+binding (`CompilerPhase3._answers_class_lookup`, read by the scan path, the index path and SpellMap's explicit
+branch); a framed spell is reached through its frame - Melder's interface dict, keyed by binding name - and a bare
+named one through its binding name; a string naming a Protocol still finds the Protocol's own definition; S1's key
+split cannot occur for class annotations; the creation cache is generation 26. The glossary (one new term), a new
+first operational invariant (the 0.2.8222 annotation-kind entry marked superseded in part, the unresolved-input entry
+pointed at it), a Breaking and a fixed failure mode (the 0.2.8224 ambiguity example and the 0.2.8250 notch entry's
+class-annotation case annotated), the sources and the code map (caching_system.py and spell_map.py remeasured,
+compiler_phase_3.py added) carry it; the component map carries the per-component contracts. Measured on 0.2.8278,
+the GIL off and on: the class meld door answers by address, so `meld(English)` still returns an English bound under
+the string category "English", which a class annotation no longer reaches; a required `list[Class]` left with no
+member refuses at conjure in an automatic world. Still unknown: see Unknowns. Where to start: src_components,
+Component: SpellCompiler and Validation Pipeline ("Class lookups reach only bare spells"), then the Breaking entry's
+upgrade paths.
+
 String-backed enum compatibility: selected native families use exact member-name string values.
 Historical readers and selected persisted, claim and diagnostic projections retain their contracts;
 direct values and some direct diagnostics change. Start at Operational Invariants and

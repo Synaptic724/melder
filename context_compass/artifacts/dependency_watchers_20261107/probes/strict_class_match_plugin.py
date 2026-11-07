@@ -13,7 +13,11 @@ Purpose:
 
 Modes (environment variable MELDER_PROBE_STRICT):
     "1": the strict rule patches `CompilerPhase3._spell_keys_for` (the scan path) and
-         `CompilerPhase3._build_candidate_index` (the index path).
+         `CompilerPhase3._build_candidate_index` (the index path): a spell bound under a
+         spellframe is not reached by its type key.
+    "2": the Autofac reading (2026-11-07): a spell bound under a spellframe OR with a binding
+         name is not reached by its type key - as an Autofac component that declares any service
+         (As, Named, Keyed) stops exposing its own type.
     anything else: matching is left as shipped.
 
 Both modes:
@@ -66,17 +70,37 @@ class StrictClassMatchProbe:
         `pytest_unconfigure`.
     """
 
-    def __init__(self, strict: bool) -> None:
+    def __init__(self, strict: bool, hide_named: bool = False) -> None:
         """
         Prepare a probe for one process.
 
         Args:
             strict: True to apply the strict class rule as well as the cache redirect.
+            hide_named: True (mode "2") to hide a spell with a binding name from type keys too.
         """
         self._strict: bool = strict
+        self._hide_named: bool = hide_named
         self._cache_root: Path = Path(tempfile.mkdtemp(prefix="melder_probe_cache_"))
         self._originals: List[Tuple[Any, str, Any]] = []
         self._removed: bool = False
+
+    def _hidden_from_type(self, spell_obj: Any) -> bool:
+        """
+        Return True when the strict rule keeps `spell_obj` out of type-key matches.
+
+        Args:
+            spell_obj: A candidate spell.
+
+        Returns:
+            bool: Bound under a spellframe, or (mode "2") bound with a non-default binding name.
+        """
+        if spell_obj.spellframe is not None:
+            return True
+        if not self._hide_named:
+            return False
+        from melder.utilities.helpers.general_helpers import SpellInputUtils
+        return (SpellInputUtils.normalize_binding_name(spell_obj.binding_name)
+                != SpellInputUtils.DEFAULT_BINDING_NAME)
 
     def apply(self) -> None:
         """
@@ -105,7 +129,12 @@ class StrictClassMatchProbe:
         Returns:
             str: One header line.
         """
-        mode = "strict" if self._strict else "as shipped"
+        if not self._strict:
+            mode = "as shipped"
+        elif self._hide_named:
+            mode = "strict, spellframe or binding name hides the type (Autofac reading)"
+        else:
+            mode = "strict, spellframe hides the type"
         return f"strict_class_match_plugin: class matching {mode}; conjure cache root {self._cache_root}"
 
     def pytest_unconfigure(self, config: pytest.Config) -> None:
@@ -188,6 +217,7 @@ class StrictClassMatchProbe:
             phase_class: `CompilerPhase3`.
         """
         original_keys = phase_class.__dict__["_spell_keys_for"]
+        hidden_from_type = self._hidden_from_type
 
         def strict_spell_keys_for(
                 phase_self: Any,
@@ -196,8 +226,8 @@ class StrictClassMatchProbe:
                 *,
                 collection: bool,
         ) -> Tuple[str, ...]:
-            """T2's rule on the scan path: a framed spell is not reached by its type key."""
-            if spell_obj.spellframe is None:
+            """T2's rule on the scan path: a hidden spell is not reached by its type key."""
+            if not hidden_from_type(spell_obj):
                 return original_keys(phase_self, annotation_kind, spell_obj, collection=collection)
             if annotation_kind == phase_self._KIND_TYPE:
                 return ()
@@ -218,13 +248,14 @@ class StrictClassMatchProbe:
             phase_class: `CompilerPhase3`.
         """
         original_build = phase_class.__dict__["_build_candidate_index"]
+        hidden_from_type = self._hidden_from_type
 
         def strict_build_candidate_index(phase_self: Any, spellbook: Any) -> Dict[str, Any]:
-            """T2's rule on the index path: the type bucket holds only spells with no spellframe."""
+            """T2's rule on the index path: the type bucket holds only spells the rule does not hide."""
             index = original_build(phase_self, spellbook)
             strict_by_type: Dict[str, List[Any]] = {}
             for key, entries in index["by_type"].items():
-                kept = [entry for entry in entries if entry[2].spellframe is None]
+                kept = [entry for entry in entries if not hidden_from_type(entry[2])]
                 if kept:
                     strict_by_type[key] = kept
             index["by_type"] = strict_by_type
@@ -246,6 +277,7 @@ def pytest_configure(config: pytest.Config) -> None:
     src_path = str(config.rootpath / "src")
     if src_path not in sys.path:
         sys.path.insert(0, src_path)
-    probe = StrictClassMatchProbe(strict=os.environ.get("MELDER_PROBE_STRICT") == "1")
+    mode = os.environ.get("MELDER_PROBE_STRICT")
+    probe = StrictClassMatchProbe(strict=mode in ("1", "2"), hide_named=mode == "2")
     probe.apply()
     config.pluginmanager.register(probe, "melder_strict_class_match_probe")

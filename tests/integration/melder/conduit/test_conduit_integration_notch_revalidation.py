@@ -9,7 +9,7 @@ Each test builds its own dynamic frame with caching off: a lender Book lends a p
 a borrower Book's consumer holds a SpellContract on that key, or one Book holds a dependency chain.
 """
 import threading
-from typing import Any, Iterator, List, Protocol, Tuple, runtime_checkable
+from typing import Any, Iterator, List, Protocol, Tuple, Union, runtime_checkable
 
 import pytest
 
@@ -18,6 +18,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
@@ -95,7 +96,7 @@ class DepB:
 
 
 class Dep:
-    """A dependency bound by its class."""
+    """A dependency filed under the category "Dep" in C4 - the address a bare bind would give it."""
 
     def tag(self) -> str:
         """Answer "d1"."""
@@ -103,7 +104,13 @@ class Dep:
 
 
 class Dep2(Dep):
-    """A subclass of Dep, which the kind rule does not select for an annotation naming Dep."""
+    """
+    A renamed subclass of Dep, staged into Dep's index under the category "Dep" (C4).
+
+    Reached through the frame, as every version of that index is; a class annotation naming Dep reaches neither
+    version, since both are bound under a spellframe (2026-11-07). Until then the type-name rule reached Dep but not
+    this subclass.
+    """
 
     def tag(self) -> str:
         """Answer "d2"."""
@@ -127,9 +134,26 @@ class QChain:
 
 
 class PClass:
-    """Depends on Dep's class."""
+    """
+    Depends on Dep's class.
+
+    A class lookup reaches only a spell bound bare - no spellframe, the default binding (2026-11-07) - so in C4's
+    world, where Dep is filed under the category "Dep", this parameter is an unresolved input.
+    """
 
     def __init__(self, dep: Dep) -> None:
+        """Keep the dependency."""
+        self.dep = dep
+
+
+class PFrame:
+    """
+    Depends on Dep's index through its frame: the category "Dep", the default binding (C4, 2026-11-07).
+
+    The frame is the index's address, so this consumer follows every notch of the index, renamed versions included.
+    """
+
+    def __init__(self, dep: Union[Dep, SpellMap] = SpellMap(spellframe="Dep")) -> None:
         """Keep the dependency."""
         self.dep = dep
 
@@ -496,6 +520,8 @@ def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, S
 
     By class, Dep is bound under the category "Dep" - the address a bare bind gives it - so its next version can be
     staged under the same binding: every version of an index is bound the way its first version was (2026-10-25).
+    Since 2026-11-07 a class annotation never reaches a spell bound under a spellframe, so PClass's `dep: Dep` is an
+    unresolved input in that world; C4 pins that, and the frame consumer (PFrame) that follows the index instead.
     """
     book, _ = _books(frame)
     if by_class:
@@ -563,15 +589,37 @@ def test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end(
         root.cleanup()
 
 
-def test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error() -> None:
-    """C4: Dep notched to its subclass, which `dep: Dep` does not select: Q fails as a first meld would."""
+def test_c4_a_class_annotation_never_reaches_a_framed_index_while_its_frame_follows_every_notch() -> None:
+    """
+    C4: Dep is filed under the category "Dep" and its renamed subclass Dep2 is staged into the same index.
+
+    Contract (2026-11-07, EPIC-2026-11-07-spellframe_hides_the_concrete_class): a class lookup reaches only a spell
+    bound bare, so `dep: Dep` reaches no version of this framed index - Q fails as a first meld would, with the same
+    UnresolvedInputError before the notch, after it and after the notch back (no stale build, no split between
+    melds) - while the frame lookup `SpellMap(spellframe="Dep")` follows the index d1 -> d2 -> d1.
+    Until 2026-11-07 `dep: Dep` reached Dep by its type name, built d1 and failed only after the notch to Dep2,
+    which it did not select: it never followed the index across renamed versions. The frame does, and did.
+    """
     book, root, index, _, q_cls = _chain("c4", by_class=True)
     try:
-        assert root.meld(spell=q_cls).p.dep.tag() == "d1"
-        _notch_dep(book, root, index, by_class=True)
+        first_id = index.selected_spell_id
+        root.bind(spell=PFrame, existence=Existence.many, permissions="create")
 
-        with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
-            root.meld(spell=q_cls)
+        def assert_class_consumer_unresolved() -> None:
+            """Q's meld fails on PClass's `dep: Dep`, which reaches no version of the framed index."""
+            with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
+                root.meld(spell=q_cls)
+
+        assert_class_consumer_unresolved()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
+
+        _notch_dep(book, root, index, by_class=True)
+        assert_class_consumer_unresolved()
+        assert root.meld(spell=PFrame).dep.tag() == "d2"
+
+        root.notch_spell(spell_index=index, spell_id=first_id)
+        assert_class_consumer_unresolved()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
     finally:
         root.cleanup()
 

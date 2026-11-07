@@ -13,8 +13,9 @@ Layout:
                     no spellspaces. Existences: unique, many, unique_per_conduit
                     ONLY (lineage/spellspace -> tier 02; cluster -> tier 03).
                     DESIGN PRINCIPLE: teach a 4B-model agent with a 64k window
-                    to be USEFUL - shared/fresh/scoped, dict-style frame ADDRESSING (frames are
-                    grouping/contract keys, not dicts), typed
+                    to be USEFUL - shared/fresh/scoped, dict-style frame ADDRESSING (a frame is
+                    the interface dict, keyed by binding_name; its members are reached through
+                    the frame, never by their own class - owner ruling 2026-11-07), typed
                     melds, Protocols, one bootstrap function. Fun and simple
                     beats complete.
 - 02_intermediate/  linking + dynamic mode + configurations (owner fence:

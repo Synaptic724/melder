@@ -10,7 +10,7 @@
 - Agent Role: synaptic_python_developer
 - Priority: p2
 - Created: 2026-11-07T10:03:26Z
-- Updated: 2026-11-07T10:22:44Z
+- Updated: 2026-11-07T15:06:23Z
 - Target Window: 2026-Q4
 - Related Program/Initiative: EPIC-2026-10-25-dependency_watchers_listen_for_names (its key split, found by S1)
 
@@ -31,8 +31,10 @@ user situation, make an epic for this and lets tackle it the right way".
 
 ## MRP Alignment (Most Reasonable Product)
 One rule for every door: a spellframe is the spell's interface. Bound under a frame, a spell is reached through the
-frame - a Protocol or name annotation of the frame, a label list, a SpellMap, the frame address; bound bare, it is
-reached by its class. With one rule every annotation's match key is its provider's address frame, so a waiting
+frame - a Protocol or name annotation of the frame, a label list, a SpellMap, the frame address; bound bare (no
+spellframe, no binding name), it is reached by its class - Autofac's rule that a declared service hides the
+component's own type, the owner's compass (2026-11-07). The spellframe is Melder's interface dict, keyed by
+binding name. With one rule every annotation's match key is its provider's address frame, so a waiting
 consumer's watch key and a change's announced key agree by construction and the S1 key split cannot occur in any
 shape. Fixing the wake-up instead (option A) would keep two answers to one question.
 
@@ -51,8 +53,9 @@ shape. Fixing the wake-up instead (option A) would keep two answers to one quest
   compiler_phase_3.py.
 
 ## Goals (Outcomes)
-- A class annotation (`greeter: English`), a string naming a class and `list[English]` select only spells bound bare;
-  a framed spell is reached through its frame, as the class meld door already requires.
+- A class lookup - `greeter: English`, a string naming a class, `list[English]`, `SpellMap(spell=English)` - selects
+  only spells bound with no spellframe and no binding name, existing objects alike; a framed spell is reached
+  through its frame and a named one through its name, as the class meld door already requires.
 - A consumer waiting on a provider wakes when a provider it matches arrives, returns or is granted, in every shape.
 - A Phase 4 error refuses a consumer annotated with a class bound only under a spellframe and names the frame to ask
   by; two spells at one address - one spellframe with no binding_name, one name with neither - stay refused on every
@@ -66,9 +69,10 @@ shape. Fixing the wake-up instead (option A) would keep two answers to one quest
 
 ## Scope Boundaries
 - In scope: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py (`_spell_keys_for`,
-  `_build_candidate_index`, `_index_buckets_for`) and whatever else T1 finds matching by type key; the tests, system
-  docs and examples that rely on it; the creation-cache generation if replayed rows would keep old matches.
-- Out of scope: Bind, addresses, SpellMap and SpellContract resolution, Protocol/contract and label matching.
+  `_build_candidate_index`, the explicit-spell branch of `_resolve_spellmap_default`) - T1 found no other matcher;
+  the 106 tests in 20 files, the docs and docstrings that rely on it; creation-cache generation 26.
+- Out of scope: Bind, addresses, SpellContract (already address-based), the frame doors (unchanged - the interface
+  dict, documented), Protocol/contract and label matching, an AsSelf-style option (declined for now, 2026-11-07).
 
 ## State Transition Event
 - from_state: draft
@@ -80,16 +84,20 @@ shape. Fixing the wake-up instead (option A) would keep two answers to one quest
 - Every test, doc and example that resolved a framed spell by class is converted or removed, none left silent.
 
 ## Requirements (Functional + Non-Functional)
-- Functional: type matching (single sockets, collections, a name annotation's type part) admits only spells with no
-  spellframe; contract, definition and label matching unchanged; a refused class match compiles an UNRESOLVED_INPUT
-  socket like any missing provider.
+- Functional: type matching (single sockets, collections, a name annotation's type part) and `SpellMap(spell=X)`
+  without a spellframe admit only spells with no spellframe and the default binding (`SpellMap(X, binding_name=b)`
+  reaches X bound bare under b); contract, definition and label matching unchanged; a refused class match compiles
+  an UNRESOLVED_INPUT socket like any missing provider, until T3 part (a) refuses it with the frame or name to use.
 - Non-functional: no warm-meld cost, no new lock, both GIL modes; a creation-cache generation bump when T1 shows
   replayed phase 3-4 rows would carry the old matches.
 
 ## Constraints / Assumptions
-- Breaking change: a consumer that resolves a framed spell by class today stops resolving. The release note leads
-  with **Breaking change:** and the upgrade path: annotate the frame's Protocol, use a SpellMap, or bind the class bare.
-- UNKNOWN until T1: how many tests, docs and examples rely on class matching of framed spells.
+- Breaking change: a consumer that resolves a framed or named spell by class today stops resolving. The release
+  note leads with **Breaking change:** and the upgrade paths (T2 Notes): annotate the Protocol or use
+  `SpellMap(spellframe=..., binding_name=...)`; drop a category spelled as the class's own name (same address); use
+  `SpellMap(Class, binding_name=...)` for a bare named class; add spellframe/binding_name to `SpellMap(Class)`.
+- Measured by T1: 106 tests in 20 files rely on it (41 assert the old rule, 65 only in fixtures); no example; docs
+  mostly already state the rule.
 
 ## Dependencies / External References
 - tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md
@@ -98,22 +106,24 @@ shape. Fixing the wake-up instead (option A) would keep two answers to one quest
 - GitHub: the epic issue on Synaptic724/melder (URL in Notes)
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: the inventory and the edge-case decisions (T1).
-- [ ] Milestone 2: the strict model landed with tests, docs, release note, notch and rebuild (T2).
+- [x] Milestone 1: the inventory and the edge-case decisions (T1, completed 2026-11-07T11:57:30Z).
+- [x] Milestone 2: the strict model landed with tests, docs, release note, notch and rebuild (T2, completed
+      2026-11-07T15:06:23Z as 0.2.8278; uncommitted).
 - [ ] Milestone 3: the Phase 4 check and the duplicate-address tests landed (T3).
 
 ## Stories (Required to Complete)
 - [ ] none - tasks sit directly under the epic, on the owner's "make an epic ... build your tasks around it".
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: TASK-2026-11-07-inventory_class_resolution_of_framed_spells (read-only in src)
-- [ ] Task: TASK-2026-11-07-class_annotation_selects_only_bare_spells
+- [x] Task: TASK-2026-11-07-inventory_class_resolution_of_framed_spells (read-only in src; completed)
+- [x] Task: TASK-2026-11-07-class_annotation_selects_only_bare_spells (completed; 0.2.8278)
 - [ ] Task: TASK-2026-11-07-spellframe_ambiguity_validation_check
 - [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
 ## Acceptance Criteria (Epic Done)
-- `greeter: English`, `greeter: "English"` and `list[English]` never resolve an English bound under a frame; a bare
-  English resolves as before; Protocol, label and SpellMap consumers are unchanged.
+- `greeter: English`, `greeter: "English"`, `list[English]` and `SpellMap(English)` never resolve an English bound
+  under a spellframe or a binding name; an English bound with neither resolves as before; Protocol, label and
+  frame-addressed SpellMap consumers are unchanged.
 - The waiting-consumer regressions assert this contract and pass, the GIL off and on.
 - The Phase 4 check refuses a consumer of a class bound only under a spellframe through the readable validation
   report, naming the frame; regression tests pin both duplicate-address shapes on every path.
@@ -148,6 +158,31 @@ shape. Fixing the wake-up instead (option A) would keep two answers to one quest
 - 2026-11-07T10:22:44Z: the owner set T3's rule (chat 2026-11-07, "lets do 3"): a Phase 4 error for a consumer
   annotated with a class bound only under a spellframe, naming the frame; and two spells at one address - one
   spellframe with no binding_name, one name with neither - refused on every path, a check added where one is not.
+- 2026-11-07T11:00:27Z: Autofac is the compass for these resolution rules ("do what autofac would do and we can
+  discuss this further thats our compass", chat 2026-11-07). E1 decided: an existing object under a spellframe is
+  hidden from its class. E2 (a binding name hiding the class) and E3 (`SpellMap(spell=X)`) wait on the Autofac
+  findings (T1 Notes).
+- 2026-11-07T11:28:06Z: E2 and E3 accepted on Autofac's reading ("E2 and E3 are fine I think"): a spellframe or a
+  binding name hides a class from class lookups; `SpellMap(Class, binding_name=b)` is the named lookup.
+- 2026-11-07T11:42:00Z: the spellframe is Melder's interface dict, keyed by binding name ("our spellframe is the
+  interface dict idea thats the point") - no dict-injection feature; the frame doors stay as shipped and are
+  documented in those terms (option (a), to be confirmed by the owner). Not taken from Autofac, by standing
+  rulings: last-registration-wins (ambiguity stays an error), several unnamed implementations of one service (one
+  spell per address). An AsSelf-style option: recommended against, the owner's call.
+- 2026-11-07T12:08:59Z: the owner settled every point ("ok yes to all your statements", chat 2026-11-07).
+  SETTLED: (1) a class lookup finds only a class bound with no spellframe; (2) existing objects alike (E1); (3) a
+  binding name hides the class too - `SpellMap(English, binding_name="v1")` reaches it (E2); (4) `SpellMap(English)`
+  follows the class rule (E3); (5) the spellframe is the interface dict - Protocol annotation, `list[Greeter]`,
+  `SpellMap(spellframe=, binding_name=)`, `meld(spellframe=, binding_name=)` unchanged; (6) T3(a): a consumer of a
+  class bound only under a frame or a name fails at conjure with an error naming where it is and what to write,
+  and the SpellMap miss names it too; (7) T3(b): both duplicate-address shapes verified refused on every path,
+  pinned by tests, a check where one slips, the stale example probe fixed; (8) `meld(spellframe=Greeter)` with no
+  binding name reads the default slot (KeyError when all are named) while `greeter: Greeter` finds the single
+  implementation - both kept and documented as dict behaviour; (9) no AsSelf-style option, for now; (10) the break
+  as measured - 41 tests rewritten, 65 fixtures converted - with the release note's four upgrade paths (annotate
+  the Protocol or SpellMap with the frame; drop a category spelled as the class's own name; `SpellMap(Class,
+  binding_name=)` for a named class; add spellframe/binding_name to `SpellMap(Class)`); (11) cache generation 26;
+  (12) order T2, then T3(b), then T3(a) - the go for T2; (13) GitHub #208 updated by melder_0 once T2 lands.
 
 ## Artifact Links (Optional)
 Qualified independent reviewer acceptance and direct closure follow shared `ticketing.md`;
@@ -226,6 +261,46 @@ this does not make independent review mandatory for every ticket.
   NEXT: T1 - read Phase 3's type-key matchers in full.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+- DATETIME: 2026-11-07T11:57:30Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: Program direction after T1 (completed): Autofac is the compass for class lookups - a spellframe or a
+    binding name is a declared service and hides the class, existing objects alike - while the spellframe stays
+    Melder's interface dict and ambiguity stays an error. T1 measured the cost: Phase 3's two type-key predicates
+    and SpellMap's explicit-spell branch; 106 tests in 20 files; no example; cache generation 26. T3 part (a) widens
+    to named-only classes and the SpellMap miss. Tranche order: T2 on the owner's go, then T3 part (b) (independent
+    of T2), then T3 part (a). GitHub #208's description predates the binding-name decision; it is updated only on
+    the owner's word.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-11-07_inventory_class_resolution_of_framed_spells_task.md:390-447
+  - context_compass/tickets/tasks/2026-11-07_class_annotation_selects_only_bare_spells_task.md:1-40
+  IMPACT: The epic's rule, scope and cost are settled; what remains is implementation.
+  NEXT: The owner's go for T2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-11-07T15:06:23Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: DECISION
+  CLAIM: T2 landed as 0.2.8278 (working tree, uncommitted) and is closed. Program-level outcomes: one rule for class
+    lookups (no spellframe, the default binding), Protocol definitions keeping their key on a name, generation 26;
+    the S1 key split gone (matrix: 22 -> 3 MISS per mode, the three being D3, G4 and H1 of the watchers epic); the
+    owner asked "did you break how it works?" and the C4 world measured index targeting intact through the frame
+    (`SpellMap(spellframe="Dep")` d1 -> d2 -> d1) while the class annotation refuses consistently - C4 rewritten on
+    his word. One documented edge by the settled rule: a category spelled as the class's own name holds the bare
+    address, so `meld(English)` finds it and `x: English` does not. Findings carried to T3(a): EmptyCollectionStrategy's
+    advice ("bind at least one implementation under its frame") misleads for `list[Class]`, and UnresolvedInputError
+    says "nothing registered provides it" when the class is registered under a frame or a name. The SpellMap
+    docstring now says a Protocol passed as `spell` matches its own definition (the owner's choice).
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-11-07_class_annotation_selects_only_bare_spells_task.md:1-12
+  - context_compass/artifacts/dependency_watchers_20261107/runs/probe_watcher_announcer_matrix_0_2_8278.txt:419-419
+  - context_compass/artifacts/dependency_watchers_20261107/runs/c4_world_probe_0_2_8278.txt:1-7
+  IMPACT: Milestone 2 is met but for the commit and the GitHub #208 update, both on the owner's word.
+  NEXT: The rebuild and its checks (T2's last step), then T3 part (b).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
@@ -243,10 +318,14 @@ this does not make independent review mandatory for every ticket.
 ## Context / Handoff Summary
 - Scope: make class-based injection agree with the class meld door - a framed spell is reached through its frame -
   and add the owner's Phase 4/6 check. Decided by the owner, chat 2026-11-07.
-- State: in_progress, melder_0. Basis measured (Notes). The S1 regression file holds 14 strict xfails written for the
-  other option; T2 rewrites them to this contract.
-- T3's rule is set (Decision Log, 2026-11-07T10:22:44Z).
-- Next: (1) T1 inventory, read-only, in progress; (2) T2; (3) T3, part (b) possibly alongside T2.
+- State: in_progress, melder_0. T1 completed (2026-11-07T11:57:30Z): the rule is a spellframe or a binding name
+  hides a class from class lookups (Autofac); the spellframe is the interface dict; 106 tests in 20 files to change.
+- T2 done 2026-11-07T15:06:23Z as 0.2.8278 (tickets/tasks/completed/; not committed); T3's rule is set and widened
+  (Decision Log; T3 Notes), plus two misleading messages for part (a) (Notes 15:06:23Z).
+- All 13 points settled by the owner (Decision Log 2026-11-07T12:08:59Z).
+- Next: (1) the rebuild and checks closing T2 - done, both `--check` runs OK; the post-rebuild full suite in flight;
+  (2) commit and push are the owner's (chat 2026-11-07: he switches the license to Apache first and pushes with his
+  own PGP key), then GitHub #208; (3) T3 part (b); (4) T3 part (a).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

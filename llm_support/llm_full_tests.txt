@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 0bacca93a987b53764c065d49637ef15a51748ba489e9647f6cee33f4f5b50a2
-FILE COUNT: 1191
+SOURCE FINGERPRINT: 18c1fb90e17188fdc7936c1e84dc3978c2c10d4e74e216637aa5fd297e6b9a45
+FILE COUNT: 1192
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -8854,7 +8854,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_fast_meld
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py
-CONTENT SHA256: 920eeacaa5132ac6e2ef668a97bef21c36779d4d112f0c94ad010de88111d314
+CONTENT SHA256: 8beae5de4ec80acaf457b62f348646c63dfcb50bbcf96075b708c3b7dc2918ef
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8879,6 +8879,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.spellbook import Spellbook
@@ -8893,9 +8894,16 @@ class NativeService:
 
 
 class NativeConsumer:
-    """The consumer: requires a NativeService, which the graph injects."""
+    """
+    The consumer: requires a NativeService, which the graph injects.
 
-    def __init__(self, service: NativeService) -> None:
+    The service is named by its frame address, ("native_probe", "NativeService"), through a SpellMap default. The
+    reported sequence binds the service under that spellframe and binding name, and a class annotation alone reaches
+    only a spell bound bare - no spellframe, the default binding (2026-11-07) - so the frame is what reaches it.
+    """
+
+    def __init__(self,
+                 service: NativeService = SpellMap(spellframe="native_probe", binding_name="NativeService")) -> None:
         """Keep the injected service so identity can be checked."""
         self.service: NativeService = service
 
@@ -8915,7 +8923,8 @@ class InjectedProviderWorld:
     Contract:
         - Every root is a dynamic conjure of its own Spellbook on its own frame. The service and consumer pair is
           bound at spellframe "native_probe" on the live root after conjure, unless a case binds it on the Book
-          before conjure or not at all.
+          before conjure or not at all. The consumer reaches the service by that frame address (its SpellMap
+          default), as the direct melds do.
         - Worlds live in the process Aether, which the `world` fixture replaces before and after each case.
         - A cached world clears its frame's conjure cache folder first unless told to keep it (a warm start), and
           every folder it resolved is removed at teardown.
@@ -22208,6 +22217,836 @@ def test_solo_root_is_not_called_without_its_unresolved_input(runtime_book: Spel
     assert CountedTask.count == 2
 ================================================================================
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_unresolved_inputs.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py
+CONTENT SHA256: e45e99b515776e6fba88ab86e0df6fa9b01616aead852265ef6207c6e0b821ff
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests: a consumer waiting on a provider picks it up when a provider it matches arrives; a class or name
+consumer matches no provider bound under a frame, so it stays unresolved whether it waited or was compiled after.
+
+EPIC-2026-10-25-dependency_watchers_listen_for_names, S1 (STORY-2026-10-25-map_dependency_watchers_and_announcers);
+the owner's direction, chat 2026-11-07: "make regressions because my test suite should be catching this kinda stuff".
+The key-split cells were rewritten to the class-lookup rule of EPIC-2026-11-07-spellframe_hides_the_concrete_class
+(TASK-2026-11-07-class_annotation_selects_only_bare_spells).
+
+A consumer that compiles while nothing provides one of its parameters records that parameter as waiting - an
+UNRESOLVED_INPUT socket, an OVERRIDE_REQUIRED socket whose only match is a non-resolvable definition, or an empty
+`list[...]` - and is watched under the name its annotation uses: `greeter: English` is watched as "english". A later
+bind, notch or contract grant marks the watchers of the provider's ADDRESS: its spellframe ("langs", "greeter"), else
+its own name. Until 2026-11-07 Phase 3 matched by kind, not by address - a class annotation found the class wherever
+it was filed - so the two agreed only where the address happened to be the annotated name: a provider bound bare, a
+Protocol consumer with a provider under that Protocol, a collection by label. Everywhere else the consumer kept the
+plan it compiled with nothing to inject, on every meld, until it was disposed and bound again, while the same
+annotation compiled after the event resolved the provider: the key split.
+
+The owner's ruling of 2026-11-07 - Autofac's rule that a declared service hides the component's own type - closes
+the split from the matching side. A class lookup - a class annotation, a string naming a class, `list[Class]` -
+reaches only a provider bound bare, with no spellframe and the default binding, existing objects alike. A provider
+filed under a frame is reached through the frame - a Protocol annotation, `list[Protocol]`, `list["label"]`, a
+frame-addressed SpellMap - and the frame is the key its bind, notch or grant announces. A waiting consumer and one
+compiled after the event now give one answer in every cell below.
+
+What these tests pin (cell ids of the S1 matrix probe, context_compass/artifacts/dependency_watchers_20261107/):
+    - The key-split cells - strict xfails written for a wake-up fix until 2026-11-07, now regressions of the
+      class-lookup rule: a provider bound after conjure under a category or a Protocol frame, as a class or an
+      existing object (A2, A3, A5), for a string annotation (A8, A9) and a list (B2, B3); the owner's original report,
+      a notch away and back on an index under a Protocol frame (C1), and under a category (C2), for a list too (C4); a
+      notch to a version staged under a category (I2); a contract grant of a provider under a frame (G2, G3); an
+      override-only consumer once a real provider arrives under a category (F2). In each the class or name consumer
+      stays unresolved (F2: keeps only its definition) while it waits (LIVE) and in its late twin (FRESH) - no key
+      split - and the frame's own consumer, bound beside it (`Greeter`, `list[Greeter]` or `list["langs"]`), wakes
+      with the provider, or follows it across a notch.
+    - Passing, and they must keep passing: the same events where the names agree (A1, A4, A6, A7, B1, B4, B5, F1, G1).
+
+Each test proves its own world before its assertion: a late twin of the consumer that must wake - the same
+annotation, bound after the event - must resolve the provider, so an assertion on a waiting consumer is always about a
+notification, never about a provider the consumer cannot match. In the framed cells the class or name consumer's own
+late twin is part of the contract: it must give the waiting consumer's answer. Preconditions raise RuntimeError, not
+AssertionError - written so that a strict xfail (raises=AssertionError) never absorbed a world that was not set up as
+the test says; the split still tells a world that was not set up from a contract that does not hold. Every meld goes
+through the class door, `meld(Consumer)`; by spell_id and by name a consumer stuck in the key split behaved the same.
+"""
+
+from collections.abc import Iterator
+from typing import Any, Dict, List, Optional, Protocol, Union
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+
+
+class Greeter(Protocol):
+    """The contract a provider filed under a Protocol frame is checked against."""
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        ...
+
+
+class English:
+    """The provider every consumer names."""
+
+    def greet(self) -> str:
+        """Return the English greeting."""
+        return "hello"
+
+
+class French:
+    """The other version a notch moves to; it never matches `English`."""
+
+    def greet(self) -> str:
+        """Return the French greeting."""
+        return "bonjour"
+
+
+class Edited:
+    """Holds a second class named `English`: another spell_id, the same type key."""
+
+    class English:
+        """An edited English: the same name, other code."""
+
+        def greet(self) -> str:
+            """Return the edited greeting."""
+            return "hello again"
+
+
+class ByClass:
+    """Waits on `English` by class annotation."""
+
+    def __init__(self, greeter: English) -> None:
+        """Keep the injected greeter."""
+        self.greeter = greeter
+
+
+class LateByClass:
+    """The late twin of `ByClass`: the same annotation, bound after the event."""
+
+    def __init__(self, greeter: English) -> None:
+        """Keep the injected greeter."""
+        self.greeter = greeter
+
+
+class ByName:
+    """Waits on `English` by a string annotation, as a TYPE_CHECKING-only import leaves it."""
+
+    def __init__(self, greeter: "English") -> None:
+        """Keep the injected greeter."""
+        self.greeter = greeter
+
+
+class LateByName:
+    """The late twin of `ByName`."""
+
+    def __init__(self, greeter: "English") -> None:
+        """Keep the injected greeter."""
+        self.greeter = greeter
+
+
+class ByProtocol:
+    """Waits on whatever is bound under `Greeter`."""
+
+    def __init__(self, greeter: Greeter) -> None:
+        """Keep the injected greeter."""
+        self.greeter = greeter
+
+
+class LateByProtocol:
+    """The late twin of `ByProtocol`."""
+
+    def __init__(self, greeter: Greeter) -> None:
+        """Keep the injected greeter."""
+        self.greeter = greeter
+
+
+class ListByClass:
+    """Gathers every `English` bound bare: `list[English]` is a class lookup, which no framed English answers."""
+
+    def __init__(self, greeters: list[English]) -> None:
+        """Keep the gathered greeters."""
+        self.greeters = greeters
+
+
+class LateListByClass:
+    """The late twin of `ListByClass`."""
+
+    def __init__(self, greeters: list[English]) -> None:
+        """Keep the gathered greeters."""
+        self.greeters = greeters
+
+
+class ListByProtocol:
+    """Gathers everything bound under `Greeter`."""
+
+    def __init__(self, greeters: list[Greeter]) -> None:
+        """Keep the gathered greeters."""
+        self.greeters = greeters
+
+
+class LateListByProtocol:
+    """The late twin of `ListByProtocol`."""
+
+    def __init__(self, greeters: list[Greeter]) -> None:
+        """Keep the gathered greeters."""
+        self.greeters = greeters
+
+
+class ListByLabel:
+    """Gathers the members of the category "langs"."""
+
+    def __init__(self, greeters: list["langs"]) -> None:
+        """Keep the gathered greeters."""
+        self.greeters = greeters
+
+
+class LateListByLabel:
+    """The late twin of `ListByLabel`."""
+
+    def __init__(self, greeters: list["langs"]) -> None:
+        """Keep the gathered greeters."""
+        self.greeters = greeters
+
+
+SHAPES: Dict[str, Dict[str, Any]] = {
+    "bare": {},
+    "category": {"spellframe": "langs"},
+    "protocol": {"spellframe": Greeter, "binding_name": "greeter"},
+}
+LATE: Dict[type, type] = {
+    ByClass: LateByClass,
+    ByName: LateByName,
+    ByProtocol: LateByProtocol,
+    ListByClass: LateListByClass,
+    ListByProtocol: LateListByProtocol,
+    ListByLabel: LateListByLabel,
+}
+# The frame's own consumer per framed shape - how a provider filed under that frame is reached (2026-11-07): the
+# label list for the category "langs"; for the Protocol frame the `Greeter` annotation, a single socket beside a single
+# class consumer (FRAME_CONSUMERS) and `list[Greeter]` beside `list[English]` (FRAME_LISTS).
+FRAME_CONSUMERS: Dict[str, type] = {"category": ListByLabel, "protocol": ByProtocol}
+FRAME_LISTS: Dict[str, type] = {"category": ListByLabel, "protocol": ListByProtocol}
+
+
+def _reset_aether() -> None:
+    """Install a fresh Aether singleton for Spellbook and Conduit."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> Iterator[None]:
+    """Give each test a fresh Aether and reset it again afterwards."""
+    _reset_aether()
+    yield
+    _reset_aether()
+
+
+def _book(frame: str, *, first: bool = True) -> Spellbook:
+    """
+    Return a Book on `frame`, not conjured.
+
+    Args:
+        frame: The frame name; each test uses its own.
+        first: True for the frame's first Book, which settles the frame dynamic with creation caching off; a later
+            Book of the same frame inherits that posture.
+
+    Returns:
+        Spellbook: The Book.
+    """
+    book = Spellbook(aetheric_frame=frame)
+    if first:
+        book.configure_aether_frame(system_state="dynamic", system_caching_enabled=False,
+                                    disposal=None, disposal_method_names=None)
+    return book
+
+
+def _bind(target: Any, spell: Any, shape: str = "bare", existence: Existence = Existence.many,
+          **options: Any) -> str:
+    """
+    Bind `spell` at the address `shape` names.
+
+    Args:
+        target: A Book before conjure, or a conduit after it.
+        spell: The class or existing object to bind.
+        shape: "bare", "category" ("langs") or "protocol" (`Greeter`, binding name "greeter").
+        existence: The existence to bind it under.
+        **options: Further bind options (`resolvable`).
+
+    Returns:
+        str: The spell_id `bind` returned.
+    """
+    return target.bind(spell=spell, existence=existence, permissions="create", **SHAPES[shape], **options)
+
+
+def _held(root: Conduit, consumer: type) -> str:
+    """
+    Meld a single-socket consumer through the class door and name the greeter it was built with.
+
+    Returns:
+        str: The greeter's qualname, or "raises <Type>" for the RuntimeError (UnresolvedInputError and
+        SpellbookValidationError are RuntimeErrors) or TypeError the meld raised.
+    """
+    try:
+        return type(root.meld(consumer).greeter).__qualname__
+    except (RuntimeError, TypeError) as error:
+        return f"raises {type(error).__name__}"
+
+
+def _gathered(root: Conduit, consumer: type) -> List[str]:
+    """Meld a collection consumer through the class door and name the greeters it gathered, sorted."""
+    return sorted(type(each).__qualname__ for each in root.meld(consumer).greeters)
+
+
+def _melded(root: Conduit, consumer: type) -> Union[str, List[str]]:
+    """
+    Meld any consumer of this module through the class door and name what it was built with.
+
+    Args:
+        root: The conduit to meld in.
+        consumer: A single-socket consumer, a collection consumer (its name starts with "List") or a late twin of
+            either (its name starts with "Late").
+
+    Returns:
+        Union[str, List[str]]: What `_gathered` names for a collection consumer; what `_held` names otherwise.
+    """
+    if consumer.__name__.startswith(("List", "LateList")):
+        return _gathered(root, consumer)
+    return _held(root, consumer)
+
+
+def _frame_holds(frame_consumer: type, member: Optional[str]) -> Union[str, List[str]]:
+    """
+    Name what a frame's own consumer melds while `member` is the one live provider in the frame.
+
+    Args:
+        frame_consumer: A value of FRAME_CONSUMERS or FRAME_LISTS.
+        member: The qualname of the frame's live provider, or None while the frame holds none.
+
+    Returns:
+        Union[str, List[str]]: For a collection consumer `[member]`, or [] with none; for a single socket the member,
+        or "raises UnresolvedInputError" with none.
+    """
+    if frame_consumer.__name__.startswith("List"):
+        return [] if member is None else [member]
+    return "raises UnresolvedInputError" if member is None else member
+
+
+def _given(observed: Any, expected: Any, what: str) -> None:
+    """
+    Check a precondition of the world under test.
+
+    Raises:
+        RuntimeError: When `observed` is not `expected` - never AssertionError, so a strict xfail could not absorb it
+            while the file held strict xfails (until 2026-11-07), and a broken world still reads apart from a broken
+            contract.
+    """
+    if observed != expected:
+        raise RuntimeError(f"precondition failed - {what}: expected {expected!r}, got {observed!r}")
+
+
+def _late_twin(root: Conduit, consumer: type) -> Union[str, List[str]]:
+    """
+    Bind the consumer's late twin now and meld it: FRESH, the same annotation compiled after the event.
+
+    Args:
+        root: The conduit to bind and meld in.
+        consumer: A key of LATE.
+
+    Returns:
+        Union[str, List[str]]: What `_melded` names for the twin.
+    """
+    late = LATE[consumer]
+    _bind(root, late)
+    return _melded(root, late)
+
+
+def _late_twin_resolves(root: Conduit, consumer: type, expected: Any) -> None:
+    """
+    Bind the consumer's late twin now and require it to resolve `expected`: the provider is matchable.
+
+    Args:
+        root: The conduit to bind and meld in.
+        consumer: A key of LATE.
+        expected: What `_melded` must name for the twin: the provider's qualname, or the list of the gathered ones.
+
+    Raises:
+        RuntimeError: Through `_given`, when the twin melds anything else - the world is not the one the test set up.
+    """
+    _given(_late_twin(root, consumer), expected, f"{LATE[consumer].__name__}, bound after the event")
+
+
+@pytest.mark.parametrize(
+    ("provider", "shape", "existence"),
+    [
+        pytest.param(English, "bare", Existence.many, id="A1-class-bare"),
+        pytest.param(English(), "bare", Existence.unique, id="A4-object-bare"),
+    ],
+)
+def test_waiting_consumer_picks_up_a_provider_bound_after_conjure(provider: Any, shape: str,
+                                                                 existence: Existence) -> None:
+    """
+    A1, A4: `ByClass` compiled with no `English` bound; `English`, a class or an existing object, arrives by `bind`,
+        bound bare.
+
+    Contract: before the bind the meld raises UnresolvedInputError; after it the meld builds `ByClass` with the
+        English just bound - bare, the one address a class lookup reaches since 2026-11-07. A2, A3 and A5 file it
+        under a frame: `test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame`.
+    """
+    book = _book(f"arrival-{shape}-{existence.name}")
+    _bind(book, ByClass)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, ByClass), "raises UnresolvedInputError", "ByClass before English is bound")
+    _bind(root, provider, shape, existence)
+    _late_twin_resolves(root, ByClass, "English")
+    held = _held(root, ByClass)
+    assert held == "English", f"ByClass melds {held} although English is live at the {shape} address"
+
+
+@pytest.mark.parametrize(
+    ("provider", "shape", "existence"),
+    [
+        pytest.param(English, "category", Existence.many, id="A2-class-category"),
+        pytest.param(English, "protocol", Existence.many, id="A3-class-protocol"),
+        pytest.param(English(), "category", Existence.unique, id="A5-object-category"),
+    ],
+)
+def test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame(provider: Any, shape: str,
+                                                                             existence: Existence) -> None:
+    """
+    A2, A3, A5: `ByClass` and the frame's own consumer compiled with no `English` bound; `English`, a class or an
+        existing object, arrives by `bind` under the category "langs" or the Protocol frame `Greeter`.
+
+    Contract (2026-11-07): the spellframe hides English from the class lookup, an existing object as much as a class,
+        so `ByClass` stays unresolved - its meld raises UnresolvedInputError - while it waits (LIVE) and in its late
+        twin compiled after the bind (FRESH): no key split. The English is reached through its frame: the frame's own
+        consumer (`list["langs"]`, `Greeter`), waiting beside `ByClass` since conjure, wakes with it.
+    """
+    frame_consumer = FRAME_CONSUMERS[shape]
+    book = _book(f"framed-arrival-{shape}-{existence.name}")
+    _bind(book, ByClass)
+    _bind(book, frame_consumer)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, ByClass), "raises UnresolvedInputError", "ByClass before English is bound")
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, None),
+           f"{frame_consumer.__name__} before English is bound")
+    _bind(root, provider, shape, existence)
+    _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
+    fresh = _late_twin(root, ByClass)
+    assert fresh == "raises UnresolvedInputError", (
+        f"LateByClass melds {fresh}: a class lookup reached English at the {shape} address"
+    )
+    held = _held(root, ByClass)
+    assert held == "raises UnresolvedInputError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
+    woken = _melded(root, frame_consumer)
+    assert woken == _frame_holds(frame_consumer, "English"), (
+        f"{frame_consumer.__name__} melds {woken} although English is live at the {shape} address"
+    )
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param("bare", id="A7-name-bare"),
+    ],
+)
+def test_consumer_waiting_by_name_picks_up_a_provider_bound_after_conjure(shape: str) -> None:
+    """
+    A7: `ByName` (annotation "English", a string) compiled with no `English` bound; `English` arrives by `bind`,
+        bound bare.
+
+    Contract: the string selects the type by name, as the class does, so the meld builds `ByName` with the English
+        just bound - bare, the one address the string's type part reaches since 2026-11-07. A8 and A9 file it under a
+        frame: `test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_frame`.
+    """
+    book = _book(f"name-{shape}")
+    _bind(book, ByName)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, ByName), "raises UnresolvedInputError", "ByName before English is bound")
+    _bind(root, English, shape)
+    _late_twin_resolves(root, ByName, "English")
+    held = _held(root, ByName)
+    assert held == "English", f"ByName melds {held} although English is live at the {shape} address"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param("category", id="A8-name-category"),
+        pytest.param("protocol", id="A9-name-protocol"),
+    ],
+)
+def test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_frame(shape: str) -> None:
+    """
+    A8, A9: `ByName` (annotation "English", a string) and the frame's own consumer compiled with no `English` bound;
+        `English` arrives by `bind` under the category "langs" or the Protocol frame `Greeter`.
+
+    Contract (2026-11-07): the string's type part is a class lookup, which no framed English answers, and neither
+        frame records a contract named "English", so `ByName` stays unresolved - its meld raises
+        UnresolvedInputError - while it waits (LIVE) and in its late twin (FRESH): no key split. The frame's own
+        consumer (`list["langs"]`, `Greeter`), waiting beside it since conjure, wakes with the English.
+    """
+    frame_consumer = FRAME_CONSUMERS[shape]
+    book = _book(f"framed-name-{shape}")
+    _bind(book, ByName)
+    _bind(book, frame_consumer)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, ByName), "raises UnresolvedInputError", "ByName before English is bound")
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, None),
+           f"{frame_consumer.__name__} before English is bound")
+    _bind(root, English, shape)
+    _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
+    fresh = _late_twin(root, ByName)
+    assert fresh == "raises UnresolvedInputError", (
+        f"LateByName melds {fresh}: the string's type part reached English at the {shape} address"
+    )
+    held = _held(root, ByName)
+    assert held == "raises UnresolvedInputError", f"ByName melds {held} while its late twin melds {fresh}: a key split"
+    woken = _melded(root, frame_consumer)
+    assert woken == _frame_holds(frame_consumer, "English"), (
+        f"{frame_consumer.__name__} melds {woken} although English is live at the {shape} address"
+    )
+
+
+def test_protocol_consumer_picks_up_a_provider_bound_under_its_protocol_after_conjure() -> None:
+    """
+    A6: `ByProtocol` compiled with nothing under `Greeter`; `English` arrives under `Greeter`.
+
+    Contract: the watcher ("greeter") and the provider's address ("greeter") agree, so the meld builds `ByProtocol`
+        with English. Passing today; it must keep passing.
+    """
+    book = _book("protocol-consumer")
+    _bind(book, ByProtocol)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, ByProtocol), "raises UnresolvedInputError", "ByProtocol before English is bound")
+    _bind(root, English, "protocol")
+    _late_twin_resolves(root, ByProtocol, "English")
+    assert _held(root, ByProtocol) == "English"
+
+
+@pytest.mark.parametrize(
+    ("consumer", "shape"),
+    [
+        pytest.param(ListByClass, "bare", id="B1-list-class-bare"),
+        pytest.param(ListByProtocol, "protocol", id="B4-list-protocol-protocol"),
+        pytest.param(ListByLabel, "category", id="B5-list-label-category"),
+    ],
+)
+def test_waiting_list_gathers_a_provider_bound_after_conjure(consumer: type, shape: str) -> None:
+    """
+    B1, B4, B5: a collection consumer compiled with nothing to gather; `English` arrives by `bind`.
+
+    Contract: before the bind the meld gathers nothing; after it the list holds the English just bound when the
+        annotation matches it - a class list by type, of an English bound bare (2026-11-07), a Protocol list by
+        contract, a label list by category. B2 and B3 file English under a frame for the class list:
+        `test_waiting_list_gathers_nothing_from_a_provider_bound_under_a_frame`.
+    """
+    book = _book(f"list-{consumer.__name__}-{shape}")
+    _bind(book, consumer)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_gathered(root, consumer), [], f"{consumer.__name__} before English is bound")
+    _bind(root, English, shape)
+    _late_twin_resolves(root, consumer, ["English"])
+    gathered = _gathered(root, consumer)
+    assert gathered == ["English"], f"{consumer.__name__} gathers {gathered} although English is live at {shape}"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param("category", id="B2-list-class-category"),
+        pytest.param("protocol", id="B3-list-class-protocol"),
+    ],
+)
+def test_waiting_list_gathers_nothing_from_a_provider_bound_under_a_frame(shape: str) -> None:
+    """
+    B2, B3: `ListByClass` and the frame's own list compiled with nothing to gather; `English` arrives by `bind` under
+        the category "langs" or the Protocol frame `Greeter`.
+
+    Contract (2026-11-07): `list[English]` is a class lookup and gathers only an English bound bare, so it gathers
+        nothing while it waits (LIVE) and in its late twin (FRESH): no key split. The frame's own list
+        (`list["langs"]`, `list[Greeter]`), waiting beside it since conjure, wakes with the English.
+    """
+    frame_list = FRAME_LISTS[shape]
+    book = _book(f"framed-list-{shape}")
+    _bind(book, ListByClass)
+    _bind(book, frame_list)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_gathered(root, ListByClass), [], "ListByClass before English is bound")
+    _given(_gathered(root, frame_list), [], f"{frame_list.__name__} before English is bound")
+    _bind(root, English, shape)
+    _late_twin_resolves(root, frame_list, ["English"])
+    fresh = _late_twin(root, ListByClass)
+    assert fresh == [], f"LateListByClass gathers {fresh}: a class list reached English at the {shape} address"
+    gathered = _gathered(root, ListByClass)
+    assert gathered == [], f"ListByClass gathers {gathered} while its late twin gathers {fresh}: a key split"
+    woken = _gathered(root, frame_list)
+    assert woken == ["English"], f"{frame_list.__name__} gathers {woken} although English is live at {shape}"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param("protocol", id="C1-protocol-index"),
+        pytest.param("category", id="C2-category-index"),
+    ],
+)
+def test_waiting_consumer_stays_unresolved_across_a_notch_of_a_framed_provider(shape: str) -> None:
+    """
+    C1 (the owner's original report), C2: English is bound under the Protocol frame `Greeter` or the category "langs"
+        before conjure, beside `ByClass` and the frame's own consumer; French is staged on English's index, the index
+        is notched to French and back to English.
+
+    Contract (2026-11-07): the frame hides English from the class lookup, so `ByClass` never melds it - its meld
+        raises UnresolvedInputError with English active, with French active (nothing provides English) and after the
+        notch back, and its late twin compiled after the notch back agrees: no key split. The frame's own consumer
+        (`Greeter`, `list["langs"]`) follows the index: English, French, English again. Until the ruling the original
+        report read as a missed wake-up: `ByClass` melded the framed English, lost it to French and never got it back,
+        while a late twin resolved it.
+    """
+    frame = f"notch-back-{shape}"
+    frame_consumer = FRAME_CONSUMERS[shape]
+    book = _book(frame)
+    english_id = _bind(book, English, shape)
+    _bind(book, ByClass)
+    _bind(book, frame_consumer)
+    root = book.conjure(dynamic=True, name="root")
+    index = root.get_spell_by_spell_id(english_id, frame).spell_index
+    french_id = root.bind_inactive(spell=French, spell_index=index, existence=Existence.many,
+                                   permissions="create", **SHAPES[shape])
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "English"),
+           f"{frame_consumer.__name__} with English active")
+    with_english = _held(root, ByClass)
+    assert with_english == "raises UnresolvedInputError", (
+        f"ByClass melds {with_english}: a class lookup reached English at the {shape} address"
+    )
+    root.notch_spell(spell_index=index, spell_id=french_id)
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "French"),
+           f"{frame_consumer.__name__} with French active")
+    _given(_held(root, ByClass), "raises UnresolvedInputError", "ByClass with French active")
+    root.notch_spell(spell_index=index, spell_id=english_id)
+    _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
+    fresh = _late_twin(root, ByClass)
+    assert fresh == "raises UnresolvedInputError", (
+        f"LateByClass melds {fresh}: a class lookup reached English at the {shape} address after the notch back"
+    )
+    held = _held(root, ByClass)
+    assert held == "raises UnresolvedInputError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
+    followed = _melded(root, frame_consumer)
+    assert followed == _frame_holds(frame_consumer, "English"), (
+        f"{frame_consumer.__name__} melds {followed} after the notch back to English at the {shape} address"
+    )
+
+
+def test_waiting_list_gathers_nothing_across_a_notch_of_a_framed_provider() -> None:
+    """
+    C4: English is bound under the category "langs" before conjure, beside `ListByClass` and `ListByLabel`; the
+        "langs" index is notched to French and back to English.
+
+    Contract (2026-11-07): `list[English]` never gathers the framed English - it gathers nothing with English active,
+        with French active and after the notch back, and its late twin compiled after the notch back agrees: no key
+        split - while `list["langs"]` follows the index: [English], [French], [English]. Until the ruling
+        `ListByClass` gathered the framed English and lost it for good at the notch to French.
+    """
+    frame = "list-notch-back"
+    book = _book(frame)
+    english_id = _bind(book, English, "category")
+    _bind(book, ListByClass)
+    _bind(book, ListByLabel)
+    root = book.conjure(dynamic=True, name="root")
+    index = root.get_spell_by_spell_id(english_id, frame).spell_index
+    french_id = root.bind_inactive(spell=French, spell_index=index, existence=Existence.many,
+                                   permissions="create", spellframe="langs")
+    _given(_gathered(root, ListByLabel), ["English"], "ListByLabel with English active")
+    with_english = _gathered(root, ListByClass)
+    assert with_english == [], f"ListByClass gathers {with_english}: a class list reached English under 'langs'"
+    root.notch_spell(spell_index=index, spell_id=french_id)
+    _given(_gathered(root, ListByLabel), ["French"], "ListByLabel with French active")
+    _given(_gathered(root, ListByClass), [], "ListByClass with French active")
+    root.notch_spell(spell_index=index, spell_id=english_id)
+    _late_twin_resolves(root, ListByLabel, ["English"])
+    fresh = _late_twin(root, ListByClass)
+    assert fresh == [], f"LateListByClass gathers {fresh}: a class list reached English under 'langs'"
+    gathered = _gathered(root, ListByClass)
+    assert gathered == [], f"ListByClass gathers {gathered} while its late twin gathers {fresh}: a key split"
+    followed = _gathered(root, ListByLabel)
+    assert followed == ["English"], f"ListByLabel gathers {followed} after the notch back to English"
+
+
+def test_waiting_consumer_stays_unresolved_for_a_version_notched_in_under_a_category() -> None:
+    """
+    I2: French is active under "langs" and `ByClass` waits for English beside `ListByLabel`; English is staged on that
+        index with `bind_inactive` and notched in.
+
+    Contract (2026-11-07): staging alone changes nothing (a parked version is not resolvable); after the notch English
+        is active under "langs", which hides it from the class lookup, so `ByClass` still raises
+        UnresolvedInputError, LIVE and FRESH alike - no key split - while `list["langs"]` moves from [French] to
+        [English].
+    """
+    frame = "notch-in"
+    book = _book(frame)
+    french_id = _bind(book, French, "category")
+    _bind(book, ByClass)
+    _bind(book, ListByLabel)
+    root = book.conjure(dynamic=True, name="root")
+    index = root.get_spell_by_spell_id(french_id, frame).spell_index
+    english_id = root.bind_inactive(spell=English, spell_index=index, existence=Existence.many,
+                                    permissions="create", spellframe="langs")
+    _given(_held(root, ByClass), "raises UnresolvedInputError", "ByClass with English parked")
+    _given(_gathered(root, ListByLabel), ["French"], "ListByLabel with English parked")
+    root.notch_spell(spell_index=index, spell_id=english_id)
+    _late_twin_resolves(root, ListByLabel, ["English"])
+    fresh = _late_twin(root, ByClass)
+    assert fresh == "raises UnresolvedInputError", (
+        f"LateByClass melds {fresh}: a class lookup reached English notched in under 'langs'"
+    )
+    held = _held(root, ByClass)
+    assert held == "raises UnresolvedInputError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
+    followed = _gathered(root, ListByLabel)
+    assert followed == ["English"], f"ListByLabel gathers {followed} after English was notched in under 'langs'"
+
+
+@pytest.mark.parametrize(
+    ("definition", "consumer", "provider", "shape", "expected"),
+    [
+        pytest.param(Greeter, ByProtocol, English, "protocol", "English", id="F1-protocol-definition"),
+    ],
+)
+def test_override_only_consumer_uses_a_real_provider_once_one_arrives(definition: type, consumer: type,
+                                                                     provider: type, shape: str,
+                                                                     expected: str) -> None:
+    """
+    F1: the consumer's only match is a definition bound resolvable=False, so it compiled an OVERRIDE_REQUIRED
+        socket; then a real provider of that type arrives by `bind`.
+
+    Contract: without an override the meld fails while only the definition matches (the constructor misses its
+        argument); once a resolvable provider the consumer matches is bound the meld builds the consumer with it.
+        F2's provider arrives under a frame its class consumer does not match:
+        `test_override_only_consumer_keeps_its_definition_when_a_provider_arrives_under_a_frame`.
+    """
+    book = _book(f"override-{consumer.__name__}")
+    _bind(book, definition, resolvable=False)
+    _bind(book, consumer)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, consumer), "raises TypeError", f"{consumer.__name__} with only the definition bound")
+    _bind(root, provider, shape)
+    _late_twin_resolves(root, consumer, expected)
+    held = _held(root, consumer)
+    assert held == expected, f"{consumer.__name__} melds {held} although {expected} is live at the {shape} address"
+
+
+def test_override_only_consumer_keeps_its_definition_when_a_provider_arrives_under_a_frame() -> None:
+    """
+    F2: `ByClass`'s only match is the definition `English` bound bare with resolvable=False, so it compiled an
+        OVERRIDE_REQUIRED socket; then `Edited.English` - the same type key, another spell_id - arrives by `bind`
+        under the category "langs", beside a waiting `ListByLabel`.
+
+    Contract (2026-11-07): the category hides Edited.English from the class lookup, so the definition stays
+        `ByClass`'s only match and its meld still fails without an override (the constructor misses its argument),
+        LIVE and FRESH alike - no key split - while `list["langs"]` wakes with Edited.English.
+    """
+    book = _book("override-ByClass-framed")
+    _bind(book, English, resolvable=False)
+    _bind(book, ByClass)
+    _bind(book, ListByLabel)
+    root = book.conjure(dynamic=True, name="root")
+    _given(_held(root, ByClass), "raises TypeError", "ByClass with only the definition bound")
+    _given(_gathered(root, ListByLabel), [], "ListByLabel before Edited.English is bound")
+    _bind(root, Edited.English, "category")
+    _late_twin_resolves(root, ListByLabel, ["Edited.English"])
+    fresh = _late_twin(root, ByClass)
+    assert fresh == "raises TypeError", (
+        f"LateByClass melds {fresh}: a class lookup reached Edited.English under 'langs'"
+    )
+    held = _held(root, ByClass)
+    assert held == "raises TypeError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
+    woken = _gathered(root, ListByLabel)
+    assert woken == ["Edited.English"], f"ListByLabel gathers {woken} although Edited.English is live under 'langs'"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param("bare", id="G1-bare"),
+    ],
+)
+def test_waiting_borrower_picks_up_a_provider_granted_by_contract(shape: str) -> None:
+    """
+    G1: `ByClass` waits in a borrower root; the owner root's English, bound bare, is granted to it by link and
+        `add_spell_to_contract`.
+
+    Contract: after the grant the borrower's meld builds `ByClass` with the borrowed English - bare, the one address
+        a class lookup reaches since 2026-11-07. G2 and G3 grant an English the owner filed under a frame:
+        `test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_contract`.
+    """
+    frame = f"grant-{shape}"
+    owner_book = _book(frame)
+    english_id = _bind(owner_book, English, shape)
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower_book = _book(frame, first=False)
+    _bind(borrower_book, ByClass)
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    _given(_held(borrower, ByClass), "raises UnresolvedInputError", "ByClass in the borrower before the grant")
+    _given(owner.link(borrower), True, "owner.link(borrower)")
+    _given(borrower.add_spell_to_contract(spell_id=english_id, conduit=owner, permissions="create"), True,
+           "the grant of English")
+    _late_twin_resolves(borrower, ByClass, "English")
+    held = _held(borrower, ByClass)
+    assert held == "English", f"the borrower's ByClass melds {held} although English is granted ({shape})"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param("protocol", id="G2-protocol"),
+        pytest.param("category", id="G3-category"),
+    ],
+)
+def test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_contract(shape: str) -> None:
+    """
+    G2, G3: `ByClass` and the frame's own consumer wait in a borrower root; the owner root's English, filed under the
+        Protocol frame `Greeter` or the category "langs", is granted to it by link and `add_spell_to_contract`.
+
+    Contract (2026-11-07): the borrowed English keeps the owner's frame, which hides it from the class lookup, so the
+        borrower's `ByClass` still raises UnresolvedInputError after the grant, LIVE and FRESH alike - no key split -
+        while the borrower's frame consumer (`Greeter`, `list["langs"]`) wakes with the borrowed English.
+    """
+    frame = f"grant-{shape}"
+    frame_consumer = FRAME_CONSUMERS[shape]
+    owner_book = _book(frame)
+    english_id = _bind(owner_book, English, shape)
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower_book = _book(frame, first=False)
+    _bind(borrower_book, ByClass)
+    _bind(borrower_book, frame_consumer)
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    _given(_held(borrower, ByClass), "raises UnresolvedInputError", "ByClass in the borrower before the grant")
+    _given(_melded(borrower, frame_consumer), _frame_holds(frame_consumer, None),
+           f"{frame_consumer.__name__} in the borrower before the grant")
+    _given(owner.link(borrower), True, "owner.link(borrower)")
+    _given(borrower.add_spell_to_contract(spell_id=english_id, conduit=owner, permissions="create"), True,
+           "the grant of English")
+    _late_twin_resolves(borrower, frame_consumer, _frame_holds(frame_consumer, "English"))
+    fresh = _late_twin(borrower, ByClass)
+    assert fresh == "raises UnresolvedInputError", (
+        f"the borrower's LateByClass melds {fresh}: a class lookup reached the granted English ({shape})"
+    )
+    held = _held(borrower, ByClass)
+    assert held == "raises UnresolvedInputError", (
+        f"the borrower's ByClass melds {held} while its late twin melds {fresh}: a key split ({shape})"
+    )
+    woken = _melded(borrower, frame_consumer)
+    assert woken == _frame_holds(frame_consumer, "English"), (
+        f"the borrower's {frame_consumer.__name__} melds {woken} although English is granted ({shape})"
+    )
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_graduation_configuration.py
@@ -38285,7 +39124,7 @@ END FILE: tests/component/melder/spellbook/spell_compiler_runtime_test_support.p
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/change_control/test_spellbook_component_spell_crafter_change_control.py
-CONTENT SHA256: 3eccb4d3c89598214524b9b08aa23b5535509f5ba8ccee9949a88fcc9c5d1a81
+CONTENT SHA256: 92efd2c72dc4b35cbe6c2cccb4b640c8e059a0d04e38bef23f2cb02da0b854ff
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -38397,6 +39236,10 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
     Contract:
         - component_of includes root and dependency spell ids.
         - Revalidator registration is enabled.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it: a class lookup reaches only a
+          spell bound bare (2026-11-07). Its address is its own name, as under
+          the spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -38433,7 +39276,6 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -38473,6 +39315,11 @@ def test_component_change_control_revalidator_clears_dirty_roots() -> None:
     Contract:
         - notify_spell_changed marks the root as dirty.
         - revalidate_dirty_roots clears dirty roots and monitoring.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the root depends on it: a
+          class lookup reaches only a spell bound bare (2026-11-07). Its address
+          is its own name, as under the spellframe 'BasicService' it was bound
+          with before.
     Returns:
         None.
     Raises:
@@ -38509,7 +39356,6 @@ def test_component_change_control_revalidator_clears_dirty_roots() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -38545,6 +39391,11 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
     Contract:
         - Contracted dependency spell ids map back to the root spell id.
         - Revalidator registration is enabled after Phase 5.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -38584,7 +39435,6 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         owner = owner_book.conjure(dynamic=True, name="owner")
         borrower = borrower_book.conjure(dynamic=True, name="borrower")
@@ -38631,6 +39481,11 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
     Contract:
         - Uncontracted remote spell ids do not appear in component_of.
         - Contracted dependencies are still present.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -38690,7 +39545,6 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         remote_id = remote_book.bind(
             spell=RemoteOnly,
@@ -38743,6 +39597,10 @@ def test_component_change_control_shared_dependency_maps_to_multiple_roots() -> 
     Contract:
         - Shared dependency spell id maps to both root spell ids.
         - Each root maps to itself in component_of.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          both consumers' class annotations reach it: a class lookup reaches
+          only a spell bound bare (2026-11-07). Its address is its own name, as
+          under the spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -38802,7 +39660,6 @@ def test_component_change_control_shared_dependency_maps_to_multiple_roots() -> 
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         consumer_a_id = spellbook.bind(
             spell=ConsumerA,
@@ -44431,7 +45288,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py
-CONTENT SHA256: a9cd32ac44f9578867066fa26170fa3c4d80f6b196cf57cb89bd77e2ce89defb
+CONTENT SHA256: 143f61e16b913f034e3690c941c45bfa211d483a37ed25548b97887cc34f04b0
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -44508,7 +45365,12 @@ def _bind_graph(
         Bind a dependency graph and return ids keyed by class.
     Contract:
         - Each class is bound as a unique spell with create permissions.
-        - Spellframes match class names for forward-ref DI resolution.
+        - Each class is bound bare (no spellframe, the default binding), so its
+          address is its own name and the graph's forward-ref class annotations
+          reach it: a class lookup reaches only a spell bound bare (2026-11-07).
+          Before, each was bound under a spellframe spelled as its class name:
+          the same address, but a spellframe now hides the class from those
+          annotations.
         - Returned mapping contains an entry for every class.
     Args:
         spellbook: Spellbook used to bind the classes.
@@ -44522,7 +45384,6 @@ def _bind_graph(
             spell=cls,
             existence=Existence.unique,
             permissions="create",
-            spellframe=cls.__name__,
         )
         ids[cls] = spell_id
     return ids
@@ -44574,6 +45435,11 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
         - Contracted dependency spell ids appear in the system index.
         - Root blueprints include contracted dependency nodes.
         - Contracted dependencies are not treated as roots.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -44613,7 +45479,6 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
 
         owner = owner_book.conjure(dynamic=True, name="owner")
@@ -44755,6 +45620,11 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
     Contract:
         - Contracted spell ids appear in the system index and DAG.
         - Uncontracted remote spell ids are filtered out.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation and the DAG holds it: a class lookup reaches only
+          a spell bound bare (2026-11-07). Its address is its own name, as under
+          the spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -44814,7 +45684,6 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         remote_id = remote_book.bind(
             spell=RemoteOnly,
@@ -62060,7 +62929,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py
-CONTENT SHA256: 735a46dbf0461303f1c4851c18d3960bf6e6ba53427a0f6bfe00e5ca23d68571
+CONTENT SHA256: cbc90cf0c9260a5cb5dde0d9031dee01e64c0bf8f2e8e4aff1bb25eefaab4c70
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -62987,6 +63856,11 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         Validate explicit SpellMap defaults raise when duplicates exist.
     Contract:
         - run_phase_local_frame raises when explicit spell resolves to multiple matches.
+        - The two duplicates are pool stubs bound bare under the default binding: `SpellMap(BasicService)`
+          is a class lookup, which reaches only BasicService bound with no spellframe under the default
+          binding (2026-11-07, the owner's rulings E2-E3). Stubs under a spellframe (the class itself, which
+          bind has refused as a spellframe since 0.2.8222) or under binding names are skipped, so the
+          default would be unresolved rather than ambiguous.
     Returns:
         None.
     Raises:
@@ -63026,15 +63900,11 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         spell_id="candidate-a",
         spell=BasicService,
         spell_name="BasicService-A",
-        spellframe=BasicService,
-        binding_name="primary-a",
     )
     candidate_b = _SpellCandidateStub(
         spell_id="candidate-b",
         spell=BasicService,
         spell_name="BasicService-B",
-        spellframe=BasicService,
-        binding_name="primary-b",
     )
     spellbook._spell_id_pool[candidate_a.spell_index.selected_spell_id] = candidate_a
     spellbook._spell_id_pool[candidate_b.spell_index.selected_spell_id] = candidate_b
@@ -67273,7 +68143,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_structural_s
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py
-CONTENT SHA256: a8c58b0b7e90bdc99580d1ff425326ec082d4335e08a694e8b4f41ed4ace7309
+CONTENT SHA256: 14209cf001ac2b06bb30b226a62813f742d5c3aeea734dc6c75a0a7046a4b50a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -67310,7 +68180,7 @@ from melder.utilities.custom_exceptions.unresolved_input_error import Unresolved
 from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
 from tests.mocks.spellbook.contract_classes import ContractConsumerPrimary, ContractServicePrimary
 from tests.mocks.spellbook.protocols import IService
-from tests.mocks.spellbook.structural_snapshot_classes import Car, Engine, EngineAlternative, Radio, Wheel
+from tests.mocks.spellbook.structural_snapshot_classes import Car, Engine, Radio, Wheel
 
 FRAME = "structural-parity"
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -67392,12 +68262,15 @@ def _bind_world(book: Spellbook) -> Dict[str, str]:
     """
     Bind Engine (unique), Wheel (many), Car (many) and Radio (unique); return the ids by class name.
 
-    Engine is bound under the string category 'Engine' - the address a bare bind gives it, so `meld(spell=Engine)`
-    still reaches it - because every version of an index is bound the way its first version was (2026-10-25): the
-    notch event stages EngineAlternative under that binding. The child process binds it the same way.
+    Engine is bound bare (no spellframe, the default binding), the only binding a class lookup reaches (2026-11-07):
+    Car's and Dashboard's `engine: Engine` reach it, and `meld(spell=Engine)` reaches it at its own name. Until
+    2026-11-07 it was bound under the string category 'Engine' - the same address - so the notch event could stage the
+    renamed EngineAlternative under that binding; a spellframe now hides Engine from class lookups. Every version of
+    an index is bound the way its first version was (2026-10-25), so the notch event stages an edited Engine
+    (`_edited_engine`) under this bare binding. The child process binds it the same way.
     """
     return {
-        "Engine": book.bind(spell=Engine, existence="unique", permissions="create", spellframe="Engine"),
+        "Engine": book.bind(spell=Engine, existence="unique", permissions="create"),
         "Wheel": book.bind(spell=Wheel, existence="many", permissions="create"),
         "Car": book.bind(spell=Car, existence="many", permissions="create"),
         "Radio": book.bind(spell=Radio, existence="unique", permissions="create"),
@@ -67455,34 +68328,54 @@ def _event_post_conjure_bind(book: Spellbook, conduit: Conduit, ids: Dict[str, s
     return (type(dashboard.radio).__name__, type(dashboard.engine).__name__, type(car.engine).__name__, len(car.wheels))
 
 
+def _edited_engine() -> type:
+    """
+    Return an edited Engine: a class of Engine's name with new code, so a new spell_id at Engine's bare address.
+
+    Every version of an index is bound the way its first version was (2026-10-25), and Engine is bound bare, so a
+    version staged into its index is a class named Engine bound bare - an edited Engine; a renamed class such as
+    EngineAlternative is a new spell, refused there. Its `__qualname__` (`_edited_engine.<locals>.Engine`) tells it
+    from Engine in an event outcome, and every call builds the same code, so both worlds stage the same spell_id.
+    """
+
+    class Engine:  # the edited class keeps its name
+        """Edited Engine version staged into Engine's index by the notch event."""
+
+    return Engine
+
+
 def _event_notch(book: Spellbook, conduit: Conduit, ids: Dict[str, str]) -> Any:
     """
-    Meld Car, stage an alternative Engine into Engine's index under Engine's binding (the category 'Engine'), notch
-    it, meld the new member and Car, then notch back to Engine and meld Car again.
+    Meld Car, stage an edited Engine (`_edited_engine`) into Engine's index under Engine's binding (bare), notch it,
+    meld the new member and Car, then notch back to Engine and meld Car again.
 
     Rule 2 (D2, 2026-10-16): a notch marks every spell that depends on the notched one, so Car's next meld rechecks
-    its structure against the version now active. A class annotation selects its own type (the kind rule), so
-    `engine: Engine` does not select EngineAlternative: that meld raises the UnresolvedInputError a first meld would
-    raise, and after the notch back Car builds with Engine again. Before rule 2 the after-notch meld silently built
-    the old Engine, and a dependent melded first after a provider notch failed with "generalized manifest references
-    unknown spell_id". Cold and hydrated worlds must end alike either way.
+    its structure against the version now active. A class annotation selects its own type bound bare (the kind rule;
+    2026-11-07), and the edited Engine is a class of that name bound bare, so the after-notch meld builds the edited
+    Engine, and after the notch back Car builds with Engine again. The outcome names each class by `__qualname__`, so
+    an after-notch meld that built the old Engine shows in it; an UnresolvedInputError there is recorded rather than
+    raised, so the two worlds compare either way. Until 2026-11-07 this event staged the renamed EngineAlternative
+    under the category 'Engine' and the after-notch meld raised the UnresolvedInputError a first meld would raise,
+    since `engine: Engine` did not select EngineAlternative; a category now hides Engine from Car, and a bare index
+    admits no renamed class. Before rule 2 the after-notch meld silently built the old Engine, and a dependent melded
+    first after a provider notch failed with "generalized manifest references unknown spell_id". Cold and hydrated
+    worlds must end alike either way.
     """
     before = conduit.meld(spell=Car)
     engine_index = book.find_spell_by_spell_id(ids["Engine"]).spell_index
-    staged_id = conduit.bind_inactive(
-        spell=EngineAlternative, spell_index=engine_index, existence="unique", spellframe="Engine",
-    )
+    staged_id = conduit.bind_inactive(spell=_edited_engine(), spell_index=engine_index, existence="unique")
     conduit.notch_spell(spell_index=engine_index, spell_id=staged_id)
     member = conduit.meld(spell_id=staged_id)
     staged_is_active = book.find_spell_by_spell_id(staged_id).spell_id == staged_id
     try:
-        after: Any = type(conduit.meld(spell=Car).engine).__name__
+        after: Any = type(conduit.meld(spell=Car).engine).__qualname__
     except UnresolvedInputError as error:
         after = (type(error).__name__, "engine" in str(error))
     conduit.notch_spell(spell_index=engine_index, spell_id=ids["Engine"])
     back = conduit.meld(spell=Car)
     return (
-        type(before.engine).__name__, type(member).__name__, staged_is_active, after, type(back.engine).__name__,
+        type(before.engine).__qualname__, type(member).__qualname__, staged_is_active, after,
+        type(back.engine).__qualname__,
     )
 
 
@@ -67594,7 +68487,7 @@ configuration.with_system_cache_root_path(Path({fragment!r}))
 book = Spellbook(aetheric_frame={frame!r})
 book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
 ids = [
-    book.bind(spell=Engine, existence="unique", permissions="create", spellframe="Engine"),
+    book.bind(spell=Engine, existence="unique", permissions="create"),
     book.bind(spell=Wheel, existence="many", permissions="create"),
     book.bind(spell=Car, existence="many", permissions="create"),
     book.bind(spell=Radio, existence="unique", permissions="create"),
@@ -94216,7 +95109,7 @@ END FILE: tests/experiments/cprofile_testing/trace_creation_vs_bootstrap.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py
-CONTENT SHA256: 0db7d2b758946bf971b2fdbf5b2c0977313e66480b7bc10189b3bc234b5f62f7
+CONTENT SHA256: 02ef78fc96af707c91d1b1d1f06f75d1c7502e47e673b77f06b47552abee8cf2
 SOURCE ENCODING: utf-8
 ================================================================================
 """Integration regressions: annotations match by kind; a spellframe is a category or a Protocol contract.
@@ -94232,6 +95125,15 @@ records the kind (`Spell.spellframe_kind`) so Phase 3 reads it instead of inferr
 
 Repaired 2026-10-04 (annotation_kind_matching): the four defect cases below ran under xfail(strict=True) until
 then; the guards pin what the repair must keep, and the new cases pin the ruled contract and collection rules.
+
+Narrowed 2026-11-07 (EPIC-2026-11-07-spellframe_hides_the_concrete_class, the owner's Autofac reading): a class
+lookup - a class annotation, a string naming a class, `list[Class]`, `SpellMap(Class)` - reaches a spell only when it
+is bound bare, with no spellframe and the default binding, existing objects alike; a spellframe or a binding name
+hides the class, and the spell is reached through its frame (`list["label"]`, a Protocol annotation,
+`SpellMap(spellframe=..., binding_name=...)`, `meld(spellframe=..., binding_name=...)`). So the collision guards bind
+the real Spectrum bare, where a class lookup still finds it, and the cases built on the reported shape - a Spectrum,
+a manager, a config or a ScanProfile filed under a category - now pin that the class consumer stays unresolved (an
+override supplies it), that two framed spells of one class are no ambiguity, and that the frame reaches each of them.
 """
 
 import sys
@@ -94241,8 +95143,7 @@ from typing import Any, Protocol, Type
 
 import pytest
 
-from melder import Aether, Cleanable, Conduit, Spellbook
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder import Aether, Cleanable, Conduit, Spellbook, SpellMap
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
 
@@ -94264,7 +95165,10 @@ def reset_melder() -> Iterator[None]:
 
 
 class Spectrum(Cleanable):
-    """The host object a consumer annotates; bound as a unique at ("spectrum", "Spectrum")."""
+    """
+    The host object a consumer annotates; bound as a unique at ("spectrum", "Spectrum") - the reported shape, which
+    hides it from class lookups since 2026-11-07 - or bare, where a class lookup finds it.
+    """
 
     def __init__(self) -> None:
         """No collaborators."""
@@ -94312,6 +95216,25 @@ class CenterWithString(Cleanable):
 
     def __init__(self, *, spectrum: "Spectrum") -> None:
         """Hold the borrowed host."""
+        super().__init__()
+        self.spectrum = spectrum
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum
+
+
+class CenterWithSpellMap(Cleanable):
+    """
+    Consumer that asks for the host by its address - the frame-addressed SpellMap through which a class filed under a
+    category is injected since 2026-11-07, when the class annotation no longer reaches it.
+    """
+
+    def __init__(self, *, spectrum: Spectrum = SpellMap(spellframe="spectrum", binding_name="Spectrum")) -> None:
+        """Hold the host found at ("spectrum", "Spectrum")."""
         super().__init__()
         self.spectrum = spectrum
 
@@ -94431,11 +95354,20 @@ def _consumer_with_unbound_annotation(class_name: str, param_name: str, annotati
     ],
 )
 def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shared_category: bool) -> None:
-    """The reported four-case matrix: Spectrum resolves whether or not Toolbox shares the "spectrum" category."""
+    """
+    The reported four-case matrix, with the real provider bound bare: Spectrum resolves whether or not Toolbox shares
+    the "spectrum" category.
+
+    Since 2026-11-07 a class lookup reaches Spectrum only when it is bound bare - no spellframe, the default binding -
+    and its address frame is then "spectrum", the category's own name. The guard of the 2026-10-03 report (a category
+    named like the type made every member a candidate: an ambiguity beside the real provider) therefore binds the
+    real provider bare; the reported shape itself, Spectrum filed at ("spectrum", "Spectrum"), is pinned by
+    `test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category`.
+    """
     root = _dynamic_root("annotation-category-matrix")
     try:
-        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
-                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        # bare: filed at ("spectrum", "Spectrum") it is hidden from the class lookup (2026-11-07)
+        root.bind(spell=Spectrum, existence="unique_per_conduit", disposal_method_names=["cleanup"])
         root.bind(spell=Toolbox, existence="unique_per_conduit",
                   spellframe="spectrum" if shared_category else "tooling",
                   binding_name="Toolbox", disposal_method_names=["cleanup"])
@@ -94449,11 +95381,17 @@ def test_spectrum_annotation_selects_the_spectrum_provider(annotation: str, shar
 
 
 def test_type_checking_only_string_annotation_selects_the_spectrum_provider() -> None:
-    """A string annotation whose name is unbound at runtime resolves exactly as the class object does."""
+    """
+    A string annotation whose name is unbound at runtime resolves exactly as the class object does: Spectrum, bound
+    bare, beside a Toolbox in the "spectrum" category.
+
+    Bare since 2026-11-07, the one address a class lookup - the string's type part as much as the class object -
+    reaches; filed under the category, Spectrum leaves the unbound string unresolved exactly as it leaves the class
+    object (`test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category`).
+    """
     root = _dynamic_root("annotation-category-unbound-string")
     try:
-        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
-                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Spectrum, existence="unique_per_conduit", disposal_method_names=["cleanup"])
         root.bind(spell=Toolbox, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="Toolbox", disposal_method_names=["cleanup"])
         root.bind(spell=_center_with_unbound_string_annotation(), existence="many",
@@ -94464,11 +95402,63 @@ def test_type_checking_only_string_annotation_selects_the_spectrum_provider() ->
         root.cleanup()
 
 
+@pytest.mark.parametrize("annotation", ["class", "string", "unbound_string"])
+@pytest.mark.parametrize(
+    "shared_category",
+    [
+        False,
+        True,
+    ],
+)
+def test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category(annotation: str,
+                                                                              shared_category: bool) -> None:
+    """
+    The reported shape under the class-lookup rule (2026-11-07): Spectrum filed at ("spectrum", "Spectrum"), Toolbox
+    in that category or in "tooling".
+
+    Contract:
+        - `spectrum: Spectrum` - the class object, its name as a string, or a string unbound at runtime - is an
+          unresolved input: the category and the binding name hide Spectrum from the class lookup, and Toolbox, a
+          member of a category spelled like the type, is no candidate either. The consumer binds without an
+          AMBIGUOUS_PROVIDER refusal, and its meld raises UnresolvedInputError instead of injecting anything.
+        - Spectrum is reached through its address: `meld(spellframe="spectrum", binding_name="Spectrum")` builds it,
+          a frame-addressed `SpellMap` (`CenterWithSpellMap`) injects that same unique, and an override supplies it to
+          the class consumer.
+    """
+    root = _dynamic_root("annotation-category-reported-shape")
+    try:
+        root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="Spectrum", disposal_method_names=["cleanup"])
+        root.bind(spell=Toolbox, existence="unique_per_conduit",
+                  spellframe="spectrum" if shared_category else "tooling",
+                  binding_name="Toolbox", disposal_method_names=["cleanup"])
+        if annotation == "class":
+            consumer = CenterWithClass
+        elif annotation == "string":
+            consumer = CenterWithString
+        else:
+            consumer = _center_with_unbound_string_annotation()
+        root.bind(spell=consumer, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="command_center", binding_name="center")
+        host = root.meld(spellframe="spectrum", binding_name="Spectrum")
+        assert isinstance(host, Spectrum)
+        root.bind(spell=CenterWithSpellMap, existence="many", spellframe="command_center",
+                  binding_name="by_address", disposal_method_names=["cleanup"])
+        assert root.meld(spellframe="command_center", binding_name="by_address").spectrum is host
+        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": host})
+        assert center.spectrum is host
+    finally:
+        root.cleanup()
+
+
 def test_lone_category_member_is_not_injected_for_a_type_annotation() -> None:
     """With no Spectrum bound, a Toolbox in category "spectrum" is NOT handed to `spectrum: Spectrum`.
 
     The parameter is an unresolved input: the meld refuses without an override and takes the supplied
-    object with one. Today the Toolbox is injected silently.
+    object with one. Until 2026-10-04 the Toolbox was injected silently; since 2026-11-07 a class lookup
+    reaches only a spell bound bare, so a category member is never a candidate for a type annotation.
     """
     root = _dynamic_root("annotation-category-lone-member")
     try:
@@ -94569,7 +95559,14 @@ class Gatherer(Cleanable):
 
 
 def test_collection_annotations_gather_the_group_their_kind_names() -> None:
-    """`list[Spectrum]` gathers that class, `list["spectrum"]` the category's members, `list[IService]` the contract's."""
+    """
+    `list[Spectrum]` gathers that class bound bare, `list["spectrum"]` the category's members, `list[IService]` the
+    contract's.
+
+    Spectrum is filed under the category here, so since 2026-11-07 the class list gathers nothing - the category hides
+    Spectrum from a class lookup, a collection as much as a single socket - and Spectrum is gathered through its
+    category instead, beside Toolbox; neither list takes the other's group.
+    """
     root = _dynamic_root("annotation-category-collections")
     try:
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
@@ -94581,34 +95578,46 @@ def test_collection_annotations_gather_the_group_their_kind_names() -> None:
         root.bind(spell=Gatherer, existence="many", spellframe="consumers", binding_name="gatherer",
                   disposal_method_names=["cleanup"])
         gatherer = root.meld(spellframe="consumers", binding_name="gatherer")
-        assert [type(item).__name__ for item in gatherer.spectra] == ["Spectrum"]
+        assert [type(item).__name__ for item in gatherer.spectra] == []
         assert sorted(type(item).__name__ for item in gatherer.members) == ["Spectrum", "Toolbox"]
         assert [type(item).__name__ for item in gatherer.services] == ["Impl"]
     finally:
         root.cleanup()
 
 
-def test_guard_two_providers_of_the_annotated_type_still_raise_ambiguity() -> None:
+def test_two_framed_providers_of_the_annotated_type_leave_the_class_lookup_unresolved() -> None:
     """
-    GUARD: two spells of the annotated TYPE at distinct addresses are a real ambiguity - the second a version of
-    Spectrum (its name, other code), since one class is one spell. Since 2026-10-04 it is refused through the
-    readable validation report (AMBIGUOUS_PROVIDER) naming both addresses and the remedies, at the late bind in a
-    dynamic world.
+    Two spells of the annotated TYPE at distinct framed addresses - the second a version of Spectrum (its name, other
+    code), since one class is one spell - are no ambiguity for `spectrum: Spectrum` since 2026-11-07: each spellframe
+    hides its Spectrum from the class lookup, so neither is a candidate.
+
+    From 2026-10-04 to 2026-11-07 the pair was a real ambiguity, refused through the readable validation report
+    (AMBIGUOUS_PROVIDER) naming both addresses and the remedies, at the late bind in a dynamic world. Now the late
+    bind of the consumer is accepted, its meld raises UnresolvedInputError naming the override remedy, each version is
+    reached through its own address, and an override supplies the one wanted. Two providers that both answer a class
+    lookup would both be bound bare, at one address, which bind refuses (one active spell per signature per frame;
+    TASK-2026-11-07-spellframe_ambiguity_validation_check part (b) checks the other paths); the report itself stays
+    pinned for a Protocol frame with two implementations
+    (test_spellbook_integration_resolution_contract.py::test_type_hint_di_ambiguous_frame_raises).
     """
     root = _dynamic_root("annotation-category-type-ambiguity")
     try:
+        mirror = version_of(Spectrum, mirror=True)
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="primary", disposal_method_names=["cleanup"])
-        root.bind(spell=version_of(Spectrum, mirror=True), existence="unique_per_conduit", spellframe="mirror",
+        root.bind(spell=mirror, existence="unique_per_conduit", spellframe="mirror",
                   binding_name="secondary", disposal_method_names=["cleanup"])
-        with pytest.raises(SpellbookValidationError) as excinfo:
-            root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
-                      binding_name="center", disposal_method_names=["cleanup"])
-        text = str(excinfo.value)
-        assert "[AMBIGUOUS_PROVIDER]" in text
-        assert "Spectrum at (spellframe='spectrum', binding_name='primary')" in text
-        assert "Spectrum at (spellframe='mirror', binding_name='secondary')" in text
-        assert "SpellMap(spellframe=..., binding_name=...)" in text and "override={'spectrum': ...}" in text
+        root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
+                  binding_name="center", disposal_method_names=["cleanup"])
+        with pytest.raises(UnresolvedInputError) as excinfo:
+            root.meld(spellframe="command_center", binding_name="center")
+        assert "override={'spectrum': ...}" in str(excinfo.value)
+        primary = root.meld(spellframe="spectrum", binding_name="primary")
+        secondary = root.meld(spellframe="mirror", binding_name="secondary")
+        assert type(primary) is Spectrum
+        assert type(secondary) is mirror
+        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": secondary})
+        assert center.spectrum is secondary
     finally:
         root.cleanup()
 
@@ -94638,13 +95647,19 @@ class MCPScanner:
         self.profile = profile
 
 
-def test_two_same_named_classes_in_two_categories_are_reported_with_both_addresses() -> None:
+def test_two_same_named_classes_in_two_categories_leave_the_class_consumer_unresolved() -> None:
     """
     The MelderOps composition: Agents' ScanProfile under "agents" and Utilities' ScanProfile under
     "artificial_intelligence_tools", and `MCPScanner.profile: ScanProfile`. A class annotation keys by the
-    class NAME (so a TYPE_CHECKING string and the class object agree), so the two are one type key; conjure
-    refuses MCPScanner through the readable report naming both addresses and the SpellMap remedy, not with a
-    compiler RuntimeError.
+    class NAME (so a TYPE_CHECKING string and the class object agree), so the two are one type key; until 2026-11-07
+    conjure refused MCPScanner through the readable report naming both addresses and the SpellMap remedy
+    (AMBIGUOUS_PROVIDER), not with a compiler RuntimeError.
+
+    Since then each category - and each binding name - hides its ScanProfile from the class lookup, so neither is a
+    candidate: conjure is accepted, MCPScanner's meld raises UnresolvedInputError naming the override remedy, each
+    ScanProfile is reached through its own address, and an override supplies the one MCPScanner needs.
+    TASK-2026-11-07-spellframe_ambiguity_validation_check part (a) is to refuse such a consumer at conjure with an
+    error naming where the class is bound; until it lands the socket is an unresolved input.
     """
     aether = Aether(); Spellbook._aether = aether; Conduit._aether = aether
     book = Spellbook(aetheric_frame="annotation-category-same-named-classes")
@@ -94653,14 +95668,20 @@ def test_two_same_named_classes_in_two_categories_are_reported_with_both_address
     book.bind(spell=ScanProfileFromTools, existence="unique", spellframe="artificial_intelligence_tools",
               binding_name="ScanProfile")
     book.bind(spell=MCPScanner, existence="many")
-    with pytest.raises(SpellbookValidationError) as excinfo:
-        book.conjure(name="root")
-    text = str(excinfo.value)
-    assert "Broken spells: MCPScanner" in text
-    assert "ScanProfile at (spellframe='agents', binding_name='ScanProfile')" in text
-    assert "ScanProfile at (spellframe='artificial_intelligence_tools', binding_name='ScanProfile')" in text
-    assert "[AMBIGUOUS_PROVIDER]" in text
-    book.cleanup()
+    root = book.conjure(name="root")
+    try:
+        with pytest.raises(UnresolvedInputError) as excinfo:
+            root.meld(MCPScanner)
+        assert "override={'profile': ...}" in str(excinfo.value)
+        agents_profile = root.meld(spellframe="agents", binding_name="ScanProfile")
+        tools_profile = root.meld(spellframe="artificial_intelligence_tools", binding_name="ScanProfile")
+        assert type(agents_profile) is ScanProfileFromAgents
+        assert type(tools_profile) is ScanProfileFromTools
+        scanner = root.meld(MCPScanner, override={"profile": tools_profile})
+        assert scanner.profile is tools_profile
+    finally:
+        root.cleanup()
+        book.cleanup()
 
 
 def test_guard_explicit_address_selection_is_unchanged() -> None:
@@ -94765,9 +95786,13 @@ class CommandCenter(Cleanable):
 def test_many_category_members_never_become_providers_for_the_type() -> None:
     """
     MelderOps shape: the host class, two named existing objects, two managers and a function spell all live in
-    the "spectrum" category; `CommandCenter.spectrum: Spectrum` resolves the host alone, the managers' typed
-    inputs resolve the existing objects by their classes, and melding the center with the host supplied by
-    override (as Spectrum.configure does) injects exactly that object.
+    the "spectrum" category. Since 2026-11-07 the category hides every member from the class lookup, existing
+    objects alike, so no member is a provider for any class annotation - not for `CommandCenter.spectrum: Spectrum`
+    or `CommandCenter.manager: ManagerA`, not for the managers' typed inputs, which until then resolved the existing
+    objects by their classes. Without overrides the manager and the center refuse to meld (UnresolvedInputError);
+    every member is reached through its address, and melding the manager with the existing objects, then the center
+    with the host and that manager, supplied by override (as Spectrum.configure supplies the host), injects exactly
+    those objects. The manager stays the conduit's one unique.
     """
     root = _dynamic_root("annotation-category-melderops-shape")
     try:
@@ -94785,15 +95810,23 @@ def test_many_category_members_never_become_providers_for_the_type() -> None:
         root.bind(spell=CommandCenter, existence="many", spellframe="command_center",
                   binding_name="center", disposal_method_names=["cleanup"])
         host = root.meld(spellframe="spectrum", binding_name="Spectrum")
-        center = root.meld(spellframe="command_center", binding_name="center", override={"spectrum": host})
+        # the manager's typed inputs are existing objects filed under the category: hidden from their classes
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="spectrum", binding_name="ManagerA")
+        manager = root.meld(spellframe="spectrum", binding_name="ManagerA",
+                            override={"spectrum_config": spectrum_config, "iris": iris})
+        center = root.meld(spellframe="command_center", binding_name="center",
+                           override={"spectrum": host, "manager": manager})
         assert center.spectrum is host
         assert isinstance(center.manager, ManagerA)
+        assert center.manager is manager
         assert center.manager.spectrum_config is spectrum_config
         assert center.manager.iris is iris
-        # without the override the host still resolves by its type, not by the category
-        second = root.meld(spellframe="command_center", binding_name="center")
-        assert isinstance(second.spectrum, Spectrum)
-        assert second.manager is center.manager
+        # without the override the host no longer resolves by its type (2026-11-07): the category hides it, as it
+        # hides every member, so the center refuses to meld; the manager is still the one unique at its address
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spellframe="command_center", binding_name="center")
+        assert root.meld(spellframe="spectrum", binding_name="ManagerA") is center.manager
     finally:
         root.cleanup()
 ================================================================================
@@ -97300,7 +98333,7 @@ END FILE: tests/integration/melder/aether/conduit/test_meld_unhashable_input_cac
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py
-CONTENT SHA256: 69324fe727a839971337b7939cab3a879bd2c062a53cb7b1b14da20f8dfe0d7d
+CONTENT SHA256: 83408bbb0705b60e949eae147a465ab00908f94cb83756a2de89e6e2d399d225
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -97314,10 +98347,13 @@ the index by address (measured on 0.2.8255, and on 0.2.8260, where a spell_id is
 With the fix the notch runs the check inside its window and, when the check fails, puts the structure back before
 it raises: the owner's answer (a), "refuse it and throw and move on". Until it lands these tests fail.
 
-Two broken versions are used. `SelfMade`'s constructor takes its own class (SELF_DEPENDENCY at Phase 4).
-`TimedGreeter`'s constructor needs a `Clock` while two are registered (AMBIGUOUS_PROVIDER): nothing in it loops, so
-it shows the half-switch follows any failing check, not recursion. Each is only checked once it is active, because
-a parked version is not in the pool Phase 3 resolves against.
+Two broken versions are used. `SelfMade`'s constructor takes a `Greeter`, the contract every version is staged
+under, so once SelfMade is active that parameter resolves to SelfMade itself (SELF_DEPENDENCY at Phase 4). It took
+its own class until 2026-11-07, when a class lookup stopped reaching a spell bound under a spellframe: that
+annotation would now compile to an unresolved input and the notch would stand, so the Protocol keeps the refusal a
+failed structural check. `TimedGreeter`'s constructor needs a `Clock` while two are registered (AMBIGUOUS_PROVIDER):
+nothing in it loops, so it shows the half-switch follows any failing check, not recursion. Each is only checked once
+it is active, because a parked version is not in the pool Phase 3 resolves against.
 
 Worlds follow probe N1-N3 (artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py): a dynamic
 frame with caching off, English active on the lender's index and, when a borrower is asked for, a second Book that
@@ -97367,14 +98403,23 @@ class French:
 
 
 class SelfMade:
-    """A broken version: its constructor takes its own class (SELF_DEPENDENCY once it is active)."""
+    """
+    A broken version: its constructor takes a `Greeter`, the contract it is staged under, so once it is the index's
+    active version that parameter resolves to SelfMade itself (SELF_DEPENDENCY once it is active).
 
-    def __init__(self, other: SelfMade) -> None:
+    Until 2026-11-07 the parameter named SelfMade's own class. A class lookup now reaches only a spell bound bare (no
+    spellframe, the default binding), and every version here is staged under (Greeter, 'greeter'), so that annotation
+    would compile to an unresolved input, not a self-dependency; the Protocol annotation reaches the active version
+    through the frame and keeps the failure a structural one.
+    """
+
+    def __init__(self, other: Greeter) -> None:
         """
         Keep the other instance.
 
         Args:
-            other: Another instance of this class; no meld can supply one.
+            other: Another Greeter; once SelfMade is the index's active version the only Greeter the lender's Book
+                resolves is SelfMade itself, so no meld can supply one.
         """
         self.other = other
 
@@ -98217,7 +99262,7 @@ END FILE: tests/integration/melder/aether/conduit/test_notch_spell_by_id_integra
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_rebind_after_first_meld_integration.py
-CONTENT SHA256: 79862f0513af749bf083fd3605618807a655256013a126c813ff9c9cd845a92e
+CONTENT SHA256: 59d49427fe2f82a1fbec44e1e35356b648e02a7a45936b7c057a97927e12bc2c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Integration coverage: rebind after first meld resolves again in every conduit (0.2.8219 repair).
@@ -98333,7 +99378,7 @@ class ContractConsumer(Cleanable):
 
 
 class Consumer(Cleanable):
-    """Depends on the provider class by annotation."""
+    """Depends on the provider class by annotation, which reaches Provider only when it is bound bare (2026-11-07)."""
 
     def __init__(self, p: Provider) -> None:
         """Hold the injected provider."""
@@ -98461,19 +99506,23 @@ def test_dependent_consumer_is_rebuilt_against_the_replacement_class() -> None:
 
 
 def test_dependent_consumer_survives_a_same_class_rebind_of_its_dependency() -> None:
-    """GUARD (green before the repair): same class, same id - the consumer's next meld builds a live provider."""
+    """
+    GUARD (green before the repair): same class, same id - the consumer's next meld builds a live provider.
+
+    Provider is bound bare, which is the address ("provider", default binding) its earlier category "provider" gave
+    it, so `meld(spellframe="provider")` still reaches it; bare is what `Consumer`'s class annotation reaches, because
+    a class lookup never reaches a spell bound under a spellframe (2026-11-07).
+    """
     frame = "rebind-matrix-m2b"
     book, root, peer, scope = _world(frame)
     try:
-        provider_id = root.bind(spell=Provider, existence="many", spellframe="provider",
-                                disposal_method_names=["cleanup"])
+        provider_id = root.bind(spell=Provider, existence="many", disposal_method_names=["cleanup"])
         root.bind(spell=Consumer, existence="many", spellframe="consumers",
                   binding_name="consumer", disposal_method_names=["cleanup"])
         first = scope.meld(spellframe="consumers", binding_name="consumer")
         definition = root.get_spell_by_spell_id(provider_id, frame)
         root.cleanup_spell(spell=definition)
-        again = root.bind(spell=Provider, existence="many", spellframe="provider",
-                          disposal_method_names=["cleanup"])
+        again = root.bind(spell=Provider, existence="many", disposal_method_names=["cleanup"])
         assert again == provider_id
         second = scope.meld(spellframe="consumers", binding_name="consumer")
         assert second is not first and second.p is not first.p and not second.p.cleaned
@@ -125687,7 +126736,7 @@ END FILE: tests/integration/melder/conduit/test_conduit_integration_many_child_b
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py
-CONTENT SHA256: df4acfc8b4f4d1821ca47f80c8e71f4f34d2286d97911776c6d7c0ddebc04aa0
+CONTENT SHA256: df782e703d369ca8e64908e19921a9b1aceb942a299c2b0499d122e8b8a93bc1
 SOURCE ENCODING: utf-8
 ================================================================================
 """Integration regressions for contract_recheck_on_notch_2026_10_16: rule 2 and D2 (melder_1, 2026-10-16).
@@ -125701,7 +126750,7 @@ Each test builds its own dynamic frame with caching off: a lender Book lends a p
 a borrower Book's consumer holds a SpellContract on that key, or one Book holds a dependency chain.
 """
 import threading
-from typing import Any, Iterator, List, Protocol, Tuple, runtime_checkable
+from typing import Any, Iterator, List, Protocol, Tuple, Union, runtime_checkable
 
 import pytest
 
@@ -125710,6 +126759,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
@@ -125787,7 +126837,7 @@ class DepB:
 
 
 class Dep:
-    """A dependency bound by its class."""
+    """A dependency filed under the category "Dep" in C4 - the address a bare bind would give it."""
 
     def tag(self) -> str:
         """Answer "d1"."""
@@ -125795,7 +126845,13 @@ class Dep:
 
 
 class Dep2(Dep):
-    """A subclass of Dep, which the kind rule does not select for an annotation naming Dep."""
+    """
+    A renamed subclass of Dep, staged into Dep's index under the category "Dep" (C4).
+
+    Reached through the frame, as every version of that index is; a class annotation naming Dep reaches neither
+    version, since both are bound under a spellframe (2026-11-07). Until then the type-name rule reached Dep but not
+    this subclass.
+    """
 
     def tag(self) -> str:
         """Answer "d2"."""
@@ -125819,9 +126875,26 @@ class QChain:
 
 
 class PClass:
-    """Depends on Dep's class."""
+    """
+    Depends on Dep's class.
+
+    A class lookup reaches only a spell bound bare - no spellframe, the default binding (2026-11-07) - so in C4's
+    world, where Dep is filed under the category "Dep", this parameter is an unresolved input.
+    """
 
     def __init__(self, dep: Dep) -> None:
+        """Keep the dependency."""
+        self.dep = dep
+
+
+class PFrame:
+    """
+    Depends on Dep's index through its frame: the category "Dep", the default binding (C4, 2026-11-07).
+
+    The frame is the index's address, so this consumer follows every notch of the index, renamed versions included.
+    """
+
+    def __init__(self, dep: Union[Dep, SpellMap] = SpellMap(spellframe="Dep")) -> None:
         """Keep the dependency."""
         self.dep = dep
 
@@ -126188,6 +127261,8 @@ def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, S
 
     By class, Dep is bound under the category "Dep" - the address a bare bind gives it - so its next version can be
     staged under the same binding: every version of an index is bound the way its first version was (2026-10-25).
+    Since 2026-11-07 a class annotation never reaches a spell bound under a spellframe, so PClass's `dep: Dep` is an
+    unresolved input in that world; C4 pins that, and the frame consumer (PFrame) that follows the index instead.
     """
     book, _ = _books(frame)
     if by_class:
@@ -126255,15 +127330,37 @@ def test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end(
         root.cleanup()
 
 
-def test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error() -> None:
-    """C4: Dep notched to its subclass, which `dep: Dep` does not select: Q fails as a first meld would."""
+def test_c4_a_class_annotation_never_reaches_a_framed_index_while_its_frame_follows_every_notch() -> None:
+    """
+    C4: Dep is filed under the category "Dep" and its renamed subclass Dep2 is staged into the same index.
+
+    Contract (2026-11-07, EPIC-2026-11-07-spellframe_hides_the_concrete_class): a class lookup reaches only a spell
+    bound bare, so `dep: Dep` reaches no version of this framed index - Q fails as a first meld would, with the same
+    UnresolvedInputError before the notch, after it and after the notch back (no stale build, no split between
+    melds) - while the frame lookup `SpellMap(spellframe="Dep")` follows the index d1 -> d2 -> d1.
+    Until 2026-11-07 `dep: Dep` reached Dep by its type name, built d1 and failed only after the notch to Dep2,
+    which it did not select: it never followed the index across renamed versions. The frame does, and did.
+    """
     book, root, index, _, q_cls = _chain("c4", by_class=True)
     try:
-        assert root.meld(spell=q_cls).p.dep.tag() == "d1"
-        _notch_dep(book, root, index, by_class=True)
+        first_id = index.selected_spell_id
+        root.bind(spell=PFrame, existence=Existence.many, permissions="create")
 
-        with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
-            root.meld(spell=q_cls)
+        def assert_class_consumer_unresolved() -> None:
+            """Q's meld fails on PClass's `dep: Dep`, which reaches no version of the framed index."""
+            with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
+                root.meld(spell=q_cls)
+
+        assert_class_consumer_unresolved()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
+
+        _notch_dep(book, root, index, by_class=True)
+        assert_class_consumer_unresolved()
+        assert root.meld(spell=PFrame).dep.tag() == "d2"
+
+        root.notch_spell(spell_index=index, spell_id=first_id)
+        assert_class_consumer_unresolved()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
     finally:
         root.cleanup()
 
@@ -148039,7 +149136,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: 0b9551946368b3de98670da41fd4fbd60bcc8b157e57a7bfa870ef5758a7574f
+CONTENT SHA256: 6b090f8f45a7e0bfc7f8611c8b906731ca6cab33f0825f4dbcace76e4563fc33
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -148079,6 +149176,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     23: "binding_manifest_keys",
     24: "spell_index_keeps_its_binding",
     25: "creation_store_slots_by_binding",
+    26: "class_lookup_bare_spells",
 }
 
 
@@ -148627,7 +149725,7 @@ END FILE: tests/integration/melder/spellbook/test_direct_cleanup_refuses_active_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py
-CONTENT SHA256: 1599b9cb8550b178d7ce1f55781784b13d0802ad468878984204e6fbc7e00a23
+CONTENT SHA256: daca5218f241255a1db250d3875059b431a573bd2eda085d999c860302117662
 SOURCE ENCODING: utf-8
 ================================================================================
 """Stock-runtime regressions for gaps confirmed by the existing-instance experiment.
@@ -148663,9 +149761,15 @@ if TYPE_CHECKING:
 
 
 class RepeatedValueConsumer:
-    """Two required parameters must retain the same registered instance."""
+    """
+    Two required parameters must retain the same registered instance.
 
-    def __init__(self, left: SuppliedValue, right: SuppliedValue) -> None:
+    Both parameters name IExistingValue, the contract the value is framed under: since 2026-11-07 the
+    value's class reaches only an object bound bare (no spellframe, the default binding), so the Protocol
+    keeps both edges on the one framed existing value.
+    """
+
+    def __init__(self, left: IExistingValue, right: IExistingValue) -> None:
         """Retain both references without constructing or taking ownership of the value."""
         self.left = left
         self.right = right
@@ -148690,8 +149794,13 @@ class LinkedValueConsumer:
         self.value = value
 
 
-def build_value_consumer(value: SuppliedValue) -> ValueConsumer:
-    """A function provider may itself require an existing object as a dependency."""
+def build_value_consumer(value: IExistingValue) -> ValueConsumer:
+    """
+    A function provider may itself require an existing object as a dependency.
+
+    The parameter names IExistingValue, the contract the value is framed under: since 2026-11-07 the
+    value's class reaches only an object bound bare (no spellframe, the default binding).
+    """
     return ValueConsumer(value)
 
 
@@ -148714,9 +149823,17 @@ def test_existing_provider_can_be_injected_into_function(instance_book: Spellboo
 
 
 def test_existing_provider_typechecking_annotation_does_not_raise_nameerror(instance_book: Spellbook) -> None:
-    """Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure."""
+    """
+    Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure.
+
+    The value is bound bare, at its class's address. The annotation must stay the TYPE_CHECKING-only
+    class name `ExistingValue` - that unevaluable name is the subject - and since 2026-11-07 a class name
+    resolves only to an object bound bare (no spellframe, the default binding), never to one framed
+    under IExistingValue. Naming the Protocol instead would use a name this module imports at runtime and
+    stop exercising the deferred annotation.
+    """
     supplied = SuppliedValue("deferred-input")
-    instance_book.bind(spell=supplied, existence="unique", spellframe=IExistingValue)
+    instance_book.bind(spell=supplied, existence="unique")
     target = instance_book.bind(spell=DeferredValueConsumer, existence="many")
     consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
     assert consumer.value is supplied
@@ -148797,7 +149914,7 @@ END FILE: tests/integration/melder/spellbook/test_existing_instance_additional_r
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_planning.py
-CONTENT SHA256: dd4ef91d1227bbbb79aa53b9dced23f43726ab50b7c8f353a3f2f61dc9dc122c
+CONTENT SHA256: 0f6e964338085abf9fa0d7fdb3acf583aaef1fedddf153180bed269afdaed09e
 SOURCE ENCODING: utf-8
 ================================================================================
 """Existing values stay opaque through both contract planners and dependency walks.
@@ -148836,9 +149953,15 @@ class ExistingValue:
 
 
 class ValueConsumer:
-    """Borrow an existing non-callable object through ordinary type-hint DI."""
+    """Borrow an existing non-callable object through ordinary type-hint DI.
 
-    def __init__(self, value: ExistingValue) -> None:
+    The parameter names IExistingValue, the contract the tests frame the value under. Since 2026-11-07 an
+    existing object follows the class rule - a spellframe hides it from class lookups - so an
+    `ExistingValue` annotation would reach only an object bound bare (no spellframe, the default binding);
+    the Protocol keeps the dependency edge on the same framed existing value.
+    """
+
+    def __init__(self, value: IExistingValue) -> None:
         """Retain the exact supplied value without acquiring its lifecycle."""
         self.value = value
 
@@ -149308,7 +150431,7 @@ END FILE: tests/integration/melder/spellbook/test_managed_bind_options_integrati
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_provider_artifact_ownership.py
-CONTENT SHA256: ec4b1185c1ad5ce4fe21f0f1b7a28a649bb6a560dcb9559d03cb410f4a7dcbcb
+CONTENT SHA256: 9a0fea382b99a32649b2e2d7a449ca92e3553a903ac48d9c114091aa66e17bbc
 SOURCE ENCODING: utf-8
 ================================================================================
 """Native provider ownership regressions for borrower validation and teardown.
@@ -149319,12 +150442,13 @@ lookup, so an earlier diagnostic lookup cannot repair a later failing prefix.
 """
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spellbook import Spellbook
 from tests._spell_identity_test_support import version_of
 
@@ -149341,9 +150465,21 @@ class RetainedProvider:
 
 
 class ProviderConsumer:
-    """Borrow a required provider instance without acquiring its lifecycle."""
+    """Borrow a required provider instance without acquiring its lifecycle.
 
-    def __init__(self, provider: RetainedProvider) -> None:
+    The provider is bound under the string category "providers" as "retained", so the parameter names that
+    address with a frame-addressed SpellMap: since 2026-11-07 a spellframe or a binding name hides a spell
+    from class lookups, and a `RetainedProvider` annotation would reach only a provider bound bare (no
+    spellframe, the default binding). The SpellMap keeps the same dependency edge - a borrower resolves it
+    to the provider spell its read contract imported, a same-book consumer to the local provider spell.
+    """
+
+    def __init__(
+            self,
+            provider: Union[RetainedProvider, SpellMap] = SpellMap(
+                spellframe="providers", binding_name="retained",
+            ),
+    ) -> None:
         """Retain the injected provider for identity and state assertions."""
         self.provider = provider
 
@@ -154157,7 +155293,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_default_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_di_shape_compiler_matrix.py
-CONTENT SHA256: f0dd1060d57a52d0568e8a5e6b8a7e8338b47c4bfe8eeb67de4b22b89f807e95
+CONTENT SHA256: 182d158797146e507d0d3ab8b30504744eb5a422d5b242c9ca2c05a5943e385c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -154933,7 +156069,14 @@ def test_phase6_broken_spell_is_invalid_and_conduit_state_invalid() -> None:
 
 
 def test_phase6_cycle_raises_at_root_blueprints() -> None:
-    """A two-spell cycle raises during Phase-5 blueprint construction."""
+    """
+    A two-spell cycle raises during Phase-5 blueprint construction.
+
+    Alpha and Beta are bound bare (no spellframe, the default binding), so each
+    class annotation reaches the other spell and the cycle forms: a class lookup
+    reaches only a spell bound bare (2026-11-07). Their addresses are their own
+    names, as under the spellframes "Alpha" and "Beta" they were bound with before.
+    """
     spellbook = _make_spellbook()
 
     class Alpha:
@@ -154945,8 +156088,8 @@ def test_phase6_cycle_raises_at_root_blueprints() -> None:
             self.alpha = alpha
 
     try:
-        alpha_id = spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create", spellframe="Alpha")
-        beta_id = spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create", spellframe="Beta")
+        alpha_id = spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create")
+        beta_id = spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create")
         for spell_id in (alpha_id, beta_id):
             spell = _get_spell(spellbook, spell_id)
             _phases_1_4(spell)
@@ -155138,7 +156281,14 @@ def test_e2e_existence_many_creates_new_instances() -> None:
 
 
 def test_e2e_conjure_raises_validation_error_on_cycle() -> None:
-    """A dependency cycle blocks conjure with SpellbookValidationError."""
+    """
+    A dependency cycle blocks conjure with SpellbookValidationError.
+
+    Alpha and Beta are bound bare (no spellframe, the default binding), so each
+    class annotation reaches the other spell and the cycle forms: a class lookup
+    reaches only a spell bound bare (2026-11-07). Their addresses are their own
+    names, as under the spellframes "Alpha" and "Beta" they were bound with before.
+    """
     spellbook = _make_spellbook()
 
     class Alpha:
@@ -155150,8 +156300,8 @@ def test_e2e_conjure_raises_validation_error_on_cycle() -> None:
             self.alpha = alpha
 
     try:
-        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create", spellframe="Alpha")
-        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create", spellframe="Beta")
+        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create")
+        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create")
         with pytest.raises(SpellbookValidationError):
             spellbook.conjure(name="root")
     finally:
@@ -161116,7 +162266,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py
-CONTENT SHA256: 1b3a7b690b83699231dae8fdded11b27ad3dac5449cbf7b32ec9f9b9bdc8856e
+CONTENT SHA256: 815adfab9121f6b0fe1915f3229303c012bf9ee6cc12e0ea10008cdf244dff21
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -161644,15 +162794,37 @@ def test_b2_provider_bound_under_own_class_only_leaves_frame_hint_unresolved() -
 # =========================================================================== #
 # B3 / B5 - SpellMap default and callable spells
 # =========================================================================== #
-def test_b3_spellmap_matches_target_under_any_binding() -> None:
-    """B3 characterization: SpellMap(Class) with no binding_name matches that class under ANY binding, so a binding-only registration still resolves."""
+def test_b3_spellmap_without_binding_name_fails_conjure_on_binding_only_registration() -> None:
+    """B3 characterization: SpellMap(Class) with no binding_name is a class lookup that reaches only the default binding (2026-11-07, the owner's rulings E2-E3; before, it matched the class under ANY binding), so a binding-only registration fails conjure with "SpellMap default could not be resolved"; SpellMap(Class, binding_name=...) reaches it by its name (test_b3_spellmap_with_binding_name_resolves_binding_only_registration)."""
     spellbook = _make_spellbook()
-    conduit = None
     try:
         spellbook.bind(spell=Config, existence=Existence.unique, permissions="create", binding_name="named")
         spellbook.bind(spell=NeedsConfigViaMap, existence=Existence.unique, permissions="create")
+        with pytest.raises(PhaseExecutionError, match="SpellMap default could not be resolved"):
+            spellbook.conjure(name="root")
+    finally:
+        spellbook.cleanup()
+
+
+def test_b3_spellmap_with_binding_name_resolves_binding_only_registration() -> None:
+    """B3 behavior: SpellMap(Class, binding_name=...) is the named class lookup (2026-11-07) - it resolves a binding-only registration by its name, which the plain SpellMap(Class) no longer reaches."""
+    spellbook = _make_spellbook()
+    conduit = None
+
+    class NeedsNamedConfigViaMap:
+        """B3 consumer (SpellMap default naming the binding): the named class lookup that reaches Config bound under 'named'."""
+
+        def __init__(self, config: object = SpellMap(Config, binding_name="named")) -> None:
+            """Keep the Config the named SpellMap default resolves."""
+            self.config = config
+
+    try:
+        spellbook.bind(spell=Config, existence=Existence.unique, permissions="create", binding_name="named")
+        spellbook.bind(spell=NeedsNamedConfigViaMap, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell=NeedsConfigViaMap).config, Config)
+        instance = conduit.meld(spell=NeedsNamedConfigViaMap)
+        assert isinstance(instance.config, Config)
+        assert instance.config is conduit.meld(spell=Config, binding_name="named")
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -165371,7 +166543,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py
-CONTENT SHA256: 533539b38478583dddbaacc493f8a1fc352998906191cc2bc2199a33edf719dd
+CONTENT SHA256: 58eace9255fd84496e5f6e8e9ab9bd61af2f0fc334adeae530490d01ca674e8f
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -165385,7 +166557,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
 
 
@@ -166667,21 +167839,30 @@ def test_bind_rejects_module_as_spell() -> None:
         )
 
 
-def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
+def test_type_hint_di_concrete_class_bound_only_under_binding_names_is_unresolved() -> None:
     """
     Purpose:
-        Validate ambiguous type-hint DI for one concrete class fails at build.
+        Validate type-hint DI for one concrete class does not reach the class bound
+        under binding names: the socket is unresolved, not ambiguous.
     Contract:
         - One class is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code):
           binding _Repo again under another binding name is refused, so the second
           provider is a version of _Repo - its name, other code - under 'secondary'.
-        - A consumer whose constructor type-hints the concrete class then has
-          two single-DI candidates, and Phase 3 rejects the ambiguity at
-          conjure with disambiguation guidance.
+        - A binding name hides the class from a class annotation (2026-11-07, the
+          owner's rulings E2-E3; Autofac's rule that a declared service hides the
+          component's own type), so a consumer whose constructor type-hints the
+          concrete class has no single-DI candidate. Before, both named bindings
+          were candidates and the ambiguity was refused at conjure
+          (AMBIGUOUS_PROVIDER) with disambiguation guidance.
+        - Conjure therefore succeeds; melding the consumer raises
+          UnresolvedInputError naming the 'repo' parameter and the _Repo type unless
+          an override supplies the value, and each binding is still reached by its
+          name.
     Returns:
         None.
     Raises:
-        AssertionError: If the ambiguous conjure does not raise.
+        AssertionError: If the class annotation reaches a named binding, or a
+            binding is not reached by its name.
     """
     class _Repo:
         """
@@ -166706,7 +167887,8 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     class _Consumer:
         """
         Purpose:
-            Provide a consumer that type-hints the ambiguous concrete class.
+            Provide a consumer that type-hints the concrete class, which is bound
+            only under binding names (formerly the ambiguous case).
         Contract:
             Stores the injected repository for assertions.
         """
@@ -166727,6 +167909,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
+    secondary = version_of(_Repo, provider="secondary")
     spellbook.bind(
         spell=_Repo,
         existence=Existence.unique,
@@ -166734,7 +167917,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         binding_name="primary",
     )
     spellbook.bind(
-        spell=version_of(_Repo, provider="secondary"),
+        spell=secondary,
         existence=Existence.unique,
         permissions="create",
         binding_name="secondary",
@@ -166744,13 +167927,21 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
-    with pytest.raises(SpellbookValidationError) as excinfo:
-        spellbook.conjure(name="ambiguous-concrete", dynamic=False)
-    text = str(excinfo.value)
-    assert "[AMBIGUOUS_PROVIDER]" in text
-    assert "_Repo at (spellframe=None, binding_name='primary')" in text
-    assert "_Repo at (spellframe=None, binding_name='secondary')" in text
+    # 2026-10-04: the ambiguity was refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    # 2026-11-07: neither named binding answers the class annotation any more, so nothing is ambiguous:
+    # conjure succeeds and the socket is an unresolved input the meld must supply.
+    conduit = spellbook.conjure(name="named-concrete", dynamic=False)
+    try:
+        with pytest.raises(UnresolvedInputError) as excinfo:
+            conduit.meld(spell=_Consumer)
+        assert excinfo.value.param_name == "repo"
+        assert excinfo.value.expected_type == _Repo.__qualname__
+        primary = conduit.meld(spell=_Repo, binding_name="primary")
+        assert type(primary) is _Repo
+        assert type(conduit.meld(spell=_Repo, binding_name="secondary")) is secondary
+        assert conduit.meld(spell=_Consumer, override={"repo": primary}).repo is primary
+    finally:
+        conduit.cleanup()
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:
@@ -168560,7 +169751,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_error_matrix.py
-CONTENT SHA256: 1e39f43f3bc3b1e907ef090f7cc03e6aec15df6365c718105b26c4e062a0b727
+CONTENT SHA256: b6732345ec0952ca9aff1430cd4ebc2d39c8c8cd70f1ac0c4650e06feadfa61e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -168893,7 +170084,14 @@ def test_bind_duplicate_frame_binding_key_raises() -> None:
 # Section 3 - conjure / compile faults
 # =========================================================================== #
 def test_conjure_with_cycle_raises() -> None:
-    """A dependency cycle must block conjure (SpellbookValidationError)."""
+    """
+    A dependency cycle must block conjure (SpellbookValidationError).
+
+    Alpha and Beta are bound bare (no spellframe, the default binding), so each
+    class annotation reaches the other spell and the cycle forms: a class lookup
+    reaches only a spell bound bare (2026-11-07). Their addresses are their own
+    names, as under the spellframes "Alpha" and "Beta" they were bound with before.
+    """
     spellbook = _make_spellbook()
 
     class Alpha:
@@ -168905,8 +170103,8 @@ def test_conjure_with_cycle_raises() -> None:
             self.alpha = alpha
 
     try:
-        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create", spellframe="Alpha")
-        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create", spellframe="Beta")
+        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create")
+        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create")
         with pytest.raises(Exception):
             spellbook.conjure(name="root")
     finally:
@@ -171106,7 +172304,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_validati
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py
-CONTENT SHA256: 1ff15f1b335554785a06d093942a3f70faad252505a8dbf3d391cb9252a42a12
+CONTENT SHA256: a07df7c1b6466f03172a34032fe3612ce58eac6e8d48ba1deb7ca7eb55331715
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -171940,6 +173138,11 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
         Validate conjure raises SpellbookValidationError for broken spells.
     Contract:
         - A circular dependency triggers SpellbookValidationError.
+        - Alpha and Beta are bound bare (no spellframe, the default binding), so
+          each class annotation reaches the other spell and the cycle forms: a
+          class lookup reaches only a spell bound bare (2026-11-07). Their
+          addresses are their own names, as under the spellframes 'Alpha' and
+          'Beta' they were bound with before.
     Returns:
         None.
     Raises:
@@ -171956,7 +173159,7 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
         Contract:
             - Declares a Beta dependency via forward reference annotation.
         Args:
-            beta: Dependency spelled by the Beta spellframe.
+            beta: Dependency on the Beta spell, bound bare (its address is its own name).
         """
 
         def __init__(self, beta: Beta) -> None:
@@ -171979,7 +173182,7 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
         Contract:
             - Declares an Alpha dependency via forward reference annotation.
         Args:
-            alpha: Dependency spelled by the Alpha spellframe.
+            alpha: Dependency on the Alpha spell, bound bare (its address is its own name).
         """
 
         def __init__(self, alpha: Alpha) -> None:
@@ -172000,13 +173203,11 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
             spell=Alpha,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Alpha",
         )
         spellbook.bind(
             spell=Beta,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Beta",
         )
 
         with pytest.raises(SpellbookValidationError, match="Broken spells"):
@@ -172552,6 +173753,11 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
     Contract:
         - missing_phase4_validation is not reported when Phase 4 ran for all nodes.
         - root_not_viable is not emitted when dependencies are validated.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the root has a dependency
+          to validate: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -172589,7 +173795,6 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -172620,6 +173825,11 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
         Validate system validation detects index cycles and graph mismatches.
     Contract:
         - Phase 5 root blueprint build raises on cycles in the DAG.
+        - Alpha and Beta are bound bare (no spellframe, the default binding), so
+          each class annotation reaches the other spell and the cycle forms: a
+          class lookup reaches only a spell bound bare (2026-11-07). Their
+          addresses are their own names, as under the spellframes 'Alpha' and
+          'Beta' they were bound with before.
     Returns:
         None.
     Raises:
@@ -172704,13 +173914,11 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
             spell=Alpha,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Alpha",
         )
         beta_id = spellbook.bind(
             spell=Beta,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Beta",
         )
 
         root_spell = _get_spell_by_version_id(spellbook, root_id)
@@ -172743,6 +173951,11 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
     Contract:
         - missing_index_node is reported for the missing dependency node.
         - root_not_viable is reported for the affected root.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the removed node is the
+          root's dependency: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -172780,7 +173993,6 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -172827,6 +174039,11 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
     Contract:
         - edge_mismatch_index is reported when the index omits a dependency edge.
         - root_not_viable is reported for the affected root.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the blueprint holds the
+          edge the index then omits: a class lookup reaches only a spell bound
+          bare (2026-11-07). Its address is its own name, as under the
+          spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -172864,7 +174081,6 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -177744,7 +178960,7 @@ END FILE: tests/mocks/spellbook/scan_bind_module_wrapped.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/mocks/spellbook/structural_snapshot_classes.py
-CONTENT SHA256: a9dffc72f7ba4f88e7ea0913d027f0a120befd3edac5951e4a9ee20eb25cc4f6
+CONTENT SHA256: 6c9467e8122e53a405973b807c3f4ad139ee7d441a1a60cbc1719ba718267175
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -177761,7 +178977,15 @@ class Engine:
 
 
 class EngineAlternative:
-    """Alternative Engine version staged into Engine's index by a notch."""
+    """
+    Alternative Engine version the parity contracts staged into Engine's index by a notch, until 2026-11-07.
+
+    Unused since then: Engine is bound bare so that `Car`'s class annotation reaches it (a class lookup reaches only
+    a spell bound bare), and a bare Engine index admits only a class named Engine (every version of an index is bound
+    the way its first version was, 0.2.8273), so the parity notch event stages an edited Engine instead
+    (`_edited_engine` in test_spellbook_component_structural_snapshot_parity.py). Kept until the owner decides to
+    remove it.
+    """
 
 
 class Wheel:
@@ -310629,7 +311853,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
-CONTENT SHA256: 6e767262cdfb629ffecbe9a744bab8d1936d464784c65c79c9adcb3f20ab5d83
+CONTENT SHA256: 29bf3799143c75fa56f4e94c94be7cc0b9818be60ad25936e69543b44d99a851
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 3 local DAG build."""
@@ -310832,15 +312056,16 @@ def test_iter_all_spells_uses_live_spell_id_pool_order() -> None:
 @pytest.mark.parametrize(
     ("spell_type", "annotation_kind", "binding_name", "candidate_binding_name", "require_class_spell", "expected"),
     [
-        (SpellType.SPELL, "type", None, None, True, True),
-        (SpellType.SPELL, "type", "alpha", "beta", True, False),
+        (SpellType.SPELL, "type", None, None, True, False),
+        (SpellType.SPELL, "contract", "alpha", "beta", True, False),
         (SpellType.SPELL, "contract", None, None, True, True),
-        (SpellType.SPELL, "type_name", None, None, True, True),
+        (SpellType.SPELL, "type_name", None, None, True, False),
         (SpellType.SPELL, "contract_name", None, None, True, True),
         (SpellType.SPELL, "other", None, None, True, False),
         (SpellType.SPELL, "other_name", None, None, True, False),
-        (SpellType.METHOD, "type", None, None, True, False),
-        (SpellType.METHOD, "type", None, None, False, True),
+        (SpellType.METHOD, "contract", None, None, True, False),
+        (SpellType.METHOD, "contract", None, None, False, True),
+        (SpellType.METHOD, "type", None, None, False, False),
     ],
 )
 def test_matches_annotation_cases(
@@ -310851,7 +312076,14 @@ def test_matches_annotation_cases(
         require_class_spell: bool,
         expected: bool,
 ) -> None:
-    """A single socket matches a contract-framed spell by its type, by its Protocol, or by either name."""
+    """
+    A single socket matches a contract-framed spell by its Protocol, as the class or by name, never by its type.
+
+    The spellframe hides the concrete class from class lookups (2026-11-07, `_answers_class_lookup`): the type, as
+    the class or by name, no longer selects the spell - before, it did. The binding-name filter and the
+    `require_class_spell` exclusion of METHOD spells are shown on the Protocol match, which the frame keeps; a
+    METHOD spell's type stays hidden even when methods are allowed.
+    """
     phase = CompilerPhase3()
 
     class _FrameContract(Protocol):
@@ -310947,7 +312179,13 @@ def test_annotation_kind_classifies_contracts_types_and_names() -> None:
 
 
 def test_matches_annotation_supports_forward_ref_strings_and_contract_names() -> None:
-    """A string names the spell's type or its Protocol contract, never a different name."""
+    """
+    A string, or a ForwardRef, names a framed spell's Protocol contract, never its type or a different name.
+
+    A single string annotation's type part is a class lookup (2026-11-07, `_answers_class_lookup`): the spellframe
+    hides the framed spell's type name, while its contract name still reaches it. The same type name, as a string or
+    a ForwardRef, still reaches a spell of that name bound bare under the default binding.
+    """
     phase = CompilerPhase3()
 
     class _FrameContract(Protocol):
@@ -310959,11 +312197,20 @@ def test_matches_annotation_supports_forward_ref_strings_and_contract_names() ->
         spellframe=_FrameContract,
         spell_name="CandidateSpell",
     )
+    bare = _make_spell_stub(
+        "bare",
+        spell_obj=object(),
+        spellframe=None,
+        spell_name="CandidateSpell",
+    )
 
-    assert phase._matches_annotation("CandidateSpell", None, candidate, require_class_spell=True) is True
+    assert phase._matches_annotation("CandidateSpell", None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation(typing.ForwardRef("CandidateSpell"), None, candidate, require_class_spell=True) is False
     assert phase._matches_annotation("_FrameContract", None, candidate, require_class_spell=True) is True
     assert phase._matches_annotation(typing.ForwardRef("_FrameContract"), None, candidate, require_class_spell=True) is True
     assert phase._matches_annotation("Unrelated", None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation("CandidateSpell", None, bare, require_class_spell=True) is True
+    assert phase._matches_annotation(typing.ForwardRef("CandidateSpell"), None, bare, require_class_spell=True) is True
 
 
 def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_name() -> None:
@@ -310992,7 +312239,13 @@ def test_matches_annotation_matches_an_existing_object_by_its_class_and_by_its_n
 
 
 def test_matches_annotation_never_reads_a_string_category_as_a_type_or_contract() -> None:
-    """A spell under a string category answers to its own type; the category's name reaches it only as a collection label."""
+    """
+    A spell under a string category is hidden from class lookups; the category's name reaches it only as a collection label.
+
+    The category hides the spell's own type, as the class or by name, single socket or collection (2026-11-07,
+    `_answers_class_lookup`; before, the type reached it). The category's name never makes it a provider of a
+    class spelled the same way, and never reaches a single socket.
+    """
     phase = CompilerPhase3()
 
     class Service:
@@ -311012,20 +312265,28 @@ def test_matches_annotation_never_reads_a_string_category_as_a_type_or_contract(
     assert phase._spell_type_key(candidate) == "impl"
     assert phase._spell_label_key(candidate) == "service"
     assert phase._spell_contract_keys(candidate) == ()
-    # single socket: the type, by object or by name - never the category
-    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=True) is True
-    assert phase._matches_annotation("Impl", None, candidate, require_class_spell=True) is True
+    assert phase._answers_class_lookup(candidate) is False
+    # single socket: neither the type, by object or by name (the category hides it), nor the category
+    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=True) is False
+    assert phase._matches_annotation("Impl", None, candidate, require_class_spell=True) is False
     assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is False
     assert phase._matches_annotation("service", None, candidate, require_class_spell=True) is False
-    # collection: the label by name, the type by class - not the category by a class spelled like it
+    # collection: the label by name only - not the type by class (hidden), not the category by a class spelled like it
     assert phase._matches_annotation("service", None, candidate, require_class_spell=False, collection=True) is True
-    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=False, collection=True) is True
+    assert phase._matches_annotation(Impl, None, candidate, require_class_spell=False, collection=True) is False
     assert phase._matches_annotation(Service, None, candidate, require_class_spell=False, collection=True) is False
     assert phase._matches_annotation("impl", None, candidate, require_class_spell=False, collection=True) is False
 
 
-def test_matches_annotation_contract_spell_is_reached_by_type_contract_and_their_names() -> None:
-    """A spell under a Protocol answers to its type, to the Protocol (object or name), and as a collection to both groups."""
+def test_matches_annotation_contract_spell_is_reached_by_its_contract_never_by_its_type() -> None:
+    """
+    A spell under a Protocol answers to the Protocol (object or name), single or as a collection, never to its type.
+
+    The Protocol spellframe hides the concrete class from class lookups (2026-11-07, `_answers_class_lookup`;
+    Autofac's rule that a declared service hides the component's own type): `x: Impl`, `x: "Impl"` and
+    `list[Impl]` no longer select it - before, they did - while `x: IService`, `x: "IService"`,
+    `list[IService]` and `list["iservice"]` still do.
+    """
     phase = CompilerPhase3()
 
     class IService(Protocol):
@@ -311042,30 +312303,50 @@ def test_matches_annotation_contract_spell_is_reached_by_type_contract_and_their
     assert candidate.spellframe_kind is SpellframeKind.contract
     assert phase._spell_contract_keys(candidate) == ("iservice",)
     assert phase._spell_label_key(candidate) == "iservice"
-    for annotation in (Impl, "Impl", IService, "IService"):
+    assert phase._answers_class_lookup(candidate) is False
+    for annotation in (IService, "IService"):
         assert phase._matches_annotation(annotation, None, candidate, require_class_spell=True) is True, annotation
+    for annotation in (Impl, "Impl"):
+        assert phase._matches_annotation(annotation, None, candidate, require_class_spell=True) is False, annotation
     assert phase._matches_annotation(Other, None, candidate, require_class_spell=True) is False
-    for annotation in (IService, "iservice", Impl):
+    for annotation in (IService, "iservice"):
         assert phase._matches_annotation(annotation, None, candidate, require_class_spell=False, collection=True) is True, annotation
-    assert phase._matches_annotation("impl", None, candidate, require_class_spell=False, collection=True) is False
+    for annotation in (Impl, "impl"):
+        assert phase._matches_annotation(annotation, None, candidate, require_class_spell=False, collection=True) is False, annotation
 
 
 @pytest.mark.parametrize(
     ("annotation_name", "collection", "expected"),
     [
-        ("Impl", False, ["Impl"]),
+        ("Impl", False, []),
         ("IService", False, ["Impl"]),
-        ("Spectrum", False, ["Spectrum"]),
-        ("Toolbox", False, ["Toolbox"]),
+        ("Spectrum", False, []),
+        ("Toolbox", False, []),
         ("spectrum_label", False, []),
-        ("Spectrum", True, ["Spectrum"]),
+        ("Spectrum", True, []),
         ("spectrum_label", True, ["Spectrum", "Toolbox"]),
         ("IService", True, ["Impl"]),
-        ("Impl", True, ["Impl"]),
+        ("Impl", True, []),
+        ("impl", False, []),
+        ("iservice", False, ["Impl"]),
+        ("Plain", False, ["Plain"]),
+        ("Plain", True, ["Plain"]),
+        ("plain", False, ["Plain"]),
+        ("Named", False, []),
+        ("Named", True, []),
+        ("named", False, []),
+        ("named", True, ["Named"]),
     ],
 )
 def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, collection: bool, expected: list[str]) -> None:
-    """The three-bucket index returns exactly what the scan returns, in pool order, for every annotation and socket kind."""
+    """
+    The three-bucket index returns exactly what the scan returns, in pool order, for every annotation and socket kind.
+
+    Only Plain, bound bare under the default binding, answers a class lookup - a class, `list[Class]` or a single
+    string's type part (2026-11-07, `_answers_class_lookup`): it alone is in `by_type`. Spectrum and Toolbox under
+    a category, Impl under a Protocol and Named bound bare under a binding name are reached only through their
+    Protocol (as the class or by name) or their label - before, their class reached them as well.
+    """
     phase = CompilerPhase3()
 
     class IService(Protocol):
@@ -311080,13 +312361,21 @@ def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, 
     class Toolbox:
         pass
 
-    objects = {"Impl": Impl, "IService": IService, "Spectrum": Spectrum, "Toolbox": Toolbox}
+    class Plain:
+        """Bound bare under the default binding: the one spell here a class lookup reaches."""
+
+    class Named:
+        """Bound bare under a binding name: hidden from class lookups, still a member of its own label."""
+
+    objects = {"Impl": Impl, "IService": IService, "Spectrum": Spectrum, "Toolbox": Toolbox, "Plain": Plain, "Named": Named}
     annotation: Any = objects.get(annotation_name, annotation_name)
     root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
     pool = {
         "spectrum": _make_spell_stub("spectrum", spell_obj=Spectrum, spellframe="spectrum_label", spell_name="Spectrum", binding_name="Spectrum"),
         "toolbox": _make_spell_stub("toolbox", spell_obj=Toolbox, spellframe="spectrum_label", spell_name="Toolbox", binding_name="Toolbox"),
         "impl": _make_spell_stub("impl", spell_obj=Impl, spellframe=IService, spell_name="Impl"),
+        "plain": _make_spell_stub("plain", spell_obj=Plain, spellframe=None, spell_name="Plain"),
+        "named": _make_spell_stub("named", spell_obj=Named, spellframe=None, spell_name="Named", binding_name="v1"),
     }
     spellbook = SimpleNamespace(_spell_id_pool=pool)
     dep = _make_dependency(
@@ -311108,8 +312397,8 @@ def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, 
     assert [candidate.spell_name for candidate in scanned.values()] == expected
     assert list(indexed.items()) == list(scanned.items())
     assert set(index) == {"by_type", "by_label", "by_contract", "by_definition"}
-    assert sorted(index["by_type"]) == ["impl", "spectrum", "toolbox"]
-    assert sorted(index["by_label"]) == ["iservice", "spectrum_label"]
+    assert sorted(index["by_type"]) == ["plain"]
+    assert sorted(index["by_label"]) == ["iservice", "named", "plain", "spectrum_label"]
     assert sorted(index["by_contract"]) == ["iservice"]
     assert index["by_definition"] == {}
 
@@ -311148,6 +312437,90 @@ def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
     assert index["by_contract"] == {}
 
 
+@pytest.mark.parametrize("existing_object", [False, True])
+@pytest.mark.parametrize(
+    ("placement", "answers"),
+    [
+        ("bare", True),
+        ("bare_empty_binding_name", True),
+        ("bare_written_default_binding_name", True),
+        ("bare_named", False),
+        ("category", False),
+        ("protocol", False),
+    ],
+)
+def test_class_lookup_reaches_only_a_bare_default_binding_spell_on_scan_and_index(
+        placement: str,
+        answers: bool,
+        existing_object: bool,
+) -> None:
+    """
+    A class lookup reaches a spell only when it is bound bare: no spellframe and the default binding.
+
+    The owner's rulings E1-E3 (2026-11-07; Autofac's rule that a declared service hides the component's own type):
+    a class annotation, a single string annotation's type part and `list[Class]` all follow
+    `_answers_class_lookup`, on the scan path (`_matches_annotation`) and the index path (`by_type`) alike, so
+    both return the same candidates. None, "" and "__default__" all name the default binding, so those bare spells
+    answer; a binding name, a string category or a Protocol hides the class, and the label bucket still holds the
+    spell under its address label. An existing object follows the same rule through its class.
+    """
+    phase = CompilerPhase3()
+
+    class IService(Protocol):
+        pass
+
+    class Service:
+        """The class every lookup in this test names; bound, or its instance bound, at one placement."""
+
+    spellframe: Any = None
+    binding_name: Optional[str] = None
+    if placement == "bare_empty_binding_name":
+        binding_name = ""
+    elif placement == "bare_written_default_binding_name":
+        binding_name = SpellInputUtils.DEFAULT_BINDING_NAME
+    elif placement == "bare_named":
+        binding_name = "v1"
+    elif placement == "category":
+        spellframe = "services"
+    elif placement == "protocol":
+        spellframe = IService
+    candidate = _make_spell_stub(
+        "svc",
+        spell_obj=Service() if existing_object else Service,
+        spellframe=spellframe,
+        spell_name="Service",
+        binding_name=binding_name,
+    )
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    spellbook = SimpleNamespace(_spell_id_pool={"svc": candidate})
+    index = phase._build_candidate_index(spellbook)
+    expected = [candidate] if answers else []
+
+    assert phase._answers_class_lookup(candidate) is answers
+    assert ("service" in index["by_type"]) is answers
+    assert [entry[2] for entry in index["by_label"][phase._spell_label_key(candidate)]] == [candidate]
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=True) is answers
+    assert phase._matches_annotation("Service", None, candidate, require_class_spell=True) is answers
+    assert phase._matches_annotation(Service, None, candidate, require_class_spell=False, collection=True) is answers
+    for annotation, collection in ((Service, False), ("Service", False), (Service, True)):
+        dep = _make_dependency(
+            spell_id="root",
+            param_name="service",
+            position=0,
+            di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION if collection else ParameterDIShape.SINGLE_BY_ANNOTATION,
+            target_annotation=annotation,
+            is_collection=collection,
+        )
+        if collection:
+            scanned = phase._resolve_collection_by_annotation(spellbook, dep)
+            indexed = phase._resolve_collection_by_annotation(spellbook, dep, index)
+        else:
+            scanned = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+            indexed = phase._resolve_single_by_annotation(root_spell, spellbook, dep, index)
+        assert list(scanned.values()) == expected, (annotation, collection)
+        assert list(indexed.items()) == list(scanned.items()), (annotation, collection)
+
+
 def test_protocol_definition_is_a_candidate_for_its_own_annotation_until_an_implementer_exists() -> None:
     """A Protocol bound resolvable=False matches `x: Proto` (OVERRIDE_REQUIRED); a recorded implementer wins over it."""
     phase = CompilerPhase3()
@@ -311179,6 +312552,55 @@ def test_protocol_definition_is_a_candidate_for_its_own_annotation_until_an_impl
     named = _make_dependency(spell_id="root", param_name="repo", position=0,
                              di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation="IRepo")
     assert list(phase._resolve_single_by_annotation(root_spell, only_definition, named).values()) == [definition]
+
+
+@pytest.mark.parametrize("placement", ["binding_name", "spellframe"])
+def test_protocol_definition_hidden_from_class_lookups_is_still_a_candidate_for_its_protocol(placement: str) -> None:
+    """
+    The Protocol - as the class, a string or a ForwardRef - reaches its definition whatever the definition's binding.
+
+    A Protocol bound resolvable=False under a binding name or under a spellframe offers no type key (2026-11-07,
+    `_answers_class_lookup`), so it is absent from `by_type`. Its definition key is not gated by that rule: `x: Proto`
+    reads it through `by_definition`, and a single socket naming the Protocol - `x: "Proto"`, or the ForwardRef a
+    `TYPE_CHECKING`-only import leaves - is a contract lookup that finds the definition exactly as the Protocol object
+    does, on the scan and the index path alike. Only a Protocol definition keeps that key on a name: a concrete class
+    bound at the same placement is not found by its string name.
+    """
+    phase = CompilerPhase3()
+
+    class IRepo(Protocol):
+        pass
+
+    class Repo:
+        """A concrete class bound at the same placement: its name is a class lookup, which the placement hides."""
+
+    spellframe: Optional[str] = "repos" if placement == "spellframe" else None
+    binding_name: Optional[str] = "described" if placement == "binding_name" else None
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="RootSpell")
+    definition = _make_spell_stub("def", spell_obj=IRepo, spellframe=spellframe, spell_name="IRepo",
+                                  binding_name=binding_name, resolvable=False)
+    concrete = _make_spell_stub("repo", spell_obj=Repo, spellframe=spellframe, spell_name="Repo",
+                                binding_name=binding_name)
+    spellbook = SimpleNamespace(_spell_id_pool={"def": definition, "repo": concrete})
+    index = phase._build_candidate_index(spellbook)
+
+    assert phase._answers_class_lookup(definition) is False
+    assert phase._answers_class_lookup(concrete) is False
+    assert index["by_type"] == {}
+    assert sorted(index["by_definition"]) == ["irepo"]
+    for annotation, expected in (
+            (IRepo, [definition]),
+            ("IRepo", [definition]),
+            (typing.ForwardRef("IRepo"), [definition]),
+            ("Repo", []),
+            (typing.ForwardRef("Repo"), []),
+    ):
+        dep = _make_dependency(spell_id="root", param_name="repo", position=0,
+                               di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation=annotation)
+        scanned = phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+        indexed = phase._resolve_single_by_annotation(root_spell, spellbook, dep, index)
+        assert list(scanned.values()) == expected, annotation
+        assert list(indexed.items()) == list(scanned.items()), annotation
 
 
 @pytest.mark.parametrize(
@@ -311778,6 +313200,136 @@ def test_resolve_spellmap_default_none_and_empty_binding_name_select_the_default
     spellbook = SimpleNamespace(_spell_id_pool={"default": default, "named": named})
     resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
     assert list(resolved.values()) == [default]
+
+
+def _class_lookup_spellmap_pool(provider: Any) -> tuple[dict[str, Any], Any]:
+    """
+    One provider at four addresses: bare and under the category "agents", each under the default binding and "v1".
+
+    A stub-only pool (Bind registers one object once): it puts side by side every placement a `SpellMap(spell=...)`
+    could reach, so a lookup that reached more than the one address it names would raise "resolved to multiple
+    candidates" instead of returning a single stub.
+
+    Args:
+        provider: The object every stub binds, the `spell` a SpellMap names.
+
+    Returns:
+        tuple[dict[str, Any], Any]: The stubs by placement ("bare", "named", "framed", "framed_named") and a
+        spellbook stand-in whose pool holds them in that order.
+    """
+    stubs = {
+        "bare": _make_spell_stub("bare", spell_obj=provider, spellframe=None, spell_name="Provider"),
+        "named": _make_spell_stub("named", spell_obj=provider, spellframe=None, spell_name="Provider",
+                                  binding_name="v1"),
+        "framed": _make_spell_stub("framed", spell_obj=provider, spellframe="agents", spell_name="Provider"),
+        "framed_named": _make_spell_stub("framed_named", spell_obj=provider, spellframe="agents",
+                                         spell_name="Provider", binding_name="v1"),
+    }
+    return stubs, SimpleNamespace(_spell_id_pool=dict(stubs))
+
+
+@pytest.mark.parametrize(("written", "expected"), [
+    (None, "bare"), ("", "bare"), ("v1", "named"), ("V1", "named"),
+])
+def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_reaches_only_the_bare_spell(
+        written: Optional[str],
+        expected: str,
+) -> None:
+    """
+    `SpellMap(spell=X)` with no spellframe is a class lookup: it reaches only X bound with no spellframe.
+
+    The owner's rulings E2-E3 (2026-11-07): with no binding name (None or "") it selects X under the default
+    binding; with `binding_name` it selects X bound bare under that name, compared case-insensitively. X under a
+    spellframe is never selected, whatever its binding - it is reached through `SpellMap(X, spellframe=...)`.
+    Before, X matched at every address here, and this pool raised "resolved to multiple candidates".
+    """
+    provider = object()
+    stubs, spellbook = _class_lookup_spellmap_pool(provider)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(provider, binding_name=written))
+    resolved = CompilerPhase3()._resolve_spellmap_default(root_spell, spellbook, dep)
+    assert list(resolved.values()) == [stubs[expected]]
+
+
+@pytest.mark.parametrize(("spellframe", "bound_as", "written"), [
+    ("agents", None, None),
+    ("agents", "v1", "v1"),
+    ("IProvider", None, None),
+    (None, "v1", None),
+    (None, None, "v1"),
+])
+def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name(
+        spellframe: Optional[str],
+        bound_as: Optional[str],
+        written: Optional[str],
+) -> None:
+    """
+    `SpellMap(spell=X)` with no spellframe raises "could not be resolved" when X is bound only elsewhere.
+
+    The owner's rulings E2-E3 (2026-11-07): X under a spellframe - a string category or a Protocol ("IProvider"
+    stands for the Protocol defined here) - is refused whatever binding name the SpellMap writes, even the one X is
+    bound under; X bound bare under a binding name is refused when the SpellMap writes none, and X under the
+    default binding when it writes another name. Before, every case but the last resolved to X; the last raised
+    then as it does now.
+    """
+    class IProvider(Protocol):
+        """Contract frame."""
+
+    provider = object()
+    frame: Any = IProvider if spellframe == "IProvider" else spellframe
+    only = _make_spell_stub("only", spell_obj=provider, spellframe=frame, spell_name="Provider",
+                            binding_name=bound_as)
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                           di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                           spellmap_default=SpellMap(provider, binding_name=written))
+    with pytest.raises(RuntimeError, match="could not be resolved"):
+        CompilerPhase3()._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool={"only": only}), dep)
+
+
+def test_resolve_spellmap_default_explicit_spell_with_its_spellframe_is_unchanged() -> None:
+    """
+    `SpellMap(spell=X, spellframe=F, ...)` names the frame, so the class-lookup rule (2026-11-07) leaves it as it was.
+
+    It reaches X under F only - never X bound bare or under another frame: with a binding name, X at that name;
+    with none, X under F at any binding, as before. The no-binding-name case matters here: the default-binding
+    filter of the plain class lookup must not reach a SpellMap that names its frame.
+    """
+    class IProvider(Protocol):
+        """Contract frame."""
+
+    provider = object()
+    bare = _make_spell_stub("bare", spell_obj=provider, spellframe=None, spell_name="Provider")
+    named = _make_spell_stub("named", spell_obj=provider, spellframe=None, spell_name="Provider", binding_name="v1")
+    framed_named = _make_spell_stub("framed_named", spell_obj=provider, spellframe="agents", spell_name="Provider",
+                                    binding_name="v1")
+    contract = _make_spell_stub("contract", spell_obj=provider, spellframe=IProvider, spell_name="Provider")
+    spellbook = SimpleNamespace(_spell_id_pool={"bare": bare, "named": named, "framed_named": framed_named,
+                                                "contract": contract})
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    phase = CompilerPhase3()
+
+    def _resolve(spellmap: SpellMap) -> list[Any]:
+        """
+        Resolve one SpellMap default over this test's pool through Phase 3's SPELLMAP_DEFAULT path.
+
+        Args:
+            spellmap: The descriptor the consumer's parameter carries.
+
+        Returns:
+            list[Any]: The selected stubs in pool order; Phase 3's RuntimeError propagates on a miss.
+        """
+        dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                               di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=spellmap)
+        return list(phase._resolve_spellmap_default(root_spell, spellbook, dep).values())
+
+    assert _resolve(SpellMap(provider, spellframe="agents", binding_name="v1")) == [framed_named]
+    assert _resolve(SpellMap(provider, spellframe="Agents")) == [framed_named]
+    assert _resolve(SpellMap(provider, spellframe=IProvider)) == [contract]
+    with pytest.raises(RuntimeError, match="could not be resolved"):
+        _resolve(SpellMap(provider, spellframe=IProvider, binding_name="v1"))
 
 
 def test_spellmap_frame_matching_folds_case_for_categories_only() -> None:

@@ -107,6 +107,10 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
     Contract:
         - component_of includes root and dependency spell ids.
         - Revalidator registration is enabled.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it: a class lookup reaches only a
+          spell bound bare (2026-11-07). Its address is its own name, as under
+          the spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -143,7 +147,6 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -183,6 +186,11 @@ def test_component_change_control_revalidator_clears_dirty_roots() -> None:
     Contract:
         - notify_spell_changed marks the root as dirty.
         - revalidate_dirty_roots clears dirty roots and monitoring.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the root depends on it: a
+          class lookup reaches only a spell bound bare (2026-11-07). Its address
+          is its own name, as under the spellframe 'BasicService' it was bound
+          with before.
     Returns:
         None.
     Raises:
@@ -219,7 +227,6 @@ def test_component_change_control_revalidator_clears_dirty_roots() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -255,6 +262,11 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
     Contract:
         - Contracted dependency spell ids map back to the root spell id.
         - Revalidator registration is enabled after Phase 5.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -294,7 +306,6 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         owner = owner_book.conjure(dynamic=True, name="owner")
         borrower = borrower_book.conjure(dynamic=True, name="borrower")
@@ -341,6 +352,11 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
     Contract:
         - Uncontracted remote spell ids do not appear in component_of.
         - Contracted dependencies are still present.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -400,7 +416,6 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         remote_id = remote_book.bind(
             spell=RemoteOnly,
@@ -453,6 +468,10 @@ def test_component_change_control_shared_dependency_maps_to_multiple_roots() -> 
     Contract:
         - Shared dependency spell id maps to both root spell ids.
         - Each root maps to itself in component_of.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          both consumers' class annotations reach it: a class lookup reaches
+          only a spell bound bare (2026-11-07). Its address is its own name, as
+          under the spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -512,7 +531,6 @@ def test_component_change_control_shared_dependency_maps_to_multiple_roots() -> 
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         consumer_a_id = spellbook.bind(
             spell=ConsumerA,

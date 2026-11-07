@@ -1,0 +1,12 @@
+shipped: 15648 tests - failed 121, passed 15483, skipped 32, xfailed 12 (context_compass/artifacts/dependency_watchers_20261107/runs/suite_strict_class_match_0_2_8277_strict1_gil0.xml)
+strict: 15648 tests - failed 124, passed 15480, skipped 32, xfailed 12 (context_compass/artifacts/dependency_watchers_20261107/runs/suite_autofac_reading_0_2_8277_gil0.xml)
+differing tests: 3 in 3 files
+tests.component.melder.spellbook.test_spellbook_component_spell_crafter
+  passed -> failed  tests.component.melder.spellbook.test_spellbook_component_spell_crafter::test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_matches
+      AssertionError: Regex pattern did not match.
+tests.integration.melder.spellbook.test_spellbook_integration_resolution_break_matrix
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_break_matrix::test_b3_spellmap_matches_target_under_any_binding
+      melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'config' on spell 'NeedsConfigViaMap'. SpellMap=<SpellMap spell=<class 'test_spellbook_integration_resolution_break_matrix.Config'> spellframe=None bind
+tests.integration.melder.spellbook.test_spellbook_integration_resolution_contract_more
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_contract_more::test_type_hint_di_ambiguous_concrete_class_raises
+      Failed: DID NOT RAISE SpellbookValidationError

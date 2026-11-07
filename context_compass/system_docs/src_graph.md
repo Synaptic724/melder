@@ -187,7 +187,7 @@ descriptors and reassemble.
 
 ## src/melder/__license__.py
 
-- source_sha256: `fdacc9edcd065b54c0e53877eab98e9bfe06b0340e39bb248063bfb55e013809`
+- source_sha256: `71e0d0aea0d48ed99b5b499a879a264b3617d317dfa017982cb2292719def9e6`
 - nodes: 1
 
 ### Nodes
@@ -198,7 +198,7 @@ descriptors and reassemble.
 - defined at: `src/melder/__license__.py:1`
 - role: Top-level license metadata module.
 - responsibilities:
-  - stores the package license label and embedded license context
+  - stores the package license label, the SPDX identifier pyproject.toml declares (Apache-2.0 since 0.2.8279), and the embedded Apache License 2.0 header as informational context, not runtime logic
 - owns_state: `__license__`
 - phases: `runtime`
 
@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `032483e5bce47f6aa0ab2c7bd5b2bf4e0e48a8aefb0e97f11b5590cde3fbe09c`
+- source_sha256: `7f7acb712b619960f201590b68bfc32b91f2a961d5ed5ad1bf3456f8b919cf30`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `d4b1d867c55552291a2c89cd32ca975e3da18a1d83e847b08dafe79e3251ce3b`
+- source_sha256: `54c07bb326f46551989162e53010dcc019ce8682e4edce11be1f1e270ed04da7`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `4412836ae4d90c9bc653ba8af1a0c83c1c5e1e8bf76b35a1048621a148fb0a72`
+- source_sha256: `c56d5ad0cac404a5e074deaae7037864433926bd520cd7a42fbffce296330e27`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `f2db44c63d1f2a4966a27bc273795694be9e97ab47375b40baea65d93eb7ef79`
+- source_sha256: `b67ec74b4eb2b1b7fb88d85b128943fdeb17628a78c153debaea49ed163268db`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `044fe711d29cc02fbfe84ee39c6e45c22c22f77ca39716287094de1a42cb066b`
+- source_sha256: `3da0902b0351784234bad34789e12232639b2957d88f541113c4d0fe65f4d8a3`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `5164229da64a36f5a897b295103e91a1e067aed3ec283bf4dd3c9c51c062958d`
+- source_sha256: `607f97ff62961531847501d82e51a7312009f3c2b96025318e037d44b498ed5b`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `23ecf1cbcb360965f01a65976e210c22911afd4e43f008f51382d80cf906cdc6`
+- source_sha256: `d21dbc2ce7734ed3031185ad59e09e4a32cb9d0deea56524654163d3fe2acf5e`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `343050fde5625537408f3c00e671c2f203de58b9529597ae862eee71cb94297e`
+- source_sha256: `0c3f1c5904184b3c57395918b165515d7d3c53f667dbb346d420d91068a2cc70`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `d1dd78178dba65217b97e81c495d8f9cb6e90b516a8bfa73dccefd5e9d721df5`
+- source_sha256: `962665b31efa996b7b674d8beaee427011e696d7a97abda368e8ca4ff5a55b74`
 - nodes: 1
 
 ### Nodes
@@ -5563,7 +5563,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_map.py
 
-- source_sha256: `b670854eaa331ad49c7fd5ecbec348a024ae26ff691b5852bd10a872b422b0c7`
+- source_sha256: `ab37cc183273dffdce467c2494100b8cc6406de605a00e951752d8d239e14578`
 - nodes: 2
 
 ### Nodes
@@ -5588,6 +5588,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - describes normal spellbook-local DI identity and optional override payload
   - lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking
   - keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key Phase 3 matches by (0.2.8226)
+  - SpellMap(spell=X) without a spellframe is a class lookup (0.2.8278): Phase 3 reaches only X bound with no spellframe, under the default binding or under binding_name when one is given, so its canonical_key is the address of the only spell it can reach; a SpellMap naming a spellframe reads the frame as before
 - owns_state: `spell`, `spellframe`, `binding_name`, `override`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `canonical_key`, `cleanup`, `lookup_triplet`, `spell_key`
@@ -11496,7 +11497,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `c16ce258ddb1173f2ab67c4e3177f0290f316c6e80afc83451ee0d76abb90332`
+- source_sha256: `a38be19d194fb428c7c4828c82cca6b65fda0a15c3beb807d793e56f11d57739`
 - nodes: 2
 
 ### Nodes
@@ -11520,12 +11521,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
   - selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology
   - republishes enabled late-compiled Nexus records after local topology is available
-  - records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises
+  - records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter has no candidate - since 0.2.8278 also when its class is registered only under a spellframe or a binding name
   - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
-  - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class
-  - indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule
+  - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type key, contract keys and definition key for a single string and the frame key for a string collection - so a string category never provides for a same-named class
+  - answers a class lookup - a class annotation, list[Class], a single string's type part, SpellMap(spell=X) without a spellframe - only with a spell bound with no spellframe and the default binding (_answers_class_lookup, 0.2.8278): a spellframe or a binding name hides the spell's own type, as a declared service hides the component's type in Autofac, so only such a spell offers its type key and enters by_type, while contract, definition and label matching are unchanged
+  - indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for (a single-socket name reads by_type, by_contract and by_definition); the scan (_matches_annotation over _spell_keys_for) and the index read one table and one class-lookup predicate, so their membership is equal; _eq_safe_object is kept only as the structural snapshot's replayability rule
   - records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)
-  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226)
+  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -26154,7 +26156,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `007de2f51874a464581b9066b933a0dddbdcc65e7094373d5aa10f24cf092eb8`
+- source_sha256: `68741c7541c9b2c2e30bdfee2b0bae9b6758a7b54a3f5bb0f0f865985554c8da`
 - nodes: 2
 
 ### Nodes
@@ -26191,6 +26193,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - saves best-effort (emit -> bool, 0.2.8266): the folder, this writer's temp file (<conduit>.meldercache.<pid>.<thread id>.tmp) and the rename in one try under the instance lock; on Windows (RETRY_REFUSED_RENAME) a PermissionError of the rename is retried up to REPLACE_ATTEMPTS attempts, REPLACE_RETRY_DELAY_SECONDS times the attempt apart; any OSError refuses the save - its temp file removed (one that cannot be removed is logged), the bundle on disk and every staged payload kept, False returned and the refusal logged at WARNING the first time for the instance, DEBUG after (_refused_save_logged)
   - cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)
   - cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)
+  - cache generation 26 retires bundles whose structural rows were resolved while a class lookup reached a spell bound under a spellframe or a binding name: a class annotation, list[Class] and SpellMap(spell=Class) now reach only a spell bound bare, so a replayed phase 3 row could hold a match the rule refuses (class_lookup_bare_spells, 2026-11-07, 0.2.8278; the owner's point 11)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_refused_save_logged`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)

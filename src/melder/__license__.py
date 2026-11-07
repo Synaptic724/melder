@@ -6,24 +6,24 @@ Contract:
   package root. It carries the SPDX identifier, which is what `pyproject.toml`
   declares and what packaging tools read, so the two cannot drift apart
   silently.
-- The embedded AGPL header is informational/legal context, not executable
-  runtime logic.
+- The embedded Apache-2.0 header is informational/legal context, not
+  executable runtime logic. Melder moved from AGPL-3.0-or-later to the Apache
+  License 2.0 on the owner's decision (2026-11-07, 0.2.8279).
 """
 
 #    Melder - AI-native dependency graph runtime for free-threaded Python.
 #    Copyright (C) 2025-2026 Mark Thomas Geleta
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as published
-#    by the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#        http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 
-__license__ = "AGPL-3.0-or-later"
+__license__ = "Apache-2.0"

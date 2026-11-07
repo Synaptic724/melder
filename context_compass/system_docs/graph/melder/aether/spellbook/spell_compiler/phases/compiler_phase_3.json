@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "c16ce258ddb1173f2ab67c4e3177f0290f316c6e80afc83451ee0d76abb90332",
+ "source_sha256": "a38be19d194fb428c7c4828c82cca6b65fda0a15c3beb807d793e56f11d57739",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -29,11 +29,11 @@
     "run"
    ],
    "shape": {
-    "method_count": 26,
+    "method_count": 27,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "afcebccb48272c8055a369a9413fa3a5310656b609aecd348ac807ccad2f7389",
+   "span_sha256": "ba5394cf06321dd8cc416e1589863b38910425af7fe766090a4aeb2c8eb145d8",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
@@ -41,18 +41,19 @@
     "publishes direct dependency ids and SpellLocalTopology into SpellSystemStates",
     "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology",
     "republishes enabled late-compiled Nexus records after local topology is available",
-    "records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises",
+    "records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter has no candidate - since 0.2.8278 also when its class is registered only under a spellframe or a binding name",
     "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan",
-    "matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class",
-    "indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule",
+    "matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type key, contract keys and definition key for a single string and the frame key for a string collection - so a string category never provides for a same-named class",
+    "answers a class lookup - a class annotation, list[Class], a single string's type part, SpellMap(spell=X) without a spellframe - only with a spell bound with no spellframe and the default binding (_answers_class_lookup, 0.2.8278): a spellframe or a binding name hides the spell's own type, as a declared service hides the component's type in Autofac, so only such a spell offers its type key and enters by_type, while contract, definition and label matching are unchanged",
+    "indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for (a single-socket name reads by_type, by_contract and by_definition); the scan (_matches_annotation over _spell_keys_for) and the index read one table and one class-lookup predicate, so their membership is equal; _eq_safe_object is kept only as the structural snapshot's replayability rule",
     "records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)",
-    "resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226)"
+    "resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "dbe8c6e04316910263f762230b92cc4db81b642f39b5cb52d2ac24aa9066cdac"
+   "semantics_authored_against": "ba5394cf06321dd8cc416e1589863b38910425af7fe766090a4aeb2c8eb145d8"
   }
  },
  "edges_out": [],
