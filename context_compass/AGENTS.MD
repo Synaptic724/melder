@@ -52,17 +52,24 @@ holds state about the work that lives outside this repository.
   connection; each Issue body
   holds its template, Status, `## Notes` and current resume view; supported Issue comments
   may hold attributed findings directly without copying every finding into the body.
-  A Project URL is optional. In both modes,
+  A Project URL is optional. In both of these modes,
   `attention_board.md`, `artifact_board.md` + `artifacts/`,
   `context_management/`, and `mailbox_board.md` remain local. Plugin mode also
-  uses local `issue_board.md` for agent claims. Read the backend-specific general
+  uses local `issue_board.md` for agent claims. In `github_issues` mode, tickets
+  and every board live in GitHub Issues in the configured repository: wherever
+  this file names a board, use the GitHub record that
+  `agent_onboarding/default/general/skills/github/issues_backend.md` maps it to,
+  with whatever GitHub tools you have. Without access to that repository, stop
+  and raise it to your owner. Read the backend-specific general
   skills before work. Resolve older config values using
   `agent_onboarding/default/general/skills/work_tracking_backend.md`.
   If config, tools, or access are invalid, stop; never silently switch backends
   or use CLI authentication as a substitute for the selected plugin.
 - Resolve `agent_communication.backend` independently from the ticket backend.
   Missing means `mailbox`; `codex_mcp` selects the available Codex/MCP chat tools
-  for messages only. Agent registration, setup outcomes and
+  for messages only; `claude_internal_communication` selects Claude Code's built-in
+  agent messaging for messages only, for teams of Claude agents only. Agent
+  registration, setup outcomes and
   ticket/board ownership stay in Context Compass. Read the shared session-state
   skill and only the selected communication baseline; do not read inactive
   mailbox messaging instructions or use native chat as the durable work record.
@@ -238,7 +245,8 @@ After any context compaction or handoff, apply the bootstrap before these recove
 - Re-read the roster and relevant setup Notes in
   `context_compass/mailbox_board.md` through `agent_session_state.md`. In mailbox
   mode also recover addressed messages through `mailbox_protocol.md`; in
-  `codex_mcp` mode skip mailbox Messages and message alerts and use `codex_mcp.md`.
+  `codex_mcp` or `claude_internal_communication` mode skip mailbox Messages and
+  message alerts and use that transport's skill.
   Update shared session state as the first authorized action, then recover the
   selected transport. Both state/message writes wait for effective authorization.
 - Role README reads are allowed for `new` first-time onboarding only; non-`new`
@@ -283,10 +291,11 @@ Before any tooling, edits, or execution:
   `execution_contract.md` in the same uninterrupted session.
 - Read `config/context_compass_config.yaml`.
 - Read `agent_onboarding/default/general/skills/work_tracking_backend.md` and
-  resolve `local` or `github_codex_plugin` before reading ticket state. Count
+  resolve `local`, `github_codex_plugin` or `github_issues` before reading ticket state. Count
   this read once if the role's general baseline also lists it.
 - Read `agent_onboarding/default/general/skills/agent_communication_backend.md`
-  and resolve `mailbox` or `codex_mcp` independently. Read the shared
+  and resolve `mailbox`, `codex_mcp` or `claude_internal_communication`
+  independently. Read the shared
   `agent_session_state.md`; count these reads once in the general baseline.
 - Read `SKILLS.MD`.
 - Read `agent_onboarding/default/general/skills/harness_custom_instructions.md`.
@@ -395,7 +404,8 @@ Certification gating (default unless explicitly overridden):
      Update only your check-in row in that same check-in pass, following
      `agent_session_state.md`.
   2. Recover the selected message transport: consume addressed mailbox messages
-     only in mailbox mode; use authorized MCP reads in `codex_mcp` mode.
+     only in mailbox mode; use authorized MCP reads in `codex_mcp` mode; in
+     `claude_internal_communication` mode, messages arrive on their own.
   3. Route from `attention_board.md` to the active ticket and begin.
 
 ## Communication Style and Feedback Standards

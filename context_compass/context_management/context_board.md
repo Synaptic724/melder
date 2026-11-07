@@ -1,5 +1,7 @@
 # Context Board
 
+> 2026-11-07: moved to GitHub Issues (`work_tracking.backend: github_issues`). Nothing reads this board any more; the live records start at the header issue: https://github.com/Synaptic724/melder/issues/263
+
 Purpose
 - Canonical index of active context-management associations.
 - Track reusable reread packs linked to tickets.

@@ -115,7 +115,12 @@ def test_other_socket_kinds_emit_nothing() -> None:
 
 
 def test_ambiguous_socket_names_every_candidate_address_and_the_remedies() -> None:
-    """One AMBIGUOUS_PROVIDER error: parameter, expected type, both addresses (ordered), three remedies, details."""
+    """
+    One AMBIGUOUS_PROVIDER error: parameter, expected type, both addresses (ordered), two remedies, details.
+
+    Since 2026-11-07 (the owner's D4) the text no longer offers a meld override: the error refuses the spell, and the
+    meld gate refuses every meld of a refused spell, override or not, so that remedy could never work.
+    """
     topology = SpellLocalTopology(spell_id="consumer", sockets=[_socket(SocketKind.AMBIGUOUS_INPUT, ("id-b", "id-a"))])
     book = _BookStub({
         "id-a": _CandidateStub("ScanProfile", "agents", "ScanProfile"),
@@ -130,9 +135,11 @@ def test_ambiguous_socket_names_every_candidate_address_and_the_remedies() -> No
     assert issue.severity == "error" and issue.code == "AMBIGUOUS_PROVIDER"
     assert issue.message.startswith("Parameter 'profile' on spell 'MCPScanner' expects _Profile, but 2 registered spells provide it: ")
     assert issue.message.index("spellframe='agents'") < issue.message.index("spellframe='artificial_intelligence_tools'")
-    assert "SpellMap(spellframe=..., binding_name=...)" in issue.message
-    assert "override={'profile': ...}" in issue.message
-    assert "bind only one provider of this type" in issue.message
+    assert issue.message.endswith(
+        "Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), "
+        "or bind only one provider of this type."
+    )
+    assert "override=" not in issue.message
     assert issue.details["spell_id"] == "consumer" and issue.details["parameter_name"] == "profile"
     assert issue.details["expected_type"] == "_Profile"
     assert [c["spell_id"] for c in issue.details["candidates"]] == ["id-a", "id-b"]

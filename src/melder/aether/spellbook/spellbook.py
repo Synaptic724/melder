@@ -43,6 +43,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
@@ -3313,6 +3314,14 @@ class Spellbook(Cleanable):
         contract_recheck_on_notch_2026_10_16), so their next meld builds against
         the new copy; the mark walks on to what depends on them.
 
+        A copy bound under a spellframe also announces its class's type key in
+        the same collection-dependent mark (2026-11-07, patch
+        hidden_provider_2026_11_07, the owner's D1 = B;
+        `CompilerPhase3._hidden_type_key`): a consumer that compiled with that
+        class unresolved waits under the class name, and the copy's arrival is
+        what makes Phase 4 refuse it (HIDDEN_PROVIDER) at its next meld. A bare
+        copy adds nothing - its frame key already is its type key.
+
         Args:
             spell (Spell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
@@ -3321,6 +3330,7 @@ class Spellbook(Cleanable):
             Exception: Whatever a registry mark raises, logged; the added copy stays published.
         """
         frame_key = None
+        type_key = None
         should_mark = False
         with self._lock:
             if conduit_id not in self._contracted_spells:
@@ -3353,10 +3363,13 @@ class Spellbook(Cleanable):
                     conduit_spell_ids.add(member_id)
 
             frame_key = spell.key[0]
+            # A framed copy's class name: its class consumers wait under it (2026-11-07).
+            type_key = CompilerPhase3._hidden_type_key(spell)
             should_mark = bool(self._conjured)
 
         if should_mark and frame_key:
-            self._mark_collection_dependents_dirty({frame_key})
+            announced = {frame_key} if type_key is None else {frame_key, type_key}
+            self._mark_collection_dependents_dirty(announced)
         if should_mark:
             # Rule 2: a new active copy for this key - its consumers rebuild against it at their next meld.
             self._mark_contract_dependents_dirty({spell_key})

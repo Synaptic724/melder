@@ -60,7 +60,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-11-07T14:15:36Z
+- Updated: 2026-11-07T16:50:30Z
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -421,11 +421,11 @@ External interfaces are Python APIs:
   another way (ValueError) before anything is registered or moved, and a notch, which never moves the index's
   address, refuses an address another spell holds (RuntimeError) with nothing moved.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5679, 5823 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5871-6089 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5711, 5855 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5903-6121 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6091, 6189 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6212, 6287 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6123, 6221 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6244, 6319 (`remove_from_spell_index`; starts it)
   - src/melder/aether/spellbook/spellbook.py:4712 (`_add_to_spell_index` entry)
   - src/melder/aether/spellbook/spellbook.py:4750 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
@@ -879,7 +879,12 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, r
    - Fires `on_conduit_post_unlink` hook on success.
 
 ### Sequence: Transfer Spell Ownership
-1. `Conduit.transfer_spell_ownership(...)` validates dynamic mode.
+1. `Conduit.transfer_spell_ownership(...)` checks, before anything starts and each with a RuntimeError: the conduit is
+   not cleaned and is a normal root, the frame posture allows ownership transfer, the world is dynamic, and the
+   target conduit is in this conduit's aetheric frame (0.2.8280: "Cannot transfer spell ownership across different
+   AethericFrames: <source> != <target>. ...", as `link` refuses a cross-frame peer). Only then does it open the
+   `TRANSFER_OWNERSHIP` transaction, whose metadata (`_build_transfer_transaction_metadata`) runs the read-only
+   preflight below, and hand the move to `ConduitWard._transfer_spell_ownership`.
 2. `TransferOfOwnership.preflight()` captures borrowers, deps, creations.
 3. `TransferOfOwnership.execute()`:
    - Marks lineage disabled (transfer_in_progress) and flips registries under lock.
@@ -976,11 +981,11 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, r
    - src/melder/aether/spellbook/spellbook.py:4750-4855
    - src/melder/aether/spellbook/spellbook.py:4970-5090
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
-   - src/melder/aether/conduit/conduit.py:5679-5869
-   - src/melder/aether/conduit/conduit.py:5871-6089
-   - src/melder/aether/conduit/conduit.py:6091-6300
-   - src/melder/aether/conduit/conduit.py:6411-6440
-   - src/melder/aether/conduit/conduit.py:6442-6485
+   - src/melder/aether/conduit/conduit.py:5711-5901
+   - src/melder/aether/conduit/conduit.py:5903-6121
+   - src/melder/aether/conduit/conduit.py:6123-6332
+   - src/melder/aether/conduit/conduit.py:6443-6472
+   - src/melder/aether/conduit/conduit.py:6474-6517
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1056,7 +1061,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5628-5630 (the check and the raise)
+  - src/melder/aether/conduit/conduit.py:5660-5662 (the check and the raise)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
   - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
@@ -1075,6 +1080,28 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A spell's stewardship stays inside one aetheric frame, as its links do (2026-11-07, 0.2.8280; part (b) of
+  TASK-2026-11-07-spellframe_ambiguity_validation_check, EPIC-2026-11-07-spellframe_hides_the_concrete_class, on the
+  owner's ruling in chat, 2026-11-07: "they shouldn't be able to transfer between frames thats an illegal operation
+  ... you cannot link between frames either"): `Conduit.transfer_spell_ownership` refuses a target conduit whose
+  aetheric frame is not this conduit's, as `ConduitWard._link` refuses a cross-frame peer, with RuntimeError "Cannot
+  transfer spell ownership across different AethericFrames: <source> != <target>. ..." naming the remedy (bind the
+  spell in a Spellbook of the target frame), logged at ERROR. The check runs after the cleaned, normal-root,
+  frame-posture and dynamic-mode checks and before the `TRANSFER_OWNERSHIP` transaction opens - before
+  `_build_transfer_transaction_metadata` and its read-only `TransferOfOwnership` preflight, which would otherwise
+  read the target against a foreign frame - so a refusal starts nothing: no transaction, no preflight footprint, no
+  move. A frame is a world with its own addresses, links and contracts, so a spell's stewardship, links and
+  contracts stay inside one frame, and one active spell per address per frame (the 0.2.8273 notch rule and the
+  frame-wide claim) holds through every transfer. Measured before the fix (the part (b) probe): a transfer to a root
+  of another frame gave the target Book two active spells at one address (DUPLICATE_SPELL_NAME on meld), left the
+  source frame's address claim naming the moved spell, so no Book of that frame could bind the address again, and
+  never claimed the address in the target frame, so a later bind there registered a second active spell. Not
+  changed: transfers between conduits of one frame - their options, preflight and steps - and links. Locks: none -
+  the check compares the two conduits' `_aetheric_frame_name`, fixed at construction, and takes no lock, as `_link`
+  does.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`,
+  `Conduit._build_transfer_transaction_metadata` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._link`.
 - A class lookup reaches only a spell bound bare (2026-11-07, 0.2.8278;
   TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class,
   on the owner's rulings in chat, 2026-11-07: "do what autofac would do ... thats our compass", then "ok yes to all
@@ -2169,11 +2196,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `CompilerPhase3._spellmap_frame_matches` and
   `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.annotation_refs`.
 - Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below; SUPERSEDED in
-  part at 0.2.8278 by the first entry above: a class annotation, `list[Class]` and a single string's type part select
-  only spells bound with no spellframe and the default binding, so "spells of that type (a class bound bare, an
-  existing object of that class)" below now means those bound so, an existing object included; `by_type` files only
-  such spells, and a single string reaches a Protocol's own definition through its definition key; the kind rule,
-  Protocol and category matching and the four buckets stand): a spellframe is a string category or a
+  part at 0.2.8278 by the class-lookup entry above: a class annotation, `list[Class]` and a single string's type
+  part select only spells bound with no spellframe and the default binding, so "spells of that type (a class bound
+  bare, an existing object of that class)" below now means those bound so, an existing object included; `by_type`
+  files only such spells, and a single string reaches a Protocol's own definition through its definition key; the
+  kind rule, Protocol and category matching and the four buckets stand): a spellframe is a string category or a
   `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
   (`SpellframeKind.none` / `category` / `contract`) and the Protocol on the Spell (`spellframe_kind`,
   `implemented_protocols`) and raises `TypeError` for a concrete class or any other object. Phase 3 reads the
@@ -2353,7 +2380,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   a stored object never demands the
   input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
   never refuses these parameters. Since 0.2.8278 a class registered only under a spellframe or a binding name is no
-  match for a class annotation (a class lookup reaches only a spell bound bare; the first entry above), so its
+  match for a class annotation (a class lookup reaches only a spell bound bare; the 0.2.8278 entry above), so its
   consumer compiles this socket too, and for a class annotation the kept key (its name, the default binding) is the
   address of every provider that can match it.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
@@ -2494,6 +2521,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
+- Breaking (0.2.8280): `Conduit.transfer_spell_ownership` to a conduit of another aetheric frame raises RuntimeError
+  "Cannot transfer spell ownership across different AethericFrames: <source> != <target>. An aetheric frame is a
+  world with its own addresses, links and contracts, so a spell's stewardship moves only between conduits of one
+  frame, as links do. To use the spell in the other frame, bind it in a Spellbook of that frame." before the
+  `TRANSFER_OWNERSHIP` transaction opens, and nothing starts: the source keeps the spell and still melds it, and the
+  target frame is untouched. Through 0.2.8279 such a transfer ran: the target Book could hold two active spells at
+  one address (DUPLICATE_SPELL_NAME on meld), the source frame's address claim kept naming the moved spell, so no
+  Book of that frame could bind the address again, and the target frame never claimed the address, so a later bind
+  there registered a second active spell. Remedy: transfer only between conduits of one frame; to use the spell in
+  another frame, bind it in a Spellbook of that frame.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`.
 - Breaking (0.2.8278): a consumer annotated with a class - `greeter: English`, `list[English]`, or a single string
   annotation naming the class (a `TYPE_CHECKING` import) - no longer resolves an English bound under a spellframe or
   under a binding name, an existing object alike; only an English bound bare (no spellframe, the default binding)
@@ -2881,7 +2919,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   never built raised RuntimeError "many_only manifest references unknown spell_id '<the old version id>'" on
   every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused. Since
   0.2.8278 the parenthetical case cannot arise for a class annotation, nor for a single string annotation's type
-  part: a class lookup reaches only a spell bound bare (the first operational invariant), and every version of an
+  part: a class lookup reaches only a spell bound bare (Operational Invariants, 0.2.8278), and every version of an
   index is bound the way its first version was (0.2.8273), so such an annotation selects every version of a bare
   index - all carry the class's name - and no version of a framed or named one; a string's contract part reads the
   Protocol every version of a framed index records alike.
@@ -3215,7 +3253,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   candidates ...")` out of the compiler, never reaching the report. Ambiguity stays an error by owner ruling
   (2026-10-04): never a warning, never an input the meld picks. Since 0.2.8278 the example's two ScanProfiles, each
   bound under a string category, no longer answer a `ScanProfile` annotation (a class lookup reaches only a spell
-  bound bare; the first operational invariant): that `profile` parameter compiles UNRESOLVED_INPUT instead, and the
+  bound bare; Operational Invariants, 0.2.8278): that `profile` parameter compiles UNRESOLVED_INPUT instead, and the
   message stands for the candidates a lookup still reaches - two implementations of one Protocol, for instance.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`.
@@ -3281,7 +3319,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`.
 - SpellContract requires at least `spell` or `spellframe` (ValueError).
 - Ownership transfer raises RuntimeError when dynamic mode is disabled (same
-  posture gate as linking, severing and upgrade).
+  posture gate as linking, severing and upgrade), and since 0.2.8280 when the target conduit is in another
+  aetheric frame (the Breaking 0.2.8280 entry above), as linking does.
 
 ## Promoted Patch Decisions (re-absorbed 2026-08-02)
 
@@ -4341,9 +4380,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8012
-  loc: 8012
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 8044
+  loc: 8044
+  verified_at: 2026-11-07T16:50:30Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -5103,6 +5142,21 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+2026-11-07 a spell's stewardship stays inside one aetheric frame (0.2.8280; part (b) of
+TASK-2026-11-07-spellframe_ambiguity_validation_check, on the owner's ruling "they shouldn't be able to transfer
+between frames thats an illegal operation ... you cannot link between frames either"; patch
+transfer_within_one_frame_2026_11_07): `Conduit.transfer_spell_ownership` refuses a target conduit of another frame
+with RuntimeError "Cannot transfer spell ownership across different AethericFrames: ..." after its dynamic-mode check
+and before the `TRANSFER_OWNERSHIP` transaction and its preflight, so nothing starts; the part (b) probe had shown a
+cross-frame transfer leaving two active spells at one address in the target Book and the source frame's claim
+naming the moved spell. A new first operational invariant, a Breaking failure mode (the transfer posture line
+pointed at it), the transfer sequence's step 1 and the code map (conduit.py remeasured) carry it; the component map
+carries the per-component contracts. Numeric citations into conduit.py past the edit moved 32 lines and were
+remapped line by line; the 0.2.8278 entries' pointers now name the class-lookup entry instead of "the first entry".
+Measured on 0.2.8280: a transfer to a cleaned target conduit still fails with AttributeError (on
+`_aetheric_frame_name` now, on `_spellbook` before), as it did. Still unknown: see Unknowns. Where to start:
+src_components, Subcomponent: Ownership Transfer.
+
 2026-11-07 a class lookup reaches only a spell bound bare (0.2.8278;
 TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class, on
 the owner's rulings "do what autofac would do ... thats our compass" and "ok yes to all your statements"; patch

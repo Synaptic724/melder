@@ -48,8 +48,11 @@ Purpose
 - Mailbox-mode message passing (point-to-point handoffs, notices, questions, acks).
 - Companion to `attention_board.md` (which stays routing/broadcast-only).
 - Shared state: `agent_onboarding/default/general/skills/agent_session_state.md`.
-- Message transport: `agent_communication.backend` in the config selects mailbox or codex_mcp.
-  MCP agents read only Checked-In Agents and relevant Notes; they skip
+- Unused in `github_issues` mode: agent issues hold the roster, setup notes and
+  messages (`agent_onboarding/default/general/skills/github/issues_backend.md`).
+- Message transport: `agent_communication.backend` in the config selects mailbox,
+  codex_mcp or claude_internal_communication. Agents on codex_mcp or
+  claude_internal_communication read only Checked-In Agents and relevant Notes; they skip
   the messaging rules below and the Messages region. Existing messages remain untouched.
 
 Shared state rules
@@ -88,7 +91,7 @@ Message format (mailbox mode only; append-only, delete after consumption)
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: checked_in -->
 <!-- melder_0 reassigned by the owner 2026-11-07 to session claude@2026-11-07T08:52:02Z; prior: session_01NXa4DfhVXtR5LXnw23inye. -->
-| melder_0 | claude | 2026-11-07T08:52:02Z | 2026-11-07T13:46:19Z | active |
+| melder_0 | claude | 2026-11-07T08:52:02Z | 2026-11-07T18:37:27Z | departed |
 | melder_1 | claude | 2026-09-26T17:46:30Z | 2026-10-25T14:58:20Z | stale |
 | melder_2 | claude | 2026-10-18T21:07:02Z | 2026-10-25T15:04:54Z | stale |
 <!-- command_5 native session 01a18f23-96ee-7302-936a-5d5135e286d4; initial Melder certificate c5-melder-initial-certification-20261101. -->
@@ -146,4 +149,9 @@ Message format (mailbox mode only; append-only, delete after consumption)
 - 2026-11-07 melder_0 (session claude@2026-11-07T08:52:02Z; Claude Code in the Claude desktop app): harness custom
   instructions ABSENT - ~/.claude/CLAUDE.md does not exist, CLAUDE_CONFIG_DIR is unset and there is no
   ~/.claude/rules; the setup form was offered once and the owner declined ("use agents.md"). No global edit.
+- 2026-11-07T18:22:46Z melder_0 (session claude@2026-11-07T08:52:02Z; re-onboarding after a compaction): harness
+  custom instructions now PRESENT - the owner's ~/.claude/CLAUDE.md (written 2026-11-07T15:16:57Z) carries the
+  Context Compass block, including retained certification across compaction; the instruction source changed, so the
+  outcome above is superseded. No setup form shown, no global edit.
+2026-11-07: moved to GitHub Issues (`work_tracking.backend: github_issues`). Nothing reads this board any more; the live records start at the header issue: https://github.com/Synaptic724/melder/issues/263
 <!-- END USER-DEFINED: notes -->

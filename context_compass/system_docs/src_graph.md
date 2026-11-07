@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `7f7acb712b619960f201590b68bfc32b91f2a961d5ed5ad1bf3456f8b919cf30`
+- source_sha256: `1177388c49037ee91549f45cd2bf023af5e30c092e602d290de25dbc95e9ac84`
 - nodes: 1
 
 ### Nodes
@@ -4440,7 +4440,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `f510b432bdd3d08791bceacb591f9cdad75e3d7c0c3cb92ce63c9030a1dc4fd8`
+- source_sha256: `390cd8d6ff4c3dccf1a152d91b27ec6beb990cd2c9a3a9a37969a5b5583b9aa2`
 - nodes: 2
 
 ### Nodes
@@ -4470,7 +4470,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - creates lesser conduits
   - promotes childless lessers into independent normal roots through a fresh Book and its private existing-conduit conjure route
   - drains creation admission before graduation and restores lesser topology on pre-attachment failure
-  - supports dynamic linking and ownership transfer in dynamic mode
+  - supports dynamic linking and ownership transfer in dynamic mode, both inside one aetheric frame: transfer_spell_ownership refuses a target conduit of another frame with RuntimeError before the TRANSFER_OWNERSHIP transaction and its preflight open, as a link across frames is refused (0.2.8280)
   - facades bind-hook add and clear on the owning Book for live normal conduits; lessers cannot edit borrowed Bind policy
   - owns stable root runtime hook maps copied from configuration and exposes validated local or explicit root-shared updates
   - restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools

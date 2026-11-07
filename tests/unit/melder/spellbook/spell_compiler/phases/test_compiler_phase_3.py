@@ -487,7 +487,9 @@ def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, 
     Only Plain, bound bare under the default binding, answers a class lookup - a class, `list[Class]` or a single
     string's type part (2026-11-07, `_answers_class_lookup`): it alone is in `by_type`. Spectrum and Toolbox under
     a category, Impl under a Protocol and Named bound bare under a binding name are reached only through their
-    Protocol (as the class or by name) or their label - before, their class reached them as well.
+    Protocol (as the class or by name) or their label - before, their class reached them as well. Those four are
+    the class lookup's hidden candidates, filed in `by_hidden_type` under their class names (patch
+    hidden_provider_2026_11_07); resolution never reads that bucket, so the resolved candidates are unchanged.
     """
     phase = CompilerPhase3()
 
@@ -538,11 +540,12 @@ def test_indexed_candidates_equal_the_scan_for_every_kind(annotation_name: str, 
 
     assert [candidate.spell_name for candidate in scanned.values()] == expected
     assert list(indexed.items()) == list(scanned.items())
-    assert set(index) == {"by_type", "by_label", "by_contract", "by_definition"}
+    assert set(index) == {"by_type", "by_label", "by_contract", "by_definition", "by_hidden_type"}
     assert sorted(index["by_type"]) == ["plain"]
     assert sorted(index["by_label"]) == ["iservice", "named", "plain", "spectrum_label"]
     assert sorted(index["by_contract"]) == ["iservice"]
     assert index["by_definition"] == {}
+    assert sorted(index["by_hidden_type"]) == ["impl", "named", "spectrum", "toolbox"]
 
 
 def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
@@ -573,10 +576,11 @@ def test_indexed_candidates_equal_the_scan_for_an_existing_object() -> None:
 
     assert list(scanned.values()) == [service]
     assert indexed == scanned
-    assert set(index) == {"by_type", "by_label", "by_contract", "by_definition"}
+    assert set(index) == {"by_type", "by_label", "by_contract", "by_definition", "by_hidden_type"}
     assert sorted(index["by_type"]) == ["other", "service"]
     assert sorted(index["by_label"]) == ["other", "service"]
     assert index["by_contract"] == {}
+    assert index["by_hidden_type"] == {}
 
 
 @pytest.mark.parametrize("existing_object", [False, True])
@@ -1395,40 +1399,90 @@ def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_reaches_on
     assert list(resolved.values()) == [stubs[expected]]
 
 
-@pytest.mark.parametrize(("spellframe", "bound_as", "written"), [
-    ("agents", None, None),
-    ("agents", "v1", "v1"),
-    ("IProvider", None, None),
-    (None, "v1", None),
-    (None, None, "v1"),
+class SpellMapTarget:
+    """
+    The X a class-lookup `SpellMap(spell=X)` names in the hidden-provider cases below.
+
+    Module level, so its qualified name - the name the reports render - is its plain name.
+    """
+
+
+@pytest.mark.parametrize(("spellframe", "bound_as", "written", "entry"), [
+    ("agents", None, None,
+     "SpellMapTarget at (spellframe='agents', binding_name=None) - use SpellMap(spellframe='agents')"),
+    ("agents", "v1", "v1",
+     "SpellMapTarget at (spellframe='agents', binding_name='v1') - use SpellMap(spellframe='agents', binding_name='v1')"),
+    ("IProvider", None, None,
+     "SpellMapTarget at (spellframe='IProvider', binding_name=None) - use SpellMap(spellframe=IProvider)"),
+    (None, "v1", None,
+     "SpellMapTarget at (spellframe=None, binding_name='v1') - use SpellMap(SpellMapTarget, binding_name='v1')"),
+    (None, None, "v1",
+     "SpellMapTarget at (spellframe=None, binding_name=None) - use SpellMap(SpellMapTarget)"),
 ])
 def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name(
         spellframe: Optional[str],
         bound_as: Optional[str],
         written: Optional[str],
+        entry: str,
 ) -> None:
     """
-    `SpellMap(spell=X)` with no spellframe raises "could not be resolved" when X is bound only elsewhere.
+    `SpellMap(spell=X)` with no spellframe does not reach X bound only elsewhere - and now says where X is.
 
     The owner's rulings E2-E3 (2026-11-07): X under a spellframe - a string category or a Protocol ("IProvider"
     stands for the Protocol defined here) - is refused whatever binding name the SpellMap writes, even the one X is
     bound under; X bound bare under a binding name is refused when the SpellMap writes none, and X under the
-    default binding when it writes another name. Before, every case but the last resolved to X; the last raised
-    then as it does now.
+    default binding when it writes another name.
+
+    Regression (patch hidden_provider_2026_11_07): that miss is the HIDDEN_PROVIDER shape. Phase 3's own call passes
+    `hidden_out`, which receives X's registrations while the mapping comes back empty, so the socket compiles
+    UNRESOLVED_INPUT and Phase 4 refuses it through the readable report; a direct caller still gets the
+    RuntimeError "could not be resolved", now ending with where X is bound and the SpellMap that reaches it. Before,
+    both raised the bare RuntimeError, which surfaced as PhaseExecutionError at conjure.
     """
     class IProvider(Protocol):
         """Contract frame."""
 
-    provider = object()
     frame: Any = IProvider if spellframe == "IProvider" else spellframe
-    only = _make_spell_stub("only", spell_obj=provider, spellframe=frame, spell_name="Provider",
+    only = _make_spell_stub("only", spell_obj=SpellMapTarget, spellframe=frame, spell_name="SpellMapTarget",
                             binding_name=bound_as)
     root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
     dep = _make_dependency(spell_id="root", param_name="provider", position=0,
                            di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
-                           spellmap_default=SpellMap(provider, binding_name=written))
-    with pytest.raises(RuntimeError, match="could not be resolved"):
-        CompilerPhase3()._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool={"only": only}), dep)
+                           spellmap_default=SpellMap(SpellMapTarget, binding_name=written))
+    spellbook = SimpleNamespace(_spell_id_pool={"only": only})
+    phase = CompilerPhase3()
+
+    hidden_out: list = []
+    assert phase._resolve_spellmap_default(root_spell, spellbook, dep, hidden_out=hidden_out) == {}
+    assert hidden_out == [(only.spell_index, only)]
+
+    with pytest.raises(RuntimeError) as caught:
+        phase._resolve_spellmap_default(root_spell, spellbook, dep)
+    text = str(caught.value)
+    assert text.startswith("SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'provider'")
+    assert text.endswith(f" SpellMapTarget is bound only where this class lookup does not reach: {entry}.")
+
+
+def test_resolve_spellmap_default_misses_that_are_not_hidden_providers_raise_as_before() -> None:
+    """
+    Only the class-lookup form with X registered elsewhere is recorded: X bound nowhere, and a frame-named SpellMap
+    that misses, raise the RuntimeError unchanged (the owner's D4) and leave `hidden_out` empty.
+    """
+    elsewhere = _make_spell_stub("elsewhere", spell_obj=SpellMapTarget, spellframe="tools",
+                                 spell_name="SpellMapTarget")
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    phase = CompilerPhase3()
+    for spellmap, pool in (
+            (SpellMap(SpellMapTarget), {}),
+            (SpellMap(SpellMapTarget, spellframe="agents"), {"elsewhere": elsewhere}),
+    ):
+        dep = _make_dependency(spell_id="root", param_name="provider", position=0,
+                               di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=spellmap)
+        hidden_out: list = []
+        with pytest.raises(RuntimeError) as caught:
+            phase._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool=pool), dep, hidden_out=hidden_out)
+        assert str(caught.value).endswith(f"SpellMap={spellmap!r}.")
+        assert hidden_out == []
 
 
 def test_resolve_spellmap_default_explicit_spell_with_its_spellframe_is_unchanged() -> None:
@@ -1897,3 +1951,182 @@ def test_run_honors_cancellation_before_local_dag_build() -> None:
         )
 
     assert cancel_event.throw_calls == 1
+
+
+# --------------------------------------------------------------------------- #
+# Hidden candidates (patch hidden_provider_2026_11_07)
+# --------------------------------------------------------------------------- #
+
+class HiddenGreeter(Protocol):
+    """The Protocol frame of the hidden-candidate pools below."""
+
+    def greet(self) -> str: ...
+
+
+class HiddenEnglish:
+    """The class the hidden-candidate consumers ask for."""
+
+
+def _hidden_pool() -> dict[str, Any]:
+    """
+    One HiddenEnglish at every address a class lookup does not reach, plus spells that must never count.
+
+    `framed` under the Protocol, `category_named` under a category with a binding name, `bare_named` bare under a
+    binding name; `factory` a method spell named like the class (single sockets drop it), `definition` the Protocol's
+    own definition under a frame (never a candidate), `unresolvable` a non-resolvable framed definition of the class
+    (single sockets count it, collections do not), `other` an unrelated bare class.
+    """
+    return {
+        "framed": _make_spell_stub("framed", spell_obj=HiddenEnglish, spellframe=HiddenGreeter,
+                                   spell_name="HiddenEnglish"),
+        "category_named": _make_spell_stub("category_named", spell_obj=HiddenEnglish, spellframe="greeters",
+                                           spell_name="HiddenEnglish", binding_name="english"),
+        "bare_named": _make_spell_stub("bare_named", spell_obj=HiddenEnglish, spellframe=None,
+                                       spell_name="HiddenEnglish", binding_name="v1"),
+        "factory": _make_spell_stub("factory", spell_obj=object(), spellframe="factories", spell_name="HiddenEnglish",
+                                    spell_type=SpellType.METHOD),
+        "definition": _make_spell_stub("definition", spell_obj=HiddenGreeter, spellframe="defs",
+                                       spell_name="HiddenGreeter", resolvable=False),
+        "unresolvable": _make_spell_stub("unresolvable", spell_obj=HiddenEnglish, spellframe="drafts",
+                                         spell_name="HiddenEnglish", resolvable=False),
+        "other": _make_spell_stub("other", spell_obj=object(), spellframe=None, spell_name="Other"),
+    }
+
+
+@pytest.mark.parametrize(
+    ("annotation", "collection", "ids", "frames"),
+    [
+        pytest.param(HiddenEnglish, False, ("bare_named", "category_named", "framed", "unresolvable"),
+                     ("drafts", "greeters", "hiddenenglish", "hiddengreeter"), id="class-single"),
+        pytest.param("HiddenEnglish", False, ("bare_named", "category_named", "framed", "unresolvable"),
+                     ("drafts", "greeters", "hiddenenglish", "hiddengreeter"), id="string-single"),
+        pytest.param(HiddenEnglish, True, ("bare_named", "category_named", "factory", "framed"),
+                     ("factories", "greeters", "hiddenenglish", "hiddengreeter"), id="class-collection"),
+        pytest.param("HiddenEnglish", True, (), (), id="string-collection-is-a-label-lookup"),
+        pytest.param(HiddenGreeter, False, (), (), id="protocol-is-a-contract-lookup"),
+        pytest.param("HiddenGreeter", False, (), (), id="definition-never-counts"),
+    ],
+)
+def test_hidden_candidates_are_the_class_bound_where_a_class_lookup_does_not_reach_on_scan_and_index(
+        annotation: Any,
+        collection: bool,
+        ids: tuple,
+        frames: tuple,
+) -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07): a class lookup that finds nothing names the spells of its class
+    bound under a spellframe or a binding name - the scan path and the `by_hidden_type` bucket give the same ids and
+    address frame keys. A Protocol annotation and a string collection are not class lookups; a Protocol's own
+    definition never counts; method spells count only in a collection; non-resolvable definitions only on a single
+    socket.
+    """
+    phase = CompilerPhase3()
+    spellbook = SimpleNamespace(_spell_id_pool=_hidden_pool())
+    index = phase._build_candidate_index(spellbook)
+
+    scanned = phase._hidden_class_candidates(spellbook, annotation, candidate_index=None, collection=collection)
+    indexed = phase._hidden_class_candidates(spellbook, annotation, candidate_index=index, collection=collection)
+
+    assert scanned == (ids, frames)
+    assert indexed == scanned
+
+
+def test_hidden_type_key_names_only_spells_a_class_lookup_cannot_reach() -> None:
+    """Bare default: reached, no key. Framed or named: the class's type key. A Protocol's own definition: no key."""
+    pool = _hidden_pool()
+    bare = _make_spell_stub("bare", spell_obj=HiddenEnglish, spellframe=None, spell_name="HiddenEnglish")
+    assert CompilerPhase3._hidden_type_key(bare) is None
+    assert CompilerPhase3._hidden_type_key(pool["framed"]) == "hiddenenglish"
+    assert CompilerPhase3._hidden_type_key(pool["bare_named"]) == "hiddenenglish"
+    assert CompilerPhase3._hidden_type_key(pool["definition"]) is None
+
+
+def _build_hidden_topology(pool: dict[str, Any], *deps: SpellSymbolicDependency) -> Any:
+    """Run the frame builder (index path) over the pool and return the topology it registered."""
+    phase = CompilerPhase3()
+    root_spell = _make_spell_stub("root", spell_obj=object(), spellframe=None, spell_name="Consumer")
+    states = _SpellSystemStatesStub()
+    phase._build_local_frame_dag(
+        spell=root_spell,
+        spellbook=SimpleNamespace(_spell_id_pool=pool),
+        spell_system_states=states,
+        requirements=SimpleNamespace(parameters=[]),
+        graph=SpellSymbolicGraph(spell_id="root", dependencies=list(deps)),
+        cancellation_event=_CancelStub(is_set=False),
+        resolution_pass_cache={},
+    )
+    (_, topology), = states.topology_calls
+    return topology
+
+
+def test_class_lookup_miss_records_hidden_candidates_on_the_socket_and_resolves_nothing_new() -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07): the single socket - `Optional[Class]` without a default included -
+    stays UNRESOLVED_INPUT and carries the hidden ids and their frame keys (Phase 4 refuses it); a required
+    `list[Class]` stays NORMAL and empty with the ids only (Phase 6 names them); an optional one records nothing; a
+    `SpellMap(spell=X)` that misses X bound elsewhere becomes UNRESOLVED_INPUT with X's registrations instead of
+    raising.
+    """
+    pool = {
+        "framed": _make_spell_stub("framed", spell_obj=HiddenEnglish, spellframe=HiddenGreeter,
+                                   spell_name="HiddenEnglish", binding_name="english"),
+    }
+    topology = _build_hidden_topology(
+        pool,
+        _make_dependency(spell_id="root", param_name="single", position=0,
+                         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation=Optional[HiddenEnglish]),
+        _make_dependency(spell_id="root", param_name="required_list", position=1,
+                         di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION, target_annotation=HiddenEnglish,
+                         is_collection=True),
+        _make_dependency(spell_id="root", param_name="optional_list", position=2,
+                         di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION, target_annotation=HiddenEnglish,
+                         is_collection=True, is_optional=True),
+        _make_dependency(spell_id="root", param_name="spellmap", position=3,
+                         di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=SpellMap(HiddenEnglish)),
+    )
+    sockets = {socket.param_name: socket for socket in topology.sockets}
+
+    assert sockets["single"].socket_kind.name == "UNRESOLVED_INPUT"
+    assert (sockets["single"].hidden_spell_ids, sockets["single"].hidden_frame_keys) == (
+        ("framed",), ("hiddengreeter",))
+    assert sockets["required_list"].socket_kind.name == "NORMAL"
+    assert sockets["required_list"].target_spell_ids == ()
+    assert (sockets["required_list"].hidden_spell_ids, sockets["required_list"].hidden_frame_keys) == (
+        ("framed",), ())
+    assert (sockets["optional_list"].hidden_spell_ids, sockets["optional_list"].hidden_frame_keys) == ((), ())
+    assert sockets["spellmap"].socket_kind.name == "UNRESOLVED_INPUT"
+    assert sockets["spellmap"].dependency_key == ("hiddenenglish", "__default__")
+    assert (sockets["spellmap"].hidden_spell_ids, sockets["spellmap"].hidden_frame_keys) == (
+        ("framed",), ("hiddengreeter",))
+
+
+def test_class_bound_bare_beside_a_framed_one_resolves_and_records_no_hidden_candidates() -> None:
+    """Control: a class also bound bare is found as before; nothing is hidden on any socket."""
+    pool = {
+        "bare": _make_spell_stub("bare", spell_obj=HiddenEnglish, spellframe=None, spell_name="HiddenEnglish"),
+        "framed": _make_spell_stub("framed", spell_obj=object(), spellframe=HiddenGreeter, spell_name="HiddenEnglish"),
+    }
+    topology = _build_hidden_topology(
+        pool,
+        _make_dependency(spell_id="root", param_name="single", position=0,
+                         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation=HiddenEnglish),
+        _make_dependency(spell_id="root", param_name="every", position=1,
+                         di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION, target_annotation=HiddenEnglish,
+                         is_collection=True),
+    )
+    for socket in topology.sockets:
+        assert socket.socket_kind.name == "NORMAL"
+        assert socket.target_spell_ids == ("bare",)
+        assert (socket.hidden_spell_ids, socket.hidden_frame_keys) == ((), ())
+
+
+def test_class_registered_nowhere_stays_a_plain_unresolved_input() -> None:
+    """Control: nothing of the class anywhere - UNRESOLVED_INPUT with no hidden candidates, as before."""
+    topology = _build_hidden_topology(
+        {"other": _make_spell_stub("other", spell_obj=object(), spellframe="greeters", spell_name="Other")},
+        _make_dependency(spell_id="root", param_name="single", position=0,
+                         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION, target_annotation=HiddenEnglish),
+    )
+    socket, = topology.sockets
+    assert socket.socket_kind.name == "UNRESOLVED_INPUT"
+    assert (socket.hidden_spell_ids, socket.hidden_frame_keys) == ((), ())

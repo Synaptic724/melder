@@ -47,6 +47,8 @@ Purpose
 - Canonical index of active artifact associations.
 - Track artifact lifecycle decisions that support ticket execution.
 - Keep `attention_board.md` ticket-only and free of artifact pointers.
+- Unused in `github_issues` mode: each ticket's Artifact Links section holds its
+  artifacts.
 
 Scope rules
 - `attention_board.md` routes tickets only; do not add artifact paths there.
@@ -76,6 +78,9 @@ Disposition values
 | tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md | artifacts/correctness_defects_20261017/probes/diag_class_annotated_consumer_after_notch_back.py | defect_reproducer | active | retain_as_reference | The stuck class-annotated consumer (a notch back or a later bind under a spellframe) with its run (runs/diag_class_annotated_consumer_after_notch_back_0_2_8267.txt); the epic's S1 starts from it and its fix story re-runs it. | 2026-10-25T02:47:38Z | REQUIRED |
 | tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md | artifacts/dependency_watchers_20261107/ | investigation_evidence | active | retain_as_reference | The S1 matrix probe and runner (probes/), the reproducer re-run, the 39-cell matrix and the D3 repeats on 0.2.8277 (runs/); re-run the matrix at the fix. | 2026-11-07T09:30:32Z | REQUIRED |
 | tickets/epics/2026-11-07_spellframe_hides_the_concrete_class_epic.md | artifacts/dependency_watchers_20261107/probes/strict_class_match_plugin.py | measurement_probe | active | retain_as_reference | Re-associated from T2 (completed 2026-11-07): the probe plugins (mode 2 = the landed rule), the suite runner and comparer, and c4_world_probe.py; runs 0.2.8277 (before) and *_0_2_8278* (after: suite, examples, matrix, interface check, C4 world). | 2026-11-07T15:06:23Z | REQUIRED |
+| tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | artifacts/duplicate_address_paths_20261107/ | measurement_evidence | active | retain_as_reference | T3 part (b): the path x shape probe (135 rows, five shapes) with its runs at 0.2.8279 (cross-frame transfer admitted) and 0.2.8280 (none admitted), and the test-run outputs; re-run when an address path changes. | 2026-11-07T16:54:46Z | REQUIRED |
+| tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | system_docs/patches/active/hidden_provider_2026_11_07/ | patch | active | promote_to_documentation | T3 part (a): the HIDDEN_PROVIDER patch (architecture, six component and two code-description patches), read and mapped 2026-11-07T18:23:28Z; merged into the system docs at the docs merge, then moved to patches/completed/. | 2026-11-07T18:23:28Z | REQUIRED |
+| tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | artifacts/hidden_provider_20261107/ | measurement_evidence | active | retain_as_reference | T3 part (a): the design probes (hidden_class_probe.py, emulated_probe.py, the emulation plugin modes 1-2, order_b_check.py) and their 0.2.8280 runs (probe matrix, affected-test diffs for both designs, suite diffs); the after-runs land beside them. | 2026-11-07T18:23:28Z | REQUIRED |
 | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | artifacts/index_binding_risks_20261025/ | measurement_evidence | active | retain_as_reference | GAP-1's measurement script and its runs and the UX runs (GAP-10), on 0.2.8273 and 0.2.8275; the graph census belonged to GAP-12, dropped; each investigation runs its measurement again. | 2026-10-25T14:58:20Z | HELPFUL |
 <!-- END USER-DEFINED: active_artifacts -->
 
@@ -83,9 +88,11 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | system_docs/patches/completed/transfer_within_one_frame_2026_11_07/ | promote_to_documentation | Merged into src_architecture and src_components (indexes regenerated, graph refreshed); kept in patches/completed/ as the lane's record. | 2026-11-07T16:54:46Z |
 | tickets/tasks/completed/2026-11-07_class_annotation_selects_only_bare_spells_task.md | system_docs/patches/completed/class_lookup_bare_spells_2026_11_07/ | promote_to_documentation | Merged into src_architecture and src_components (indexes regenerated); kept in patches/completed/ as the lane's record. | 2026-11-07T15:06:23Z |
 <!-- END USER-DEFINED: cleared_artifacts -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
+2026-11-07: moved to GitHub Issues (`work_tracking.backend: github_issues`). Nothing reads this board any more; the live records start at the header issue: https://github.com/Synaptic724/melder/issues/263
 <!-- END USER-DEFINED: notes -->

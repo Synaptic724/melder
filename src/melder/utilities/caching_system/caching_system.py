@@ -251,6 +251,14 @@ class CachingSystem(Cleanable):
     # cold-starts every bundle (version 9); the bump records why, as versions
     # 18 and 20 did for the earlier matching-rule changes (the owner's point
     # 11, chat 2026-11-07).
+    # Version 27 retires bundles captured before HIDDEN_PROVIDER
+    # (TASK-2026-11-07-spellframe_ambiguity_validation_check part (a), patch
+    # hidden_provider_2026_11_07): their structural rows replay a valid verdict
+    # for a consumer whose class lookup misses a class bound only under a
+    # spellframe or a binding name, which Phase 4 now refuses, and their socket
+    # rows lack the hidden-candidate fields (payload format 3). A release change
+    # already cold-starts every bundle (version 9); the bump records why, as
+    # versions 18, 20 and 26 did for the earlier matching-rule changes.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -278,6 +286,7 @@ class CachingSystem(Cleanable):
         24: "spell_index_keeps_its_binding",
         25: "creation_store_slots_by_binding",
         26: "class_lookup_bare_spells",
+        27: "class_lookup_hidden_providers",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 

@@ -36,6 +36,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     24: "spell_index_keeps_its_binding",
     25: "creation_store_slots_by_binding",
     26: "class_lookup_bare_spells",
+    27: "class_lookup_hidden_providers",
 }
 
 

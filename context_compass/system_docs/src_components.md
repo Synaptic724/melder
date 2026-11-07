@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-11-07T14:15:36Z
+- Updated: 2026-11-07T16:50:30Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -629,7 +629,7 @@ Responsibilities:
   - src/melder/aether/spellbook/spellbook.py:4712, 4750 (`_add_to_spell_index` -> `_apply_add_to_index`)
   - src/melder/aether/spellbook/spellbook.py:4936, 4970 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
   - src/melder/aether/spellbook/spellbook.py:4104-4106 (states the Conduit admits it)
-  - src/melder/aether/conduit/conduit.py:5790, 6169, 6276 (notch/add/remove
+  - src/melder/aether/conduit/conduit.py:5822, 6201, 6308 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
@@ -3486,7 +3486,7 @@ Responsibilities:
 - Upgrade childless lessers in dynamic mode by retaining their creation stores, preparing independent
   normal-root resources and delegating fresh Book attachment to its private conjure route.
 - Manage peer link/sever flows and fire conduit hooks on success.
-- Transfer spell ownership between conduits in dynamic mode.
+- Transfer spell ownership between conduits of one aetheric frame in dynamic mode (one frame since 0.2.8280).
 - Admit the SpellIndex mutations (`notch_spell`, `add_to_spell_index`, `remove_from_spell_index`) as
   change-control transactions; a notch resolves and checks its target by spell_id, and the index moves resolve
   theirs the same way (0.2.8249; Subcomponent: SpellIndex Mutation Surface).
@@ -3561,6 +3561,8 @@ Invariants/Guarantees:
 - `link` and `sever_link` are only allowed in dynamic mode.
 - `upgrade_to_normal` rewires Meld to the currently owned Creations manager.
 - Ownership transfer is only allowed in dynamic mode.
+- Ownership transfer stays inside one aetheric frame, as a link does (0.2.8280, the owner's ruling): the target
+  conduit's frame must be this conduit's (Subcomponent: Ownership Transfer).
 - The caller-facing meld door for a conduit is always `ConduitMeld`.
 - Spellspace-local request work is routed through `SpellSpaceMeld`, not
   through the conduit front door.
@@ -3575,9 +3577,13 @@ Failure Modes:
 - TypeError if `link` target is not a `Conduit`. This is a CONCRETE isinstance
   check, not a structural one: a conduit-shaped object that is not a `Conduit`
   subclass is rejected with "Expected Conduit-compatible object, got {type}".
-  EVIDENCE: src/melder/aether/conduit/conduit.py:5628-5630.
+  EVIDENCE: src/melder/aether/conduit/conduit.py:5660-5662.
 - RuntimeError if `link` target lacks a valid creation context.
 - RuntimeError if `transfer_spell_ownership` is called in non-dynamic mode.
+- RuntimeError "Cannot transfer spell ownership across different AethericFrames: <source> != <target>. ..." from
+  `transfer_spell_ownership` when the target conduit is in another aetheric frame (0.2.8280, Breaking), after the
+  dynamic-mode check and before the transaction and its preflight: nothing starts and the source keeps the spell.
+  Until 0.2.8280 the transfer ran (src_architecture, Failure Modes and Error Paths).
 - ValueError or TypeError from `notch_spell` for its target (0.2.8249): both or neither of `spell` and `spell_id`,
   a version the Book does not own and a version of another index are ValueErrors naming its spell_id and the
   remedy; a non-str spell_id and a str given as `spell` are TypeErrors. A refusal before the transaction starts
@@ -3910,7 +3916,8 @@ Key Files (C1):
   provider), and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.
 - Ownership transfer (`Conduit.transfer_spell_ownership`) migrates spell
   stewardship between conduits in dynamic mode, with optional creation moves,
-  contract/cluster unsharing, and change-control gating.
+  contract/cluster unsharing, and change-control gating - between conduits of one
+  aetheric frame only, as links (0.2.8280; Subcomponent: Ownership Transfer).
 
 ### Component: Creations and SpellSpace
 Purpose:
@@ -7056,15 +7063,15 @@ Purpose:
 Contract/Interface:
 - `Conduit.notch_spell(spell_index=, spell_id= | spell=)` resolves and checks its target
   (`_resolve_notch_target`, `_owned_notch_target`: owned by the Book, a member of the index passed; 0.2.8249),
-  opens the `notch` transaction at `src/melder/aether/conduit/conduit.py:5823`, checks the target again inside
+  opens the `notch` transaction at `src/melder/aether/conduit/conduit.py:5855`, checks the target again inside
   the window, then calls `Spellbook._notch_spell(...)`, which delegates the member-store switch to the seam
   `_apply_notch(...)`.
 - `Conduit.add_to_spell_index(spell_id= | spell=, target_index=)` resolves a spell_id to the spell the Book owns
   (`_resolve_spell_to_move`; 0.2.8249), opens `add_to_index` at
-  `src/melder/aether/conduit/conduit.py:6189`, then calls `Spellbook._add_to_spell_index(...)`, which
+  `src/melder/aether/conduit/conduit.py:6221`, then calls `Spellbook._add_to_spell_index(...)`, which
   delegates the move-in to `_apply_add_to_index(...)`.
 - `Conduit.remove_from_spell_index(spell_id= | spell=, source_index=)` resolves it the same way, opens
-  `remove_from_index` at `src/melder/aether/conduit/conduit.py:6287`, then calls
+  `remove_from_index` at `src/melder/aether/conduit/conduit.py:6319`, then calls
   `Spellbook._remove_from_spell_index(...)`, which delegates the split to
   `_apply_remove_from_index(...)`.
   THE SPLIT OF OWNERSHIP IS THE POINT: the Conduit admits the transaction
@@ -7078,8 +7085,8 @@ Contract/Interface:
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5679, 6091, 6212 (public verbs)
-  - src/melder/aether/conduit/conduit.py:5871, 5910, 5965, 6016, 6052 (`_resolve_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5711, 6123, 6244 (public verbs)
+  - src/melder/aether/conduit/conduit.py:5903, 5942, 5997, 6048, 6084 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
   - src/melder/aether/spellbook/spellbook.py:4177, 4750, 4970 (applied seams)
 Data Structures:
@@ -7492,10 +7499,24 @@ Key Files (C1):
 ### Subcomponent: Ownership Transfer
 Parent Component: ConduitWard and Contracts
 Purpose:
-- Transfer spell stewardship between conduits in dynamic mode.
+- Transfer spell stewardship between conduits of one aetheric frame in dynamic mode.
 Contract/Interface:
 - `Conduit.transfer_spell_ownership(...)` and `_transfer_spell_ownership(...)`; both default to `move_creations=True`
   since 0.2.8239 (`TransferOfOwnership`'s own constructor keeps False; the verbs always pass the value).
+- One frame (2026-11-07, 0.2.8280; the owner's ruling: "they shouldn't be able to transfer between frames thats an
+  illegal operation ... you cannot link between frames either"): the public verb, the only caller of
+  `ConduitWard._transfer_spell_ownership`, checks in order a live normal root (`check_cleaned`, "Only normal conduits
+  can transfer spell ownership."), the frame posture ("[CONDUIT] Ownership transfer is disabled for the current frame
+  posture."), dynamic mode ("Ownership transfer requires dynamic mode.") and then that the target conduit's
+  `_aetheric_frame_name` equals its own, as `ConduitWard._link` does for a peer; a target in another frame raises
+  RuntimeError "Cannot transfer spell ownership across different AethericFrames: <source> != <target>. ..." with the
+  remedy (bind the spell in a Spellbook of that frame), logged at ERROR. Every check runs before the
+  `TRANSFER_OWNERSHIP` transaction and `_build_transfer_transaction_metadata`'s read-only preflight, so a refusal
+  starts nothing and the source still melds the spell. Through 0.2.8279 a cross-frame transfer ran, leaving the target
+  Book two active spells at one address (DUPLICATE_SPELL_NAME on meld), the source frame's claim naming the moved
+  spell and the address unclaimed in the target frame, where a later bind registered a second active spell. The frame
+  names are fixed at construction, so the check takes no lock. A cleaned target conduit fails earlier, with
+  AttributeError on `_aetheric_frame_name` (on `_spellbook` before 0.2.8280; measured both ways).
 - `move_creations=True`: `_move_creations` extracts every index member's entries from the source root's store and
   restores them into the target's - a `unique` stays one object, and a holder's row carries the holder alone, its
   `many` objects staying in the store that recorded them (0.2.8267) - replacing, undisposed, whatever the target held
@@ -9023,9 +9044,12 @@ These flows describe concrete method sequences for core behaviors.
    `is_root_dirty(conduit_id, root_id)`.
 
 ### Flow: Transfer Spell Ownership (Dynamic)
-1. `Conduit.transfer_spell_ownership(...)` validates dynamic mode; a spell_id handle resolves to the spell its
-   index has active here - `Conduit._resolve_transfer_spell`: `get_spell_by_spell_id`, then
-   `get_spell_by_index_id` of that member's index (0.2.8253).
+1. `Conduit.transfer_spell_ownership(...)` checks a live normal root, the frame posture, dynamic mode and - since
+   0.2.8280 - a target conduit in its own aetheric frame (RuntimeError "Cannot transfer spell ownership across
+   different AethericFrames: ..."), all before the `TRANSFER_OWNERSHIP` transaction opens; then
+   `_build_transfer_transaction_metadata` resolves the handle - a spell_id resolves to the spell its index has active
+   here, `Conduit._resolve_transfer_spell`: `get_spell_by_spell_id`, then `get_spell_by_index_id` of that member's
+   index (0.2.8253) - and runs the read-only preflight for the transaction's footprint.
 2. `TransferOfOwnership.preflight()` enumerates borrowers/deps/creations.
 3. `TransferOfOwnership.execute()`:
    - Marks lineage disabled (transfer_in_progress).
@@ -9655,9 +9679,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-11-01T23:32:00Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8012
-  loc: 8012
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 8044
+  loc: 8044
+  verified_at: 2026-11-07T16:50:30Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -12375,6 +12399,19 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+2026-11-07 a spell's stewardship stays inside one aetheric frame (0.2.8280; part (b) of
+TASK-2026-11-07-spellframe_ambiguity_validation_check, on the owner's ruling "they shouldn't be able to transfer
+between frames thats an illegal operation ... you cannot link between frames either"; patch
+transfer_within_one_frame_2026_11_07). What component contracts changed: Ownership Transfer - the one-frame check, its
+place after the posture and dynamic checks and before the transaction and its preflight, the RuntimeError and its
+remedy, what a cross-frame transfer did through 0.2.8279; Conduit Runtime (Normal and Lesser) - its transfer
+responsibility, a one-frame invariant and the failure mode; ConduitWard and Contracts - the narrative's transfer line;
+the transfer flow's step 1 lists the checks. Numeric citations into conduit.py past the edit moved 32 lines and were
+remapped line by line, and the code map remeasures conduit.py. Measured on 0.2.8280, and with the previous conduit.py
+in a scratch copy: a cross-frame transfer is refused and the source still melds the spell (it ran before); a cleaned
+target conduit fails with AttributeError either way. Still unknown: the Unknowns section, unchanged. Verify next: part
+(a) of TASK-2026-11-07-spellframe_ambiguity_validation_check.
+
 2026-11-07 a class lookup reaches only a spell bound bare (0.2.8278;
 TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class, on
 the owner's rulings "do what autofac would do ... thats our compass" and "ok yes to all your statements"; patch

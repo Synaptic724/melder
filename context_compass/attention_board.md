@@ -49,6 +49,8 @@ Purpose
 - Active-work routing board.
 - Attention-only summary for fast re-entry.
 - Canonical detail lives in linked tickets.
+- Unused in `github_issues` mode: each ticket issue carries its own `## Route`
+  (`agent_onboarding/default/general/skills/github/issues_backend.md`).
 
 Attention details rule
 - Keep this board compact and operational.
@@ -87,10 +89,11 @@ Active detail entry format (add actual entries only inside the USER-DEFINED regi
 
 Message alert rules
 - Apply only when `agent_communication.backend` resolves to `mailbox`. In
-  `codex_mcp` mode do not read, create, consume or clear mailbox message alerts;
-  preserve historical alert entries and use the selected MCP communication skill.
-- Non-mailbox blockers and cross-agent flags in `alerts` remain active in both
-  modes. Skip only mailbox message notices, not the board's other attention data.
+  `codex_mcp` or `claude_internal_communication` mode do not read, create,
+  consume or clear mailbox message alerts; preserve historical alert entries and
+  use the selected transport's skill.
+- Non-mailbox blockers and cross-agent flags in `alerts` remain active in every
+  mode. Skip only mailbox message notices, not the board's other attention data.
 - Senders add one line per message sent on `mailbox_board.md`:
   `- NEW MESSAGE for <agent_name> (from <agent_name>, <DATETIME>)`.
 - The named recipient clears their line in the same pass that consumes the
@@ -108,9 +111,9 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | correctness_defects | in_progress | handoff | claude | melder_1 | none | S2 landed at 0.2.8273 and is turned in; the stuck consumer is its own epic (row dependency_watchers_epic); S5, S11 and the recorded-world finding wait for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T12:26:46Z | REQUIRED |
 | dependency_watchers_epic | ready | handoff | claude | melder_0 | none | The key split moved to row spellframe_hides_class_epic (the owner's option B); S1's other misses (H1/H2, D1, G4, E1, P1a) wait for his word, one at a time. | Why a waiting consumer misses its provider, mapped for every watcher and announcer; then the fixes on the owner's word. | S1's matrix and the fix options are on the epic for the owner, or he redirects. | tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md | 2026-11-07T10:03:26Z | REQUIRED |
-| spellframe_hides_class_epic | ready | implementation | claude | melder_0 | none | T2 done as 0.2.8278 (uncommitted; commit on the owner's word); next T3 part (b): pin both duplicate-address shapes on every path and fix the stale example probe; then T3(a). | Class lookups agree with the class meld door - a spellframe or a binding name hides a class (Autofac) - plus the owner's Phase 4 check. | The rule and the check landed and accepted, or the owner redirects. | tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | 2026-11-07T15:06:23Z | REQUIRED |
-| license_metadata_to_apache | in_progress | implementation | claude | melder_0 | none | Bring NOTICE, pyproject, __license__.py and its test, both READMEs to Apache-2.0; release-note line, notch 0.2.8279; graph descriptor; rebuild last. | Every license statement agrees with the owner's Apache-2.0 LICENSE. | No AGPL statement outside history; checks OK, or the owner redirects. | tickets/tasks/2026-11-07_license_metadata_to_apache_task.md | 2026-11-07T15:31:12Z | REQUIRED |
-| dependabot_ci_requirements | in_progress | implementation | claude | melder_0 | none | Read .github/ci_cd/README.md, then bump the provenance pins (PyJWT, urllib3, pyasn1, dnspython, cryptography) and setuptools through each file's tooling; validate. | The 26 open Dependabot alerts' pins at or above their patched versions. | Every named pin bumped and tests/unit/github_workflows green, or the owner redirects. | tickets/tasks/2026-11-07_dependabot_ci_requirements_task.md | 2026-11-07T15:31:12Z | REQUIRED |
+| spellframe_hides_class_epic | in_progress | implementation | claude | melder_0 | none | T3 part (a): mapped, notched 0.2.8281, release note folded; src and tests in flight (subagent). Checked out 18:37:27Z for the GitHub Issues move - after the switch: record STEP 2's report, docs merge, full suite both modes; rebuild held. | Class lookups agree with the class meld door - a spellframe or a binding name hides a class (Autofac) - plus the owner's Phase 4 check. | The rule and the check landed and accepted, or the owner redirects. | tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | 2026-11-07T18:37:27Z | REQUIRED |
+| license_metadata_to_apache | in_progress | implementation | claude | melder_0 | owner hold: no asset rebuild for now (chat 2026-11-07) | Edits, release note, notch 0.2.8279 and graph done; the asset and llm_support rebuild with both checks waits for the owner's word. | Every license statement agrees with the owner's Apache-2.0 LICENSE. | No AGPL statement outside history; checks OK, or the owner redirects. | tickets/tasks/2026-11-07_license_metadata_to_apache_task.md | 2026-11-07T15:44:27Z | REQUIRED |
+| dependabot_ci_requirements | in_progress | implementation | claude | melder_0 | owner hold: no asset rebuild for now (chat 2026-11-07) | All 26 alerts' pins bumped (floors kept, the owner's call); the docs-lock urllib3 bump and BRANCH_WORKFLOW line in flight; the rebuild waits for the owner's word. | The 26 open Dependabot alerts' pins at or above their patched versions. | Every named pin bumped and tests/unit/github_workflows green, or the owner redirects. | tickets/tasks/2026-11-07_dependabot_ci_requirements_task.md | 2026-11-07T15:44:27Z | REQUIRED |
 | index_binding_risks_epic | ready | discovery | claude | melder_1 | none | Parked on the owner's word (2026-10-25): every open label documented; investigations wait for his go, GAP-1 first. | What can break around one binding per index - GAP-1 first - investigated and decided on the owner's word. | Every label has a verdict on the epic, or the owner redirects. | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | 2026-10-25T14:58:20Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
@@ -165,4 +168,5 @@ Message alert rules
 - Device VM Python: bare `python3` is CPython 3.10; load a 3.14 interpreter in every device command.
 - Device VM disk: `/sessions` is full; run tests with `TMPDIR` under /tmp and delete scratch trees when a lane lands.
 - Mailbox IDs: melder_0 sends `M0-<seq>`, melder_1 `M1-<seq>`; the ID leads CLAIM and a reply cites it.
+2026-11-07: moved to GitHub Issues (`work_tracking.backend: github_issues`). Nothing reads this board any more; the live records start at the header issue: https://github.com/Synaptic724/melder/issues/263
 <!-- END USER-DEFINED: notes -->

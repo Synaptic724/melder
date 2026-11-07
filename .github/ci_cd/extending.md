@@ -67,13 +67,22 @@ in one change:
    `test_workflow_contracts.py`.
 2. Regenerate `.github/provenance/requirements.txt` with the command in its header: `pypi-attestations` at the
    version that release's `requirements/runtime.txt` pins, with that file as constraints, so sigstore and the
-   rest take the action's versions (hashes for every pin, wheels only, the helper release on Linux x64).
+   rest take the action's versions, except a pin below one of the security floors the header lists, which takes
+   the floor (hashes for every pin, wheels only, the helper release on Linux x64). Drop a floor once the action's
+   own pin meets it.
 3. Record the new control: save PyPI's Integrity API answer for the `pypi-attestations` wheel the lock installs
    as `.github/provenance/known_good_provenance.json`, byte for byte, and update `ProvenanceControl` in
    `testpypi_provenance.py` (name, sha256, signer, claims). A control whose wheel the lock does not install is
    refused before anything runs.
 4. Build the tool environment from the lock in a scratch folder and run the verifier on the controls; the genuine
    one must verify and both tampered copies must be refused. Then run the workflow tests.
+
+A security advisory against a pin the action still carries does not wait for the action to move: add the patched
+version to the security floors in the lock's header, regenerate with the header's command at the action's current
+commit, and do step 4; the action's pin and the control stay as they are. The floors raise transitive pins only:
+`pypi-attestations` and sigstore stay at the action's versions, which the control and
+`test_candidate_provenance.py` check. The floors set on 2026-11-07 cover cryptography, dnspython, pyasn1, PyJWT
+and urllib3.
 
 ## Add or change a route
 

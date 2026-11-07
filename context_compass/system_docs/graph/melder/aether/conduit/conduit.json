@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "f510b432bdd3d08791bceacb591f9cdad75e3d7c0c3cb92ce63c9030a1dc4fd8",
+ "source_sha256": "390cd8d6ff4c3dccf1a152d91b27ec6beb990cd2c9a3a9a37969a5b5583b9aa2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -120,7 +120,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "af9734a5c91bd68293d2c6936b329d09cc78f6239fc3545a7104ac38a2015103",
+   "span_sha256": "cb72b6edb40f9d087ae7c6d6d3e2f0b6d7ba4b0dee11c66a952af84993acc924",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -130,7 +130,7 @@
     "creates lesser conduits",
     "promotes childless lessers into independent normal roots through a fresh Book and its private existing-conduit conjure route",
     "drains creation admission before graduation and restores lesser topology on pre-attachment failure",
-    "supports dynamic linking and ownership transfer in dynamic mode",
+    "supports dynamic linking and ownership transfer in dynamic mode, both inside one aetheric frame: transfer_spell_ownership refuses a target conduit of another frame with RuntimeError before the TRANSFER_OWNERSHIP transaction and its preflight open, as a link across frames is refused (0.2.8280)",
     "facades bind-hook add and clear on the owning Book for live normal conduits; lessers cannot edit borrowed Bind policy",
     "owns stable root runtime hook maps copied from configuration and exposes validated local or explicit root-shared updates",
     "restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools",

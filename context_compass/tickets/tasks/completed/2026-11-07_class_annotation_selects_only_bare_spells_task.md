@@ -424,6 +424,24 @@ this does not make independent review mandatory for every ticket.
   NEXT: Close T2 (summary, completed/, board and artifact sync), then the rebuild and both `--check` runs last.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+- DATETIME: 2026-11-07T15:32:00Z
+  AUTHOR: melder_0
+  AUTHOR_ROLE: synaptic_python_developer
+  TYPE: MEASURE
+  CLAIM: After the 0.2.8278 rebuild (build assets `--check` OK; llm_support `--check` OK, both at 0.2.8278), the
+    full suite: the GIL off 15634 passed, 9 failed - exactly the 9 standing failures of 0.2.8277 - 33 skipped, 12
+    xfailed, 2 xpassed; the GIL on the same plus one failure, test_rows_captured_by_another_process_hydrate_this_one
+    ('miss' for 'full_hit'), caused by the license task's notch to 0.2.8279 landing mid-run (its child process read
+    the new version, the parent the old; bundles admit only the exact version) - the parity file then passes 7 of 7
+    in both modes. T2's exit gate holds. The 0.2.8279 notch (the license task) needs one more rebuild, shared with
+    the Dependabot change set; that rebuild re-runs both checks.
+  EVIDENCE:
+  - context_compass/artifacts/dependency_watchers_20261107/runs/suite_0_2_8278_rebuilt_gil0.txt:1-1
+  - context_compass/artifacts/dependency_watchers_20261107/runs/suite_0_2_8278_rebuilt_gil1.txt:1-1
+  IMPACT: The class-lookup change is validated end to end on the user's machine.
+  NEXT: None for T2; the shared 0.2.8279 rebuild belongs to the license and Dependabot tasks.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 - Scope: land the class-lookup rule end to end (Objective). State: done 2026-11-07T15:06:23Z, melder_0, as 0.2.8278;

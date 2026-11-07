@@ -4320,6 +4320,14 @@ class Conduit(Cleanable):
             - Borrowers are unshared (`force_unshare`) or repointed at the
               target; with `include_dependencies`, each direct dependency this
               conduit owns is transferred with the same options.
+            - Source and target live in one aetheric frame. A transfer to a
+              conduit of another frame is refused before anything starts, as a
+              link across frames is (the owner's ruling, 2026-11-07: a frame is
+              a world with its own addresses, links and contracts). Until
+              0.2.8280 such a transfer ran: the target's Spellbook could hold
+              two active spells at one address, and the source frame's address
+              claim kept naming the moved spell, so no Book of that frame could
+              bind the address again.
             - Uses the normal `TRANSFER_OWNERSHIP` transaction path before the
               existing `TransferOfOwnership` execution helper runs.
             - Keeps request planning and admission in the mediator/strategy
@@ -4360,6 +4368,14 @@ class Conduit(Cleanable):
 
         Returns:
             dict: Preflight summary of the transfer plan.
+
+        Raises:
+            RuntimeError: When this conduit is cleaned or not a normal root,
+                when the frame posture disables ownership transfer, when the
+                world is not dynamic, or when `target_conduit` belongs to
+                another aetheric frame ("Cannot transfer spell ownership across
+                different AethericFrames: <source> != <target>. ..."); each is
+                raised before the transaction opens, so nothing has moved.
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -4373,6 +4389,22 @@ class Conduit(Cleanable):
             )
         if not self.__dynamic_environment__:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
+        if target_conduit._aetheric_frame_name != self._aetheric_frame_name:
+            # A frame is a world with its own addresses, links and contracts: a
+            # spell's stewardship never crosses one, as a link never does
+            # (`ConduitWard._link`). Refused before the transaction and its
+            # preflight, which would read the target against a foreign frame.
+            self._logger.error(
+                "transfer_spell_ownership: target conduit is in a different aetheric frame",
+                "transfer_spell_ownership",
+            )
+            raise RuntimeError(
+                "Cannot transfer spell ownership across different AethericFrames: "
+                f"{self._aetheric_frame_name} != {target_conduit._aetheric_frame_name}. "
+                "An aetheric frame is a world with its own addresses, links and contracts, so a spell's "
+                "stewardship moves only between conduits of one frame, as links do. To use the spell in "
+                "the other frame, bind it in a Spellbook of that frame."
+            )
         with self.transaction(
                 ChangeTransactionType.TRANSFER_OWNERSHIP,
                 metadata=self._build_transfer_transaction_metadata(

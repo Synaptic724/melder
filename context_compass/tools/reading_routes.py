@@ -6,7 +6,7 @@ import pathlib
 import re
 import json
 
-from ticket_backend import backend_from_yaml, BackendConfigError
+from ticket_backend import BACKENDS, backend_from_yaml, BackendConfigError
 
 
 class RouteError(ValueError):
@@ -22,16 +22,29 @@ ENTRY = (
     GENERAL + "skills/agent_session_state.md",
     GENERAL + "skills/harness_custom_instructions.md",
 )
-TICKETS = ("local", "github_codex_plugin")
-COMMUNICATIONS = ("mailbox", "codex_mcp")
+TICKETS = BACKENDS
+COMMUNICATIONS = ("mailbox", "codex_mcp", "claude_internal_communication")
+# Chat transports carry messages only; registration and setup state stay on the boards.
+CHAT_TRANSPORTS = ("codex_mcp", "claude_internal_communication")
 EVENTS = ("onboard", "reonboard")
 READING_MODES = ("lean", "full")
+# Each heading prefix maps to every (dimension, value) pair that must hold.
+# `boards` is derived from the ticket backend: only github_issues keeps the
+# boards on GitHub; every other backend uses the local board files.
 CONDITIONS = {
-    "local backend": ("ticket", "local"),
-    "github codex plugin": ("ticket", "github_codex_plugin"),
-    "mailbox communication": ("communication", "mailbox"),
-    "codex mcp communication": ("communication", "codex_mcp"),
+    "local backend": (("ticket", "local"),),
+    "github codex plugin": (("ticket", "github_codex_plugin"),),
+    "github issues backend": (("ticket", "github_issues"),),
+    "local boards": (("boards", "local"),),
+    "mailbox communication": (("communication", "mailbox"), ("boards", "local")),
+    "codex mcp communication": (("communication", "codex_mcp"),),
+    "claude internal communication": (("communication", "claude_internal_communication"),),
 }
+
+
+def boards_for(ticket: str) -> str:
+    """Where the boards live for a ticket backend: `github` or `local`."""
+    return "github" if ticket == "github_issues" else "local"
 
 
 def relative_path(root: pathlib.Path, value: str) -> str:
@@ -215,7 +228,7 @@ def configured_backends(root: pathlib.Path) -> tuple[str, str]:
     elif value.startswith("'") and value.endswith("'"):
         value = value[1:-1].replace("''", "'")
     if value not in COMMUNICATIONS:
-        raise RouteError("Select mailbox or codex_mcp explicitly")
+        raise RouteError("Select mailbox, codex_mcp or claude_internal_communication explicitly")
     return ticket, value
 
 
@@ -261,9 +274,12 @@ def requirements(root, roles, name, ticket, communication, event, special_paths,
                          "state": "baseline", "if_exists": False})
     required += [{"path": path, "reason": "Project special instructions", "source": "AGENTS.MD",
                   "line": locate("## Project Instructions Bootstrap"), "state": "baseline", "if_exists": False} for path in special_paths]
-    required.append({"path": "mailbox_board.md", "reason": "Shared session state; relevant Notes/messages remain session-specific",
-                     "source": GENERAL + "skills/agent_session_state.md", "line": 9,
-                     "state": "baseline", "if_exists": False})
+    boards = boards_for(ticket)
+    if boards == "local":
+        required.append({"path": "mailbox_board.md", "reason": "Shared session state; relevant Notes/messages remain session-specific",
+                         "source": GENERAL + "skills/agent_session_state.md", "line": 9,
+                         "state": "baseline", "if_exists": False})
+    selected = {"ticket": ticket, "communication": communication, "boards": boards}
     optional, sections = [], []
     for role in order:
         row, value = roles[role], manifests[role]
@@ -277,7 +293,7 @@ def requirements(root, roles, name, ticket, communication, event, special_paths,
                      if section["state"] != "baseline"]
         for entry in value["entries"]:
             condition = entry.get("condition")
-            if condition and {"ticket": ticket, "communication": communication}[condition[0]] != condition[1]:
+            if condition and any(selected[dimension] != value for dimension, value in condition):
                 continue
             entry = dict(entry, reason=f"{role}: {entry['section']}")
             eager = entry["state"] == "baseline" or (reading_mode == "full" and entry["state"] == "on_demand")

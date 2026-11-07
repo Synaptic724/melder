@@ -28,7 +28,12 @@ class SocketKind(StrEnum):
         and a missing value raises `UnresolvedInputError` when that object is
         built. Registering a matching provider later re-resolves the consumer
         and the socket becomes NORMAL. Distinct from OVERRIDE_REQUIRED, which is
-        produced only by a registered non-resolvable definition.
+        produced only by a registered non-resolvable definition. When the
+        lookup is a class lookup and its class IS registered, but only under a
+        spellframe or a binding name, the socket also carries those spells as
+        `hidden_spell_ids` (2026-11-07) and Phase 4 refuses the spell with
+        HIDDEN_PROVIDER, naming where the class is bound; such a socket never
+        reaches planning.
     - AMBIGUOUS_INPUT:
         A single typed dependency that two or more registered resolvable spells
         provide (2026-10-04). Resolution records it instead of raising: no
@@ -36,7 +41,8 @@ class SocketKind(StrEnum):
         `referenced_spell_ids`, and the dependency_key kept so a bind or removal
         of a same-keyed spell re-gates the consumer. Phase 4 refuses the spell
         with AMBIGUOUS_PROVIDER, naming every candidate's address and the
-        remedies (a SpellMap default, a meld override, or one provider). Never
+        remedies (a SpellMap default, or one provider; a meld override is not
+        offered since 2026-11-07 - a refused spell's melds are refused). Never
         reaches planning: a broken spell does not plan.
 
     Subsystem Context:
