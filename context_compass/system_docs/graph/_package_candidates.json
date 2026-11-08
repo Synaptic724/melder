@@ -133,7 +133,7 @@
    "id": "src.melder.aether.spellbook.spell_compiler.validation.strategies",
    "kind": "package",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/",
-   "member_count": 15,
+   "member_count": 16,
    "shared_suffix": "strategy",
    "cohesion": 1.0
   },

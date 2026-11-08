@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 8629536cf04b5210a31c21ca368cde685d7ddca714c7e0ab2459a717e0c1817d
-FILE COUNT: 585
+SOURCE FINGERPRINT: b0c17c7a46a0d7abca8af7211a388c940da196ad1aa9d77a399b3345a10efda1
+FILE COUNT: 587
 
 ================================================================================
 BEGIN FILE: src/melder/__architecture__.py
@@ -562,7 +562,7 @@ END FILE: src/melder/__init__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__license__.py
-CONTENT SHA256: 9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314
+CONTENT SHA256: 5212e43b2fe8e53fbb6c5979ba5c75a1e0fd9df302e557f90ff73d47e0e17bf2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -573,27 +573,29 @@ Contract:
   package root. It carries the SPDX identifier, which is what `pyproject.toml`
   declares and what packaging tools read, so the two cannot drift apart
   silently.
-- The embedded AGPL header is informational/legal context, not executable
-  runtime logic.
+- The embedded Apache-2.0 header is informational/legal context, not
+  executable runtime logic. Melder moved from AGPL-3.0-or-later to the Apache
+  License 2.0 on the owner's decision (2026-11-07, 0.2.8279).
+- The header's copyright line gives the year `LICENSE` and `NOTICE` give,
+  2026, on the owner's decision (2026-11-07, 0.2.8282).
 """
 
 #    Melder - AI-native dependency graph runtime for free-threaded Python.
-#    Copyright (C) 2025-2026 Mark Thomas Geleta
+#    Copyright (C) 2026 Mark Thomas Geleta
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as published
-#    by the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#        http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 
-__license__ = "AGPL-3.0-or-later"
+__license__ = "Apache-2.0"
 ================================================================================
 END FILE: src/melder/__license__.py
 ================================================================================
@@ -612,7 +614,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 872e0783fbceb31768e385397fd208d22af2c85481a091325e0c7c40eaefe43e
+CONTENT SHA256: c4c4b22126a0412dc1891c51d2c51153c5dd31fd7f2fc6571d4c4eca172ee4bb
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -626,7 +628,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8278"
+__version__ = "0.2.8282"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -13009,7 +13011,7 @@ END FILE: src/melder/aether/aetheric_frame/conduit_cloud.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
-CONTENT SHA256: 97bf38d72446b3134d5207e2416cb2eb141c5de09b459ffa9c77a12b66778440
+CONTENT SHA256: 5a85dbf90b035232040a9b80e26a4ed467ba912b798db0b73c6b19d667c2ee5b
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -13054,6 +13056,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -13860,8 +13863,18 @@ class ChangeControlManager(Cleanable):
         changed frame keys and marks contract dependents dirty for changed
         contract keys, but only when the staged mutation actually names a
         spellbook and contributes relevant keys.
+
+        Since 2026-11-07 (patch hidden_provider_2026_11_07, the owner's D1 = B)
+        a staged spell bound under a spellframe also announces its class's type
+        key (`_hidden_type_keys_for_staged`), unioned into the same single
+        `mark_collection_dependents_dirty` call: a consumer that compiled with
+        that class unresolved waits under the class name, so the bind, notch or
+        link of a framed spell of its class re-gates it and its next meld
+        reruns phases 1-4 - where HIDDEN_PROVIDER refuses it, as its twin bound
+        after the change is refused at bind. A bare spell adds nothing (its
+        frame key already is its type key).
         """
-        
+
         if staged.spellbook_id is None:
             return
         if not staged.binding_keys and not staged.contract_keys:
@@ -13870,6 +13883,7 @@ class ChangeControlManager(Cleanable):
         frame_keys.update(
             {frame_key for frame_key, _, _ in staged.contract_keys if frame_key}
         )
+        frame_keys.update(self._hidden_type_keys_for_staged(staged))
         if not frame_keys:
             return
         self._spell_system_states.mark_collection_dependents_dirty(
@@ -13888,6 +13902,47 @@ class ChangeControlManager(Cleanable):
             contract_keys=contract_key_set,
             change_reason=SpellStateChangeReason.contract_unvalidated,
         )
+
+    def _hidden_type_keys_for_staged(self, staged: ChangeControlStagedMutation) -> Set[str]:
+        """
+        Return the type keys the staged spells announce beside their frame keys: those a class lookup cannot reach.
+
+        Purpose:
+            The announce half of patch hidden_provider_2026_11_07 (D1 = B): a
+            spell bound under a spellframe is no provider for a class lookup, but
+            its arrival decides whether a consumer of its class is refused
+            (HIDDEN_PROVIDER), and that consumer waits under the class name -
+            not under the spell's frame key.
+
+        Contract:
+            - Resolves the staged binding keys to live spells with the helpers
+              the structural validator uses: `_resolve_spellbook_for_staged`
+              answers None and `_resolve_spells_for_binding_keys` answers [] when
+              nothing resolves (a departed spell, a spellbook-only initiator, a
+              unit fake), so this answers an empty set then and never raises for
+              a missing spell.
+            - Keeps `CompilerPhase3._hidden_type_key` of each resolved spell that
+              has one (bound under a spellframe or a binding name, not a Protocol
+              definition); a bare spell's frame key is already its type key.
+            - Reads only; the Spellbook lock is taken briefly inside
+              `_resolve_spells_for_binding_keys`, as for the structural validator
+              earlier in the same commit dispatch.
+
+        Args:
+            staged: The committed staged mutation.
+
+        Returns:
+            Set[str]: The type keys to announce; empty when there are none.
+        """
+        if not staged.binding_keys:
+            return set()
+        spellbook = self._resolve_spellbook_for_staged(staged)
+        type_keys: Set[str] = set()
+        for spell in self._resolve_spells_for_binding_keys(spellbook, staged.binding_keys):
+            type_key = CompilerPhase3._hidden_type_key(spell)
+            if type_key is not None:
+                type_keys.add(type_key)
+        return type_keys
 
     def transaction_manager(self) -> ChangeControlTransactionManager:
         """
@@ -32907,7 +32962,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: 1ad5ada142631e58197ebf0ac815015bfcd4406404c0c2d5a6edb7d9c766db20
+CONTENT SHA256: 885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -34819,6 +34874,13 @@ class SpellSystemStates(Cleanable):
               dependency-changed and its next meld re-resolves it into a NORMAL edge.
             - An AMBIGUOUS_INPUT socket is watched the same way (2026-10-04), so
               removing one of the competing providers re-gates the consumer.
+            - An UNRESOLVED_INPUT socket is also watched under its
+              `hidden_frame_keys` (2026-11-07, patch hidden_provider_2026_11_07):
+              the addresses of the spells of its class a class lookup does not
+              reach, which made Phase 4 refuse the consumer (HIDDEN_PROVIDER);
+              a change announced at one of them (a notch of that index, for
+              instance) re-gates the consumer, so a refusal whose cause moved
+              away is re-checked at its next meld.
             - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
@@ -34837,6 +34899,8 @@ class SpellSystemStates(Cleanable):
             if socket.dependency_key is None:
                 continue
             frames.add(socket.dependency_key[0])
+            if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                frames.update(socket.hidden_frame_keys)
         return frames
 
     def _extract_contract_keys(
@@ -44602,7 +44666,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: f510b432bdd3d08791bceacb591f9cdad75e3d7c0c3cb92ce63c9030a1dc4fd8
+CONTENT SHA256: 390cd8d6ff4c3dccf1a152d91b27ec6beb990cd2c9a3a9a37969a5b5583b9aa2
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -48927,6 +48991,14 @@ class Conduit(Cleanable):
             - Borrowers are unshared (`force_unshare`) or repointed at the
               target; with `include_dependencies`, each direct dependency this
               conduit owns is transferred with the same options.
+            - Source and target live in one aetheric frame. A transfer to a
+              conduit of another frame is refused before anything starts, as a
+              link across frames is (the owner's ruling, 2026-11-07: a frame is
+              a world with its own addresses, links and contracts). Until
+              0.2.8280 such a transfer ran: the target's Spellbook could hold
+              two active spells at one address, and the source frame's address
+              claim kept naming the moved spell, so no Book of that frame could
+              bind the address again.
             - Uses the normal `TRANSFER_OWNERSHIP` transaction path before the
               existing `TransferOfOwnership` execution helper runs.
             - Keeps request planning and admission in the mediator/strategy
@@ -48967,6 +49039,14 @@ class Conduit(Cleanable):
 
         Returns:
             dict: Preflight summary of the transfer plan.
+
+        Raises:
+            RuntimeError: When this conduit is cleaned or not a normal root,
+                when the frame posture disables ownership transfer, when the
+                world is not dynamic, or when `target_conduit` belongs to
+                another aetheric frame ("Cannot transfer spell ownership across
+                different AethericFrames: <source> != <target>. ..."); each is
+                raised before the transaction opens, so nothing has moved.
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -48980,6 +49060,22 @@ class Conduit(Cleanable):
             )
         if not self.__dynamic_environment__:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
+        if target_conduit._aetheric_frame_name != self._aetheric_frame_name:
+            # A frame is a world with its own addresses, links and contracts: a
+            # spell's stewardship never crosses one, as a link never does
+            # (`ConduitWard._link`). Refused before the transaction and its
+            # preflight, which would read the target against a foreign frame.
+            self._logger.error(
+                "transfer_spell_ownership: target conduit is in a different aetheric frame",
+                "transfer_spell_ownership",
+            )
+            raise RuntimeError(
+                "Cannot transfer spell ownership across different AethericFrames: "
+                f"{self._aetheric_frame_name} != {target_conduit._aetheric_frame_name}. "
+                "An aetheric frame is a world with its own addresses, links and contracts, so a spell's "
+                "stewardship moves only between conduits of one frame, as links do. To use the spell in "
+                "the other frame, bind it in a Spellbook of that frame."
+            )
         with self.transaction(
                 ChangeTransactionType.TRANSFER_OWNERSHIP,
                 metadata=self._build_transfer_transaction_metadata(
@@ -108972,7 +109068,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
-CONTENT SHA256: 1efbafdc0f597cf79162b6380de4275d63a9cbf085544fc746cd18bdc805bf37
+CONTENT SHA256: 7c8ea89ad312d696c7e0018bd8e4d8d0f50937c74de2c912c663785a328321bf
 SOURCE ENCODING: utf-8
 ================================================================================
 from enum import StrEnum
@@ -109005,7 +109101,12 @@ class SocketKind(StrEnum):
         and a missing value raises `UnresolvedInputError` when that object is
         built. Registering a matching provider later re-resolves the consumer
         and the socket becomes NORMAL. Distinct from OVERRIDE_REQUIRED, which is
-        produced only by a registered non-resolvable definition.
+        produced only by a registered non-resolvable definition. When the
+        lookup is a class lookup and its class IS registered, but only under a
+        spellframe or a binding name, the socket also carries those spells as
+        `hidden_spell_ids` (2026-11-07) and Phase 4 refuses the spell with
+        HIDDEN_PROVIDER, naming where the class is bound; such a socket never
+        reaches planning.
     - AMBIGUOUS_INPUT:
         A single typed dependency that two or more registered resolvable spells
         provide (2026-10-04). Resolution records it instead of raising: no
@@ -109013,7 +109114,8 @@ class SocketKind(StrEnum):
         `referenced_spell_ids`, and the dependency_key kept so a bind or removal
         of a same-keyed spell re-gates the consumer. Phase 4 refuses the spell
         with AMBIGUOUS_PROVIDER, naming every candidate's address and the
-        remedies (a SpellMap default, a meld override, or one provider). Never
+        remedies (a SpellMap default, or one provider; a meld override is not
+        offered since 2026-11-07 - a refused spell's melds are refused). Never
         reaches planning: a broken spell does not plan.
 
     Subsystem Context:
@@ -110315,7 +110417,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: f61974ce3301057bd3b03c4a54458bb6efb20498b3b6302620e9575d60f8a44c
+CONTENT SHA256: eef37bac2fde1782545773baba59b6e16c515627d30a6ba17f297c0e7d56c46b
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -110337,6 +110439,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
@@ -110377,6 +110480,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellLocalTopology,
     SpellSocketDescriptor,
 )
+from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import HiddenProviderReport
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
 from melder.utilities.helpers.general_helpers import SpellInputUtils
@@ -110414,6 +110518,13 @@ class CompilerPhase3:
           reached through the frame - Melder's interface dict, keyed by
           binding name - and a bare spell bound under a binding name through
           that name.
+        - A class lookup that finds nothing records the spells of that class it
+          does not reach - bound under a spellframe or a binding name - as the
+          socket's hidden candidates (`_hidden_class_candidates`, the
+          `by_hidden_type` bucket; 2026-11-07, patch hidden_provider_2026_11_07):
+          Phase 4 refuses a single or SpellMap socket that carries them with
+          HIDDEN_PROVIDER, and Phase 6 names them for an empty required
+          `list[Class]`. Recording them changes nothing that resolves.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -110650,6 +110761,45 @@ class CompilerPhase3:
         )
 
     @staticmethod
+    def _hidden_type_key(spell_obj: Spell) -> Optional[str]:
+        """
+        Return the type key a class lookup would compare for a spell it cannot reach, else None.
+
+        Purpose:
+            The one predicate of a hidden candidate (2026-11-07, patch
+            hidden_provider_2026_11_07): a spell bound under a spellframe or a
+            binding name carries its class's type key, but no class lookup
+            reaches it (`_answers_class_lookup`). Phase 3's scan and its
+            `by_hidden_type` bucket, `UnresolvedInputError`'s failure path and
+            the change-control announcers (a framed spell's bind, notch or
+            contract grant also announces this key) all read this method, so
+            they agree on which spells are hidden.
+
+        Contract:
+            - None for a spell that answers a class lookup (bound bare, the
+              default binding): it is reached, not hidden.
+            - None for a spell whose bound object is itself a Protocol - a
+              Protocol's own definition never counts as a hidden candidate (the
+              owner's D5): a name naming the Protocol reaches it through its
+              definition key whatever its binding.
+            - Otherwise the spell's type key (`_spell_type_key`, its lowercased
+              name), the key a class annotation of its class names.
+            - Reads bind-time fields only (spellframe, binding name, spell
+              name, the bound object); takes no lock.
+
+        Args:
+            spell_obj: The spell to classify.
+
+        Returns:
+            Optional[str]: The lowercased type key, or None.
+        """
+        if CompilerPhase3._answers_class_lookup(spell_obj):
+            return None
+        if CompilerPhase3._spell_definition_key(spell_obj) is not None:
+            return None
+        return CompilerPhase3._spell_type_key(spell_obj)
+
+    @staticmethod
     def _spell_label_key(spell_obj: Spell) -> str:
         """
         Return the spell's address label: the frame key of its address.
@@ -110873,7 +111023,10 @@ class CompilerPhase3:
             Collapse the O(dependencies x spells) annotation scans into one
             bucket lookup per dependency. Three bucket maps, one per spell key
             kind - type, label, contract - so a lookup reads exactly the
-            buckets the annotation's kind selects (`_spell_keys_for`). Keys
+            buckets the annotation's kind selects (`_spell_keys_for`); plus the
+            definition bucket and, since 2026-11-07, the `by_hidden_type`
+            bucket a class-lookup miss reads to name its hidden candidates
+            (`_hidden_class_candidates`; resolution never reads it). Keys
             derive from pass-invariant inputs (binds are transactional and the
             resolution pass runs post-bind): spellframe, its kind and spell_name.
 
@@ -110889,18 +111042,23 @@ class CompilerPhase3:
               `by_type` key for a bare binding), once per recorded contract to
               `by_contract`, and - when the bound object is itself a Protocol -
               once to `by_definition` under its type key.
+            - Each spell whose `_hidden_type_key` is not None (bound under a
+              spellframe or a binding name, not a Protocol definition) is
+              appended once to `by_hidden_type` under that key - the scan
+              path's predicate, so both paths name the same hidden candidates.
             - Keys are strings and both paths apply the same predicate, so
               bucket membership equals scan membership for every pool; no
               equality guard is needed.
 
         Returns:
             Dict[str, Any]: `{"by_type": {...}, "by_label": {...}, "by_contract": {...},
-            "by_definition": {...}}`, each mapping a key to its list of entries.
+            "by_definition": {...}, "by_hidden_type": {...}}`, each mapping a key to its list of entries.
         """
         by_type: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         by_label: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         by_contract: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         by_definition: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+        by_hidden_type: Dict[str, List[Tuple[int, Any, Spell]]] = {}
         position = 0
         for index, spell_obj in self._iter_all_spells(spellbook):
             entry = (position, index, spell_obj)
@@ -110913,11 +111071,15 @@ class CompilerPhase3:
             definition_key = self._spell_definition_key(spell_obj)
             if definition_key is not None:
                 by_definition.setdefault(definition_key, []).append(entry)
+            hidden_key = self._hidden_type_key(spell_obj)
+            if hidden_key is not None:
+                by_hidden_type.setdefault(hidden_key, []).append(entry)
         return {
             "by_type": by_type,
             "by_label": by_label,
             "by_contract": by_contract,
             "by_definition": by_definition,
+            "by_hidden_type": by_hidden_type,
         }
 
     def _get_candidate_index(
@@ -111058,9 +111220,12 @@ class CompilerPhase3:
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
         When nothing matches at all, the mapping is empty: the caller records an
-        UNRESOLVED_INPUT socket, which the constructing meld must supply - also
-        when the class is registered, but only under a spellframe or a binding
-        name, which a class lookup does not reach. When
+        UNRESOLVED_INPUT socket, which the constructing meld must supply. When
+        the class is registered, but only under a spellframe or a binding name
+        (which a class lookup does not reach), the caller also records those
+        spells as the socket's hidden candidates and Phase 4 refuses the spell
+        with HIDDEN_PROVIDER, naming where the class is bound (2026-11-07,
+        `_hidden_class_candidates`). When
         several match, every candidate is returned (2026-10-04): the caller
         records an AMBIGUOUS_INPUT socket and Phase 4 refuses the spell with
         AMBIGUOUS_PROVIDER, naming the candidates and their addresses - the
@@ -111108,10 +111273,12 @@ class CompilerPhase3:
             candidates = resolvable_candidates
 
         if not candidates:
-            # Nothing registered provides this type. `_build_local_frame_dag`
-            # records an UNRESOLVED_INPUT socket instead of failing resolution;
-            # the constructing meld supplies the value or raises
-            # UnresolvedInputError when this object is built.
+            # No spell answers this lookup. `_build_local_frame_dag` records an
+            # UNRESOLVED_INPUT socket instead of failing resolution; the
+            # constructing meld supplies the value or raises UnresolvedInputError
+            # when this object is built - unless the class is bound only under a
+            # spellframe or a binding name, which `_build_local_frame_dag` also
+            # records (hidden candidates) and Phase 4 refuses (HIDDEN_PROVIDER).
             return {}
 
         # Several providers: returned as they are. `_build_local_frame_dag`
@@ -111166,6 +111333,102 @@ class CompilerPhase3:
 
         return {index: candidate for index, candidate in candidates.items() if candidate.resolvable}
 
+    def _hidden_class_candidates(
+            self,
+            spellbook: Spellbook,
+            annotation: Any,
+            *,
+            candidate_index: Optional[Dict[str, Any]],
+            collection: bool,
+    ) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+        """
+        Return the spells a class lookup that found nothing does not reach: the class bound under a spellframe or a binding name.
+
+        Purpose:
+            A class lookup reaches only a spell bound bare (2026-11-07). When
+            one finds nothing, the spells of that class bound elsewhere are what
+            the user most likely meant; Phase 3 records them on the socket
+            (patch hidden_provider_2026_11_07) so Phase 4 can refuse the spell
+            with HIDDEN_PROVIDER, naming each address and the lookup that
+            reaches it, and Phase 6 can name them for an empty `list[Class]`.
+            Called only after resolution came back empty: nothing here changes
+            what resolves.
+
+        Contract:
+            - Empty for a Protocol annotation (a contract lookup, not a class
+              lookup) and for a name annotation on a collection (a label
+              lookup).
+            - Otherwise the spells whose `_hidden_type_key` equals the
+              annotation's key: from the `by_hidden_type` bucket on the index
+              path, from a scan of `_iter_all_spells` on the scan path - one
+              predicate, so both paths return the same candidates.
+            - Single socket (`collection=False`): method and lambda spells are
+              dropped, as the resolver drops them; non-resolvable framed
+              definitions count (the owner's D5). Collection: only resolvable
+              spells count, as the resolver gathers only those.
+            - Read-only; takes no lock.
+
+        Args:
+            spellbook: The spellbook whose pool the scan path reads.
+            annotation: The normalized annotation (`_normalize_annotation_for_matching`).
+            candidate_index: The pass-scoped index, or None on the scan path.
+            collection: True for a COLLECTION_BY_ANNOTATION socket.
+
+        Returns:
+            Tuple[Tuple[str, ...], Tuple[str, ...]]: The sorted hidden spell
+            ids (one per SpellIndex, its selected id) and the sorted distinct
+            address frame keys of those spells; both empty when none.
+        """
+        kind = self._annotation_kind(annotation)
+        if kind == self._KIND_CONTRACT or (kind == self._KIND_NAME and collection):
+            return (), ()
+        key = self._annotation_key(annotation)
+        if candidate_index is not None:
+            pairs = [(index, spell_obj) for _, index, spell_obj in candidate_index["by_hidden_type"].get(key, ())]
+        else:
+            pairs = [
+                (index, spell_obj) for index, spell_obj in self._iter_all_spells(spellbook)
+                if self._hidden_type_key(spell_obj) == key
+            ]
+        kept: List[Tuple[SpellIndex, Spell]] = []
+        for index, spell_obj in pairs:
+            if collection:
+                if not spell_obj.resolvable:
+                    continue
+            elif spell_obj.spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
+                continue
+            kept.append((index, spell_obj))
+        return self._hidden_ids_and_frames(kept)
+
+    def _hidden_ids_and_frames(
+            self,
+            registrations: List[Tuple[SpellIndex, Spell]],
+    ) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+        """
+        Turn hidden registrations into the two descriptor tuples.
+
+        Contract:
+            - Ids: one per SpellIndex - its `selected_spell_id`, the version a
+              lookup by address would answer - sorted, as AMBIGUOUS_INPUT
+              records its candidates.
+            - Frame keys: the distinct address frame keys of the registrations
+              (`_spell_label_key`: the spellframe's key, or the spell's own name
+              when bare - exactly what bind stores), sorted.
+
+        Args:
+            registrations: `(spell_index, spell)` pairs of hidden spells.
+
+        Returns:
+            Tuple[Tuple[str, ...], Tuple[str, ...]]: `(hidden_spell_ids, hidden_frame_keys)`.
+        """
+        ids = {index.selected_spell_id for index, _ in registrations}
+        frame_keys = {self._spell_label_key(spell_obj) for _, spell_obj in registrations}
+        return tuple(sorted(ids)), tuple(sorted(frame_keys))
+
     def _socket_kind_for_dep(self, dep: SpellSymbolicDependency) -> SocketKind:
         """
             Map a symbolic dependency's DI shape into a SocketKind.
@@ -111216,6 +111479,8 @@ class CompilerPhase3:
             spell: Spell,
             spellbook: Spellbook,
             dep: SpellSymbolicDependency,
+            *,
+            hidden_out: Optional[List[Tuple[SpellIndex, Spell]]] = None,
     ) -> Dict[Any, Spell]:
         """
         Resolve a SPELLMAP_DEFAULT dependency using the original SpellMap
@@ -111241,6 +111506,20 @@ class CompilerPhase3:
             frame-addressed `SpellMap(spellframe=F, binding_name=b)` are
             unchanged: the frame is named, so the interface dict is read.
 
+        Hidden provider (2026-11-07, patch hidden_provider_2026_11_07):
+            When `SpellMap(spell=X)` without a spellframe finds nothing while X
+            is registered at addresses that class lookup does not reach (under
+            a spellframe, or bare under another binding name), the miss is the
+            HIDDEN_PROVIDER shape. With `hidden_out` (Phase 3's own call) every
+            such registration is appended to it and the mapping is empty: the
+            caller records an UNRESOLVED_INPUT socket with those hidden
+            candidates and Phase 4 refuses the spell through the readable
+            report. Without `hidden_out` (a direct caller) the RuntimeError
+            below is raised with one sentence appended naming where X is bound
+            (`HiddenProviderReport.spellmap_runtime_suffix`). A miss with X
+            registered nowhere, a frame-named miss and several candidates raise
+            exactly as before.
+
         Args:
             spell:
                 Consuming spell owning the dependency.
@@ -111248,20 +111527,29 @@ class CompilerPhase3:
                 Spellbook used for candidate enumeration.
             dep:
                 Dependency metadata containing spellmap defaults.
+            hidden_out:
+                Optional list that receives the `(spell_index, spell)`
+                registrations of X when the HIDDEN_PROVIDER shape misses; None
+                keeps the raising behaviour for direct callers.
 
         Returns:
             Dict[Any, Spell]:
-                Mapping with exactly one resolved spell for the default.
+                Mapping with exactly one resolved spell for the default; empty
+                only when `hidden_out` received the hidden registrations.
 
         Raises:
-            RuntimeError: If no candidate can be resolved or multiple
-                candidates satisfy the explicit default selection constraints.
+            RuntimeError: If no candidate can be resolved (outside the recorded
+                HIDDEN_PROVIDER shape) or multiple candidates satisfy the
+                explicit default selection constraints.
         """
         spellmap = dep.spellmap_default
         if spellmap is None:
             return {}
 
         candidates: Dict[Any, Spell] = {}
+        # Every registration of the explicit spell, reached or not: on a miss of
+        # the class-lookup form these are its hidden candidates (2026-11-07).
+        registrations: List[Tuple[SpellIndex, Spell]] = []
         explicit_spell = spellmap.spell
         frame = spellmap.spellframe
         binding_name = spellmap.binding_name
@@ -111273,6 +111561,7 @@ class CompilerPhase3:
             for index, spell_obj in self._iter_all_spells(spellbook):
                 if spell_obj.spell is not explicit_spell:
                     continue
+                registrations.append((index, spell_obj))
 
                 if frame is not None:
                     if not self._spellmap_frame_matches(spell_obj.spellframe, frame):
@@ -111300,11 +111589,20 @@ class CompilerPhase3:
                     candidates[index] = spell_obj
 
         if not candidates:
-            raise RuntimeError(
+            message = (
                 "SpellCrafter Phase 3: SpellMap default could not be resolved for "
                 f"parameter {dep.param_name!r} on spell {spell.spell_name!r}. "
                 f"SpellMap={spellmap!r}."
             )
+            if frame is None and registrations:
+                # The class-lookup form missed an X registered elsewhere: the
+                # HIDDEN_PROVIDER shape (2026-11-07). Phase 3 records it for the
+                # readable report; a direct caller gets where X is bound.
+                if hidden_out is not None:
+                    hidden_out.extend(registrations)
+                    return {}
+                message += " " + self._spellmap_hidden_sentence(explicit_spell, registrations)
+            raise RuntimeError(message)
 
         if len(candidates) > 1:
             names = ", ".join(
@@ -111318,6 +111616,35 @@ class CompilerPhase3:
             )
 
         return candidates
+
+    @staticmethod
+    def _spellmap_hidden_sentence(
+            explicit_spell: object,
+            registrations: List[Tuple[SpellIndex, Spell]],
+    ) -> str:
+        """
+        Render the sentence a direct `_resolve_spellmap_default` caller's RuntimeError gains for the HIDDEN_PROVIDER shape.
+
+        Contract:
+            - One candidate per SpellIndex (its selected id, the last pooled
+              version kept, as the resolvers keep it), rendered by
+              `HiddenProviderReport` with SpellMap lookups: "X is bound only
+              where this class lookup does not reach: <entries>."
+            - Pure; reads bind-time fields only.
+
+        Args:
+            explicit_spell: The SpellMap's `spell` (X).
+            registrations: Every `(spell_index, spell)` registration of X in the pool.
+
+        Returns:
+            str: The sentence.
+        """
+        by_id = {index.selected_spell_id: spell_obj for index, spell_obj in registrations}
+        described = [HiddenProviderReport.describe(spell_id, spell_obj) for spell_id, spell_obj in by_id.items()]
+        return HiddenProviderReport.spellmap_runtime_suffix(
+            class_name=HiddenProviderReport.spell_display_name(explicit_spell),
+            candidates=described,
+        )
 
     def _dependency_key_for_dep(
             self,
@@ -111364,6 +111691,83 @@ class CompilerPhase3:
 
         return None
 
+    def _record_unresolved_miss(
+            self,
+            spellbook: Spellbook,
+            dep: SpellSymbolicDependency,
+            candidate_index: Optional[Dict[str, Any]],
+            spellmap_hidden: List[Tuple[SpellIndex, Spell]],
+            *,
+            socket_unresolved: Set[tuple[str, int]],
+            socket_hidden: Dict[tuple[str, int], Tuple[Tuple[str, ...], Tuple[str, ...]]],
+    ) -> None:
+        """
+        Record what a socket whose lookup found nothing becomes, and its hidden candidates.
+
+        Purpose:
+            The miss branch of `_build_local_frame_dag` (2026-11-07, patch
+            hidden_provider_2026_11_07): a single typed socket stays an
+            UNRESOLVED_INPUT as before, and a class lookup that missed a class
+            bound only under a spellframe or a binding name also records those
+            spells, so Phase 4 (single, SpellMap) or Phase 6 (an empty required
+            collection) can name where the class is bound.
+
+        Contract:
+            - SINGLE_BY_ANNOTATION: always added to `socket_unresolved`; its
+              hidden ids and frame keys are recorded when there are any.
+              `Optional[Class]` without a default takes this path (still a
+              required input).
+            - COLLECTION_BY_ANNOTATION: nothing for an optional collection (it
+              may legitimately wire nothing); a required one records its hidden
+              ids only (no frame keys: the socket stays NORMAL and the consumer
+              is not refused, so no watch is needed).
+            - SPELLMAP_DEFAULT: reached empty only when
+              `_resolve_spellmap_default` recorded `spellmap_hidden` instead of
+              raising; the socket becomes UNRESOLVED_INPUT with the hidden ids
+              and frame keys of those registrations.
+            - Any other shape: nothing (metadata-only sockets).
+            - Mutates only the two collections passed in; reads the pool or the
+              pass-scoped index; takes no lock.
+
+        Args:
+            spellbook: The spellbook whose pool the scan path reads.
+            dep: The dependency that resolved to nothing.
+            candidate_index: The pass-scoped index, or None on the scan path.
+            spellmap_hidden: The registrations `_resolve_spellmap_default` recorded (empty otherwise).
+            socket_unresolved: Sockets to mark UNRESOLVED_INPUT; updated in place.
+            socket_hidden: Hidden ids and frame keys per socket; updated in place.
+
+        Returns:
+            None.
+        """
+        key = (dep.param_name, dep.position)
+        di_shape = dep.di_shape
+        if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+            socket_unresolved.add(key)
+            hidden = self._hidden_class_candidates(
+                spellbook,
+                self._normalize_annotation_for_matching(dep.target_annotation),
+                candidate_index=candidate_index,
+                collection=False,
+            )
+        elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
+            if dep.is_optional:
+                return
+            hidden_ids, _ = self._hidden_class_candidates(
+                spellbook,
+                self._normalize_annotation_for_matching(dep.target_annotation),
+                candidate_index=candidate_index,
+                collection=True,
+            )
+            hidden = (hidden_ids, ())
+        elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT and spellmap_hidden:
+            socket_unresolved.add(key)
+            hidden = self._hidden_ids_and_frames(spellmap_hidden)
+        else:
+            return
+        if hidden[0]:
+            socket_hidden[key] = hidden
+
     def _build_local_topology(
             self,
             spell: Spell,
@@ -111374,6 +111778,7 @@ class CompilerPhase3:
             socket_references: Dict[tuple[str, int], List[str]],
             socket_unresolved: Optional[Set[tuple[str, int]]] = None,
             socket_ambiguous: Optional[Dict[tuple[str, int], List[str]]] = None,
+            socket_hidden: Optional[Dict[tuple[str, int], Tuple[Tuple[str, ...], Tuple[str, ...]]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -111394,6 +111799,12 @@ class CompilerPhase3:
                   more resolvable providers) AMBIGUOUS_INPUT, with the candidate
                   ids as descriptive `referenced_spell_ids` and no target; they
                   keep their dependency_key for the same re-gating (2026-10-04).
+                * Copy "socket_hidden" (2026-11-07) onto its sockets as
+                  `hidden_spell_ids` and `hidden_frame_keys`: an UNRESOLVED_INPUT
+                  single or SpellMap socket whose class is bound only where a
+                  class lookup does not reach (Phase 4 refuses it with
+                  HIDDEN_PROVIDER) or an empty required class collection (Phase
+                  6 names them). Every other socket keeps both empty.
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -111438,6 +111849,10 @@ class CompilerPhase3:
                     SocketKind.AMBIGUOUS_INPUT,
             ):
                 dependency_key = self._dependency_key_for_dep(dep)
+            hidden_spell_ids: Tuple[str, ...] = ()
+            hidden_frame_keys: Tuple[str, ...] = ()
+            if socket_hidden and (dep.param_name, dep.position) in socket_hidden:
+                hidden_spell_ids, hidden_frame_keys = socket_hidden[(dep.param_name, dep.position)]
 
             descriptor = SpellSocketDescriptor(
                 spell_id=spell_id,
@@ -111451,6 +111866,8 @@ class CompilerPhase3:
                 contract_key=dep.contract_key,
                 referenced_spell_ids=referenced_spell_ids,
                 parameter_kind=parameter_kinds.get(dep.param_name),
+                hidden_spell_ids=hidden_spell_ids,
+                hidden_frame_keys=hidden_frame_keys,
             )
             descriptors.append(descriptor)
 
@@ -111521,6 +111938,14 @@ class CompilerPhase3:
                 * A single typed dependency that no registered spell provides
                   produces an UNRESOLVED_INPUT socket (no dependency id) instead of
                   failing: the constructing meld supplies it.
+                * A class lookup that misses a class bound only under a
+                  spellframe or a binding name records those spells as the
+                  socket's hidden candidates (2026-11-07,
+                  `_record_unresolved_miss`): a single socket and a
+                  `SpellMap(spell=X)` without a spellframe become an
+                  UNRESOLVED_INPUT socket that Phase 4 refuses with
+                  HIDDEN_PROVIDER; an empty required `list[Class]` keeps its
+                  NORMAL socket, which Phase 6 reports naming them.
                 * A single typed dependency that several resolvable spells provide
                   produces an AMBIGUOUS_INPUT socket (no dependency id; the
                   candidates as references) instead of a RuntimeError, so Phase
@@ -111568,11 +111993,17 @@ class CompilerPhase3:
         # Single typed sockets with several resolvable providers: recorded for
         # Phase 4 with their candidate ids, never resolved.
         socket_ambiguous: Dict[tuple[str, int], List[str]] = {}
+        # Class-lookup misses whose class is bound only where the lookup does
+        # not reach: (hidden ids, hidden frame keys) per socket (2026-11-07).
+        socket_hidden: Dict[tuple[str, int], Tuple[Tuple[str, ...], Tuple[str, ...]]] = {}
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
 
             di_shape = dep.di_shape
+            # The registrations a `SpellMap(spell=X)` class lookup missed (filled
+            # only when `_resolve_spellmap_default` records instead of raising).
+            spellmap_hidden: List[Tuple[SpellIndex, Spell]] = []
 
             # Only "normal" DI shapes produce concrete dependency ids for now.
             if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
@@ -111589,7 +112020,7 @@ class CompilerPhase3:
                     candidate_index,
                 )
             elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
-                resolved = self._resolve_spellmap_default(spell, spellbook, dep)
+                resolved = self._resolve_spellmap_default(spell, spellbook, dep, hidden_out=spellmap_hidden)
             else:
                 # SpellContract / PLAIN and any future shapes
                 # are currently metadata-only at the dependency level. They
@@ -111598,10 +112029,17 @@ class CompilerPhase3:
 
             key = (dep.param_name, dep.position)
             if not resolved:
-                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
-                    # Nothing registered provides this typed parameter; keep it
-                    # as an unresolved input instead of failing resolution.
-                    socket_unresolved.add(key)
+                # Nothing answers this lookup: keep a single socket as an
+                # unresolved input instead of failing resolution, and record the
+                # class's hidden candidates where a class lookup missed them.
+                self._record_unresolved_miss(
+                    spellbook,
+                    dep,
+                    candidate_index,
+                    spellmap_hidden,
+                    socket_unresolved=socket_unresolved,
+                    socket_hidden=socket_hidden,
+                )
                 continue
             if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION and len(resolved) > 1:
                 # Several providers: record the candidates for Phase 4's
@@ -111638,6 +112076,7 @@ class CompilerPhase3:
             socket_references=socket_references,
             socket_unresolved=socket_unresolved,
             socket_ambiguous=socket_ambiguous,
+            socket_hidden=socket_hidden,
         )
 
         # Update spell-system state with dependency IDs and local topology.
@@ -125779,7 +126218,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
-CONTENT SHA256: 72accc6b9f8249b4759ad121f4d7586b7883778df0ee609b53339f577e060f6e
+CONTENT SHA256: c5e0fcc72d5011bc5da1568306e4a9dec0241fcd29c9cf12a1140445f54b7599
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -125841,7 +126280,7 @@ class StructuralSnapshot:
           registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
           (validity and the `contract_unvalidated` flag) and the bind-time
           profile requirements (annotation type references for the key).
-        - Payload schema (`PAYLOAD_FORMAT` 2):
+        - Payload schema (`PAYLOAD_FORMAT` 3):
           ``{"key": {"format", "spell_id", "binding_hash", "annotation_refs"},
              "world_stamp": str, "replayable": bool,
              "phase3": {"dependency_ids": [...], "sockets": [...]},
@@ -125849,7 +126288,13 @@ class StructuralSnapshot:
           where a socket row is the `SpellSocketDescriptor` fields in order
           ``(param_name, position, socket_kind_name, is_collection,
           is_optional, target_spell_ids, dependency_key, contract_key,
-          referenced_spell_ids, parameter_kind)``.
+          referenced_spell_ids, parameter_kind, hidden_spell_ids,
+          hidden_frame_keys)``. The last two (format 3, 2026-11-07) are the
+          hidden candidates of a class-lookup miss: a valid dynamic spell's
+          empty required `list[Class]` socket can carry `hidden_spell_ids`, so
+          a replay must restore them for the topology to equal the cold one; a
+          socket that refuses its spell (HIDDEN_PROVIDER) is never replayed,
+          because only `valid` and `gated` payloads are.
         - The ordered local frame is NOT stored: it is the sorted distinct
           dependency ids (without the spell itself) followed by the spell id,
           the same law phase 3 applies.
@@ -125919,7 +126364,9 @@ class StructuralSnapshot:
 
     # Format 2 (EPIC-2026-10-18-spell_identity_is_the_code, S2): the key carries the spell's
     # binding hash beside its spell_id, which became the code digest alone.
-    PAYLOAD_FORMAT: ClassVar[int] = 2
+    # Format 3 (patch hidden_provider_2026_11_07): a socket row carries the descriptor's
+    # `hidden_spell_ids` and `hidden_frame_keys` (12 fields); a format-2 payload misses.
+    PAYLOAD_FORMAT: ClassVar[int] = 3
 
     @staticmethod
     def type_refs(value: Any) -> List[Tuple[str, str]]:
@@ -126207,6 +126654,8 @@ class StructuralSnapshot:
                 None if descriptor.contract_key is None else tuple(descriptor.contract_key),
                 tuple(descriptor.referenced_spell_ids),
                 descriptor.parameter_kind,
+                tuple(descriptor.hidden_spell_ids),
+                tuple(descriptor.hidden_frame_keys),
             ))
         return {
             "key": key,
@@ -126230,8 +126679,9 @@ class StructuralSnapshot:
         Contract:
             - Format `PAYLOAD_FORMAT`, the key's spell id equal to `spell_id`,
               a string world stamp, a bool `replayable`, `phase3.dependency_ids`
-              a list of str, `phase3.sockets` a list of 10-tuples whose socket
-              kind names a `SocketKind` member and whose id fields are tuples
+              a list of str, `phase3.sockets` a list of 12-tuples whose socket
+              kind names a `SocketKind` member and whose id and key fields
+              (targets, references, hidden ids, hidden frame keys) are tuples
               of str, and `phase4.validity` one of the replayable validities
               (`valid`, `gated`) with a bool `contract_unvalidated`.
             - Never raises: any shape violation is False.
@@ -126291,11 +126741,12 @@ class StructuralSnapshot:
             bool:
                 True when the row rebuilds into a descriptor.
         """
-        if not isinstance(row, tuple) or len(row) != 10:
+        if not isinstance(row, tuple) or len(row) != 12:
             return False
         (
             param_name, position, socket_kind_name, is_collection, is_optional,
             target_spell_ids, dependency_key, contract_key, referenced_spell_ids, parameter_kind,
+            hidden_spell_ids, hidden_frame_keys,
         ) = row
         if not isinstance(param_name, str) or not isinstance(position, int):
             return False
@@ -126303,7 +126754,7 @@ class StructuralSnapshot:
             return False
         if not isinstance(is_collection, bool) or not isinstance(is_optional, bool):
             return False
-        for ids in (target_spell_ids, referenced_spell_ids):
+        for ids in (target_spell_ids, referenced_spell_ids, hidden_spell_ids, hidden_frame_keys):
             if not isinstance(ids, tuple) or not all(isinstance(item, str) for item in ids):
                 return False
         for pair in (dependency_key, contract_key):
@@ -126342,6 +126793,7 @@ class StructuralSnapshot:
             (
                 param_name, position, socket_kind_name, is_collection, is_optional,
                 target_spell_ids, dependency_key, contract_key, referenced_spell_ids, parameter_kind,
+                hidden_spell_ids, hidden_frame_keys,
             ) = row
             descriptors.append(
                 SpellSocketDescriptor(
@@ -126356,6 +126808,8 @@ class StructuralSnapshot:
                     contract_key=None if contract_key is None else (contract_key[0], contract_key[1]),
                     referenced_spell_ids=tuple(referenced_spell_ids),
                     parameter_kind=parameter_kind,
+                    hidden_spell_ids=tuple(hidden_spell_ids),
+                    hidden_frame_keys=tuple(hidden_frame_keys),
                 )
             )
         return SpellLocalTopology(spell_id=spell_id, sockets=descriptors)
@@ -129418,7 +129872,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/dependenc
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
-CONTENT SHA256: c50313abfbdb7f8b7026da693a4a135cd2faf0e398fa777500843721d8052bfd
+CONTENT SHA256: 6dfbe7bb161cc3e8343419ab2b212bc1051ce064b4661749fd2be3c711e2f764
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
@@ -129437,10 +129891,16 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.cancellation_event_signal import (
         CancellationEvent,
     )
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+        SpellSocketDescriptor,
+    )
 
 
 # Melder imports
 from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import (
+    HiddenProviderReport,
+)
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
@@ -129488,6 +129948,11 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
           without a resolvable mode are treated as non-dynamic (fail-fast).
         - Optional collection sockets are skipped: an optional list[Frame] may
           legitimately wire nothing (the constructor default applies).
+        - A `list[Class]` left empty because its class is bound only under a
+          spellframe or a binding name carries Phase 3's hidden candidates
+          (`SpellSocketDescriptor.hidden_spell_ids`, 2026-11-07); its message
+          names where the class is bound and the list that gathers it
+          (`_diagnostic_for`), at the same severity.
         - Reads only; never mutates Phase 5/6 inputs.
         - Honors cancellation between spells.
     """
@@ -129583,38 +130048,111 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
                 if socket.target_spell_ids:
                     continue
 
-                if spell_is_dynamic:
-                    severity = SystemDiagnosticSeverity.WARNING
-                    remediation = (
-                        "An empty list will be injected at construction; bind "
-                        "implementations under its frame or add them via a "
-                        "post-conjure contract to populate it."
-                    )
-                else:
-                    severity = SystemDiagnosticSeverity.ERROR
-                    remediation = (
-                        "Bind at least one implementation under its frame, "
-                        "make the parameter optional, or run the book in "
-                        "dynamic mode if members arrive via contracts."
-                    )
                 diagnostics.append(
-                    SystemDiagnostic(
-                        code="collection_socket_no_providers",
-                        message=(
-                            f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
-                            f"parameter '{socket.param_name}' is a required list[...] "
-                            "dependency, but no provider is wired into it. "
-                            f"{remediation}"
-                        ),
-                        severity=severity,
+                    self._diagnostic_for(
                         spell_id=spell_id,
-                        root_id=spell_id,
-                        details={
-                            "spell_id": spell_id,
-                            "param_name": socket.param_name,
-                        },
+                        socket=socket,
+                        spell_lookup=spell_lookup,
+                        spell_is_dynamic=spell_is_dynamic,
                     )
                 )
+
+    @staticmethod
+    def _diagnostic_for(
+            *,
+            spell_id: str,
+            socket: SpellSocketDescriptor,
+            spell_lookup: Mapping[str, Spell],
+            spell_is_dynamic: bool,
+    ) -> SystemDiagnostic:
+        """
+        Build the collection_socket_no_providers diagnostic for one empty required collection socket.
+
+        Purpose:
+            Keep the mode-scoped wording in one place and, since 2026-11-07
+            (patch hidden_provider_2026_11_07), name where the class of a
+            `list[Class]` is bound when Phase 3 recorded hidden candidates: the
+            class IS registered, under a spellframe or a binding name, where a
+            class lookup does not gather it, and "bind implementations under its
+            frame" would send the user the wrong way.
+
+        Contract:
+            - Severity: WARNING in a dynamic Book (`[]` is injected), ERROR
+              otherwise - unchanged by hidden candidates (the owner's D3).
+            - Without hidden candidates (or none of them found in
+              `spell_lookup`) the message is byte-identical to the text before
+              2026-11-07.
+            - With them: "... but no provider is wired into it: list[T] gathers
+              T only where it is bound bare (no spellframe, the default
+              binding), and T is bound only <where>: <entries>." followed by
+              "Gather it where it is bound, as shown, bind T bare, or make the
+              parameter optional." (ERROR) or "An empty list will be injected at
+              construction; gather it where it is bound, as shown, or bind T
+              bare to populate it." (WARNING); `details` gains
+              "hidden_candidates" (the described candidates with their `use`).
+            - Candidates are rendered from `spell_lookup`, the visible spells of
+              this scope; an id it does not hold renders as `spell id <id>`.
+
+        Args:
+            spell_id: The consumer spell id.
+            socket: Its empty required collection socket.
+            spell_lookup: Visible spell_ids to spell objects for this scope.
+            spell_is_dynamic: Whether the consumer's Book is dynamic.
+
+        Returns:
+            SystemDiagnostic: The diagnostic to append.
+        """
+        candidates = [
+            HiddenProviderReport.describe(candidate_id, spell_lookup.get(candidate_id))
+            for candidate_id in socket.hidden_spell_ids
+        ]
+        clause, type_name = HiddenProviderReport.collection_clause(candidates)
+        details: Dict[str, object] = {
+            "spell_id": spell_id,
+            "param_name": socket.param_name,
+        }
+        if type_name is not None:
+            details["hidden_candidates"] = HiddenProviderReport.with_uses(
+                candidates, shape=HiddenProviderReport.SHAPE_LIST,
+            )
+        if spell_is_dynamic:
+            severity = SystemDiagnosticSeverity.WARNING
+            if type_name is None:
+                remediation = (
+                    " An empty list will be injected at construction; bind "
+                    "implementations under its frame or add them via a "
+                    "post-conjure contract to populate it."
+                )
+            else:
+                remediation = (
+                    " An empty list will be injected at construction; gather it where it is bound, as shown, "
+                    f"or bind {type_name} bare to populate it."
+                )
+        else:
+            severity = SystemDiagnosticSeverity.ERROR
+            if type_name is None:
+                remediation = (
+                    " Bind at least one implementation under its frame, "
+                    "make the parameter optional, or run the book in "
+                    "dynamic mode if members arrive via contracts."
+                )
+            else:
+                remediation = (
+                    f" Gather it where it is bound, as shown, bind {type_name} bare, or make the parameter optional."
+                )
+        return SystemDiagnostic(
+            code="collection_socket_no_providers",
+            message=(
+                f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
+                f"parameter '{socket.param_name}' is a required list[...] "
+                f"dependency, but no provider is wired into it{clause or '.'}"
+                f"{remediation}"
+            ),
+            severity=severity,
+            spell_id=spell_id,
+            root_id=spell_id,
+            details=details,
+        )
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
 ================================================================================
@@ -131943,7 +132481,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/visibilit
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
-CONTENT SHA256: f6ff81123b030a7b7a4b5ce3fcb3dc0bd37a823bafee05df26d082371f222f2a
+CONTENT SHA256: 9176fd03cff0eda6833045ccddae2c32dc95db62880e1546bfa2d7c74d6d26b8
 SOURCE ENCODING: utf-8
 ================================================================================
 from dataclasses import dataclass
@@ -131983,6 +132521,11 @@ class SpellSocketDescriptor:
             * NORMAL – standard DI edge or plain parameter socket.
             * SPELL_CONTRACT – cross-conduit spell contract socket.
             * OVERRIDE_REQUIRED – required supplied input with a descriptive target only.
+            * UNRESOLVED_INPUT – a lookup no registered spell answers; the
+              constructing call supplies it, unless `hidden_spell_ids` is set
+              and Phase 4 refuses the spell (HIDDEN_PROVIDER).
+            * AMBIGUOUS_INPUT – several resolvable providers; Phase 4 refuses
+              the spell (AMBIGUOUS_PROVIDER).
 
         is_collection:
             True if this socket is a collection DI shape (e.g. list[...]).
@@ -132018,6 +132561,23 @@ class SpellSocketDescriptor:
             This is populated with SPELL_CONTRACT sockets to support
             system-level contract validation.
 
+        hidden_spell_ids:
+            The spells of the class a class lookup named that the lookup does
+            not reach - bound under a spellframe or a binding name (2026-11-07,
+            HIDDEN_PROVIDER). Phase 3 records them only on a miss: on an
+            UNRESOLVED_INPUT single or SpellMap socket, whose spell Phase 4
+            then refuses with HIDDEN_PROVIDER, and on an empty required
+            class-collection socket, whose Phase 6 report names them. Sorted
+            selected spell ids, one per SpellIndex; empty everywhere else.
+            Descriptive only: never traversed, planned, published as a
+            relationship or counted as a dependency.
+
+        hidden_frame_keys:
+            The distinct address frame keys of `hidden_spell_ids`, sorted, set
+            only on an UNRESOLVED_INPUT socket. `SpellSystemStates` watches
+            them beside `dependency_key`, so a change announced at a hidden
+            candidate's address re-gates the refused consumer.
+
     Subsystem Context:
         The local socket view of the `topology` package; `SpellLocalTopology` owns a
         tuple of these, one per constructor socket.
@@ -132030,8 +132590,9 @@ class SpellSocketDescriptor:
 
     AGENT_PURPOSE:
         access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name,
-        position, socket_kind, is_collection/is_optional, resolved target_spell_ids, and
-        dependency_key/contract_key. Frozen value object.
+        position, socket_kind, is_collection/is_optional, resolved target_spell_ids,
+        dependency_key/contract_key, and the hidden candidates of a class-lookup miss
+        (hidden_spell_ids, hidden_frame_keys). Frozen value object.
     """
     # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
     spell_id: str
@@ -132045,6 +132606,8 @@ class SpellSocketDescriptor:
     contract_key: Optional[Tuple[str, str]] = None
     referenced_spell_ids: Tuple[str, ...] = ()
     parameter_kind: Optional[str] = None
+    hidden_spell_ids: Tuple[str, ...] = ()
+    hidden_frame_keys: Tuple[str, ...] = ()
 
 
 class SpellLocalTopology(Cleanable):
@@ -132188,6 +132751,565 @@ class SpellLocalTopology(Cleanable):
         return tuple(sockets)
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
+================================================================================
+================================================================================
+BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py
+CONTENT SHA256: 81b14f80f1c65d5e7d94cc9e14195ee176435b8afa93bdfe61969d8ef5f91bb0
+SOURCE ENCODING: utf-8
+================================================================================
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Sequence, Tuple
+
+from melder.aether.spellbook.spellframe_kind.spellframe_kind import SpellframeKind
+from melder.utilities.helpers.general_helpers import SpellInputUtils
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+
+
+class HiddenProviderReport:
+    """
+    Internal
+
+    Render where a class lookup's class is bound when the lookup cannot reach it - the one wording every report of a
+    hidden provider uses.
+
+    Purpose:
+        A class lookup - a class annotation, a single string annotation's type part, `list[Class]`,
+        `SpellMap(spell=Class)` without a spellframe - reaches a spell only when it is bound bare, with no spellframe
+        and the default binding (`CompilerPhase3._answers_class_lookup`, 2026-11-07). When such a lookup finds
+        nothing while spells of that class are bound under a spellframe or a binding name, Phase 3 records them as
+        hidden candidates (`SpellSocketDescriptor.hidden_spell_ids`) and four reports name them: Phase 4's
+        HIDDEN_PROVIDER error (`HiddenProviderStrategy`), Phase 6's `collection_socket_no_providers`
+        (`EmptyCollectionStrategy`), the meld-time `UnresolvedInputError`, and Phase 3's own RuntimeError for a
+        direct `_resolve_spellmap_default` caller. This class is their single renderer, so a candidate reads the same
+        everywhere (patch hidden_provider_2026_11_07, owner-approved 2026-11-07).
+
+    Contract:
+        - Pure and stateless: static and class methods over value dicts; reads a `Spell` only in `describe`; never
+          looks anything up, never raises for a candidate it cannot describe.
+        - A candidate is the dict `describe` returns: `spell_id`, `spell_name`, `spellframe` (a category as itself,
+          a Protocol by `__name__`, None when bare), `spellframe_kind` (`SpellframeKind` value, None when unknown)
+          and `binding_name` (as bound, None for the default). A candidate whose spell could not be found carries
+          only its id and renders as `spell id <id>`, with no lookup; a remedy that points at "the SpellMap shown"
+          counts the entries that show one (`described_count`) and names none when none is shown.
+        - Candidates are always rendered in address order - (spellframe, binding_name, spell_name), None first -
+          the order AMBIGUOUS_PROVIDER uses.
+        - Lookups by shape: `SHAPE_SINGLE` and `SHAPE_SPELLMAP` render the `SpellMap` that reaches the candidate's
+          address (`SpellMap(spellframe=P, binding_name='b')`, a Protocol unquoted and a category quoted; the
+          binding name left out for the default binding; `SpellMap(Name, binding_name='b')` or `SpellMap(Name)` for
+          a bare candidate); `SHAPE_LIST` renders the collection that gathers it (`list[P]`, `list['c']`, and
+          `list['Name']` for a bare candidate - a string list gathers the bare spells named so under any binding).
+
+    Registration:
+        MELDER KERNEL - internal helper of the `validation` package; never bound.
+
+    Subsystem Context:
+        Beside `SpellValidationSystem` in the `validation` package; imported by `HiddenProviderStrategy`,
+        `EmptyCollectionStrategy`, `UnresolvedInputError` and `CompilerPhase3`.
+
+    System Context:
+        Phases 3, 4 and 6 of the conjure pipeline and the meld failure path; it renders, it decides nothing.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure renderer of hidden candidates (spells of a class bound only under a spellframe or a
+        binding name): describe, order, the "where" words, the lookup per shape and the four report texts.
+    """
+
+    __slots__ = ()
+
+    # Lookup shapes: which surface a rendered lookup reaches the candidate through.
+    SHAPE_SINGLE: ClassVar[str] = "single"
+    SHAPE_SPELLMAP: ClassVar[str] = "spellmap"
+    SHAPE_LIST: ClassVar[str] = "list"
+
+    @staticmethod
+    def describe(candidate_id: str, spell: Optional[Spell]) -> Dict[str, Optional[str]]:
+        """
+        Describe one hidden candidate as a value dict.
+
+        Contract:
+            - With a spell: its name, its spellframe for display (a string category as itself, a Protocol by
+              `__name__`, None when bare), the `SpellframeKind` value and the binding name as bound.
+            - Without one (the caller's lookup found no spell under the id): the id and None everywhere else.
+            - Reads bind-time fields only; no lock, no lookup.
+
+        Args:
+            candidate_id: The spell id the socket recorded.
+            spell: The spell under that id, or None when the caller could not find it.
+
+        Returns:
+            Dict[str, Optional[str]]: `{spell_id, spell_name, spellframe, spellframe_kind, binding_name}`.
+        """
+        if spell is None:
+            return {
+                "spell_id": candidate_id, "spell_name": None, "spellframe": None,
+                "spellframe_kind": None, "binding_name": None,
+            }
+        frame = spell.spellframe
+        if frame is None:
+            frame_text: Optional[str] = None
+        elif isinstance(frame, str):
+            frame_text = frame
+        else:
+            # Bind admits only a string category or a Protocol class as a spellframe.
+            frame_text = frame.__name__
+        return {
+            "spell_id": candidate_id,
+            "spell_name": spell.spell_name,
+            "spellframe": frame_text,
+            "spellframe_kind": spell.spellframe_kind.value,
+            "binding_name": spell.binding_name,
+        }
+
+    @staticmethod
+    def ordered(candidates: Sequence[Dict[str, Optional[str]]]) -> List[Dict[str, Optional[str]]]:
+        """
+        Return the candidates in address order.
+
+        Contract:
+            Sorted by (spellframe, binding_name, spell_name) with None first; the input is not mutated.
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            List[Dict[str, Optional[str]]]: A new, ordered list.
+        """
+        return sorted(
+            candidates,
+            key=lambda entry: (entry["spellframe"] or "", entry["binding_name"] or "", entry["spell_name"] or ""),
+        )
+
+    @staticmethod
+    def where(candidates: Sequence[Dict[str, Optional[str]]]) -> str:
+        """
+        Name where the class is bound: under a spellframe, a binding name, or either.
+
+        Contract:
+            - Reads the described candidates only (a candidate known by id alone says nothing).
+            - "under a spellframe" when every described candidate has one, "under a binding name" when none has,
+              "under a spellframe or a binding name" when they differ or none is described.
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            str: The phrase, without a leading or trailing space.
+        """
+        known = [entry for entry in candidates if entry["spell_name"] is not None]
+        framed = [entry for entry in known if entry["spellframe"] is not None]
+        if known and len(framed) == len(known):
+            return "under a spellframe"
+        if known and not framed:
+            return "under a binding name"
+        return "under a spellframe or a binding name"
+
+    @staticmethod
+    def described_count(candidates: Sequence[Dict[str, Optional[str]]]) -> int:
+        """
+        Count the candidates whose entries show a lookup.
+
+        Purpose:
+            A remedy that points at "the SpellMap shown" must name one only when an entry shows it: a candidate the
+            caller could not find renders `spell id <id>` with no lookup (STEP 3 of patch
+            hidden_provider_2026_11_07, 0.2.8281).
+
+        Contract:
+            The number of described candidates (`spell_name` not None) - exactly the entries `entry` renders with
+            "- use <lookup>", since `lookup` answers for every described candidate.
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            int: How many entries show a lookup.
+        """
+        return sum(1 for entry in candidates if entry["spell_name"] is not None)
+
+    @staticmethod
+    def is_default_binding(binding_name: Optional[str]) -> bool:
+        """
+        Return True when a binding name normalizes to the default binding.
+
+        Contract:
+            None and "" name the default binding, as in every address key (`SpellInputUtils.normalize_binding_name`).
+
+        Args:
+            binding_name: A binding name as bound or as a SpellMap wrote it.
+
+        Returns:
+            bool: Whether it is the default binding.
+        """
+        return SpellInputUtils.normalize_binding_name(binding_name) == SpellInputUtils.DEFAULT_BINDING_NAME
+
+    @classmethod
+    def lookup(
+            cls,
+            candidate: Dict[str, Optional[str]],
+            *,
+            shape: str,
+            class_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Render the lookup that reaches one candidate through the given surface.
+
+        Contract:
+            - None for a candidate known by id alone.
+            - `SHAPE_LIST`: `list[P]` for a Protocol frame, `list['c']` for a category, `list['Name']` when bare.
+            - `SHAPE_SINGLE` / `SHAPE_SPELLMAP`: `SpellMap(spellframe=P, binding_name='b')` (a Protocol unquoted, a
+              category quoted, the binding name left out when it is the default); a bare candidate renders
+              `SpellMap(Name, binding_name='b')`, or `SpellMap(Name)` under the default binding.
+
+        Args:
+            candidate: One dict from `describe`.
+            shape: `SHAPE_SINGLE`, `SHAPE_SPELLMAP` or `SHAPE_LIST`.
+            class_name: The class name a bare-candidate `SpellMap` names; the candidate's own name when None.
+
+        Returns:
+            Optional[str]: The lookup, or None when the candidate is not described.
+        """
+        name = candidate["spell_name"]
+        if name is None:
+            return None
+        frame = candidate["spellframe"]
+        binding = candidate["binding_name"]
+        is_contract = candidate["spellframe_kind"] == SpellframeKind.contract.value
+        if shape == cls.SHAPE_LIST:
+            if frame is None:
+                return f"list[{name!r}]"
+            return f"list[{frame}]" if is_contract else f"list[{frame!r}]"
+        if frame is None:
+            target = name if class_name is None else class_name
+            if cls.is_default_binding(binding):
+                return f"SpellMap({target})"
+            return f"SpellMap({target}, binding_name={binding!r})"
+        frame_text = frame if is_contract else repr(frame)
+        if cls.is_default_binding(binding):
+            return f"SpellMap(spellframe={frame_text})"
+        return f"SpellMap(spellframe={frame_text}, binding_name={binding!r})"
+
+    @classmethod
+    def entry(
+            cls,
+            candidate: Dict[str, Optional[str]],
+            *,
+            shape: str,
+            class_name: Optional[str] = None,
+    ) -> str:
+        """
+        Render one candidate as `<Name> at (spellframe=..., binding_name=...) - use <lookup>`.
+
+        Contract:
+            The address part is AMBIGUOUS_PROVIDER's rendering; a candidate known by id alone renders
+            `spell id <id>` with no lookup.
+
+        Args:
+            candidate: One dict from `describe`.
+            shape: The lookup shape (see `lookup`).
+            class_name: Passed to `lookup`.
+
+        Returns:
+            str: The rendered entry.
+        """
+        if candidate["spell_name"] is None:
+            return f"spell id {candidate['spell_id']}"
+        address = (
+            f"{candidate['spell_name']} at (spellframe={candidate['spellframe']!r}, "
+            f"binding_name={candidate['binding_name']!r})"
+        )
+        use = cls.lookup(candidate, shape=shape, class_name=class_name)
+        return address if use is None else f"{address} - use {use}"
+
+    @classmethod
+    def entries(
+            cls,
+            candidates: Sequence[Dict[str, Optional[str]]],
+            *,
+            shape: str,
+            class_name: Optional[str] = None,
+    ) -> str:
+        """
+        Render every candidate, in address order, joined by "; ".
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+            shape: The lookup shape (see `lookup`).
+            class_name: Passed to `lookup`.
+
+        Returns:
+            str: The joined entries.
+        """
+        return "; ".join(
+            cls.entry(candidate, shape=shape, class_name=class_name) for candidate in cls.ordered(candidates)
+        )
+
+    @classmethod
+    def with_uses(
+            cls,
+            candidates: Sequence[Dict[str, Optional[str]]],
+            *,
+            shape: str,
+            class_name: Optional[str] = None,
+    ) -> List[Dict[str, Optional[str]]]:
+        """
+        Return the candidates in address order, each with its lookup under "use", for a report's details payload.
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+            shape: The lookup shape (see `lookup`).
+            class_name: Passed to `lookup`.
+
+        Returns:
+            List[Dict[str, Optional[str]]]: New dicts; the inputs are not mutated.
+        """
+        return [
+            {**candidate, "use": cls.lookup(candidate, shape=shape, class_name=class_name)}
+            for candidate in cls.ordered(candidates)
+        ]
+
+    @staticmethod
+    def protocol_clause(candidates: Sequence[Dict[str, Optional[str]]]) -> str:
+        """
+        Offer the Protocol annotation as a second way to reach a candidate bound under a Protocol frame.
+
+        Contract:
+            - "" when no candidate is under a Protocol frame.
+            - One Protocol: ", or a P annotation while that spell is the only one bound under P" - a Protocol
+              annotation selects the frame's single implementation and is AMBIGUOUS_PROVIDER beside a second one.
+            - Several: ", or an annotation with its Protocol while that spell is the only one bound under it".
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            str: The clause, starting with ", or" when not empty.
+        """
+        protocols = sorted({
+            entry["spellframe"] for entry in candidates
+            if entry["spellframe_kind"] == SpellframeKind.contract.value and entry["spellframe"] is not None
+        })
+        if not protocols:
+            return ""
+        if len(protocols) == 1:
+            return f", or a {protocols[0]} annotation while that spell is the only one bound under {protocols[0]}"
+        return ", or an annotation with its Protocol while that spell is the only one bound under it"
+
+    @staticmethod
+    def spell_display_name(value: object) -> str:
+        """
+        Name the class a `SpellMap(spell=...)` names, for display.
+
+        Contract:
+            A class renders as its `__qualname__`; any other object (an existing object a SpellMap names) as its
+            type's `__qualname__`.
+
+        Args:
+            value: The SpellMap's `spell`.
+
+        Returns:
+            str: The display name.
+        """
+        if isinstance(value, type):
+            return value.__qualname__
+        return type(value).__qualname__
+
+    @classmethod
+    def spellmap_text(cls, class_name: str, binding_name: Optional[str]) -> str:
+        """
+        Render a class-lookup SpellMap as written: `SpellMap(X)` or `SpellMap(X, binding_name='b')`.
+
+        Args:
+            class_name: The display name of the SpellMap's spell.
+            binding_name: The SpellMap's binding name (None or "" for the default binding).
+
+        Returns:
+            str: The rendering.
+        """
+        if cls.is_default_binding(binding_name):
+            return f"SpellMap({class_name})"
+        return f"SpellMap({class_name}, binding_name={binding_name!r})"
+
+    @classmethod
+    def annotation_message(
+            cls,
+            *,
+            param_name: str,
+            consumer_name: str,
+            expected_type: str,
+            candidates: Sequence[Dict[str, Optional[str]]],
+    ) -> str:
+        """
+        Render HIDDEN_PROVIDER for a class annotation, a string annotation's type part or `Optional[Class]`.
+
+        Contract:
+            "Parameter 'p' on spell 'C' expects T, but a class lookup reaches T only where it is bound bare (no
+            spellframe, the default binding), and T is bound only <where>: <entries>. Ask for it where it is bound -
+            the SpellMap shown, as the parameter's default<protocol clause> - or bind T bare." The remedy counts the
+            SpellMaps the entries show (`described_count`): "the SpellMap shown" for one, "the SpellMap of the one it
+            needs" for several, and for none - every candidate known by id alone - "Ask for it where it is bound, or
+            bind T bare." (STEP 3 of patch hidden_provider_2026_11_07, 0.2.8281).
+
+        Args:
+            param_name: The consumer's parameter.
+            consumer_name: The consumer spell's name.
+            expected_type: The annotation's display name (`UnresolvedInputError.expected_type_name`).
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            str: The message, without the "[HIDDEN_PROVIDER]" tag the report adds.
+        """
+        described = cls.described_count(candidates)
+        if described == 0:
+            # Every candidate reads `spell id <id>`: no SpellMap is shown, so the remedy names none.
+            remedy = f"Ask for it where it is bound, or bind {expected_type} bare."
+        else:
+            shown = "the SpellMap shown" if described == 1 else "the SpellMap of the one it needs"
+            remedy = (
+                f"Ask for it where it is bound - {shown}, as the parameter's default{cls.protocol_clause(candidates)} "
+                f"- or bind {expected_type} bare."
+            )
+        return (
+            f"Parameter {param_name!r} on spell {consumer_name!r} expects {expected_type}, but a class lookup reaches "
+            f"{expected_type} only where it is bound bare (no spellframe, the default binding), and {expected_type} "
+            f"is bound only {cls.where(candidates)}: {cls.entries(candidates, shape=cls.SHAPE_SINGLE)}. {remedy}"
+        )
+
+    @classmethod
+    def spellmap_message(
+            cls,
+            *,
+            param_name: str,
+            consumer_name: str,
+            class_name: str,
+            binding_name: Optional[str],
+            candidates: Sequence[Dict[str, Optional[str]]],
+    ) -> str:
+        """
+        Render HIDDEN_PROVIDER for a `SpellMap(spell=X)` default without a spellframe that misses X.
+
+        Contract:
+            "Parameter 'p' on spell 'C' has the default SpellMap(X), a class lookup that reaches X only where it is
+            bound bare under the default binding, but X is bound only where that lookup does not reach: <entries>.
+            Point the SpellMap at the address it means, as shown, or bind X bare." With `binding_name='b'` the
+            SpellMap renders with it, the scope reads "under the binding name 'b'" and the last clause "bind X bare
+            under the binding name 'b'". When no entry shows a SpellMap (every candidate known by id alone) "as shown"
+            is left out: "Point the SpellMap at the address it means, or bind X bare." (STEP 3, 0.2.8281).
+
+        Args:
+            param_name: The consumer's parameter.
+            consumer_name: The consumer spell's name.
+            class_name: The display name of X (`spell_display_name`).
+            binding_name: The SpellMap's binding name.
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            str: The message, without the "[HIDDEN_PROVIDER]" tag the report adds.
+        """
+        if cls.is_default_binding(binding_name):
+            scope = "the default binding"
+            suffix = ""
+        else:
+            scope = f"the binding name {binding_name!r}"
+            suffix = f" under the binding name {binding_name!r}"
+        # "as shown" only when an entry shows the SpellMap that reaches it.
+        as_shown = ", as shown," if cls.described_count(candidates) else ","
+        return (
+            f"Parameter {param_name!r} on spell {consumer_name!r} has the default "
+            f"{cls.spellmap_text(class_name, binding_name)}, a class lookup that reaches {class_name} only where it is "
+            f"bound bare under {scope}, but {class_name} is bound only where that lookup does not reach: "
+            f"{cls.entries(candidates, shape=cls.SHAPE_SPELLMAP, class_name=class_name)}. Point the SpellMap at the "
+            f"address it means{as_shown} or bind {class_name} bare{suffix}."
+        )
+
+    @classmethod
+    def collection_clause(cls, candidates: Sequence[Dict[str, Optional[str]]]) -> Tuple[str, Optional[str]]:
+        """
+        Render the clause an empty required `list[Class]` report inserts, and the class name it uses.
+
+        Contract:
+            - The class name is the first described candidate's (address order); with none described the clause
+              is "" and the name None, so the caller keeps its text without hidden candidates.
+            - Clause: ": list[T] gathers T only where it is bound bare (no spellframe, the default binding), and T is
+              bound only <where>: <entries>." with `SHAPE_LIST` lookups.
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            Tuple[str, Optional[str]]: The clause (starting with ":") and the class name, or ("", None).
+        """
+        ordered = cls.ordered(candidates)
+        names = [entry["spell_name"] for entry in ordered if entry["spell_name"] is not None]
+        if not names:
+            return "", None
+        name = names[0]
+        return (
+            f": list[{name}] gathers {name} only where it is bound bare (no spellframe, the default binding), and "
+            f"{name} is bound only {cls.where(ordered)}: {cls.entries(ordered, shape=cls.SHAPE_LIST)}.",
+            name,
+        )
+
+    @classmethod
+    def unresolved_input_message(
+            cls,
+            *,
+            consumer_name: str,
+            param_name: str,
+            expected_type: str,
+            candidates: Sequence[Dict[str, Optional[str]]],
+    ) -> str:
+        """
+        Render `UnresolvedInputError`'s text for an unsupplied input whose class is bound only where it cannot be
+        reached.
+
+        Contract:
+            "C.p expects T, but this meld did not supply it and a class lookup reaches T only where it is bound bare
+            (no spellframe, the default binding), while T is bound only <where>: <entries>. Supply it with
+            override={'p': ...} when melding C, a path key ending in '>p' (or '**p') when C is built as a dependency,
+            ask for it where it is bound, as shown, or bind T bare."
+
+        Args:
+            consumer_name: The consumer spell's name.
+            param_name: Its first missing parameter.
+            expected_type: That parameter's display type.
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            str: The message body (MeldExecutionError adds its "[MELD] ..." prefix).
+        """
+        return (
+            f"{consumer_name}.{param_name} expects {expected_type}, but this meld did not supply it and a class lookup "
+            f"reaches {expected_type} only where it is bound bare (no spellframe, the default binding), while "
+            f"{expected_type} is bound only {cls.where(candidates)}: "
+            f"{cls.entries(candidates, shape=cls.SHAPE_SINGLE)}. Supply it with override={{{param_name!r}: ...}} when "
+            f"melding {consumer_name}, a path key ending in '>{param_name}' (or '**{param_name}') when "
+            f"{consumer_name} is built as a dependency, ask for it where it is bound, as shown, or bind "
+            f"{expected_type} bare."
+        )
+
+    @classmethod
+    def spellmap_runtime_suffix(cls, *, class_name: str, candidates: Sequence[Dict[str, Optional[str]]]) -> str:
+        """
+        Render the sentence Phase 3 appends to its SpellMap RuntimeError for a direct caller.
+
+        Contract:
+            "X is bound only where this class lookup does not reach: <entries>." with `SHAPE_SPELLMAP` lookups.
+
+        Args:
+            class_name: The display name of the SpellMap's spell.
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            str: The sentence.
+        """
+        return (
+            f"{class_name} is bound only where this class lookup does not reach: "
+            f"{cls.entries(candidates, shape=cls.SHAPE_SPELLMAP, class_name=class_name)}."
+        )
+================================================================================
+END FILE: src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py
@@ -132683,7 +133805,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py
-CONTENT SHA256: a859938850269f358e348e2590c5af13d1938dd34d2744bb6360841cd4ea02df
+CONTENT SHA256: 47ea71c0e70bd393060ff7738e141cd63aa000c81973493c5ecb7bec4c126e7c
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List
@@ -132716,8 +133838,10 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
     - One `AMBIGUOUS_PROVIDER` error per `AMBIGUOUS_INPUT` socket of the spell's Phase-3 topology.
     - The message names the parameter, the expected type (rendered as the meld-time
       `UnresolvedInputError` renders it), each candidate as `<spell_name> at (spellframe=...,
-      binding_name=...)` ordered by address, and the three ways out: a `SpellMap`
-      default on the parameter, a meld override, or a single provider of the type.
+      binding_name=...)` ordered by address, and the two ways out: a `SpellMap`
+      default on the parameter, or a single provider of the type. A meld override is not
+      offered (2026-11-07, the owner's D4): the error refuses the spell, and the meld gate
+      refuses every meld of a refused spell, override or not.
     - `details` carries `spell_id`, `parameter_name`, `expected_type` and `candidates` (a list of
       `{spell_id, spell_name, spellframe, binding_name}`), so tooling can act without parsing text.
     - A candidate the spellbook can no longer find (removed between phases) is rendered by id only.
@@ -132728,7 +133852,9 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
 
     Subsystem Context:
         One built-in of the `validation/strategies` family, registered into `SpellValidationSystem`
-        after `RequiredHolesStrategy` (which reports the sibling UNRESOLVED_INPUT sockets as warnings).
+        after `RequiredHolesStrategy` (which reports the sibling UNRESOLVED_INPUT sockets as warnings)
+        and before `HiddenProviderStrategy` (an UNRESOLVED_INPUT whose class is bound only where a
+        class lookup does not reach).
 
     System Context:
         Phase 4 (validation) of the conjure pipeline. Its error marks the spell broken: conjure refuses
@@ -132793,8 +133919,7 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
                         f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
                         f"{expected_type}, but {len(candidates)} registered spells provide it: {rendered}. "
                         f"Select one with a SpellMap default on the parameter "
-                        f"(SpellMap(spellframe=..., binding_name=...)), supply it at meld with "
-                        f"override={{{socket.param_name!r}: ...}}, or bind only one provider of this type."
+                        f"(SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type."
                     ),
                     details={
                         "spell_id": spell.spell_id,
@@ -134731,6 +135856,275 @@ class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
 END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py
 ================================================================================
 ================================================================================
+BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py
+CONTENT SHA256: f78246fdf26502451036bce279c85729853f76b4603c88bcff5244867d59056d
+SOURCE ENCODING: utf-8
+================================================================================
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+# Melder imports
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import ParameterDIShape
+from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import HiddenProviderReport
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
+        SpellParameterRequirement,
+    )
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellSocketDescriptor
+    from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+    from melder.aether.spellbook.spellbook import Spellbook
+
+
+class HiddenProviderStrategy(SpellValidationStrategy):
+    """
+    Refuse a spell whose class lookup finds its class only where the lookup cannot reach it, and say where it is bound.
+
+    A class lookup - a class annotation, a single string annotation's type part, `Optional[Class]` without a
+    default, `SpellMap(spell=Class)` without a spellframe - reaches a spell only when it is bound bare, with no
+    spellframe and the default binding (2026-11-07). The owner's rule for TASK-2026-11-07-spellframe_ambiguity_
+    validation_check part (a): a consumer whose class is bound only under a spellframe or only under a binding name is
+    refused at conjure by a Phase 4 error that names where the class is bound and the lookup to use (patch
+    hidden_provider_2026_11_07, approved 2026-11-07). Phase 3 records such a parameter as an UNRESOLVED_INPUT socket
+    carrying the hidden candidates (`SpellSocketDescriptor.hidden_spell_ids`); this strategy turns each into one
+    HIDDEN_PROVIDER error. A class also bound bare is found by Phase 3, so its socket carries no candidates and this
+    strategy says nothing.
+
+    Contract:
+    - One `HIDDEN_PROVIDER` error per UNRESOLVED_INPUT socket with `hidden_spell_ids`; every other socket is ignored.
+    - The annotation form (`HiddenProviderReport.annotation_message`) names the parameter, the expected type
+      (rendered as `UnresolvedInputError.expected_type_name` renders it), each candidate's address with the
+      `SpellMap` that reaches it, and a Protocol annotation where one applies; the SpellMap form
+      (`HiddenProviderReport.spellmap_message`) is used when the parameter's Phase-1 shape is SPELLMAP_DEFAULT.
+      Neither offers a meld override: a refused spell's melds are refused, override or not.
+    - Candidates are found with `context.spellbook.find_spell_by_spell_id`, which searches the Book's own active and
+      parked spells, and then among the copies the Book borrows from peer conduits
+      (`Spellbook._find_contracted_spell_by_id`), so a borrowed candidate renders as an owned one does (STEP 3 of the
+      patch, 0.2.8281); an id neither finds (removed between phases) renders as `spell id <id>` and never raises, and
+      when no candidate is found at all the report's remedy names no SpellMap.
+    - `details` carries `spell_id`, `parameter_name`, `lookup` ("annotation" or "spellmap"), `expected_type` or
+      `spellmap`, `dependency_key` and `candidates` (the `HiddenProviderReport.describe` dicts in address order, each
+      with its `use`), so tooling can act without parsing text.
+    - Emits into the supplied context; mutates no graph, topology or spell.
+
+    Registration:
+        MELDER KERNEL. A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        One built-in of the `validation/strategies` family, registered into `SpellValidationSystem` right after
+        `AmbiguousProviderStrategy`; `RequiredHolesStrategy` skips the sockets this strategy reports, so they are not
+        also listed as UNRESOLVED_INPUT warnings.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. Its error marks the spell broken: conjure refuses through
+        `SpellbookValidationError`; a consumer late-bound into a dynamic world is refused at that bind and stays
+        registered and invalid, so every meld after it raises the same report, as AMBIGUOUS_PROVIDER does.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: emits one HIDDEN_PROVIDER error per UNRESOLVED_INPUT socket whose class
+        is bound only under a spellframe or a binding name, naming each address and the SpellMap that reaches it.
+    """
+
+    __slots__ = SpellValidationStrategy.__slots__
+
+    def __init__(self) -> None:
+        """
+        Initialize the hidden-provider strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the validation pipeline.
+        """
+        super().__init__(
+            name="hidden_provider",
+            description="Refuses a class lookup whose class is bound only under a spellframe or a binding name, "
+                        "and says where.",
+        )
+
+    def validate(self, context: SpellValidationContext) -> None:
+        """
+        Emit one HIDDEN_PROVIDER error per UNRESOLVED_INPUT socket that recorded hidden candidates.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Reads the spell's Phase-3 topology through the spell's `SpellSystemStates`; a spell with no topology
+          (stand-ins, or validation without Phase 3) yields nothing.
+        - Never raises for a candidate id the spellbook cannot resolve; the entry is rendered by id.
+
+        Args:
+            context: Validation context of the spell under validation.
+        """
+        self.check_cleaned()
+
+        cancel_event = context.cancel_event
+        if cancel_event is not None and cancel_event.is_set:
+            cancel_event.throw_if_set()
+
+        spell = context.spell
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is None:
+            return
+        for socket in topology.iter_sockets():
+            if socket.socket_kind is not SocketKind.UNRESOLVED_INPUT or not socket.hidden_spell_ids:
+                continue
+            context.issues.append(self._issue_for(context, socket))
+
+    def _issue_for(self, context: SpellValidationContext, socket: SpellSocketDescriptor) -> SpellValidationIssue:
+        """
+        Build the HIDDEN_PROVIDER issue for one socket, in the annotation or the SpellMap form.
+
+        Contract:
+            - The SpellMap form when the parameter's Phase-1 shape is SPELLMAP_DEFAULT with a captured SpellMap;
+              the annotation form otherwise (a missing requirement renders the parameter name as the type, so the
+              report never fails on a rendering detail).
+
+        Args:
+            context: Validation context of the spell under validation.
+            socket: An UNRESOLVED_INPUT socket with hidden candidates.
+
+        Returns:
+            SpellValidationIssue: The error.
+        """
+        spell = context.spell
+        candidates = self._describe_candidates(context, socket)
+        param = self._requirement_for(context, socket.param_name)
+        details: Dict[str, object] = {
+            "spell_id": spell.spell_id,
+            "parameter_name": socket.param_name,
+            "dependency_key": socket.dependency_key,
+        }
+        spellmap = (
+            param.spellmap_default
+            if param is not None and param.di_shape is ParameterDIShape.SPELLMAP_DEFAULT
+            else None
+        )
+        if spellmap is not None:
+            class_name = HiddenProviderReport.spell_display_name(spellmap.spell)
+            message = HiddenProviderReport.spellmap_message(
+                param_name=socket.param_name,
+                consumer_name=spell.spell_name,
+                class_name=class_name,
+                binding_name=spellmap.binding_name,
+                candidates=candidates,
+            )
+            details["lookup"] = "spellmap"
+            details["spellmap"] = HiddenProviderReport.spellmap_text(class_name, spellmap.binding_name)
+            details["candidates"] = HiddenProviderReport.with_uses(
+                candidates, shape=HiddenProviderReport.SHAPE_SPELLMAP, class_name=class_name,
+            )
+        else:
+            expected_type = (
+                socket.param_name if param is None else UnresolvedInputError.expected_type_name(param.annotation)
+            )
+            message = HiddenProviderReport.annotation_message(
+                param_name=socket.param_name,
+                consumer_name=spell.spell_name,
+                expected_type=expected_type,
+                candidates=candidates,
+            )
+            details["lookup"] = "annotation"
+            details["expected_type"] = expected_type
+            details["candidates"] = HiddenProviderReport.with_uses(candidates, shape=HiddenProviderReport.SHAPE_SINGLE)
+        return SpellValidationIssue(severity="error", code="HIDDEN_PROVIDER", message=message, details=details)
+
+    @staticmethod
+    def _requirement_for(context: SpellValidationContext, param_name: str) -> Optional[SpellParameterRequirement]:
+        """
+        Return the Phase-1 requirement of one parameter, or None.
+
+        Contract:
+            None when the context carries no requirements or they do not list the parameter.
+
+        Args:
+            context: Validation context of the spell under validation.
+            param_name: The socket's parameter.
+
+        Returns:
+            Optional[SpellParameterRequirement]: The requirement.
+        """
+        requirements = context.requirements
+        if requirements is None:
+            return None
+        for param in requirements.parameters:
+            if param.name == param_name:
+                return param
+        return None
+
+    @classmethod
+    def _describe_candidates(
+            cls,
+            context: SpellValidationContext,
+            socket: SpellSocketDescriptor,
+    ) -> List[Dict[str, Optional[str]]]:
+        """
+        Describe each hidden candidate the socket recorded.
+
+        Contract:
+            - One `HiddenProviderReport.describe` dict per id, in recorded order (the report orders by address).
+            - Each id is found by `_find_candidate`: an own spell of the Book or a copy it borrows, so a borrowed
+              candidate is described - and rendered - as an owned one is.
+            - A candidate found nowhere (removed between phases) is described by id only.
+
+        Args:
+            context: Validation context of the spell under validation.
+            socket: The UNRESOLVED_INPUT socket.
+
+        Returns:
+            List[Dict[str, Optional[str]]]: The candidate descriptions.
+        """
+        spellbook = context.spellbook
+        return [
+            HiddenProviderReport.describe(candidate_id, cls._find_candidate(spellbook, candidate_id))
+            for candidate_id in socket.hidden_spell_ids
+        ]
+
+    @staticmethod
+    def _find_candidate(spellbook: Optional[Spellbook], candidate_id: str) -> Optional[Spell]:
+        """
+        Find one hidden candidate: an own spell of the Book, else a copy the Book borrows from a peer conduit.
+
+        Purpose:
+            Phase 3 finds hidden candidates in the Book's spell_id pool, which holds the copies a peer granted by
+            contract as well as the Book's own spells, so a hidden candidate can be a borrowed copy.
+            `Spellbook.find_spell_by_spell_id` answers for own spells only; a borrowed candidate rendered as
+            `spell id <id>`, with no address and no SpellMap (finding c of patch hidden_provider_2026_11_07, fixed in
+            its STEP 3, 0.2.8281).
+
+        Contract:
+            - `Spellbook.find_spell_by_spell_id` first: the Book's own active and parked spells.
+            - Then the Book's borrowed copies, peer by peer, through `Spellbook._find_contracted_spell_by_id` - the
+              walk `Conduit.find_contracted_spell` makes over the same maps; no lookup surface is added.
+            - Lock-free, as both lookups are: Phase 4 runs while conjure holds the Book lock. The peer ids are copied
+              with one `list(...)` call, exact under a concurrent link or sever on 3.14t; a peer linked or severed
+              meanwhile may be missed or still answered, and is then rendered by id.
+            - None for a stand-in context without a Book, and for an id neither lookup finds (a spell removed
+              between phases); never raises for a missing spell.
+
+        Args:
+            spellbook: The Book under validation, or None for a stand-in context.
+            candidate_id: A hidden candidate's spell_id as Phase 3 recorded it.
+
+        Returns:
+            Optional[Spell]: The candidate, or None.
+        """
+        if spellbook is None:
+            return None
+        own = spellbook.find_spell_by_spell_id(candidate_id)
+        if own is not None:
+            return own
+        for conduit_id in list(spellbook._contracted_spells):
+            borrowed = spellbook._find_contracted_spell_by_id(candidate_id, conduit_id)
+            if borrowed is not None:
+                return borrowed
+        return None
+================================================================================
+END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py
+================================================================================
+================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
 CONTENT SHA256: 809462c886f714dd22fe3730e6a2ba4dce06f9999ae567074174a594c22a4428
 SOURCE ENCODING: utf-8
@@ -134947,7 +136341,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/param
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
-CONTENT SHA256: d63a30f1979d561b23216b9df22dafe45a532f987d64ee72d04a93b73f0a74b1
+CONTENT SHA256: aeb86bcde9f45024b891403a1936b380fbb9edb78a4aca1b1abe3534d8e86539
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -134989,6 +136383,11 @@ class RequiredHolesStrategy(SpellValidationStrategy):
       spell provides) with the expected type, so a forgotten binding is visible
       at conjure even though constructing the spell without the value only fails
       at meld.
+    - Skips an UNRESOLVED_INPUT socket that carries hidden candidates
+      (`hidden_spell_ids`, 2026-11-07): its class IS registered, under a
+      spellframe or a binding name, and `HiddenProviderStrategy` refuses the
+      spell with HIDDEN_PROVIDER naming where - a warning saying no registered
+      spell provides it would contradict that error.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -135040,7 +136439,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         - Reads reference-only required inputs from SpellSystemStates without
           taking ownership of their topology or changing declaration facts.
         - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket,
-          naming the expected type from the Phase-1 annotation.
+          naming the expected type from the Phase-1 annotation - except a socket
+          with hidden candidates, which HIDDEN_PROVIDER reports as an error.
 
         Raises:
             RuntimeError: If an UNRESOLVED_INPUT socket has no matching Phase-1
@@ -135085,6 +136485,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
             return
         for socket in topology.sockets:
             if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                if socket.hidden_spell_ids:
+                    # The class is bound under a spellframe or a binding name:
+                    # HiddenProviderStrategy refuses the spell naming where.
+                    continue
                 expected_type = self._expected_type_for(requirements, socket.param_name)
                 context.issues.append(
                     SpellValidationIssue(
@@ -135707,7 +137111,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/spell
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/validation_system.py
-CONTENT SHA256: 15093a7899e5154f1e20d893e56b31686437c63350036932b45aeda91a7b5fa7
+CONTENT SHA256: 81850f5bb09bc343a93226a7b53c174ddac0c76d341fc1fb96e48d334005ff63
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -135745,6 +137149,9 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.dangling_depen
 from melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy import RequiredHolesStrategy
 from melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy import (
     AmbiguousProviderStrategy,
+)
+from melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy import (
+    HiddenProviderStrategy,
 )
 from melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy import \
     ResolutionFramePresenceStrategy
@@ -135882,6 +137289,9 @@ class SpellValidationSystem(Cleanable):
         * SelfDependencyStrategy
         * CircularDependencyStrategy
         * RequiredHolesStrategy
+        * AmbiguousProviderStrategy
+        * HiddenProviderStrategy (2026-11-07: a class lookup whose class is
+          bound only under a spellframe or a binding name)
         * DuplicateSpellNameStrategy
         * AnnotationShapeGuardStrategy
         * SpellMapShapeValidationStrategy
@@ -135897,6 +137307,7 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
         self.register_strategy(AmbiguousProviderStrategy())
+        self.register_strategy(HiddenProviderStrategy())
         self.register_strategy(DuplicateSpellNameStrategy())
         self.register_strategy(AnnotationShapeGuardStrategy())
         self.register_strategy(SpellMapShapeValidationStrategy())
@@ -137148,7 +138559,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 6d84948d7373c9f0503374f37ec0b7ff20b94babea1276cae9ba32fe2c52d06e
+CONTENT SHA256: 63d5bb746a2a59f95af1c17b493f691328b1276c59faafd808eef026096510c3
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -137196,6 +138607,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
@@ -140466,6 +141878,14 @@ class Spellbook(Cleanable):
         contract_recheck_on_notch_2026_10_16), so their next meld builds against
         the new copy; the mark walks on to what depends on them.
 
+        A copy bound under a spellframe also announces its class's type key in
+        the same collection-dependent mark (2026-11-07, patch
+        hidden_provider_2026_11_07, the owner's D1 = B;
+        `CompilerPhase3._hidden_type_key`): a consumer that compiled with that
+        class unresolved waits under the class name, and the copy's arrival is
+        what makes Phase 4 refuse it (HIDDEN_PROVIDER) at its next meld. A bare
+        copy adds nothing - its frame key already is its type key.
+
         Args:
             spell (Spell): The spell object to add.
             conduit_id (str): The ID of the peer conduit the spell was contracted from.
@@ -140474,6 +141894,7 @@ class Spellbook(Cleanable):
             Exception: Whatever a registry mark raises, logged; the added copy stays published.
         """
         frame_key = None
+        type_key = None
         should_mark = False
         with self._lock:
             if conduit_id not in self._contracted_spells:
@@ -140506,10 +141927,13 @@ class Spellbook(Cleanable):
                     conduit_spell_ids.add(member_id)
 
             frame_key = spell.key[0]
+            # A framed copy's class name: its class consumers wait under it (2026-11-07).
+            type_key = CompilerPhase3._hidden_type_key(spell)
             should_mark = bool(self._conjured)
 
         if should_mark and frame_key:
-            self._mark_collection_dependents_dirty({frame_key})
+            announced = {frame_key} if type_key is None else {frame_key, type_key}
+            self._mark_collection_dependents_dirty(announced)
         if should_mark:
             # Rule 2: a new active copy for this key - its consumers rebuild against it at their next meld.
             self._mark_contract_dependents_dirty({spell_key})
@@ -268185,7 +269609,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: 68741c7541c9b2c2e30bdfee2b0bae9b6758a7b54a3f5bb0f0f865985554c8da
+CONTENT SHA256: 7967e1dd94d36fab7eb81b30fbe2c9c3b1d0f19718cd5d2fdf63c81c6ca91046
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -268441,6 +269865,14 @@ class CachingSystem(Cleanable):
     # cold-starts every bundle (version 9); the bump records why, as versions
     # 18 and 20 did for the earlier matching-rule changes (the owner's point
     # 11, chat 2026-11-07).
+    # Version 27 retires bundles captured before HIDDEN_PROVIDER
+    # (TASK-2026-11-07-spellframe_ambiguity_validation_check part (a), patch
+    # hidden_provider_2026_11_07): their structural rows replay a valid verdict
+    # for a consumer whose class lookup misses a class bound only under a
+    # spellframe or a binding name, which Phase 4 now refuses, and their socket
+    # rows lack the hidden-candidate fields (payload format 3). A release change
+    # already cold-starts every bundle (version 9); the bump records why, as
+    # versions 18, 20 and 26 did for the earlier matching-rule changes.
     CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
         1: "legacy_executor_payloads",
         2: "decoded_manifest_package_payloads",
@@ -268468,6 +269900,7 @@ class CachingSystem(Cleanable):
         24: "spell_index_keeps_its_binding",
         25: "creation_store_slots_by_binding",
         26: "class_lookup_bare_spells",
+        27: "class_lookup_hidden_providers",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
 
@@ -270986,16 +272419,19 @@ END FILE: src/melder/utilities/custom_exceptions/spellbook_validation_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py
-CONTENT SHA256: 4df566718c1fb6600303729f76ef2565ae9f522c16d5e4eeaf937a090a1c6fcf
+CONTENT SHA256: e6920b7bd3b6bf95b56f8fd4a66ebbe0c22def45b1c08d4eacb4eb81fef83de6
 SOURCE ENCODING: utf-8
 ================================================================================
 import annotationlib
 import inspect
 import types
 import typing
-from typing import TYPE_CHECKING, Any, Collection, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Tuple
 
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
+from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import HiddenProviderReport
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 if TYPE_CHECKING:
@@ -271027,7 +272463,10 @@ class UnresolvedInputError(MeldExecutionError):
         melding the consumer itself, a path key ending in `>param` (or a broadcast
         `**param`) when the consumer is built as a dependency. Or bind a provider
         for the expected type; the consumer re-resolves into a normal dependency
-        on its next meld.
+        on its next meld. When the expected class is registered, but only under a
+        spellframe or a binding name - where a class lookup does not reach it -
+        the message names each such address and the lookup that reaches it, and
+        `hidden_spell_ids` lists those spells (2026-11-07).
 
     Contract:
         - A `MeldExecutionError`: code that catches `MeldExecutionError` keeps
@@ -271039,11 +272478,22 @@ class UnresolvedInputError(MeldExecutionError):
         - `unresolved_params` lists every missing unresolved parameter of the
           consumer, in signature order.
         - `inner` is None: nothing has been called when it is raised.
+        - The text says "nothing registered provides it" only when nothing does.
+          When the first missing parameter is a class lookup whose class is
+          bound only under a spellframe or a binding name (found live in the
+          consumer's Spellbook pool on this failure path, patch
+          hidden_provider_2026_11_07), the text names each address and the
+          `SpellMap` that reaches it, and `hidden_spell_ids` carries their ids.
+          A socket whose Phase 3 recorded such candidates refuses its spell in
+          Phase 4 (HIDDEN_PROVIDER), so this arises with candidates only where
+          they appeared after the consumer compiled and nothing re-gated it.
 
     Owned State:
         - Inherited `spell_id`, `spell_name`, `node_id`, `param_name`, `inner`.
         - `expected_type`: display name of the first missing parameter's type.
         - `unresolved_params`: names of all missing unresolved parameters.
+        - `hidden_spell_ids`: sorted ids of the spells of the expected class a
+          class lookup does not reach; empty when there are none.
 
     Registration:
         A public exception type; import, raise, and catch freely. Like every
@@ -271070,6 +272520,7 @@ class UnresolvedInputError(MeldExecutionError):
     __slots__ = (
         "expected_type",
         "unresolved_params",
+        "hidden_spell_ids",
     )
 
     def __init__(
@@ -271083,6 +272534,7 @@ class UnresolvedInputError(MeldExecutionError):
             inner: Optional[BaseException] = None,
             expected_type: str,
             unresolved_params: Tuple[str, ...],
+            hidden_spell_ids: Tuple[str, ...] = (),
     ) -> None:
         """
         Construct an unresolved-input failure.
@@ -271107,6 +272559,10 @@ class UnresolvedInputError(MeldExecutionError):
             unresolved_params:
                 Every missing unresolved parameter of the consumer, in signature
                 order. Never empty.
+            hidden_spell_ids:
+                Ids of the spells of the first missing parameter's class that a
+                class lookup does not reach (bound under a spellframe or a
+                binding name), sorted; empty (the default) when there are none.
 
         Contract:
             - Preserves every `MeldExecutionError` field unchanged.
@@ -271124,6 +272580,7 @@ class UnresolvedInputError(MeldExecutionError):
         )
         self.expected_type: str = expected_type
         self.unresolved_params: Tuple[str, ...] = unresolved_params
+        self.hidden_spell_ids: Tuple[str, ...] = hidden_spell_ids
 
     @staticmethod
     def expected_type_name(annotation: Any) -> str:
@@ -271219,6 +272676,16 @@ class UnresolvedInputError(MeldExecutionError):
         """
         Build the error from the consumer's missing UNRESOLVED_INPUT sockets.
 
+        Contract:
+            - The first missing socket (lowest position) names the type; the
+              others are listed as "Also not supplied".
+            - When the first socket's class lookup finds its class bound only
+              under a spellframe or a binding name (`_hidden_candidates`, a live
+              read of the consumer's pool), the text is
+              `HiddenProviderReport.unresolved_input_message` and
+              `hidden_spell_ids` carries the candidates; otherwise the text says
+              nothing registered provides it, unchanged since 2026-09-26.
+
         Args:
             spell: The consumer.
             missing: Its unsupplied UNRESOLVED_INPUT sockets (any order; sorted here).
@@ -271231,12 +272698,21 @@ class UnresolvedInputError(MeldExecutionError):
         consumer = spell.spell_name
         param_name = first.param_name
         expected_type = cls._constructor_expected_type(spell, first)
-        message = (
-            f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
-            f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
-            f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
-            f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
-        )
+        candidates = cls._hidden_candidates(spell, cls._constructor_annotation(spell, first))
+        if candidates:
+            message = HiddenProviderReport.unresolved_input_message(
+                consumer_name=consumer,
+                param_name=param_name,
+                expected_type=expected_type,
+                candidates=candidates,
+            )
+        else:
+            message = (
+                f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
+                f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+                f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
+                f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
+            )
         if len(missing) > 1:
             others = ", ".join(repr(socket.param_name) for socket in missing[1:])
             message += f" Also not supplied: {others}."
@@ -271250,7 +272726,43 @@ class UnresolvedInputError(MeldExecutionError):
             inner=None,
             expected_type=expected_type,
             unresolved_params=tuple(socket.param_name for socket in missing),
+            hidden_spell_ids=tuple(sorted(
+                candidate["spell_id"] for candidate in candidates if candidate["spell_id"] is not None
+            )),
         )
+
+    @staticmethod
+    def _constructor_annotation(spell: Spell, socket: SpellSocketDescriptor) -> object:
+        """
+        Read one unresolved parameter's annotation from the consumer's constructor signature.
+
+        Contract:
+            - Phase-1 requirements are released after resolution, so this re-reads
+              the constructor signature with FORWARDREF annotations (a name that
+              only exists under TYPE_CHECKING stays its written name).
+            - Returns `inspect.Parameter.empty` when the signature cannot be read
+              (TypeError, ValueError) or does not annotate the parameter.
+            - Failure path only.
+
+        Args:
+            spell: The consumer whose construction failed.
+            socket: One of its missing UNRESOLVED_INPUT sockets.
+
+        Returns:
+            object: The annotation, or `inspect.Parameter.empty`.
+        """
+        try:
+            signature = inspect.signature(
+                spell.spell,
+                annotation_format=annotationlib.Format.FORWARDREF,
+            )
+        except (TypeError, ValueError):
+            return inspect.Parameter.empty
+        parameter = signature.parameters.get(socket.param_name)
+        if parameter is None:
+            return inspect.Parameter.empty
+        annotation: object = parameter.annotation
+        return annotation
 
     @staticmethod
     def _constructor_expected_type(spell: Spell, socket: SpellSocketDescriptor) -> str:
@@ -271258,10 +272770,8 @@ class UnresolvedInputError(MeldExecutionError):
         Name one unresolved parameter's expected type at meld time.
 
         Contract:
-            - Phase-1 requirements are released after resolution, so this re-reads
-              the constructor signature with FORWARDREF annotations (a name that
-              only exists under TYPE_CHECKING stays its written name) and applies
-              `expected_type_name`.
+            - Renders the constructor annotation (`_constructor_annotation`)
+              with `expected_type_name`.
             - When the signature cannot be read or does not annotate the
               parameter, the socket's watched frame key names the type instead.
             - Failure path only.
@@ -271273,20 +272783,62 @@ class UnresolvedInputError(MeldExecutionError):
         Returns:
             str: Display name of the expected type.
         """
-        try:
-            signature = inspect.signature(
-                spell.spell,
-                annotation_format=annotationlib.Format.FORWARDREF,
-            )
-        except (TypeError, ValueError):
-            signature = None
-        if signature is not None:
-            parameter = signature.parameters.get(socket.param_name)
-            if parameter is not None and parameter.annotation is not inspect.Parameter.empty:
-                return UnresolvedInputError.expected_type_name(parameter.annotation)
+        annotation = UnresolvedInputError._constructor_annotation(spell, socket)
+        if annotation is not inspect.Parameter.empty:
+            return UnresolvedInputError.expected_type_name(annotation)
         if socket.dependency_key is not None:
             return socket.dependency_key[0]
         return "an unregistered type"
+
+    @staticmethod
+    def _hidden_candidates(spell: Spell, annotation: object) -> List[Dict[str, Optional[str]]]:
+        """
+        Find, live, the spells of a class lookup's class that the lookup cannot reach.
+
+        Purpose:
+            A socket whose Phase 3 recorded hidden candidates refuses its spell
+            in Phase 4 (HIDDEN_PROVIDER), so this error never sees them recorded.
+            It still arises when such a spell was bound after the consumer
+            compiled and nothing re-gated the consumer - then "nothing
+            registered provides it" would mislead - so the failure path looks
+            them up itself (patch hidden_provider_2026_11_07).
+
+        Contract:
+            - Empty for an unreadable annotation and for a Protocol annotation
+              (a contract lookup, not a class lookup).
+            - Otherwise the spells of the consumer's Spellbook pool whose
+              `CompilerPhase3._hidden_type_key` equals the annotation's key (the
+              single-socket rule: method and lambda spells excluded), one per
+              SpellIndex under its selected id, described by
+              `HiddenProviderReport.describe` in id order.
+            - Iterates a copy of the pool: a concurrent bind may change the live
+              dict, which this failure path does not lock.
+            - Failure path only; raises nothing of its own.
+
+        Args:
+            spell: The consumer whose construction failed.
+            annotation: The first missing parameter's annotation (`_constructor_annotation`).
+
+        Returns:
+            List[Dict[str, Optional[str]]]: The described candidates, possibly empty.
+        """
+        if annotation is inspect.Parameter.empty:
+            return []
+        normalized = CompilerPhase3()._normalize_annotation_for_matching(annotation)
+        if CompilerPhase3._annotation_kind(normalized) == CompilerPhase3._KIND_CONTRACT:
+            return []
+        key = CompilerPhase3._annotation_key(normalized)
+        found: Dict[str, Spell] = {}
+        for pooled in spell._spellbook._spell_id_pool.copy().values():
+            if pooled.spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
+                continue
+            if CompilerPhase3._hidden_type_key(pooled) == key:
+                found[pooled.spell_index.selected_spell_id] = pooled
+        return [HiddenProviderReport.describe(spell_id, found[spell_id]) for spell_id in sorted(found)]
 ================================================================================
 END FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py
 ================================================================================

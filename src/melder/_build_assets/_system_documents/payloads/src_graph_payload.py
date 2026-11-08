@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28262
-CONTENT_SHA256 = '127b8ec622f587dea8328da3a128143fa57e0ac8d416a6cf51a520cd986ce860'
+LINE_COUNT = 28381
+CONTENT_SHA256 = '143d9a4aca90ce96535c933a6669ad5b2a940363b39918260ddab5fb31e5f36e'
 
 TEXT = """# src_graph
 
@@ -206,7 +206,7 @@ descriptors and reassemble.
 
 ## src/melder/__license__.py
 
-- source_sha256: `fdacc9edcd065b54c0e53877eab98e9bfe06b0340e39bb248063bfb55e013809`
+- source_sha256: `7895d4a5e13ecb557ec93a3af9911e0a178c7bcfe820c56dcad934ca9ec71669`
 - nodes: 1
 
 ### Nodes
@@ -217,7 +217,7 @@ descriptors and reassemble.
 - defined at: `src/melder/__license__.py:1`
 - role: Top-level license metadata module.
 - responsibilities:
-  - stores the package license label and embedded license context
+  - stores the package license label, the SPDX identifier pyproject.toml declares (Apache-2.0 since 0.2.8279), and the embedded Apache License 2.0 header as informational context, not runtime logic
 - owns_state: `__license__`
 - phases: `runtime`
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `872e0783fbceb31768e385397fd208d22af2c85481a091325e0c7c40eaefe43e`
+- source_sha256: `c4c4b22126a0412dc1891c51d2c51153c5dd31fd7f2fc6571d4c4eca172ee4bb`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `897436d2f6fc1ceebff4cbb3daa1b5fa662fcce9ecb16da246c2c60a7d1d5e94`
+- source_sha256: `54c07bb326f46551989162e53010dcc019ce8682e4edce11be1f1e270ed04da7`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `6d02e8ffd6af703a38b254035466590c41d0f2161834b3eeabcb58cb8f9a342c`
+- source_sha256: `b6bd578afb53ed0648e7cb1e0c2d99fa0015860805724fefd44aa8d12bbe7cba`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `2657deec7feb0b257ecbe8892d3bdebc127aaa71b5cf981564ef7f485481c8ed`
+- source_sha256: `b67ec74b4eb2b1b7fb88d85b128943fdeb17628a78c153debaea49ed163268db`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `600b8b9f0dcd00939af17e7e00090e58b2175000d57fccc3106e41129e162589`
+- source_sha256: `3da0902b0351784234bad34789e12232639b2957d88f541113c4d0fe65f4d8a3`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `6991f13e2c6745a13167a450bb79863a876f17330c6ff46047ea75bfdf0d28db`
+- source_sha256: `607f97ff62961531847501d82e51a7312009f3c2b96025318e037d44b498ed5b`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `2adcd4408914a5a4d32dfbd2149eccfbfcce021769cd9b3ce2ebb0bf9115bed1`
+- source_sha256: `d21dbc2ce7734ed3031185ad59e09e4a32cb9d0deea56524654163d3fe2acf5e`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `b0b8933c79a671132892f3add02cd9f2b0a7d92278177d86a1c9f5d45d88e10f`
+- source_sha256: `0c3f1c5904184b3c57395918b165515d7d3c53f667dbb346d420d91068a2cc70`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `0fe9867916346f0d04b7fe84ab0875a25aeac536f81827e0f50a877099076dee`
+- source_sha256: `962665b31efa996b7b674d8beaee427011e696d7a97abda368e8ca4ff5a55b74`
 - nodes: 1
 
 ### Nodes
@@ -1066,7 +1066,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
 
-- source_sha256: `3f6fbfcd5f9c62e984a67a230016baab02f4e12ca5e6628c890f0ca3c8e7d777`
+- source_sha256: `c98e19202cbed01b98305629d5ffc43b2f24633f3ccb1d8c571044320e3dd83a`
 - nodes: 2
 
 ### Nodes
@@ -1080,7 +1080,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ChangeControlManager` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:61`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:62`
 - extends: `Cleanable`
 - role: Frame-level change-control registry and admission surface.
 - responsibilities:
@@ -1088,6 +1088,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns change-control transaction, conflict, embargo, and orchestrator managers
   - coordinates revalidation hooks for dirty roots
   - validates bind/notch structural commits for member, exact-name and legacy string forms while retaining the enum-notch compiled-member shortcut
+  - announces, from its default dirty marker, the type key of each staged spell bound under a spellframe or a binding name beside the frame keys of a bind, notch or link commit, in the same single mark_collection_dependents_dirty call, so a consumer waiting under the class name is re-gated (_hidden_type_keys_for_staged, 0.2.8281, the owner's D1 = B)
 - owns_state: `_pending_changes`, `_component_of_by_conduit`, `_dirty_roots_by_conduit`, `_transaction_manager`, `_conflict_manager`, `_embargo_manager`, `_orchestrator`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `abort_request`, `admit_request`, `cleanup`, `clear_pending_change`, `commit_request`, `conflict_manager`, `describe`, `devops_information_registry`, `disable_change_control`, `embargo_manager`, `enable_change_control`, `get_pending_change` (+22 more)
@@ -1102,12 +1103,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` | owns_lifecycle_of | `melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator` | one_to_one | runtime,cleanup | authored |
 | `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` | owns_lifecycle_of | `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager` | one_to_one | runtime,cleanup | authored |
 | `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` | borrows | `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` | one_to_one | runtime | authored |
+| `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` | uses | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | one_to_one | runtime | authored |
 
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager`: ChangeControlManager owns the RETIRED scope-overlap conflict detector: it is constructed per frame and cleaned on teardown, but find_conflicts has ZERO call sites and is NOT part of admission. Admission is one atomic moded acquisition against ChangeControlEmbargoManager. Retained by owner ruling 2026-08-03 as a placeholder for a future conflict-based transaction family, not as a live path.
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager`: ChangeControlManager owns the scope-key embargo registry used during admission and staging.
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator`: ChangeControlManager owns the serialized orchestrator for admission, staging, commit, and abort flows.
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager`: ChangeControlManager owns the transaction-bookkeeping root used to build and track requests.
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: ChangeControlManager operates over SpellSystemStates but does not own its lifecycle.
+- `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`: _hidden_type_keys_for_staged reads CompilerPhase3._hidden_type_key for each staged spell it resolves.
 
 ### Edge candidates (8, unconfirmed)
 
@@ -3220,7 +3223,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `1ad5ada142631e58197ebf0ac815015bfcd4406404c0c2d5a6edb7d9c766db20`
+- source_sha256: `885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8`
 - nodes: 2
 
 ### Nodes
@@ -3248,6 +3251,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)
   - records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)
   - records the binding key of each lineage's selected version in register_index (binding_key=..., kept when None, dropped by unregister_index and cleanup) and marks everything downstream of given lineages for revalidation - a lineage reached by a registry edge, frame-wide, as gated, impacted_by_dependency and transitively dirty; a SpellContract consumer, in any Book, of a reached lineage's binding key as gated + contract_unvalidated - visiting each lineage once and never a seed (mark_dependents_for_revalidation); mark_contract_dependents_dirty walks on the same way from the consumers it marks (0.2.8250)
+  - also watches an UNRESOLVED_INPUT socket under its hidden_frame_keys, so a change announced at a hidden candidate's address (a notch of that index, for instance) re-gates the consumer Phase 4 refused (0.2.8281)
 - owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`, `_non_resolvable_index_ids`, `_binding_key_by_index`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id`, `get_by_spell_id` (+21 more)
@@ -4459,7 +4463,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `f510b432bdd3d08791bceacb591f9cdad75e3d7c0c3cb92ce63c9030a1dc4fd8`
+- source_sha256: `390cd8d6ff4c3dccf1a152d91b27ec6beb990cd2c9a3a9a37969a5b5583b9aa2`
 - nodes: 2
 
 ### Nodes
@@ -4489,7 +4493,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - creates lesser conduits
   - promotes childless lessers into independent normal roots through a fresh Book and its private existing-conduit conjure route
   - drains creation admission before graduation and restores lesser topology on pre-attachment failure
-  - supports dynamic linking and ownership transfer in dynamic mode
+  - supports dynamic linking and ownership transfer in dynamic mode, both inside one aetheric frame: transfer_spell_ownership refuses a target conduit of another frame with RuntimeError before the TRANSFER_OWNERSHIP transaction and its preflight open, as a link across frames is refused (0.2.8280)
   - facades bind-hook add and clear on the owning Book for live normal conduits; lessers cannot edit borrowed Bind policy
   - owns stable root runtime hook maps copied from configuration and exposes validated local or explicit root-shared updates
   - restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools
@@ -5582,7 +5586,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_map.py
 
-- source_sha256: `15050540e00c1a9c91a060dd9496148d07af89ad8ed5422ca2f398d6cf8446da`
+- source_sha256: `ab37cc183273dffdce467c2494100b8cc6406de605a00e951752d8d239e14578`
 - nodes: 2
 
 ### Nodes
@@ -11185,7 +11189,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 
-- source_sha256: `a8f8a60f882cda30b64edac0081ae05a26d46d5da8acc0e1a7b05e169311cee1`
+- source_sha256: `7c8ea89ad312d696c7e0018bd8e4d8d0f50937c74de2c912c663785a328321bf`
 - nodes: 2
 
 ### Nodes
@@ -11203,10 +11207,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - markers: `StrEnum`
 - role: Enum classifying the kind of socket represented by a DAG edge.
 - responsibilities:
-  - labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED and UNRESOLVED_INPUT categories
-  - UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call
-  - AMBIGUOUS_INPUT (0.2.8224): a single typed dependency with several resolvable providers - no target, candidates as references, frame key kept; refused by Phase 4
-- owns_state: `NORMAL`, `SPELL_CONTRACT`, `OVERRIDE_REQUIRED`
+  - labels the NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED, UNRESOLVED_INPUT and AMBIGUOUS_INPUT categories as a StrEnum whose values are the member names; the historical integers 1-5 stay readable (_missing_) and are projected for numeric compiler rows (_legacy_code)
+  - UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call; when its class is registered only under a spellframe or a binding name the socket carries those spells (hidden_spell_ids) and Phase 4 refuses the spell with HIDDEN_PROVIDER, so it never reaches planning (0.2.8281)
+  - AMBIGUOUS_INPUT (0.2.8224): a single typed dependency with several resolvable providers - no target, candidates as references, frame key kept; refused by Phase 4 with the remedies a SpellMap default or one provider (no meld override since 0.2.8281)
+- owns_state: `NORMAL`, `SPELL_CONTRACT`, `OVERRIDE_REQUIRED`, `UNRESOLVED_INPUT`, `AMBIGUOUS_INPUT`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py -->
@@ -11516,7 +11520,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `a38be19d194fb428c7c4828c82cca6b65fda0a15c3beb807d793e56f11d57739`
+- source_sha256: `646c9eb0f995ddb7f8b68d7280e70ebcffe6a96e76099c6cf4d42d27db7ba8b0`
 - nodes: 2
 
 ### Nodes
@@ -11532,7 +11536,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CompilerPhase3` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`
-- defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:66`
+- defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:68`
 - role: Compiler-owned phase-3 local-frame and DAG build surface.
 - responsibilities:
   - resolves symbolic constructor sockets into concrete dependency spell ids
@@ -11540,13 +11544,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
   - selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology
   - republishes enabled late-compiled Nexus records after local topology is available
-  - records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter has no candidate - since 0.2.8278 also when its class is registered only under a spellframe or a binding name
+  - records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter has no candidate; when its class lookup misses a class bound only under a spellframe or a binding name the socket also carries those spells (hidden_spell_ids, sorted, one per SpellIndex, and their address frame keys, hidden_frame_keys; method and lambda spells dropped) and Phase 4 refuses the consumer with HIDDEN_PROVIDER (0.2.8281)
   - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
   - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type key, contract keys and definition key for a single string and the frame key for a string collection - so a string category never provides for a same-named class
   - answers a class lookup - a class annotation, list[Class], a single string's type part, SpellMap(spell=X) without a spellframe - only with a spell bound with no spellframe and the default binding (_answers_class_lookup, 0.2.8278): a spellframe or a binding name hides the spell's own type, as a declared service hides the component's type in Autofac, so only such a spell offers its type key and enters by_type, while contract, definition and label matching are unchanged
-  - indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for (a single-socket name reads by_type, by_contract and by_definition); the scan (_matches_annotation over _spell_keys_for) and the index read one table and one class-lookup predicate, so their membership is equal; _eq_safe_object is kept only as the structural snapshot's replayability rule
+  - indexes candidates once per resolution pass into five buckets (by_type, by_label, by_contract, by_definition and, since 0.2.8281, by_hidden_type) read through _index_buckets_for (a single-socket name reads by_type, by_contract and by_definition); the scan (_matches_annotation over _spell_keys_for) and the index read one table and one class-lookup predicate, so their membership is equal; _eq_safe_object is kept only as the structural snapshot's replayability rule
   - records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)
-  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another
+  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another; a miss whose spell is registered elsewhere returns empty into hidden_out on Phase 3's own call, so the socket becomes UNRESOLVED_INPUT with those registrations (0.2.8281), while a direct caller gets the RuntimeError with a sentence naming where the spell is bound (_spellmap_hidden_sentence)
+  - names a class lookup's hidden candidates with one predicate, _hidden_type_key - the type key of a spell bound under a spellframe or a binding name, None for one bound bare under the default binding and for a Protocol's own definition - read from the by_hidden_type bucket or the pool scan (_hidden_class_candidates); _record_unresolved_miss records them per shape: a single or SpellMap socket gets ids and frame keys, a required list[Class] resolvable ids only (it stays NORMAL for Phase 6's report), an optional collection nothing (0.2.8281)
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -11561,6 +11566,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph` | one_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | creates | `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology` | one_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.utilities.helpers.general_helpers.SpellInputUtils` | one_to_one | validation | authored |
+| `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport` | one_to_one | validation | authored |
 
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: CompilerPhase3 publishes direct dependencies and local topology into SpellSystemStates.
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility`: CompilerPhase3 uses CompilerPhaseUtility for shared cancellation handling.
@@ -11569,6 +11575,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph`: CompilerPhase3 consumes the symbolic graph when resolving constructor sockets into concrete dependency spell ids.
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology`: CompilerPhase3 builds SpellLocalTopology from symbolic dependencies and resolved target spell ids.
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.utilities.helpers.general_helpers.SpellInputUtils`: CompilerPhase3 uses SpellInputUtils when normalizing annotation-derived dependency keys.
+- `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport`: CompilerPhase3 renders the SpellMap RuntimeError's sentence naming where a missed spell is bound through HiddenProviderReport.
 
 ### Edge candidates (5, unconfirmed)
 
@@ -13347,7 +13354,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py
 
-- source_sha256: `53499d1aba0b36d1d2e3c722086c92663fc54d42c706e1b55fdc2c46c4660772`
+- source_sha256: `8f2a8d56e40927abc1dc60a4652e59da983a97791833096641b7c7d9d21da91d`
 - nodes: 2
 
 ### Nodes
@@ -13356,14 +13363,24 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot`
 - defined at: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The phase 3-4 structural snapshot: value rows captured into the conduit cache bundle at conjure end and replayed at the next conjure when every owned spell still matches.
+- responsibilities:
+  - exports StructuralSnapshot, the capture, classification and replay helpers of the conjure-time structural cache
+- phases: `validation`
 
 #### `StructuralSnapshot` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot`
 - defined at: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:35`
+- role: Slot-only static helper that captures each owned spell's phase 3-4 results as marshal-safe value rows and, on a full structural hit, replays them instead of running the structural phases.
+- responsibilities:
+  - builds one payload per owned spell at conjure end (capture_at_conjure_end, build_payload): the structural key (format, spell_id, binding hash, annotation type references), the world stamp, the replayable flag, phase-3 dependency ids and socket rows and the phase-4 validity and contract_unvalidated flag - values only, never index ids, objects or reprs
+  - writes a socket row as the SpellSocketDescriptor fields in order - payload format 3 adds hidden_spell_ids and hidden_frame_keys (0.2.8281) - and rebuilds descriptors from rows (rebuild_topology)
+  - stamps the world as a SHA-256 over the sorted pool ids with their binding hashes, the frame posture and the sorted borrowed ids with theirs (world_stamp); a pool holding an object or spellframe that overrides __eq__ is not replayable (pool_replayable, CompilerPhase3._eq_safe_object)
+  - classifies each owned spell as a hit only when its payload is well-formed and carries the live key, the live world stamp and replayable True (classify, payload_well_formed): disabled, full_hit, partial or miss
+  - on a full hit replays phase 3's durable writes through the registry helpers phase 3 calls, then the phase-4 verdict (hydrate_full_hit); capture is best-effort per spell, logs and drops a payload it cannot build and removes the payloads of spells no longer live, never raising into conjure
+- phases: `validation`
 - public methods: `annotation_refs`, `bind_time_requirements`, `build_payload`, `capture_at_conjure_end`, `classify`, `hydrate_full_hit`, `payload_well_formed`, `pool_replayable`, `rebuild_topology`, `structural_key`, `type_refs`, `world_stamp`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (4, unconfirmed)
 
@@ -14066,7 +14083,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
 
-- source_sha256: `38f1cde90a84f5c24eaa208f0d4cdaa9e17bbdde3b046577b1e568c8b857eade`
+- source_sha256: `34bf81538b504db0b244f80e4fcc62bd17363d8bff53853c01609f0c82488f0a`
 - nodes: 2
 
 ### Nodes
@@ -14080,13 +14097,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `EmptyCollectionStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:31`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:37`
 - extends: `SpellSystemValidationStrategy`
 - role: The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.
 - responsibilities:
   - read local topologies from SpellSystemStates for every scoped spell
   - emit collection_socket_no_providers as an ERROR when the book is not dynamic - composition is final at conjure, so zero providers is a permanent wiring mistake
   - emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)
+  - names the hidden candidates Phase 3 recorded on an empty required list[Class] socket - its class bound only under a spellframe or a binding name - rendered from the scope's spell_lookup through HiddenProviderReport with list lookups, in the text and in details['hidden_candidates']; severity and policy are unchanged, and with none found the text is the earlier one (0.2.8281)
 - phases: `compile`
 - public methods: `run`
 
@@ -14095,6 +14113,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy` | specializes | `melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy` | - | - | derived |
+| `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy` | uses | `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport` | one_to_one | validation | authored |
+
+- `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy` -> `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport`: EmptyCollectionStrategy renders the hidden candidates of an empty required list[Class] through HiddenProviderReport.
 
 ### Edge candidates (1, unconfirmed)
 
@@ -14847,7 +14868,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
 
-- source_sha256: `23a356c9bda33aad65c43aef521822d348c85da1924db89b78db05c56258c480`
+- source_sha256: `8491118dcebaa6a4a003ff97b06540e85665ebf88c55f38dae8fa04699245d67`
 - nodes: 3
 
 ### Nodes
@@ -14867,12 +14888,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - describe one constructor socket, including the is_collection truth later layers must carry forward verbatim
   - stay local - it makes no claim about the system graph
   - retains descriptive referenced_spell_ids and parameter_kind separately from executable target_spell_ids
+  - carries the hidden candidates of a class-lookup miss: hidden_spell_ids (sorted selected ids, one per SpellIndex, on an UNRESOLVED_INPUT single or SpellMap socket or an empty required class-collection socket) and hidden_frame_keys (their sorted address frame keys, on an UNRESOLVED_INPUT socket only) - descriptive, never traversed, planned or counted as a dependency (0.2.8281)
 - phases: `compile`
 
 #### `SpellLocalTopology` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology`
-- defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:102`
+- defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:127`
 - extends: `Cleanable`
 - role: Per-spell local constructor socket topology.
 - responsibilities:
@@ -14900,6 +14922,40 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology` creates `ValueError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py -->
+
+## src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py
+
+- source_sha256: `3e84df6bedeb60ff9af8d40988f0a1214d2ce130e3bb50a7eb9297087f7ff601`
+- nodes: 2
+
+### Nodes
+
+#### `hidden_provider_report` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py:1`
+- role: Module holding the one renderer of where a class lookup's class is bound, shared by the reports that name hidden providers.
+- responsibilities:
+  - exports HiddenProviderReport
+- phases: `validation`, `runtime`
+
+#### `HiddenProviderReport` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py:10`
+- role: Pure, stateless renderer of hidden candidates, shared by HIDDEN_PROVIDER, Phase 6's empty-collection report, UnresolvedInputError and Phase 3's SpellMap RuntimeError.
+- responsibilities:
+  - describes a candidate id and its spell, or None, as a value dict of spell_id, spell_name, spellframe (a string category as itself, a Protocol by its __name__), spellframe_kind and binding_name (describe)
+  - orders candidates by spellframe, binding_name and spell_name and renders each as '<Name> at (spellframe=..., binding_name=...) - use <lookup>', or 'spell id <id>' when it is not described
+  - renders the lookup that reaches a candidate per shape: SpellMap(spellframe=P, binding_name='b') or SpellMap(Name, binding_name='b') for the single and SpellMap shapes, list[P], list['c'] or list['Name'] for the list shape
+  - counts the SpellMaps the entries show (described_count), so a closing sentence never points at a SpellMap no entry shows
+  - renders the annotation, SpellMap, collection, unresolved-input and Phase 3 RuntimeError texts; reads bind-time fields only, takes no lock and holds no state
+- phases: `validation`, `runtime`
+- public methods: `annotation_message`, `collection_clause`, `describe`, `described_count`, `entries`, `entry`, `is_default_binding`, `lookup`, `ordered`, `protocol_clause`, `spell_display_name`, `spellmap_message` (+5 more)
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py -->
 
@@ -15034,7 +15090,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py
 
-- source_sha256: `111a14a692ae19c5caf81b39f06e74302487799b70cd1bee1cc4c662937bd9bb`
+- source_sha256: `8e4a581fbbb24d8836961fc65a8f4df0135b6e3b509576aae6bf0c9701a5c4ff`
 - nodes: 2
 
 ### Nodes
@@ -15057,7 +15113,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - reads the spell's Phase-3 topology and selects the AMBIGUOUS_INPUT sockets Phase 3 recorded instead of raising (0.2.8224)
   - describes each referenced candidate through the spellbook as {spell_id, spell_name, spellframe, binding_name}, ordered by address; an unknown id renders by id
-  - renders the expected type with UnresolvedInputError.expected_type_name and names the three remedies: a SpellMap default, a meld override, one provider
+  - renders the expected type with UnresolvedInputError.expected_type_name and names the two remedies: a SpellMap default or one provider - no meld override, since the meld gate refuses every meld of a refused spell, override or not (0.2.8281, the owner's D4)
   - emits severity error so conjure refuses the spell through SpellbookValidationError; never mutates topology, graph or spell
 - phases: `validation`
 - public methods: `validate`
@@ -15450,6 +15506,58 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py -->
 
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py -->
+
+## src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py
+
+- source_sha256: `f78246fdf26502451036bce279c85729853f76b4603c88bcff5244867d59056d`
+- nodes: 2
+
+### Nodes
+
+#### `hidden_provider_strategy` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py:1`
+- role: Module holding the Phase-4 strategy that refuses a class lookup whose class is bound only under a spellframe or a binding name (HIDDEN_PROVIDER).
+- responsibilities:
+  - exports HiddenProviderStrategy for SpellValidationSystem registration
+- phases: `validation`
+
+#### `HiddenProviderStrategy` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py:20`
+- extends: `SpellValidationStrategy`
+- role: Phase-4 strategy: one HIDDEN_PROVIDER error per UNRESOLVED_INPUT socket that carries hidden candidates, naming where the class is bound and the lookup that reaches each place.
+- responsibilities:
+  - reads the spell's Phase-3 topology and selects the UNRESOLVED_INPUT sockets whose hidden_spell_ids is not empty; every other socket is ignored
+  - picks the form from the parameter's Phase-1 requirement: HiddenProviderReport.spellmap_message for a SPELLMAP_DEFAULT with a captured SpellMap, annotation_message otherwise, the expected type rendered by UnresolvedInputError.expected_type_name
+  - finds each candidate with _find_candidate - Spellbook.find_spell_by_spell_id, then the Book's borrowed copies peer by peer through Spellbook._find_contracted_spell_by_id, lock-free - so a borrowed candidate renders as an owned one; an id neither finds renders spell id <id>
+  - offers no meld override: the error marks the spell broken, conjure raises SpellbookValidationError and the meld gate refuses every meld of it, override or not
+  - carries spell_id, parameter_name, lookup, expected_type or spellmap, dependency_key and the described candidates with their use in details; mutates no graph, topology or spell
+- phases: `validation`
+- public methods: `validate`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy` | specializes | `melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy` | - | - | derived |
+| `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy` | uses | `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport` | one_to_one | validation | authored |
+| `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy` | uses | `melder.aether.spellbook.spellbook.Spellbook` | one_to_one | validation | authored |
+
+- `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy` -> `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport`: HiddenProviderStrategy renders every HIDDEN_PROVIDER message and candidate entry through HiddenProviderReport.
+- `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy` -> `melder.aether.spellbook.spellbook.Spellbook`: HiddenProviderStrategy finds hidden candidates through the Book's own and borrowed spell lookups.
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy` creates `SpellValidationIssue`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py -->
+
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py -->
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
@@ -15500,7 +15608,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 
-- source_sha256: `8aac8697dace186307c75327524ea31342c8a62cd446e9cc3147165f21a4124a`
+- source_sha256: `9699c305d3d70b42a92cdfc2cfe01c889f62805394e76166537474b9d5a3eb13`
 - nodes: 2
 
 ### Nodes
@@ -15525,7 +15633,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emit warnings rather than hard errors
   - adds the list-only collection hint to REQUIRED_HOLE only when a set, frozenset, dict or tuple annotation holds a user class; plain data containers get no hint
   - reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations
-  - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key
+  - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key - except a socket carrying hidden_spell_ids, which HiddenProviderStrategy reports as the HIDDEN_PROVIDER error (0.2.8281)
 - phases: `compile`
 - public methods: `validate`
 
@@ -15724,7 +15832,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/validation_system.py
 
-- source_sha256: `8ad8182ac0c89588d7de252281362cd56639fd9c872b6970fe53f1ef0743846e`
+- source_sha256: `0a802e87316701b3cfaea1c0d5838561a68fff01963fc81c79f1d4aaf491f452`
 - nodes: 2
 
 ### Nodes
@@ -15738,7 +15846,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellValidationSystem` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:65`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:68`
 - extends: `Cleanable`
 - role: Spell-level validation strategy registry and runner.
 - responsibilities:
@@ -15746,7 +15854,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates one spell across requirements, symbolic graph, and phase 3 summary
   - aggregates issues into a SpellValidationResult for the caller
   - cleans validation context and strategies after use
-  - registers AmbiguousProviderStrategy after RequiredHolesStrategy (0.2.8224)
+  - registers AmbiguousProviderStrategy after RequiredHolesStrategy (0.2.8224) and HiddenProviderStrategy right after it (0.2.8281)
 - owns_state: `_strategies`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `iter_strategies`, `register_strategy`, `unregister_strategy`, `validate_spell`
@@ -15766,7 +15874,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` -> `melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy`: SpellValidationSystem owns the registered spell validation strategies it runs.
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` -> `melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError`: Spell validation flows use SpellbookValidationError for fatal validation failures.
 
-### Edge candidates (18, unconfirmed)
+### Edge candidates (19, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -15779,6 +15887,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `CircularDependencyStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `RequiredHolesStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `AmbiguousProviderStrategy`
+- `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `HiddenProviderStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `DuplicateSpellNameStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `AnnotationShapeGuardStrategy`
 - `melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem` creates `SpellMapShapeValidationStrategy`
@@ -15872,7 +15981,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `6d84948d7373c9f0503374f37ec0b7ff20b94babea1276cae9ba32fe2c52d06e`
+- source_sha256: `63d5bb746a2a59f95af1c17b493f691328b1276c59faafd808eef026096510c3`
 - nodes: 2
 
 ### Nodes
@@ -15886,7 +15995,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spellbook` (class)
 
 - id: `melder.aether.spellbook.spellbook.Spellbook`
-- defined at: `src/melder/aether/spellbook/spellbook.py:73`
+- defined at: `src/melder/aether/spellbook/spellbook.py:74`
 - extends: `Cleanable`
 - role: Public binding, validation, and conjure surface.
 - responsibilities:
@@ -15925,6 +16034,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)
   - keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)
   - runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)
+  - announces a contract grant's type key: _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name, its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -15950,6 +16060,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spellbook.Spellbook` | borrows | `melder.nexus.nexus.Nexus` | one_to_one | init,runtime | authored |
 | `melder.aether.spellbook.spellbook.Spellbook` | owns_lifecycle_of | `melder.utilities.caching_system.caching_system.CachingSystem` | one_to_one | runtime,cleanup | authored |
 | `melder.aether.spellbook.spellbook.Spellbook` | borrows | `melder.mutation_research.mutation_research.MutationResearch` | many_to_one | runtime | authored |
+| `melder.aether.spellbook.spellbook.Spellbook` | uses | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | one_to_one | runtime | authored |
 
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.aether.aether.Aether`: Spellbook uses Aether to ensure frames exist, bind configuration, and register runtime state.
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration`: Spellbook derives and binds an AethericFrameConfiguration from its Spellbook configuration during conjure.
@@ -15967,6 +16078,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.nexus.nexus.Nexus`: Spellbook keeps a Nexus handle for frame and spell publication when the frame posture is Rift-enabled.
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.utilities.caching_system.caching_system.CachingSystem`: Spellbook owns the optional CachingSystem used for rooted-conduit spell payload persistence.
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.mutation_research.mutation_research.MutationResearch`: The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).
+- `melder.aether.spellbook.spellbook.Spellbook` -> `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`: _add_contracted_spell reads CompilerPhase3._hidden_type_key for the copy it grants.
 
 ### Edge candidates (15, unconfirmed)
 
@@ -26175,7 +26287,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `68741c7541c9b2c2e30bdfee2b0bae9b6758a7b54a3f5bb0f0f865985554c8da`
+- source_sha256: `7967e1dd94d36fab7eb81b30fbe2c9c3b1d0f19718cd5d2fdf63c81c6ca91046`
 - nodes: 2
 
 ### Nodes
@@ -26213,6 +26325,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - cache generation 24 retires bundles written by worlds that could hold a SpellIndex whose versions were bound at different addresses: every version of an index is bound the way its first version was, so a notch never moves an index's address (spell_index_keeps_its_binding, 2026-10-25; the owner's call)
   - cache generation 25 retires bundles written before the creation stores filed objects by store key: the emitted plans, doors, solo templates and specializer read and publish a slot by Spell.store_key and publish a no-disposal slot through Creations.register_slot (creation_store_slots_by_binding, 2026-10-25; the owner's rule that a codegen change bumps the cache)
   - cache generation 26 retires bundles whose structural rows were resolved while a class lookup reached a spell bound under a spellframe or a binding name: a class annotation, list[Class] and SpellMap(spell=Class) now reach only a spell bound bare, so a replayed phase 3 row could hold a match the rule refuses (class_lookup_bare_spells, 2026-11-07, 0.2.8278; the owner's point 11)
+  - cache generation 27 retires bundles captured before HIDDEN_PROVIDER: their structural rows could replay a valid verdict for a consumer Phase 4 now refuses, and their socket rows lack the hidden-candidate fields of payload format 3 (class_lookup_hidden_providers, 2026-11-07, 0.2.8281)
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_refused_save_logged`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cached_structural_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `get_structural_payload`, `has_spell_payload`, `has_structural_payload`, `remove_spell_payload`, `remove_structural_payload` (+7 more)
@@ -26652,7 +26765,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/custom_exceptions/unresolved_input_error.py
 
-- source_sha256: `47177e20a26628787192e7e79a9d9a964aa42f73e59f5c2cb73c9d4da667fa5b`
+- source_sha256: `76454d5c6e79c8146f5973bbef1cd26957f9dadd254767dba90fa5bc2aa5b9f4`
 - nodes: 2
 
 ### Nodes
@@ -26670,7 +26783,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `UnresolvedInputError` (class)
 
 - id: `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError`
-- defined at: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:15`
+- defined at: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:18`
 - extends: `MeldExecutionError`
 - role: MeldExecutionError subclass for an UNRESOLVED_INPUT socket the constructing call did not supply.
 - responsibilities:
@@ -26678,7 +26791,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - for_unsupplied builds the error for sockets a plan or solo call target knows are unsupplied, before any construction (no cause)
   - expected_type_name renders Optional, ForwardRef, quoted-string and class annotations as one display name shared with the Phase-4 warning
   - reads the expected type from the constructor signature when the error is built, because Phase 1-4 artifacts are released after resolution
-- owns_state: `expected_type`, `unresolved_params`
+  - on the failure path looks up, live, the spells of the first missing parameter's class that a class lookup cannot reach (_hidden_candidates: Phase 3's annotation helpers and CompilerPhase3._hidden_type_key over a copy of the consumer's Book pool, method and lambda spells excluded) and, with any, renders HiddenProviderReport.unresolved_input_message and carries their ids in hidden_spell_ids (0.2.8281)
+- owns_state: `expected_type`, `unresolved_params`, `hidden_spell_ids`
 - phases: `runtime`
 - public methods: `expected_type_name`, `for_unsupplied`
 
@@ -26688,14 +26802,19 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` | specializes | `melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError` | - | - | derived |
 | `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` | uses | `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` | one_to_one | runtime | authored |
+| `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` | uses | `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport` | one_to_one | runtime | authored |
+| `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` | uses | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | one_to_one | runtime | authored |
 
 - `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: for_unsupplied reads the consumer's live Phase-3 topology to select the named UNRESOLVED_INPUT sockets.
+- `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` -> `melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport`: UnresolvedInputError renders where an unsupplied input's class is bound through HiddenProviderReport.
+- `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` -> `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`: UnresolvedInputError classifies the missing parameter's annotation and finds its hidden candidates with Phase 3's helpers and CompilerPhase3._hidden_type_key.
 
-### Edge candidates (1, unconfirmed)
+### Edge candidates (2, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` creates `RuntimeError`
+- `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError` creates `CompilerPhase3`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py -->
 

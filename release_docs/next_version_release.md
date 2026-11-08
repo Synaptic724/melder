@@ -1,4 +1,4 @@
-# Melder 0.2.8281
+# Melder 0.2.8282
 
 **Unreleased**
 
@@ -17,7 +17,9 @@ Melder's license changes from the GNU Affero General Public License v3.0 or late
 Apache License 2.0 (SPDX `Apache-2.0`). `LICENSE` carries the Apache License's text, and `NOTICE`, the package
 metadata (`license` in `pyproject.toml`, `melder.__license__`) and the README state the same license. The AGPL's
 terms, its network-use clause included, are replaced by the Apache License's. The trademark notice keeps its
-substance: the license grants no rights in the Melder name or marks.
+substance: the license grants no rights in the Melder name or marks. `LICENSE`, `NOTICE`, the header of
+`melder.__license__` and the documentation's copyright line name one copyright holder, Mark Thomas Geleta, and one
+year, 2026.
 
 ## A class lookup reaches only a spell bound bare
 
@@ -50,7 +52,7 @@ Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches 
 bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at
 (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english').
 Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while
-that spell is the only one bound under Greeter - or bind English bare.  [HIDDEN_PROVIDER]
+that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
 ```
 
 The refusal covers a class annotation, a single string annotation naming the class, `Optional[ThatClass]`
@@ -147,6 +149,10 @@ The README's GitHub stars badge uses the social style and links to the stargazer
 
 The README's Spellframes, Dependency Injection and `SpellMap` passages, beginner lesson 25, the examples'
 `AGENTS.md` and the agent operations guide's constructor table state the class-lookup rule and the
-spellframe as an interface dict.
+spellframe as an interface dict. The README's overview, its `conjure()` and Dependency Injection passages
+name the `HIDDEN_PROVIDER` refusal, and its `SpellMap` passage no longer offers a meld `override` among
+`AMBIGUOUS_PROVIDER`'s fixes. The source maps, their indexes and the source graph describe the refusal, the
+type-key announce and creation-cache generation 27. The internal-bind guard lists 631 classes:
+`HiddenProviderStrategy` and `HiddenProviderReport` joined it.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8281.
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8282.

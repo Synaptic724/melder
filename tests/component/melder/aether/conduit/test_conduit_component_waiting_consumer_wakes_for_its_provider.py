@@ -1,6 +1,7 @@
 """
 Component tests: a consumer waiting on a provider picks it up when a provider it matches arrives; a class or name
-consumer matches no provider bound under a frame, so it stays unresolved whether it waited or was compiled after.
+consumer matches no provider bound under a frame, so it is refused - HIDDEN_PROVIDER, naming where its class is bound -
+whether it waited or was compiled after.
 
 EPIC-2026-10-25-dependency_watchers_listen_for_names, S1 (STORY-2026-10-25-map_dependency_watchers_and_announcers);
 the owner's direction, chat 2026-11-07: "make regressions because my test suite should be catching this kinda stuff".
@@ -24,29 +25,40 @@ filed under a frame is reached through the frame - a Protocol annotation, `list[
 frame-addressed SpellMap - and the frame is the key its bind, notch or grant announces. A waiting consumer and one
 compiled after the event now give one answer in every cell below.
 
+Since patch hidden_provider_2026_11_07 (TASK-2026-11-07-spellframe_ambiguity_validation_check part (a), 0.2.8281) that
+answer, where the class is bound only under a frame, is a refusal rather than an unresolved input: Phase 4 reports
+HIDDEN_PROVIDER, an error naming each address the class is bound at and the lookup that reaches it. The late twin is
+refused at its bind (a dynamic late bind runs phases 1-4); the bind, notch or grant that files the class under a frame
+also announces the class's own name (D1 = B), so the waiting consumer is re-gated and refused at its next meld, with an
+override as without one (D2). A refused consumer watches the addresses of its hidden candidates too, so a notch of
+that index to a version of another class releases it into an unresolved input again (re-gate path 6b).
+
 What these tests pin (cell ids of the S1 matrix probe, context_compass/artifacts/dependency_watchers_20261107/):
-    - The key-split cells - strict xfails written for a wake-up fix until 2026-11-07, now regressions of the
+    - The key-split cells - strict xfails written for a wake-up fix until 2026-11-07, then regressions of the
       class-lookup rule: a provider bound after conjure under a category or a Protocol frame, as a class or an
       existing object (A2, A3, A5), for a string annotation (A8, A9) and a list (B2, B3); the owner's original report,
       a notch away and back on an index under a Protocol frame (C1), and under a category (C2), for a list too (C4); a
       notch to a version staged under a category (I2); a contract grant of a provider under a frame (G2, G3); an
-      override-only consumer once a real provider arrives under a category (F2). In each the class or name consumer
-      stays unresolved (F2: keeps only its definition) while it waits (LIVE) and in its late twin (FRESH) - no key
-      split - and the frame's own consumer, bound beside it (`Greeter`, `list[Greeter]` or `list["langs"]`), wakes
-      with the provider, or follows it across a notch.
+      override-only consumer once a real provider arrives under a category (F2). Since 0.2.8281 the single class or
+      name consumer is refused with HIDDEN_PROVIDER while it waits (LIVE, at its next meld) and in its late twin
+      (FRESH, at its bind) - one answer, no key split - and released by a notch of the framed index to another class
+      (C1, C2); a list gathers nothing (B2, B3, C4: Phase 6 names the bindings) and F2 keeps only its definition,
+      which is bound bare. The frame's own consumer, bound beside it (`Greeter`, `list[Greeter]` or
+      `list["langs"]`), wakes with the provider, or follows it across a notch.
     - Passing, and they must keep passing: the same events where the names agree (A1, A4, A6, A7, B1, B4, B5, F1, G1).
 
 Each test proves its own world before its assertion: a late twin of the consumer that must wake - the same
 annotation, bound after the event - must resolve the provider, so an assertion on a waiting consumer is always about a
 notification, never about a provider the consumer cannot match. In the framed cells the class or name consumer's own
-late twin is part of the contract: it must give the waiting consumer's answer. Preconditions raise RuntimeError, not
-AssertionError - written so that a strict xfail (raises=AssertionError) never absorbed a world that was not set up as
-the test says; the split still tells a world that was not set up from a contract that does not hold. Every meld goes
-through the class door, `meld(Consumer)`; by spell_id and by name a consumer stuck in the key split behaved the same.
+late twin is part of the contract: it must give the waiting consumer's answer, and a refusal is asserted as its whole
+text. Preconditions raise RuntimeError, not AssertionError - written so that a strict xfail (raises=AssertionError)
+never absorbed a world that was not set up as the test says; the split still tells a world that was not set up from a
+contract that does not hold. Every meld goes through the class door, `meld(Consumer)`; by spell_id and by name a
+consumer stuck in the key split behaved the same.
 """
 
 from collections.abc import Iterator
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 
 import pytest
 
@@ -54,6 +66,8 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 class Greeter(Protocol):
@@ -205,6 +219,20 @@ LATE: Dict[type, type] = {
 # class consumer (FRAME_CONSUMERS) and `list[Greeter]` beside `list[English]` (FRAME_LISTS).
 FRAME_CONSUMERS: Dict[str, type] = {"category": ListByLabel, "protocol": ByProtocol}
 FRAME_LISTS: Dict[str, type] = {"category": ListByLabel, "protocol": ListByProtocol}
+# What follows "English is bound only " in the HIDDEN_PROVIDER error per framed shape (patch
+# hidden_provider_2026_11_07): where English is bound, the SpellMap that reaches it, and the ways out.
+HIDDEN_AT: Dict[str, str] = {
+    "category": (
+        "under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). "
+        "Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare."
+    ),
+    "protocol": (
+        "under a spellframe: English at (spellframe='Greeter', binding_name='greeter') - use "
+        "SpellMap(spellframe=Greeter, binding_name='greeter'). Ask for it where it is bound - the SpellMap shown, as "
+        "the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or "
+        "bind English bare."
+    ),
+}
 
 
 def _reset_aether() -> None:
@@ -357,6 +385,75 @@ def _late_twin_resolves(root: Conduit, consumer: type, expected: Any) -> None:
     _given(_late_twin(root, consumer), expected, f"{LATE[consumer].__name__}, bound after the event")
 
 
+def _hidden_provider_report(consumer: str, bound_at: str) -> str:
+    """
+    The whole SpellbookValidationError text that refuses `consumer`'s `greeter: English` with HIDDEN_PROVIDER.
+
+    Args:
+        consumer: The refused spell's name (`ByClass`, `LateByName`, ...).
+        bound_at: What follows "English is bound only " - a value of HIDDEN_AT (owned and borrowed English alike).
+
+    Returns:
+        str: The header naming the spell, its block, and its one error line with the code.
+    """
+    return (
+        f"Spellbook validation failed. Broken spells: {consumer}.\n{consumer}:\n"
+        f"  - Parameter 'greeter' on spell '{consumer}' expects English, but a class lookup reaches English only "
+        f"where it is bound bare (no spellframe, the default binding), and English is bound only {bound_at} "
+        "[HIDDEN_PROVIDER]"
+    )
+
+
+def _refusal(action: Callable[[], Any]) -> str:
+    """
+    Run a bind, meld or conjure that must be refused and return what it raised.
+
+    Args:
+        action: The call to run.
+
+    Returns:
+        str: The SpellbookValidationError's message; otherwise "<Type>: <message>" for the RuntimeError or TypeError
+        raised instead, or "no refusal" when the call returned - so a failed assertion shows what happened.
+    """
+    try:
+        action()
+    except SpellbookValidationError as error:
+        return str(error)
+    except (RuntimeError, TypeError) as error:
+        return f"{type(error).__name__}: {error}"
+    return "no refusal"
+
+
+def _unsupplied(root: Conduit, consumer: type) -> str:
+    """
+    Meld a single-socket consumer that must miss its greeter and return the sentence its UnresolvedInputError says.
+
+    Args:
+        root: The conduit to meld in.
+        consumer: A single-socket consumer of this module.
+
+    Returns:
+        str: The text after "(parameter 'greeter'): "; otherwise "<Type>: <message>" for another RuntimeError, or
+        "no error" when the meld built the consumer.
+    """
+    try:
+        root.meld(consumer)
+    except UnresolvedInputError as error:
+        return str(error).split("(parameter 'greeter'): ", 1)[-1]
+    except RuntimeError as error:
+        return f"{type(error).__name__}: {error}"
+    return "no error"
+
+
+def _nothing_provides(consumer: str) -> str:
+    """The UnresolvedInputError sentence of a consumer whose `greeter: English` nothing registered provides."""
+    return (
+        f"{consumer}.greeter expects English, but nothing registered provides it and this meld did not supply it. "
+        f"Supply it with override={{'greeter': ...}} when melding {consumer}, a path key ending in '>greeter' (or "
+        f"'**greeter') when {consumer} is built as a dependency, or bind a provider for English."
+    )
+
+
 @pytest.mark.parametrize(
     ("provider", "shape", "existence"),
     [
@@ -372,7 +469,7 @@ def test_waiting_consumer_picks_up_a_provider_bound_after_conjure(provider: Any,
 
     Contract: before the bind the meld raises UnresolvedInputError; after it the meld builds `ByClass` with the
         English just bound - bare, the one address a class lookup reaches since 2026-11-07. A2, A3 and A5 file it
-        under a frame: `test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame`.
+        under a frame: `test_waiting_class_consumer_is_refused_once_its_class_is_bound_under_a_frame`.
     """
     book = _book(f"arrival-{shape}-{existence.name}")
     _bind(book, ByClass)
@@ -392,16 +489,18 @@ def test_waiting_consumer_picks_up_a_provider_bound_after_conjure(provider: Any,
         pytest.param(English(), "category", Existence.unique, id="A5-object-category"),
     ],
 )
-def test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame(provider: Any, shape: str,
-                                                                             existence: Existence) -> None:
+def test_waiting_class_consumer_is_refused_once_its_class_is_bound_under_a_frame(provider: Any, shape: str,
+                                                                                 existence: Existence) -> None:
     """
     A2, A3, A5: `ByClass` and the frame's own consumer compiled with no `English` bound; `English`, a class or an
         existing object, arrives by `bind` under the category "langs" or the Protocol frame `Greeter`.
 
-    Contract (2026-11-07): the spellframe hides English from the class lookup, an existing object as much as a class,
-        so `ByClass` stays unresolved - its meld raises UnresolvedInputError - while it waits (LIVE) and in its late
-        twin compiled after the bind (FRESH): no key split. The English is reached through its frame: the frame's own
-        consumer (`list["langs"]`, `Greeter`), waiting beside `ByClass` since conjure, wakes with it.
+    Contract (patch hidden_provider_2026_11_07): the spellframe hides English from the class lookup, an existing
+        object as much as a class, and the lookup is refused - HIDDEN_PROVIDER, naming English's address and the
+        SpellMap that reaches it. The late twin is refused at its bind; the bind announced English's name, so the
+        waiting `ByClass` is refused at its next meld with the same report, and an override does not rescue it - one
+        answer, refused. The frame's own consumer (`list["langs"]`, `Greeter`), waiting beside `ByClass` since
+        conjure, wakes with the English.
     """
     frame_consumer = FRAME_CONSUMERS[shape]
     book = _book(f"framed-arrival-{shape}-{existence.name}")
@@ -413,12 +512,16 @@ def test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame(pr
            f"{frame_consumer.__name__} before English is bound")
     _bind(root, provider, shape, existence)
     _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
-    fresh = _late_twin(root, ByClass)
-    assert fresh == "raises UnresolvedInputError", (
-        f"LateByClass melds {fresh}: a class lookup reached English at the {shape} address"
+    late = _refusal(lambda: _bind(root, LateByClass))
+    assert late == _hidden_provider_report("LateByClass", HIDDEN_AT[shape]), (
+        f"LateByClass, bound after English was filed at the {shape} address, is not refused as HIDDEN_PROVIDER"
     )
-    held = _held(root, ByClass)
-    assert held == "raises UnresolvedInputError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
+    waiting = _refusal(lambda: root.meld(ByClass))
+    assert waiting == _hidden_provider_report("ByClass", HIDDEN_AT[shape]), (
+        "ByClass, waiting since conjure, is not refused at its next meld while its late twin is: a key split"
+    )
+    overridden = _refusal(lambda: root.meld(ByClass, override={"greeter": English()}))
+    assert overridden == waiting, "an override let a refused ByClass meld"
     woken = _melded(root, frame_consumer)
     assert woken == _frame_holds(frame_consumer, "English"), (
         f"{frame_consumer.__name__} melds {woken} although English is live at the {shape} address"
@@ -438,7 +541,7 @@ def test_consumer_waiting_by_name_picks_up_a_provider_bound_after_conjure(shape:
 
     Contract: the string selects the type by name, as the class does, so the meld builds `ByName` with the English
         just bound - bare, the one address the string's type part reaches since 2026-11-07. A8 and A9 file it under a
-        frame: `test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_frame`.
+        frame: `test_waiting_name_consumer_is_refused_once_its_class_is_bound_under_a_frame`.
     """
     book = _book(f"name-{shape}")
     _bind(book, ByName)
@@ -457,15 +560,16 @@ def test_consumer_waiting_by_name_picks_up_a_provider_bound_after_conjure(shape:
         pytest.param("protocol", id="A9-name-protocol"),
     ],
 )
-def test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_frame(shape: str) -> None:
+def test_waiting_name_consumer_is_refused_once_its_class_is_bound_under_a_frame(shape: str) -> None:
     """
     A8, A9: `ByName` (annotation "English", a string) and the frame's own consumer compiled with no `English` bound;
         `English` arrives by `bind` under the category "langs" or the Protocol frame `Greeter`.
 
-    Contract (2026-11-07): the string's type part is a class lookup, which no framed English answers, and neither
-        frame records a contract named "English", so `ByName` stays unresolved - its meld raises
-        UnresolvedInputError - while it waits (LIVE) and in its late twin (FRESH): no key split. The frame's own
-        consumer (`list["langs"]`, `Greeter`), waiting beside it since conjure, wakes with the English.
+    Contract (patch hidden_provider_2026_11_07): the string's type part is a class lookup, which no framed English
+        answers, and neither frame records a contract named "English", so the lookup is refused with HIDDEN_PROVIDER
+        exactly as the class object's is - the late twin at its bind, the waiting `ByName` at its next meld, an
+        override or not. The frame's own consumer (`list["langs"]`, `Greeter`), waiting beside it since conjure,
+        wakes with the English.
     """
     frame_consumer = FRAME_CONSUMERS[shape]
     book = _book(f"framed-name-{shape}")
@@ -477,12 +581,17 @@ def test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_
            f"{frame_consumer.__name__} before English is bound")
     _bind(root, English, shape)
     _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
-    fresh = _late_twin(root, ByName)
-    assert fresh == "raises UnresolvedInputError", (
-        f"LateByName melds {fresh}: the string's type part reached English at the {shape} address"
+    late = _refusal(lambda: _bind(root, LateByName))
+    assert late == _hidden_provider_report("LateByName", HIDDEN_AT[shape]), (
+        f"LateByName, bound after English was filed at the {shape} address, is not refused as HIDDEN_PROVIDER"
     )
-    held = _held(root, ByName)
-    assert held == "raises UnresolvedInputError", f"ByName melds {held} while its late twin melds {fresh}: a key split"
+    waiting = _refusal(lambda: root.meld(ByName))
+    assert waiting == _hidden_provider_report("ByName", HIDDEN_AT[shape]), (
+        "ByName, waiting since conjure, is not refused at its next meld while its late twin is: a key split"
+    )
+    assert _refusal(lambda: root.meld(ByName, override={"greeter": English()})) == waiting, (
+        "an override let a refused ByName meld"
+    )
     woken = _melded(root, frame_consumer)
     assert woken == _frame_holds(frame_consumer, "English"), (
         f"{frame_consumer.__name__} melds {woken} although English is live at the {shape} address"
@@ -572,24 +681,34 @@ def test_waiting_list_gathers_nothing_from_a_provider_bound_under_a_frame(shape:
         pytest.param("category", id="C2-category-index"),
     ],
 )
-def test_waiting_consumer_stays_unresolved_across_a_notch_of_a_framed_provider(shape: str) -> None:
+def test_class_consumer_refused_for_a_framed_index_is_released_by_a_notch_away_and_refused_after_the_notch_back(
+        shape: str) -> None:
     """
     C1 (the owner's original report), C2: English is bound under the Protocol frame `Greeter` or the category "langs"
-        before conjure, beside `ByClass` and the frame's own consumer; French is staged on English's index, the index
-        is notched to French and back to English.
+        beside the frame's own consumer; French is staged on English's index, the index is notched to French and back
+        to English, then to `Edited.English`, another class named English.
 
-    Contract (2026-11-07): the frame hides English from the class lookup, so `ByClass` never melds it - its meld
-        raises UnresolvedInputError with English active, with French active (nothing provides English) and after the
-        notch back, and its late twin compiled after the notch back agrees: no key split. The frame's own consumer
-        (`Greeter`, `list["langs"]`) follows the index: English, French, English again. Until the ruling the original
-        report read as a missed wake-up: `ByClass` melded the framed English, lost it to French and never got it back,
-        while a late twin resolved it.
+    Contract (patch hidden_provider_2026_11_07): `ByClass` bound beside the framed English before conjure refuses the
+        conjure - HIDDEN_PROVIDER, naming the address; bound after conjure it is refused at its bind and at its meld
+        while English is active. The notch to French announces the index's frame, which the refused `ByClass` watches
+        through its hidden candidate's address (re-gate path 6b): it melds as an unresolved input again - nothing
+        registered provides English, and an override supplies it. The notch back announces English's name (D1 = B,
+        path 6c): `ByClass` is refused again at its next meld, as its late twin is at its bind. `Edited.English`, the
+        same name, keeps it refused. The frame's own consumer (`Greeter`, `list["langs"]`) follows the index
+        throughout: English, French, English, Edited.English.
     """
-    frame = f"notch-back-{shape}"
     frame_consumer = FRAME_CONSUMERS[shape]
+    report = _hidden_provider_report("ByClass", HIDDEN_AT[shape])
+    beside = _book(f"notch-beside-{shape}")
+    _bind(beside, English, shape)
+    _bind(beside, ByClass)
+    _bind(beside, frame_consumer)
+    assert _refusal(lambda: beside.conjure(dynamic=True, name="root")) == report, (
+        f"the conjure of ByClass beside English filed at the {shape} address is not refused as HIDDEN_PROVIDER"
+    )
+    frame = f"notch-back-{shape}"
     book = _book(frame)
     english_id = _bind(book, English, shape)
-    _bind(book, ByClass)
     _bind(book, frame_consumer)
     root = book.conjure(dynamic=True, name="root")
     index = root.get_spell_by_spell_id(english_id, frame).spell_index
@@ -597,25 +716,30 @@ def test_waiting_consumer_stays_unresolved_across_a_notch_of_a_framed_provider(s
                                    permissions="create", **SHAPES[shape])
     _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "English"),
            f"{frame_consumer.__name__} with English active")
-    with_english = _held(root, ByClass)
-    assert with_english == "raises UnresolvedInputError", (
-        f"ByClass melds {with_english}: a class lookup reached English at the {shape} address"
-    )
+    assert _refusal(lambda: _bind(root, ByClass)) == report, "ByClass is not refused at its bind"
+    assert _refusal(lambda: root.meld(ByClass)) == report, "ByClass is not refused at its meld with English active"
     root.notch_spell(spell_index=index, spell_id=french_id)
     _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "French"),
            f"{frame_consumer.__name__} with French active")
-    _given(_held(root, ByClass), "raises UnresolvedInputError", "ByClass with French active")
+    released = _unsupplied(root, ByClass)
+    assert released == _nothing_provides("ByClass"), (
+        "the notch of the hidden provider's index to French did not release ByClass into an unresolved input"
+    )
+    supplied = type(root.meld(ByClass, override={"greeter": English()}).greeter).__qualname__
+    assert supplied == "English", f"the released ByClass melds {supplied} with English supplied"
     root.notch_spell(spell_index=index, spell_id=english_id)
     _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
-    fresh = _late_twin(root, ByClass)
-    assert fresh == "raises UnresolvedInputError", (
-        f"LateByClass melds {fresh}: a class lookup reached English at the {shape} address after the notch back"
+    assert _refusal(lambda: root.meld(ByClass)) == report, "ByClass is not refused again after the notch back"
+    assert _refusal(lambda: _bind(root, LateByClass)) == _hidden_provider_report("LateByClass", HIDDEN_AT[shape]), (
+        "LateByClass, bound after the notch back, is not refused at its bind"
     )
-    held = _held(root, ByClass)
-    assert held == "raises UnresolvedInputError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
-    followed = _melded(root, frame_consumer)
-    assert followed == _frame_holds(frame_consumer, "English"), (
-        f"{frame_consumer.__name__} melds {followed} after the notch back to English at the {shape} address"
+    edited_id = root.bind_inactive(spell=Edited.English, spell_index=index, existence=Existence.many,
+                                   permissions="create", **SHAPES[shape])
+    root.notch_spell(spell_index=index, spell_id=edited_id)
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "Edited.English"),
+           f"{frame_consumer.__name__} with Edited.English active")
+    assert _refusal(lambda: root.meld(ByClass)) == report, (
+        "a version of the same name released ByClass: Edited.English is English to a class lookup"
     )
 
 
@@ -654,15 +778,16 @@ def test_waiting_list_gathers_nothing_across_a_notch_of_a_framed_provider() -> N
     assert followed == ["English"], f"ListByLabel gathers {followed} after the notch back to English"
 
 
-def test_waiting_consumer_stays_unresolved_for_a_version_notched_in_under_a_category() -> None:
+def test_waiting_class_consumer_is_refused_once_its_class_is_notched_in_under_a_category() -> None:
     """
     I2: French is active under "langs" and `ByClass` waits for English beside `ListByLabel`; English is staged on that
         index with `bind_inactive` and notched in.
 
-    Contract (2026-11-07): staging alone changes nothing (a parked version is not resolvable); after the notch English
-        is active under "langs", which hides it from the class lookup, so `ByClass` still raises
-        UnresolvedInputError, LIVE and FRESH alike - no key split - while `list["langs"]` moves from [French] to
-        [English].
+    Contract (patch hidden_provider_2026_11_07): staging alone changes nothing (a parked version is not resolvable,
+        nor a hidden candidate); after the notch English is active under "langs", which hides it from the class
+        lookup, and the notch announced English's name (D1 = B), so the waiting `ByClass` is refused at its next meld
+        with HIDDEN_PROVIDER, as its late twin is at its bind - one answer - while `list["langs"]` moves from
+        [French] to [English].
     """
     frame = "notch-in"
     book = _book(frame)
@@ -673,16 +798,18 @@ def test_waiting_consumer_stays_unresolved_for_a_version_notched_in_under_a_cate
     index = root.get_spell_by_spell_id(french_id, frame).spell_index
     english_id = root.bind_inactive(spell=English, spell_index=index, existence=Existence.many,
                                     permissions="create", spellframe="langs")
-    _given(_held(root, ByClass), "raises UnresolvedInputError", "ByClass with English parked")
+    _given(_unsupplied(root, ByClass), _nothing_provides("ByClass"), "ByClass with English parked")
     _given(_gathered(root, ListByLabel), ["French"], "ListByLabel with English parked")
     root.notch_spell(spell_index=index, spell_id=english_id)
     _late_twin_resolves(root, ListByLabel, ["English"])
-    fresh = _late_twin(root, ByClass)
-    assert fresh == "raises UnresolvedInputError", (
-        f"LateByClass melds {fresh}: a class lookup reached English notched in under 'langs'"
+    late = _refusal(lambda: _bind(root, LateByClass))
+    assert late == _hidden_provider_report("LateByClass", HIDDEN_AT["category"]), (
+        "LateByClass, bound after English was notched in under 'langs', is not refused as HIDDEN_PROVIDER"
     )
-    held = _held(root, ByClass)
-    assert held == "raises UnresolvedInputError", f"ByClass melds {held} while its late twin melds {fresh}: a key split"
+    waiting = _refusal(lambda: root.meld(ByClass))
+    assert waiting == _hidden_provider_report("ByClass", HIDDEN_AT["category"]), (
+        "ByClass, waiting since conjure, is not refused at its next meld while its late twin is: a key split"
+    )
     followed = _gathered(root, ListByLabel)
     assert followed == ["English"], f"ListByLabel gathers {followed} after English was notched in under 'langs'"
 
@@ -758,7 +885,7 @@ def test_waiting_borrower_picks_up_a_provider_granted_by_contract(shape: str) ->
 
     Contract: after the grant the borrower's meld builds `ByClass` with the borrowed English - bare, the one address
         a class lookup reaches since 2026-11-07. G2 and G3 grant an English the owner filed under a frame:
-        `test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_contract`.
+        `test_waiting_borrower_is_refused_once_its_class_is_granted_from_under_a_frame`.
     """
     frame = f"grant-{shape}"
     owner_book = _book(frame)
@@ -783,14 +910,18 @@ def test_waiting_borrower_picks_up_a_provider_granted_by_contract(shape: str) ->
         pytest.param("category", id="G3-category"),
     ],
 )
-def test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_contract(shape: str) -> None:
+def test_waiting_borrower_is_refused_once_its_class_is_granted_from_under_a_frame(shape: str) -> None:
     """
     G2, G3: `ByClass` and the frame's own consumer wait in a borrower root; the owner root's English, filed under the
         Protocol frame `Greeter` or the category "langs", is granted to it by link and `add_spell_to_contract`.
 
-    Contract (2026-11-07): the borrowed English keeps the owner's frame, which hides it from the class lookup, so the
-        borrower's `ByClass` still raises UnresolvedInputError after the grant, LIVE and FRESH alike - no key split -
-        while the borrower's frame consumer (`Greeter`, `list["langs"]`) wakes with the borrowed English.
+    Contract (patch hidden_provider_2026_11_07): the borrowed English keeps the owner's frame, which hides it from the
+        class lookup; the grant announced English's name (D1 = B), so the borrower's waiting `ByClass` is refused at
+        its next meld with HIDDEN_PROVIDER, as its late twin is at its bind - one answer - while the borrower's frame
+        consumer (`Greeter`, `list["langs"]`) wakes with the borrowed English. The report names the borrowed copy as
+        it names an owned one - its address and the SpellMap that reaches it. Until STEP 3 of the patch (0.2.8281) it
+        read `spell id <id>` with no address, because candidates were found through `find_spell_by_spell_id` alone,
+        which does not consult contracted copies; the strategy now falls back to the Book's borrowed copies.
     """
     frame = f"grant-{shape}"
     frame_consumer = FRAME_CONSUMERS[shape]
@@ -808,13 +939,14 @@ def test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_cont
     _given(borrower.add_spell_to_contract(spell_id=english_id, conduit=owner, permissions="create"), True,
            "the grant of English")
     _late_twin_resolves(borrower, frame_consumer, _frame_holds(frame_consumer, "English"))
-    fresh = _late_twin(borrower, ByClass)
-    assert fresh == "raises UnresolvedInputError", (
-        f"the borrower's LateByClass melds {fresh}: a class lookup reached the granted English ({shape})"
+    late = _refusal(lambda: _bind(borrower, LateByClass))
+    assert late == _hidden_provider_report("LateByClass", HIDDEN_AT[shape]), (
+        f"the borrower's LateByClass, bound after the grant ({shape}), is not refused as HIDDEN_PROVIDER naming the "
+        "borrowed English's address"
     )
-    held = _held(borrower, ByClass)
-    assert held == "raises UnresolvedInputError", (
-        f"the borrower's ByClass melds {held} while its late twin melds {fresh}: a key split ({shape})"
+    waiting = _refusal(lambda: borrower.meld(ByClass))
+    assert waiting == _hidden_provider_report("ByClass", HIDDEN_AT[shape]), (
+        f"the borrower's waiting ByClass is not refused at its next meld while its late twin is ({shape})"
     )
     woken = _melded(borrower, frame_consumer)
     assert woken == _frame_holds(frame_consumer, "English"), (

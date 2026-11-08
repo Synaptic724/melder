@@ -31,7 +31,8 @@ class HiddenProviderReport:
         - A candidate is the dict `describe` returns: `spell_id`, `spell_name`, `spellframe` (a category as itself,
           a Protocol by `__name__`, None when bare), `spellframe_kind` (`SpellframeKind` value, None when unknown)
           and `binding_name` (as bound, None for the default). A candidate whose spell could not be found carries
-          only its id and renders as `spell id <id>`, with no lookup.
+          only its id and renders as `spell id <id>`, with no lookup; a remedy that points at "the SpellMap shown"
+          counts the entries that show one (`described_count`) and names none when none is shown.
         - Candidates are always rendered in address order - (spellframe, binding_name, spell_name), None first -
           the order AMBIGUOUS_PROVIDER uses.
         - Lookups by shape: `SHAPE_SINGLE` and `SHAPE_SPELLMAP` render the `SpellMap` that reaches the candidate's
@@ -145,6 +146,28 @@ class HiddenProviderReport:
         if known and not framed:
             return "under a binding name"
         return "under a spellframe or a binding name"
+
+    @staticmethod
+    def described_count(candidates: Sequence[Dict[str, Optional[str]]]) -> int:
+        """
+        Count the candidates whose entries show a lookup.
+
+        Purpose:
+            A remedy that points at "the SpellMap shown" must name one only when an entry shows it: a candidate the
+            caller could not find renders `spell id <id>` with no lookup (STEP 3 of patch
+            hidden_provider_2026_11_07, 0.2.8281).
+
+        Contract:
+            The number of described candidates (`spell_name` not None) - exactly the entries `entry` renders with
+            "- use <lookup>", since `lookup` answers for every described candidate.
+
+        Args:
+            candidates: Candidate dicts from `describe`.
+
+        Returns:
+            int: How many entries show a lookup.
+        """
+        return sum(1 for entry in candidates if entry["spell_name"] is not None)
 
     @staticmethod
     def is_default_binding(binding_name: Optional[str]) -> bool:
@@ -364,8 +387,10 @@ class HiddenProviderReport:
         Contract:
             "Parameter 'p' on spell 'C' expects T, but a class lookup reaches T only where it is bound bare (no
             spellframe, the default binding), and T is bound only <where>: <entries>. Ask for it where it is bound -
-            the SpellMap shown, as the parameter's default<protocol clause> - or bind T bare." "the SpellMap shown"
-            reads "the SpellMap of the one it needs" for several candidates.
+            the SpellMap shown, as the parameter's default<protocol clause> - or bind T bare." The remedy counts the
+            SpellMaps the entries show (`described_count`): "the SpellMap shown" for one, "the SpellMap of the one it
+            needs" for several, and for none - every candidate known by id alone - "Ask for it where it is bound, or
+            bind T bare." (STEP 3 of patch hidden_provider_2026_11_07, 0.2.8281).
 
         Args:
             param_name: The consumer's parameter.
@@ -376,13 +401,20 @@ class HiddenProviderReport:
         Returns:
             str: The message, without the "[HIDDEN_PROVIDER]" tag the report adds.
         """
-        shown = "the SpellMap shown" if len(candidates) == 1 else "the SpellMap of the one it needs"
+        described = cls.described_count(candidates)
+        if described == 0:
+            # Every candidate reads `spell id <id>`: no SpellMap is shown, so the remedy names none.
+            remedy = f"Ask for it where it is bound, or bind {expected_type} bare."
+        else:
+            shown = "the SpellMap shown" if described == 1 else "the SpellMap of the one it needs"
+            remedy = (
+                f"Ask for it where it is bound - {shown}, as the parameter's default{cls.protocol_clause(candidates)} "
+                f"- or bind {expected_type} bare."
+            )
         return (
             f"Parameter {param_name!r} on spell {consumer_name!r} expects {expected_type}, but a class lookup reaches "
             f"{expected_type} only where it is bound bare (no spellframe, the default binding), and {expected_type} "
-            f"is bound only {cls.where(candidates)}: {cls.entries(candidates, shape=cls.SHAPE_SINGLE)}. Ask for it "
-            f"where it is bound - {shown}, as the parameter's default{cls.protocol_clause(candidates)} - or bind "
-            f"{expected_type} bare."
+            f"is bound only {cls.where(candidates)}: {cls.entries(candidates, shape=cls.SHAPE_SINGLE)}. {remedy}"
         )
 
     @classmethod
@@ -403,7 +435,8 @@ class HiddenProviderReport:
             bound bare under the default binding, but X is bound only where that lookup does not reach: <entries>.
             Point the SpellMap at the address it means, as shown, or bind X bare." With `binding_name='b'` the
             SpellMap renders with it, the scope reads "under the binding name 'b'" and the last clause "bind X bare
-            under the binding name 'b'".
+            under the binding name 'b'". When no entry shows a SpellMap (every candidate known by id alone) "as shown"
+            is left out: "Point the SpellMap at the address it means, or bind X bare." (STEP 3, 0.2.8281).
 
         Args:
             param_name: The consumer's parameter.
@@ -421,12 +454,14 @@ class HiddenProviderReport:
         else:
             scope = f"the binding name {binding_name!r}"
             suffix = f" under the binding name {binding_name!r}"
+        # "as shown" only when an entry shows the SpellMap that reaches it.
+        as_shown = ", as shown," if cls.described_count(candidates) else ","
         return (
             f"Parameter {param_name!r} on spell {consumer_name!r} has the default "
             f"{cls.spellmap_text(class_name, binding_name)}, a class lookup that reaches {class_name} only where it is "
             f"bound bare under {scope}, but {class_name} is bound only where that lookup does not reach: "
             f"{cls.entries(candidates, shape=cls.SHAPE_SPELLMAP, class_name=class_name)}. Point the SpellMap at the "
-            f"address it means, as shown, or bind {class_name} bare{suffix}."
+            f"address it means{as_shown} or bind {class_name} bare{suffix}."
         )
 
     @classmethod
@@ -467,7 +502,8 @@ class HiddenProviderReport:
             candidates: Sequence[Dict[str, Optional[str]]],
     ) -> str:
         """
-        Render `UnresolvedInputError`'s text for an unsupplied input whose class is bound only where it cannot be reached.
+        Render `UnresolvedInputError`'s text for an unsupplied input whose class is bound only where it cannot be
+        reached.
 
         Contract:
             "C.p expects T, but this meld did not supply it and a class lookup reaches T only where it is bound bare

@@ -439,18 +439,41 @@ def test_b1_concrete_dependency_unbound_defers_to_meld() -> None:
         spellbook.cleanup()
 
 
-def test_b1_dependency_only_under_binding_defers_and_conjures() -> None:
-    """B1 characterization: a provider bound only under a binding_name leaves the bare hint unsatisfied, but that is a warning - conjure still succeeds (the failure is deferred to meld)."""
+def _engine_hidden_under(binding_name: str) -> str:
+    """
+    The conjure refusal of NeedsEngineConcrete while Engine is bound bare only under `binding_name`.
+
+    Args:
+        binding_name: The one binding name Engine is bound under.
+
+    Returns:
+        str: The whole SpellbookValidationError text: one HIDDEN_PROVIDER error naming the binding and the SpellMap
+        that reaches it (patch hidden_provider_2026_11_07).
+    """
+    return (
+        "Spellbook validation failed. Broken spells: NeedsEngineConcrete.\nNeedsEngineConcrete:\n"
+        "  - Parameter 'engine' on spell 'NeedsEngineConcrete' expects Engine, but a class lookup reaches Engine only "
+        "where it is bound bare (no spellframe, the default binding), and Engine is bound only under a binding name: "
+        f"Engine at (spellframe=None, binding_name={binding_name!r}) - use SpellMap(Engine, "
+        f"binding_name={binding_name!r}). Ask for it where it is bound - the SpellMap shown, as the parameter's "
+        "default - or bind Engine bare. [HIDDEN_PROVIDER]"
+    )
+
+
+def test_b1_dependency_only_under_a_binding_name_refuses_conjure_naming_the_binding() -> None:
+    """
+    B1: a provider bound only under a binding_name leaves the bare hint unsatisfied. Until patch
+    hidden_provider_2026_11_07 that was a warning and conjure succeeded (the failure deferred to meld); now the class
+    lookup is a HIDDEN_PROVIDER error that refuses conjure, naming the binding and the SpellMap that reaches it.
+    """
     spellbook = _make_spellbook()
-    conduit = None
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", binding_name="named")
         spellbook.bind(spell=NeedsEngineConcrete, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
-        assert conduit is not None
+        with pytest.raises(SpellbookValidationError) as caught:
+            spellbook.conjure(name="root")
+        assert str(caught.value) == _engine_hidden_under("named")
     finally:
-        if conduit is not None:
-            conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -524,13 +547,28 @@ def test_b2_provider_bound_under_own_class_only_leaves_frame_hint_unresolved() -
 # B3 / B5 - SpellMap default and callable spells
 # =========================================================================== #
 def test_b3_spellmap_without_binding_name_fails_conjure_on_binding_only_registration() -> None:
-    """B3 characterization: SpellMap(Class) with no binding_name is a class lookup that reaches only the default binding (2026-11-07, the owner's rulings E2-E3; before, it matched the class under ANY binding), so a binding-only registration fails conjure with "SpellMap default could not be resolved"; SpellMap(Class, binding_name=...) reaches it by its name (test_b3_spellmap_with_binding_name_resolves_binding_only_registration)."""
+    """
+    B3 characterization: SpellMap(Class) with no binding_name is a class lookup that reaches only the default binding
+    (2026-11-07, the owner's rulings E2-E3; before, it matched the class under ANY binding), so a binding-only
+    registration fails conjure - since patch hidden_provider_2026_11_07 through the readable report, a HIDDEN_PROVIDER
+    error naming the binding and the SpellMap that reaches it, where Phase 3 raised "SpellMap default could not be
+    resolved" (PhaseExecutionError) before; SpellMap(Class, binding_name=...) reaches it by its name
+    (test_b3_spellmap_with_binding_name_resolves_binding_only_registration).
+    """
     spellbook = _make_spellbook()
     try:
         spellbook.bind(spell=Config, existence=Existence.unique, permissions="create", binding_name="named")
         spellbook.bind(spell=NeedsConfigViaMap, existence=Existence.unique, permissions="create")
-        with pytest.raises(PhaseExecutionError, match="SpellMap default could not be resolved"):
+        with pytest.raises(SpellbookValidationError) as caught:
             spellbook.conjure(name="root")
+        assert str(caught.value) == (
+            "Spellbook validation failed. Broken spells: NeedsConfigViaMap.\nNeedsConfigViaMap:\n"
+            "  - Parameter 'config' on spell 'NeedsConfigViaMap' has the default SpellMap(Config), a class lookup "
+            "that reaches Config only where it is bound bare under the default binding, but Config is bound only "
+            "where that lookup does not reach: Config at (spellframe=None, binding_name='named') - use "
+            "SpellMap(Config, binding_name='named'). Point the SpellMap at the address it means, as shown, or bind "
+            "Config bare. [HIDDEN_PROVIDER]"
+        )
     finally:
         spellbook.cleanup()
 
@@ -844,18 +882,20 @@ def test_e1_bind_primitive_value_raises() -> None:
         spellbook.cleanup()
 
 
-def test_e2_concrete_default_binding_missing_defers_and_conjures() -> None:
-    """E2 characterization: a concrete hint with no default-binding provider is a deferred warning; conjure succeeds rather than failing eagerly."""
+def test_e2_concrete_hint_with_only_a_named_provider_refuses_conjure_naming_the_binding() -> None:
+    """
+    E2 characterization: a concrete hint with no default-binding provider - its class bound only under the binding
+    name "only" - was a deferred warning until patch hidden_provider_2026_11_07, and conjure succeeded; now it is a
+    HIDDEN_PROVIDER error that fails conjure eagerly, naming the binding and the SpellMap that reaches it.
+    """
     spellbook = _make_spellbook()
-    conduit = None
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", binding_name="only")
         spellbook.bind(spell=NeedsEngineConcrete, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
-        assert conduit is not None
+        with pytest.raises(SpellbookValidationError) as caught:
+            spellbook.conjure(name="root")
+        assert str(caught.value) == _engine_hidden_under("only")
     finally:
-        if conduit is not None:
-            conduit.cleanup()
         spellbook.cleanup()
 
 

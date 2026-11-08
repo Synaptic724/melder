@@ -9,10 +9,12 @@ Contract:
 - The embedded Apache-2.0 header is informational/legal context, not
   executable runtime logic. Melder moved from AGPL-3.0-or-later to the Apache
   License 2.0 on the owner's decision (2026-11-07, 0.2.8279).
+- The header's copyright line gives the year `LICENSE` and `NOTICE` give,
+  2026, on the owner's decision (2026-11-07, 0.2.8282).
 """
 
 #    Melder - AI-native dependency graph runtime for free-threaded Python.
-#    Copyright (C) 2025-2026 Mark Thomas Geleta
+#    Copyright (C) 2026 Mark Thomas Geleta
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.

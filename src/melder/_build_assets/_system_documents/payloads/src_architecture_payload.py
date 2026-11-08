@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 5535
-CONTENT_SHA256 = '389ac25f087ae7305e51151d5ef49bc3210c38e105253d54cd891e716c601eb0'
+LINE_COUNT = 5805
+CONTENT_SHA256 = 'f110a92ccc0d89060eeeed4ebd33e544bdc12b2a94221a0b2f7def800b6371fd'
 
 TEXT = """# Src Architecture (C4)
 
@@ -79,7 +79,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-11-07T14:15:36Z
+- Updated: 2026-11-07T22:36:33Z
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -325,9 +325,15 @@ Dependencies include:
   spellframe and the default binding, an existing object through its class (0.2.8278). A spell bound under a
   spellframe is reached through the frame - Melder's interface dict, keyed by binding name - and a bare spell bound
   under a binding name through that name (`SpellMap(Class, binding_name=...)`, `meld(Class, binding_name=...)`).
+- Hidden provider: a spell of the class a class lookup names that the lookup cannot reach - bound under a spellframe
+  or a binding name, never a Protocol's own definition (`CompilerPhase3._hidden_type_key`, 0.2.8281). When a class
+  lookup finds nothing, Phase 3 records the class's hidden providers on the socket (`hidden_spell_ids`,
+  `hidden_frame_keys`) and Phase 4 refuses the consumer with the error HIDDEN_PROVIDER, naming each address and the
+  lookup that reaches it; an empty required `list[Class]` names them in its Phase 6 report instead.
 - Unresolved input: a single typed constructor parameter that no registered spell provides. It compiles as
   an UNRESOLVED_INPUT socket; the constructing meld supplies it by override, and `UnresolvedInputError`
-  names it when a construction would go without it (2026-09-26).
+  names it when a construction would go without it (2026-09-26). Since 0.2.8281 a class lookup whose class is
+  registered only under a spellframe or a binding name is no such input: its consumer is refused (HIDDEN_PROVIDER).
 - Key-set plan: the code one override key set compiles to in a `SitePlanOverrideRuntime`; it builds only what
   the payload does not supply. The empty key set is the normal plan of the many_only and generalized
   families (2026-09-26).
@@ -440,13 +446,13 @@ External interfaces are Python APIs:
   another way (ValueError) before anything is registered or moved, and a notch, which never moves the index's
   address, refuses an address another spell holds (RuntimeError) with nothing moved.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5679, 5823 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5871-6089 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5711, 5855 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5903-6121 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6091, 6189 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6212, 6287 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4712 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4750 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6123, 6221 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6244, 6319 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4725 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4763 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -565,7 +571,7 @@ index before anything moves; the two index moves take a spell_id the same way (0
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262). Every version of an index is bound the way its first version was, so a notch moves which version
 serves the index's address, never the address, and refuses an address another spell holds (0.2.8273).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, remeasured 2026-10-25 at 0.2.8273);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5103 (the three seams, remeasured 2026-11-07 at 0.2.8281);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -588,9 +594,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, r
   tagging any user-extensible base silently made user subclasses unbindable.
 - `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs imported from the
   hand-written loader `melder._build_assets._bind_guard.bind_guard`, which re-exports it
-  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (629 at
-  0.2.8267: `HolderDisposalEntry` left; 630 at 0.2.8257: `SpellCodeDigest` and `BindingManifest` joined; 628 at
-  0.2.8246: the managed-spell classes joined at 0.2.8242-0.2.8244; 620 at 0.2.8216). The TRUTH is the COMMITTED
+  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (631 at
+  0.2.8281: `HiddenProviderStrategy` and `HiddenProviderReport` joined; 629 at 0.2.8267: `HolderDisposalEntry` left;
+  630 at 0.2.8257: `SpellCodeDigest` and `BindingManifest` joined; 628 at 0.2.8246: the managed-spell classes joined
+  at 0.2.8242-0.2.8244; 620 at 0.2.8216). The TRUTH is the COMMITTED
   manifest `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.meldercache`
   under `__melder_cache__/__bind_guard__/` that is an ACCELERATOR and never the source.
   The manifest module is imported lazily on cache miss only, so a warm process never
@@ -610,7 +617,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, r
   `raising=True`, so if the enforcement seam is ever renamed or moved again, the tests
   fail immediately instead of silently creating an attribute nothing reads. That matters
   because `test_bind.py` neutralizes the guard for its whole file via an autouse
-  fixture; a silently-dead patch would let the real manifest (629 entries at 0.2.8267) begin refusing
+  fixture; a silently-dead patch would let the real manifest (631 entries at 0.2.8281) begin refusing
   binds mid-suite with no signal pointing back at the fixture. Preserve `raising=True`
   if these sites are ever touched.
 - The guard is entirely absent from the package root: `melder/__init__.py` neither
@@ -898,7 +905,12 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, r
    - Fires `on_conduit_post_unlink` hook on success.
 
 ### Sequence: Transfer Spell Ownership
-1. `Conduit.transfer_spell_ownership(...)` validates dynamic mode.
+1. `Conduit.transfer_spell_ownership(...)` checks, before anything starts and each with a RuntimeError: the conduit is
+   not cleaned and is a normal root, the frame posture allows ownership transfer, the world is dynamic, and the
+   target conduit is in this conduit's aetheric frame (0.2.8280: "Cannot transfer spell ownership across different
+   AethericFrames: <source> != <target>. ...", as `link` refuses a cross-frame peer). Only then does it open the
+   `TRANSFER_OWNERSHIP` transaction, whose metadata (`_build_transfer_transaction_metadata`) runs the read-only
+   preflight below, and hand the move to `ConduitWard._transfer_spell_ownership`.
 2. `TransferOfOwnership.preflight()` captures borrowers, deps, creations.
 3. `TransferOfOwnership.execute()`:
    - Marks lineage disabled (transfer_in_progress) and flips registries under lock.
@@ -991,15 +1003,15 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4177-5090 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4177-4438 (`_apply_notch`, `_refuse_taken_address`)
-   - src/melder/aether/spellbook/spellbook.py:4750-4855
-   - src/melder/aether/spellbook/spellbook.py:4970-5090
+   - src/melder/aether/spellbook/spellbook.py:4190-4451 (`_apply_notch`, `_refuse_taken_address`)
+   - src/melder/aether/spellbook/spellbook.py:4763-4868
+   - src/melder/aether/spellbook/spellbook.py:4983-5103
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
-   - src/melder/aether/conduit/conduit.py:5679-5869
-   - src/melder/aether/conduit/conduit.py:5871-6089
-   - src/melder/aether/conduit/conduit.py:6091-6300
-   - src/melder/aether/conduit/conduit.py:6411-6440
-   - src/melder/aether/conduit/conduit.py:6442-6485
+   - src/melder/aether/conduit/conduit.py:5711-5901
+   - src/melder/aether/conduit/conduit.py:5903-6121
+   - src/melder/aether/conduit/conduit.py:6123-6332
+   - src/melder/aether/conduit/conduit.py:6443-6472
+   - src/melder/aether/conduit/conduit.py:6474-6517
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1075,7 +1087,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5628-5630 (the check and the raise)
+  - src/melder/aether/conduit/conduit.py:5660-5662 (the check and the raise)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
   - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
@@ -1094,10 +1106,138 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A class lookup that finds its class only where it cannot reach refuses its consumer and says where (2026-11-07,
+  0.2.8281, HIDDEN_PROVIDER; part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check, GitHub #245, of
+  EPIC-2026-11-07-spellframe_hides_the_concrete_class; the owner's rule for part (a) and his calls D1-D5, approved in
+  chat, 2026-11-07; patch hidden_provider_2026_11_07): Phase 3 resolves exactly as before - no socket gains a target,
+  no NORMAL socket changes kind - and when a class lookup (a class annotation, the type part of a single string
+  annotation, `Optional[Class]` without a default, `list[Class]`, `SpellMap(spell=Class)` without a spellframe) comes
+  back empty, the miss branch of `_build_local_frame_dag` (`_record_unresolved_miss`) also records the spells of that
+  class the lookup cannot reach, its hidden candidates. One predicate decides them, `CompilerPhase3._hidden_type_key`:
+  the type key of a spell bound under a spellframe or a binding name, None for a spell that answers a class lookup
+  and for a Protocol's own definition. It is read on the index path from the pass-scoped index's fifth bucket
+  `by_hidden_type` and on the scan path over the pool (`_hidden_class_candidates`), so both name the same spells, one
+  per SpellIndex under its selected id. They land on the socket's descriptor as
+  `SpellSocketDescriptor.hidden_spell_ids` (sorted) and `hidden_frame_keys` (their sorted address frame keys): a
+  single socket stays UNRESOLVED_INPUT, drops method and lambda spells and keeps non-resolvable framed definitions; a
+  required `list[Class]` keeps its NORMAL socket, resolvable spells only and no frame keys; a Protocol annotation and
+  a string collection record none. A
+  `SpellMap(spell=X)` miss with X registered elsewhere no longer raises in Phase 3: `_resolve_spellmap_default`,
+  given `hidden_out`, returns empty and the socket becomes UNRESOLVED_INPUT with X's registrations (a direct caller
+  without `hidden_out` still gets the RuntimeError, with one sentence naming where X is bound); X bound nowhere, a
+  frame-named miss and several candidates raise as before. Phase 4's `HiddenProviderStrategy`, registered right after
+  `AmbiguousProviderStrategy`, emits one error HIDDEN_PROVIDER per UNRESOLVED_INPUT socket with hidden candidates -
+  "Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is bound bare
+  (no spellframe, the default binding), and English is bound only under a spellframe: English at
+  (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for
+  it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is
+  the only one bound under Greeter - or bind English bare.", or for a SpellMap default "Parameter 'greeter' on spell
+  'Host' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the
+  default binding, but English is bound only where that lookup does not reach: <entries>. Point the SpellMap at the
+  address it means, as shown, or bind English bare." - and `RequiredHolesStrategy` skips those sockets, so no
+  UNRESOLVED_INPUT warning says nothing provides them. The error is an ordinary user-fixable one (not internal,
+  gating, restating or superseded) and marks the spell broken: conjure raises SpellbookValidationError; a late bind
+  into a dynamic world raises it and the spell stays registered and refused; every meld of it raises the same report
+  at the meld gate, with or without an override. Every report renders a candidate through `HiddenProviderReport` as
+  "<Name> at (spellframe=..., binding_name=...) - use <lookup>", in address order; a candidate the Book owns or
+  borrows renders alike (`HiddenProviderStrategy._find_candidate`: `Spellbook.find_spell_by_spell_id`, then the
+  borrowed copies peer by peer through `Spellbook._find_contracted_spell_by_id`, lock-free), and an id neither finds
+  renders `spell id <id>` with no lookup. The closing sentence counts the SpellMaps the entries show
+  (`HiddenProviderReport.described_count`): the annotation form reads "the SpellMap shown" for one, "the SpellMap of
+  the one it needs" for several and "Ask for it where it is bound, or bind English bare." for none; the SpellMap form
+  reads "as shown" for one or more and "Point the SpellMap at the address it means, or bind English bare." for none.
+  A spell bound under a spellframe or a binding name announces its type key beside its frame key - the commit's
+  `ChangeControlManager._default_dirty_marker` for bind, notch and link commits (`_hidden_type_keys_for_staged`, in
+  the same single `mark_collection_dependents_dirty` call) and `Spellbook._add_contracted_spell` for contract
+  grants. So a consumer that compiled with its class unresolved, waiting under the class name, is re-gated and refused
+  at its next meld, as its twin bound afterwards is refused at bind (one answer, the owner's D1); a bare spell adds
+  nothing (its frame key is its type key) and still wakes such a consumer into NORMAL.
+  `SpellSystemStates._extract_collection_frame_keys` also watches an UNRESOLVED_INPUT socket under its
+  `hidden_frame_keys`, so a change announced at a hidden candidate's address re-gates the refused consumer: a notch of
+  that index to a class of another name releases it to UNRESOLVED_INPUT. Phase 6's `collection_socket_no_providers`
+  names the hidden candidates of an empty required `list[Class]` at its usual severity - ERROR when the Book is not
+  dynamic ("Spell 'Host' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it:
+  list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is
+  bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use list[Greeter].
+  Gather it where it is bound, as shown, bind English bare, or make the parameter optional."), WARNING with `[]`
+  injected when it is ("... An empty list will be injected at construction; gather it where it is bound, as shown,
+  or bind English bare to populate it.", the owner's D3); without candidates both texts are unchanged.
+  `UnresolvedInputError` looks the
+  candidates up live in the consumer's Book pool on its failure path (a socket that recorded them never reaches a
+  meld) and names them - "Host.greeter expects English, but this meld did not supply it and a class lookup reaches
+  English only where it is bound bare (no spellframe, the default binding), while English is bound only under a
+  spellframe: <entries>. Supply it with override={'greeter': ...} when melding Host, a path key ending in '>greeter'
+  (or '**greeter') when Host is built as a dependency, ask for it where it is bound, as shown, or bind English bare.",
+  carrying their ids as `hidden_spell_ids`. AMBIGUOUS_PROVIDER no longer offers a meld override (the owner's D4):
+  "... Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), or bind only
+  one provider of this type." The structural snapshot's socket rows carry the two fields (12 fields, `PAYLOAD_FORMAT`
+  3), and the creation cache is generation 27 (`class_lookup_hidden_providers`): an older bundle could replay a valid
+  verdict Phase 4 now refuses. Not changed: what resolves, the meld doors, SpellMap misses with X bound nowhere or
+  frame-named, the dynamic empty-list policy and Phase 8's signature rows. Locks: none added - the predicate reads
+  bind-time fields only, the bucket lives in the pass-scoped resolution cache with the other four, the announcers
+  resolve the staged spells with the helpers the structural validator uses (the Book lock taken briefly, as there)
+  and still make one mark call per commit and per grant, and the watch keys are computed at topology registration.
+  Open LIVE != FRESH gaps, each pinned by a strict xfail on EPIC-2026-10-25-dependency_watchers_listen_for_names
+  (GitHub #210): a transfer that brings a framed provider of the class into the consumer's root announces only its
+  frame key (cell H2 of the epic's S1 matrix), so the waiting consumer melds as UNRESOLVED_INPUT (its
+  UnresolvedInputError names where the class is bound) while a fresh twin is refused; three contract and link
+  departures - `remove_spell_from_contract`, `remove_index_from_contract` and `sever_link` - mark no collection
+  dependents, so a borrower refused because of a lent copy keeps a refusal its fresh twin no longer gives; and a
+  dependent melded while its dependency was refused stays invalid after the refusal lifts ("No validation error was
+  recorded for this spell; ..."). That last gap predates HIDDEN_PROVIDER: on the pre-patch tree (0733b3b65) a
+  dependent melded while its dependency was refused with AMBIGUOUS_PROVIDER stays invalid the same way, measured in
+  both GIL modes - nothing re-gates such a dependent once the refusal lifts. Not a gap: a refused consumer whose
+  hidden provider is disposed by `cleanup_spell` - in the consumer's own Book, or by a lender of a granted provider -
+  also keeps its refusal, and that is accepted behaviour under the owner's ruling (chat, 2026-11-07: "if a spell is
+  cleaned it means its cleaned its fine thats not really a bug"): the errors a consumer meets after its provider's
+  `cleanup_spell` are the caller's to handle.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._hidden_type_key`,
+  `CompilerPhase3._build_candidate_index`, `CompilerPhase3._hidden_class_candidates`,
+  `CompilerPhase3._record_unresolved_miss`, `CompilerPhase3._resolve_spellmap_default`,
+  `CompilerPhase3._build_local_topology`,
+  `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:SpellSocketDescriptor`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py:HiddenProviderStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py:HiddenProviderReport`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:EmptyCollectionStrategy._diagnostic_for`,
+  `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError._hidden_candidates`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._hidden_type_keys_for_staged`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._add_contracted_spell`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`,
+  `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.PAYLOAD_FORMAT`,
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY` and
+  `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`.
+- A spell's stewardship stays inside one aetheric frame, as its links do (2026-11-07, 0.2.8280; part (b) of
+  TASK-2026-11-07-spellframe_ambiguity_validation_check, EPIC-2026-11-07-spellframe_hides_the_concrete_class, on the
+  owner's ruling in chat, 2026-11-07: "they shouldn't be able to transfer between frames thats an illegal operation
+  ... you cannot link between frames either"): `Conduit.transfer_spell_ownership` refuses a target conduit whose
+  aetheric frame is not this conduit's, as `ConduitWard._link` refuses a cross-frame peer, with RuntimeError "Cannot
+  transfer spell ownership across different AethericFrames: <source> != <target>. ..." naming the remedy (bind the
+  spell in a Spellbook of the target frame), logged at ERROR. The check runs after the cleaned, normal-root,
+  frame-posture and dynamic-mode checks and before the `TRANSFER_OWNERSHIP` transaction opens - before
+  `_build_transfer_transaction_metadata` and its read-only `TransferOfOwnership` preflight, which would otherwise
+  read the target against a foreign frame - so a refusal starts nothing: no transaction, no preflight footprint, no
+  move. A frame is a world with its own addresses, links and contracts, so a spell's stewardship, links and
+  contracts stay inside one frame, and one active spell per address per frame (the 0.2.8273 notch rule and the
+  frame-wide claim) holds through every transfer. Measured before the fix (the part (b) probe): a transfer to a root
+  of another frame gave the target Book two active spells at one address (DUPLICATE_SPELL_NAME on meld), left the
+  source frame's address claim naming the moved spell, so no Book of that frame could bind the address again, and
+  never claimed the address in the target frame, so a later bind there registered a second active spell. Not
+  changed: transfers between conduits of one frame - their options, preflight and steps - and links. Locks: none -
+  the check compares the two conduits' `_aetheric_frame_name`, fixed at construction, and takes no lock, as `_link`
+  does.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`,
+  `Conduit._build_transfer_transaction_metadata` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._link`.
 - A class lookup reaches only a spell bound bare (2026-11-07, 0.2.8278;
   TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class,
   on the owner's rulings in chat, 2026-11-07: "do what autofac would do ... thats our compass", then "ok yes to all
-  your statements" for the thirteen points he was shown): a class lookup - a class annotation on a single or a
+  your statements" for the thirteen points he was shown; SUPERSEDED in part at 0.2.8281 by the HIDDEN_PROVIDER entry
+  above: a miss whose class is bound only under a spellframe or a binding name refuses its consumer instead of leaving
+  an UNRESOLVED_INPUT a meld could supply, an empty required `list[Class]` names those bindings, and a `SpellMap(X)`
+  miss of that kind refuses through the readable report instead of raising RuntimeError; the rule of what a class
+  lookup reaches stands): a class lookup - a class annotation on a single or a
   `list[...]` socket, the type part of a single string annotation (a `TYPE_CHECKING` name) and `SpellMap(spell=X)`
   without a spellframe - reaches a spell only when it is bound bare, with no spellframe and a binding name that
   normalizes to the default binding (`CompilerPhase3._answers_class_lookup`); an existing object answers through its
@@ -1123,7 +1263,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   binding name reads the frame's default slot (KeyError when every member is named) while an `F` annotation selects
   the frame's single implementation; ambiguity stays an error (AMBIGUOUS_PROVIDER); there is no AsSelf-style option;
   a conjure-time error naming where a hidden class is bound is part (a) of
-  TASK-2026-11-07-spellframe_ambiguity_validation_check, not this change. Not changed: Bind and addresses; the meld
+  TASK-2026-11-07-spellframe_ambiguity_validation_check, not this change (it landed at 0.2.8281: the HIDDEN_PROVIDER
+  entry above). Not changed: Bind and addresses; the meld
   doors, which look a spell up by address - `meld(X)` reads X's name and the default binding, the address a bare X
   holds and also the address of an X bound under a string category spelled as X's own name, which a class annotation
   no longer reaches (the upgrade drops that spellframe; the address stays); SpellContract (`canonical_key`); Protocol,
@@ -2188,11 +2329,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `CompilerPhase3._spellmap_frame_matches` and
   `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.annotation_refs`.
 - Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below; SUPERSEDED in
-  part at 0.2.8278 by the first entry above: a class annotation, `list[Class]` and a single string's type part select
-  only spells bound with no spellframe and the default binding, so "spells of that type (a class bound bare, an
-  existing object of that class)" below now means those bound so, an existing object included; `by_type` files only
-  such spells, and a single string reaches a Protocol's own definition through its definition key; the kind rule,
-  Protocol and category matching and the four buckets stand): a spellframe is a string category or a
+  part at 0.2.8278 by the class-lookup entry above: a class annotation, `list[Class]` and a single string's type
+  part select only spells bound with no spellframe and the default binding, so "spells of that type (a class bound
+  bare, an existing object of that class)" below now means those bound so, an existing object included; `by_type`
+  files only such spells, and a single string reaches a Protocol's own definition through its definition key; the
+  kind rule, Protocol and category matching and the four buckets stand): a spellframe is a string category or a
   `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
   (`SpellframeKind.none` / `category` / `contract`) and the Protocol on the Spell (`spellframe_kind`,
   `implemented_protocols`) and raises `TypeError` for a concrete class or any other object. Phase 3 reads the
@@ -2372,9 +2513,14 @@ each entry in `src_components.md`; this list is the set that crosses components.
   a stored object never demands the
   input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
   never refuses these parameters. Since 0.2.8278 a class registered only under a spellframe or a binding name is no
-  match for a class annotation (a class lookup reaches only a spell bound bare; the first entry above), so its
+  match for a class annotation (a class lookup reaches only a spell bound bare; the 0.2.8278 entry above), so its
   consumer compiles this socket too, and for a class annotation the kept key (its name, the default binding) is the
-  address of every provider that can match it.
+  address of every provider that can match it. SUPERSEDED in part at 0.2.8281 (the HIDDEN_PROVIDER entry above):
+  such a socket also carries the class's hidden candidates (`hidden_spell_ids`, `hidden_frame_keys`) and Phase 4
+  refuses its spell at conjure, a late bind and every meld, override or not - so conjure does refuse that shape; a
+  `SpellMap(X)` socket that misses an X registered elsewhere is UNRESOLVED_INPUT too, refused the same way; and the
+  socket is also watched under its `hidden_frame_keys`. A parameter whose class is registered nowhere keeps this
+  entry's behaviour.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`.
 - Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
@@ -2403,9 +2549,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   slots, which is why a cleaned Spellbook cannot be re-conjured rather than
   merely refusing to be: the state that would answer the question is gone.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:271 (`_conjured` initialised)
-  - src/melder/aether/spellbook/spellbook.py:780 (ownership check reads it)
-  - src/melder/aether/spellbook/spellbook.py:838 (deleted on cleanup)
+  - src/melder/aether/spellbook/spellbook.py:272 (`_conjured` initialised)
+  - src/melder/aether/spellbook/spellbook.py:781 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:839 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Disposal order is established at bind: both groups contribute and book order owns shared
   names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
@@ -2450,10 +2596,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7800-7843
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7830-7842,
-    effective-mode return :7843; remeasured 2026-10-25 at 0.2.8273)
-  - src/melder/aether/spellbook/spellbook.py:8056
+  - src/melder/aether/spellbook/spellbook.py:7813-7856
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7843-7855,
+    effective-mode return :7856; remeasured 2026-11-07 at 0.2.8281)
+  - src/melder/aether/spellbook/spellbook.py:8069
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2513,6 +2659,43 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
+- Breaking (0.2.8281): a consumer whose class lookup - a class annotation, a single string annotation's type part,
+  `Optional[Class]` without a default, `SpellMap(Class)` or `SpellMap(Class, binding_name=b)` - finds no spell bound
+  bare while its class is bound under a spellframe or a binding name is refused with the Phase 4 error
+  HIDDEN_PROVIDER. Conjure raises SpellbookValidationError, the block reading "  - Parameter 'greeter' on spell 'Host'
+  expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default
+  binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') -
+  use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the
+  parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English
+  bare. [HIDDEN_PROVIDER]"; a late bind into a dynamic world raises the same report and the spell stays registered
+  and refused; every meld of it raises the same report, with or without an override; a consumer compiled before such
+  a class was bound under a frame is refused at its next meld. Through 0.2.8280 such a consumer conjured with an
+  UNRESOLVED_INPUT socket - melded by override, or raising UnresolvedInputError "... nothing registered provides it
+  ..." - and `SpellMap(Class)` failed conjure with PhaseExecutionError "... SpellMap default could not be resolved
+  ..." (a bare RuntimeError at a late bind or meld). Remedy: ask for the class where it is bound - the SpellMap the
+  message shows, as the parameter's default, or a Protocol annotation while the spell is its frame's only
+  implementation - bind the class bare, or give the parameter an ordinary Python default (a PLAIN parameter is never
+  looked up). An empty required `list[Class]` keeps `collection_socket_no_providers` (an error that refuses conjure
+  when the Book is not dynamic, a warning with `[]` injected when it is), its text now naming the bindings and the
+  `list[...]` that gathers each; `UnresolvedInputError` names them too when it still arises; AMBIGUOUS_PROVIDER's text
+  no longer offers "supply it at meld with override=...". A creation-cache bundle written before is cold once
+  (generation 27).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py:HiddenProviderStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py:HiddenProviderReport.annotation_message`,
+  `HiddenProviderReport.spellmap_message`,
+  `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._record_unresolved_miss` and
+  `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`.
+- Breaking (0.2.8280): `Conduit.transfer_spell_ownership` to a conduit of another aetheric frame raises RuntimeError
+  "Cannot transfer spell ownership across different AethericFrames: <source> != <target>. An aetheric frame is a
+  world with its own addresses, links and contracts, so a spell's stewardship moves only between conduits of one
+  frame, as links do. To use the spell in the other frame, bind it in a Spellbook of that frame." before the
+  `TRANSFER_OWNERSHIP` transaction opens, and nothing starts: the source keeps the spell and still melds it, and the
+  target frame is untouched. Through 0.2.8279 such a transfer ran: the target Book could hold two active spells at
+  one address (DUPLICATE_SPELL_NAME on meld), the source frame's address claim kept naming the moved spell, so no
+  Book of that frame could bind the address again, and the target frame never claimed the address, so a later bind
+  there registered a second active spell. Remedy: transfer only between conduits of one frame; to use the spell in
+  another frame, bind it in a Spellbook of that frame.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`.
 - Breaking (0.2.8278): a consumer annotated with a class - `greeter: English`, `list[English]`, or a single string
   annotation naming the class (a `TYPE_CHECKING` import) - no longer resolves an English bound under a spellframe or
   under a binding name, an existing object alike; only an English bound bare (no spellframe, the default binding)
@@ -2539,7 +2722,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   drop the binding name; (4) `SpellMap(English)` aimed at a framed or named English - add its `spellframe` and
   `binding_name`. Unchanged: Protocol annotations, `list[Protocol]`, `list["category"]`, a string naming a Protocol,
   frame-addressed SpellMaps, every meld door, SpellContract, and AMBIGUOUS_PROVIDER for two implementations of one
-  Protocol. A creation-cache bundle written before is cold once (generation 26).
+  Protocol. A creation-cache bundle written before is cold once (generation 26). SUPERSEDED in part at 0.2.8281
+  (Breaking 0.2.8281 above): where the class is registered under a spellframe or a binding name, the single socket no
+  longer compiles UNRESOLVED_INPUT for a meld to supply and `SpellMap(English)` no longer fails with
+  PhaseExecutionError - both refuse with HIDDEN_PROVIDER, the conjure-time error this entry said part (a) would
+  bring, naming where English is bound; the empty `list[English]` text names the bindings; a class registered
+  nowhere keeps this entry's behaviour, and the four upgrade paths stand.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
   `CompilerPhase3._resolve_spellmap_default`,
   `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`,
@@ -2900,7 +3088,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   never built raised RuntimeError "many_only manifest references unknown spell_id '<the old version id>'" on
   every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused. Since
   0.2.8278 the parenthetical case cannot arise for a class annotation, nor for a single string annotation's type
-  part: a class lookup reaches only a spell bound bare (the first operational invariant), and every version of an
+  part: a class lookup reaches only a spell bound bare (Operational Invariants, 0.2.8278), and every version of an
   index is bound the way its first version was (0.2.8273), so such an annotation selects every version of a bare
   index - all carry the class's name - and no version of a framed or named one; a string's contract part reads the
   Protocol every version of a framed index records alike.
@@ -3220,7 +3408,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `__cause__` (2026-09-26; until then it was raised from the binding TypeError). It names the consumer,
   parameter, expected type and override keys, and lists every missing input. A TypeError from a constructor
   body with every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
-  typed parameter with no provider; two or more providers still refuse the spell (next entry).
+  typed parameter with no provider; two or more providers still refuse the spell (next entry). Since 0.2.8281 a class
+  lookup whose class is registered only under a spellframe or a binding name is refused at conjure (HIDDEN_PROVIDER,
+  Breaking 0.2.8281 above); when the error still arises with such a class bound - one bound after the consumer
+  compiled and nothing re-gated it - its text names where the class is bound and the `SpellMap` that reaches it, and
+  `hidden_spell_ids` lists them.
   EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
 - A single typed parameter that two or more registered resolvable spells provide refuses its spell through the
   readable report (0.2.8224): Phase 3 records an `AMBIGUOUS_INPUT` socket (no target, no edge, the candidates as
@@ -3234,8 +3426,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   candidates ...")` out of the compiler, never reaching the report. Ambiguity stays an error by owner ruling
   (2026-10-04): never a warning, never an input the meld picks. Since 0.2.8278 the example's two ScanProfiles, each
   bound under a string category, no longer answer a `ScanProfile` annotation (a class lookup reaches only a spell
-  bound bare; the first operational invariant): that `profile` parameter compiles UNRESOLVED_INPUT instead, and the
+  bound bare; Operational Invariants, 0.2.8278): that `profile` parameter compiles UNRESOLVED_INPUT instead, and the
   message stands for the candidates a lookup still reaches - two implementations of one Protocol, for instance.
+  SUPERSEDED in part at 0.2.8281 (Breaking 0.2.8281 above): the quoted remedy no longer offers "supply it at meld
+  with override={'profile': ...}" - the message ends "Select one with a SpellMap default on the parameter
+  (SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type." (the owner's D4: a refused
+  spell's melds are refused, override or not); and the example's `profile` parameter is refused with HIDDEN_PROVIDER,
+  naming both ScanProfiles and the `SpellMap` that reaches each, instead of compiling UNRESOLVED_INPUT.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`.
 - An override key that names no socket, a UNIQUE key that matches more than one, or equal-rank keys with
@@ -3293,14 +3490,18 @@ each entry in `src_components.md`; this list is the set that crosses components.
   diagnosing one should check the world's posture before checking the operation:
   a single posture setting explains all four at once, and it is the common
   cause.
-- SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError.
+- SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError - except, since 0.2.8281, a
+  `SpellMap(X)` or `SpellMap(X, binding_name=b)` without a spellframe that misses an X registered elsewhere: Phase 3
+  records it and Phase 4 refuses the consumer with HIDDEN_PROVIDER through SpellbookValidationError (Breaking
+  0.2.8281 above). X registered nowhere, a frame-named miss and several candidates still raise RuntimeError.
 - A non-string `binding_name` on a SpellMap or SpellContract raises TypeError (0.2.8226); a SpellMap default matches
   its provider's binding name and string category in any case.
   EVIDENCE:
   `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`.
 - SpellContract requires at least `spell` or `spellframe` (ValueError).
 - Ownership transfer raises RuntimeError when dynamic mode is disabled (same
-  posture gate as linking, severing and upgrade).
+  posture gate as linking, severing and upgrade), and since 0.2.8280 when the target conduit is in another
+  aetheric frame (the Breaking 0.2.8280 entry above), as linking does.
 
 ## Promoted Patch Decisions (re-absorbed 2026-08-02)
 
@@ -3483,6 +3684,18 @@ shortfall honesty, R-A covenant) are unchanged.
 
 
 ## C1 Code Map (Core Only)
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py`
+  start_line: 1
+  end_line: 261
+  loc: 261
+  verified_at: 2026-11-07T20:43:01Z
+  note: Phase-4 HIDDEN_PROVIDER: refuses a class lookup whose class is bound only under a spellframe or a binding name.
+- path: `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py`
+  start_line: 1
+  end_line: 551
+  loc: 551
+  verified_at: 2026-11-07T20:43:01Z
+  note: the one renderer of where a class lookup's class is bound, shared by four reports.
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py`
   start_line: 1
   end_line: 290
@@ -3490,9 +3703,9 @@ shortfall honesty, R-A covenant) are unchanged.
   verified_at: 2026-11-02T12:02:57Z
 - path: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
   start_line: 1
-  end_line: 102
-  loc: 102
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 108
+  loc: 108
+  verified_at: 2026-11-07T20:43:01Z
 - path: `src/melder/nexus/configuration/rift_access_mode.py`
   start_line: 1
   end_line: 52
@@ -3587,12 +3800,13 @@ Package root:
     committed manifest via an accelerator cache.
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 651
-  loc: 651
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 653
+  loc: 653
+  verified_at: 2026-11-07T22:35:23Z
   note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
     edit by hand.
-    629 entries at 0.2.8267 (`HolderDisposalEntry` left; 630 at 0.2.8257), measured on this landing's rebuild output.
+    631 entries at 0.2.8281 (`HiddenProviderStrategy` and `HiddenProviderReport` joined; 629 at 0.2.8267), measured
+    on this landing's rebuild output.
 - path: `src/melder/_build_assets/_bind_guard/_builder.py`
   start_line: 1
   end_line: 387
@@ -3642,9 +3856,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8625
-  loc: 8625
-  verified_at: 2026-10-25T14:22:13Z
+  end_line: 8638
+  loc: 8638
+  verified_at: 2026-11-07T20:43:01Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -3780,11 +3994,12 @@ SpellCompiler and validation:
 
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
   start_line: 1
-  end_line: 1438
-  loc: 1438
-  verified_at: 2026-11-07T14:17:07Z
+  end_line: 1775
+  loc: 1775
+  verified_at: 2026-11-07T20:43:01Z
   note: phase 3: resolves each constructor socket to provider spells (annotation matching by kind, the class-lookup
-    predicate, SpellMap defaults) and records the local topology, UNRESOLVED_INPUT and AMBIGUOUS_INPUT sockets.
+    predicate, SpellMap defaults) and records the local topology, UNRESOLVED_INPUT and AMBIGUOUS_INPUT sockets, and
+    the hidden candidates of a class lookup that misses.
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
   start_line: 1
   end_line: 729
@@ -3799,15 +4014,15 @@ SpellCompiler and validation:
   note: per-spell phase artifacts.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
   start_line: 1
-  end_line: 354
-  loc: 354
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 361
+  loc: 361
+  verified_at: 2026-11-07T20:43:01Z
   note: phase 4 validation.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
   start_line: 1
-  end_line: 198
-  loc: 198
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 201
+  loc: 201
+  verified_at: 2026-11-07T20:43:01Z
   note: Phase-4 refusal of a single typed parameter with several providers.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
   start_line: 1
@@ -4360,9 +4575,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8012
-  loc: 8012
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 8044
+  loc: 8044
+  verified_at: 2026-11-07T16:50:30Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -4437,9 +4652,9 @@ Resolution and creations:
   note: compiled execution lanes and runtime dispatch.
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
   start_line: 1
-  end_line: 369
-  loc: 369
-  verified_at: 2026-11-07T14:17:07Z
+  end_line: 382
+  loc: 382
+  verified_at: 2026-11-07T15:20:59Z
   note: SpellMap descriptor.
 - path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
@@ -4494,9 +4709,9 @@ Control plane:
   note: frame-local topology and transaction mirror.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 2052
-  loc: 2052
-  verified_at: 2026-11-01T13:44:23Z
+  end_line: 2061
+  loc: 2061
+  verified_at: 2026-11-07T20:43:01Z
   note: lineage registry.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
@@ -4518,9 +4733,9 @@ Control plane:
   note: change reasons.
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
-  end_line: 1686
-  loc: 1686
-  verified_at: 2026-11-02T12:29:20Z
+  end_line: 1739
+  loc: 1739
+  verified_at: 2026-11-07T20:43:01Z
   note: change control.
 - path: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
   start_line: 1
@@ -4533,9 +4748,9 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 1148
-  loc: 1148
-  verified_at: 2026-11-07T14:17:07Z
+  end_line: 1157
+  loc: 1157
+  verified_at: 2026-11-07T20:43:01Z
   note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence.
 
 - path: `src/melder/utilities/general_base/abstract_elastic_pool.py`
@@ -4701,9 +4916,14 @@ inputs use existing execution, Nexus exposes references, and durable replay pres
 ```text
 conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> Phase-4 warning (conjure succeeds;
          listed only by conjure(validation_warnings=True))
+         class lookup whose class is bound only under a spellframe or a binding name (0.2.8281)
+             -> UNRESOLVED_INPUT socket + hidden candidates -> Phase-4 error HIDDEN_PROVIDER
+                (conjure, a late bind and every meld refused, override or not)
 meld:    value supplied -> constructor receives it
          value missing  -> UnresolvedInputError (a MeldExecutionError) before construction
+                           (naming where the class is bound, when it is)
 bind:    matching provider added later -> consumer re-resolves -> normal dependency edge
+         framed or named provider of the class added later -> type key announced -> refused at the next meld
 ```
 
 ```mermaid
@@ -4715,6 +4935,10 @@ flowchart LR
   M -->|No| E[UnresolvedInputError before construction]
   B[Later matching bind] --> R[Re-resolve to a normal edge]
   U --> R
+  H[Class bound only under a spellframe or a binding name] --> HU[UNRESOLVED_INPUT socket with hidden candidates]
+  HU --> HP[Phase-4 error HIDDEN_PROVIDER: conjure, late bind and every meld refused]
+  F[Later framed bind, notch or grant of the class] --> T[Type key announced]
+  T --> HP
 ```
 
 ### Override Key-Set Plans
@@ -4938,6 +5162,10 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 `binding_changes` (0.2.8258).
 
 ## Information Sources
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py`
 - `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py`
 - `src/melder/utilities/custom_exceptions/phase_execution_error.py`
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py`
@@ -5122,6 +5350,48 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+2026-11-07 a class lookup that finds its class only where it cannot reach refuses its consumer and says where
+(0.2.8281, HIDDEN_PROVIDER; part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check, GitHub #245, on the
+owner's approval of the design and his calls D1-D5; patch hidden_provider_2026_11_07): Phase 3 records the spells of
+a missed class bound under a spellframe or a binding name as the socket's hidden candidates (`_hidden_type_key`, the
+`by_hidden_type` bucket, `hidden_spell_ids` and `hidden_frame_keys`), and Phase 4's `HiddenProviderStrategy` refuses
+a single or SpellMap socket that carries them - at conjure, at a late bind and at every meld, override or not; Phase
+6's empty-`list[Class]` report and `UnresolvedInputError` name the same addresses through one renderer
+(`HiddenProviderReport`); a framed or named spell's bind, notch, link and contract grant announce its type key, and a
+refused consumer also watches its hidden candidates' frames; AMBIGUOUS_PROVIDER drops its override remedy; snapshot
+rows are format 3 and the creation cache is generation 27. The glossary (one new term, the unresolved-input term
+pointed at it), a new first operational invariant (the 0.2.8278 class-lookup and 2026-09-26 unresolved-input entries
+marked superseded in part), a Breaking failure mode (the 0.2.8278 Breaking entry, the 0.2.8224 ambiguity entry, the
+UnresolvedInputError entry and the SpellMap RuntimeError line pointed at it), the Unresolved Input Resolution diagram
+and the sources carry it; the component map carries the per-component contracts. The report wording is the patch's
+final STEP 3: a borrowed candidate renders as an owned one, an unfound id as `spell id <id>`, and the closing sentence
+counts the SpellMaps shown. The C1 code map remeasures the eight changed files it holds and adds the two new modules;
+the line citations into spellbook.py and change_control_manager.py moved with the patch's insertions (the
+`_run_structural_phases` precondition citation, stale before this pass, points at its docstring line again). The
+asset rebuild put `HiddenProviderStrategy` and `HiddenProviderReport` in the bind guard: the guardrail's count (631)
+and the manifest's C1 entry carry it. Open LIVE != FRESH gaps, each pinned by a strict xfail on
+EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): a transfer arrival that announces only the frame
+key, three contract and link departures that mark no collection dependents, and a dependent left invalid after a
+refusal lifts - a gap that predates HIDDEN_PROVIDER (AMBIGUOUS_PROVIDER leaves it on the pre-patch tree). A
+provider's `cleanup_spell` leaving a refusal standing is accepted behaviour under the owner's ruling, not a gap. Still
+unknown: see Unknowns. Where to start: src_components, Component: SpellCompiler and Validation Pipeline ("Hidden
+providers refused"), then Subcomponent: Spell Validation Strategies.
+
+2026-11-07 a spell's stewardship stays inside one aetheric frame (0.2.8280; part (b) of
+TASK-2026-11-07-spellframe_ambiguity_validation_check, on the owner's ruling "they shouldn't be able to transfer
+between frames thats an illegal operation ... you cannot link between frames either"; patch
+transfer_within_one_frame_2026_11_07): `Conduit.transfer_spell_ownership` refuses a target conduit of another frame
+with RuntimeError "Cannot transfer spell ownership across different AethericFrames: ..." after its dynamic-mode check
+and before the `TRANSFER_OWNERSHIP` transaction and its preflight, so nothing starts; the part (b) probe had shown a
+cross-frame transfer leaving two active spells at one address in the target Book and the source frame's claim
+naming the moved spell. A new first operational invariant, a Breaking failure mode (the transfer posture line
+pointed at it), the transfer sequence's step 1 and the code map (conduit.py remeasured) carry it; the component map
+carries the per-component contracts. Numeric citations into conduit.py past the edit moved 32 lines and were
+remapped line by line; the 0.2.8278 entries' pointers now name the class-lookup entry instead of "the first entry".
+Measured on 0.2.8280: a transfer to a cleaned target conduit still fails with AttributeError (on
+`_aetheric_frame_name` now, on `_spellbook` before), as it did. Still unknown: see Unknowns. Where to start:
+src_components, Subcomponent: Ownership Transfer.
+
 2026-11-07 a class lookup reaches only a spell bound bare (0.2.8278;
 TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class, on
 the owner's rulings "do what autofac would do ... thats our compass" and "ok yes to all your statements"; patch

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "6d84948d7373c9f0503374f37ec0b7ff20b94babea1276cae9ba32fe2c52d06e",
+ "source_sha256": "63d5bb746a2a59f95af1c17b493f691328b1276c59faafd808eef026096510c3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -19,7 +19,7 @@
    "label": "Spellbook",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spellbook.py",
-   "lineno": 73,
+   "lineno": 74,
    "bases": [
     "Cleanable"
    ],
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c9f20d8a58aa1d3206420932283f9c7fd3d585de72dcbe172570ad5a6bd04e1d",
+   "span_sha256": "6b33fb66214bbb04b356e2f589bbcd31f150c4a6703e116039da125f18bb1c5c",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -97,7 +97,8 @@
     "saves its creation-cache bundle through one seam (_emit_cache_file_if_required): clears the emit flag under the Book lock before the save, returns the save's bool and leaves the flag cleared after a refusal, so no meld door, conjure end or explicit save fails on or retries a refused save; any other exception restores the flag and propagates (0.2.8266)",
     "answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)",
     "keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)",
-    "runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)"
+    "runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)",
+    "announces a contract grant's type key: _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name, its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)"
    ],
    "owns_state": [
     "_bind",
@@ -252,6 +253,7 @@
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "Spell": "melder.aether.spellbook.spell.Spell",
+  "CompilerPhase3": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
   "SpellbookCreationSystem": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
   "Nexus": "melder.nexus.nexus.Nexus",
   "CachingSystem": "melder.utilities.caching_system.caching_system.CachingSystem",
@@ -466,6 +468,17 @@
    "relation": "borrows",
    "why": "The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).",
    "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spellbook.Spellbook",
+   "to": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
+   "relation": "uses",
+   "why": "_add_contracted_spell reads CompilerPhase3._hidden_type_key for the copy it grants.",
+   "cardinality": "one_to_one",
    "phase": [
     "runtime"
    ],

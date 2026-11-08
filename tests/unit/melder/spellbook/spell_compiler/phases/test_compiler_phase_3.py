@@ -1411,7 +1411,8 @@ class SpellMapTarget:
     ("agents", None, None,
      "SpellMapTarget at (spellframe='agents', binding_name=None) - use SpellMap(spellframe='agents')"),
     ("agents", "v1", "v1",
-     "SpellMapTarget at (spellframe='agents', binding_name='v1') - use SpellMap(spellframe='agents', binding_name='v1')"),
+     "SpellMapTarget at (spellframe='agents', binding_name='v1') - use "
+     "SpellMap(spellframe='agents', binding_name='v1')"),
     ("IProvider", None, None,
      "SpellMapTarget at (spellframe='IProvider', binding_name=None) - use SpellMap(spellframe=IProvider)"),
     (None, "v1", None,
@@ -1480,7 +1481,8 @@ def test_resolve_spellmap_default_misses_that_are_not_hidden_providers_raise_as_
                                di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=spellmap)
         hidden_out: list = []
         with pytest.raises(RuntimeError) as caught:
-            phase._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool=pool), dep, hidden_out=hidden_out)
+            phase._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool=pool), dep,
+                                            hidden_out=hidden_out)
         assert str(caught.value).endswith(f"SpellMap={spellmap!r}.")
         assert hidden_out == []
 

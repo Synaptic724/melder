@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: e2cee92c13192148b697fd1e687b34b85384476e49335a6a713306a9de673a74
+SOURCE FINGERPRINT: d7263b16422e6e7f9cb35e79b3dcee1a5ad0b1d7d6e4b58ac3729d7af6cd30d7
 FILE COUNT: 419
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: b2624b788afed4dc02e4d8f4762477b283f94b12f32f29cf6912c5cb9488faa6
+CONTENT SHA256: da743c636dac6abf3b0d014179995a4c49cfd41f4aa9dd7aa316d76cc0980f82
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -469,9 +469,11 @@ repository and its owner (with their numeric ids), the workflow on
 `release_candidate`, this commit, a GitHub-hosted runner, public visibility and the
 `pypitest` environment, and, for a file this run uploaded, this run and attempt;
 and the attested statement names exactly the file and its sha256. The verifier is
-the publishing action's own signing toolchain, installed from a hash-pinned lock,
-and it must first verify a recorded genuine attestation and refuse two tampered
-copies of it, so a tool that cannot check fails the run instead of passing it.
+the publishing action's own signing toolchain (pypi-attestations and sigstore at
+the action's versions, with a few transitive pins raised to security floors),
+installed from a hash-pinned lock, and it must first verify a recorded genuine
+attestation and refuse two tampered copies of it, so a tool that cannot check
+fails the run instead of passing it.
 
 Commit and promote this workflow into release_candidate to switch. Wait for
 package-ready to succeed, then rerun any prod PR check that already failed
@@ -715,7 +717,7 @@ END FILE: .github/ci_cd/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/extending.md
-CONTENT SHA256: 3948826ec3417b30c44ca0cfb5289227fac29fd2a437cff7cebf0dd3fbfa0608
+CONTENT SHA256: df28b1932d7a73db6f188aa4088275c7d226d7417fe8270b7a26dd78364c360e
 SOURCE ENCODING: utf-8
 ================================================================================
 # Extending CI
@@ -787,13 +789,22 @@ in one change:
    `test_workflow_contracts.py`.
 2. Regenerate `.github/provenance/requirements.txt` with the command in its header: `pypi-attestations` at the
    version that release's `requirements/runtime.txt` pins, with that file as constraints, so sigstore and the
-   rest take the action's versions (hashes for every pin, wheels only, the helper release on Linux x64).
+   rest take the action's versions, except a pin below one of the security floors the header lists, which takes
+   the floor (hashes for every pin, wheels only, the helper release on Linux x64). Drop a floor once the action's
+   own pin meets it.
 3. Record the new control: save PyPI's Integrity API answer for the `pypi-attestations` wheel the lock installs
    as `.github/provenance/known_good_provenance.json`, byte for byte, and update `ProvenanceControl` in
    `testpypi_provenance.py` (name, sha256, signer, claims). A control whose wheel the lock does not install is
    refused before anything runs.
 4. Build the tool environment from the lock in a scratch folder and run the verifier on the controls; the genuine
    one must verify and both tampered copies must be refused. Then run the workflow tests.
+
+A security advisory against a pin the action still carries does not wait for the action to move: add the patched
+version to the security floors in the lock's header, regenerate with the header's command at the action's current
+commit, and do step 4; the action's pin and the control stay as they are. The floors raise transitive pins only:
+`pypi-attestations` and sigstore stay at the action's versions, which the control and
+`test_candidate_provenance.py` check. The floors set on 2026-11-07 cover cryptography, dnspython, pyasn1, PyJWT
+and urllib3.
 
 ## Add or change a route
 
@@ -997,7 +1008,7 @@ END FILE: .github/ci_cd/python_versions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/scripts.md
-CONTENT SHA256: c14379a491e89220df869f8098b2d65009ca8c07dbcc5950bc71383778029c02
+CONTENT SHA256: 8bbcc4e35da6eb7b1cf467addf14ab0fe1edb32341105667cb0eefea990e7eba
 SOURCE ENCODING: utf-8
 ================================================================================
 # Scripts and other `.github` files
@@ -1144,11 +1155,13 @@ agree, and a small bind, conjure and meld scenario must work with the GIL off.
 - `provenance/`: the provenance checks' tool, used by `testpypi_provenance.py` and `pypi_provenance.py`.
   `.github/provenance/verify_attestations.py` is the verifier, the one script under `.github/` that imports
   packages outside the standard library, so it never runs on a bare interpreter.
-  `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it.
+  `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it and
+  the security floors that raise some of the action's transitive pins past published advisories.
   `.github/provenance/known_good_provenance.json` is the recorded control: PyPI's provenance of the
   pypi-attestations wheel the lock installs. Moving the tool is one change: the publishing action's pin in
-  `release-candidate.yml` and `python-publish.yml`, the lock at the versions that action signs with, and the control
-  re-recorded for the new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
+  `release-candidate.yml` and `python-publish.yml`, the lock at the versions that action signs with (raised to the
+  header's floors), and the control re-recorded for the new pypi-attestations wheel with `ProvenanceControl` updated
+  ([extending.md](extending.md)).
 - `python/`: the Python release manifests ([python_versions.md](python_versions.md)).
 - `rulesets/`: `dev.json`, `preprod.json`, `release_candidate.json` and `prod.json` are the branch protection
   payloads. Each requires a pull request and the `CI / merge-ready` status from the GitHub Actions app (ID 15368)
@@ -1162,7 +1175,7 @@ END FILE: .github/ci_cd/scripts.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/validating.md
-CONTENT SHA256: 2294b24f5865f8c3ab74b01717c6ff5015df0ffddf091d35b71f043fe0667faa
+CONTENT SHA256: 83ad85c461a65374f66ab3a2557d74b610f8cbb33dbe4b9a4cc1686431fca927
 SOURCE ENCODING: utf-8
 ================================================================================
 # Validating a CI change
@@ -1234,6 +1247,11 @@ Artifacts worth opening: `runtime-results-*` (JUnit) and `coverage-*` for each t
 - Some agent sandboxes cannot delete files in the checkout. There, a git command that refreshes the index can
   leave `.git/index.lock` behind and block the owner's commits: run only read-only git, with
   `GIT_OPTIONAL_LOCKS=0`.
+- On Windows without the symlink privilege, the provenance verifier's trust-root refresh fails ("Failed to refresh
+  TUF metadata", from tuf's `root.json` symlink, WinError 1314). Run the controls ([extending.md](extending.md),
+  "Change the provenance tool", step 4) on Linux, or locally with the verifier's `--offline` flag, which uses the
+  trust root bundled with the pinned sigstore. Build the tool environment from a GIL CPython 3.14: the lock's
+  rfc3161-client publishes only abi3 wheels, which a free-threaded interpreter cannot install.
 ================================================================================
 END FILE: .github/ci_cd/validating.md
 ================================================================================
@@ -1416,19 +1434,26 @@ END FILE: .github/provenance/known_good_provenance.json
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/provenance/requirements.txt
-CONTENT SHA256: 2b1a2920ea4ce8bb638025ca50efdaff403d36eb43b2aa94953c00bde5ad7442
+CONTENT SHA256: 3977a36e70a5e9512a29663a6b00f06619dd44f08c896f4301d1d4cb6b74f9d3
 SOURCE ENCODING: utf-8
 ================================================================================
 # The tool closure of the release candidate's provenance check: pypi-attestations and everything it imports, at the
 # exact versions the pinned publish action (pypa/gh-action-pypi-publish 7245906f, v1.14.3) signs with, so the check
-# verifies with the signer's own toolchain. Resolved for CPython 3.14 on x86_64 Linux, the helper release on
-# ubuntu-24.04. testpypi_provenance.py installs it into a fresh environment with
+# verifies with the signer's own toolchain, except where a security floor below raises a transitive pin. Resolved
+# for CPython 3.14 (the GIL build) on x86_64 Linux, the helper release on ubuntu-24.04. testpypi_provenance.py
+# installs it into a fresh environment with
 #   pip install --isolated --no-deps --only-binary=:all: --require-hashes -r .github/provenance/requirements.txt
-# Regenerate it when the publish action's pin moves, never on its own: put pypi-attestations==<the action's version>
-# in a scratch tool.in, take the action's requirements/runtime.txt pins at its new commit as constraints, and run
+# Security floors, set 2026-11-07 for Dependabot advisories against pins the action still carries (v1.14.3 and its
+# unstable/v1 branch pin cryptography 49.0.0, dnspython 2.8.0, pyasn1 0.6.4, pyjwt 2.13.0 and urllib3 2.7.0):
+#   cryptography>=50.0.0 dnspython>=2.9.0 pyasn1>=0.6.5 pyjwt>=2.15.0 urllib3>=2.8.0
+# Regenerate it when the publish action's pin moves or a floor changes, never otherwise: put
+# pypi-attestations==<the action's version> in a scratch tool.in, take the action's requirements/runtime.txt pins at
+# its commit as constraints, replace each pin below a floor with the floor (drop a floor the action's pin meets),
+# and run with a GIL CPython 3.14 as uv's interpreter (pass --python <it> where uv would pick a free-threaded build,
+# which cannot use rfc3161-client's abi3-only wheels)
 #   uv pip compile tool.in -c <those pins> --generate-hashes --python-version 3.14 \
 #     --python-platform x86_64-manylinux_2_39 --only-binary :all: --no-header --no-annotate
-# Then refresh known_good_provenance.json for the new pypi-attestations wheel (.github/ci_cd/extending.md,
+# Then refresh known_good_provenance.json for a new pypi-attestations wheel (.github/ci_cd/extending.md,
 # "Change the provenance tool").
 annotated-types==0.8.0 \
     --hash=sha256:13b2beaad985e05e2d6407ee4c4f35590b11f8d693a258a561055cac8f64cab7 \
@@ -1631,56 +1656,69 @@ charset-normalizer==3.4.9 \
     --hash=sha256:f86c6358749bd4fda175388691e3ba8c46e24c5347d0afd20f9b7edfc9faf07d \
     --hash=sha256:fa36ec09ef71d158186bc79e359ff5fdd6e7996fe8ab638f00d6b93139ba4fcf \
     --hash=sha256:fe2c7201c642b7c308f1675355ad7ff7b66acfe3541625efe5a3ad38f29d6115
-cryptography==49.0.0 \
-    --hash=sha256:026ac7423e6fa66872d3bf889be5974507da3944f866f704fa200eadacd00001 \
-    --hash=sha256:07cab27cc7b7e0fd28e5e26bb9eeedde5c135c868b46de4a27845abe94af6122 \
-    --hash=sha256:084ef1af862eb07ec46d25f68689f2102a9fc0e05ce7b80f14f5fe51e4eef0f6 \
-    --hash=sha256:0b82e28ee398a386f0807bba7884d30f25218855690f45115831bcce5d90822c \
-    --hash=sha256:0e959b578856a3924bc0cbb710fc12c387b9412a951389f3ca61704a9e25f325 \
-    --hash=sha256:0f21641cf4b30fca7aee061ced0ec7ad7b073518088b7c9969a297c0ae796c69 \
-    --hash=sha256:196ecd6a36e4e9aa10270393bb98d8df88fccee0bf1e5128b91ae4eb4375896d \
-    --hash=sha256:2400ef9c9e2299a25614eb1dea3db54a69b1349efd043bfac9c67630d136df36 \
-    --hash=sha256:28d8b15e6275f12c8a207dc309dfa957903c927d08d0cc937ee3f63f200693cc \
-    --hash=sha256:2afe9051da7ae7bd5905da5a949280c7d2bb75682e188f650a9d0f2756b834c6 \
-    --hash=sha256:2eda353d8a27bcbcaa4cbed18994a74ab4d19a2ca897db188ea269ab9b71419b \
-    --hash=sha256:32703d93296f5c1f4b53349ad3a250c2cae0fdecd3a3dd5d47e616d8d616af27 \
-    --hash=sha256:33cd0565932807baddb67b96dbee92f2c374b5c89dee09fd74079aeb8c8dba61 \
-    --hash=sha256:35b151772baff2c74cba7fa290ceaff4c3b11c0c881eb93eb5dbc05a7cfbba18 \
-    --hash=sha256:36d1709f992593689b45bda411498d62c6e365f2ca00b84657d4dadd24de16db \
-    --hash=sha256:42b0684e0e40cf26122427802486f6d93aea593612603a94fbf260c7eb1e9c1b \
-    --hash=sha256:4ae387c9cb68ea569ca17e490d66d8142b81c3cc814bf179974b7d146e490bbb \
-    --hash=sha256:53ecee2e23f7169b6117e99fc8a944e5e50f79e69758a83b52a00cb98ab2b2d2 \
-    --hash=sha256:66ec79c3904820572d7e987abdf304281f141d37ad9a489b8e97066e7b9b6459 \
-    --hash=sha256:67e1d20ad9ef3a563c59ef22e7a8a0b8210bd26604369ea4a30a7c66aefe504e \
-    --hash=sha256:6f2debedf9ca60cf1d5bd466475638af5130f89965605cd818484d19987d3a21 \
-    --hash=sha256:6fc361c34fb6aac015ce19435876635e5c6d21db31998b0920f675f131e043b8 \
-    --hash=sha256:73a205dce83953d131a4aa1e0fd917a2fd1c5b1eef251e9d7152efefcbf5caf7 \
-    --hash=sha256:7abcee80084cda3f7691f3eb1ce480d8df49cec637b429aa35986c1de71738aa \
-    --hash=sha256:8c25ceb16df5b9435f3f6a9829204985b0e0cbee3b48aacd432c7d2c850b44d9 \
-    --hash=sha256:966fe0e9c67490071f14c0d2b1cb2dfb3023c5ce39457343931415f08382f2db \
-    --hash=sha256:9e82dcc8e56052715fb18b2429e3bca4823b1629136a2084fc45a9a5cecb9b64 \
-    --hash=sha256:b20133d204d2bb56ba047642199603876c872026ca53e79c35b83772ab2cc505 \
-    --hash=sha256:b39efa323140595abd3ecca8529d321ae50f55f3aa3ba9cc81ea56a6011953d5 \
-    --hash=sha256:b47db11c2c3525083296069b98ac5221907455e989ae0c2e3008bde851921615 \
-    --hash=sha256:b87e65d263b3e5d3bb92a57e2a6638e2f31110fa7aa890c7b2dbba42248d0a3f \
-    --hash=sha256:b970c6da94d5bb18629db453d14f2a1300f6bf59b61e9b82377931ef95504866 \
-    --hash=sha256:be9fcb48a55f023493482827d4f459bd263cc20efde64f204b97c123201850c6 \
-    --hash=sha256:c2bc30226390d60ea19d9f82b19db005fe0452154a23c1c410c12ea801e43561 \
-    --hash=sha256:c83782480a4a9da4d0feb51950131ba32e12e70813848b3343f6e18c28a66838 \
-    --hash=sha256:cbc77da8c523d5abd028635ba850a6966fcee2c82e2bf65a41d1d8afe0f98be9 \
-    --hash=sha256:ccac2bfebc306b862133e3bb71f3f6ee8bb525240089b2d952e4144b3a6d5da7 \
-    --hash=sha256:d0527ce944105f257f605a827d6ebead966c752038b6e8656abb9c5edee6fc68 \
-    --hash=sha256:d8ecde755e2e91bf773fc94e8c9d730cd7f2007004cb492263a794ec3899a1c8 \
-    --hash=sha256:e3fb64c420688e5319ae25113a354015abbd8dffbfbc41781a1ea66fc7622ac3 \
-    --hash=sha256:e5dfc1e64de5677cec922ffa8da89c546d0415bf6efdf081842e5d44c84e1f0e \
-    --hash=sha256:ec5e529fb80935c94fe7b729f9972b50e351a0e6b50aa294fd5cabb109fcc29a \
-    --hash=sha256:f37d847238971164fdbc68ade6f6574aecc9c0af714190e2083429ff68f4ce9d \
-    --hash=sha256:f78ff2c9ed8dc2d036b0f4d640e22522213d047c1b14e61205a7e55c80a494d4 \
-    --hash=sha256:f89660a348f4f78a92366240a61404e337586ef7f5909a2fef59ca88ef505493 \
-    --hash=sha256:fc1e275c2f1d97b1a6450b8b0ea3ebfa6e087a611c2b26cb2404d48588abab7b
-dnspython==2.8.0 \
-    --hash=sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af \
-    --hash=sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f
+cryptography==50.0.2 \
+    --hash=sha256:0ddc924c04591c2811ca024d62ecad4f7f6f08af8939c211438f48a16bd23602 \
+    --hash=sha256:0ec5f09541743261e66e291b4a0cbf0fb2997aeaab6d9e9c740b9dba1b58d1c2 \
+    --hash=sha256:0ecbc5652bdb6fc9eaf89a7d196e20941adfe812f43bc4ca05d9150496821047 \
+    --hash=sha256:1981f1db4630889b9ef7803fadef12b056f428cb6b85c27ba57b774793b6093c \
+    --hash=sha256:1ba34f04897fcdaa73f74145c25f3ec146fbd56593853e88adc2e811303c5f42 \
+    --hash=sha256:241449bf940a5d27309bd317e6f9a2af6932113818bb2b8f5c59ddc7ef16da18 \
+    --hash=sha256:25784ce8b9621c90c643efb9e1e2162ab3b0224cae446ad5e70e7fcb1ce18b51 \
+    --hash=sha256:3dc4fd8058cea1644971207d530e1a03a184a805ffc8ebdddf0599d78a331b81 \
+    --hash=sha256:4061c0079120205fb760c58acab6443e217307dcf05e3702cf970e0689972856 \
+    --hash=sha256:4a20ce1e5cb4284a86692fdcba7cb8754185c6b2e5c56fcef3751cf451d3cdc2 \
+    --hash=sha256:4e81d95e5bafc2d6e34e4bed780e53e4d5b9a2f928573428aa4d35fbec1eb0de \
+    --hash=sha256:58a0c478eeca76fe5e07993c5a0703def34a6dc6a0cda4f5564639b33112ffe7 \
+    --hash=sha256:58ddb5a8e3179d12f19e4ea34d2d32e9d63a4baa142c875c1eb59f41b7243acd \
+    --hash=sha256:630ebfea3bf689d075f82316324ff7433dc447fe6bc1bfc76524b74b4a9567d2 \
+    --hash=sha256:6f8700550aa1474a91e5dc07049c46f98b423b5b1ddd0483e0b51362eeeaf5be \
+    --hash=sha256:78198641e5be9521beea5aa782bb551a58068d10e6eb04c9c680c1b69f2e7d45 \
+    --hash=sha256:79def8d059362e7831389ed3be0ecdf58a89386e1271e35dd9f5af84e81bffd0 \
+    --hash=sha256:7a8701d6b584d76e909e3d305b7d126b41439876a5aaf76cddc67fc230eafa2e \
+    --hash=sha256:7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c \
+    --hash=sha256:7b46165bb56eb4704e2eaaf86f3c940d19154535d9b0ca7d6d590b04060e00d5 \
+    --hash=sha256:7b75de3c8b3be1cdb1052747c929440c3eea46c1bc2cb8a6e3a48388e9b7b452 \
+    --hash=sha256:7c6d0330c472d96f6a6afe24d80dfdf15176c33096f0a4397ae4c60f3dd3be48 \
+    --hash=sha256:828d49b0ff5a0e3975865571c5d91dbbdd0d38d8289b249a163e9425413a5e05 \
+    --hash=sha256:84f964e537f916e2cc85199e5a88742e964939b575ac8598b3f9d6cc416cdaf1 \
+    --hash=sha256:85d0d9a31b9098e98534226d5686b47264b95e62ce459dc2e62fdfc809f9fe93 \
+    --hash=sha256:87e9ce85beb6b328ba370cc6e6aea483c92617b4c95b1d33a49297eb662bfb04 \
+    --hash=sha256:8c71ba2cd31fc93748c38e1b613200ff1c2665cbfd5341fe3a61cfde35a1430e \
+    --hash=sha256:92e665960f25fcdc73725b9cec7a3824f279ba97a98653afe9ffac2e43668f67 \
+    --hash=sha256:94e5e9f108ee10471288214d3d233fbfbb492840a8457eb85178d643ddeb32c7 \
+    --hash=sha256:9c8402a82ea0dc4ceeab793db05f0fafa8ca139ca34fcde5df0f596103c74107 \
+    --hash=sha256:9dab55f57c74c3cad24c323bacbbd04be4705ba6eb0d92e920b1fc4837ed5079 \
+    --hash=sha256:a582ab2ae1d34f67112cadc86702774c9ea4374df6bca6afe672817203c99134 \
+    --hash=sha256:a6557e5f38e065ca9fbdaf7cfc7435ecb1d113aa81a022d1b51921ee7432e227 \
+    --hash=sha256:a9f7355e6fab51f6c369b86fb7571cffa05edee2c2121e0380a37fb9ac1cd5c1 \
+    --hash=sha256:ab50ee449bf968271e820086f10a33d101dd060370abc10bcd22279be2656539 \
+    --hash=sha256:ac9ed99d81760c62fe89d5f0815cdfa1ba9a35141cf30f1c2d044f04b4803d2e \
+    --hash=sha256:b13478603dcd0a2479ff8e87e2c19a7d525734686fe3c49542472293a204212d \
+    --hash=sha256:c423ab384a46c4dff7217b2ea5ba2e11cffdeab6441acd04cf65a369caf0366c \
+    --hash=sha256:c5e67125c7dca78d199ec4e116aa93dbb83494808ecbb8211a2cb09b1bf41dbd \
+    --hash=sha256:c71be1cbfa5cd9a41ee452acf1eccd82b2c05950358b106ec8ceb83411d1a020 \
+    --hash=sha256:cbc8738fd8526d80f35cb3a40d41f41a2e7030bb3b18b09a6778ef63d291c2fd \
+    --hash=sha256:ce47f66801c20ec6c6632453bb5960fe38939e9306970b48b3a5a26de7745d94 \
+    --hash=sha256:d370b8d1dfcdf7130178137f6fbee6140774a1acc6cacefc4b42643ec11d0a3a \
+    --hash=sha256:d38cdff612d06fa6a32840d5e1b1f7a27cee4a349aa9085d94a67789d6bfd408 \
+    --hash=sha256:d8947001be83df1394050758ce0e745dd74fb134eef0a4b5124208dfc3a68c37 \
+    --hash=sha256:deb9fde5c60e437ee4821bc9bc39ff31b42135c27e1dc61ef0a629389c1de62e \
+    --hash=sha256:dfe9763530994147d9af1def057a5b9658b00e8f8fe8743d144d1e0911c2e454 \
+    --hash=sha256:e105ab60406787da31fccc883fc0f733af1efd78f0136a4599692c4083a73d0c \
+    --hash=sha256:e275096ea1e60cc595cda2836fd4a6c725d1125108b868be17f53684d164e2cc \
+    --hash=sha256:edc3342adf8f697fc5f59c887a304356f147b397809440ed64e2fa6af2f50f37 \
+    --hash=sha256:ee247f5c245c9a2fe7c8e2214e295918838e44e00a45a6718451e4004219e767 \
+    --hash=sha256:eef4c2f3423810b3070ab391f85436d2f8bbfcb286ac15cbc73190b3563b1f1a \
+    --hash=sha256:f21e8a22c8605750c7af886bab299a363721264061b4ac0a30efb73cfd58efc5 \
+    --hash=sha256:f265528741e048bce55c3463ed721fb0aa45a5888d8add8cfeccb3035451bbdc \
+    --hash=sha256:f2f9bd7f90c64fe89253f0a2c05e3c4856072660429ce8831b4235bf29403a67 \
+    --hash=sha256:f785f6161f202ab04d8ca194158968798e480ca058943907972da5f12e2881e8 \
+    --hash=sha256:f9f6143a8c75945eb960d9eb98905a441394abfa24afaae239d514ffb2586480 \
+    --hash=sha256:fa8f5efb344d6908a1ce62f4a24e2e5780f825d6f53f5f50ec5ffacac72936cb \
+    --hash=sha256:fdd28f912fccfec1846a94e2e1e8f9b0012f557f0c46fe4f3eb0d7a87afcf90b
+dnspython==2.9.2 \
+    --hash=sha256:8d4d39a513e649d634004ce4d39ade2352efcea472a0247535a5c2d18a9d7ba9 \
+    --hash=sha256:af15f7d385a6ae2fb35a796fde2138004c8c42c7389090e2addc83e3b3340fd8
 email-validator==2.3.0 \
     --hash=sha256:80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4 \
     --hash=sha256:9fc05c37f2f6cf439ff414f8fc46d917929974a82244c20eb10231ba60c54426
@@ -1702,9 +1740,9 @@ packaging==26.2 \
 platformdirs==4.11.0 \
     --hash=sha256:0555d18370482847566ffabcaa53ad7c6c1c29f195989ae1ed634a05f76ea1e0 \
     --hash=sha256:360ccded2b7fce0af0ff80cc8f5942a1c5d99b0e856033acb030bfc634709e74
-pyasn1==0.6.4 \
-    --hash=sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81 \
-    --hash=sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b
+pyasn1==0.6.5 \
+    --hash=sha256:4017b0fce125096b8573b39c989fdb1a4b19cf761e683398184550fea0e66587 \
+    --hash=sha256:6b11616a6bcf3a40e635f082bb232fa57b5e0dd7f517bd7ddd69ec3794508a47
 pycparser==3.0 \
     --hash=sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29 \
     --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
@@ -1835,9 +1873,9 @@ pydantic-core==2.46.4 \
 pygments==2.20.0 \
     --hash=sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f \
     --hash=sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176
-pyjwt==2.13.0 \
-    --hash=sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423 \
-    --hash=sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728
+pyjwt==2.15.1 \
+    --hash=sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193 \
+    --hash=sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8
 pypi-attestations==0.0.30 \
     --hash=sha256:14ff13c76bbef02a483c2b77532da02bfd746b5141b881f355e06b9807434423 \
     --hash=sha256:b3a9c53f6cb89e5e7b5b70e6cfca97cfc66008c1ed54087355e06e40071cef21
@@ -1888,9 +1926,9 @@ typing-extensions==4.16.0 \
 typing-inspection==0.4.2 \
     --hash=sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7 \
     --hash=sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464
-urllib3==2.7.0 \
-    --hash=sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c \
-    --hash=sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
+urllib3==2.8.0 \
+    --hash=sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3 \
+    --hash=sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63
 ================================================================================
 END FILE: .github/provenance/requirements.txt
 ================================================================================
@@ -8024,709 +8062,242 @@ END FILE: CONTRIBUTING.md
 ================================================================================
 ================================================================================
 BEGIN FILE: LICENSE
-CONTENT SHA256: b54857356e43422ea6a6f5fe84f58e8b105ab27af45ba7dbf792bf6c20ac1827
+CONTENT SHA256: 82dcf3786af3330e37dacb3f66b46eb3b383c4ba0a6a7e79ef26291706e63ece
 SOURCE ENCODING: utf-8
 ================================================================================
-                    GNU AFFERO GENERAL PUBLIC LICENSE
-                       Version 3, 19 November 2007
-
- Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
- Everyone is permitted to copy and distribute verbatim copies
- of this license document, but changing it is not allowed.
-
-                            Preamble
-
-  The GNU Affero General Public License is a free, copyleft license for
-software and other kinds of works, specifically designed to ensure
-cooperation with the community in the case of network server software.
-
-  The licenses for most software and other practical works are designed
-to take away your freedom to share and change the works.  By contrast,
-our General Public Licenses are intended to guarantee your freedom to
-share and change all versions of a program--to make sure it remains free
-software for all its users.
-
-  When we speak of free software, we are referring to freedom, not
-price.  Our General Public Licenses are designed to make sure that you
-have the freedom to distribute copies of free software (and charge for
-them if you wish), that you receive source code or can get it if you
-want it, that you can change the software or use pieces of it in new
-free programs, and that you know you can do these things.
-
-  Developers that use our General Public Licenses protect your rights
-with two steps: (1) assert copyright on the software, and (2) offer
-you this License which gives you legal permission to copy, distribute
-and/or modify the software.
-
-  A secondary benefit of defending all users' freedom is that
-improvements made in alternate versions of the program, if they
-receive widespread use, become available for other developers to
-incorporate.  Many developers of free software are heartened and
-encouraged by the resulting cooperation.  However, in the case of
-software used on network servers, this result may fail to come about.
-The GNU General Public License permits making a modified version and
-letting the public access it on a server without ever releasing its
-source code to the public.
-
-  The GNU Affero General Public License is designed specifically to
-ensure that, in such cases, the modified source code becomes available
-to the community.  It requires the operator of a network server to
-provide the source code of the modified version running there to the
-users of that server.  Therefore, public use of a modified version, on
-a publicly accessible server, gives the public access to the source
-code of the modified version.
-
-  An older license, called the Affero General Public License and
-published by Affero, was designed to accomplish similar goals.  This is
-a different license, not a version of the Affero GPL, but Affero has
-released a new version of the Affero GPL which permits relicensing under
-this license.
-
-  The precise terms and conditions for copying, distribution and
-modification follow.
-
-                       TERMS AND CONDITIONS
-
-  0. Definitions.
-
-  "This License" refers to version 3 of the GNU Affero General Public License.
-
-  "Copyright" also means copyright-like laws that apply to other kinds of
-works, such as semiconductor masks.
-
-  "The Program" refers to any copyrightable work licensed under this
-License.  Each licensee is addressed as "you".  "Licensees" and
-"recipients" may be individuals or organizations.
-
-  To "modify" a work means to copy from or adapt all or part of the work
-in a fashion requiring copyright permission, other than the making of an
-exact copy.  The resulting work is called a "modified version" of the
-earlier work or a work "based on" the earlier work.
-
-  A "covered work" means either the unmodified Program or a work based
-on the Program.
-
-  To "propagate" a work means to do anything with it that, without
-permission, would make you directly or secondarily liable for
-infringement under applicable copyright law, except executing it on a
-computer or modifying a private copy.  Propagation includes copying,
-distribution (with or without modification), making available to the
-public, and in some countries other activities as well.
-
-  To "convey" a work means any kind of propagation that enables other
-parties to make or receive copies.  Mere interaction with a user through
-a computer network, with no transfer of a copy, is not conveying.
-
-  An interactive user interface displays "Appropriate Legal Notices"
-to the extent that it includes a convenient and prominently visible
-feature that (1) displays an appropriate copyright notice, and (2)
-tells the user that there is no warranty for the work (except to the
-extent that warranties are provided), that licensees may convey the
-work under this License, and how to view a copy of this License.  If
-the interface presents a list of user commands or options, such as a
-menu, a prominent item in the list meets this criterion.
-
-  1. Source Code.
-
-  The "source code" for a work means the preferred form of the work
-for making modifications to it.  "Object code" means any non-source
-form of a work.
-
-  A "Standard Interface" means an interface that either is an official
-standard defined by a recognized standards body, or, in the case of
-interfaces specified for a particular programming language, one that
-is widely used among developers working in that language.
-
-  The "System Libraries" of an executable work include anything, other
-than the work as a whole, that (a) is included in the normal form of
-packaging a Major Component, but which is not part of that Major
-Component, and (b) serves only to enable use of the work with that
-Major Component, or to implement a Standard Interface for which an
-implementation is available to the public in source code form.  A
-"Major Component", in this context, means a major essential component
-(kernel, window system, and so on) of the specific operating system
-(if any) on which the executable work runs, or a compiler used to
-produce the work, or an object code interpreter used to run it.
-
-  The "Corresponding Source" for a work in object code form means all
-the source code needed to generate, install, and (for an executable
-work) run the object code and to modify the work, including scripts to
-control those activities.  However, it does not include the work's
-System Libraries, or general-purpose tools or generally available free
-programs which are used unmodified in performing those activities but
-which are not part of the work.  For example, Corresponding Source
-includes interface definition files associated with source files for
-the work, and the source code for shared libraries and dynamically
-linked subprograms that the work is specifically designed to require,
-such as by intimate data communication or control flow between those
-subprograms and other parts of the work.
-
-  The Corresponding Source need not include anything that users
-can regenerate automatically from other parts of the Corresponding
-Source.
-
-  The Corresponding Source for a work in source code form is that
-same work.
-
-  2. Basic Permissions.
-
-  All rights granted under this License are granted for the term of
-copyright on the Program, and are irrevocable provided the stated
-conditions are met.  This License explicitly affirms your unlimited
-permission to run the unmodified Program.  The output from running a
-covered work is covered by this License only if the output, given its
-content, constitutes a covered work.  This License acknowledges your
-rights of fair use or other equivalent, as provided by copyright law.
-
-  You may make, run and propagate covered works that you do not
-convey, without conditions so long as your license otherwise remains
-in force.  You may convey covered works to others for the sole purpose
-of having them make modifications exclusively for you, or provide you
-with facilities for running those works, provided that you comply with
-the terms of this License in conveying all material for which you do
-not control copyright.  Those thus making or running the covered works
-for you must do so exclusively on your behalf, under your direction
-and control, on terms that prohibit them from making any copies of
-your copyrighted material outside their relationship with you.
-
-  Conveying under any other circumstances is permitted solely under
-the conditions stated below.  Sublicensing is not allowed; section 10
-makes it unnecessary.
-
-  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
-
-  No covered work shall be deemed part of an effective technological
-measure under any applicable law fulfilling obligations under article
-11 of the WIPO copyright treaty adopted on 20 December 1996, or
-similar laws prohibiting or restricting circumvention of such
-measures.
-
-  When you convey a covered work, you waive any legal power to forbid
-circumvention of technological measures to the extent such circumvention
-is effected by exercising rights under this License with respect to
-the covered work, and you disclaim any intention to limit operation or
-modification of the work as a means of enforcing, against the work's
-users, your or third parties' legal rights to forbid circumvention of
-technological measures.
-
-  4. Conveying Verbatim Copies.
-
-  You may convey verbatim copies of the Program's source code as you
-receive it, in any medium, provided that you conspicuously and
-appropriately publish on each copy an appropriate copyright notice;
-keep intact all notices stating that this License and any
-non-permissive terms added in accord with section 7 apply to the code;
-keep intact all notices of the absence of any warranty; and give all
-recipients a copy of this License along with the Program.
-
-  You may charge any price or no price for each copy that you convey,
-and you may offer support or warranty protection for a fee.
-
-  5. Conveying Modified Source Versions.
-
-  You may convey a work based on the Program, or the modifications to
-produce it from the Program, in the form of source code under the
-terms of section 4, provided that you also meet all of these conditions:
-
-    a) The work must carry prominent notices stating that you modified
-    it, and giving a relevant date.
-
-    b) The work must carry prominent notices stating that it is
-    released under this License and any conditions added under section
-    7.  This requirement modifies the requirement in section 4 to
-    "keep intact all notices".
-
-    c) You must license the entire work, as a whole, under this
-    License to anyone who comes into possession of a copy.  This
-    License will therefore apply, along with any applicable section 7
-    additional terms, to the whole of the work, and all its parts,
-    regardless of how they are packaged.  This License gives no
-    permission to license the work in any other way, but it does not
-    invalidate such permission if you have separately received it.
-
-    d) If the work has interactive user interfaces, each must display
-    Appropriate Legal Notices; however, if the Program has interactive
-    interfaces that do not display Appropriate Legal Notices, your
-    work need not make them do so.
-
-  A compilation of a covered work with other separate and independent
-works, which are not by their nature extensions of the covered work,
-and which are not combined with it such as to form a larger program,
-in or on a volume of a storage or distribution medium, is called an
-"aggregate" if the compilation and its resulting copyright are not
-used to limit the access or legal rights of the compilation's users
-beyond what the individual works permit.  Inclusion of a covered work
-in an aggregate does not cause this License to apply to the other
-parts of the aggregate.
-
-  6. Conveying Non-Source Forms.
-
-  You may convey a covered work in object code form under the terms
-of sections 4 and 5, provided that you also convey the
-machine-readable Corresponding Source under the terms of this License,
-in one of these ways:
-
-    a) Convey the object code in, or embodied in, a physical product
-    (including a physical distribution medium), accompanied by the
-    Corresponding Source fixed on a durable physical medium
-    customarily used for software interchange.
-
-    b) Convey the object code in, or embodied in, a physical product
-    (including a physical distribution medium), accompanied by a
-    written offer, valid for at least three years and valid for as
-    long as you offer spare parts or customer support for that product
-    model, to give anyone who possesses the object code either (1) a
-    copy of the Corresponding Source for all the software in the
-    product that is covered by this License, on a durable physical
-    medium customarily used for software interchange, for a price no
-    more than your reasonable cost of physically performing this
-    conveying of source, or (2) access to copy the
-    Corresponding Source from a network server at no charge.
-
-    c) Convey individual copies of the object code with a copy of the
-    written offer to provide the Corresponding Source.  This
-    alternative is allowed only occasionally and noncommercially, and
-    only if you received the object code with such an offer, in accord
-    with subsection 6b.
-
-    d) Convey the object code by offering access from a designated
-    place (gratis or for a charge), and offer equivalent access to the
-    Corresponding Source in the same way through the same place at no
-    further charge.  You need not require recipients to copy the
-    Corresponding Source along with the object code.  If the place to
-    copy the object code is a network server, the Corresponding Source
-    may be on a different server (operated by you or a third party)
-    that supports equivalent copying facilities, provided you maintain
-    clear directions next to the object code saying where to find the
-    Corresponding Source.  Regardless of what server hosts the
-    Corresponding Source, you remain obligated to ensure that it is
-    available for as long as needed to satisfy these requirements.
-
-    e) Convey the object code using peer-to-peer transmission, provided
-    you inform other peers where the object code and Corresponding
-    Source of the work are being offered to the general public at no
-    charge under subsection 6d.
-
-  A separable portion of the object code, whose source code is excluded
-from the Corresponding Source as a System Library, need not be
-included in conveying the object code work.
-
-  A "User Product" is either (1) a "consumer product", which means any
-tangible personal property which is normally used for personal, family,
-or household purposes, or (2) anything designed or sold for incorporation
-into a dwelling.  In determining whether a product is a consumer product,
-doubtful cases shall be resolved in favor of coverage.  For a particular
-product received by a particular user, "normally used" refers to a
-typical or common use of that class of product, regardless of the status
-of the particular user or of the way in which the particular user
-actually uses, or expects or is expected to use, the product.  A product
-is a consumer product regardless of whether the product has substantial
-commercial, industrial or non-consumer uses, unless such uses represent
-the only significant mode of use of the product.
-
-  "Installation Information" for a User Product means any methods,
-procedures, authorization keys, or other information required to install
-and execute modified versions of a covered work in that User Product from
-a modified version of its Corresponding Source.  The information must
-suffice to ensure that the continued functioning of the modified object
-code is in no case prevented or interfered with solely because
-modification has been made.
-
-  If you convey an object code work under this section in, or with, or
-specifically for use in, a User Product, and the conveying occurs as
-part of a transaction in which the right of possession and use of the
-User Product is transferred to the recipient in perpetuity or for a
-fixed term (regardless of how the transaction is characterized), the
-Corresponding Source conveyed under this section must be accompanied
-by the Installation Information.  But this requirement does not apply
-if neither you nor any third party retains the ability to install
-modified object code on the User Product (for example, the work has
-been installed in ROM).
-
-  The requirement to provide Installation Information does not include a
-requirement to continue to provide support service, warranty, or updates
-for a work that has been modified or installed by the recipient, or for
-the User Product in which it has been modified or installed.  Access to a
-network may be denied when the modification itself materially and
-adversely affects the operation of the network or violates the rules and
-protocols for communication across the network.
-
-  Corresponding Source conveyed, and Installation Information provided,
-in accord with this section must be in a format that is publicly
-documented (and with an implementation available to the public in
-source code form), and must require no special password or key for
-unpacking, reading or copying.
-
-  7. Additional Terms.
-
-  "Additional permissions" are terms that supplement the terms of this
-License by making exceptions from one or more of its conditions.
-Additional permissions that are applicable to the entire Program shall
-be treated as though they were included in this License, to the extent
-that they are valid under applicable law.  If additional permissions
-apply only to part of the Program, that part may be used separately
-under those permissions, but the entire Program remains governed by
-this License without regard to the additional permissions.
-
-  When you convey a copy of a covered work, you may at your option
-remove any additional permissions from that copy, or from any part of
-it.  (Additional permissions may be written to require their own
-removal in certain cases when you modify the work.)  You may place
-additional permissions on material, added by you to a covered work,
-for which you have or can give appropriate copyright permission.
-
-  Notwithstanding any other provision of this License, for material you
-add to a covered work, you may (if authorized by the copyright holders of
-that material) supplement the terms of this License with terms:
-
-    a) Disclaiming warranty or limiting liability differently from the
-    terms of sections 15 and 16 of this License; or
-
-    b) Requiring preservation of specified reasonable legal notices or
-    author attributions in that material or in the Appropriate Legal
-    Notices displayed by works containing it; or
-
-    c) Prohibiting misrepresentation of the origin of that material, or
-    requiring that modified versions of such material be marked in
-    reasonable ways as different from the original version; or
-
-    d) Limiting the use for publicity purposes of names of licensors or
-    authors of the material; or
-
-    e) Declining to grant rights under trademark law for use of some
-    trade names, trademarks, or service marks; or
-
-    f) Requiring indemnification of licensors and authors of that
-    material by anyone who conveys the material (or modified versions of
-    it) with contractual assumptions of liability to the recipient, for
-    any liability that these contractual assumptions directly impose on
-    those licensors and authors.
-
-  All other non-permissive additional terms are considered "further
-restrictions" within the meaning of section 10.  If the Program as you
-received it, or any part of it, contains a notice stating that it is
-governed by this License along with a term that is a further
-restriction, you may remove that term.  If a license document contains
-a further restriction but permits relicensing or conveying under this
-License, you may add to a covered work material governed by the terms
-of that license document, provided that the further restriction does
-not survive such relicensing or conveying.
-
-  If you add terms to a covered work in accord with this section, you
-must place, in the relevant source files, a statement of the
-additional terms that apply to those files, or a notice indicating
-where to find the applicable terms.
-
-  Additional terms, permissive or non-permissive, may be stated in the
-form of a separately written license, or stated as exceptions;
-the above requirements apply either way.
-
-  8. Termination.
-
-  You may not propagate or modify a covered work except as expressly
-provided under this License.  Any attempt otherwise to propagate or
-modify it is void, and will automatically terminate your rights under
-this License (including any patent licenses granted under the third
-paragraph of section 11).
-
-  However, if you cease all violation of this License, then your
-license from a particular copyright holder is reinstated (a)
-provisionally, unless and until the copyright holder explicitly and
-finally terminates your license, and (b) permanently, if the copyright
-holder fails to notify you of the violation by some reasonable means
-prior to 60 days after the cessation.
-
-  Moreover, your license from a particular copyright holder is
-reinstated permanently if the copyright holder notifies you of the
-violation by some reasonable means, this is the first time you have
-received notice of violation of this License (for any work) from that
-copyright holder, and you cure the violation prior to 30 days after
-your receipt of the notice.
-
-  Termination of your rights under this section does not terminate the
-licenses of parties who have received copies or rights from you under
-this License.  If your rights have been terminated and not permanently
-reinstated, you do not qualify to receive new licenses for the same
-material under section 10.
-
-  9. Acceptance Not Required for Having Copies.
-
-  You are not required to accept this License in order to receive or
-run a copy of the Program.  Ancillary propagation of a covered work
-occurring solely as a consequence of using peer-to-peer transmission
-to receive a copy likewise does not require acceptance.  However,
-nothing other than this License grants you permission to propagate or
-modify any covered work.  These actions infringe copyright if you do
-not accept this License.  Therefore, by modifying or propagating a
-covered work, you indicate your acceptance of this License to do so.
-
-  10. Automatic Licensing of Downstream Recipients.
-
-  Each time you convey a covered work, the recipient automatically
-receives a license from the original licensors, to run, modify and
-propagate that work, subject to this License.  You are not responsible
-for enforcing compliance by third parties with this License.
-
-  An "entity transaction" is a transaction transferring control of an
-organization, or substantially all assets of one, or subdividing an
-organization, or merging organizations.  If propagation of a covered
-work results from an entity transaction, each party to that
-transaction who receives a copy of the work also receives whatever
-licenses to the work the party's predecessor in interest had or could
-give under the previous paragraph, plus a right to possession of the
-Corresponding Source of the work from the predecessor in interest, if
-the predecessor has it or can get it with reasonable efforts.
-
-  You may not impose any further restrictions on the exercise of the
-rights granted or affirmed under this License.  For example, you may
-not impose a license fee, royalty, or other charge for exercise of
-rights granted under this License, and you may not initiate litigation
-(including a cross-claim or counterclaim in a lawsuit) alleging that
-any patent claim is infringed by making, using, selling, offering for
-sale, or importing the Program or any portion of it.
-
-  11. Patents.
-
-  A "contributor" is a copyright holder who authorizes use under this
-License of the Program or a work on which the Program is based.  The
-work thus licensed is called the contributor's "contributor version".
-
-  A contributor's "essential patent claims" are all patent claims
-owned or controlled by the contributor, whether already acquired or
-hereafter acquired, that would be infringed by some manner, permitted
-by this License, of making, using, or selling its contributor version,
-but do not include claims that would be infringed only as a
-consequence of further modification of the contributor version.  For
-purposes of this definition, "control" includes the right to grant
-patent sublicenses in a manner consistent with the requirements of
-this License.
-
-  Each contributor grants you a non-exclusive, worldwide, royalty-free
-patent license under the contributor's essential patent claims, to
-make, use, sell, offer for sale, import and otherwise run, modify and
-propagate the contents of its contributor version.
-
-  In the following three paragraphs, a "patent license" is any express
-agreement or commitment, however denominated, not to enforce a patent
-(such as an express permission to practice a patent or covenant not to
-sue for patent infringement).  To "grant" such a patent license to a
-party means to make such an agreement or commitment not to enforce a
-patent against the party.
-
-  If you convey a covered work, knowingly relying on a patent license,
-and the Corresponding Source of the work is not available for anyone
-to copy, free of charge and under the terms of this License, through a
-publicly available network server or other readily accessible means,
-then you must either (1) cause the Corresponding Source to be so
-available, or (2) arrange to deprive yourself of the benefit of the
-patent license for this particular work, or (3) arrange, in a manner
-consistent with the requirements of this License, to extend the patent
-license to downstream recipients.  "Knowingly relying" means you have
-actual knowledge that, but for the patent license, your conveying the
-covered work in a country, or your recipient's use of the covered work
-in a country, would infringe one or more identifiable patents in that
-country that you have reason to believe are valid.
-
-  If, pursuant to or in connection with a single transaction or
-arrangement, you convey, or propagate by procuring conveyance of, a
-covered work, and grant a patent license to some of the parties
-receiving the covered work authorizing them to use, propagate, modify
-or convey a specific copy of the covered work, then the patent license
-you grant is automatically extended to all recipients of the covered
-work and works based on it.
-
-  A patent license is "discriminatory" if it does not include within
-the scope of its coverage, prohibits the exercise of, or is
-conditioned on the non-exercise of one or more of the rights that are
-specifically granted under this License.  You may not convey a covered
-work if you are a party to an arrangement with a third party that is
-in the business of distributing software, under which you make payment
-to the third party based on the extent of your activity of conveying
-the work, and under which the third party grants, to any of the
-parties who would receive the covered work from you, a discriminatory
-patent license (a) in connection with copies of the covered work
-conveyed by you (or copies made from those copies), or (b) primarily
-for and in connection with specific products or compilations that
-contain the covered work, unless you entered into that arrangement,
-or that patent license was granted, prior to 28 March 2007.
-
-  Nothing in this License shall be construed as excluding or limiting
-any implied license or other defenses to infringement that may
-otherwise be available to you under applicable patent law.
-
-  12. No Surrender of Others' Freedom.
-
-  If conditions are imposed on you (whether by court order, agreement or
-otherwise) that contradict the conditions of this License, they do not
-excuse you from the conditions of this License.  If you cannot convey a
-covered work so as to satisfy simultaneously your obligations under this
-License and any other pertinent obligations, then as a consequence you may
-not convey it at all.  For example, if you agree to terms that obligate you
-to collect a royalty for further conveying from those to whom you convey
-the Program, the only way you could satisfy both those terms and this
-License would be to refrain entirely from conveying the Program.
-
-  13. Remote Network Interaction; Use with the GNU General Public License.
-
-  Notwithstanding any other provision of this License, if you modify the
-Program, your modified version must prominently offer all users
-interacting with it remotely through a computer network (if your version
-supports such interaction) an opportunity to receive the Corresponding
-Source of your version by providing access to the Corresponding Source
-from a network server at no charge, through some standard or customary
-means of facilitating copying of software.  This Corresponding Source
-shall include the Corresponding Source for any work covered by version 3
-of the GNU General Public License that is incorporated pursuant to the
-following paragraph.
-
-  Notwithstanding any other provision of this License, you have
-permission to link or combine any covered work with a work licensed
-under version 3 of the GNU General Public License into a single
-combined work, and to convey the resulting work.  The terms of this
-License will continue to apply to the part which is the covered work,
-but the work with which it is combined will remain governed by version
-3 of the GNU General Public License.
-
-  14. Revised Versions of this License.
-
-  The Free Software Foundation may publish revised and/or new versions of
-the GNU Affero General Public License from time to time.  Such new versions
-will be similar in spirit to the present version, but may differ in detail to
-address new problems or concerns.
-
-  Each version is given a distinguishing version number.  If the
-Program specifies that a certain numbered version of the GNU Affero General
-Public License "or any later version" applies to it, you have the
-option of following the terms and conditions either of that numbered
-version or of any later version published by the Free Software
-Foundation.  If the Program does not specify a version number of the
-GNU Affero General Public License, you may choose any version ever published
-by the Free Software Foundation.
-
-  If the Program specifies that a proxy can decide which future
-versions of the GNU Affero General Public License can be used, that proxy's
-public statement of acceptance of a version permanently authorizes you
-to choose that version for the Program.
-
-  Later license versions may give you additional or different
-permissions.  However, no additional obligations are imposed on any
-author or copyright holder as a result of your choosing to follow a
-later version.
-
-  15. Disclaimer of Warranty.
-
-  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
-APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
-HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
-OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
-IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
-ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
-
-  16. Limitation of Liability.
-
-  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
-WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
-THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
-GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
-USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
-DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
-PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
-EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGES.
-
-  17. Interpretation of Sections 15 and 16.
-
-  If the disclaimer of warranty and limitation of liability provided
-above cannot be given local legal effect according to their terms,
-reviewing courts shall apply local law that most closely approximates
-an absolute waiver of all civil liability in connection with the
-Program, unless a warranty or assumption of liability accompanies a
-copy of the Program in return for a fee.
-
-                     END OF TERMS AND CONDITIONS
-
-            How to Apply These Terms to Your New Programs
-
-  If you develop a new program, and you want it to be of the greatest
-possible use to the public, the best way to achieve this is to make it
-free software which everyone can redistribute and change under these terms.
-
-  To do so, attach the following notices to the program.  It is safest
-to attach them to the start of each source file to most effectively
-state the exclusion of warranty; and each file should have at least
-the "copyright" line and a pointer to where the full notice is found.
-
-    Melder™ - AI-native dependency graph runtime for free-threaded Python.
-    Copyright (C) 2026 Mark Thomas Geleta
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Also add information on how to contact you by electronic and paper mail.
-
-  If your software can interact with users remotely through a computer
-network, you should also make sure that it provides a way for users to
-get its source.  For example, if your program is a web application, its
-interface could display a "Source" link that leads users to an archive
-of the code.  There are many ways you could offer source, and different
-solutions will be better for different programs; see section 13 for the
-specific requirements.
-
-  You should also get your employer (if you work as a programmer) or school,
-if any, to sign a "copyright disclaimer" for the program, if necessary.
-For more information on this, and how to apply and follow the GNU AGPL, see
-<https://www.gnu.org/licenses/>.
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright (C) 2026 Mark Thomas Geleta
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ================================================================================
 END FILE: LICENSE
 ================================================================================
 ================================================================================
 BEGIN FILE: NOTICE
-CONTENT SHA256: f52bb06e0d0c9ff56c8d83387b1577a6221063ea8d5da0160407c1dac45718e2
+CONTENT SHA256: 1ea85e984e62725f6385d62d0c1d7daacf36accc9ec7f920bcf7084bd5e47516
 SOURCE ENCODING: utf-8
 ================================================================================
 Melder™
-Copyright 2025-2026 Mark Thomas Geleta / Synaptic AI Systems
+Copyright 2026 Mark Thomas Geleta
 
-Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI Systems. The AGPL
-grants rights in the SOFTWARE; it does not grant rights in the name or the
-marks. Forks and redistributions must not use the Melder name or marks in a way
-that suggests endorsement by, or origin from, the trademark holder.
+Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI Systems. The Apache
+License grants rights in the SOFTWARE; it does not grant rights in the name or
+the marks (see its section 6). Forks and redistributions must not use the Melder
+name or marks in a way that suggests endorsement by, or origin from, the
+trademark holder.
 
 This product includes software developed by Mark Thomas Geleta.
 Source repository: https://github.com/Synaptic724/melder
 
-Melder™ is free software: you can redistribute it and/or modify it under the
-terms of the GNU Affero General Public License as published by the Free
-Software Foundation, either version 3 of the License, or (at your option) any
-later version. SPDX-License-Identifier: AGPL-3.0-or-later
+Melder™ is licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this software except in compliance with the License.
+SPDX-License-Identifier: Apache-2.0
 
 You may obtain a copy of the License at:
 
-    https://www.gnu.org/licenses/agpl-3.0.html
+    http://www.apache.org/licenses/LICENSE-2.0
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License along
-with this program. If not, see <https://www.gnu.org/licenses/>.
-
-NETWORK USE IS DISTRIBUTION. Section 13 of the AGPL is the clause that separates
-it from the ordinary GPL: if you modify Melder™ and let users interact with the
-modified version remotely over a network, you must offer those users the
-corresponding source of your modified version.
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
 
 Redistributors of this software must retain this NOTICE file, LICENSE file, and
 all attribution and copyright statements when redistributing the software,
@@ -8777,7 +8348,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 1bf953bba2affc1654ce178e2f38c694b084a68e32f0909c28485523898a0571
+CONTENT SHA256: b4ebd06b8b4bc50ef396f88b7bfef9216144b9744703e8fc9156e9e092f2a386
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -8907,6 +8478,8 @@ meld  →  resolve instances             (as often as you like)
 ```
 
 `conjure()` checks the registered graph, including cycles and ambiguous providers.
+It also refuses a class lookup whose class is bound only under a spellframe or a
+binding name (`HIDDEN_PROVIDER`), naming where it is bound.
 A typed parameter with no registered provider can remain a caller-supplied input:
 the constructing `meld()` must supply it through `override`, or it raises
 `UnresolvedInputError`. Dynamic changes can also require validation at a later meld.
@@ -9168,8 +8741,10 @@ server = conduit.meld("Server")
 
 **`conjure()` prepares the registered graph.** Requirements extraction, graph
 construction, cycle detection, and runtime compilation run there. Cycles and
-ambiguous providers refuse startup. A typed parameter with no provider can be
-supplied at `meld(override={...})`; omitting it when construction needs it raises
+ambiguous providers refuse startup, and so does a class lookup whose class is
+bound only under a spellframe or a binding name (`HIDDEN_PROVIDER`, naming where
+it is bound). A typed parameter with no provider can be supplied at
+`meld(override={...})`; omitting it when construction needs it raises
 `UnresolvedInputError`. Ordinary Python parameter defaults remain defaults.
 
 > **One book, one conjure.** A Spellbook produces exactly one conduit, ever.
@@ -9252,7 +8827,9 @@ What an annotation selects depends on what it is. A **class** selects only the s
 **bare** — no `spellframe` and no `binding_name`, the class itself or an existing object of it — which is
 exactly what `meld(TheClass)` returns. A spell bound under a spellframe is reached through its frame, and a
 spell bound under a binding name through that name (`SpellMap(TheClass, binding_name=...)`); a category that
-happens to share the class's name does not turn its members into providers either. A **Protocol** selects
+happens to share the class's name does not turn its members into providers either. When the class is bound
+only under a spellframe or a binding name, `conjure()` refuses the consumer with `HIDDEN_PROVIDER`, naming
+each place it is bound and the `SpellMap` that reaches it. A **Protocol** selects
 the spells bound under it as their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at
 runtime, resolves by name to a bare type or a contract, never to a string category. `list[...]` gathers the
 group the annotation's kind names: the bare spell of the class, every implementer of the Protocol, or — for
@@ -9312,7 +8889,7 @@ that name; a store bound under a spellframe is named through the frame,
 When a single Protocol-annotated parameter has several registered implementations,
 `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
 report that lists every candidate's address and the fix — a `SpellMap`
-default, a meld `override`, or one provider — never a guess.
+default or one provider — never a guess.
 Registering the same class twice is instead refused as a duplicate spell identity
 at registration; another binding name does not make it a different spell.
 
@@ -10317,15 +9894,12 @@ long-form guides and API reference belong in the hosted documentation site.
 
 ## License
 
-GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see
+Apache License 2.0 (Apache-2.0) — see
 [LICENSE](https://github.com/Synaptic724/melder/blob/prod/LICENSE).
 
-The AGPL's network clause applies: if you run a modified version of Melder™ as a
-service that users interact with over a network, you must offer those users the
-corresponding source of your modified version.
-
 **Trademark.** Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI
-Systems. The AGPL grants rights in the software, not in the name — forks and
+Systems. The Apache License grants rights in the software, not in the name (its
+section 6 grants no permission to use trade names or marks) — forks and
 redistributions must not use the Melder name or marks in a way that suggests
 endorsement by, or origin from, the trademark holder. See
 [NOTICE](https://github.com/Synaptic724/melder/blob/prod/NOTICE).
@@ -31384,7 +30958,7 @@ END FILE: UX_and_AIX_experiences/pytest_examples/test_expert_examples.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/pytest_examples/test_expert_probes.py
-CONTENT SHA256: 0994829d32fd1e5136ef9efa64a0540ed5826c63724269b68b44b96d48b68e05
+CONTENT SHA256: 7e3cbd87045e613bf5a047703a97cae4e239d13ad84bbbd69a63ccfae6661906
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -32378,14 +31952,34 @@ def test_probe_an_empty_conjured_frame_is_linkable():
     print("late bind pinned: spells are cargo, not a precondition")
 
 
-def test_probe_two_visible_spells_may_not_share_a_name():
-    """Lesson 30 claim: a distinct `binding_name` does NOT settle a
-    duplicate spell name.
+def test_probe_two_spells_may_share_a_name_but_never_an_address():
+    """Lesson 30 claim, CORRECTED (0.2.8206; re-measured 2026-11-07): a
+    spell NAME is not unique - an ADDRESS is.
 
-    Two INDEPENDENT binds make both spells visible at once, so a shared
-    class name makes `meld(spell_name=...)` ambiguous and the post-conjure
-    structural validator refuses. This is why 30's two generated modules
-    declare ReportBase and ReportDonor rather than Report twice."""
+    An address is (frame_key, binding_key): the spellframe, or the spell's
+    own name when it is bound bare, and the binding_name, both lowercased.
+    Two INDEPENDENT classes both NAMED Alpha, under distinct binding_names,
+    sit at two addresses: both bind - the second one AFTER conjure, on this
+    dynamic frame - and each meld by ("Alpha", binding_name) builds its own
+    class. A third class NAMED Alpha bound at an address one of them holds
+    ("PROBE-DUP-ONE" is "probe-dup-one") is refused AT BIND by the
+    frame-wide claim - one active spell per address per frame,
+    `Spellbook.bind` -> `AethericFrame.claim_lookup` ->
+    `LookupContainer.claim`, RuntimeError - before any validator runs, and
+    the holder keeps serving its address.
+
+    This row used to pin the pre-0.2.8206 rule: "a distinct `binding_name`
+    does NOT settle a duplicate spell name", the post-conjure structural
+    validator refusing the second bind with DUPLICATE_SPELL_NAME; it was
+    the reason 30's two generated modules declare ReportBase and
+    ReportDonor rather than Report twice. Since 0.2.8206 Phase 4
+    (DuplicateSpellNameStrategy) checks the full address, so that bind
+    stands and the row went red (DID NOT RAISE). Every path that registers
+    a spell was re-measured on 2026-11-07 by
+    context_compass/artifacts/duplicate_address_paths_20261107 (rows P01
+    and P02, shapes N-scope and N-case, are this probe's refusing half);
+    the contract probes' potato row pins the same-name half before
+    conjure."""
     frame_name = "probe-dupname-frame"
     book = _frame(frame_name)
 
@@ -32393,26 +31987,37 @@ def test_probe_two_visible_spells_may_not_share_a_name():
         def __init__(self) -> None:
             self.tag = "a"
 
-    Beta = type("Alpha", (), {"__init__": lambda self: None})
+    # Another class NAMED Alpha with other code, so another spell_id.
+    Beta = type("Alpha", (), {"__init__": lambda self: setattr(self, "tag", "b")})
+    # A third class NAMED Alpha, for the address Alpha holds.
+    Gamma = type("Alpha", (), {"__init__": lambda self: setattr(self, "tag", "c")})
 
-    # Same order the failing run took: bind, conjure, then the SECOND bind
-    # is what trips the post-conjure structural validator.
+    # Same order the original run took: bind, conjure, then the SECOND
+    # bind - post-conjure, on this dynamic frame. It used to trip the
+    # post-conjure structural validator; since 0.2.8206 it stands, because
+    # its ADDRESS differs.
     book.bind(spell=Alpha, existence="unique", permissions="create",
               binding_name="probe-dup-one")
-    book.conjure(name="probe-dup-root")
+    root = book.conjure(name="probe-dup-root")
+    book.bind(spell=Beta, existence="unique", permissions="create",
+              binding_name="probe-dup-two")
+    assert root.meld("Alpha", binding_name="probe-dup-one").tag == "a"
+    assert root.meld("Alpha", binding_name="probe-dup-two").tag == "b"
 
-    with pytest.raises(Exception) as collision:
-        book.bind(spell=Beta, existence="unique", permissions="create",
-                  binding_name="probe-dup-two")
+    with pytest.raises(RuntimeError) as collision:
+        book.bind(spell=Gamma, existence="unique", permissions="create",
+                  binding_name="PROBE-DUP-ONE")
     message = str(collision.value)
     # Specific, not incidental: the class name would appear in almost any
-    # error, so pin the validator's own strategy verdict instead.
-    assert "DUPLICATE_SPELL_NAME" in message, message
-    assert "probe-dup-one" in message and "probe-dup-two" in message, (
-        "both binding names should appear - which is the proof that a "
-        "DISTINCT binding_name did not settle the collision"
+    # error, so pin the frame claim's own verdict and the address it names
+    # - lowercased, because an address is case-insensitive.
+    assert "Binding signature already active in this frame" in message, message
+    assert "frame_key='alpha', binding_name='probe-dup-one'" in message, message
+    assert root.meld("Alpha", binding_name="probe-dup-one").tag == "a", (
+        "the holder keeps serving its address after the refusal"
     )
-    print("duplicate name pinned: distinct binding_name did not save it")
+    print("one name, two addresses: both serve; a held address: "
+          "the second spell is refused at bind")
 
 
 def test_probe_a_part_miss_is_a_value_and_never_a_raise():
@@ -37350,7 +36955,7 @@ END FILE: architecture_and_design/05_engineering_drawings/mermaid/use_case_scope
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/README.md
-CONTENT SHA256: 96047c153f71655712a392c3496c273212b252e4a0f119c31ec054c5acbe1399
+CONTENT SHA256: 769d0f1d2a79a01994bcdf4dc1305f6763b9b45f82b44a170dba2efbb22cc3b7
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder Architecture and Design
@@ -37430,7 +37035,7 @@ The canonical diagram sources and generated assets follow the
 
 ## Current License
 
-Melder is licensed under GNU AGPL v3 or later (`AGPL-3.0-or-later`). See the repository
+Melder is licensed under the Apache License 2.0 (`Apache-2.0`). See the repository
 [LICENSE](../LICENSE) and [NOTICE](../NOTICE).
 ================================================================================
 END FILE: architecture_and_design/README.md
@@ -72480,7 +72085,7 @@ END FILE: docs/catalog.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/conf.py
-CONTENT SHA256: cab8932b58ac0892819af7db581981311fe578d37885032de984af9a9f8f8a79
+CONTENT SHA256: 53f526c251f60897730842eda6108c7ff8d3638ad673a863471f83ccf562f5c5
 SOURCE ENCODING: utf-8
 ================================================================================
 """Configure Melder's documentation build without importing Melder for its version.
@@ -72499,7 +72104,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
 
 project = "Melder"
 author = "Mark Geleta / Synaptic AI Systems"
-copyright = "2026, Mark Geleta / Synaptic AI Systems"
+copyright = "2026, Mark Thomas Geleta"
 release = ast.literal_eval(
     next(
         node.value
@@ -78585,7 +78190,7 @@ END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: 1f751ec99c19a8bf64ff478afb0b77794ec6ffef089af9f8f7fe39a52ec41f3c
+CONTENT SHA256: e2e8c3e12599ecdeacc039ecf85149703a1866c07efe5fe36c5180a671068a44
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -78598,7 +78203,7 @@ dynamic = ["version"]
 description = "AI-native dependency graph runtime for free-threaded Python: a live, inspectable object graph that agents can read, safely operate under compiled permissions, checkpoint, and evolve. One dependency (pip), 3.14+ no-GIL."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.14"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 
 authors = [
@@ -81422,12 +81027,31 @@ END FILE: release_docs/0.2.8275.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 89cb471243e9c8f3908f9ff81c24871a54ff6ed1d6afff9d26f1b0a6e68a4c46
+CONTENT SHA256: ad7749888457bfe48d5d8d73d3045a750dbd9bfe64fce902531ca9901838c139
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8278
+# Melder 0.2.8282
 
 **Unreleased**
+
+## Spell ownership is never transferred across aetheric frames
+
+**Breaking change:** `Conduit.transfer_spell_ownership` now raises RuntimeError "Cannot transfer spell ownership
+across different AethericFrames: <source> != <target>. ..." when the target conduit belongs to another aetheric
+frame, before anything starts - the rule `link` already follows. Such a transfer used to run and could leave the
+target's Spellbook with two active spells at one address (a meld of that address raised `DUPLICATE_SPELL_NAME`) and
+the source frame unable to bind that address again. To use a spell in another frame, bind it in a Spellbook of that
+frame. Transfers within one frame are unchanged.
+
+## Melder is licensed under the Apache License 2.0
+
+Melder's license changes from the GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`) to the
+Apache License 2.0 (SPDX `Apache-2.0`). `LICENSE` carries the Apache License's text, and `NOTICE`, the package
+metadata (`license` in `pyproject.toml`, `melder.__license__`) and the README state the same license. The AGPL's
+terms, its network-use clause included, are replaced by the Apache License's. The trademark notice keeps its
+substance: the license grants no rights in the Melder name or marks. `LICENSE`, `NOTICE`, the header of
+`melder.__license__` and the documentation's copyright line name one copyright holder, Mark Thomas Geleta, and one
+year, 2026.
 
 ## A class lookup reaches only a spell bound bare
 
@@ -81451,12 +81075,30 @@ class FramedHost:
         self.greeter = greeter
 ```
 
-A single parameter that relied on the old matching keeps conjuring: it becomes an unresolved input, and
-melding the consumer raises `UnresolvedInputError` naming the parameter unless the meld supplies it with
-`override=`. A required `list[ThatClass]` that is left empty refuses at `conjure()` in an automatic world
-(`collection_socket_no_providers`), as any empty required collection does, and a dynamic world injects `[]`.
-A `SpellMap(ThatClass)` that no longer matches fails at `conjure()` with "SpellMap default could not be
-resolved".
+**Breaking change:** a consumer whose class lookup finds the class only where the lookup does not reach -
+under a spellframe or a binding name - is refused at `conjure()` with `SpellbookValidationError`, code
+`HIDDEN_PROVIDER`, and the message names every place the class is bound and the lookup to use there:
+
+```text
+Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is
+bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at
+(spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english').
+Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while
+that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+```
+
+The refusal covers a class annotation, a single string annotation naming the class, `Optional[ThatClass]`
+without a default, and a `SpellMap(ThatClass)` default, which used to fail inside the compiler with
+"SpellMap default could not be resolved". `override=` no longer rescues such a consumer: in a dynamic world,
+binding it after `conjure()` raises the same error and leaves it registered and refused, and every meld of
+it is refused, with or without `override=`. Order does not matter: a consumer compiled before its class was
+bound under a spellframe is refused at its next meld, as one compiled after is refused at its bind.
+
+A required `list[ThatClass]` left empty for the same reason refuses at `conjure()` in an automatic world
+(`collection_socket_no_providers`), its message now naming where the class is bound and the list to use
+(`list[Greeter]`); a dynamic world injects `[]` with a warning naming the same places. A class bound nowhere
+still compiles as an unresolved input: melding the consumer raises `UnresolvedInputError` naming the
+parameter unless the meld supplies it with `override=`.
 
 How to upgrade:
 
@@ -81467,17 +81109,22 @@ How to upgrade:
 3. A bare class bound with a binding name: use `SpellMap(English, binding_name="v1")`, or drop the binding
    name.
 4. `SpellMap(English)` aimed at a framed or named English: add its `spellframe` and `binding_name`.
+5. A parameter you supplied with `override=` at every meld: point a `SpellMap` default at where the class
+   is bound, bind the class bare, or give the parameter an ordinary Python default
+   (`greeter: Optional[English] = None`), which Melder never injects over and the check does not look at.
 
 What stays the same: Protocol annotations, `list[Protocol]`, `list["category"]`, frame-addressed `SpellMap`s,
 every meld door, `SpellContract`, and ambiguity - two implementations of one Protocol still refuse with
-`AMBIGUOUS_PROVIDER`. A spellframe is the spell's interface, a dict keyed by binding name:
+`AMBIGUOUS_PROVIDER`, whose message no longer suggests `override=` (an override never rescued a refused
+spell). A spellframe is the spell's interface, a dict keyed by binding name:
 `meld(spellframe=Greeter)` with no binding name reads the default slot, while a `Greeter` annotation selects
 the frame's single implementation.
 
 Why: `meld(English)` refused an English bound under a frame while `greeter: English` injected it - two
 answers to one question - and a consumer compiled before its framed provider arrived waited under the class
-name while the provider announced its frame, so it never picked the provider up. One rule removes both.
-Creation-cache bundles written before are cold once (cache generation 26).
+name while the provider announced its frame, so it never picked the provider up. One rule removes both, and
+the refusal says where the class is instead of "nothing registered provides it". Creation-cache bundles
+written before are cold once (cache generation 27).
 
 ## Canonical terminal enum names with compatible record reads
 
@@ -81534,15 +81181,19 @@ The README's GitHub stars badge uses the social style and links to the stargazer
 
 The README's Spellframes, Dependency Injection and `SpellMap` passages, beginner lesson 25, the examples'
 `AGENTS.md` and the agent operations guide's constructor table state the class-lookup rule and the
-spellframe as an interface dict.
+spellframe as an interface dict. The README's overview, its `conjure()` and Dependency Injection passages
+name the `HIDDEN_PROVIDER` refusal, and its `SpellMap` passage no longer offers a meld `override` among
+`AMBIGUOUS_PROVIDER`'s fixes. The source maps, their indexes and the source graph describe the refusal, the
+type-key announce and creation-cache generation 27. The internal-bind guard lists 631 classes:
+`HiddenProviderStrategy` and `HiddenProviderReport` joined it.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8278.
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8282.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt
-CONTENT SHA256: 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0
+CONTENT SHA256: e3af53c142f9acdb9c2d2b4134c3695df75ec22b33d819d3af47334ff58681f4
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder has ZERO third-party RUNTIME dependencies.
@@ -81590,7 +81241,7 @@ coverage==7.16.1
 ruff==0.16.7
 
 # --- build ---
-setuptools==84.0.0
+setuptools==84.2.1
 wheel==0.48.0
 
 # --- optional: parallel test runs (`pytest -n auto`) ---

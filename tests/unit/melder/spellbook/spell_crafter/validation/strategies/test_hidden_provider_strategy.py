@@ -57,15 +57,26 @@ class _SpellStub:
 
 
 class _BookStub:
-    """A spellbook that answers `find_spell_by_spell_id` from a dict, as the Book does for its own spells."""
+    """
+    A spellbook that answers for its own spells and for the copies it borrows, as the Book does.
 
-    def __init__(self, spells: dict) -> None:
-        """Hold the lookup."""
+    `find_spell_by_spell_id` reads the own spells; `_contracted_spells` keys the peers whose copies the Book holds and
+    `_find_contracted_spell_by_id(spell_id, conduit_id)` answers one peer's copy - the two surfaces the strategy reads.
+    """
+
+    def __init__(self, spells: dict, borrowed: Optional[dict] = None) -> None:
+        """Hold the own spells by id and the borrowed copies as {peer conduit id: {spell id: copy}}."""
         self._spells = spells
+        self._borrowed = borrowed or {}
+        self._contracted_spells = {conduit_id: {} for conduit_id in self._borrowed}
 
     def find_spell_by_spell_id(self, spell_id: str) -> Any:
-        """Return the candidate or None."""
+        """Return the own spell or None; a borrowed copy is not an own spell."""
         return self._spells.get(spell_id)
+
+    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> Any:
+        """Return the copy borrowed from `conduit_id` under `spell_id`, or None."""
+        return self._borrowed.get(conduit_id, {}).get(spell_id)
 
 
 def _candidate(spellframe: Any, binding_name: Optional[str]) -> SimpleNamespace:
@@ -125,7 +136,9 @@ def test_no_topology_emits_nothing() -> None:
 
 
 def test_sockets_without_hidden_candidates_or_of_another_kind_emit_nothing() -> None:
-    """An UNRESOLVED_INPUT with no hidden candidates (nothing registered) and an empty class list are not refused here."""
+    """
+    An UNRESOLVED_INPUT with no hidden candidates (nothing registered) and an empty class list are not refused here.
+    """
     topology = SpellLocalTopology("consumer", [
         _socket(SocketKind.UNRESOLVED_INPUT),
         _socket(SocketKind.NORMAL, ("english-sid",), param_name="greeters", position=1, collection=True),
@@ -184,18 +197,76 @@ def test_spellmap_class_lookup_miss_is_refused_in_the_spellmap_form() -> None:
     assert issue.details["spellmap"] == "SpellMap(English, binding_name='english')"
 
 
-def test_candidate_the_book_cannot_find_renders_by_id_and_never_raises() -> None:
-    """A removed spell or a borrowed copy (which find_spell_by_spell_id does not consult) renders `spell id <id>`."""
-    topology = SpellLocalTopology("consumer", [_socket(SocketKind.UNRESOLVED_INPUT, ("borrowed-sid", "english-sid"))])
+def test_borrowed_candidate_is_named_with_its_address_and_spellmap_as_an_owned_one_is() -> None:
+    """
+    Regression (STEP 3 of patch hidden_provider_2026_11_07): a hidden candidate that is a copy the Book borrows from a
+    peer conduit - in the pool Phase 3 reads, but not among the own spells `find_spell_by_spell_id` answers for - was
+    rendered `spell id <id>`, with no address and no SpellMap. It is found among the borrowed copies, peer by peer,
+    and the report reads exactly as it does for the same English owned by the Book.
+    """
+    topology = SpellLocalTopology("consumer", [_socket(SocketKind.UNRESOLVED_INPUT, ("english-sid",))])
+    owning = _BookStub({"english-sid": _candidate(Greeter, "english")})
+    borrowing = _BookStub({}, borrowed={"peer-a": {}, "peer-b": {"english-sid": _candidate(Greeter, "english")}})
+    reports = []
+    for book in (owning, borrowing):
+        issues: List[SpellValidationIssue] = []
+        HiddenProviderStrategy().validate(_context(topology, book, issues, _requirements(_annotated())))
+        issue, = issues
+        reports.append((issue.message, issue.details["candidates"]))
+    assert reports[1] == reports[0]
+    assert reports[1][0] == (
+        "Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is "
+        "bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at "
+        "(spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). "
+        "Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while "
+        "that spell is the only one bound under Greeter - or bind English bare."
+    )
+
+
+@pytest.mark.parametrize("in_a_book", [True, False], ids=["book-without-the-id", "stand-in-without-a-book"])
+def test_candidate_found_nowhere_renders_by_id_and_the_remedy_names_no_spellmap(in_a_book: bool) -> None:
+    """
+    Regression (STEP 3 of patch hidden_provider_2026_11_07): a candidate neither the Book's own spells nor its
+    borrowed copies hold (removed between phases) renders `spell id <id>` with no lookup, and never raises. With no
+    entry showing a SpellMap the remedy no longer points at "the SpellMap shown" - in the annotation form or, without
+    "as shown", in the SpellMap form.
+    """
+    topology = SpellLocalTopology("consumer", [_socket(SocketKind.UNRESOLVED_INPUT, ("gone-sid",))])
+    book = _BookStub({}, borrowed={"peer": {}}) if in_a_book else None
+    spellmap = SimpleNamespace(name="greeter", annotation=None, di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+                               spellmap_default=SpellMap(English))
+    messages = []
+    for param in (_annotated(), spellmap):
+        issues: List[SpellValidationIssue] = []
+        HiddenProviderStrategy().validate(_context(topology, book, issues, _requirements(param)))
+        issue, = issues
+        messages.append(issue.message)
+    assert messages == [
+        "Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is "
+        "bound bare (no spellframe, the default binding), and English is bound only under a spellframe or a binding "
+        "name: spell id gone-sid. Ask for it where it is bound, or bind English bare.",
+        "Parameter 'greeter' on spell 'Host' has the default SpellMap(English), a class lookup that reaches English "
+        "only where it is bound bare under the default binding, but English is bound only where that lookup does not "
+        "reach: spell id gone-sid. Point the SpellMap at the address it means, or bind English bare.",
+    ]
+
+
+def test_candidate_found_nowhere_beside_a_found_one_renders_by_id_and_the_remedy_counts_the_shown_spellmap() -> None:
+    """
+    A removed candidate beside a found one: the removed one reads `spell id <id>` (first - None sorts first), the
+    found one its address and SpellMap, and the remedy points at the one SpellMap shown.
+    """
+    topology = SpellLocalTopology("consumer", [_socket(SocketKind.UNRESOLVED_INPUT, ("gone-sid", "english-sid"))])
     book = _BookStub({"english-sid": _candidate(None, "v1")})
     issues: List[SpellValidationIssue] = []
     HiddenProviderStrategy().validate(_context(topology, book, issues, _requirements(_annotated())))
     issue, = issues
-    assert "spell id borrowed-sid; English at (spellframe=None, binding_name='v1') - use SpellMap(English, " \
-           "binding_name='v1')" in issue.message
-    issues.clear()
-    HiddenProviderStrategy().validate(_context(topology, None, issues, _requirements(_annotated())))
-    assert issues[0].message.count("spell id ") == 2
+    assert issue.message == (
+        "Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is "
+        "bound bare (no spellframe, the default binding), and English is bound only under a binding name: spell id "
+        "gone-sid; English at (spellframe=None, binding_name='v1') - use SpellMap(English, binding_name='v1'). Ask "
+        "for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare."
+    )
 
 
 def test_missing_requirements_render_the_parameter_name_as_the_type() -> None:

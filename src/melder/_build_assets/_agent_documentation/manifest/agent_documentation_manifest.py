@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8278"
-SOURCE_SHA256 = "0558c0624141f6e6eb7a41843d2d8936d4bd740e39b5afc5eb87353e301233f7"
-MARKED_COUNT = 469
+BUILT_FOR_VERSION = "0.2.8282"
+SOURCE_SHA256 = "b4f70aa50129b52444027be44d7304c6b21c2a263c47fb24bbb72f7496836bb4"
+MARKED_COUNT = 471
 EXEMPT_COUNT = 142
 PENDING_COUNT = 18
 
@@ -217,7 +217,8 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency', 'SpellSymbolicDependency'): ('internal', 'access: internal. Phase-2 symbolic socket for ONE constructor parameter: spell_id, param_name, position, di_shape, target_annotation, is_collection, spellmap_default, contract_key. Symbolic only - not yet tied to concrete spell ids.'),
     ('melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph', 'SpellSymbolicGraph'): ('internal', 'access: internal. Phase-2 per-spell symbolic graph: the set of SpellSymbolicDependency edges (one per constructor socket) for one spell version. No DAG ordering, no concrete spell ids, no existence policy.'),
     ('melder.aether.spellbook.spell_compiler.topology.spell_local_topology', 'SpellLocalTopology'): ('internal', 'access: internal. Per-spell local topology: the SpellSocketDescriptor tuple plus a param-name index (sockets / iter_sockets / get_sockets_for_param). Produced once in Phase 3, effectively immutable.'),
-    ('melder.aether.spellbook.spell_compiler.topology.spell_local_topology', 'SpellSocketDescriptor'): ('internal', 'access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name, position, socket_kind, is_collection/is_optional, resolved target_spell_ids, and dependency_key/contract_key. Frozen value object.'),
+    ('melder.aether.spellbook.spell_compiler.topology.spell_local_topology', 'SpellSocketDescriptor'): ('internal', 'access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name, position, socket_kind, is_collection/is_optional, resolved target_spell_ids, dependency_key/contract_key, and the hidden candidates of a class-lookup miss (hidden_spell_ids, hidden_frame_keys). Frozen value object.'),
+    ('melder.aether.spellbook.spell_compiler.validation.hidden_provider_report', 'HiddenProviderReport'): ('internal', 'access: internal. Pure renderer of hidden candidates (spells of a class bound only under a spellframe or a binding name): describe, order, the "where" words, the lookup per shape and the four report texts.'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_context', 'SpellValidationContext'): ('internal', 'access: internal. Phase-4 per-spell validation context handed to each strategy: the spell, spellbook, and the Phase 1/2/3 artifacts, plus the shared mutable issues list and an optional pass-scoped memo cache. Strategies read fields and append issues; they do not own the list.'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_issue', 'SpellValidationIssue'): ('internal', "access: internal. One Phase-4 validation finding: severity ('error'|'warning'), code, message, optional source (emitting strategy) and details. The unit strategies append into the context's issues list."),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_result', 'SpellValidationResult'): ('internal', 'access: internal. Aggregate Phase-4 result for one spell version: spell_id, spell_name, the full issues list, plus derived errors/warnings/has_errors/has_warnings views. The artifact Spell.validated / is_broken reads from.'),
@@ -230,6 +231,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy', 'DanglingDependenciesStrategy'): ('internal', "access: internal. Phase-4 strategy: checks every id in spell.dependencies exists in the owning Spellbook's _spell_id_pool. Emits DANGLING_DEPENDENCY (error) per missing id, or NO_SPELLBOOK_FOR_DEPENDENCY_CHECK (warning) when no spellbook is attached."),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy', 'DuplicateSpellNameStrategy'): ('internal', 'access: internal. Phase-4 strategy: collects visible spells by normalized lookup address (pass-cached) and emits DUPLICATE_SPELL_NAME for a shared address. Same-named spells at distinct addresses are valid. Advises changing the frame or binding.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy', 'ExistingCreationCompatibilityStrategy'): ('internal', 'access: internal. Phase-4 strategy for existing-creation spells: errors if there is no bound instance, existence is not unique, the instance binding profile is missing, or DI parameters are declared. No-op for non-existing-creation spells.'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy', 'HiddenProviderStrategy'): ('internal', 'access: internal. Phase-4 strategy: emits one HIDDEN_PROVIDER error per UNRESOLVED_INPUT socket whose class is bound only under a spellframe or a binding name, naming each address and the SpellMap that reaches it.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy', 'ParameterPolicyStrategy'): ('internal', 'access: internal. Phase-4 strategy: enforces DI policy on parameters - no variadic DI, single/collection DI must carry a resolvable non-builtin annotation/element. Emits the DI_* / VARIADIC_DI_UNSUPPORTED errors. Validation only.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy', 'RequiredHolesStrategy'): ('internal', 'access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN, default-less parameter - a hole Melder DI will never fill, so the caller must supply it via overrides or manual composition; for set/dict/tuple parameters the message adds that Melder injects collections only as list[T] - plus OVERRIDE_REQUIRED and UNRESOLVED_INPUT warnings for supplied-input sockets. Reporting only.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy', 'ResolutionFramePresenceStrategy'): ('internal', 'access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when Phase 3 produced no resolution frame. (MISSING_DEPENDENCY_GRAPH retired 2026-09-26.)'),
@@ -940,6 +942,7 @@ CLASS_BASES = {
     ('melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy', 'DanglingDependenciesStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy', 'DuplicateSpellNameStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy', 'ExistingCreationCompatibilityStrategy'): ('SpellValidationStrategy',),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy', 'HiddenProviderStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy', 'ParameterPolicyStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy', 'RequiredHolesStrategy'): ('SpellValidationStrategy',),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy', 'ResolutionFramePresenceStrategy'): ('SpellValidationStrategy',),

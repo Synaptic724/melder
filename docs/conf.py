@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
 
 project = "Melder"
 author = "Mark Geleta / Synaptic AI Systems"
-copyright = "2026, Mark Geleta / Synaptic AI Systems"
+copyright = "2026, Mark Thomas Geleta"
 release = ast.literal_eval(
     next(
         node.value

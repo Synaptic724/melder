@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "1ad5ada142631e58197ebf0ac815015bfcd4406404c0c2d5a6edb7d9c766db20",
+ "source_sha256": "885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -64,7 +64,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9ea299cae1851ab05b2ba02eed289a84ffd6dceda51aab03c42cb0ef1c70b087",
+   "span_sha256": "f2065dde45ba2227744024dce4d278c8371fd6c007a189dab3cb20ad76829e1d",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
@@ -76,7 +76,8 @@
     "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)",
     "watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)",
     "records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)",
-    "records the binding key of each lineage's selected version in register_index (binding_key=..., kept when None, dropped by unregister_index and cleanup) and marks everything downstream of given lineages for revalidation - a lineage reached by a registry edge, frame-wide, as gated, impacted_by_dependency and transitively dirty; a SpellContract consumer, in any Book, of a reached lineage's binding key as gated + contract_unvalidated - visiting each lineage once and never a seed (mark_dependents_for_revalidation); mark_contract_dependents_dirty walks on the same way from the consumers it marks (0.2.8250)"
+    "records the binding key of each lineage's selected version in register_index (binding_key=..., kept when None, dropped by unregister_index and cleanup) and marks everything downstream of given lineages for revalidation - a lineage reached by a registry edge, frame-wide, as gated, impacted_by_dependency and transitively dirty; a SpellContract consumer, in any Book, of a reached lineage's binding key as gated + contract_unvalidated - visiting each lineage once and never a seed (mark_dependents_for_revalidation); mark_contract_dependents_dirty walks on the same way from the consumers it marks (0.2.8250)",
+    "also watches an UNRESOLVED_INPUT socket under its hidden_frame_keys, so a change announced at a hidden candidate's address (a notch of that index, for instance) re-gates the consumer Phase 4 refused (0.2.8281)"
    ],
    "owns_state": [
     "_states_by_index_id",

@@ -30,7 +30,8 @@ def _spell(spellframe: Any = None, binding_name: Optional[str] = None, spell_nam
         kind = SpellframeKind.category
     else:
         kind = SpellframeKind.contract
-    return SimpleNamespace(spell_name=spell_name, spellframe=spellframe, spellframe_kind=kind, binding_name=binding_name)
+    return SimpleNamespace(spell_name=spell_name, spellframe=spellframe, spellframe_kind=kind,
+                           binding_name=binding_name)
 
 
 def _described(spellframe: Any = None, binding_name: Optional[str] = None, spell_id: str = "sid",
@@ -180,10 +181,11 @@ def test_annotation_message_for_several_candidates_asks_for_the_one_it_needs() -
     ("binding_name", "expected"),
     [
         pytest.param(None, (
-            "Parameter 'greeter' on spell 'Host' has the default SpellMap(English), a class lookup that reaches English "
-            "only where it is bound bare under the default binding, but English is bound only where that lookup does "
-            "not reach: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). "
-            "Point the SpellMap at the address it means, as shown, or bind English bare."
+            "Parameter 'greeter' on spell 'Host' has the default SpellMap(English), a class lookup that reaches "
+            "English only where it is bound bare under the default binding, but English is bound only where that "
+            "lookup does not reach: English at (spellframe='greeters', binding_name=None) - use "
+            "SpellMap(spellframe='greeters'). Point the SpellMap at the address it means, as shown, or bind English "
+            "bare."
         ), id="default-binding"),
         pytest.param("v1", (
             "Parameter 'greeter' on spell 'Host' has the default SpellMap(English, binding_name='v1'), a class lookup "
@@ -200,6 +202,49 @@ def test_spellmap_message_is_the_hidden_provider_text(binding_name: Optional[str
         param_name="greeter", consumer_name="Host", class_name="English", binding_name=binding_name,
         candidates=[_described("greeters", None)],
     ) == expected
+
+
+def test_described_count_counts_the_entries_that_show_a_lookup() -> None:
+    """A found candidate's entry shows a lookup; a candidate known by id alone shows none."""
+    gone = HiddenProviderReport.describe("gone", None)
+    assert HiddenProviderReport.described_count([]) == 0
+    assert HiddenProviderReport.described_count([gone]) == 0
+    assert HiddenProviderReport.described_count([gone, _described(Greeter, "english"), _described("greeters")]) == 2
+
+
+def test_remedies_name_no_spellmap_when_no_entry_shows_one() -> None:
+    """
+    Regression (STEP 3 of patch hidden_provider_2026_11_07): with every candidate known by id alone no SpellMap is
+    shown, so the annotation form's remedy reads "Ask for it where it is bound, or bind T bare." and the SpellMap form
+    leaves out "as shown"; beside a found candidate the remedy points at "the SpellMap shown" - it counts the
+    SpellMaps the entries show, not the candidates.
+    """
+    gone = HiddenProviderReport.describe("gone", None)
+    assert HiddenProviderReport.annotation_message(
+        param_name="greeter", consumer_name="Host", expected_type="English", candidates=[gone],
+    ) == (
+        "Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is "
+        "bound bare (no spellframe, the default binding), and English is bound only under a spellframe or a binding "
+        "name: spell id gone. Ask for it where it is bound, or bind English bare."
+    )
+    assert HiddenProviderReport.spellmap_message(
+        param_name="greeter", consumer_name="Host", class_name="English", binding_name="v1", candidates=[gone],
+    ) == (
+        "Parameter 'greeter' on spell 'Host' has the default SpellMap(English, binding_name='v1'), a class lookup "
+        "that reaches English only where it is bound bare under the binding name 'v1', but English is bound only "
+        "where that lookup does not reach: spell id gone. Point the SpellMap at the address it means, or bind English "
+        "bare under the binding name 'v1'."
+    )
+    mixed = HiddenProviderReport.annotation_message(
+        param_name="greeter", consumer_name="Host", expected_type="English",
+        candidates=[gone, _described(Greeter, "english")],
+    )
+    assert mixed.endswith(
+        "English is bound only under a spellframe: spell id gone; English at (spellframe='Greeter', "
+        "binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is "
+        "bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only "
+        "one bound under Greeter - or bind English bare."
+    )
 
 
 def test_collection_clause_names_the_list_that_gathers_each_candidate() -> None:

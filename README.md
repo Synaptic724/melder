@@ -125,6 +125,8 @@ meld  →  resolve instances             (as often as you like)
 ```
 
 `conjure()` checks the registered graph, including cycles and ambiguous providers.
+It also refuses a class lookup whose class is bound only under a spellframe or a
+binding name (`HIDDEN_PROVIDER`), naming where it is bound.
 A typed parameter with no registered provider can remain a caller-supplied input:
 the constructing `meld()` must supply it through `override`, or it raises
 `UnresolvedInputError`. Dynamic changes can also require validation at a later meld.
@@ -386,8 +388,10 @@ server = conduit.meld("Server")
 
 **`conjure()` prepares the registered graph.** Requirements extraction, graph
 construction, cycle detection, and runtime compilation run there. Cycles and
-ambiguous providers refuse startup. A typed parameter with no provider can be
-supplied at `meld(override={...})`; omitting it when construction needs it raises
+ambiguous providers refuse startup, and so does a class lookup whose class is
+bound only under a spellframe or a binding name (`HIDDEN_PROVIDER`, naming where
+it is bound). A typed parameter with no provider can be supplied at
+`meld(override={...})`; omitting it when construction needs it raises
 `UnresolvedInputError`. Ordinary Python parameter defaults remain defaults.
 
 > **One book, one conjure.** A Spellbook produces exactly one conduit, ever.
@@ -470,7 +474,9 @@ What an annotation selects depends on what it is. A **class** selects only the s
 **bare** — no `spellframe` and no `binding_name`, the class itself or an existing object of it — which is
 exactly what `meld(TheClass)` returns. A spell bound under a spellframe is reached through its frame, and a
 spell bound under a binding name through that name (`SpellMap(TheClass, binding_name=...)`); a category that
-happens to share the class's name does not turn its members into providers either. A **Protocol** selects
+happens to share the class's name does not turn its members into providers either. When the class is bound
+only under a spellframe or a binding name, `conjure()` refuses the consumer with `HIDDEN_PROVIDER`, naming
+each place it is bound and the `SpellMap` that reaches it. A **Protocol** selects
 the spells bound under it as their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at
 runtime, resolves by name to a bare type or a contract, never to a string category. `list[...]` gathers the
 group the annotation's kind names: the bare spell of the class, every implementer of the Protocol, or — for
@@ -530,7 +536,7 @@ that name; a store bound under a spellframe is named through the frame,
 When a single Protocol-annotated parameter has several registered implementations,
 `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
 report that lists every candidate's address and the fix — a `SpellMap`
-default, a meld `override`, or one provider — never a guess.
+default or one provider — never a guess.
 Registering the same class twice is instead refused as a duplicate spell identity
 at registration; another binding name does not make it a different spell.
 

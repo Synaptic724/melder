@@ -8,11 +8,13 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
         SpellParameterRequirement,
     )
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellSocketDescriptor
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+    from melder.aether.spellbook.spellbook import Spellbook
 
 
 class HiddenProviderStrategy(SpellValidationStrategy):
@@ -37,8 +39,10 @@ class HiddenProviderStrategy(SpellValidationStrategy):
       (`HiddenProviderReport.spellmap_message`) is used when the parameter's Phase-1 shape is SPELLMAP_DEFAULT.
       Neither offers a meld override: a refused spell's melds are refused, override or not.
     - Candidates are found with `context.spellbook.find_spell_by_spell_id`, which searches the Book's own active and
-      parked spells; an id it cannot find (removed between phases, or a copy borrowed from a peer conduit, which
-      that lookup does not consult) renders as `spell id <id>` and never raises.
+      parked spells, and then among the copies the Book borrows from peer conduits
+      (`Spellbook._find_contracted_spell_by_id`), so a borrowed candidate renders as an owned one does (STEP 3 of the
+      patch, 0.2.8281); an id neither finds (removed between phases) renders as `spell id <id>` and never raises, and
+      when no candidate is found at all the report's remedy names no SpellMap.
     - `details` carries `spell_id`, `parameter_name`, `lookup` ("annotation" or "spellmap"), `expected_type` or
       `spellmap`, `dependency_key` and `candidates` (the `HiddenProviderReport.describe` dicts in address order, each
       with its `use`), so tooling can act without parsing text.
@@ -188,8 +192,9 @@ class HiddenProviderStrategy(SpellValidationStrategy):
                 return param
         return None
 
-    @staticmethod
+    @classmethod
     def _describe_candidates(
+            cls,
             context: SpellValidationContext,
             socket: SpellSocketDescriptor,
     ) -> List[Dict[str, Optional[str]]]:
@@ -198,8 +203,9 @@ class HiddenProviderStrategy(SpellValidationStrategy):
 
         Contract:
             - One `HiddenProviderReport.describe` dict per id, in recorded order (the report orders by address).
-            - A candidate the spellbook cannot find - removed between phases, or a borrowed copy, which
-              `find_spell_by_spell_id` does not consult - is described by id only.
+            - Each id is found by `_find_candidate`: an own spell of the Book or a copy it borrows, so a borrowed
+              candidate is described - and rendered - as an owned one is.
+            - A candidate found nowhere (removed between phases) is described by id only.
 
         Args:
             context: Validation context of the spell under validation.
@@ -210,9 +216,46 @@ class HiddenProviderStrategy(SpellValidationStrategy):
         """
         spellbook = context.spellbook
         return [
-            HiddenProviderReport.describe(
-                candidate_id,
-                spellbook.find_spell_by_spell_id(candidate_id) if spellbook is not None else None,
-            )
+            HiddenProviderReport.describe(candidate_id, cls._find_candidate(spellbook, candidate_id))
             for candidate_id in socket.hidden_spell_ids
         ]
+
+    @staticmethod
+    def _find_candidate(spellbook: Optional[Spellbook], candidate_id: str) -> Optional[Spell]:
+        """
+        Find one hidden candidate: an own spell of the Book, else a copy the Book borrows from a peer conduit.
+
+        Purpose:
+            Phase 3 finds hidden candidates in the Book's spell_id pool, which holds the copies a peer granted by
+            contract as well as the Book's own spells, so a hidden candidate can be a borrowed copy.
+            `Spellbook.find_spell_by_spell_id` answers for own spells only; a borrowed candidate rendered as
+            `spell id <id>`, with no address and no SpellMap (finding c of patch hidden_provider_2026_11_07, fixed in
+            its STEP 3, 0.2.8281).
+
+        Contract:
+            - `Spellbook.find_spell_by_spell_id` first: the Book's own active and parked spells.
+            - Then the Book's borrowed copies, peer by peer, through `Spellbook._find_contracted_spell_by_id` - the
+              walk `Conduit.find_contracted_spell` makes over the same maps; no lookup surface is added.
+            - Lock-free, as both lookups are: Phase 4 runs while conjure holds the Book lock. The peer ids are copied
+              with one `list(...)` call, exact under a concurrent link or sever on 3.14t; a peer linked or severed
+              meanwhile may be missed or still answered, and is then rendered by id.
+            - None for a stand-in context without a Book, and for an id neither lookup finds (a spell removed
+              between phases); never raises for a missing spell.
+
+        Args:
+            spellbook: The Book under validation, or None for a stand-in context.
+            candidate_id: A hidden candidate's spell_id as Phase 3 recorded it.
+
+        Returns:
+            Optional[Spell]: The candidate, or None.
+        """
+        if spellbook is None:
+            return None
+        own = spellbook.find_spell_by_spell_id(candidate_id)
+        if own is not None:
+            return own
+        for conduit_id in list(spellbook._contracted_spells):
+            borrowed = spellbook._find_contracted_spell_by_id(candidate_id, conduit_id)
+            if borrowed is not None:
+                return borrowed
+        return None
