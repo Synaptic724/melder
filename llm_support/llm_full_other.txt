@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 88ab32167b723ffa07dd8bbb1bb3ce648875d20541f5ff46d8eb8afb6ac2278e
-FILE COUNT: 419
+SOURCE FINGERPRINT: c09aaf8513266235ea486e1f35c1b4b194ec304d778c71967752ec0c4b883d3e
+FILE COUNT: 420
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -81103,13 +81103,18 @@ What stays the same: every signature, notches inside one Spellbook, warm melds, 
 END FILE: release_docs/0.2.8275.md
 ================================================================================
 ================================================================================
-BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: fe797ee49f421657b35ab10e9934f9babb1f3bb5fff83ac2ac08e1b514a14de1
+BEGIN FILE: release_docs/0.2.8300.md
+CONTENT SHA256: d4d2094cfda18c5e30c0069e012bfcb79f0ee7627c2517afdfc95d36a9dbcaf7
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8288
+# Melder 0.2.8300
 
-**Unreleased**
+Melder 0.2.8300 moves the license to Apache 2.0, and a class lookup now reaches only a spell bound bare: a consumer
+whose class is bound only under a spellframe or a binding name is refused with `HIDDEN_PROVIDER`. Agents sharing a
+Rift no longer freeze each other or its removal, and selected enums carry string values with canonical `CLEANED`
+names. Breaking changes: the class-lookup rule and `HIDDEN_PROVIDER`, the enum values and names, and transfers
+across aetheric frames. The number jumps from 0.2.8275 to 0.2.8300: a release takes the next hundredth (the
+contribution guide), which the 0.2.8265 and 0.2.8275 cuts did not follow.
 
 ## Spell ownership is never transferred across aetheric frames
 
@@ -81280,6 +81285,47 @@ AttributeError (GitHub issue #271, following #206). `FrameLinkContract` keeps it
 most Melder classes do. Both docstrings say which reads take no lock. Nothing changes for code that does not race a
 cleanup.
 
+## Two Rift races leave the frame budget and the projection sets right
+
+Two attaches of one frame to one Rift at once - two agents calling `Rift.create_frame_link`, or one of them beside
+the room's `link_frame` - could both reserve the frame in Nexus's target-frame budget, and the second replaced the
+first's frame-link contract: that contract was never cleaned, and the frame's budget count stayed at 1 after
+`Nexus.remove_rift`, so its slot was used up for good. The second attach now keeps the first contract and gives its
+reservation back. An attach overtaken by the Rift's removal gives its reservation back and raises RuntimeError "Rift
+has already been cleaned." (it raised AttributeError). A projection refresh overtaken by the Rift's removal cleans
+the projection sets Nexus built for it and raises the same RuntimeError; those sets were left uncleaned, and a
+refresh waiting on the Rift's lock raised AttributeError. The Rift keeps its lock after cleanup for these two checks,
+and its docstrings say so (GitHub issue #274). Attaches and refreshes that do not race are unchanged.
+
+An attach that published while `Nexus.remove_rift` was finishing - after the removal counted the Rift's frames and
+before it cleaned the Rift - still kept its budget count. The removal now marks the Rift cleaned at the moment it
+counts its frames, so such an attach gives its reservation back and raises the same RuntimeError.
+
+## Agents sharing a room no longer wait on or freeze each other
+
+Agents work in one Rift room at the same time and share its workstation. The workstation's `call_target` and
+`cleanup_target` held its lock while the target's code ran, and the room's `get_target_attribute`,
+`get_target_method`, `execute_target_method` and `execute_codegen` held its command lock while an attribute, a
+method or a script ran. So agents took turns, and two could freeze each other for good: a target that read the
+target through a room command, against another agent's command reading the target. The lock is now held only to
+look up the target, and the agent's code runs after it is released, so agents' calls run side by side (GitHub
+issue #274). `cleanup_target` clears the selection afterwards only while no other agent has selected a different
+target meanwhile. A room has one workstation, shared by every agent in it - one active target and one set of
+binding names - and whether a target's own methods are safe to call from several threads at once is up to the
+target. The room's other commands still take turns under its command lock, and the codegen engine still runs one
+script at a time.
+
+## Removing a Rift while agents use it no longer freezes
+
+`Nexus.remove_rift` cleaned a Rift's room while holding the Rift's lock, and the room cleaned its workstation and
+command system while holding its own; agents take those locks the other way round. A removal could therefore
+freeze for good against an agent in the middle of `call_target` running a room command, against a weak workstation
+binding collected while the workstation was busy, or against `link_frame` refreshing its projections - both
+threads stuck and the Rift left half cleaned (GitHub issue #274). The Rift and its room now mark themselves cleaned
+under their lock and clean what they own after releasing it. An agent still using the Rift while it is removed can
+still meet the "has already been cleaned" RuntimeError or an AttributeError; letting the removal wait for agents to
+leave is a separate step.
+
 ## Packaging and documentation
 
 The source and test maps, their indexes and the source graph reflect the selected enum changes.
@@ -81322,7 +81368,23 @@ so cleaning one object from two threads at once is the caller's mistake, and a c
 overlap keeps its lock and says so. The source and test maps, their indexes and the source graph describe the
 frame-link contract's change.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8288.
+`Rift.create_frame_link` is documented as public: agents attach a frame with it directly or through their room's
+`link_frame`, in parallel too (it was marked internal while the Rift's own docstring pointed agents at it).
+`FrameViewer`'s docstring says that a read overlapping a frame link or an ACL refresh of its frame can raise the
+cleaned RuntimeError of the projection it was reading, and that a retry reads the new projection. `Nexus`'s
+docstring says it has one lock, the class-level `Nexus._lock` (it said each instance had its own as well), and
+`CommandSystem`'s says which of its commands take its lock (it said none did). The source and test maps, their
+indexes and the source graph describe the room's lock changes and the Rift's teardown.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8300.
+================================================================================
+END FILE: release_docs/0.2.8300.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+SOURCE ENCODING: utf-8
+================================================================================
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

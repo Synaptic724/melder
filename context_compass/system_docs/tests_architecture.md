@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-11-08T16:21:11Z
+- Updated: 2026-11-08T20:11:28Z
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -530,10 +530,15 @@ The most important recent integration addition is the dedicated
   loaded its lock is reproduced the same way, on one thread: a data descriptor on a per-test `__slots__`
   subclass (`_LockReadHook`) runs the overtaking cleanup inside the caller's `_lock` read, and a lock whose
   first entry runs it (`_CleanupBeforeAcquireLock`) covers the wait on the lock - both in the FrameLinkContract
-  tests, the class that keeps its lock after cleanup.
+  tests, the class that keeps its lock after cleanup. The Rift, which keeps its lock too, gets the same treatment
+  for GitHub #274 (0.2.8289): a class-level patch of a Nexus step runs the overlapping attach or `Nexus.remove_rift`
+  inside the first call, and `_RunBeforeFirstAcquireLock`, the Rift-side twin, runs the removal at the lock's
+  first entry.
   EVIDENCE:
   - tests/unit/melder/aether/test_frame_link_contract_profiles.py:14-179
   - tests/unit/melder/aether/test_frame_link_contract_profiles.py:406-470
+  - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:42-98
+  - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:167-271
   (It also cited the FrameLink runtime file's D1 test at 364-384, removed 2026-11-08 with that file's copy of
   the hook when the owner's decision had FrameLink's cleanup delete its lock again.)
 - A cleanup's inner `_cleaned` recheck is proven by two real callers whose order events fix, never by timing
@@ -546,6 +551,19 @@ The most important recent integration addition is the dedicated
   - tests/_cleanup_recheck_support.py:77-117
   - tests/_cleanup_recheck_support.py:179-227
   - tests/unit/melder/aether/test_frame_link_contract_profiles.py:275-302 (it read 102-129 before GitHub #271)
+- A deadlock is proven by real agent threads that a bound joins, never by sleeps (GitHub #274, 0.2.8290-0.2.8291):
+  a deadlock cannot happen on one thread, so the Rift agents-and-teardown module runs each other agent on a daemon
+  thread and fixes the order with `threading.Event` handshakes set at named points - a lock stand-in's first entry
+  by a watched thread (`_HandshakeLock`, wrapping a real `RLock`), a room action hook, a patched Nexus or engine
+  step. Every thread is joined within `_Handshake.BOUND_SECONDS` (5 s), so a deadlock or a point never reached fails
+  its test instead of hanging the suite, and a test asserts that agent code waiting on another agent finished
+  within that bound. Like `CleanupRecheckHandshake` it orders real threads with events; unlike it, it lives in its
+  one module.
+  EVIDENCE:
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:1-17
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:78-206
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:277-393
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:663-852
 - A creation-cache save's failure is injected at the operating-system boundary, never by stubbing the save
   (0.2.8266): the refused-save component and unit tests wrap `os.replace` (which `Path.replace` calls),
   `Path.write_bytes`, `Path.mkdir` or `Path.unlink` through `monkeypatch` for paths under the test's own cache
@@ -635,13 +653,14 @@ Direct evidence used in this pass:
 
 Current Python test inventory from direct filesystem count:
 - `unit/`: 557 `.py` files, 554 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 179 `.py` files, 177 of them `test_*.py` (143, 81)
+- `component/`: 181 `.py` files, 179 of them `test_*.py` (178 and 177 earlier on 2026-11-08, 143, 81)
 - `integration/`: 196 `.py` files, 189 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
 Recounted 2026-11-08 with `find tests/<tier> -name '*.py'` (pycache excluded), every module on disk counted,
-the day's three untracked test modules among them; the three tiers' 920 `test_*.py` modules (880 on
-2026-11-01) are the count `tests_components` states.
+the day's three untracked test modules among them, then again at 0.2.8289 with the untracked Rift race module and
+at 0.2.8292 with the untracked Rift agents-and-teardown module; the three tiers' 922 `test_*.py` modules (921
+before that module, 920 before the race module, 880 on 2026-11-01) are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -1370,8 +1389,36 @@ graph TD
 - `tests/unit/melder/aether/test_frame_link_runtime_contracts.py`
 - `src/melder/nexus/rift/frame_link/frame_link_contract.py`
 - `src/melder/nexus/rift/frame_link/frame_link.py`
+- the Rift race module read whole and run with the GIL off (4 passed), the Rift attach, refresh and cleanup it pins
+  read in src, and the component tier recounted from disk (2026-11-08, GitHub #274, 0.2.8289)
+- `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`
+- `src/melder/nexus/rift/rift.py`
+- the Rift agents-and-teardown module read whole and not run by this pass, the workstation, command, room, Rift
+  and removal paths it pins read in src, and every tier recounted from disk (2026-11-08, GitHub #274,
+  0.2.8290-0.2.8292)
+- `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
 
 ## Context / Handoff Summary
+2026-11-08 Rift agents and teardown (no notch from this pass; documentation only; GitHub #274, 0.2.8290-0.2.8292):
+one invariant joins the operational invariants - a deadlock is proven by real agent threads that a bound joins,
+never by sleeps: the new component module runs each other agent on a daemon thread ordered by `threading.Event`
+handshakes at named points (a lock stand-in's first entry by a watched thread, a room action hook, a patched Nexus
+or engine step) and joins each within 5 s, so a deadlock fails its test instead of hanging the suite - with four
+citations of the module. The inventory follows the new file (component 181 `.py`, 179 of them `test_*.py`; 922 test
+modules in the three tiers, the count `tests_components` states), and the module joins the sources. No tier,
+conftest, marker or shared support module changes, and this map gains no record (the module, and the Nexus
+orchestration unit file catalogued beside it, are in `tests_components`' core set, 359 paths). Nothing was run by
+this pass.
+
+2026-11-08 the Rift races (no notch from this pass; documentation only; GitHub #274, 0.2.8289): one sentence joins
+the stand-in invariant - the Rift's attach and refresh races are reproduced on one thread as the FrameLinkContract's
+are, by a class-level patch of a Nexus step that runs the overlapping attach or `Nexus.remove_rift` inside the first
+call, and by `_RunBeforeFirstAcquireLock`, the Rift-side twin of `_CleanupBeforeAcquireLock` - with two citations of
+the new component module. The inventory follows the new file (component 180 `.py`, 178 of them `test_*.py`; 921
+test modules in the three tiers), and the module and `rift.py` join the sources. No tier, conftest, marker or shared
+support module changes, and this map gains no record (the module is in `tests_components`' core set, 357 paths).
+The module ran with the GIL off (4 passed); nothing else was run.
+
 2026-11-08 the FrameLink lifecycle races (no notch from this pass; documentation only; GitHub #271, 0.2.8288):
 one statement joins the stand-in invariant - a window before a caller has even loaded its lock is reproduced on
 one thread too, by a data descriptor that runs the overtaking cleanup inside the caller's `_lock` read

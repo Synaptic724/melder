@@ -87,8 +87,10 @@ class Nexus(Cleanable):
         behavior.
 
     Threading:
-        Uses one class-level singleton lock for instance creation and one
-        instance `threading.RLock` for multi-step mutable state transitions.
+        Uses one lock, the class-level `Nexus._lock` (a `threading.RLock`):
+        singleton construction and every multi-step mutable state transition
+        take it, and `self._lock` reads that same class attribute. (Corrected
+        2026-11-08: this said each instance had its own lock as well.)
 
     Threading:
         Registry mutation and ACL-change fan-out are serialized internally. The
@@ -318,8 +320,8 @@ class Nexus(Cleanable):
               completes.
 
         Threading:
-            Acquires the instance lock for mutable-state teardown, then the
-            class-level singleton lock to reset singleton bookkeeping.
+            Takes `Nexus._lock`, the one class-level lock, for the teardown and
+            again to reset the singleton bookkeeping.
 
         Returns:
             None.
@@ -1269,11 +1271,15 @@ class Nexus(Cleanable):
 
         Contract:
             - Removes the Rift from Nexus registries under the Nexus lock.
-            - Decrements target-frame ref counts and detaches the Rift from its
-              Nexus-managed frames as part of registry teardown.
+            - Marks the Rift cleaned there and decrements the target-frame ref
+              counts for exactly the frames attached at that moment, so an
+              attach that lands later gives its own reservation back instead of
+              leaking a count (GitHub #274, the R4 residual).
+            - Detaches the Rift from its Nexus-managed frames as part of
+              registry teardown.
             - Disposes orphaned Nexus-managed frames only after the locked
               registry mutation phase completes.
-            - Cleans the removed Rift before returning.
+            - Cleans the removed Rift's owned state before returning.
 
         Args:
             rift_id:
@@ -1281,6 +1287,18 @@ class Nexus(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            ValueError: If no Rift with that id is registered.
+            RuntimeError: If the Rift was already cleaned outside Nexus; only its
+                id-registry entry is gone by then (its name, gate, counts stay).
+
+        Threading:
+            The registry phase holds the Nexus lock and takes the Rift lock
+            inside it, briefly, to mark the Rift (Nexus, then Rift - the order
+            `Nexus.cleanup` takes). The Rift's teardown runs after the Nexus
+            lock is released: it cleans the room, whose command lock an
+            attaching agent holds while it reserves under the Nexus lock.
         """
         self._require_activated()
         frame_names_to_cleanup: List[str] = []
@@ -1294,18 +1312,22 @@ class Nexus(Cleanable):
             rift_name = rift.rift_name
             if rift.rift_name:
                 self._rift_ids_by_name.pop(rift.rift_name, None)
-            self._rift_gate_controller.unregister_rift_gate(rift.id)
-            for target_frame_name in rift.list_assigned_frame_names():
+            self._rift_gate_controller.unregister_rift_gate(rift_id)
+            # Mark the Rift cleaned and take the frames it holds at that moment, in one step under the Rift lock: an
+            # attach publishes under the same lock, so it lands before the mark - and its frame is decremented here -
+            # or after it, finds the Rift cleaned and gives its own reservation back (GitHub #274, the R4 residual).
+            for target_frame_name in rift._mark_cleaned_for_removal():
                 self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
             frame_names_to_cleanup.extend(
                 self._frame_manager.get_frame_names_to_cleanup_for_removed_rift(
-                    rift.id
+                    rift_id
                 )
             )
 
         for frame_name in frame_names_to_cleanup:
             self._frame_manager.remove(frame_name)
-        rift.cleanup()
+        # This call marked the Rift, so it owns the teardown (Rift._clean_owned_state), run without the Nexus lock.
+        rift._clean_owned_state()
         self._logger.info(
             "Removed Rift '{0}' (id={1}).".format(rift_name, rift_id),
             "remove_rift",
@@ -3505,6 +3527,34 @@ class Nexus(Cleanable):
         with self._lock:
             self._validate_target_frame_budget((target_frame_name,))
             self._increment_target_frame_ref_count(target_frame_name)
+
+    def _release_target_frame(self, target_frame_name: str) -> None:
+        """
+        Internal
+
+        Give back one target-frame slot that `_reserve_target_frame` reserved
+        for an attach that published nothing.
+
+        Contract:
+            - Decrements the frame's ref count under the Nexus ``ClassVar``
+              ``_lock`` and removes it at zero - the decrement `remove_rift`
+              applies to each frame a removed Rift had attached.
+            - For `Rift.create_frame_link` only, when its publish lost: another
+              attach of the same frame published first, or the Rift was cleaned
+              meanwhile (GitHub #274, R4). A caller gives back only a
+              reservation it took itself.
+            - Acquires only the Nexus lock; as for `_reserve_target_frame`, the
+              caller must not hold a Rift lock across this call.
+
+        Args:
+            target_frame_name:
+                Target frame name whose reservation is given back.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
 
     def _remove_frame_acl_container(self, frame_name: str) -> bool:
         """

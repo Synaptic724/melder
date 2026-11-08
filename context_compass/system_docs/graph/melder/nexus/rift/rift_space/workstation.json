@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/workstation.py",
- "source_sha256": "c0ed8955cf615984080ed74452e2fb6b508246b3bc140143d43ba11815995d90",
+ "source_sha256": "e7f53ab635ed11b5ec8abf36f9edb0733fa4d198cf44e352738a4b56d42189e3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.workstation": {
@@ -45,24 +45,29 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "360d00b6ead14d57e99d1f771db15c321c95e6729ebe2a5693a82687e78ec15e",
+   "span_sha256": "4e404b9bb04c2881507029a039e3506da151b2d65451db18eabb22aaa1058a41",
    "role": "Room-local binding canvas.",
    "responsibilities": [
     "stores bound objects, attributes, and methods",
     "tracks one active target",
-    "supports result rebinding for later room work"
+    "supports result rebinding for later room work",
+    "is shared by every agent in its room and never holds its lock while a target or its cleanup methods run"
    ],
    "owns_state": [
-    "_objects_by_name",
-    "_attributes_by_name",
-    "_methods_by_name",
-    "_active_target_name"
+    "_strong_objects_by_name",
+    "_strong_attributes_by_name",
+    "_strong_methods_by_name",
+    "_weak_objects_by_name",
+    "_weak_attributes_by_name",
+    "_weak_methods_by_name",
+    "_target_name",
+    "_target_store"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5f0d389fb388333acad7fc68b14bbfd4913c65d997b1b1c7333b4132bb4c037d"
+   "semantics_authored_against": "4e404b9bb04c2881507029a039e3506da151b2d65451db18eabb22aaa1058a41"
   }
  },
  "edges_out": [

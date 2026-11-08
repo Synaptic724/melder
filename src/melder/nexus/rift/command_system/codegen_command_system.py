@@ -702,6 +702,14 @@ class CodegenCommandSystem(CommandSystem):
 
         Raises:
             ValueError: If `code` or `frame_name` is empty.
+
+        Threading:
+            Reads the attached `CodegenSystem` under the command lock and runs
+            the request - agent code - after releasing it, so other commands in
+            the room do not wait on a running script and a script that runs a
+            command of this room cannot freeze against it (GitHub #274, W5).
+            The engine's own locks are unchanged and still take one request at
+            a time.
         """
         self.check_cleaned()
         if not isinstance(code, str) or not code:
@@ -718,13 +726,14 @@ class CodegenCommandSystem(CommandSystem):
             try:
                 with self._lock:
                     codegen_system = self._require_codegen_system()
-                    transaction_context, execution_result = (
-                        codegen_system.execute_codegen_request(
-                            code,
-                            frame_name=frame_name,
-                        )
+                # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
+                transaction_context, execution_result = (
+                    codegen_system.execute_codegen_request(
+                        code,
+                        frame_name=frame_name,
                     )
-                    return execution_result.to_payload()
+                )
+                return execution_result.to_payload()
             finally:
                 if rift_gate is not None:
                     rift_gate.unregister_ticket()

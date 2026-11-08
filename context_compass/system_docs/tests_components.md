@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-11-08T16:21:11Z
+- Updated: 2026-11-08T20:18:11Z
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -567,6 +567,16 @@ Protects:
   `### Subcomponent: Aether Component Cluster`)
 - the mediator plane as a real slice and under real threads, and the change-control transaction surface on a
   live frame (catalogued 2026-11-08; see `### Subcomponent: Aether Component Cluster`)
+- two Rift races on a real Nexus (0.2.8289, GitHub #274): two attaches of one frame keep one contract and one
+  target-frame budget count, and an attach overtaken by `Nexus.remove_rift` after its reservation, or a projection
+  refresh after its sets were built, gives back its reservation or cleans its fresh sets and raises the cleaned
+  RuntimeError (corrected 2026-11-08: the two windows were unnamed; the Rift's class docstring now names them) (see
+  `### Subcomponent: Aether Component Cluster`)
+- agents sharing one Rift while it is removed (0.2.8290-0.2.8291, GitHub #274): agent code - a workstation target,
+  a target method, the engine call of a codegen script - waits on another agent's command of the room without
+  freezing, a target selected while `cleanup_target` ran stays selected, `Nexus.remove_rift` finishes beside an
+  agent mid-command, a weak binding's collection event and a `link_frame` refresh, and an attach landing inside the
+  removal keeps no budget count (see `### Subcomponent: Aether Component Cluster`)
 
 Inputs:
 - small real runtime slices
@@ -586,12 +596,16 @@ Lifecycle/Cleanup:
 Concurrency/Threading:
 - no parallel harness layer of its own; the synchronization component files start
   threads to prove that a gate drain waits for tickets in flight
-  (`tests/component/melder/utilities/synchronization/test_creation_gate_component.py`)
+  (`tests/component/melder/utilities/synchronization/test_creation_gate_component.py`), and the Rift
+  agents-and-teardown module starts one daemon thread per agent, ordered by `threading.Event` handshakes set at
+  fixed points and joined within 5 s, so a deadlock fails its test instead of hanging the suite
+  (`tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`, 0.2.8290-0.2.8291)
 
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 177 `test_*.py` modules among 179 `.py` files (recounted 2026-11-08)
+- 179 `test_*.py` modules among 181 `.py` files (recounted 2026-11-08 at 0.2.8292 with the Rift agents-and-teardown
+  module; it read 178 among 180, and 177 among 179 before the Rift race module of 0.2.8289)
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -604,9 +618,10 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- No harness or support module of its own; the 83 test_*.py modules in
-  tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
-  conftests named in `tests_architecture.md`. Paths in this bullet are written
+- No harness or support module of its own; the 85 test_*.py modules in
+  tests/component/melder/aether/ (84 before the Rift agents-and-teardown module, 2026-11-08) depend only on the
+  shared surfaces at tests/ and the scoped conftests named in `tests_architecture.md`; the module-local thread
+  and lock stand-ins of the two Rift race modules are not shared. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
 - No harness or support module of its own; the 7 test_*.py modules in
   tests/component/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
@@ -1246,6 +1261,13 @@ Protects:
   with its key and restore files each row under it, the target's shelf dropped undisposed first; a row with no
   key restores under the bare spell_id, and a key without ':' is its own shelf; the shelves outlive `clear_all`
   and the pool reset and go with cleanup; eight threads filing keys at once leave each key on its shelf once
+- `Nexus.remove_rift`'s order (`test_nexus_orchestration_and_lifecycle.py`, 18 tests, catalogued 2026-11-08 for its
+  `test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup`, changed for 0.2.8291; the other 17 were not
+  read by that pass): over a fake Rift whose `_mark_cleaned_for_removal` records the mark and hands back two frames
+  holding one count each, the gate is unregistered, the Rift marked, the orphaned Nexus-managed frame removed with
+  both counts already gone and the Rift not yet torn down, and `_clean_owned_state` runs last; the Rift leaves both
+  registries. The fake had `list_assigned_frame_names` and `cleanup` before GitHub #274's R4 residual fix, and the
+  expected order gained the mark
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
@@ -1260,6 +1282,7 @@ Key Files (C1):
 - `tests/unit/melder/aether/conduit/creations/test_creations_store_slots.py` (slots by binding, 2026-10-25)
 - `tests/unit/melder/aether/test_frame_link_contract_profiles.py` (#271's races, catalogued 2026-11-08)
 - `tests/unit/melder/aether/test_frame_link_runtime_contracts.py` (#271's races, catalogued 2026-11-08)
+- `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py` (`remove_rift`'s order, catalogued 2026-11-08)
 
 ### Subcomponent: Aetheric Mediator Lifecycle Unit Cluster
 Parent Component: Unit Test Suite
@@ -2007,6 +2030,28 @@ Protects:
   updates extend staged binding and contract keys, or return False with no session; an end with no session
   raises; the registry mirrors each live session by identity and by type and drops it on end, after an
   abort-only end too; `get_active_request` and `describe` report the live request
+- two Rift races (0.2.8289, GitHub #274; `test_rift_component_concurrent_attach_and_refresh.py`, 3 tests, 4 cases,
+  one thread, each interleaving fixed by nesting rather than timing; `_build_world` builds `default`, a dynamic
+  frame with descriptor truth, and one capability Rift): two attaches of `default` keep one `FrameLinkContract`
+  and a budget count of 1, which `Nexus.remove_rift` takes to 0 while it cleans that contract (R4); an attach whose
+  Rift `remove_rift` cleans inside its reservation raises "Rift has already been cleaned" and leaves no count
+  (R4); a refresh overtaken by `remove_rift` right after Nexus built its projection sets, or at its apply's first
+  lock entry, raises the same error with every set it was handed cleaned (R5, two cases). Read against the code
+  before 0.2.8289, each case fails there - a count of 2, AttributeError for the deleted `_id` and registry, fresh
+  sets left uncleaned (see `### Flow: Rift Attach And Refresh Race Stand-Ins`)
+- agents and teardown sharing one Rift (0.2.8290-0.2.8291, GitHub #274;
+  `test_rift_component_agents_and_teardown_do_not_deadlock.py`, 8 tests; `_build_world` builds `default`, and
+  `ledger` when asked, and one capability or codegen Rift attached to `default`). W5, four tests: agent code waits
+  on another agent of the room and returns - a `call_target` target joins another agent's `get_target_attribute`, an
+  `execute_target_method` method and the patched engine call of `execute_codegen` each join another agent's
+  `list_conduit_names`, which keeps the command lock - and a target selected from inside `cleanup_target`'s
+  cleanup stays selected. W4, W6 and C3: `Nexus.remove_rift` and an agent finish within the bound - an agent held
+  inside a room command its `call_target` target runs (W4), a rebind whose dropped object's weak alias publishes a
+  room event (W6), a `link_frame` whose refresh has built its sets (C3) - the removal succeeding, the agent allowed
+  to fail with its room gone. R4's residual: an attach that reserves `ledger` and publishes while `remove_rift`
+  is held between its registry phase and its teardown raises "Rift has already been cleaned" and leaves no count.
+  Each test's docstring names the symptom of the code before its fix - agent code under a lock that never
+  returned, a deadlock, a count left (see `### Flow: Rift Agents And Teardown Handshakes`)
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -2033,6 +2078,8 @@ Key Files (C1):
 - `tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py` (catalogued 2026-11-08)
 - `tests/component/melder/aether/dev_ops/change_control_manager/test_transaction_surface_component.py`
   (catalogued 2026-11-08)
+- `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py` (GitHub #274, 2026-11-08)
+- `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py` (GitHub #274, 2026-11-08)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -2833,6 +2880,76 @@ Key Files (C1):
    - src/melder/nexus/rift/frame_link/frame_link_contract.py:188-276
    - src/melder/nexus/rift/frame_link/frame_link.py:132-168 (it read 129-165)
 
+### Flow: Rift Attach And Refresh Race Stand-Ins
+1. the autouse `_isolated_runtime` fixture resets the utility system, Nexus and Aether and binds a fresh Aether to
+   `Spellbook`, `Conduit` and `CommandSystem` before and after each test; `_build_world` builds a dynamic
+   `default` frame with descriptor truth (one `_Pricing` spell bound under spellframe `pricing`, its root
+   conjured), activates Nexus with multiple target frames on (a cap of 8, `default` the one allowed name), and
+   creates one capability Rift, attaching `default` first when the test needs a linked Rift.
+2. R4, two attaches: a class-level monkeypatch of `Nexus._reserve_target_frame` reserves and then, once, runs a
+   complete second `create_frame_link` of the same frame, so the inner attach publishes first and the outer one
+   meets the published contract under the Rift lock and gives its reservation back. The removal case patches the
+   same step to run `Nexus.remove_rift` after the reservation, so the outer attach finds the Rift cleaned there.
+3. R5 before the apply: a patch of `Nexus.create_frame_projection_sets_for_rift` keeps the sets it built and runs
+   `remove_rift` before returning them, so `_apply_projection_sets` is handed sets for a cleaned Rift.
+4. R5 while waiting on the lock: `_RunBeforeFirstAcquireLock` installed as the Rift's `_lock` runs `remove_rift` at
+   its first entry - the removal's own entries acquire its real `RLock` plainly - and then acquires, so the apply
+   holds the lock over a cleaned Rift whose registry is deleted. It is the Rift-side twin of the FrameLinkContract
+   tests' `_CleanupBeforeAcquireLock` (`### Flow: FrameLink Lifecycle Race Stand-Ins`).
+5. no thread runs and nothing waits: the order comes from the nesting, never from timing. The tests assert the
+   corrected outcome - one contract and a count of 1 that the removal takes to 0, no count left by the removed
+   attach, every built set cleaned - and the cleaned RuntimeError where one is due.
+   EVIDENCE:
+   - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:42-98
+   - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:101-164
+   - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:167-271
+   - src/melder/nexus/rift/rift.py:559-678 (remapped 2026-11-08 at 0.2.8292; it read 456-572)
+   - src/melder/nexus/rift/rift.py:786-854 (it read 680-748)
+   - src/melder/nexus/nexus.py:3499-3557 (it read 3477-3535)
+
+### Flow: Rift Agents And Teardown Handshakes
+1. the autouse `_isolated_runtime` fixture resets the utility system, Nexus and Aether and binds a fresh Aether to
+   `Spellbook`, `Conduit` and `CommandSystem` before and after each test; `_build_world` conjures a dynamic,
+   Rift-enabled `default` frame (AI-native for a codegen room) with one `_Pricing` spell, and `ledger` with
+   `_Ledger` when asked, activates Nexus (multiple target frames, a cap of 8), creates `pricing_rift` of the given
+   room type and attaches `default`.
+2. each other agent is an `_Agent`: a daemon thread built at construction - so a lock stand-in can watch it before
+   it starts - that keeps what its call returned or raised; `run_and_join_within_bound` is how agent code waits on
+   another agent. `_AgentTool` is what the agents keep on the workstation: calling it, its `run` and its `cleanup`
+   each run one step of agent code on the caller's thread.
+3. W5: the step starts and joins another agent's call - `get_target_attribute` from a `call_target` target,
+   `list_conduit_names` from an `execute_target_method` method or from a class-level patch of
+   `CodegenSystem.execute_codegen_request` that then delegates - and the test asserts the join finished within the
+   bound; the `cleanup_target` test selects the next target from inside the spent tool's cleanup, on one thread.
+4. W4, W6, C3: `_HandshakeLock`, installed as a Melder object's `_lock`, wraps a real `RLock` and sets `reached` at
+   one watched thread's first entry, before it acquires (waiting for `proceed` when given): the removal's first
+   entry into the workstation lock (W4, W6) or the command lock (C3) is the point the other agent waits for. W4
+   holds the agent inside its command with a room pre-hook; W6 holds the binder's room event at the room lock's
+   first entry until the removal progressed; C3 holds the link's refresh in a patched
+   `Nexus.create_frame_projection_sets_for_rift` after the sets are built. `_Agent.still_running` joins both within
+   one shared bound and names any thread still alive.
+5. R4's residual, on the test thread: a patched `Nexus._reserve_target_frame` reserves `ledger`, starts the removal
+   and waits until a patched `Rift._clean_owned_state` holds it on the removal's thread - past its registry phase -
+   so the attach publishes onto the marked Rift; the teardown proceeds once the attach finished.
+6. order comes from nesting or from events set at those points, never from sleeps; `_Handshake.BOUND_SECONDS`
+   (5 s) only turns a deadlock, or a point never reached, into a failure, and `reraise_schedule_failure` reports a
+   broken schedule as one.
+   EVIDENCE:
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:78-206 (`_Handshake`,
+     `_Agent`)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:209-393
+     (`_AgentTool`, `_HandshakeLock`)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:396-498 (the
+     fixture and `_build_world`)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:501-660 (W5)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:663-852 (W4, W6, C3)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:855-939 (R4's
+     residual)
+   - src/melder/nexus/rift/rift_space/workstation.py:529-659
+   - src/melder/nexus/rift/rift_space/rift_space.py:268-333
+   - src/melder/nexus/rift/rift.py:278-424
+   - src/melder/nexus/nexus.py:1266-1334
+
 ### Flow: Cleanup Recheck Handshake
 1. a two-caller `*_cleanup_rechecks_cleaned_inside_lock` test builds its object, creates
    `CleanupRecheckHandshake` (with `on_holder_ready` when the object must read cleaned while the holder waits),
@@ -3110,8 +3227,10 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above: 356 paths, recounted from the catalogs on 2026-11-08 and equal to the records below (it read 324
-before the follow-up pass of that day added 30, and 354 before the two FrameLink unit files of GitHub #271). The
+above: 359 paths, recounted from the catalogs on 2026-11-08 and equal to the records below (it read 324
+before the follow-up pass of that day added 30, 354 before the two FrameLink unit files of GitHub #271, 356
+before the Rift race module of GitHub #274, and 357 before #274's agents-and-teardown module and the Nexus
+orchestration unit file joined at 0.2.8292). The
 0.2.8276 baseline recorded 300 explicitly mapped paths, including three native enum/cache contract
 surfaces; the compatibility-test paths added after it, without a recount, made 317 before the
 2026-11-08 pass added seven. Change a component's key files and this set follows; if the two ever disagree,
@@ -3119,8 +3238,10 @@ this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 920 test modules of the
-three CI tiers (recounted 2026-11-08; 880 on 2026-11-01) and the 33 experimentation modules are
+builders - not every `test_*.py` module beneath it. The 922 test modules of the
+three CI tiers (recounted 2026-11-08 at 0.2.8292; 921 before the Rift agents-and-teardown module, 920 before the Rift
+race module; 880 on 2026-11-01) and the 33
+experimentation modules are
 the component's CONTENT;
 they are counted in each entry rather than cited, because a
 core set that lists the entire tree is not a set anyone can verify, which is the
@@ -4937,6 +5058,28 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: `FrameLink`: identity, detached metadata, the owned-state teardown down to `_lock`, cleaned reads, the
     `_CoordinatedLock` stand-in and a two-caller cleanup through the handshake (0.2.8288). Remeasured 2026-11-08
     (it read 384): its `_LockReadHook` and D1 test went when the owner had FrameLink delete its lock again.
+- path: `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`
+  start_line: 1
+  end_line: 271
+  loc: 271
+  verified_at: 2026-11-08T20:05:11Z
+  note: GitHub #274's R4 and R5 on one thread: one contract and one budget count for two attaches, a removed
+    attach's reservation given back, a refresh's fresh sets cleaned (0.2.8289; untracked when catalogued).
+- path: `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
+  start_line: 1
+  end_line: 939
+  loc: 939
+  verified_at: 2026-11-08T23:10:09Z
+  note: GitHub #274's W5, W4, W6, C3 and R4's residual with daemon agent threads joined within 5 s: agent code
+    runs outside Melder's locks, removals finish beside agents, no budget count left (0.2.8290-0.2.8291;
+    untracked when catalogued).
+- path: `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py`
+  start_line: 1
+  end_line: 728
+  loc: 728
+  verified_at: 2026-11-08T23:10:09Z
+  note: Nexus orchestration over fakes; catalogued for `remove_rift`'s order - gate, mark, frame removal,
+    unlocked teardown - after 0.2.8291 (18 tests, the other 17 not read by that pass).
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -5235,6 +5378,24 @@ graph TD
 - `src/melder/nexus/rift/frame_link/frame_link.py`
 - after the owner's decision that FrameLink's cleanup deletes `_lock` again: the FrameLink runtime file re-read
   whole, `FrameLink.cleanup` re-read in src, both FrameLink files run with the GIL off (40 passed) (2026-11-08)
+- the Rift race module below read whole and run with the GIL off (4 passed); `Rift.create_frame_link`,
+  `Rift.refresh_runtime_projections`, `Rift._apply_projection_sets`, `Rift.cleanup`, `Nexus.remove_rift`,
+  `Nexus._reserve_target_frame` and `Nexus._release_target_frame` read in src; the component tiers recounted from
+  disk (2026-11-08, GitHub #274, 0.2.8289)
+- `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`
+- `src/melder/nexus/rift/rift.py`
+- `src/melder/nexus/nexus.py`
+- the Rift agents-and-teardown module below read whole and the changed test of the Nexus orchestration file read,
+  neither run by this pass; `Workstation.call_target` and `cleanup_target`, the three target commands of
+  `CommandSystem`, `CodegenCommandSystem.execute_codegen`, `RiftSpace.cleanup`, `Rift.cleanup` with its marks and
+  `_clean_owned_state`, and `Nexus.remove_rift` read in src; the three tiers recounted from disk (2026-11-08,
+  GitHub #274, 0.2.8290-0.2.8292)
+- `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
+- `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py`
+- `src/melder/nexus/rift/rift_space/workstation.py`
+- `src/melder/nexus/rift/rift_space/rift_space.py`
+- `src/melder/nexus/rift/command_system/command_system.py`
+- `src/melder/nexus/rift/command_system/codegen_command_system.py`
 
 ## Open Questions
 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a
@@ -5247,6 +5408,35 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+2026-11-08 Rift agents and teardown (no notch from this pass; documentation only; GitHub #274, 0.2.8290-0.2.8292):
+the new component module `test_rift_component_agents_and_teardown_do_not_deadlock.py` (939 lines; 8 tests) is
+catalogued in the Aether Component Cluster and the component suite's protects list, and recorded in the core map:
+agent code - a workstation target, a target method, the patched engine call of `execute_codegen` - waits on another
+agent's command of the room and returns, a target selected from inside `cleanup_target`'s cleanup stays selected
+(W5), `Nexus.remove_rift` finishes beside an agent mid-command (W4), a weak binding's collection event (W6) and a
+`link_frame` refresh (C3), and an attach landing inside the removal keeps no budget count (R4's residual). A new
+call flow names its machinery - `_Agent` daemon threads joined within 5 s, `_AgentTool`, and `_HandshakeLock`, a
+lock stand-in that announces one watched thread's first entry - and the component suite's threading names it too.
+The unit file `test_nexus_orchestration_and_lifecycle.py`, uncatalogued until now, joins the Aether/Nexus/Rift Unit
+Cluster for its changed `remove_rift` order test (gate, mark, frame removal, teardown). The 0.2.8289 flow's source
+citations are remapped (rift.py 559-678 and 786-854, nexus.py 3499-3557). Counts follow the new file: 179
+`test_*.py` modules among 181 `.py` in the component tier, 85 in its aether tree, 922 in the three tiers; the core
+set is 359 paths, equal to the map. Neither file was run by this pass. Still unknown: the Unknowns section,
+unchanged. Map next: the other 17 tests of the Nexus orchestration file, which this pass did not read.
+
+2026-11-08 the Rift races (no notch from this pass; documentation only; GitHub #274, 0.2.8289): the new component
+module `test_rift_component_concurrent_attach_and_refresh.py` (271 lines; 3 tests, 4 cases) is catalogued in the
+Aether Component Cluster and recorded in the core map (357 paths, equal to the map): two attaches of one frame keep
+one contract and one target-frame budget count (R4), an attach whose Rift is removed inside its reservation gives it
+back and raises the cleaned RuntimeError (R4), and a refresh overtaken by the removal - right after Nexus built its
+sets, or at the apply's first lock entry - cleans those sets and raises (R5, two cases). A new call flow names the
+nesting stand-ins: class-level monkeypatches of `Nexus._reserve_target_frame` and
+`Nexus.create_frame_projection_sets_for_rift`, and `_RunBeforeFirstAcquireLock`, the Rift-side twin of
+`_CleanupBeforeAcquireLock`. The component suite's protects list gains the races, and its counts follow the new file
+(178 `test_*.py` modules among 180 `.py`, 84 in the aether tree; 921 in the three tiers). The module ran with the
+GIL off (4 passed); nothing else was run. It is untracked at this pass. Still unknown: the Unknowns section,
+unchanged. Map next: nothing outstanding from this round.
+
 2026-11-08 the FrameLink lifecycle races (no notch from this pass; documentation only; GitHub #271, 0.2.8288):
 the two FrameLink unit files, which the follow-up pass left to that lane, are catalogued in the Aether/Nexus/Rift
 Unit Cluster and recorded in the core map (356 paths, equal to the map): the owned-state teardowns, the

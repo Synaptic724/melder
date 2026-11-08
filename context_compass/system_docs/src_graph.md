@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `861172254dd87b063799567a0e2a886cd448e11c5577f42b6452d9a6f0220dc4`
+- source_sha256: `76dceadfe3a0104d18f4554a3a9ef97a24b853cb3b7daf561ef5b5b45ee71248`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `a0baf74c8e7cdc21ca4ee11b2b39a6c3675cba75699a9ea6660fb29ccab98cd1`
+- source_sha256: `96800932d59232bf96dd0a727a1833ce0d23d81d081ce6e5e3760fd93a565723`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `7b51f6421655b9e1f16620145067b2ea9c593c977f25cd6fd066a0f9b00cb869`
+- source_sha256: `2a8cb3e7dcff548b99a3932c52102be49d185977ce30eb8484e2befabefeb7b9`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `844251e07e638de3c69ae5b0f6a9bd5eea8f6d38da50d431ad02679fc11b33e9`
+- source_sha256: `5fba52517201d0cc19fbd1fc8aef95650d9714a6b10a4b14f5753668a8f91b29`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `7374873149686ff6d56bb280c5ec064ea4dee69d1fe6e920d64af34fad11a1e7`
+- source_sha256: `8757a9b3ec11773a6cd440e0a7af89f4bd8f33853c2d947c30d3e84dd0fe9b35`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `e8e5f674321651cf374d993f7f7bf58fa9c07a3a612c2d4ed09d1c8414ae2cb8`
+- source_sha256: `cf57ab34ec1c1ca387e731547a2affc3df96391423715f710102af75c167f806`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `41ddcadc995ae721c00289393ea3fada6b6a11d33269136ab7fcf8277dbbc800`
+- source_sha256: `95a2407c6d14436e52881cd66335cc3c0776e55a0f52eb163cce1e8c1264a9a2`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `98f396713546f38f192f4a829367124fd9ca9f1ba1c50f5eacfe945e7df21daf`
+- source_sha256: `4e585268b669db4a3f09c4e648cd77bda5a935c42a407ccdf83d77a11d037992`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `d6c31ef66971a1c8cf00a894ab719c537254b6b9cee39566b7d2689ae9d23aaa`
+- source_sha256: `b87e49a275dc61fb85b7a24f7b27057204b58f9a0f51c4acee6c2581adc94051`
 - nodes: 1
 
 ### Nodes
@@ -22957,7 +22957,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus.py
 
-- source_sha256: `b62d5e8397ba99a6ffaba6c54f4bd150e09422e32b1e2e99d0383957def1e4b9`
+- source_sha256: `3bf099c0ff5443511cf3ba5782030ef25e495061c223b0546be64c7e71a144ca`
 - nodes: 2
 
 ### Nodes
@@ -22987,7 +22987,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - coordinates projection refresh across affected Rifts
   - facades existing-ID pooled publication without refreshing admitted Rift commands
   - keeps its installed policy while active: configure, and activate with another configuration, refuse until deactivate
-- owns_state: `_rifts_by_id`, `_frame_descriptor_manager`, `_frame_acl_manager`, `_frame_manager`, `_rift_gate_controller`, `_configuration`
+  - reserves and gives back target-frame budget slots for Rift attaches under its class-level lock
+  - removes a Rift by marking it cleaned and taking its attached frames in one step inside its locked registry phase, decrementing exactly those frames, and tearing it down after releasing its lock
+- owns_state: `_rifts_by_id`, `_frame_descriptor_manager`, `_frame_acl_manager`, `_frame_manager`, `_rift_gate_controller`, `_configuration`, `_target_frame_ref_counts`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `activate`, `activated`, `add_rift`, `authorize_frame_link_for_rift`, `check_for_aetheric_frame`, `cleanup`, `close_and_wait_rift`, `configuration`, `configure`, `configured`, `count_active_rift_threads`, `count_active_rift_threads_total` (+43 more)
 
@@ -24570,7 +24572,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `d55f2798c145fd30683b3ac904a27ddb14ede129995ce2fafff748d2ada34500`
+- source_sha256: `afe598fe112022b7c7e4bed60d58fb9794b859e07a8890b60866aef2b5002bbf`
 - nodes: 2
 
 ### Nodes
@@ -24591,9 +24593,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - preserves the selected runtime-helper subset for codegen rooms
   - delegates validate and execute requests into the attached CodegenSystem
   - emits full-source codegen room-memory records for top-level codegen actions
-  - owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal
+  - owns the FULL research_* command family (34 commands: 7 record reads, 5 organization verbs, 2 campaign verbs, 9 foresight, 3 synthesis and 8 composition commands) via a non-constructing MutationResearch peek with teach-grade refusal
   - uses lesser-aware authorized named lookup without expanding room capabilities
   - refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)
+  - runs execute_codegen's engine request after releasing the command lock, its RiftGate ticket held; materialize_codegen still runs its module under that lock
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)
@@ -24628,7 +24631,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `83750344a906095da4b7e7168b741324b812c7137c4378def715bf21f66ccca2`
+- source_sha256: `2f783f3eab5b6c935a82b623ab1cc7c641ef6cb08a2d711d7c8072954fb48951`
 - nodes: 2
 
 ### Nodes
@@ -24653,6 +24656,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - resolves named access by the exact authorized published ID and rejects changed live names
   - resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors
   - answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused
+  - runs get_target_attribute, get_target_method and execute_target_method with no command lock, so agent code there never runs under it
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id` (+7 more)
@@ -24822,7 +24826,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/frame_viewer.py
 
-- source_sha256: `ced7ac875af3c0e44466a48856022adfb2583c5d67aa883cb34c6cb88ddbcdbd`
+- source_sha256: `46f8b3751c93011630f79345d0e2a6206eae8463765f859a2b6c3bc11b2d2b41`
 - nodes: 2
 
 ### Nodes
@@ -24842,11 +24846,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - role: Projection-backed room viewer asset.
 - responsibilities:
-  - holds the current per-frame projection-set references for the room
-  - owns the helper cache for frame, conduit, and spell view surfaces
+  - reads current view projections from its borrowed Rift on demand, caching no projection and no helper
+  - builds the view, frame, conduit and spell helper surfaces per call, owned by the call
   - provides the visible frame-local query surface
   - delegates registered relationship navigation to the current ACL-filtered spell viewer
-- owns_state: `_projection_sets_by_frame_name`, `_view_multiframe`, `_helper_surfaces_by_frame_name`, `_default_view_frame_name`
+  - a read overlapping a frame link or an ACL refresh can raise the cleaned RuntimeError of the projection it read; a retry reads the new projection
+- owns_state: `_id`, `_lock`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `compare_conduit_records`, `compare_conduits`, `compare_frame_conduits`, `compare_frame_spells`, `compare_frames`, `compare_frames_brief`, `compare_spell_records`, `compare_spells`, `count_conduit_records`, `count_frames` (+141 more)
 
@@ -25347,7 +25352,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift.py
 
-- source_sha256: `bcd218d4520507c32749f3445c1cdecb2a285a1f83f4d3991169e166ab4846b5`
+- source_sha256: `cb62caff825712a23704f4587dd6880fb7ceda4bf477ab257030e9d07287e9a3`
 - nodes: 2
 
 ### Nodes
@@ -25369,7 +25374,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stores frame-link contracts for engaged frames
   - owns one RiftGate
   - refreshes room assets from current projection state
-- owns_state: `_space`, `_frame_link_contracts_by_name`, `_rift_gate`, `_configuration`, `_projection_sets_by_frame_name`
+  - attaches each frame once, giving back a target-frame budget reservation that published nothing
+  - keeps its lock after cleanup: an attach overtaken by removal after its reservation, or a refresh after its sets were built, meets the cleaned state under it
+  - cleans up in two steps - marks itself cleaned under its lock, then tears the room and the rest down with no lock held, the caller that marked running the teardown; Nexus.remove_rift marks it through _mark_cleaned_for_removal, which returns the frames attached at the mark
+- owns_state: `_space`, `_frame_link_contracts_by_frame_name`, `_rift_gate`, `_configuration`, `_projection_sets_by_frame_name`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `configuration`, `create_frame_link`, `create_nexus_frame`, `get_frame_link_contract`, `get_frame_viewer`, `get_nexus_frame`, `get_selected_contract_names`, `id`, `is_active`, `is_registered`, `list_accessible_nexus_frame_names` (+11 more)
 
@@ -25401,10 +25409,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.rift.rift.Rift` creates `RuntimeError`
 - `melder.nexus.rift.rift.Rift` creates `RiftGate`
 - `melder.nexus.rift.rift.Rift` creates `ValueError`
-- `melder.nexus.rift.rift.Rift` creates `FrameLinkContract`
 - `melder.nexus.rift.rift.Rift` creates `CodegenRiftSpace`
 - `melder.nexus.rift.rift.Rift` creates `CapabilityRiftSpace`
 - `melder.nexus.rift.rift.Rift` creates `StaticRiftSpace`
+- `melder.nexus.rift.rift.Rift` creates `FrameLinkContract`
 
 <!-- END FILE: src/melder/nexus/rift/rift.py -->
 
@@ -25766,7 +25774,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/rift_space.py
 
-- source_sha256: `89b358dfe5d7cf904754d07e1a12b31c254161648d1a5ed0ace5d9c13442dd99`
+- source_sha256: `65db8b70ba36674bbbb5e6dbd09c3eafd2356faeb92f481df62c537bf261374a`
 - nodes: 2
 
 ### Nodes
@@ -25788,6 +25796,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns the workstation
   - owns the room-local command system
   - owns room-local event and memory systems
+  - cleans up by marking itself cleaned under its lock and cleaning its children after releasing it
 - owns_state: `_frame_viewer`, `_workstation`, `_command_system`, `_event_system`, `_memory_system`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system`, `event_system`, `frame_viewer`, `memory_system`, `metadata`, `owner_rift_id`, `register_action_post_hook`, `register_action_pre_hook`, `register_category_post_hook`, `register_category_pre_hook`, `rift_gate` (+5 more)
@@ -25874,7 +25883,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/workstation.py
 
-- source_sha256: `c0ed8955cf615984080ed74452e2fb6b508246b3bc140143d43ba11815995d90`
+- source_sha256: `e7f53ab635ed11b5ec8abf36f9edb0733fa4d198cf44e352738a4b56d42189e3`
 - nodes: 2
 
 ### Nodes
@@ -25895,7 +25904,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stores bound objects, attributes, and methods
   - tracks one active target
   - supports result rebinding for later room work
-- owns_state: `_objects_by_name`, `_attributes_by_name`, `_methods_by_name`, `_active_target_name`
+  - is shared by every agent in its room and never holds its lock while a target or its cleanup methods run
+- owns_state: `_strong_objects_by_name`, `_strong_attributes_by_name`, `_strong_methods_by_name`, `_weak_objects_by_name`, `_weak_attributes_by_name`, `_weak_methods_by_name`, `_target_name`, `_target_store`
 - phases: `runtime`, `cleanup`
 - public methods: `bind_attribute`, `bind_method`, `bind_object`, `call_target`, `cleanup`, `cleanup_target`, `clear_target`, `describe_bindings`, `get`, `get_target`, `owner_space_id`, `release` (+2 more)
 

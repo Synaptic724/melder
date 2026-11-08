@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 6f7008e8fb6bd3643330746e6211c4fc4c7adbe0f985099b47e872d951397359
+SOURCE FINGERPRINT: 5ca2cbcb5c3a3ae6f0667d88ad1a64cbd05697a56e947c07cf3f337424569eaa
 FILE COUNT: 586
 
 ================================================================================
@@ -614,7 +614,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 861172254dd87b063799567a0e2a886cd448e11c5577f42b6452d9a6f0220dc4
+CONTENT SHA256: 7796a7012de3a08a70117d3d12e61eafdb8fae5a522e560eb568232b39134dde
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -628,7 +628,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8288"
+__version__ = "0.2.8300"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -221207,7 +221207,7 @@ END FILE: src/melder/nexus/frame_descriptor_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/nexus.py
-CONTENT SHA256: f745009e73e679163ae6ef757d70dc15dfda97c1c498db76e4e9a9f447538d75
+CONTENT SHA256: 4f55ee64b571ab53b7d922638e53890de218a88241a9396374429916de94248b
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -221299,8 +221299,10 @@ class Nexus(Cleanable):
         behavior.
 
     Threading:
-        Uses one class-level singleton lock for instance creation and one
-        instance `threading.RLock` for multi-step mutable state transitions.
+        Uses one lock, the class-level `Nexus._lock` (a `threading.RLock`):
+        singleton construction and every multi-step mutable state transition
+        take it, and `self._lock` reads that same class attribute. (Corrected
+        2026-11-08: this said each instance had its own lock as well.)
 
     Threading:
         Registry mutation and ACL-change fan-out are serialized internally. The
@@ -221530,8 +221532,8 @@ class Nexus(Cleanable):
               completes.
 
         Threading:
-            Acquires the instance lock for mutable-state teardown, then the
-            class-level singleton lock to reset singleton bookkeeping.
+            Takes `Nexus._lock`, the one class-level lock, for the teardown and
+            again to reset the singleton bookkeeping.
 
         Returns:
             None.
@@ -222481,11 +222483,15 @@ class Nexus(Cleanable):
 
         Contract:
             - Removes the Rift from Nexus registries under the Nexus lock.
-            - Decrements target-frame ref counts and detaches the Rift from its
-              Nexus-managed frames as part of registry teardown.
+            - Marks the Rift cleaned there and decrements the target-frame ref
+              counts for exactly the frames attached at that moment, so an
+              attach that lands later gives its own reservation back instead of
+              leaking a count (GitHub #274, the R4 residual).
+            - Detaches the Rift from its Nexus-managed frames as part of
+              registry teardown.
             - Disposes orphaned Nexus-managed frames only after the locked
               registry mutation phase completes.
-            - Cleans the removed Rift before returning.
+            - Cleans the removed Rift's owned state before returning.
 
         Args:
             rift_id:
@@ -222493,6 +222499,18 @@ class Nexus(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            ValueError: If no Rift with that id is registered.
+            RuntimeError: If the Rift was already cleaned outside Nexus; only its
+                id-registry entry is gone by then (its name, gate, counts stay).
+
+        Threading:
+            The registry phase holds the Nexus lock and takes the Rift lock
+            inside it, briefly, to mark the Rift (Nexus, then Rift - the order
+            `Nexus.cleanup` takes). The Rift's teardown runs after the Nexus
+            lock is released: it cleans the room, whose command lock an
+            attaching agent holds while it reserves under the Nexus lock.
         """
         self._require_activated()
         frame_names_to_cleanup: List[str] = []
@@ -222506,18 +222524,22 @@ class Nexus(Cleanable):
             rift_name = rift.rift_name
             if rift.rift_name:
                 self._rift_ids_by_name.pop(rift.rift_name, None)
-            self._rift_gate_controller.unregister_rift_gate(rift.id)
-            for target_frame_name in rift.list_assigned_frame_names():
+            self._rift_gate_controller.unregister_rift_gate(rift_id)
+            # Mark the Rift cleaned and take the frames it holds at that moment, in one step under the Rift lock: an
+            # attach publishes under the same lock, so it lands before the mark - and its frame is decremented here -
+            # or after it, finds the Rift cleaned and gives its own reservation back (GitHub #274, the R4 residual).
+            for target_frame_name in rift._mark_cleaned_for_removal():
                 self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
             frame_names_to_cleanup.extend(
                 self._frame_manager.get_frame_names_to_cleanup_for_removed_rift(
-                    rift.id
+                    rift_id
                 )
             )
 
         for frame_name in frame_names_to_cleanup:
             self._frame_manager.remove(frame_name)
-        rift.cleanup()
+        # This call marked the Rift, so it owns the teardown (Rift._clean_owned_state), run without the Nexus lock.
+        rift._clean_owned_state()
         self._logger.info(
             "Removed Rift '{0}' (id={1}).".format(rift_name, rift_id),
             "remove_rift",
@@ -224717,6 +224739,34 @@ class Nexus(Cleanable):
         with self._lock:
             self._validate_target_frame_budget((target_frame_name,))
             self._increment_target_frame_ref_count(target_frame_name)
+
+    def _release_target_frame(self, target_frame_name: str) -> None:
+        """
+        Internal
+
+        Give back one target-frame slot that `_reserve_target_frame` reserved
+        for an attach that published nothing.
+
+        Contract:
+            - Decrements the frame's ref count under the Nexus ``ClassVar``
+              ``_lock`` and removes it at zero - the decrement `remove_rift`
+              applies to each frame a removed Rift had attached.
+            - For `Rift.create_frame_link` only, when its publish lost: another
+              attach of the same frame published first, or the Rift was cleaned
+              meanwhile (GitHub #274, R4). A caller gives back only a
+              reservation it took itself.
+            - Acquires only the Nexus lock; as for `_reserve_target_frame`, the
+              caller must not hold a Rift lock across this call.
+
+        Args:
+            target_frame_name:
+                Target frame name whose reservation is given back.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
 
     def _remove_frame_acl_container(self, frame_name: str) -> bool:
         """
@@ -234370,7 +234420,7 @@ END FILE: src/melder/nexus/rift/command_system/capability_command_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/command_system/codegen_command_system.py
-CONTENT SHA256: aa0ac947e3daf6822396e2c9c745edf9d386f0b83e0e77ff454d27a0fd194745
+CONTENT SHA256: 79fcd97dbd7995a1e3b9457d950b8ee6cb334cf777c5d45c9b193c3b856a2428
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -235077,6 +235127,14 @@ class CodegenCommandSystem(CommandSystem):
 
         Raises:
             ValueError: If `code` or `frame_name` is empty.
+
+        Threading:
+            Reads the attached `CodegenSystem` under the command lock and runs
+            the request - agent code - after releasing it, so other commands in
+            the room do not wait on a running script and a script that runs a
+            command of this room cannot freeze against it (GitHub #274, W5).
+            The engine's own locks are unchanged and still take one request at
+            a time.
         """
         self.check_cleaned()
         if not isinstance(code, str) or not code:
@@ -235093,13 +235151,14 @@ class CodegenCommandSystem(CommandSystem):
             try:
                 with self._lock:
                     codegen_system = self._require_codegen_system()
-                    transaction_context, execution_result = (
-                        codegen_system.execute_codegen_request(
-                            code,
-                            frame_name=frame_name,
-                        )
+                # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
+                transaction_context, execution_result = (
+                    codegen_system.execute_codegen_request(
+                        code,
+                        frame_name=frame_name,
                     )
-                    return execution_result.to_payload()
+                )
+                return execution_result.to_payload()
             finally:
                 if rift_gate is not None:
                     rift_gate.unregister_ticket()
@@ -236489,7 +236548,7 @@ END FILE: src/melder/nexus/rift/command_system/codegen_command_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/command_system/command_system.py
-CONTENT SHA256: 7923900c27c801fc8d00ebcce76d34e0b45d77eaeed77c403d28096e868ed804
+CONTENT SHA256: 5e9fd4f918491e717d16a29a14d3b692445bda27590ae55c2b6afb8815d20b25
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -236539,9 +236598,17 @@ class CommandSystem(Cleanable):
         and workstation but does not clean those children itself.
 
     Threading:
-        Room-confined. It holds no cross-room state and takes no lock of its
-        own; the ACL projections it enforces against are refreshed by the owning
-        Rift.
+        Room-confined: it holds no cross-room state, and the ACL projections it
+        enforces against are refreshed by the owning Rift. Every public command
+        enters the room's action-hook scope and holds a `RiftGate` ticket while
+        it runs; most also do their work under the command lock (`self._lock`),
+        so those commands take turns within one room. The target commands -
+        `get_target_attribute`, `get_target_method` and `execute_target_method` -
+        take no command lock: reading an attribute or calling a method of the
+        target runs agent code, the workstation's own lock covers the target
+        lookup, and agents sharing the room must not wait on each other's
+        target code (GitHub #274, W5). (Corrected 2026-11-08: this said the
+        class takes no lock of its own.)
 
     Registration:
         MELDER KERNEL. The three postures are melder-internal and constructed by their
@@ -236937,16 +237004,19 @@ class CommandSystem(Cleanable):
             )
         )
 
-    def _get_target_method_locked(
+    def _get_target_method(
             self,
             method_name: str,
     ) -> Callable[..., object]:
         """
-        Resolve one callable from the current workstation target while the
-        command lock is already held.
+        Resolve one callable from the current workstation target.
 
         Contract:
-            - Requires the caller to hold `self._lock`.
+            - Takes no command lock: the workstation's own lock covers the
+              target lookup, and the attribute read can run agent code (a
+              property), which must not run under a Melder lock (GitHub #274,
+              W5). Renamed from `_get_target_method_locked`, which required the
+              command lock, when that requirement went.
             - Enforces the same validation contract as
               `get_target_method(...)`.
 
@@ -237525,12 +237595,17 @@ class CommandSystem(Cleanable):
                 If `attribute_name` is empty.
             AttributeError:
                 If the target does not expose the requested attribute.
+
+        Threading:
+            Holds a `RiftGate` ticket but no command lock: the attribute read
+            can run agent code (a property), and the workstation's own lock
+            covers the target lookup (GitHub #274, W5).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="get_target_attribute",
                 frame_name=None,
-        ), self._lock:
+        ):
             if not attribute_name:
                 raise ValueError("attribute_name cannot be empty.")
             target = self._workstation.get_target()
@@ -237557,13 +237632,17 @@ class CommandSystem(Cleanable):
                 If the target does not expose the requested method.
             RuntimeError:
                 If the resolved attribute is not callable.
+
+        Threading:
+            Holds a `RiftGate` ticket but no command lock, as
+            `get_target_attribute` (GitHub #274, W5).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="get_target_method",
                 frame_name=None,
-        ), self._lock:
-            return self._get_target_method_locked(method_name)
+        ):
+            return self._get_target_method(method_name)
 
     def execute_target_method(
             self,
@@ -237595,13 +237674,20 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Method return value.
+
+        Threading:
+            Holds a `RiftGate` ticket but no command lock while the method -
+            agent code - runs, so other commands in the room do not wait on it
+            and a method that runs a command of this room cannot freeze against
+            it (GitHub #274, W5). Binding the result takes the workstation's
+            own lock.
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="execute_target_method",
                 frame_name=None,
-        ), self._lock:
-            method = self._get_target_method_locked(method_name)
+        ):
+            method = self._get_target_method(method_name)
             result = method(*args, **kwargs)
             if bind_as_name is not None:
                 self._bind_result(
@@ -239691,7 +239777,7 @@ END FILE: src/melder/nexus/rift/frame_link/frame_link_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/frame_viewer.py
-CONTENT SHA256: 1f90b2941db7f9b9a26ecf0a88060ef0a44e59338e65a016dc4c03a87d2ee318
+CONTENT SHA256: d7a851af1b78cef9b2e5a4bb4aa22ebb08d18d220664a2fbd24ea4c798a192d1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -239769,6 +239855,13 @@ class FrameViewer(Cleanable):
     Threading:
         Uses one instance `threading.RLock` to serialize cleanup and
         multi-step viewer-state mutation and teardown.
+        A read that overlaps a frame link or an ACL refresh of its frame can
+        meet the projection set that refresh replaces: the Rift cleans the old
+        set when it installs the new one, and the read raises the cleaned
+        RuntimeError of the projection object it was reading (for example
+        "CompiledFrameACLAccessSurface has already been cleaned. "). The read
+        changed nothing; retry it and it reads the new projection (GitHub #274,
+        V1; the owner, 2026-11-08).
 
     Lifecycle:
         Cleanup clears only viewer-owned references. It does not cleanup the
@@ -258372,7 +258465,7 @@ END FILE: src/melder/nexus/rift/projection/view_projection.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift.py
-CONTENT SHA256: 6825d80c611761ab4091da27c51bd15b000962fade9ce66675aa4beacc903c65
+CONTENT SHA256: 5f6c6a0b5aebda472361a8d679559e52a2b36226f6fea9f93e302c0e9d2996cb
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -258459,11 +258552,28 @@ class Rift(Cleanable):
         (`projection_refresh_gate_enabled` and its timeout/poll settings) blocks
         new entrants at the Rift gate, drains in-flight tickets, refreshes once,
         then reopens.
+        The Rift keeps `_lock` after cleanup, the documented exception to
+        `Cleanable`'s lock rule: `create_frame_link` publishes its contract and
+        `_apply_projection_sets` installs a refresh under it, each checking
+        `_cleaned` there. A removal landing after an attach reserved its
+        budget slot, or after a refresh's sets were built, makes it give the
+        slot back or clean those sets and raise the cleaned error (GitHub
+        #274); one landing earlier can still hit the unlocked reads.
+        Cleanup marks the Rift cleaned under the lock and cleans the room after
+        releasing it, so an agent attaching through the room's command system,
+        which holds the command lock while it takes the Rift lock, cannot freeze
+        against a removal (GitHub #274, C3). `Nexus.remove_rift` marks the Rift
+        in its registry phase and decrements the target-frame budget for exactly
+        the frames attached at that moment, so an attach that publishes later
+        gives its own reservation back (the R4 residual).
 
     Lifecycle / Cleanup:
         Cleanup cleans the one owned space, the owned config snapshot, the owned
         `RiftGate`, and every engaged `FrameLinkContract`, then clears Rift-local
-        metadata and cleans the logger LAST.
+        metadata and cleans the logger LAST. It keeps `_lock` (see Threading).
+        The mark and the teardown are separate steps (`_mark_cleaned` or
+        `_mark_cleaned_for_removal`, then `_clean_owned_state`), and whoever
+        marks the Rift runs the teardown.
 
     Registration:
         MELDER KERNEL - guarded. Rifts are created and registered by `Nexus`
@@ -258649,44 +258759,139 @@ class Rift(Cleanable):
               teardown completes.
             - Does not attempt to clean Nexus or Aether-owned global state.
             - Leaves the Rift unusable after cleanup.
+            - Keeps `_lock`: an attach's publish and a refresh's apply check
+              `_cleaned` under it (GitHub #274).
 
         Returns:
             None.
+
+        Threading:
+            Marks the Rift cleaned under the Rift lock (`_mark_cleaned`) and
+            cleans the room and the rest after releasing it
+            (`_clean_owned_state`). Agent paths take the room's command lock
+            and then the Rift's - `CommandSystem.link_frame` attaches through
+            `create_frame_link` - so cleaning the room under the Rift lock could
+            freeze against them (GitHub #274, C3). `_cleaned`, set under the
+            lock, already makes an attach's publish and a refresh's apply back
+            out. A cleanup that overlaps a running one returns at once, before
+            that teardown finishes.
+        """
+        if not self._mark_cleaned():
+            return
+        self._clean_owned_state()
+
+    def _mark_cleaned(self) -> bool:
+        """
+        Internal
+
+        Mark this Rift cleaned under its lock, once.
+
+        Contract:
+            - Returns True to the one caller that marked it, which then owns
+              the teardown (`_clean_owned_state`); False when it was already
+              marked.
+            - Every check of `_cleaned` refuses new Rift work from here on; an
+              attach's publish and a refresh's apply read it under the same
+              lock (GitHub #274).
+
+        Returns:
+            bool: True when this call marked the Rift cleaned.
+
+        Threading:
+            Takes only the Rift lock, briefly.
         """
         if self.is_cleaned:
-            return
+            return False
         with self._lock:
             if self.is_cleaned:
-                return
+                return False
             self._cleaned = True
-            self._logger.info("Cleaning Rift runtime state.", "cleanup")
-            if self._space is not None:
-                self._space.cleanup()
-            if self._configuration is not None:
-                self._configuration.cleanup()
-            if self._rift_gate is not None:
-                self._rift_gate.cleanup()
-            self._metadata.clear()
-            for projection_set in self._projection_sets_by_frame_name.values():
-                projection_set.cleanup()
-            self._projection_sets_by_frame_name.clear()
-            for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
-                frame_link_contract.cleanup()
-            self._frame_link_contracts_by_frame_name.clear()
-            self._logger.cleanup()
+            return True
 
-            del self._projection_sets_by_frame_name
-            del self._nexus
-            del self._configuration
-            del self._rift_gate
-            del self._frame_link_contracts_by_frame_name
-            del self._space
-            del self._is_registered
-            del self._is_active
-            del self._metadata
-            del self._rift_name
-            del self._id
-            del self._logger
+    def _mark_cleaned_for_removal(self) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Mark this Rift cleaned under its lock for `Nexus.remove_rift` and return
+        the frames attached at that moment.
+
+        Contract:
+            - The caller owns the teardown and must call `_clean_owned_state`
+              next; a later `cleanup()` returns at once.
+            - An attach publishes its contract under the same lock, so it lands
+              either before this mark - its frame is in the returned names - or
+              after it, finds the Rift cleaned and gives its own reservation
+              back (GitHub #274, the R4 residual).
+
+        Returns:
+            Tuple[str, ...]: The frame names attached when the Rift was marked,
+            in attach order.
+
+        Raises:
+            RuntimeError: If the Rift is already cleaned.
+
+        Threading:
+            Takes only the Rift lock, briefly; `Nexus.remove_rift` calls it
+            under the Nexus lock (Nexus, then Rift - the order `Nexus.cleanup`
+            takes; nothing under the Rift lock takes the Nexus lock).
+        """
+        with self._lock:
+            self.check_cleaned()
+            self._cleaned = True
+            return tuple(self._frame_link_contracts_by_frame_name.keys())
+
+    def _clean_owned_state(self) -> None:
+        """
+        Internal
+
+        Clean the room and every other owned object after the Rift was marked
+        cleaned, with no Rift lock held.
+
+        Contract:
+            - Called once, by the caller that marked the Rift (`cleanup`, or
+              `Nexus.remove_rift` after `_mark_cleaned_for_removal`).
+            - Cleans the room, the configuration snapshot, the gate, the
+              projection sets and the frame-link contracts, then the logger
+              last, and deletes every field but `_lock`. No attach or refresh
+              changes the registries after the mark, so they are read here
+              without the lock.
+
+        Returns:
+            None.
+
+        Threading:
+            Runs without the Rift lock: cleaning the room takes the room's
+            child locks, which agent paths hold while they take the Rift lock
+            (GitHub #274, C3).
+        """
+        self._logger.info("Cleaning Rift runtime state.", "cleanup")
+        if self._space is not None:
+            self._space.cleanup()
+        if self._configuration is not None:
+            self._configuration.cleanup()
+        if self._rift_gate is not None:
+            self._rift_gate.cleanup()
+        self._metadata.clear()
+        for projection_set in self._projection_sets_by_frame_name.values():
+            projection_set.cleanup()
+        self._projection_sets_by_frame_name.clear()
+        for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
+            frame_link_contract.cleanup()
+        self._frame_link_contracts_by_frame_name.clear()
+        self._logger.cleanup()
+
+        del self._projection_sets_by_frame_name
+        del self._nexus
+        del self._configuration
+        del self._rift_gate
+        del self._frame_link_contracts_by_frame_name
+        del self._space
+        del self._is_registered
+        del self._is_active
+        del self._metadata
+        del self._rift_name
+        del self._id
+        del self._logger
 
     @property
     def id(self) -> str:
@@ -258823,9 +259028,12 @@ class Rift(Cleanable):
 
     def create_frame_link(self, frame_name: str) -> None:
         """
-        Internal
-
         Validate and engage one target frame on this Rift's frame contract.
+
+        Public: agents attach targets with it directly, or through their room's
+        `CommandSystem.link_frame`, and may call it in parallel (GitHub #274;
+        the owner, 2026-11-08). (Corrected 2026-11-08: this was marked
+        Internal while the class docstring pointed agents at it.)
 
         Args:
             frame_name:
@@ -258842,9 +259050,27 @@ class Rift(Cleanable):
             - Registers the frame on the Rift-local frame contract.
             - Refreshes the owned-space viewer when descriptor truth is
               available for the currently assigned frame set.
+            - Attaches a frame once: another attach of the same frame,
+              concurrent or later, keeps the published contract and the
+              frame's single budget count; a reservation that published
+              nothing is given back to Nexus.
 
         Returns:
             None.
+
+        Raises:
+            ValueError: If `frame_name` is empty, the frame has no descriptor,
+                or it fails Nexus's target-frame policy or budget.
+            RuntimeError: If the Rift is cleaned - also when a removal
+                overtakes the attach after its budget reservation, which is
+                given back first.
+
+        Threading:
+            Validation and the budget reservation run without the Rift lock,
+            which Nexus forbids holding across the reservation. The contract is
+            published under the Rift lock with a re-check, so concurrent
+            attaches of one frame publish one contract and keep one budget
+            count (GitHub #274, R4).
         """
         self.check_cleaned()
         if not frame_name:
@@ -258890,17 +259116,35 @@ class Rift(Cleanable):
             # attaching distinct frames cannot both pass the same empty budget
             # under the free-threaded runtime (BUG-055). Reserving first means a
             # cap refusal raises before any Rift-local state is created.
-            self._nexus._reserve_target_frame(frame_name)
-            from melder.nexus.rift.frame_link.frame_link_contract import (
-                FrameLinkContract,
-            )
-            self._frame_link_contracts_by_frame_name[frame_name] = FrameLinkContract(
-                rift_id=self._id,
-                frame_name=frame_name,
-                metadata={
-                    "rift_name": self._rift_name,
-                },
-            )
+            # `nexus` is held in a local on purpose: a removal that cleans this
+            # Rift during the attach deletes `_nexus`, and the reservation must
+            # still go back to the Nexus that holds it (GitHub #274, R4).
+            nexus = self._nexus
+            nexus._reserve_target_frame(frame_name)
+            with self._lock:
+                # Publish under the Rift lock, which cleanup keeps, checking again:
+                # two attaches of one frame both pass the unlocked check above, so
+                # the second to arrive gives its reservation back instead of
+                # replacing the first contract, and a Rift cleaned meanwhile
+                # publishes nothing (GitHub #274, R4).
+                published = (
+                    not self.is_cleaned
+                    and frame_name not in self._frame_link_contracts_by_frame_name
+                )
+                if published:
+                    from melder.nexus.rift.frame_link.frame_link_contract import (
+                        FrameLinkContract,
+                    )
+                    self._frame_link_contracts_by_frame_name[frame_name] = FrameLinkContract(
+                        rift_id=self._id,
+                        frame_name=frame_name,
+                        metadata={
+                            "rift_name": self._rift_name,
+                        },
+                    )
+            if not published:
+                nexus._release_target_frame(frame_name)
+                self.check_cleaned()
         self.refresh_runtime_projections()
 
     def _authorize_nexus_managed_frame_link(self, frame_name: str) -> bool:
@@ -259030,11 +259274,33 @@ class Rift(Cleanable):
                 When True, replace only the named incoming projection sets and
                 preserve unaffected installed sets.
 
+        Contract:
+            - Takes ownership of the incoming sets: they are installed, or -
+              when the Rift is cleaned - cleaned here, since no one else holds
+              them.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the Rift is cleaned, including by a removal that
+                overtook the refresh after Nexus built its sets; the incoming
+                sets are cleaned first (GitHub #274, R5).
+
+        Threading:
+            Checks `_cleaned` under the Rift lock, which cleanup keeps, and only
+            there: a check before the lock would raise with the incoming sets
+            left uncleaned.
         """
-        self.check_cleaned()
         with self._lock:
+            if self.is_cleaned:
+                # A removal cleaned this Rift after the refresh built these sets -
+                # before this call or while it waited on the lock. Nothing else
+                # will clean them, so clean them, then raise the cleaned error
+                # (GitHub #274, R5).
+                for projection_set in projection_sets_by_frame_name.values():
+                    projection_set.cleanup()
+                self.check_cleaned()
             if merge:
                 merged_projection_sets_by_frame_name = dict(
                     self._projection_sets_by_frame_name
@@ -261689,7 +261955,7 @@ END FILE: src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift_space/rift_space.py
-CONTENT SHA256: 1b2e87bdd39c6afae906b58c509135a0e3fa46da1905c4270b3be37b46493f8a
+CONTENT SHA256: 2f8a2b389caf76b92dd4e457e0f615a2972c5b15bac0242caec55601ee232e0e
 SOURCE ENCODING: utf-8
 ================================================================================
 from contextlib import contextmanager
@@ -261785,7 +262051,7 @@ class RiftSpace(Cleanable):
     Registration:
         MELDER KERNEL. `StaticRiftSpace`, `CapabilityRiftSpace`, and
         `CodegenRiftSpace` are all melder-internal and constructed only inside `Rift`
-        (rift.py:917-933) from `space_type`; there is no injection seam - no room
+        (`Rift._create_primary_space_from_configuration`) from `space_type`; there is no injection seam - no room
         class kwarg, no factory hook.
 
     Subsystem Context:
@@ -261975,6 +262241,16 @@ class RiftSpace(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            Marks the room cleaned under the room lock and cleans its children
+            after releasing it. Agent paths take a child's lock and then the
+            room's - a weak workstation binding collected under the workstation
+            lock publishes its room event, a command leaving its action-hook
+            scope - so cleaning the children under the room lock could freeze
+            against them (GitHub #274, W4 and W6). `_cleaned`, set under the
+            lock, already refuses new room work. A cleanup that overlaps a
+            running one returns at once, before that teardown finishes.
         """
         if self._cleaned:
             return
@@ -261982,38 +262258,38 @@ class RiftSpace(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            if self._frame_viewer is not None:
-                self._frame_viewer.cleanup()
-            self._command_system.cleanup()
-            self._workstation.cleanup()
-            self._event_system.cleanup()
-            self._pre_category_hooks_by_name.clear()
-            self._post_category_hooks_by_name.clear()
-            self._pre_action_hooks_by_key.clear()
-            self._post_action_hooks_by_key.clear()
-            self._action_hook_keys_by_subscription_id.clear()
-            self._action_hook_depth_by_category.clear()
-            self._metadata.clear()
-            self._memory_system.cleanup()
+        # The children are cleaned after the room lock is released (GitHub #274, W4 and W6; see Threading).
+        if self._frame_viewer is not None:
+            self._frame_viewer.cleanup()
+        self._command_system.cleanup()
+        self._workstation.cleanup()
+        self._event_system.cleanup()
+        self._pre_category_hooks_by_name.clear()
+        self._post_category_hooks_by_name.clear()
+        self._pre_action_hooks_by_key.clear()
+        self._post_action_hooks_by_key.clear()
+        self._action_hook_keys_by_subscription_id.clear()
+        self._action_hook_depth_by_category.clear()
+        self._metadata.clear()
+        self._memory_system.cleanup()
 
-            del self._space_name
-            del self._owner_rift_id
-            del self._space_kind
-            del self._metadata
-            del self._frame_viewer
-            del self._rift_gate
-            del self._memory_system
-            del self._event_system
-            del self._workstation
-            del self._command_system
-            del self._pre_category_hooks_by_name
-            del self._post_category_hooks_by_name
-            del self._pre_action_hooks_by_key
-            del self._post_action_hooks_by_key
-            del self._action_hook_keys_by_subscription_id
-            del self._action_hook_depth_by_category
-            del self._id
-
+        del self._space_name
+        del self._owner_rift_id
+        del self._space_kind
+        del self._metadata
+        del self._frame_viewer
+        del self._rift_gate
+        del self._memory_system
+        del self._event_system
+        del self._workstation
+        del self._command_system
+        del self._pre_category_hooks_by_name
+        del self._post_category_hooks_by_name
+        del self._pre_action_hooks_by_key
+        del self._post_action_hooks_by_key
+        del self._action_hook_keys_by_subscription_id
+        del self._action_hook_depth_by_category
+        del self._id
         del self._lock
 
     def register_category_pre_hook(
@@ -262837,7 +263113,7 @@ END FILE: src/melder/nexus/rift/rift_space/static_rift_space.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift_space/workstation.py
-CONTENT SHA256: 711416abd778195e8eff73db993f1acfb8738a921b2e33d7ad8aa58edef08844
+CONTENT SHA256: f671edf2b7a9a778e7f072402de86bdbd87eec231b5df13a34f0838730c62ec5
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -262874,8 +263150,9 @@ class Workstation(Cleanable):
         - Explicit weak binding raises when the supplied value cannot be
           weak-referenced; it never silently degrades to strong storage.
         - Tracks at most one active target binding at a time.
-        - `cleanup_target(...)` acts only on the currently selected target and
-          then clears target selection.
+        - `cleanup_target(...)` acts only on the target selected when it starts
+          and then clears target selection, unless another agent selected a
+          different target meanwhile.
         - `call_target(...)` invokes the currently selected callable target and
           may bind the return value back into the workstation.
         - Cleanup clears workstation-owned binding state but does not attempt
@@ -262907,9 +263184,23 @@ class Workstation(Cleanable):
         the opposite of what was requested, and the caller would have no way to
         detect it.
         Separating object, attribute, and method stores keeps those namespaces
-        from colliding, and the single active target reflects that a room is one
-        person's workspace - a canvas with several simultaneous "current" things
-        would make every target-relative command ambiguous.
+        from colliding, and the single active target keeps target-relative
+        commands unambiguous - a canvas with several simultaneous "current"
+        things would make every one of them ambiguous. Agents working in one
+        room share that one target (see Threading).
+
+    Threading:
+        One workstation per room, shared by every agent working in that room
+        (the owner, 2026-11-08: agents can work in the same workstation at the
+        same time). They share its one active target and its binding names, so
+        one agent can select another target, or rebind a name, under another;
+        coordinating that is the agents' business. The workstation lock keeps
+        the binding stores and the selection consistent and is never held while
+        agent code runs: `call_target` and `cleanup_target` resolve the target
+        under it and call the target, or its cleanup methods, after releasing
+        it (GitHub #274, W5), so agents' calls run concurrently. Whether the
+        target's own methods are safe to call from several threads at once is
+        the target's business, not Melder's (the owner, 2026-11-08).
 
     AGENT_ACCESS: public
 
@@ -263357,6 +263648,15 @@ class Workstation(Cleanable):
         """
         Call cleanup methods on the current target and then clear target selection.
 
+        Contract:
+            - Cleans the target selected when the call starts; the cleanup
+              methods run in the order given.
+            - Clears the selection afterwards only while it still names the
+              binding just cleaned (by name and store): a target another agent
+              selected while the cleanup methods ran stays selected.
+            - Returns without clearing when a teardown cleaned the workstation
+              meanwhile; one landing just before the lock raises AttributeError.
+
         Args:
             *method_names:
                 Optional ordered cleanup method names. When omitted, the
@@ -263371,30 +263671,49 @@ class Workstation(Cleanable):
                 If no target is selected, a method name is empty, or no cleanup
                 method can be resolved on the current target.
             RuntimeError:
-                If one resolved cleanup method is not callable.
+                If the workstation is cleaned, or one resolved cleanup method is
+                not callable.
+
+        Threading:
+            Resolves the target under the workstation lock and runs its cleanup
+            methods - agent code - after releasing it, so another agent's use
+            of this workstation does not wait on them and a cleanup method that
+            uses this room cannot freeze against it (GitHub #274, W5). The
+            selection is cleared under the lock again.
         """
         self.check_cleaned()
         with self._lock:
-            target = self.get_target()
-            cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
-            resolved_any = False
-            for method_name in cleanup_names:
-                if not method_name:
-                    raise ValueError("cleanup method names cannot be empty.")
-                method = getattr(target, method_name, None)
-                if method is None:
-                    continue
-                if not callable(method):
-                    raise RuntimeError(
-                        "Target cleanup attribute '{0}' is not callable.".format(
-                            method_name
-                        )
+            if self._target_name is None or self._target_store is None:
+                raise ValueError("Workstation has no active target.")
+            target_name = self._target_name
+            target_store = self._target_store
+            _, _, target = self._resolve_binding(target_name, store=target_store)
+        cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
+        resolved_any = False
+        for method_name in cleanup_names:
+            if not method_name:
+                raise ValueError("cleanup method names cannot be empty.")
+            method = getattr(target, method_name, None)
+            if method is None:
+                continue
+            if not callable(method):
+                raise RuntimeError(
+                    "Target cleanup attribute '{0}' is not callable.".format(
+                        method_name
                     )
-                method()
-                resolved_any = True
-            if not resolved_any:
-                raise ValueError("No cleanup method was found on the active target.")
-            self._clear_target_locked()
+                )
+            method()
+            resolved_any = True
+        if not resolved_any:
+            raise ValueError("No cleanup method was found on the active target.")
+        if self._cleaned:
+            # A teardown cleaned this workstation while the cleanup methods ran; its selection went with it.
+            return
+        with self._lock:
+            # Clear the selection only while it still names the binding just cleaned: another agent may have
+            # selected a different target while the cleanup methods ran outside the lock (GitHub #274, W5).
+            if self._target_name == target_name and self._target_store == target_store:
+                self._clear_target_locked()
 
     def call_target(
             self,
@@ -263407,7 +263726,9 @@ class Workstation(Cleanable):
         Invoke the current target and optionally bind the return value.
 
         Contract:
-            - Resolves the current target through the logical store layer.
+            - Resolves the current target through the logical store layer and
+              calls the target selected when the call starts; another agent
+              selecting a different target meanwhile does not change it.
             - When `bind_as_name` is supplied, the return value is rebound
               through the normal workstation bind path with `weak_ref=None`,
               which means the room default applies.
@@ -263430,22 +263751,30 @@ class Workstation(Cleanable):
             ValueError:
                 If no target is selected or `bind_as_store` is invalid.
             RuntimeError:
-                If the target is not callable.
+                If the target is not callable, or the workstation is cleaned -
+                also when a teardown cleaned it while the target ran and
+                `bind_as_name` asks to bind the result.
+
+        Threading:
+            Resolves the target under the workstation lock and calls it - agent
+            code - after releasing it, so agents sharing this workstation run
+            their calls concurrently and a target that uses this room through a
+            command cannot freeze against another command reading the target
+            (GitHub #274, W5).
         """
         self.check_cleaned()
-        with self._lock:
-            target = self.get_target()
-            if not callable(target):
-                raise RuntimeError("Active target is not callable.")
-            result = target(*args, **kwargs)
-            if bind_as_name is not None:
-                self._bind(
-                    bind_as_store,
-                    bind_as_name,
-                    result,
-                    weak_ref=None,
-                )
-            return result
+        target = self.get_target()
+        if not callable(target):
+            raise RuntimeError("Active target is not callable.")
+        result = target(*args, **kwargs)
+        if bind_as_name is not None:
+            self._bind(
+                bind_as_store,
+                bind_as_name,
+                result,
+                weak_ref=None,
+            )
+        return result
 
     def _bind(
             self,
