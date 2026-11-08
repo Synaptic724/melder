@@ -32,6 +32,19 @@ class FrameLinkContract(Cleanable):
         Created for one Rift/frame pair and cleaned with the owning Rift unless
         explicitly cloned into another local hosting object.
 
+    Threading:
+        `_lock` serializes `cleanup()` against itself and against the
+        lock-guarded reads (`get_selected_contract_names`,
+        `get_selected_contract_name`, `describe`, `clone`). Each checks
+        `_cleaned`, takes `_lock`, then checks again under it - Cleanable's
+        double-check - so a second concurrent `cleanup()` returns and a read
+        overtaken by a cleanup raises the cleaned `RuntimeError`. `cleanup()`
+        keeps `_lock` so both can still take it. The property reads
+        (`contract_id`, `rift_id`, `frame_name`, `metadata`) take no lock: one
+        that races `cleanup()` past its check can raise `AttributeError`, and
+        `metadata` can return the map cleanup has already cleared
+        (GitHub #271).
+
     Registration:
         MELDER KERNEL - guarded. Created per Rift/frame pair during
         `Rift.create_frame_link(...)`.
@@ -115,6 +128,15 @@ class FrameLinkContract(Cleanable):
         Contract:
             - Clears selected-contract and metadata state.
             - Leaves the contract unusable after cleanup.
+            - Keeps `_lock` as a documented post-cleanup tombstone: a
+              concurrent `cleanup()` past its outer check, or a lock-guarded
+              read, takes it after this teardown and observes `_cleaned` under
+              it instead of a missing field (GitHub #271).
+
+        Threading:
+            Checks `_cleaned`, takes `_lock`, checks again under it, and sets
+            `_cleaned` and deletes the state under it. Two concurrent calls
+            tear the state down once and both return.
 
         Returns:
             None.
@@ -135,7 +157,9 @@ class FrameLinkContract(Cleanable):
             del self._frame_name
             del self._rift_id
             del self._id
-        del self._lock
+        # `_lock` is kept, a documented post-cleanup tombstone: deleting it here made a
+        # concurrent cleanup() past its outer check, or a lock-guarded read past its
+        # check, raise AttributeError on the missing `_lock` (GitHub #271).
 
     @property
     def contract_id(self) -> str:
@@ -165,11 +189,22 @@ class FrameLinkContract(Cleanable):
         """
         Return the selected ACL contract names for this frame.
 
+        Threading:
+            Checks `_cleaned` before and again under `_lock`, the lock
+            `cleanup()` sets `_cleaned` and deletes the selection under, so the
+            copy never sees a half-torn-down selection and a read overtaken by a
+            concurrent cleanup raises the cleaned `RuntimeError`.
+
+        Raises:
+            RuntimeError: If the contract has been cleaned, including by a
+                cleanup that finished while this read waited for `_lock`.
+
         Returns:
             Dict[str, str]: Selected view/command/codegen contract names.
         """
         self.check_cleaned()
         with self._lock:
+            self.check_cleaned()
             return dict(self._selected_contract_names)
 
     def get_selected_contract_name(self) -> str:
@@ -179,22 +214,41 @@ class FrameLinkContract(Cleanable):
         Contract:
             This same-name selection always matches the attached `frame_name`.
 
+        Threading:
+            Checks `_cleaned` before and again under `_lock`, as
+            `get_selected_contract_names` does.
+
+        Raises:
+            RuntimeError: If the contract has been cleaned, including by a
+                cleanup that finished while this read waited for `_lock`.
+
         Returns:
             str: Selected view ACL contract name.
         """
         self.check_cleaned()
         with self._lock:
+            self.check_cleaned()
             return self._selected_contract_names["view"]
 
     def describe(self) -> Dict[str, object]:
         """
         Return one detached summary of this per-frame contract.
 
+        Threading:
+            Checks `_cleaned` before and again under `_lock`, so the summary is
+            built from one consistent live state and a read overtaken by a
+            concurrent cleanup raises the cleaned `RuntimeError`.
+
+        Raises:
+            RuntimeError: If the contract has been cleaned, including by a
+                cleanup that finished while this read waited for `_lock`.
+
         Returns:
             Dict[str, object]: Detached contract summary.
         """
         self.check_cleaned()
         with self._lock:
+            self.check_cleaned()
             return {
                 "rift_id": self._rift_id,
                 "frame_name": self._frame_name,
@@ -205,11 +259,21 @@ class FrameLinkContract(Cleanable):
         """
         Return a detached copy of this per-frame contract.
 
+        Threading:
+            Checks `_cleaned` before and again under `_lock`, so the copy is
+            built from one consistent live state and a clone overtaken by a
+            concurrent cleanup raises the cleaned `RuntimeError`.
+
+        Raises:
+            RuntimeError: If the contract has been cleaned, including by a
+                cleanup that finished while this call waited for `_lock`.
+
         Returns:
             FrameLinkContract: Detached contract copy.
         """
         self.check_cleaned()
         with self._lock:
+            self.check_cleaned()
             return FrameLinkContract(
                 rift_id=self._rift_id,
                 frame_name=self._frame_name,

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_link/frame_link.py",
- "source_sha256": "2164bb2822f89f7073c74d5b7f3ff26311ea18c8fb88e1697e2d55862b6d8e0f",
+ "source_sha256": "e4b7e0871171fd1cad4212654971d2053dce9411bd054e2b8974f14f2b826168",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_link.frame_link": {
@@ -11,8 +11,8 @@
    "file": "src/melder/nexus/rift/frame_link/frame_link.py",
    "lineno": 1,
    "include": true,
-   "role": "The view-safe frame target entry a Rift holds after attachment.",
-   "semantics_authored_against": "2164bb2822f89f7073c74d5b7f3ff26311ea18c8fb88e1697e2d55862b6d8e0f"
+   "role": "The view-safe frame target entry the frame viewers build on demand (ViewFrame._build_links) - a coordinate, not a handle, and not the Rift's FrameLinkContract.",
+   "semantics_authored_against": ""
   },
   "melder.nexus.rift.frame_link.frame_link.FrameLink": {
    "id": "melder.nexus.rift.frame_link.frame_link.FrameLink",
@@ -40,11 +40,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b4b84eff534cbc203662aae9e077a82f7d6a4dfb2fa4576f3a6766ce747f61bc",
+   "span_sha256": "7abf72d0b25c135f4cc7aabc58f7635a9b74c8b0515751b447ff58a5b8fe5e90",
    "role": "View-safe frame target entry.",
    "responsibilities": [
     "stores stable identity and metadata for one visible frame-scoped target",
-    "avoids exposing raw runtime objects through viewer helper surfaces"
+    "avoids exposing raw runtime objects through viewer helper surfaces",
+    "deletes _lock last, after releasing it, under Melder's rule to fully clear every object (the owner, 2026-11-08): a second cleanup already waiting on the lock returns, but one that loads _lock after the deletion raises AttributeError - cleaning one link from two threads is the caller's mistake, and nothing in Melder cleans a link; its property reads and clone take no lock, so one racing a cleanup past its check can raise AttributeError, and a clone can carry the metadata the cleanup already cleared (0.2.8288, GitHub #271)"
    ],
    "owns_state": [
     "_frame_name",
@@ -57,7 +58,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "b4b84eff534cbc203662aae9e077a82f7d6a4dfb2fa4576f3a6766ce747f61bc"
+   "semantics_authored_against": "7abf72d0b25c135f4cc7aabc58f7635a9b74c8b0515751b447ff58a5b8fe5e90"
   }
  },
  "edges_out": [

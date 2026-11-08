@@ -60,7 +60,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-11-07T22:36:33Z
+- Updated: 2026-11-08T16:23:34Z
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -203,6 +203,23 @@ Each item must include:
   release changes the compiled code. Where to investigate:
   `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest._code_digest` with the same targets
   digested on two patch releases. Current status: uninvestigated (one patch release installed).
+
+- UNKNOWN (an open gap, for the owner's decision): how a notch should end when a `cleanup_spell` disposes its
+  OUTGOING version while the incoming one's structural check runs. Read from the code, not probed: after the seam
+  has switched the index, the outgoing version is parked, so `cleanup_spell` may dispose it (no transaction orders
+  it against the notch); when `_check_notched_version` then fails, `_revert_refused_notch` runs the seam back toward
+  that version, `_refuse_unparked_incoming` refuses it (being disposed, or no longer parked), and the reversal
+  raises its RuntimeError "notch_spell refused '<name>' (spell_id <id>) but could not put the index back to ...
+  This is a Melder bug; please report it with this message." with the refused version left active and its Phase
+  1-4 artifacts not reset. Before 0.2.8285 the same overlap also ended in that error, with the index left with no
+  active version. A disposal of the notch's target is closed (Operational Invariants, 0.2.8285). Why it matters:
+  a refused version keeps serving the address, under an error that calls itself a Melder bug. Where to
+  investigate: `src/melder/aether/spellbook/spellbook.py:Spellbook._revert_refused_notch`,
+  `Spellbook._refuse_unparked_incoming` and `Spellbook._dispose_spell` (its parked branch), with a component test
+  that disposes the outgoing version from inside a failing structural check of the incoming one. Ordering
+  `cleanup_spell` against an in-flight notch is the design question. Current status: uninvestigated (a non-goal of
+  patch small_fixes_2026_11_08, recorded there as a risk); GitHub #273, filed 2026-11-08 and not started, would bring
+  `cleanup_spell` into the frame mediator's scope, which is the owner's decision.
 
 ## System Context (C4)
 Melder is a Dependency Graph Runtime embedded into user systems. User code
@@ -425,15 +442,19 @@ External interfaces are Python APIs:
   parked version can be named by its spell_id or by the Spell they return. Every version of an index is bound
   the way its first version was (0.2.8273): `bind_inactive` and `add_to_spell_index` refuse a version bound
   another way (ValueError) before anything is registered or moved, and a notch, which never moves the index's
-  address, refuses an address another spell holds (RuntimeError) with nothing moved.
+  address, refuses an address another spell holds (RuntimeError) with nothing moved. A target a `cleanup_spell`
+  is disposing, or has taken off the Book's maps, after the in-window check - `cleanup_spell` takes no
+  transaction - is refused by the seam with RuntimeError "notch_spell refused: '<name>' (spell_id <id>) is being
+  disposed by cleanup_spell, ..." or "notch_spell refused: spell_id '<id>' is not a version parked in this
+  Spellbook - ..." and nothing moved (0.2.8285).
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5711, 5855 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5903-6121 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5711, 5860 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5908-6126 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6123, 6221 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6244, 6319 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4725 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4763 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6128, 6226 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6249, 6324 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4829 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4867 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -548,11 +569,13 @@ the versions, compositions pin specific ones, and the creation stores key object
 so a `unique` can have one live object per version while agents iterate on one object and converge
 on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
 fan-out). A notch names its target by spell_id or by Spell and checks that it is the Book's version of that
-index before anything moves; the two index moves take a spell_id the same way (0.2.8249). A notch whose
+index before anything moves; the two index moves take a spell_id the same way (0.2.8249). The seam checks the
+version it is handed once more, under the Book lock and before anything moves, so a target disposed, or being
+disposed, since the conduit's check is refused and the index keeps its active version (0.2.8285). A notch whose
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262). Every version of an index is bound the way its first version was, so a notch moves which version
 serves the index's address, never the address, and refuses an address another spell holds (0.2.8273).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5103 (the three seams, remeasured 2026-11-07 at 0.2.8281);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, remeasured 2026-11-08 at 0.2.8285);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -940,7 +963,15 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5103 (the three seams, r
    `_apply_remove_from_index(...)`. THE ENTRY AND THE SEAM ARE DIFFERENT
    METHODS; the entry is what the Conduit calls, the seam is what mutates.
 5. The seams execute the member-store work inside that held window:
-   - notch first moves the index's address claim from the outgoing version
+   - notch first checks, under the Book lock, that the incoming version is the
+     one parked in this Book under its spell_id, parked in the index and not
+     being disposed by a `cleanup_spell`, and refuses it otherwise, nothing moved
+     (`_refuse_unparked_incoming`, 0.2.8285; until then it parked the outgoing
+     member before the promotion checked the incoming one, so a target
+     `cleanup_spell` took off the Book's maps after step 4's check left the index
+     with no active version, and one a disposal had decided on but not yet
+     removed was promoted and then cleaned while the index selected it); then it
+     moves the index's address claim from the outgoing version
      to the incoming one by compare-and-set (`AethericFrame.repoint_lookup`)
      and refuses, nothing moved, an address another spell holds (0.2.8273);
      then it parks the outgoing active member, promotes the incoming parked
@@ -984,15 +1015,16 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5103 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4190-4451 (`_apply_notch`, `_refuse_taken_address`)
-   - src/melder/aether/spellbook/spellbook.py:4763-4868
-   - src/melder/aether/spellbook/spellbook.py:4983-5103
+   - src/melder/aether/spellbook/spellbook.py:4190-4555 (`_apply_notch`, `_refuse_unparked_incoming`,
+     `_refuse_taken_address`; remeasured 2026-11-08 at 0.2.8285)
+   - src/melder/aether/spellbook/spellbook.py:4867-4972
+   - src/melder/aether/spellbook/spellbook.py:5087-5207
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
-   - src/melder/aether/conduit/conduit.py:5711-5901
-   - src/melder/aether/conduit/conduit.py:5903-6121
-   - src/melder/aether/conduit/conduit.py:6123-6332
-   - src/melder/aether/conduit/conduit.py:6443-6472
-   - src/melder/aether/conduit/conduit.py:6474-6517
+   - src/melder/aether/conduit/conduit.py:5711-5906
+   - src/melder/aether/conduit/conduit.py:5908-6126
+   - src/melder/aether/conduit/conduit.py:6128-6337
+   - src/melder/aether/conduit/conduit.py:6448-6477
+   - src/melder/aether/conduit/conduit.py:6479-6522
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1087,6 +1119,48 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A notch's seam checks its incoming version before anything moves (2026-11-08, 0.2.8285;
+  TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254; the owner's word, chat 2026-11-08: "yeah do
+  the small fixes and flaky CI test please"; patch small_fixes_2026_11_08): `Spellbook._apply_notch`, under the Book
+  lock, right after its no-op return for the active version and before the address claim moves (its step 0a), runs
+  `_refuse_unparked_incoming`. The incoming version must be the one `_inactive_spells` holds under its spell_id, its
+  index - read through `Spell._spell_index_unless_cleaned`, so a cleaned version reads None instead of raising -
+  must be the index passed, and no `cleanup_spell` may be disposing it (its spell_id in `_disposing_spell_ids`).
+  Otherwise the seam logs at ERROR and raises RuntimeError, nothing moved: "notch_spell refused: spell_id '<id>' is
+  not a version parked in this Spellbook - it was disposed, is active, or was never staged here - so the notch did
+  not happen and nothing moved; '<name>' (spell_id <id>) is still the active version of the index. Stage the version
+  on this index with bind_inactive, which returns the spell_id to pass, and notch again." ("...; the index still has
+  no active version." on an index with none); "notch_spell refused: '<name>' (spell_id <id>) is being disposed by
+  cleanup_spell, so the notch did not happen and nothing moved; <the same tail>." (no remedy to offer); or
+  "notch_spell refused: '<name>' (spell_id <id>) is parked in SpellIndex <other>, not in SpellIndex <index>, so the
+  notch did not happen and nothing moved; <the same tail>. Notch it through its own index, or move it into this one
+  with add_to_spell_index first." `Conduit.notch_spell` checks its target before the transaction and again inside
+  the window (`_owned_notch_target`, 0.2.8249), but `cleanup_spell` is not admitted through a transaction, so a
+  disposal of the target can overlap the notch. `_dispose_spell` marks the version in `_disposing_spell_ids` in its
+  Book-locked decision, releases it from the contracts with no Book lock held - the version still parked - and only
+  then pops it from `_inactive_spells` and the index and cleans it; a cleaned Spell keeps its spell_id. So the seam
+  refuses, by name, a target whose disposal has decided or popped it, and a disposal that decides after the seam's
+  section finds the version active. Until 0.2.8285 the seam moved the claim, parked the outgoing version and
+  cleaned its creation context before `_reactivate_owned_spell` checked the incoming one: a target already popped
+  raised AttributeError "'Spell' object has no attribute 'spell_index'" (once cleaned) or RuntimeError "Owned
+  spell_id not parked for reactivation (spell_id=<id>)." and left the index with no active version; a target still
+  parked while its disposal released its contracts was promoted, and the disposal then dropped it from the index's
+  members and cleaned it while the index selected it; and a version parked in another index of the Book passed the
+  check and was promoted, filed under its own index while this one was repointed to it. The refusal raises before
+  `_notch_spell`'s `try`, as `_refuse_taken_address`'s does, so no reversal runs and `Conduit.notch_spell` ends the
+  transaction as failed with no borrower fan-out. A notch to the active version is still a no-op, a notch that
+  passes the check is unchanged, and the seam's compensation - the claim given back when the park or the promotion
+  raises - now covers only an unexpected error from those two; `_reactivate_owned_spell` keeps its checks for its
+  other callers. Not changed: the conduit's two checks, the notch transaction, `_revert_refused_notch`, and
+  `cleanup_spell`, which stays outside the transaction mediator - so a disposal of the OUTGOING version while the
+  incoming one's structural check runs is still not ordered against the notch (an open gap, see Unknowns). Locks:
+  no lock or lock-order edge is added - the spell's own lock is taken under the Book lock, the order Book teardown
+  and conjure's ownership stamping take.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch`, `Spellbook._refuse_unparked_incoming`,
+  `Spellbook._dispose_spell`, `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`,
+  `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit.cleanup_spell` and
+  `tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py` (the overlapping
+  disposal: `test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused`).
 - A class lookup that finds its class only where it cannot reach refuses its consumer and says where (2026-11-07,
   0.2.8281, HIDDEN_PROVIDER; part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check, GitHub #245, of
   EPIC-2026-11-07-spellframe_hides_the_concrete_class; the owner's rule for part (a) and his calls D1-D5, approved in
@@ -1972,11 +2046,14 @@ each entry in `src_components.md`; this list is the set that crosses components.
   check and the switch, and a refusal there ends the transaction as failed (its `on_end` reopens the frozen gates)
   before `Spellbook._notch_spell` runs. The resolved Spell is rebound to `spell`, so the transaction metadata, the
   seam and the fan-out read one object and a valid call behaves as before; a notch to the active version stays a
-  no-op. The checks exist because the seam cannot be handed a foreign target: `_apply_notch` parks the outgoing
-  version before `_reactivate_owned_spell` checks the incoming one, and files it under its own `spell_index`.
-  `Conduit.cleanup_spell` is not admitted through a transaction, so a disposal of the target between the in-window
-  check and the seam's Book lock still meets that park-first order (pre-existing; filed for the seam). No lock or
-  lock-order edge is added: `_get_owned_spell` takes the Book lock alone and the identity reads take none.
+  no-op. The checks exist because the seam could not be handed a foreign target: until 0.2.8285 `_apply_notch`
+  parked the outgoing version before `_reactivate_owned_spell` checked the incoming one, and filed a version of
+  another index under its own `spell_index`. `Conduit.cleanup_spell` is not admitted through a transaction, so a
+  disposal of the target between the in-window check and the seam's Book lock met that park-first order; since
+  0.2.8285 the seam checks the incoming version first and refuses both cases with nothing moved (the seam-check
+  entry, 0.2.8285; corrected 2026-11-08: this said the seam parks first and called the disposal race pre-existing
+  and filed for the seam). No lock or lock-order edge is added: `_get_owned_spell` takes the Book lock alone and the
+  identity reads take none.
   `add_to_spell_index` and `remove_from_spell_index` take the same two forms (0.2.8249, the owner's extension):
   `_resolve_spell_to_move` runs the shared `_check_spell_argument` - its messages name the verb - and resolves a
   spell_id through `_owned_spell_by_id` (`_get_owned_spell`), refusing one the Book does not own before the
@@ -1986,8 +2063,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._resolve_notch_target`,
   `Conduit._owned_notch_target`, `Conduit._check_spell_argument`, `Conduit._resolve_spell_to_move`,
   `Conduit._owned_spell_by_id`, `src/melder/aether/spellbook/spellbook.py:Spellbook._get_owned_spell`,
-  `Spellbook._apply_notch`, `Spellbook._reactivate_owned_spell`, `Spellbook._apply_add_to_index`,
-  `Spellbook._apply_remove_from_index` and
+  `Spellbook._apply_notch`, `Spellbook._refuse_unparked_incoming` (0.2.8285), `Spellbook._reactivate_owned_spell`,
+  `Spellbook._apply_add_to_index`, `Spellbook._apply_remove_from_index` and
   `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:NotchTransactionStrategy._seal_scope_keys`.
 - Parked versions are wired at conjure (2026-10-16, 0.2.8248): after conjure every version a Book owns carries the
   owner stamp - `Spell._add_owned_conduit` with the root's id, name and store, its dynamic flag and gate controller
@@ -2577,10 +2654,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7813-7856
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7843-7855,
-    effective-mode return :7856; remeasured 2026-11-07 at 0.2.8281)
-  - src/melder/aether/spellbook/spellbook.py:8069
+  - src/melder/aether/spellbook/spellbook.py:7917-7960
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7947-7959,
+    effective-mode return :7960; remeasured 2026-11-08 at 0.2.8285)
+  - src/melder/aether/spellbook/spellbook.py:8173
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2640,6 +2717,59 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
+- Fixed in 0.2.8288: a frame-link contract's cleanup, and the contract reads racing it, raise the documented errors
+  (GitHub #271). `FrameLinkContract.cleanup()` checks `_cleaned`, takes `_lock`, checks again under it and tears
+  the state down there, but ended with `del self._lock`, so a second concurrent `cleanup()` past its outer check
+  raised AttributeError "... object has no attribute '_lock'" instead of returning. It now keeps `_lock` as a
+  documented post-cleanup tombstone - the exception the owner allows, since `Nexus.remove_rift` can race a
+  projection build - so the second call takes it, finds `_cleaned` set and returns, and the state is torn down once
+  (D1). `FrameLink.cleanup()` deletes `_lock` last, under the owner's rule to fully clear every object (chat
+  2026-11-08, "sure your plan here is fine"; nothing in Melder cleans a FrameLink): a second call already waiting on
+  the lock returns, and one that loads `_lock` after the deletion raises AttributeError, cleaning one link from two
+  threads being the caller's mistake; `Cleanable`'s docstring states that default and the kept-lock exception
+  (corrected 2026-11-08: this said both classes keep the lock). `FrameLinkContract.get_selected_contract_names()`,
+  `get_selected_contract_name()`, `describe()` and `clone()` checked `_cleaned` and then took `_lock` without
+  checking again, so a cleanup that overtook them raised AttributeError for the missing lock or for the selection
+  and ids it had deleted. Each now checks again under `_lock` and raises RuntimeError "FrameLinkContract has already
+  been cleaned. " (D2). The window is reachable in the runtime: `Nexus.create_frame_projection_sets_for_rift`
+  reads a Rift's contracts while `Nexus.remove_rift`, which cleans the Rift outside the Nexus lock, tears them down.
+  Not changed, and left open (src_components, Unknowns; GitHub #274, filed): the unlocked property reads of both
+  classes and `FrameLink.clone`, `Rift.get_selected_contract_names` racing `Rift.cleanup`, and two concurrent
+  `Rift.create_frame_link` calls for one frame.
+  EVIDENCE: `src/melder/nexus/rift/frame_link/frame_link_contract.py:124-162` (cleanup), `:188-281` (the four reads),
+  `src/melder/nexus/rift/frame_link/frame_link.py:132-168` (cleanup), `src/melder/nexus/nexus.py:1264-1312`
+  (`remove_rift`), `:2476-2537` (`create_frame_projection_sets_for_rift`),
+  `src/melder/utilities/general_base/cleanable.py:38-52` (the lock policy),
+  `tests/unit/melder/aether/test_frame_link_contract_profiles.py`
+  (`test_frame_link_contract_locked_read_racing_cleanup_raises_cleaned_error_not_attribute_error`,
+  `test_frame_link_contract_cleanup_after_concurrent_teardown_raises_no_missing_lock_error`) and
+  `tests/unit/melder/aether/test_frame_link_runtime_contracts.py` (`test_frame_link_cleanup_clears_owned_state`:
+  the link's lock is deleted).
+- Fixed in 0.2.8285: a notch whose target is disposed meanwhile leaves the index as it was. `Conduit.notch_spell`
+  checks its target before the transaction and again inside the window, but `cleanup_spell` takes no transaction,
+  so a `cleanup_spell` of that target on another thread could overlap the notch. When the disposal had taken the
+  target off the Book's maps before the seam's Book lock, the seam moved the address claim and parked the index's
+  active version before it checked the incoming one, raised AttributeError "'Spell' object has no attribute
+  'spell_index'" (the target already cleaned) or RuntimeError "Owned spell_id not parked for reactivation
+  (spell_id=<id>)." (its disposal still running), and left the index with no active version. When the disposal had
+  decided but was still releasing the target's contracts, the target was still parked: the notch stood, and the
+  disposal then dropped the version from the index's members and cleaned it while the index selected it. And a
+  version parked in another index of the Book, handed to the seam without the conduit's checks, was promoted while
+  this index was repointed to it. Each now raises RuntimeError before anything moves - "notch_spell refused: spell_id
+  '<id>' is not a version parked in this Spellbook - it was disposed, is active, or was never staged here - so the
+  notch did not happen and nothing moved; '<name>' (spell_id <id>) is still the active version of the index. Stage
+  the version on this index with bind_inactive, which returns the spell_id to pass, and notch again.", "notch_spell
+  refused: '<name>' (spell_id <id>) is being disposed by cleanup_spell, so the notch did not happen and nothing
+  moved; '<name>' (spell_id <id>) is still the active version of the index." or "notch_spell refused: '<name>'
+  (spell_id <id>) is parked in SpellIndex <other>, not in SpellIndex <index>, so the notch did not happen and
+  nothing moved; ... Notch it through its own index, or move it into this one with add_to_spell_index first." - the
+  transaction ends as failed, no borrower fan-out runs, the index keeps its active version, claim and routes, and a
+  disposal in flight completes. Notches that succeed are unchanged. A `cleanup_spell` of the outgoing version while
+  the incoming one's structural check runs is not covered (see Unknowns).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch`, `Spellbook._refuse_unparked_incoming`
+  and `tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py`
+  (`test_notch_whose_target_is_disposed_after_the_conduits_check_keeps_the_active_version`,
+  `test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused`).
 - Breaking (0.2.8281): a consumer whose class lookup - a class annotation, a single string annotation's type part,
   `Optional[Class]` without a default, `SpellMap(Class)` or `SpellMap(Class, binding_name=b)` - finds no spell bound
   bare while its class is bound under a spellframe or a binding name is refused with the Phase 4 error
@@ -3783,7 +3913,7 @@ Package root:
   start_line: 1
   end_line: 653
   loc: 653
-  verified_at: 2026-11-07T22:35:23Z
+  verified_at: 2026-11-08T15:30:59Z
   note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
     edit by hand.
     631 entries at 0.2.8281 (`HiddenProviderStrategy` and `HiddenProviderReport` joined; 629 at 0.2.8267), measured
@@ -3837,9 +3967,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8638
-  loc: 8638
-  verified_at: 2026-11-07T20:43:01Z
+  end_line: 8742
+  loc: 8742
+  verified_at: 2026-11-08T12:50:22Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -3891,15 +4021,15 @@ Spellbook and binding:
   note: stable index that categorizes/targets spells and holds the active selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 2048
-  loc: 2048
-  verified_at: 2026-10-25T12:41:30Z
+  end_line: 2050
+  loc: 2050
+  verified_at: 2026-11-08T12:50:22Z
   note: spell metadata and hooks.
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
   end_line: 192
   loc: 192
-  verified_at: 2026-11-02T12:02:57Z
+  verified_at: 2026-11-08T15:30:59Z
   note: existence modes.
 - path: `src/melder/aether/spellbook/existence/managed_spell_mode.py`
   start_line: 1
@@ -4291,16 +4421,16 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: live Rift runtime object.
 - path: `src/melder/nexus/rift/frame_link/frame_link_contract.py`
   start_line: 1
-  end_line: 238
-  loc: 238
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 302
+  loc: 302
+  verified_at: 2026-11-08T15:30:59Z
   note: per-frame ACL selection contract for one Rift/frame pair.
 - path: `src/melder/nexus/rift/frame_link/frame_link.py`
   start_line: 1
-  end_line: 231
-  loc: 231
-  verified_at: 2026-10-24T22:31:53Z
-  note: Rift-local frame-link wrapper over the contract surface.
+  end_line: 256
+  loc: 256
+  verified_at: 2026-11-08T16:21:51Z
+  note: view-safe frame target entry the viewers build on demand (corrected 2026-11-08: it said a contract wrapper).
 - path: `src/melder/nexus/rift/rift_gate/rift_gate.py`
   start_line: 1
   end_line: 411
@@ -4556,9 +4686,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8044
-  loc: 8044
-  verified_at: 2026-11-07T16:50:30Z
+  end_line: 8049
+  loc: 8049
+  verified_at: 2026-11-08T12:50:22Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -4623,7 +4753,7 @@ Resolution and creations:
   start_line: 1
   end_line: 2501
   loc: 2501
-  verified_at: 2026-11-01T13:44:23Z
+  verified_at: 2026-11-08T15:30:59Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -4743,9 +4873,9 @@ Utilities:
     outside the lock, the fixed-capacity eviction (0.2.8234).
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
-  end_line: 429
-  loc: 429
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 440
+  loc: 440
+  verified_at: 2026-11-08T16:21:51Z
   note: cleanup contract.
 - path: `src/melder/utilities/synchronization/phase_scheduler.py`
   start_line: 1
@@ -5331,6 +5461,65 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+2026-11-08 three changes after the notch seam (0.2.8286-0.2.8288). 0.2.8286 (GitHub #270, documentation in source):
+the `Existence` member docstrings of `unique_per_conduit_cluster` (one instance per cluster, held in the cluster's own
+team store, `ConduitCluster._team_store`, which member roots reach through their `ClusterCreations` facade while a
+leader is elected) and `unique_per_spell_space` (a pooled, request-local scope a conduit leases out, built only by
+the space's own meld door) match the runtime, and the `Meld` docstring counts seven modes, naming the managed lease.
+This document's Existence statements already agreed; the code map re-verifies existence.py, meld.py and the
+regenerated bind-guard manifest, whose line counts did not change. 0.2.8287 (GitHub #255): the packaged C2
+meld-resolution drawing gained the managed pool box; this document cites no packaged drawing, and the graph carries
+Python sources only. 0.2.8288 (GitHub #271): a frame-link contract's cleanup keeps `_lock` as a documented tombstone,
+so a second concurrent cleanup returns (D1), while `FrameLink`'s deletes its lock last, on the owner's decision (chat
+2026-11-08) to fully clear every object - nothing in Melder cleans a link - and `Cleanable`'s docstring now states
+that default and the kept-lock exception (corrected 2026-11-08: this said both classes keep the lock); the four
+lock-guarded reads of `FrameLinkContract` check `_cleaned` again under the lock and raise the cleaned RuntimeError
+when a cleanup overtakes them (D2): a new fixed failure mode, and the code map remeasures frame_link_contract.py (302
+lines), frame_link.py (256 lines), whose note is corrected (it called the link a contract wrapper), and cleanable.py
+(440 lines). Left open, read from the code and not probed (src_components, Unknowns; GitHub #274, filed for Rift
+thread safety): the unlocked reads of both classes and `FrameLink.clone` (L6), `Rift.get_selected_contract_names`
+racing `Rift.cleanup` (R2), and two concurrent `Rift.create_frame_link` calls for one frame (R4). The notch Unknowns
+entry names GitHub #273, filed to bring `cleanup_spell` into the frame mediator's scope. No numeric citation moved
+in the round's first pass (none pointed into the two frame-link files, and the other edits kept their line counts);
+the owner's FrameLink follow-up moved frame_link.py's lines by 3, and its citations were remapped. Where to start:
+src_components, Component: AR Runtime Surface (Nexus, Rift, RiftSpace), then its Unknowns entry.
+
+2026-11-08 the notch seam also refuses a version being disposed (0.2.8285, within
+TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254): the docs pass read `_dispose_spell` and found
+that a `cleanup_spell` which has decided on a parked version releases its contracts with no Book lock held while the
+version stays parked; a component test that notches from inside that release
+(`test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused`) saw the notch stand and the disposal then
+clean the version the index selected. `_refuse_unparked_incoming` now also refuses a version whose spell_id is in
+`_disposing_spell_ids`, with RuntimeError "notch_spell refused: '<name>' (spell_id <id>) is being disposed by
+cleanup_spell, ...", nothing moved. The seam-check invariant, the fixed failure mode, the boundary's notch line, the
+mutation sequence's step 5 and the architecture summary carry it, and the Unknowns entry keeps only the overlap still
+open - a `cleanup_spell` of the outgoing version during the incoming one's structural check, whose failing check
+then meets `_revert_refused_notch`'s Melder-bug error - for the owner's decision. In source, `Conduit.notch_spell`'s
+docstring (it said no other index operation could move the target) and `Spell._spell_index_unless_cleaned`'s list
+of readers were corrected. Numeric citations into spellbook.py past the edit moved 15 more lines, and into
+conduit.py past its docstring 5 lines; both were remapped line by line, and the code map remeasures spellbook.py,
+conduit.py and spell.py. Where to start: src_components, Component: Spellbook Core (Binding and Conjure).
+
+2026-11-08 two small fixes on the owner's word (chat 2026-11-08: "yeah do the small fixes and flaky CI test please";
+patch small_fixes_2026_11_08). 0.2.8284 (TASK-2026-10-16-remove_scratch_marker_from_src, GitHub #256): the
+unimported 35-byte module `generalized_cache_runtime_rows_SCRATCH.py` left the generalized compilers package and the
+wheel; this document never named it (the component map's inventory and the graph did). 0.2.8285
+(TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254): `Spellbook._apply_notch` checks its incoming
+version first (`_refuse_unparked_incoming`, its step 0a) - the version parked in this Book under its spell_id and
+parked in the index passed - and refuses it with nothing moved, so a `cleanup_spell` that takes the target off the
+Book's maps between the conduit's in-window check and the seam's Book lock (it takes no transaction) leaves the
+index's active version in place instead of an index with no active version, and a version parked in another index
+is no longer promoted under this one. A new first operational invariant, a fixed failure mode, the notch line of
+the boundary entry, the SpellIndex mutation sequence's step 5 and the architecture summary carry it; the 0.2.8249
+target invariant, which called the disposal race pre-existing and filed for the seam, is corrected in place. Numeric
+citations into spellbook.py past the edit moved 89 lines (the `_apply_notch` and `_refuse_taken_address` range grew
+to take in the new method) and were remapped line by line; the code map remeasures spellbook.py. Not changed:
+`cleanup_spell` stays outside the transaction mediator. New in Unknowns, read from the code and not probed: a
+disposal that decides before the seam's section and pops after it, and one of the outgoing version during the
+structural check, still meet a notch (corrected 2026-11-08: the first was closed the same day by the being-disposed
+refusal - the entry above; the second stays open). Where to start: src_components, Component: Spellbook Core
+(Binding and Conjure), then the notch flow.
+
 2026-11-07 a class lookup that finds its class only where it cannot reach refuses its consumer and says where
 (0.2.8281, HIDDEN_PROVIDER; part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check, GitHub #245, on the
 owner's approval of the design and his calls D1-D5; patch hidden_provider_2026_11_07): Phase 3 records the spells of

@@ -97,11 +97,11 @@ class Existence(StrEnum):
 
     unique_per_conduit_cluster = "unique_per_conduit_cluster"
     """
-    Shared instance across a **conduit cluster** via contracts.
+    One instance per **conduit cluster**, held in the cluster's own team store.
 
-    - The instance is stored in the owning conduit creations map.
-    - Cluster members access it through ConduitCluster sharing contracts.
-    - There is no per-cluster instance key; sharing is contract-scoped.
+    - The store is the cluster's (`ConduitCluster._team_store`, since 0.2.8237), not a member conduit's.
+    - Member roots reach it through their `ClusterCreations` facade while a leader is elected; none elected, it raises.
+    - A leader change keeps the store; `ConduitCloud.delete_cluster` or the frame's teardown disposes it once.
     """
 
     unique_per_conduit_lineage = "unique_per_conduit_lineage"
@@ -117,10 +117,10 @@ class Existence(StrEnum):
     """
     One instance per **spell space**.
 
-    - A spell space is a scoped, semaphore like zone for controlled casting.
-    - Created and closed manually (e.g., "start spell space", "close spell space").
-    - Optimized for temporary casting contexts where init/reset locking is needed.
-    - Spell spaces are versioned and resettable.
+    - A spell space is a pooled, request-local scope a conduit leases out: `enter_spellspace()` (a `with`
+      block) or `create_spellspace()` (manual; its `cleanup()` gives it back).
+    - Only the space's own meld door builds these spells; the conduit's own meld refuses them.
+    - Leaving the space disposes its objects and returns it to the pool; a released space refuses meld and purge.
     """
 
     managed_spell_quantity = "managed_spell_quantity"

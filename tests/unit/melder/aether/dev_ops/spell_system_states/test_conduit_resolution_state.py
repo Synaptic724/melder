@@ -1,5 +1,3 @@
-import threading
-
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
@@ -13,6 +11,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _make_diagnostic(*, code: str, message: str) -> SystemDiagnostic:
@@ -592,45 +591,24 @@ def test_internal_helpers_cover_none_and_exception_tolerance() -> None:
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
-    """Verify the inner cleanup re-check under concurrent teardown."""
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the state reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     state = ConduitResolutionState("cid")
-    state._lock = _CoordinatedLock()
-    failures = []
+    handshake = CleanupRecheckHandshake()
+    state._lock = handshake.lock
 
-    def _run_cleanup():
-        try:
-            state.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(state.cleanup)
 
-    first = threading.Thread(target=_run_cleanup, name="crs-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="crs-cleanup-second")
-
-    first.start()
-    assert state._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert state._cleaned is True
     assert not hasattr(state, '_lock')

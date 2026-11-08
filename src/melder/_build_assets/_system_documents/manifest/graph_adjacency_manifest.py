@@ -13,8 +13,8 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8282"
-NODE_COUNT = 1234
+BUILT_FOR_VERSION = "0.2.8288"
+NODE_COUNT = 1233
 EDGE_COUNT = 1433
 WHY_COUNT = 972
 RELATIONS = ('binds_into', 'borrows', 'creates', 'delegates_to', 'holds', 'implements', 'owns', 'owns_lifecycle_of', 'specializes', 'used_by', 'uses', 'validates')
@@ -401,7 +401,6 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py', 'SpellCodegenStrategy', 'abstract', 14, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy_builder.py', 'spell_codegen_strategy_builder', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder.SpellCodegenStrategyBuilder': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy_builder.py', 'SpellCodegenStrategyBuilder', 'class', 19, False),
-    'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_cache_runtime_rows_SCRATCH': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py', 'generalized_cache_runtime_rows_SCRATCH', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py', 'generalized_manifest_no_overrides_compiler', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py', 'generalized_no_overrides_codegen_creation_compiler', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.py', 'generalized_runtime_library', 'module', 1, False),
@@ -1201,8 +1200,8 @@ NODES = {
     'melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool': ('src/melder/utilities/general_base/abstract_elastic_pool.py', 'AbstractElasticPool', 'abstract', 13, False),
     'melder.utilities.general_base.cleanable': ('src/melder/utilities/general_base/cleanable.py', 'cleanable', 'module', 1, False),
     'melder.utilities.general_base.cleanable.Cleanable': ('src/melder/utilities/general_base/cleanable.py', 'Cleanable', 'abstract', 10, False),
-    'melder.utilities.general_base.cleanable._AsyncCleanupContext': ('src/melder/utilities/general_base/cleanable.py', '_AsyncCleanupContext', 'class', 301, False),
-    'melder.utilities.general_base.cleanable._CleanupContext': ('src/melder/utilities/general_base/cleanable.py', '_CleanupContext', 'class', 187, False),
+    'melder.utilities.general_base.cleanable._AsyncCleanupContext': ('src/melder/utilities/general_base/cleanable.py', '_AsyncCleanupContext', 'class', 312, False),
+    'melder.utilities.general_base.cleanable._CleanupContext': ('src/melder/utilities/general_base/cleanable.py', '_CleanupContext', 'class', 198, False),
     'melder.utilities.general_base.sync': ('src/melder/utilities/general_base/sync.py', 'sync', 'module', 1, False),
     'melder.utilities.general_base.sync.Sync': ('src/melder/utilities/general_base/sync.py', 'Sync', 'class', 6, False),
     'melder.utilities.helpers.class_surface_ast_describer': ('src/melder/utilities/helpers/class_surface_ast_describer.py', 'class_surface_ast_describer', 'module', 1, False),

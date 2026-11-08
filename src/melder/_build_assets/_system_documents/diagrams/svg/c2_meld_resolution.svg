@@ -185,25 +185,32 @@
   <rect class="storage" x="1252" y="728" width="220" height="112" rx="16" filter="url(#shadow)"/>
   <text class="node-title" x="1362" y="761" text-anchor="middle">SpellSpace</text>
   <text class="node-body" x="1362" y="789" text-anchor="middle">request-local Creations</text>
-  <text class="node-small" x="1362" y="817" text-anchor="middle">active thread-local scope only</text>
+  <text class="node-small" x="1362" y="817" text-anchor="middle">only via a leased SpellSpace</text>
+
+  <rect class="storage" x="496" y="728" width="220" height="112" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="606" y="761" text-anchor="middle">Managed pool</text>
+  <text class="node-body" x="606" y="789" text-anchor="middle">owner root's store · per version</text>
+  <text class="node-small" x="606" y="817" text-anchor="middle">holder owns it until release</text>
 
   <path class="edge" d="M 1392 442 V 680 H 858 V 728"/>
   <path class="edge" d="M 1392 442 V 680 H 1110 V 728"/>
   <path class="edge" d="M 1392 442 V 680 H 1362 V 728"/>
+  <path class="edge" d="M 1392 442 V 680 H 606 V 728"/>
   <rect class="label-bg" x="1160" y="656" width="88" height="22" rx="5"/>
   <text class="edge-label" x="1204" y="672" text-anchor="middle">route by scope</text>
 
   <path class="merge" d="M 858 840 V 872 H 1110"/>
   <path class="merge" d="M 1110 840 V 872"/>
   <path class="merge" d="M 1362 840 V 872 H 1110"/>
+  <path class="merge" d="M 606 840 V 872"/>
 
-  <rect class="execution" x="440" y="842" width="240" height="70" rx="15" filter="url(#shadow)"/>
-  <text class="node-title" x="560" y="872" text-anchor="middle">Resolved instance</text>
-  <text class="node-body" x="560" y="896" text-anchor="middle">post-resolve hook</text>
-  <path class="edge-blue" d="M 1110 872 H 680"/>
-  <path class="edge-blue" d="M 440 876 H 196 V 470 H 184"/>
-  <rect class="label-bg" x="298" y="844" width="98" height="22" rx="5"/>
-  <text class="edge-label" x="347" y="860" text-anchor="middle">scoped object</text>
+  <rect class="execution" x="260" y="842" width="216" height="70" rx="15" filter="url(#shadow)"/>
+  <text class="node-title" x="368" y="872" text-anchor="middle">Resolved instance</text>
+  <text class="node-body" x="368" y="896" text-anchor="middle">post-resolve hook</text>
+  <path class="edge-blue" d="M 1110 872 H 476"/>
+  <path class="edge-blue" d="M 260 876 H 196 V 470 H 184"/>
+  <rect class="label-bg" x="147" y="749" width="98" height="22" rx="5"/>
+  <text class="edge-label" x="196" y="765" text-anchor="middle">scoped object</text>
 
   <text class="footer" x="70" y="990">
     Dashed paths are governance, revalidation, and refusal. Solid paths are the successful execution lane.

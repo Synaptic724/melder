@@ -4205,6 +4205,18 @@ class Spellbook(Cleanable):
         is active using the active/inactive park machinery.
 
         Steps (owner side):
+            0a. Check the incoming version first (`_refuse_unparked_incoming`):
+               it must be the version parked in this Book under its spell_id,
+               parked in `spell_index`, and not being disposed by a
+               `cleanup_spell`; otherwise the notch is refused before anything
+               moves (2026-11-08,
+               TASK-2026-10-16-notch_seam_checks_incoming_before_parking).
+               `Conduit.notch_spell` checks its target before the transaction
+               and again inside the window, but `cleanup_spell` takes no
+               transaction, so a disposal can land between that check and this
+               seam's Book lock. Until then step 1 parked the outgoing version
+               before step 2's check, which then left the index with no active
+               version.
             0. Move the index's address claim, by compare-and-set
                (`AethericFrame.repoint_lookup`), from the outgoing version - or
                from no one, on an index with no active version - to `spell`.
@@ -4255,10 +4267,11 @@ class Spellbook(Cleanable):
             Spell: `spell`, now the active member.
 
         Raises:
-            RuntimeError: If another spell holds the index's address (nothing
-                moved; the message names the holder and the remedy), or
-                `spell` is not parked in `_inactive_spells`, or the outgoing
-                spell is not the active owned spell for its id.
+            RuntimeError: If `spell` is not parked in this Book, is parked in
+                another index or is being disposed (step 0a), or another spell
+                holds the index's address (step 0) - nothing moved in either
+                case; each message names the version still active and any
+                remedy - or the outgoing spell is not the active owned one.
         """
         self.check_cleaned()
         new_id = spell.spell_id
@@ -4268,6 +4281,12 @@ class Spellbook(Cleanable):
             if outgoing is spell:
                 # Already the active member for this index; notch is idempotent.
                 return spell
+            # Step 0a: the incoming version must be the one parked in this Book, parked in this index and not being
+            # disposed, checked under the Book lock before the claim or anything else moves. A `cleanup_spell` of the
+            # target can land between the conduit's in-window check and this lock (it takes no transaction); until
+            # 2026-11-08 the outgoing version was parked first and the index was left with no active version
+            # (TASK-2026-10-16-notch_seam_checks_incoming_before_parking).
+            self._refuse_unparked_incoming(spell_index=spell_index, spell=spell, outgoing=outgoing)
             # Step 0: the index's address claim moves first, by compare-and-set, from the outgoing version or -
             # on an index with no active version - from no one. Any other holder is another spell at this
             # index's address, and the notch is refused before anything moves (2026-10-25,
@@ -4291,9 +4310,10 @@ class Spellbook(Cleanable):
                 # Promote the incoming spell from _inactive_spells into the active maps.
                 self._reactivate_owned_spell(spell)
             except Exception:
-                # Compensation, then re-raise: a park or promotion that raises (a target the Conduit's checks
-                # refuse first) gives the claim back to the spell that held it, so that path ends as it did before
-                # the claim moved first (TASK-2026-10-16-notch_seam_checks_incoming_before_parking, backlog).
+                # Compensation, then re-raise: a park or promotion that still raises gives the claim back to the
+                # spell that held it. Step 0a now refuses an unparked or foreign target before the claim moves
+                # (TASK-2026-10-16-notch_seam_checks_incoming_before_parking, 2026-11-08), so this covers only an
+                # unexpected error from the park or the promotion themselves.
                 if previous_holder is None:
                     self._aetheric_frame.release_lookup_by_spell_id(new_id)
                 else:
@@ -4385,6 +4405,90 @@ class Spellbook(Cleanable):
                 change_reason=change_reason,
             )
         return spell
+
+    def _refuse_unparked_incoming(self, *, spell_index: SpellIndex, spell: Spell, outgoing: Optional[Spell]) -> None:
+        """
+        Internal
+
+        Refuse a notch whose incoming version is not parked in this Book's `spell_index`, before anything moves.
+
+        Purpose:
+            `_apply_notch`'s step 0a (2026-11-08, TASK-2026-10-16-notch_seam_checks_incoming_before_parking).
+            `Conduit.notch_spell` checks its target before the notch transaction and again inside the held
+            window (`Conduit._owned_notch_target`), but `cleanup_spell` takes no transaction, so a disposal of
+            the target can land between that check and the seam's Book lock, and an internal caller can hand the
+            seam an unchecked target. Until this check the seam parked the outgoing version first and
+            `_reactivate_owned_spell`'s check then failed, leaving the index with no active version until a notch
+            back; a version parked in another index of this Book passed that check and was promoted under this
+            index.
+
+        Contract:
+            - Called by `_apply_notch` under the Book lock, after its no-op return and before the claim moves.
+            - Returns when `spell` is the version `_inactive_spells` holds under its spell_id, its index is
+              `spell_index`, and no `cleanup_spell` is disposing it; otherwise logs at ERROR and raises, having
+              changed nothing.
+            - A disposing version is refused although it is still parked: `_dispose_spell` marks it in
+              `_disposing_spell_ids` in its Book-locked decision, then releases it from the contracts with no Book
+              lock held, and only then removes it from the Book and the index. Promoted in that window, it would
+              be removed and cleaned while the index selected it.
+            - Reads the version's index through `Spell._spell_index_unless_cleaned`, so a cleaned version reads
+              None instead of raising AttributeError. A disposed parked version has already left
+              `_inactive_spells` (`_dispose_spell` pops it under the Book lock before it cleans the Spell), and a
+              cleaned Spell keeps its spell_id, so the message can always name it.
+
+        Args:
+            spell_index (SpellIndex): The index being notched.
+            spell (Spell): The version the notch would make active.
+            outgoing (Optional[Spell]): The index's active version, named in the message; None when the index
+                has none.
+
+        Returns:
+            None when the version may be promoted.
+
+        Raises:
+            RuntimeError: "notch_spell refused: spell_id '<id>' is not a version parked in this Spellbook - it was
+                disposed, is active, or was never staged here - so the notch did not happen and nothing moved;
+                ...", "notch_spell refused: '<name>' (spell_id <id>) is being disposed by cleanup_spell, ..." or
+                "notch_spell refused: '<name>' (spell_id <id>) is parked in SpellIndex <other>, not in SpellIndex
+                <index>, ...", each naming the version still active (or that the index still has none) and, where
+                one exists, the remedy.
+
+        Threading:
+            Runs under the Book lock and takes the version's own lock inside it (Book -> spell, the order Book
+            teardown takes); holds no other lock and calls no user code.
+        """
+        spell_id = spell.spell_id
+        parked = self._inactive_spells.get(spell_id) is spell
+        parked_in = spell._spell_index_unless_cleaned() if parked else None
+        # A version `_dispose_spell` has decided to dispose is still parked while its contracts are released with no
+        # Book lock held; promoting it then would leave the index selecting a version the disposal removes next.
+        disposing = spell_id in self._disposing_spell_ids
+        if parked and parked_in is spell_index and not disposing:
+            return
+        if outgoing is None:
+            still = "the index still has no active version"
+        else:
+            still = f"'{outgoing.spell_name}' (spell_id {outgoing.spell_id}) is still the active version of the index"
+        if parked_in is None:
+            message = (
+                f"notch_spell refused: spell_id '{spell_id}' is not a version parked in this Spellbook - it was "
+                f"disposed, is active, or was never staged here - so the notch did not happen and nothing moved; "
+                f"{still}. Stage the version on this index with bind_inactive, which returns the spell_id to pass, "
+                "and notch again."
+            )
+        elif disposing:
+            message = (
+                f"notch_spell refused: '{spell.spell_name}' (spell_id {spell_id}) is being disposed by cleanup_spell, "
+                f"so the notch did not happen and nothing moved; {still}."
+            )
+        else:
+            message = (
+                f"notch_spell refused: '{spell.spell_name}' (spell_id {spell_id}) is parked in SpellIndex "
+                f"{parked_in.id}, not in SpellIndex {spell_index.id}, so the notch did not happen and nothing moved; "
+                f"{still}. Notch it through its own index, or move it into this one with add_to_spell_index first."
+            )
+        self._logger.error(message, "_apply_notch")
+        raise RuntimeError(message)
 
     def _refuse_taken_address(self, *, spell_index: SpellIndex, spell: Spell, holder: str) -> None:
         """

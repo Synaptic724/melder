@@ -1,4 +1,3 @@
-import threading
 from typing import FrozenSet, Optional
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
@@ -8,6 +7,7 @@ from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import (
     RiskManager as _RuntimeRiskManager,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 class _ResolutionStateStub:
@@ -311,48 +311,27 @@ def test_cleanup_clears_tracking_and_is_idempotent() -> None:
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
-    """Verify the inner cleanup re-check under concurrent teardown."""
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the risk manager reads cleaned with its
+    `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could
+    lose its signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     resolution_state = _ResolutionStateStub(SpellValidity.valid)
     states = _SpellSystemStatesStub(resolution_state)
     risk_manager = RiskManager(states)
-    risk_manager._lock = _CoordinatedLock()
-    failures = []
+    handshake = CleanupRecheckHandshake()
+    risk_manager._lock = handshake.lock
 
-    def _run_cleanup():
-        try:
-            risk_manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(risk_manager.cleanup)
 
-    first = threading.Thread(target=_run_cleanup, name="risk-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="risk-cleanup-second")
-
-    first.start()
-    assert risk_manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert risk_manager._cleaned is True
     assert not hasattr(risk_manager, '_lock')
 

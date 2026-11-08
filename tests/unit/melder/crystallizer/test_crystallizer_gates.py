@@ -129,7 +129,7 @@ def test_recorded_unit_state_enum_contract():
     Purpose:
         Verify the state-switch enum's public shape.
     Contract:
-        Exactly three members (enabled/disabled/cleaned); each member's
+        Exactly three members (enabled/disabled/CLEANED); each member's
         value equals its name (describe consumers read stable strings).
     Returns:
         None.
@@ -137,7 +137,7 @@ def test_recorded_unit_state_enum_contract():
         AssertionError: If the enum shape drifts.
     """
     assert {member.name for member in RecordedUnitState} == {
-        "enabled", "disabled", "cleaned",
+        "enabled", "disabled", "CLEANED",
     }
     for member in RecordedUnitState:
         assert member.value == member.name

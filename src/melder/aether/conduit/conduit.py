@@ -2739,9 +2739,9 @@ class Conduit(Cleanable):
               it enforces even though it can never be told to enforce something
               else.
             - Available on lesser conduits, which also cannot be written to.
-            - Returns the `Policies` MEMBER, not its name. Use `.name` for the
-              string form; `.value` is an integer because `Policies` is built
-              on `auto()`.
+            - Returns the `Policies` MEMBER, not its name. `Policies` is a
+              StrEnum: `.value` equals `.name`, and the member compares equal
+              to that string.
             - The returned member may be passed straight back into
               `set_new_policy`, which accepts a member or its string name.
 
@@ -5737,8 +5737,13 @@ class Conduit(Cleanable):
             - THE TARGET IS CHECKED before the transaction starts and again inside the
               held window: it must be a version this conduit's Spellbook owns and a member
               of `spell_index`. The second check runs under the notch seal (the Spellbook
-              and its conduits claimed EXCLUSIVE), so no other index operation can move the
-              target between that check and the switch. A refused call changes nothing.
+              and its conduits claimed EXCLUSIVE), so no other index operation admitted
+              through the mediator can move the target between that check and the switch.
+              `cleanup_spell` takes no transaction, so the Spellbook's seam checks the target
+              once more under its own lock and refuses one disposed, moved or being disposed
+              meanwhile (0.2.8285, TASK-2026-10-16-notch_seam_checks_incoming_before_parking;
+              corrected 2026-11-08: this said no other index operation could move it). A
+              refused call changes nothing.
             - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create, bind or
               remove anything. The previous member stays in the index, parked, and a
               notch back by its spell_id restores it.

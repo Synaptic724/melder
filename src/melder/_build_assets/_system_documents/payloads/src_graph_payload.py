@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28381
-CONTENT_SHA256 = '143d9a4aca90ce96535c933a6669ad5b2a940363b39918260ddab5fb31e5f36e'
+LINE_COUNT = 28366
+CONTENT_SHA256 = 'ff359a83e8d6670223cb60c2ba79ddc17a1b99b97496ceaed115d375aa6a9c90'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `c4c4b22126a0412dc1891c51d2c51153c5dd31fd7f2fc6571d4c4eca172ee4bb`
+- source_sha256: `861172254dd87b063799567a0e2a886cd448e11c5577f42b6452d9a6f0220dc4`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `54c07bb326f46551989162e53010dcc019ce8682e4edce11be1f1e270ed04da7`
+- source_sha256: `a0baf74c8e7cdc21ca4ee11b2b39a6c3675cba75699a9ea6660fb29ccab98cd1`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `b6bd578afb53ed0648e7cb1e0c2d99fa0015860805724fefd44aa8d12bbe7cba`
+- source_sha256: `7b51f6421655b9e1f16620145067b2ea9c593c977f25cd6fd066a0f9b00cb869`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `b67ec74b4eb2b1b7fb88d85b128943fdeb17628a78c153debaea49ed163268db`
+- source_sha256: `844251e07e638de3c69ae5b0f6a9bd5eea8f6d38da50d431ad02679fc11b33e9`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `3da0902b0351784234bad34789e12232639b2957d88f541113c4d0fe65f4d8a3`
+- source_sha256: `7374873149686ff6d56bb280c5ec064ea4dee69d1fe6e920d64af34fad11a1e7`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `607f97ff62961531847501d82e51a7312009f3c2b96025318e037d44b498ed5b`
+- source_sha256: `e8e5f674321651cf374d993f7f7bf58fa9c07a3a612c2d4ed09d1c8414ae2cb8`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `d21dbc2ce7734ed3031185ad59e09e4a32cb9d0deea56524654163d3fe2acf5e`
+- source_sha256: `41ddcadc995ae721c00289393ea3fada6b6a11d33269136ab7fcf8277dbbc800`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `0c3f1c5904184b3c57395918b165515d7d3c53f667dbb346d420d91068a2cc70`
+- source_sha256: `98f396713546f38f192f4a829367124fd9ca9f1ba1c50f5eacfe945e7df21daf`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `962665b31efa996b7b674d8beaee427011e696d7a97abda368e8ca4ff5a55b74`
+- source_sha256: `d6c31ef66971a1c8cf00a894ab719c537254b6b9cee39566b7d2689ae9d23aaa`
 - nodes: 1
 
 ### Nodes
@@ -4463,7 +4463,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `390cd8d6ff4c3dccf1a152d91b27ec6beb990cd2c9a3a9a37969a5b5583b9aa2`
+- source_sha256: `2dc8842b0e43cc378a985bcfa599ac405f2c1b57e13ff33fc6fe44b6d419b299`
 - nodes: 2
 
 ### Nodes
@@ -5822,7 +5822,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `d7301724dea303cf158efdb8b3a1695ceb010993df56751f6de485439c576db5`
+- source_sha256: `8f03184aeeb1210851274eac663df7c48f0fbcbe7fc411cbcfc37112b85f8958`
 - nodes: 2
 
 ### Nodes
@@ -6526,7 +6526,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/existence/existence.py
 
-- source_sha256: `1c296d0392d37309cfde622392e9e68ba55370d4e71f5f9bb4af7eba1427509b`
+- source_sha256: `79e60c4814e09787a031a666f856d54ada8fc9ed726722cac00511f32f1e23ec`
 - nodes: 2
 
 ### Nodes
@@ -6546,6 +6546,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes
   - managed_spell_quantity (0.2.8241): objects leased from a pool the owning root keeps per version and released back explicitly - the only member whose objects come back to Melder, and only when their holder releases them
+  - values equal the member names (a StrEnum since 0.2.8277), and the historical numeric values 1-7 still resolve to their members through _missing_, so older records and enum pickles stay readable
 - owns_state: `unique`, `unique_per_conduit`, `many`, `unique_per_conduit_cluster`, `unique_per_conduit_lineage`, `unique_per_spell_space`, `managed_spell_quantity`
 - phases: `runtime`
 
@@ -6629,7 +6630,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `0947c1eeb0d110f74e7b7fb785114f1ad467de8eed8304fcd8df029e32f64930`
+- source_sha256: `1f621475437148ec561a1e6215a96ef5b3f0c09cf809e58ac821fcbc51c14082`
 - nodes: 2
 
 ### Nodes
@@ -8620,26 +8621,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder.SpellCodegenStrategyBuilder` creates `RuntimeError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy_builder.py -->
-
-<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py -->
-
-## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py
-
-- source_sha256: `0f697022b9d45ccdedeffc887e615d5aec2545c615556cffcd9a768d1caa842b`
-- nodes: 1
-
-### Nodes
-
-#### `generalized_cache_runtime_rows_SCRATCH` (module)
-
-- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_cache_runtime_rows_SCRATCH`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py:1`
-- role: Scratch placeholder module for the replaced generalized cache runtime rows surface.
-- responsibilities:
-  - marks the retired generalized cache runtime-rows surface as intentionally empty pending cleanup
-- phases: `runtime`
-
-<!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py -->
 
@@ -15981,7 +15962,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `63d5bb746a2a59f95af1c17b493f691328b1276c59faafd808eef026096510c3`
+- source_sha256: `fc0492af077ba5c129120442dcb435def2b502129c42afd9a14905e77130176c`
 - nodes: 2
 
 ### Nodes
@@ -16034,7 +16015,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)
   - keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)
   - runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)
-  - announces a contract grant's type key: _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name, its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)
+  - announces a contract grant's type key: once the Book has conjured, _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name (CompilerPhase3._hidden_type_key; never a Protocol's own definition), its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)
+  - checks a notch's incoming version before anything moves: under the Book lock, after its no-op return and before the address claim moves, _apply_notch refuses a version that is not the one _inactive_spells holds under its spell_id, whose index (read through Spell._spell_index_unless_cleaned) is not the index notched, or that a cleanup_spell is disposing (its spell_id in _disposing_spell_ids: still parked while _dispose_spell releases its contracts with no Book lock held) (_refuse_unparked_incoming: RuntimeError naming the version still active, or that the index has none, and the remedy where one exists), so a cleanup_spell of the target racing the notch - it takes no transaction - leaves the index's active version, claim and routes in place, and a version parked in another index is no longer promoted under this one (0.2.8285)
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -24769,7 +24751,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_link/frame_link.py
 
-- source_sha256: `2164bb2822f89f7073c74d5b7f3ff26311ea18c8fb88e1697e2d55862b6d8e0f`
+- source_sha256: `e4b7e0871171fd1cad4212654971d2053dce9411bd054e2b8974f14f2b826168`
 - nodes: 2
 
 ### Nodes
@@ -24778,7 +24760,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_link.frame_link`
 - defined at: `src/melder/nexus/rift/frame_link/frame_link.py:1`
-- role: The view-safe frame target entry a Rift holds after attachment.
+- role: The view-safe frame target entry the frame viewers build on demand (ViewFrame._build_links) - a coordinate, not a handle, and not the Rift's FrameLinkContract.
 
 #### `FrameLink` (class)
 
@@ -24789,6 +24771,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores stable identity and metadata for one visible frame-scoped target
   - avoids exposing raw runtime objects through viewer helper surfaces
+  - deletes _lock last, after releasing it, under Melder's rule to fully clear every object (the owner, 2026-11-08): a second cleanup already waiting on the lock returns, but one that loads _lock after the deletion raises AttributeError - cleaning one link from two threads is the caller's mistake, and nothing in Melder cleans a link; its property reads and clone take no lock, so one racing a cleanup past its check can raise AttributeError, and a clone can carry the metadata the cleanup already cleared (0.2.8288, GitHub #271)
 - owns_state: `_frame_name`, `_source_kind`, `_source_id`, `_display_name`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `display_name`, `frame_name`, `from_view_subject`, `link_id`, `metadata`, `source_id`, `source_kind`
@@ -24813,7 +24796,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_link/frame_link_contract.py
 
-- source_sha256: `c92e10546dacb34cab951d93c29be6c033fd07dd40ec24f78b5487c6a5705635`
+- source_sha256: `005e2f5c3ce4c7a6dd80782232f20b1848a8fd992e9599870a104de6c1beb7ad`
 - nodes: 2
 
 ### Nodes
@@ -24833,6 +24816,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores selected view, command, and codegen contract names for one frame
   - owns the per-frame contract identity for one Rift/frame pair
+  - tears its state down once under _lock and keeps _lock after cleanup as a documented tombstone, so a second concurrent cleanup returns; get_selected_contract_names, get_selected_contract_name, describe and clone check _cleaned again under _lock and raise the cleaned RuntimeError when a cleanup overtakes them; the contract_id, rift_id, frame_name and metadata properties take no lock (0.2.8288, GitHub #271)
 - owns_state: `_frame_name`, `_selected_contract_names`, `_rift_id`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `clone`, `contract_id`, `describe`, `frame_name`, `get_selected_contract_name`, `get_selected_contract_names`, `metadata`, `rift_id`
@@ -27113,7 +27097,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/general_base/cleanable.py
 
-- source_sha256: `ca1c16d6089bb39f029d9e3d230189578590363554108deb8206e935959dcf81`
+- source_sha256: `6121dde686e0c9392188007a4a223f6d0a42457187dae423eb14198e478d9b20`
 - nodes: 4
 
 ### Nodes
@@ -27124,7 +27108,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/general_base/cleanable.py:1`
 - role: The single teardown contract shared across the entire runtime.
 - responsibilities:
-  - define idempotent explicit cleanup
+  - define explicit cleanup, idempotent for calls that do not overlap
   - provide check_cleaned so post-teardown use fails loudly
 - phases: `init`, `cleanup`
 
@@ -27136,8 +27120,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Universal explicit-cleanup base contract.
 - responsibilities:
   - stores the canonical cleaned-state flag
-  - defines idempotent cleanup and cleaned-state guard expectations
+  - defines cleanup that is idempotent for calls that do not overlap, and the cleaned-state guard expectations
   - provides using_cleanup() and async_using_cleanup() helper contexts that clean up at most once and let cleanup errors propagate
+  - sets the lock policy for subclasses: one deletes its lock last by default, so a second cleanup already waiting on it returns but one that loads it after the deletion raises AttributeError (cleaning one object from two threads is the caller's mistake); one whose cleanup a Melder path can overlap keeps its lock and documents it (Spell, Creations, FrameLinkContract), and a kept lock references nothing, so it never keeps the object alive (2026-11-08, GitHub #271)
 - owns_state: `_cleaned`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `async_cleanup`, `async_using_cleanup`, `check_cleaned`, `cleaned`, `cleanup`, `is_cleaned`, `using_cleanup`
@@ -27145,7 +27130,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_CleanupContext` (class)
 
 - id: `melder.utilities.general_base.cleanable._CleanupContext`
-- defined at: `src/melder/utilities/general_base/cleanable.py:187`
+- defined at: `src/melder/utilities/general_base/cleanable.py:198`
 - role: Internal context helper supporting the Cleanable teardown contract.
 - responsibilities:
   - scope one cleanup pass
@@ -27155,7 +27140,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_AsyncCleanupContext` (class)
 
 - id: `melder.utilities.general_base.cleanable._AsyncCleanupContext`
-- defined at: `src/melder/utilities/general_base/cleanable.py:301`
+- defined at: `src/melder/utilities/general_base/cleanable.py:312`
 - role: Async counterpart of the cleanup context, driving async_cleanup().
 - responsibilities:
   - drops its owner reference, awaits async_cleanup() at most once and lets its error propagate without suppressing the block's exception

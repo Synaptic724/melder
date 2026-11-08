@@ -160,12 +160,12 @@ class Meld(Cleanable, ABC):
         `CreationContext` executes the construction lanes this class dispatches.
 
     System Context:
-        This class is where the six `Existence` modes stop being an enum and
+        This class is where the seven `Existence` modes stop being an enum and
         become storage routing. `unique_per_conduit` and `many` land in the
         caller's own `ConduitCreations`; `unique`, `unique_per_conduit_cluster`,
         and `unique_per_conduit_lineage` resolve against broader spell-owned or
-        cluster-owned stores; `unique_per_spell_space` is reachable only through
-        the spellspace door. That is why `ConduitMeld` REFUSES a
+        cluster-owned stores; `managed_spell_quantity` leases from its owner root's
+        pool; `unique_per_spell_space` goes only through the spellspace door. So `ConduitMeld` REFUSES a
         `requires_spellspace_request` spell rather than improvising a scope -
         fabricating request-local scope from the conduit door would silently
         produce an instance with the wrong lifetime, which is far worse than a

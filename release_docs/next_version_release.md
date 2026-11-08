@@ -1,4 +1,4 @@
-# Melder 0.2.8282
+# Melder 0.2.8288
 
 **Unreleased**
 
@@ -140,6 +140,37 @@ Bind now rejects a foreign enum family passed as a managed-spell mode, even when
 valid mode. Non-`SpellState` additions to state flags are ignored instead of retained. Supported typed
 flags and ownership-transfer behavior remain covered by the focused tests.
 
+## A notch whose target is disposed meanwhile leaves the index as it was
+
+`Conduit.notch_spell` checks its target before it starts and again inside its transaction, but `cleanup_spell` takes
+no transaction, so a `cleanup_spell` of that target on another thread could land between the check and the switch.
+The notch then parked the index's active version before it noticed, raised AttributeError ("'Spell' object has no
+attribute 'spell_index'") or RuntimeError ("Owned spell_id not parked for reactivation"), and left the index with no
+active version until a notch back. A notch that landed while `cleanup_spell` was still releasing that target from
+its contracts made it active just before the disposal removed it. Both now refuse before anything moves (the second
+says the version "is being disposed by cleanup_spell"), and the index keeps serving its active version:
+
+```text
+notch_spell refused: spell_id '<id>' is not a version parked in this Spellbook - it was disposed, is active, or was
+never staged here - so the notch did not happen and nothing moved; '<name>' (spell_id <id>) is still the active
+version of the index. Stage the version on this index with bind_inactive, which returns the spell_id to pass, and
+notch again.
+```
+
+Notches that succeed are unchanged.
+
+## A frame-link contract's cleanup and the reads racing it raise the documented errors
+
+A `FrameLinkContract` whose `cleanup()` was called on two threads at once could fail the second call with
+AttributeError on its missing `_lock`; both calls now return, and the state is torn down once.
+`FrameLinkContract.get_selected_contract_names()`, `get_selected_contract_name()`, `describe()` and `clone()`
+overtaken by a concurrent cleanup - for example while `Nexus.remove_rift` cleans a Rift a projection build is
+reading - raise the documented RuntimeError "FrameLinkContract has already been cleaned." instead of an
+AttributeError (GitHub issue #271, following #206). `FrameLinkContract` keeps its lock after cleanup for this, as
+`Spell` and `Creations` do; `FrameLink`, which nothing in Melder cleans from two threads, still deletes its lock, as
+most Melder classes do. Both docstrings say which reads take no lock. Nothing changes for code that does not race a
+cleanup.
+
 ## Packaging and documentation
 
 The source and test maps, their indexes and the source graph reflect the selected enum changes.
@@ -155,4 +186,31 @@ name the `HIDDEN_PROVIDER` refusal, and its `SpellMap` passage no longer offers 
 type-key announce and creation-cache generation 27. The internal-bind guard lists 631 classes:
 `HiddenProviderStrategy` and `HiddenProviderReport` joined it.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8282.
+`Conduit.policy`'s docstring says what the returned member's `.value` is now: `Policies` has been a `StrEnum`
+since 0.2.8277, so `.value` equals the member's name (it said an integer).
+
+Two `Existence` member docstrings match the runtime again: `unique_per_conduit_cluster` names the cluster's own
+team store, which has held a cluster's object since 0.2.8237 (it said the owning conduit's store), and
+`unique_per_spell_space` describes a spell space as a pooled scope leased from a conduit, given back when it ends (it
+called spell spaces versioned and resettable).
+
+The wheel no longer ships `generalized_cache_runtime_rows_SCRATCH.py`, a 35-byte scratch marker nothing imported
+(GitHub issue #256). The source maps, their indexes and the source graph describe the notch seam's check of its
+incoming version and no longer list the scratch module.
+
+The design pages on ownership and lifetimes (`architecture_and_design/02_architecture/ownership_and_lifetimes.md`
+and the engineering drawings' README) name all seven lifetimes: `managed_spell_quantity` - objects leased from a
+pool the owning root keeps per version, given back through `ReleaseManagedSpell` and reused - joined the six they
+listed, and a `unique_per_spell_space` object is described as melded through a leased spell space, not an active one
+(GitHub issue #255). The drawings follow: the ownership-and-lifetimes map, the scoped-lifetimes use case and the C2
+meld-resolution drawing - whose copy ships in the package under `melder/_build_assets/_system_documents/diagrams/` -
+draw the managed lease from the owner root's pool, and the boot drawing and its README section name
+`ReleaseManagedSpell`, the hosted root Aether builds last. The drawings' Mermaid sources are pinned to LF in
+`.gitattributes`, so their manifest hashes hold on Windows checkouts too.
+
+`Cleanable`'s docstring says what overlapping cleanups do: a class deletes its lock with its other fields by default,
+so cleaning one object from two threads at once is the caller's mistake, and a class whose cleanup a Melder path can
+overlap keeps its lock and says so. The source and test maps, their indexes and the source graph describe the
+frame-link contract's change.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8288.

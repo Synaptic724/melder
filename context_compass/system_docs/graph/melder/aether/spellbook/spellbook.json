@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "63d5bb746a2a59f95af1c17b493f691328b1276c59faafd808eef026096510c3",
+ "source_sha256": "fc0492af077ba5c129120442dcb435def2b502129c42afd9a14905e77130176c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "The public binding, validation and conjure surface - the object a user actually holds.",
-   "semantics_authored_against": "e7cebd1e8409bf92df8afb288f51623cdb6f9a9e2149e6dbf201bb9711ebf73a"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spellbook.Spellbook": {
    "id": "melder.aether.spellbook.spellbook.Spellbook",
@@ -56,11 +56,11 @@
     "transaction"
    ],
    "shape": {
-    "method_count": 150,
+    "method_count": 151,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6b33fb66214bbb04b356e2f589bbcd31f150c4a6703e116039da125f18bb1c5c",
+   "span_sha256": "18ab64ef8c08c460efb5d87d25e83612c9c9a09c5c22914238ff5704c3d24df3",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -98,7 +98,8 @@
     "answers the version it can see under a spell_id - owned or borrowed, active or parked - with one read of its four id maps under the Book lock alone, for the doors that build nothing; a version a notch is moving is in exactly one map under that lock (_find_visible_version, 0.2.8269)",
     "keeps an index's address through a notch: _apply_notch reads the address's holder and moves the claim by compare-and-set (AethericFrame.repoint_lookup) from the outgoing version before the park, refusing with nothing moved an address another spell holds (_refuse_taken_address: RuntimeError naming the index, its binding, the holder and the remedy) and putting the claim back if the park or the promotion raises; _apply_add_to_index refuses a version bound another way than the target index before the move, and _apply_remove_from_index mints the split version's index with its binding (SpellIndex.for_binding), so it goes active only once its address is free (2026-10-25)",
     "runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)",
-    "announces a contract grant's type key: _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name, its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)"
+    "announces a contract grant's type key: once the Book has conjured, _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name (CompilerPhase3._hidden_type_key; never a Protocol's own definition), its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)",
+    "checks a notch's incoming version before anything moves: under the Book lock, after its no-op return and before the address claim moves, _apply_notch refuses a version that is not the one _inactive_spells holds under its spell_id, whose index (read through Spell._spell_index_unless_cleaned) is not the index notched, or that a cleanup_spell is disposing (its spell_id in _disposing_spell_ids: still parked while _dispose_spell releases its contracts with no Book lock held) (_refuse_unparked_incoming: RuntimeError naming the version still active, or that the index has none, and the remedy where one exists), so a cleanup_spell of the target racing the notch - it takes no transaction - leaves the index's active version, claim and routes in place, and a version parked in another index is no longer promoted under this one (0.2.8285)"
    ],
    "owns_state": [
     "_bind",
@@ -115,7 +116,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "985884aaf14bdd59c0bba00a6b79bd065fafaabf775dc82c6b56bd18a659ae0f"
+   "semantics_authored_against": "18ab64ef8c08c460efb5d87d25e83612c9c9a09c5c22914238ff5704c3d24df3"
   }
  },
  "edges_out": [

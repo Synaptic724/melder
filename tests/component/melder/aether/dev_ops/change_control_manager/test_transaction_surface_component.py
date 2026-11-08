@@ -132,7 +132,7 @@ def test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks(
             metadata={},
         )
 
-        assert session.request.request_type.value == "bind"
+        assert session.request.request_type.value == "BIND"
 
         mediator.end_transaction_for_identity(
             identity=identity,

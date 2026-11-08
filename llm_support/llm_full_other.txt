@@ -1,12 +1,12 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: d7263b16422e6e7f9cb35e79b3dcee1a5ad0b1d7d6e4b58ac3729d7af6cd30d7
+SOURCE FINGERPRINT: 88ab32167b723ffa07dd8bbb1bb3ce648875d20541f5ff46d8eb8afb6ac2278e
 FILE COUNT: 419
 
 ================================================================================
 BEGIN FILE: .gitattributes
-CONTENT SHA256: b0566c5b1c4c33c7a09a7fe32c92e0ae7407613bc38b5fdc2bbf3181e151ae07
+CONTENT SHA256: 06c22e546df8580086d78013c979b9fd52ec5d2324722eb9cdd748e4a8044115
 SOURCE ENCODING: utf-8
 ================================================================================
 # Line-ending policy - deliberately minimal.
@@ -59,6 +59,12 @@ context_compass/system_docs/**/*.md text eol=lf
 # LLM support bundles carry byte hashes and line-range indexes. Pin the whole
 # generated/support lane so Windows and Linux produce identical proofs.
 llm_support/** text eol=lf
+
+# The architecture drawings' manifest (architecture_and_design/manifest.json) records the byte hash of each
+# Mermaid source, and `architecture_and_design/tools/architecture_docs.py check` compares them. A Windows
+# checkout with `core.autocrlf=true` gave the sources CRLF while the manifest holds their LF hashes, so the check
+# reported every source stale on such a checkout (found 2026-11-08, GitHub #255). Pin them LF.
+architecture_and_design/diagrams/source/*.mmd text eol=lf
 ================================================================================
 END FILE: .gitattributes
 ================================================================================
@@ -34730,7 +34736,7 @@ END FILE: architecture_and_design/02_architecture/mediated_access.md
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/02_architecture/ownership_and_lifetimes.md
-CONTENT SHA256: 4a7132b03a1b68d6f3134c6b595ba6ada6b92d2b53f17aa22d633d1acd8f94cd
+CONTENT SHA256: af5589940f2fe2bf3695d9848a44c100252eebf437346d1e83b9448d77c9029b
 SOURCE ENCODING: utf-8
 ================================================================================
 # Ownership and Lifetimes
@@ -34741,11 +34747,17 @@ Depth: mid
 Status: current
 Verified against: Melder 0.1.2 / git 7b31be6d7665
 Last verified: 2026-08-29
+Lifetimes verified against: Melder 0.2.8283 (text), 0.2.8286 (lifetime map) / git db1b97e8cef5
+Lifetimes last verified: 2026-11-08 (lifetime text and lifetime map)
 Diagram source: architecture_and_design/diagrams/source/ownership_lifetimes.mmd
 Source anchors:
 - src/melder/aether/spellbook/existence/existence.py
 - src/melder/aether/conduit/creations/creations.py
 - src/melder/aether/conduit/spell_space/spell_space.py
+- src/melder/aether/conduit/creations/managed_spell_quantity.py
+- src/melder/aether/conduit/creations/release_managed_spell.py
+- src/melder/aether/conduit/creations/managed_spell_lease.py
+- src/melder/aether/conduit/conduit.py
 -->
 
 [Architecture and design home](../README.md)
@@ -34758,8 +34770,10 @@ Where do live objects belong, and when are they reused or disposed?
 
 Melder assigns every resolved object to an explicit lifetime boundary. The broadest
 objects belong to a frame; narrower objects belong to conduits, conduit lineages,
-clusters, or request-local spell spaces; `many` produces a new object per meld. Cleanup
-walks owned scopes inward-to-outward and disposes objects in reverse creation order.
+clusters, or request-local spell spaces; `many` produces a new object per meld; and
+`managed_spell_quantity` leases objects from a pool the owning root keeps, each one
+returning to that pool only when its holder releases it. Cleanup walks owned scopes
+inward-to-outward and disposes objects in reverse creation order.
 
 ![Melder ownership and lifetime map](../diagrams/rendered/ownership_lifetimes.svg)
 
@@ -34773,14 +34787,48 @@ walks owned scopes inward-to-outward and disposes objects in reverse creation or
 | `unique_per_conduit` | One conduit | Session or request scope |
 | `unique_per_conduit_lineage` | Root and lesser-conduit family | Context shared down a scope tree |
 | `unique_per_conduit_cluster` | Named conduit group | Coordinated cross-scope service |
-| `unique_per_spell_space` | Active spell space | Request-local ephemeral state |
+| `unique_per_spell_space` | One leased spell space | Request-local ephemeral state |
 | `many` | None | Fresh workers or value-producing services |
+| `managed_spell_quantity` | Root-owned pool per spell version | Objects reused after each release |
+
+## Managed Spells Are Leased
+
+`managed_spell_quantity` binds classes only, and each spell version gets one pool in its
+owning root's store. A meld, or an injection into a constructor during a meld, takes an
+idle object from that pool, or builds a new one when the pool's mode allows. The holder
+keeps the object until it gives it back: `ReleaseManagedSpell().release(obj)`, or a
+`ManagedSpellLease` from `ReleaseManagedSpell().managed(obj)` or
+`Conduit.managed_spell_meld(...)`, which releases once, by `release()` or at the end of
+its `with` block. A release runs the reset methods named at bind, in order, and leaves
+the object idle for the next lease; a reset that raises destroys the object instead.
+Nothing gives an object back automatically: one never released stays out, and in a
+`limited_quantity` or `queue` pool it holds its place until the root ends.
+
+The mode is chosen at bind with `managed_spell_mode`:
+
+- `elastic`, the default, always builds on a miss and keeps at most
+  `managed_spell_limit` idle objects (256 unless set), trimming idle objects as demand
+  falls;
+- `limited_quantity` allows at most `managed_spell_limit` objects alive, idle plus out,
+  and refuses a lease that finds nothing idle at that limit, before building anything;
+- `queue` has the same limit, but such a lease waits up to
+  `managed_spell_timeout_seconds` for a release before it is refused.
+
+A managed spell may depend on `unique`, other managed, and `many` spells (its `many`
+objects belong to the object they were built for), and any spell may depend on it. The
+pool lives with its root: an ownership transfer carries it, and the root's teardown
+disposes its idle objects. Objects that are out belong to whoever holds them.
 
 ## Cleanup Is Part of the Model
 
 Creation stores preserve registration order for teardown. Newer dependents are disposed
 before earlier dependencies, and failures are aggregated so one bad disposer does not
 prevent the remaining scope from being cleaned.
+
+A root's store cleans its managed pools first, so idle pooled objects are disposed
+before the `unique` objects they hold. A pool runs disposal methods only when it
+destroys an object (when it trims idle objects, when a reset raises, or at teardown),
+never on a release.
 
 ## Why This Design Is Strong
 
@@ -34802,6 +34850,8 @@ Source entry points:
 - [`Existence`](../../src/melder/aether/spellbook/existence/existence.py)
 - [`Creations`](../../src/melder/aether/conduit/creations/creations.py)
 - [`SpellSpace`](../../src/melder/aether/conduit/spell_space/spell_space.py)
+- [`ManagedSpellQuantity`](../../src/melder/aether/conduit/creations/managed_spell_quantity.py)
+- [`ReleaseManagedSpell`](../../src/melder/aether/conduit/creations/release_managed_spell.py)
 ================================================================================
 END FILE: architecture_and_design/02_architecture/ownership_and_lifetimes.md
 ================================================================================
@@ -35508,7 +35558,7 @@ END FILE: architecture_and_design/04_tradeoffs/design_tradeoffs.md
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/05_engineering_drawings/README.md
-CONTENT SHA256: 0b92a0a38ae0c57fc111afa5bc14266da24a7bdc1b642658635a8bef6ca04ac0
+CONTENT SHA256: 47fc303a918d6849c2114d4e30f4109cc404ec69d045cb13e4f1a796c680ab21
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder Engineering Drawings
@@ -35519,6 +35569,8 @@ Depth: high-to-source-bridge
 Status: current
 Verified against: Melder 0.1.2 / git 7b31be6d7665
 Last verified: 2026-08-29
+Lifetimes verified against: Melder 0.2.8283 (text), 0.2.8286 (drawings) / git db1b97e8cef5
+Lifetimes last verified: 2026-11-08 (Scoped Lifetime Use Cases text and drawing; C2 lifetime stores)
 Diagram source: 05_engineering_drawings/mermaid (semantic companions)
 Source anchors:
 - README.md
@@ -35526,6 +35578,9 @@ Source anchors:
 - src/melder/aether/spellbook/spellbook.py
 - src/melder/aether/conduit/conduit.py
 - src/melder/aether/conduit/meld/meld.py
+- src/melder/aether/spellbook/existence/existence.py
+- src/melder/aether/conduit/creations/managed_spell_quantity.py
+- src/melder/aether/conduit/creations/release_managed_spell.py
 - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py
 - src/melder/nexus/nexus.py
 - src/melder/nexus/rift/rift.py
@@ -35680,19 +35735,24 @@ and a preview is not a mutation.
 ### Scoped Lifetime Use Cases
 
 Existence is the ownership and reuse contract for a resolved object. It is selected
-when a spell is bound, then Meld routes the resulting instance into the matching
-owner's store:
+when a spell is bound, then Meld resolves each instance against the matching owner's
+store:
 
 - `unique` belongs to one AethericFrame;
 - `unique_per_conduit_lineage` and `unique_per_conduit_cluster` share within an
   explicitly related subsystem boundary;
 - `unique_per_conduit` belongs to one Conduit;
-- `unique_per_spell_space` requires an active request-local SpellSpace;
-- `many` creates a new instance for each resolution.
+- `unique_per_spell_space` is melded only through a leased request-local SpellSpace;
+- `many` creates a new instance for each resolution;
+- `managed_spell_quantity` leases objects from a pool the owning root keeps per spell
+  version; the holder gives each one back through `ReleaseManagedSpell`, and the pool
+  reuses it.
 
 The no-create probe answers whether a matching live object already exists without
 changing runtime state. Cleanup then composes two orderings: narrow scopes before broad
-owners, and newest-created objects before their dependencies.
+owners, and newest-created objects before their dependencies. A root's store cleans its
+managed pools first, disposing their idle objects; objects still out stay with their
+holders.
 
 ![Scoped lifetime use cases](svg/use_case_scoped_lifetimes.svg)
 
@@ -35747,8 +35807,9 @@ links remain same-frame only.
 
 `import melder` creates the package-root document views and the Aether singleton, but
 it creates no frame. Aether hosts the shared utility, load, continuity, and access
-roots. The first Spellbook lazily establishes its named frame, binds definitions, and
-conjures one root Conduit.
+roots, and builds `ReleaseManagedSpell` last: the registry that routes each released
+managed object back to its pool. The first Spellbook lazily establishes its named
+frame, binds definitions, and conjures one root Conduit.
 
 Ownership then narrows. The frame owns its registries and control plane. A Conduit owns
 Meld, CreationGate, ConduitWard, ConduitCreations, and its narrower scope pools. The
@@ -35925,7 +35986,7 @@ END FILE: architecture_and_design/05_engineering_drawings/README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/05_engineering_drawings/mermaid/boot_and_ownership_lifecycle.mmd
-CONTENT SHA256: a3d4082d21fe7ec86c8544173775a45090df2c487d761f4a79e517ca824e053c
+CONTENT SHA256: 81b361adb6dc63ccdb58e4d4da74b8bfd4f66118d58d8963dd6529729b14ad39
 SOURCE ENCODING: utf-8
 ================================================================================
 flowchart TB
@@ -35938,7 +35999,7 @@ flowchart TB
     subgraph boot["Boot · establish the runtime world"]
         direction LR
         aether["Aether<br/>one process owner"]
-        roots["Hosted roots<br/>utilities · LoadGate · Crystallizer · Nexus<br/>MutationResearch lazy"]
+        roots["Hosted roots<br/>utilities · LoadGate · Crystallizer · Nexus<br/>MutationResearch · ReleaseManagedSpell"]
         frame["AethericFrame<br/>named world + posture"]
         book["Spellbook<br/>definitions + one conjure"]
         conduit["Root Conduit<br/>runtime scope"]
@@ -35995,12 +36056,12 @@ END FILE: architecture_and_design/05_engineering_drawings/mermaid/boot_and_owner
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/05_engineering_drawings/mermaid/c2_meld_resolution.mmd
-CONTENT SHA256: f6ff2137576b0df9d4d16250871c71c6e834355e56f896e7d7cc79f43c64fcfd
+CONTENT SHA256: ee3d5506c2cd333995bef94b1447aa3f985e8666592470c286384bf8f93cc1f1
 SOURCE ENCODING: utf-8
 ================================================================================
 flowchart LR
     accTitle: Melder C2 meld resolution
-    accDescr: A caller enters through Conduit meld. The conduit admits the request through its CreationGate, Meld resolves a Spell, lineage and dirty-root gates may lazily rerun structural and resolution phases, CreationContext executes the compiled creation lane, and Existence selects owner, conduit, or SpellSpace lifetime storage before the instance returns.
+    accDescr: A caller enters through Conduit meld. The conduit admits the request through its CreationGate, Meld resolves a Spell, lineage and dirty-root gates may lazily rerun structural and resolution phases, CreationContext executes the compiled creation lane, and Existence selects owner, conduit, or SpellSpace lifetime storage, or leases a managed object from the pool in its owner root's store, before the instance returns.
 
     caller["Caller"]
 
@@ -36020,6 +36081,7 @@ flowchart LR
         owner["Owner Creations<br/>unique · lineage · cluster"]
         local["ConduitCreations<br/>per-conduit · many"]
         request["SpellSpace Creations<br/>request-local"]
+        managed["Managed pool<br/>owner root's store · leased"]
         failure["Typed refusal<br/>validation · dirty root · scope"]
         result["Resolved instance<br/>post-resolve hook"]
 
@@ -36035,10 +36097,12 @@ flowchart LR
         context -->|"execute"| lifetime
         lifetime -->|"shared owner"| owner
         lifetime -->|"caller scope"| local
-        lifetime -->|"active request"| request
+        lifetime -->|"leased SpellSpace only"| request
+        lifetime -->|"managed lease"| managed
         owner --> result
         local --> result
         request --> result
+        managed --> result
     end
 
     caller -->|"meld(target, overrides)"| conduit
@@ -36054,7 +36118,7 @@ flowchart LR
     class conduit,resolver,context,result execution
     class gates,states,change governance
     class structural,resolution definition
-    class owner,local,request storage
+    class owner,local,request,managed storage
     class failure failure
 ================================================================================
 END FILE: architecture_and_design/05_engineering_drawings/mermaid/c2_meld_resolution.mmd
@@ -36900,12 +36964,12 @@ END FILE: architecture_and_design/05_engineering_drawings/mermaid/use_case_nexus
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/05_engineering_drawings/mermaid/use_case_scoped_lifetimes.mmd
-CONTENT SHA256: 6fe82f5509940b8657a2b150b80425caa8f3c4c2c4f0be4a76fca43067638a04
+CONTENT SHA256: 9b201aef886c6721460ed007db0cd3d93d5a5471f0a3d810e91c414f6328596e
 SOURCE ENCODING: utf-8
 ================================================================================
 flowchart LR
     accTitle: Scoped lifetime use cases
-    accDescr: A developer selects an Existence policy when binding. Application code resolves objects whose reuse boundary may be the AethericFrame, conduit lineage or cluster, one Conduit, an active SpellSpace, or one meld call. Operators can inspect live-creation status without constructing and clean scopes deterministically in narrow-to-broad order.
+    accDescr: A developer selects an Existence policy when binding. Application code resolves objects whose reuse boundary may be the AethericFrame, conduit lineage or cluster, one Conduit, a leased SpellSpace, one meld call, or a root-owned pool that leases each object until its holder releases it through ReleaseManagedSpell. Operators can inspect live-creation status without constructing and clean scopes deterministically in narrow-to-broad order.
 
     developer["Developer / service author"]
     app["Application workload"]
@@ -36918,8 +36982,9 @@ flowchart LR
         frame(["Frame singleton<br/>unique"])
         shared(["Shared subsystem instance<br/>unique_per_conduit_lineage<br/>unique_per_conduit_cluster"])
         conduit(["Conduit-local instance<br/>unique_per_conduit"])
-        request(["Active request instance<br/>unique_per_spell_space"])
+        request(["Request-local instance<br/>unique_per_spell_space<br/>only via a leased SpellSpace"])
         transient(["New instance per resolve<br/>many"])
+        managed(["Leased pool object<br/>managed_spell_quantity<br/>released via ReleaseManagedSpell"])
         probe(["Inspect live status<br/>no-create probe<br/>presence · scope · count"])
         cleanup(["Clean deterministic scopes<br/>narrow before broad"])
 
@@ -36929,10 +36994,12 @@ flowchart LR
         resolve -.->|"selects"| conduit
         resolve -.->|"selects"| request
         resolve -.->|"selects"| transient
+        resolve -.->|"selects"| managed
         request -.->|"requires"| cleanup
         conduit -.->|"owned by"| cleanup
         shared -.->|"owned by"| cleanup
         frame -.->|"owned by"| cleanup
+        managed -.->|"idle objects owned by"| cleanup
     end
 
     developer --> choose
@@ -36948,7 +37015,7 @@ flowchart LR
     class developer,app,operator actor
     class choose definition
     class frame,shared shared
-    class resolve,conduit,request,transient execution
+    class resolve,conduit,request,transient,managed execution
     class probe,cleanup governance
 ================================================================================
 END FILE: architecture_and_design/05_engineering_drawings/mermaid/use_case_scoped_lifetimes.mmd
@@ -37371,12 +37438,12 @@ END FILE: architecture_and_design/diagrams/source/link_contract_meld.mmd
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/diagrams/source/ownership_lifetimes.mmd
-CONTENT SHA256: 3af5b5656e910f5deb16841eef6481a0b91d064be674a0dfbbeb2dcc8398cc68
+CONTENT SHA256: 5b15e7a600f3b2db3ab18af958036dfe270213f72473d656b85174f546f1490e
 SOURCE ENCODING: utf-8
 ================================================================================
 flowchart TB
     accTitle: Melder ownership and lifetime map
-    accDescr: Aetheric frames contain frame-wide unique objects and root conduits. Conduits own scoped objects, lineages may share objects with child conduits, spell spaces own request-local objects, and many creates a fresh object per meld. Cleanup moves from narrow scopes toward broad owners.
+    accDescr: Aetheric frames contain frame-wide unique objects and root conduits. Conduits own scoped objects, lineages may share objects with child conduits, leased spell spaces own request-local objects, and many creates a fresh object per meld. A root conduit keeps one pool per managed_spell_quantity spell version; the pool leases objects to holders, who own them until they release them through ReleaseManagedSpell. Cleanup moves from narrow scopes toward broad owners, and a root disposes its pools' idle objects first.
 
     frame["AethericFrame\nunique"]
     conduit["Conduit\nunique_per_conduit"]
@@ -37393,18 +37460,28 @@ flowchart TB
         many["Meld call\nmany"]
     end
 
+    subgraph pooled["Leased from a root-owned pool"]
+        direction TB
+        managed["Pool per spell version\nmanaged_spell_quantity"]
+        holder["Holder\nowns the object while out"]
+    end
+
     cleanup["Cleanup order\nnarrow scopes before owners\nnewest creations first"]
 
     frame -->|"owns root scope"| conduit
     conduit -->|"shares down tree"| lineage
     conduit -->|"joins named group"| cluster
-    conduit -->|"opens request-local scope"| spellspace
+    conduit -->|"leases request-local scope"| spellspace
     conduit -->|"creates fresh"| many
+    conduit -->|"root keeps pool"| managed
+    managed -->|"leases object"| holder
+    holder -.->|"ReleaseManagedSpell"| managed
 
     lineage -.-> cleanup
     cluster -.-> cleanup
     spellspace -.-> cleanup
     many -.-> cleanup
+    managed -.->|"idle objects first"| cleanup
     cleanup -.->|"before owner"| conduit
     conduit -.->|"before frame"| frame
 
@@ -37413,9 +37490,9 @@ flowchart TB
     classDef narrow fill:#eaf7ef,stroke:#3f7a56,color:#153824
     classDef note fill:#f7f9fc,stroke:#7b8ba8,color:#10213d
     class frame broad
-    class conduit,lineage,cluster scope
+    class conduit,lineage,cluster,managed scope
     class spellspace,many narrow
-    class cleanup note
+    class holder,cleanup note
 ================================================================================
 END FILE: architecture_and_design/diagrams/source/ownership_lifetimes.mmd
 ================================================================================
@@ -37497,7 +37574,7 @@ END FILE: architecture_and_design/diagrams/source/system_context.mmd
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/manifest.json
-CONTENT SHA256: b3214eaa1db089144e8308ab246c5884076770d027697d09557e49c85b8b65d8
+CONTENT SHA256: fdba12e6176c5ba860543ffb60982cbbc4fc6ccede8fc55c1b61aeb426b05b90
 SOURCE ENCODING: utf-8
 ================================================================================
 {
@@ -37506,7 +37583,7 @@ SOURCE ENCODING: utf-8
     "melder_version": "0.1.2",
     "verified_commit": "7b31be6d7665",
     "last_verified": "2026-08-29",
-    "last_rendered": "2026-08-29T01:31:02Z",
+    "last_rendered": "2026-11-08T14:46:07Z",
     "renderer_package": "@mermaid-js/mermaid-cli",
     "renderer_version": "11.15.0",
     "renderer_config": "diagrams/mermaid-config.json"
@@ -37821,8 +37898,8 @@ SOURCE ENCODING: utf-8
       "name": "ownership_lifetimes",
       "source": "diagrams/source/ownership_lifetimes.mmd",
       "rendered": "diagrams/rendered/ownership_lifetimes.svg",
-      "source_sha256": "3af5b5656e910f5deb16841eef6481a0b91d064be674a0dfbbeb2dcc8398cc68",
-      "rendered_sha256": "61654e7f64d9ddbdf12c0328effe8d327f7272e83e0f10626b750b123cc25b75"
+      "source_sha256": "5b15e7a600f3b2db3ab18af958036dfe270213f72473d656b85174f546f1490e",
+      "rendered_sha256": "26f1e6a4b5c30520646af80c94a5775d5e29858816e685cd578b6e5d51a53480"
     },
     {
       "name": "bind_conjure_meld",
@@ -81027,10 +81104,10 @@ END FILE: release_docs/0.2.8275.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: ad7749888457bfe48d5d8d73d3045a750dbd9bfe64fce902531ca9901838c139
+CONTENT SHA256: fe797ee49f421657b35ab10e9934f9babb1f3bb5fff83ac2ac08e1b514a14de1
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8282
+# Melder 0.2.8288
 
 **Unreleased**
 
@@ -81172,6 +81249,37 @@ Bind now rejects a foreign enum family passed as a managed-spell mode, even when
 valid mode. Non-`SpellState` additions to state flags are ignored instead of retained. Supported typed
 flags and ownership-transfer behavior remain covered by the focused tests.
 
+## A notch whose target is disposed meanwhile leaves the index as it was
+
+`Conduit.notch_spell` checks its target before it starts and again inside its transaction, but `cleanup_spell` takes
+no transaction, so a `cleanup_spell` of that target on another thread could land between the check and the switch.
+The notch then parked the index's active version before it noticed, raised AttributeError ("'Spell' object has no
+attribute 'spell_index'") or RuntimeError ("Owned spell_id not parked for reactivation"), and left the index with no
+active version until a notch back. A notch that landed while `cleanup_spell` was still releasing that target from
+its contracts made it active just before the disposal removed it. Both now refuse before anything moves (the second
+says the version "is being disposed by cleanup_spell"), and the index keeps serving its active version:
+
+```text
+notch_spell refused: spell_id '<id>' is not a version parked in this Spellbook - it was disposed, is active, or was
+never staged here - so the notch did not happen and nothing moved; '<name>' (spell_id <id>) is still the active
+version of the index. Stage the version on this index with bind_inactive, which returns the spell_id to pass, and
+notch again.
+```
+
+Notches that succeed are unchanged.
+
+## A frame-link contract's cleanup and the reads racing it raise the documented errors
+
+A `FrameLinkContract` whose `cleanup()` was called on two threads at once could fail the second call with
+AttributeError on its missing `_lock`; both calls now return, and the state is torn down once.
+`FrameLinkContract.get_selected_contract_names()`, `get_selected_contract_name()`, `describe()` and `clone()`
+overtaken by a concurrent cleanup - for example while `Nexus.remove_rift` cleans a Rift a projection build is
+reading - raise the documented RuntimeError "FrameLinkContract has already been cleaned." instead of an
+AttributeError (GitHub issue #271, following #206). `FrameLinkContract` keeps its lock after cleanup for this, as
+`Spell` and `Creations` do; `FrameLink`, which nothing in Melder cleans from two threads, still deletes its lock, as
+most Melder classes do. Both docstrings say which reads take no lock. Nothing changes for code that does not race a
+cleanup.
+
 ## Packaging and documentation
 
 The source and test maps, their indexes and the source graph reflect the selected enum changes.
@@ -81187,7 +81295,34 @@ name the `HIDDEN_PROVIDER` refusal, and its `SpellMap` passage no longer offers 
 type-key announce and creation-cache generation 27. The internal-bind guard lists 631 classes:
 `HiddenProviderStrategy` and `HiddenProviderReport` joined it.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8282.
+`Conduit.policy`'s docstring says what the returned member's `.value` is now: `Policies` has been a `StrEnum`
+since 0.2.8277, so `.value` equals the member's name (it said an integer).
+
+Two `Existence` member docstrings match the runtime again: `unique_per_conduit_cluster` names the cluster's own
+team store, which has held a cluster's object since 0.2.8237 (it said the owning conduit's store), and
+`unique_per_spell_space` describes a spell space as a pooled scope leased from a conduit, given back when it ends (it
+called spell spaces versioned and resettable).
+
+The wheel no longer ships `generalized_cache_runtime_rows_SCRATCH.py`, a 35-byte scratch marker nothing imported
+(GitHub issue #256). The source maps, their indexes and the source graph describe the notch seam's check of its
+incoming version and no longer list the scratch module.
+
+The design pages on ownership and lifetimes (`architecture_and_design/02_architecture/ownership_and_lifetimes.md`
+and the engineering drawings' README) name all seven lifetimes: `managed_spell_quantity` - objects leased from a
+pool the owning root keeps per version, given back through `ReleaseManagedSpell` and reused - joined the six they
+listed, and a `unique_per_spell_space` object is described as melded through a leased spell space, not an active one
+(GitHub issue #255). The drawings follow: the ownership-and-lifetimes map, the scoped-lifetimes use case and the C2
+meld-resolution drawing - whose copy ships in the package under `melder/_build_assets/_system_documents/diagrams/` -
+draw the managed lease from the owner root's pool, and the boot drawing and its README section name
+`ReleaseManagedSpell`, the hosted root Aether builds last. The drawings' Mermaid sources are pinned to LF in
+`.gitattributes`, so their manifest hashes hold on Windows checkouts too.
+
+`Cleanable`'s docstring says what overlapping cleanups do: a class deletes its lock with its other fields by default,
+so cleaning one object from two threads at once is the caller's mistake, and a class whose cleanup a Melder path can
+overlap keeps its lock and says so. The source and test maps, their indexes and the source graph describe the
+frame-link contract's change.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8288.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

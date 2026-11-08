@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 18c6fa2c2b9efb84260773509d26ee1447dc28aadb51597c64caf095043954db
-FILE COUNT: 1200
+SOURCE FINGERPRINT: 012f0c0f4cc0c3f3d7002d9d788c27de391e64277e4731849641d3c820f60dfc
+FILE COUNT: 1204
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -639,6 +639,273 @@ if __name__ == "__main__":
     sys.exit(main())
 ================================================================================
 END FILE: tests/_annotation_audit_support.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/_cleanup_recheck_support.py
+CONTENT SHA256: f3c188eb2a44660bea05d39731fc90226941e87c56130157c2732e3267da6585
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Deterministic two-caller handshake for the `*_cleanup_rechecks_cleaned_inside_lock` tests.
+
+Purpose:
+    Many owned objects guard `cleanup()` with an outer `_cleaned` check, take `self._lock`, and check
+    `_cleaned` again inside the lock, so a second caller that passed the outer check while the first one was
+    cleaning returns without touching state the first one removed. A test proves that inner check by replacing
+    the object's `_lock` with a stand-in that holds the FIRST caller inside the lock until the SECOND caller has
+    passed the outer check and is about to block on the lock.
+
+    The hand-made `_CoordinatedLock` classes those tests used decided which caller was first by reading an event
+    before acquiring. When both threads read it before either set it, nobody announced the second caller; the
+    first caller's one-second wait then failed inside `__enter__` with the lock held, the second thread blocked
+    on that lock for good, and the test failed (GitHub #206, a macOS 3.14.1t CI run). This module orders the two
+    callers explicitly instead (TASK-2026-11-08-deterministic_cleanup_recheck_handshake, GitHub #269).
+
+Usage:
+    handshake = CleanupRecheckHandshake()
+    target._lock = handshake.lock
+    handshake.run(target.cleanup)
+    assert target.cleaned is True
+
+    Pass `on_holder_ready` to change the object while the first caller holds the lock and the second is
+    waiting - typically to mark it cleaned, as a cleanup racing in from elsewhere would.
+"""
+from threading import Event, Lock, RLock, Thread, get_ident
+from types import TracebackType
+from typing import Callable, List, Optional, Type
+
+
+class CleanupRecheckLock:
+    """
+    Stand-in for an object's `_lock` that holds the first `cleanup()` caller until the second is about to block.
+
+    Contract:
+        - The first thread that enters is the holder: it acquires the real lock, sets `holder_entered`, waits
+          until the contender announces itself through `contender_waiting`, runs `on_holder_ready` (when one was
+          given) and only then returns from `__enter__`.
+        - Any other thread is the contender: it sets `contender_waiting` BEFORE it blocks on the real lock, so by
+          the time the holder resumes, the contender has necessarily passed the object's outer `_cleaned` check.
+        - A thread entering again while it is the recorded holder re-enters the reentrant lock without
+          signalling; a later entry by the contender (after the holder released) acquires normally.
+        - Ordering comes from the events and from `CleanupRecheckHandshake` starting the contender only after
+          `holder_entered` is set - never from timing. `WAIT_SECONDS` only bounds a broken run.
+        - A failed entry never leaves the real lock held: when the contender does not arrive within
+          `WAIT_SECONDS`, or `on_holder_ready` raises, the holder releases the lock before the error propagates.
+
+    Threading:
+        - The role is decided under `_state_lock`, a leaf lock taken briefly and never while waiting.
+        - The real lock is an `RLock`, as the objects under test use, so a nested `with self._lock` in the holder's
+          own cleanup does not deadlock.
+
+    Lifecycle:
+        - One instance serves one handshake (one holder, one contender). It owns no resource that needs cleanup.
+    """
+
+    WAIT_SECONDS: float = 10.0
+
+    def __init__(self, on_holder_ready: Optional[Callable[[], None]] = None) -> None:
+        """
+        Prepare an unheld lock with no recorded holder.
+
+        Args:
+            on_holder_ready: Called by the holder, with the real lock held, once the contender is waiting; None
+                leaves the object as the holder's own cleanup finds it.
+
+        Returns:
+            None.
+        """
+        self._lock: RLock = RLock()
+        self._state_lock: Lock = Lock()
+        self._holder_ident: Optional[int] = None
+        self._on_holder_ready: Optional[Callable[[], None]] = on_holder_ready
+        self.holder_entered: Event = Event()
+        self.contender_waiting: Event = Event()
+
+    def __enter__(self) -> CleanupRecheckLock:
+        """
+        Enter as the holder, the contender or a re-entering holder, in that order of first arrival.
+
+        Returns:
+            CleanupRecheckLock: This lock, as `with` binds it.
+
+        Raises:
+            AssertionError: In the holder, when the contender does not announce itself within `WAIT_SECONDS`;
+                the real lock is released first.
+            BaseException: Whatever `on_holder_ready` raises; the real lock is released first.
+        """
+        ident = get_ident()
+        with self._state_lock:
+            if self._holder_ident is None:
+                self._holder_ident = ident
+                role = "holder"
+            elif self._holder_ident == ident:
+                role = "reentry"
+            else:
+                role = "contender"
+        if role == "contender":
+            # Announce before blocking: the holder resumes only once this caller is past the outer check.
+            self.contender_waiting.set()
+        self._lock.acquire()
+        if role != "holder":
+            return self
+        self.holder_entered.set()
+        try:
+            if not self.contender_waiting.wait(timeout=self.WAIT_SECONDS):
+                raise AssertionError(
+                    f"The second cleanup() caller did not reach the lock within {self.WAIT_SECONDS} s: "
+                    "it returned before the inner check (its outer `_cleaned` check failed it) or never ran."
+                )
+            if self._on_holder_ready is not None:
+                self._on_holder_ready()
+        except BaseException:
+            # Never leave the real lock held by a failed entry: `__exit__` does not run when `__enter__` raises.
+            self._lock.release()
+            raise
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc: Optional[BaseException],
+            tb: Optional[TracebackType],
+    ) -> None:
+        """
+        Release the real lock; never suppress the block's exception.
+
+        Args:
+            exc_type: The exception type raised in the block, or None.
+            exc: The exception raised in the block, or None.
+            tb: Its traceback, or None.
+
+        Returns:
+            None.
+        """
+        self._lock.release()
+
+
+class CleanupRecheckHandshake:
+    """
+    Run two `cleanup()` callers through one `CleanupRecheckLock` in a fixed order and fail with a clear reason.
+
+    Contract:
+        - `lock` is the stand-in to install as the object's `_lock` before `run`.
+        - `run(cleanup)` starts the holder thread, waits until it holds the lock, then starts the contender, so the
+          contender always arrives second and announces itself before it blocks. Both threads are daemons, so a
+          broken run cannot keep the interpreter from exiting.
+        - `run` returns only when both callers finished without raising. It raises AssertionError naming what went
+          wrong otherwise: the holder never took the lock, a caller is still running after `JOIN_SECONDS`, or a
+          caller raised (chained from the first such error).
+        - What the object looks like afterwards is the calling test's to assert.
+
+    Threading:
+        - Worker errors are collected under `_failures_lock`; the joins are bounded by `JOIN_SECONDS`.
+
+    Lifecycle:
+        - One instance serves one `run`. It owns no resource that needs cleanup; its threads have ended (or are
+          reported alive) when `run` returns or raises.
+    """
+
+    JOIN_SECONDS: float = 10.0
+    POLL_SECONDS: float = 0.01
+
+    def __init__(self, on_holder_ready: Optional[Callable[[], None]] = None) -> None:
+        """
+        Prepare the lock and an empty failure list.
+
+        Args:
+            on_holder_ready: Passed to `CleanupRecheckLock`: called by the holder, with the lock held, once the
+                contender is waiting. None leaves the object as the holder's own cleanup finds it.
+
+        Returns:
+            None.
+        """
+        self.lock: CleanupRecheckLock = CleanupRecheckLock(on_holder_ready=on_holder_ready)
+        self._failures: List[BaseException] = []
+        self._failures_lock: Lock = Lock()
+
+    def run(self, cleanup: Callable[[], None]) -> None:
+        """
+        Call `cleanup` from a holder thread and then from a contender thread, and check both finished cleanly.
+
+        Args:
+            cleanup: The bound `cleanup` of the object whose `_lock` is `self.lock`.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When the holder never entered the lock, a caller is still alive after the bounded
+                joins, or either caller raised.
+        """
+        holder = Thread(target=self._call, args=(cleanup,), name="cleanup-holder", daemon=True)
+        contender = Thread(target=self._call, args=(cleanup,), name="cleanup-contender", daemon=True)
+        holder.start()
+        self._await_holder(holder)
+        contender.start()
+        holder.join(timeout=self.JOIN_SECONDS)
+        contender.join(timeout=self.JOIN_SECONDS)
+        alive = [thread.name for thread in (holder, contender) if thread.is_alive()]
+        if alive:
+            raise AssertionError(f"cleanup() callers still running after {self.JOIN_SECONDS} s: {alive}.")
+        self._raise_failures()
+
+    def _await_holder(self, holder: Thread) -> None:
+        """
+        Wait until the holder holds the lock, failing early when it ends without entering.
+
+        Args:
+            holder: The started holder thread.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When the holder ended, or `WAIT_SECONDS` passed, before it entered the lock.
+        """
+        waited = 0.0
+        while not self.lock.holder_entered.wait(timeout=self.POLL_SECONDS):
+            waited += self.POLL_SECONDS
+            if not holder.is_alive() or waited >= self.lock.WAIT_SECONDS:
+                holder.join(timeout=self.JOIN_SECONDS)
+                self._raise_failures()
+                raise AssertionError(
+                    "The first cleanup() caller never entered the lock: the object's cleanup did not take its "
+                    "`_lock`, or returned before it (was the object already cleaned?)."
+                )
+
+    def _call(self, cleanup: Callable[[], None]) -> None:
+        """
+        Run one caller, keeping any error for the test thread instead of losing it to the thread hook.
+
+        Args:
+            cleanup: The cleanup callable to invoke.
+
+        Returns:
+            None.
+        """
+        try:
+            cleanup()
+        except BaseException as error:
+            with self._failures_lock:
+                self._failures.append(error)
+
+    def _raise_failures(self) -> None:
+        """
+        Raise one AssertionError naming every worker error, chained from the first.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When at least one caller raised.
+        """
+        with self._failures_lock:
+            failures = list(self._failures)
+        if failures:
+            described = "; ".join(f"{type(error).__name__}: {error}" for error in failures)
+            raise AssertionError(f"cleanup() raised in {len(failures)} caller(s): {described}") from failures[0]
+================================================================================
+END FILE: tests/_cleanup_recheck_support.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -2904,7 +3171,7 @@ END FILE: tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py
-CONTENT SHA256: bc953e63fca32688a10f28a6cd23a4e09630b2f1dbdaaac371265f5ee4ebc845
+CONTENT SHA256: daa0e772b7689e254b8ef9a7a925f7885b72822d650a3d90fe5209ab67dab7c2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -3283,7 +3550,9 @@ def test_disjoint_frames_run_in_parallel_and_whole_world_excludes_them(plane):
             transaction_type=TransactionType.CHECKPOINT_LOAD,
             submitter=_who("whole"),
         )
-    assert AdmissionReason.WAIT_TIMEOUT.value in str(excinfo.value)
+    # Refusal texts keep the historical lowercase code; the member's value has
+    # been "WAIT_TIMEOUT" since 0.2.8277 (AdmissionResult.describe).
+    assert AdmissionReason.WAIT_TIMEOUT.name.lower() in str(excinfo.value)
     assert ScopeKey.world() in str(excinfo.value)
 
     first.leave()
@@ -3356,7 +3625,8 @@ def test_commit_stamps_freshness_before_releasing(plane):
 
     fact = plane.reporting.get_fact(ScopeKey.frame("A"))
     assert fact is not None
-    assert fact["fact_family"] == TransactionType.FORMATION_LOAD.value
+    # Facts carry the lowercase wire token, not the member's uppercase value.
+    assert fact["fact_family"] == TransactionType.FORMATION_LOAD.wire_value
     stale = plane.reporting.stale_regions(
         regions=(ScopeKey.frame("A"), "frame:NEVER"), max_age_seconds=3600.0
     )
@@ -3530,7 +3800,7 @@ END FILE: tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py
-CONTENT SHA256: b807ec99b9329aaab1db96d7db02f6a186280e3db790fb876590915457e21689
+CONTENT SHA256: 8dc15c164c5c180db7e469bbdeb7abfeb5c4c77897c47cf9ceca7592433e3cb5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -3571,10 +3841,15 @@ Run:
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Mapping, Sequence
+
+    from melder.aether.aetheric_mediator.transaction_session import (
+        TransactionSession,
+    )
 
 import pytest
 
@@ -3698,6 +3973,133 @@ def _drive(plane, identity, transaction_type, metadata, hold=HOLD_SECONDS):
         session.leave()
         plane.commit(session)
     return True
+
+
+def _row_is_torn(row: Mapping[str, object]) -> bool:
+    """
+    Report whether one rendered participant row's two halves disagree.
+
+    A row is torn when `emits` is not what its `state` token means. The token is
+    DECODED through `ParticipationState` and the member's own `emits` is read,
+    never compared with `ParticipationState.ACTIVE.value`: rows keep the
+    historical lowercase token ("active") while the member value has been
+    "ACTIVE" since 0.2.8277, so that comparison called every consistent ACTIVE
+    row torn. Decoding applies the enum's own emission rule, so a later change
+    to how the token is spelled cannot show up here as false tears.
+
+    Args:
+        row: One row from `plane.reporting.describe_participants()`.
+
+    Returns:
+        bool: True when `emits` disagrees with the state the token names.
+
+    Raises:
+        ValueError: If the token names no participation state.
+    """
+    return row["emits"] != ParticipationState(row["state"]).emits
+
+
+def _noting_plane(plane: Mediator, admitted: List[str]) -> SimpleNamespace:
+    """
+    Return a stand-in plane for `_drive` that notes every admitted request id.
+
+    `_drive` reports only WHETHER it committed, while the lifecycle strategies
+    hand the registry `staged.request_id` as a row's `reporter`. A test that
+    must know which commit a sampled row names needs that id, so this forwards
+    to the real plane: `begin` opens the session through it and appends
+    `session.staged.request_id` to `admitted`, and `commit` IS the real
+    plane's. Admission, the hold, commit and refusal stay exactly `_drive`'s;
+    nothing in the pipeline is replaced.
+
+    Threading:
+        The stand-in and `admitted` belong to ONE writer thread. Neither is
+        locked, so neither may be shared.
+
+    Args:
+        plane: The real plane. Borrowed; never cleaned here.
+        admitted: The caller's list, appended in admission order. A refused
+            `begin` raises before appending, so after `_drive` returns True
+            the LAST entry is the request id that committed.
+
+    Returns:
+        SimpleNamespace: An object carrying the `begin` and `commit` that
+            `_drive` calls, and nothing else.
+    """
+    def begin_and_note(
+            *,
+            transaction_type: TransactionType,
+            submitter: Identity,
+            metadata: Optional[Mapping[str, object]] = None,
+    ) -> TransactionSession:
+        """
+        Open the session `_drive` asked for and note its request id.
+
+        Args:
+            transaction_type: Forwarded to `Mediator.begin`.
+            submitter: Forwarded to `Mediator.begin`.
+            metadata: Forwarded to `Mediator.begin`.
+
+        Returns:
+            TransactionSession: The session the real plane opened.
+
+        Raises:
+            RuntimeError: If `Mediator.begin` refuses admission or the plane
+                is cleaned. Nothing is noted.
+            KeyError: If no strategy is registered for the transaction type.
+                Nothing is noted.
+        """
+        session = plane.begin(
+            transaction_type=transaction_type,
+            submitter=submitter,
+            metadata=metadata,
+        )
+        admitted.append(session.staged.request_id)
+        return session
+
+    return SimpleNamespace(begin=begin_and_note, commit=plane.commit)
+
+
+def _row_mixes_commits(
+        row: Mapping[str, object],
+        commits: Mapping[
+            str, Tuple[ParticipationState, Optional[Dict[str, object]]]
+        ],
+) -> bool:
+    """
+    Report whether one rendered participant row carries fields of two commits.
+
+    `InformationRegistry.set_participation` is ATOMIC: ONE lock acquisition
+    writes a row's `state`, its `reporter` and, when the edge announced any,
+    its `conditions`. In a whole row the reporter therefore names the commit
+    that wrote the state beside it, and - when that commit announced
+    conditions - the conditions beside it too. `_row_is_torn` cannot see a row
+    that breaks this, because `emits` is rendered FROM `state`.
+
+    A commit that announced no conditions (a deactivation) keeps the previous
+    ones by contract, so for its rows only the state is checked.
+
+    Args:
+        row: One row from `plane.reporting.describe_participants()`.
+        commits: Every committed write, keyed by the request id the registry
+            stores as `reporter`, giving the state that commit wrote and the
+            conditions it announced, or None when it announced none.
+
+    Returns:
+        bool: True when the row's state is not the one its reporter wrote, or
+            its conditions are not the ones its reporter announced.
+
+    Raises:
+        KeyError: If the row's reporter is not a key of `commits`; callers
+            check for unknown reporters first.
+        ValueError: If the row's state token names no participation state.
+    """
+    written_state, written_conditions = commits[row["reporter"]]
+    if ParticipationState(row["state"]) is not written_state:
+        return True
+    return (
+        written_conditions is not None
+        and row["conditions"] != written_conditions
+    )
 
 
 # --------------------------------------------------------------------------
@@ -3948,7 +4350,6 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
     # writer's `finally`, so the FIRST writer to finish stopped the reader and
     # the row was only sampled during the opening moments of the race. The
     # reader must outlive every writer or it is watching an empty room.
-    running = threading.Semaphore(0)
     remaining = {"writers": THREADS}
 
     def writer(index):
@@ -3968,10 +4369,11 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
                 for _ in range(ROUNDS):
                     _drive(plane, identity, transaction_type, metadata)
             finally:
-                identity.cleanup()
+                # Count down BEFORE cleaning the identity, so the reader stops
+                # even if that cleanup raises.
                 with bookkeeping:
                     remaining["writers"] -= 1
-                running.release()
+                identity.cleanup()
         return worker
 
     def reader(barrier):
@@ -3983,9 +4385,7 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
                 if remaining["writers"] == 0:
                     break
             for row in plane.reporting.describe_participants():
-                if row["emits"] != (
-                        row["state"] == ParticipationState.ACTIVE.value
-                ):
+                if _row_is_torn(row):
                     with bookkeeping:
                         failures.append(row)
             checks += 1
@@ -4009,6 +4409,227 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
         final is ParticipationState.ACTIVE
     )
     assert plane.describe()["claims"]["scope_count"] == 0
+
+
+def test_a_consistent_active_row_is_not_reported_as_torn(plane: Mediator) -> None:
+    """
+    Regression: every consistent ACTIVE participant row was reported as torn.
+
+    The racing test above compared the row's lowercase `state` token with
+    `ParticipationState.ACTIVE.value`, which is "ACTIVE" since 0.2.8277, so each
+    ACTIVE sample counted as a tear and the test failed on rows that were whole.
+    This proves the detector itself, single-threaded: the real row after each
+    lifecycle edge reads as whole, and a row whose halves disagree, in either
+    direction, reads as torn.
+    """
+    identity = Identity(kind="subsystem", identity_id="detector-control")
+    try:
+        for transaction_type, metadata in (
+            (TransactionType.SUBSYSTEM_ACTIVATE,
+             {"subsystem_name": "crystallizer", "worker_count": 2}),
+            (TransactionType.SUBSYSTEM_DEACTIVATE,
+             {"subsystem_name": "crystallizer"}),
+        ):
+            assert _drive(plane, identity, transaction_type, metadata, hold=0)
+            (row,) = plane.reporting.describe_participants()
+            assert _row_is_torn(row) is False, row
+    finally:
+        identity.cleanup()
+    assert _row_is_torn({"state": "active", "emits": False}) is True
+    assert _row_is_torn({"state": "inactive", "emits": True}) is True
+
+
+def test_racing_lifecycle_edges_never_mix_two_commits_in_one_row(
+        plane: Mediator,
+) -> None:
+    """
+    THE ATOMIC CONTRACT ON `set_participation`, which the torn-row test above
+    cannot see: a row's `state`, `conditions` and `reporter` come from ONE
+    commit.
+
+    `test_racing_lifecycle_edges_never_leave_a_torn_row` compares `emits` with
+    `state`, but the registry RENDERS `emits` from `state`, so those two agree
+    by construction. A `set_participation` that wrote `state` under one lock
+    acquisition and `conditions` and `reporter` under a second would still
+    pass it, while a reader between the two saw the subsystem ACTIVE beside
+    the request id of the deactivation before it. This test checks the fields
+    that are written rather than derived.
+
+    Writers race activate against deactivate on ONE subsystem through the real
+    pipeline, each activation announcing `worker_count` equal to its writer
+    index so its conditions name it. Each writer drives `_drive` through
+    `_noting_plane` and records, for every request id that committed, the state
+    that commit wrote and the conditions it announced - None for a
+    deactivation, which keeps the previous ones by contract. Several readers
+    render the row continuously and keep every distinct sample.
+
+    The cross-check runs AFTER every thread has joined, against the complete
+    record, so a sample read before its writer recorded the commit cannot fail
+    spuriously. The readers must also have seen the row in both states:
+    otherwise they never overlapped a transition, and no split write could
+    have been visible to them.
+    """
+    # SEVERAL READERS, NOT ONE, and the number is measured rather than chosen.
+    # A split write frees the lock only for the instant between its two
+    # acquisitions, and only a reader already contending for the lock can land
+    # there. With the GIL off and `set_participation` patched to write `state`
+    # and then `conditions`/`reporter` in two acquisitions, ONE reader caught
+    # the split in 15 of 20 runs; four caught it in 30 of 30, each run holding
+    # between 7 and 26 mixed rows. On the real verb every reader finds nothing.
+    readers = THREADS // 2
+    commits = {}
+    observed = {}
+    samples = []
+    finished = []
+    bookkeeping = threading.RLock()
+    # Set by the LAST writer to finish, so every reader outlives every writer -
+    # the same countdown reasoning as the torn-row test above.
+    writers_done = threading.Event()
+    remaining = {"writers": THREADS}
+
+    def writer(index: int) -> Callable[[threading.Barrier], None]:
+        """Build one worker that commits one lifecycle edge and records what it wrote."""
+        activating = index % 2 == 0
+        transaction_type = (
+            TransactionType.SUBSYSTEM_ACTIVATE if activating
+            else TransactionType.SUBSYSTEM_DEACTIVATE
+        )
+        metadata = {"subsystem_name": "crystallizer"}
+        announced = None
+        if activating:
+            announced = {"worker_count": index}
+            metadata.update(announced)
+        written = (
+            ParticipationState.ACTIVE if activating
+            else ParticipationState.INACTIVE,
+            announced,
+        )
+
+        def worker(barrier: threading.Barrier) -> None:
+            """Commit the edge ROUNDS times, recording every request id that committed."""
+            identity = Identity(kind="subsystem", identity_id=f"m-{index}")
+            admitted = []
+            noting_plane = _noting_plane(plane, admitted)
+            try:
+                barrier.wait()
+                for _ in range(ROUNDS):
+                    if _drive(noting_plane, identity, transaction_type, metadata):
+                        with bookkeeping:
+                            commits[admitted[-1]] = written
+                with bookkeeping:
+                    finished.append(index)
+            finally:
+                # Count down BEFORE cleaning the identity, so the readers stop
+                # even if that cleanup raises.
+                with bookkeeping:
+                    remaining["writers"] -= 1
+                    if remaining["writers"] == 0:
+                        writers_done.set()
+                identity.cleanup()
+        return worker
+
+    def reader(barrier: threading.Barrier) -> None:
+        """Render the row until every writer is done, keeping each distinct sample."""
+        barrier.wait()
+        distinct = {}
+        checks = 0
+        while not writers_done.is_set():
+            for row in plane.reporting.describe_participants():
+                distinct.setdefault(
+                    (row["state"], row["reporter"],
+                     tuple(sorted(row["conditions"].items()))),
+                    row,
+                )
+            checks += 1
+        with bookkeeping:
+            observed.update(distinct)
+            samples.append(checks)
+
+    _run([writer(index) for index in range(THREADS)] + [reader] * readers)
+
+    assert len(finished) == THREADS, "a writer died before recording its commits"
+    rows = list(observed.values())
+    unknown = sorted({
+        row["reporter"] for row in rows if row["reporter"] not in commits
+    })
+    assert not unknown, (
+        "sampled rows name reporter(s) that no writer recorded as a commit: "
+        "{0}".format(unknown)
+    )
+    mixed = [row for row in rows if _row_mixes_commits(row, commits)]
+    assert not mixed, (
+        "{0} sampled row(s) carry fields of two commits; first: {1}, but its "
+        "reporter's commit wrote {2}".format(
+            len(mixed), mixed[0], commits[mixed[0]["reporter"]]
+        )
+    )
+    assert len(samples) == readers and min(samples) > 100, (
+        "the readers sampled the row {0} time(s) each - they did not overlap "
+        "the writers, so they proved nothing".format(samples)
+    )
+    seen_states = {ParticipationState(row["state"]) for row in rows}
+    assert seen_states == {
+        ParticipationState.ACTIVE, ParticipationState.INACTIVE
+    }, (
+        "the readers saw only {0} - they never watched an activate/deactivate "
+        "transition, so a split write could not have reached them".format(
+            sorted(seen_states)
+        )
+    )
+    assert plane.describe()["claims"]["scope_count"] == 0
+
+
+def test_a_row_mixing_two_commits_is_reported_as_mixed(plane: Mediator) -> None:
+    """
+    The control for `_row_mixes_commits`, single-threaded, as
+    `test_a_consistent_active_row_is_not_reported_as_torn` is for `_row_is_torn`.
+
+    Real rows after activate, deactivate and re-activate read as whole against
+    the record of what each commit wrote - including the deactivated row, which
+    keeps conditions its own commit never announced. Each row also names, as
+    its reporter, the request id `_noting_plane` noted, which is the premise
+    the racing test keys its record on. Rows assembled from two of those
+    commits, the shapes a split write exposes, read as mixed: a new state
+    beside the previous commit's reporter, in both directions, and a new state
+    and reporter beside conditions that commit did not announce. Without this
+    the racing test could pass because the checker never says yes.
+    """
+    identity = Identity(kind="subsystem", identity_id="mixed-control")
+    admitted = []
+    noting_plane = _noting_plane(plane, admitted)
+    commits = {}
+    rows = []
+    try:
+        for transaction_type, written in (
+            (TransactionType.SUBSYSTEM_ACTIVATE,
+             (ParticipationState.ACTIVE, {"worker_count": 2})),
+            (TransactionType.SUBSYSTEM_DEACTIVATE,
+             (ParticipationState.INACTIVE, None)),
+            (TransactionType.SUBSYSTEM_ACTIVATE,
+             (ParticipationState.ACTIVE, {"worker_count": 4})),
+        ):
+            metadata = {"subsystem_name": "crystallizer", **(written[1] or {})}
+            assert _drive(
+                noting_plane, identity, transaction_type, metadata, hold=0
+            )
+            commits[admitted[-1]] = written
+            (row,) = plane.reporting.describe_participants()
+            assert row["reporter"] == admitted[-1], row
+            assert _row_mixes_commits(row, commits) is False, row
+            rows.append(row)
+    finally:
+        identity.cleanup()
+    activated, deactivated, reactivated = rows
+    assert deactivated["conditions"] == {"worker_count": 2}
+    assert _row_mixes_commits(
+        {**activated, "state": deactivated["state"]}, commits
+    ) is True
+    assert _row_mixes_commits(
+        {**deactivated, "state": reactivated["state"]}, commits
+    ) is True
+    assert _row_mixes_commits(
+        {**reactivated, "conditions": activated["conditions"]}, commits
+    ) is True
 
 
 def test_disjoint_subsystems_all_land_with_no_lost_updates(plane):
@@ -15352,7 +15973,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_owner_sto
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py
-CONTENT SHA256: 4b4e134e6dd1166c6bd4526c44056471b44b72aec6ea77c59b439c9c97a12dea
+CONTENT SHA256: e2e7fb0bb9780799636fc5b9bf877c268b732bbb5cc5fd094ff3e6686b98469e
 SOURCE ENCODING: utf-8
 ================================================================================
 """tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py
@@ -15467,7 +16088,9 @@ def test_the_read_is_not_a_memo_of_the_last_argument() -> None:
     conduit.set_new_policy("block_all")
     observed = conduit.policy
     assert isinstance(observed, Policies)
-    assert not isinstance(observed, str)
+    # `Policies` is a StrEnum since 0.2.8277, so the member IS a str; what must
+    # not come back is the plain string that went in.
+    assert type(observed) is not str
     assert observed.name == "block_all"
 
 
@@ -29455,7 +30078,7 @@ END FILE: tests/component/melder/aether/dev_ops/change_control_manager/test_chan
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/dev_ops/change_control_manager/test_transaction_surface_component.py
-CONTENT SHA256: c9c649b766f1d9a410e3df6bf60edfb4a87a1089ad034747e0598e0d5ad5ef00
+CONTENT SHA256: df0b276e8b124a1f491baf90e042f60fc63f4bfe86077fbf792ba03ab2e1b829
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Optional, Tuple
@@ -29592,7 +30215,7 @@ def test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks(
             metadata={},
         )
 
-        assert session.request.request_type.value == "bind"
+        assert session.request.request_type.value == "BIND"
 
         mediator.end_transaction_for_identity(
             identity=identity,
@@ -61492,6 +62115,269 @@ def test_local_phase_body_observes_current_run_cancellation(
     assert outcomes == ["cancelled"]
 ================================================================================
 END FILE: tests/component/melder/spellbook/test_spellbook_component_local_phase_cancellation.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py
+CONTENT SHA256: eedf24b28f1464d39094cdf7c1088046c18b713cee4fadac92bcb57620102c8e
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests: the notch seam checks its incoming version before anything moves.
+
+WHY THIS EXISTS. TASK-2026-10-16-notch_seam_checks_incoming_before_parking (GitHub #254), on the owner's word of
+2026-11-08. `Spellbook._apply_notch` parked the index's outgoing version, and cleaned its creation context, before
+`_reactivate_owned_spell` checked that the incoming version was parked in the Book. `Conduit.notch_spell` checks its
+target before the notch transaction and again inside the held window (0.2.8249), but `cleanup_spell` takes no
+transaction, so a disposal of the target can land between that check and the seam's Book lock: the seam then raised
+"Owned spell_id not parked for reactivation" with the outgoing version already parked, and the index had no active
+version until a notch back. A version parked in another index of the Book passed the old check and was promoted
+under the wrong index. Since 0.2.8285 the seam refuses both before its address claim or anything else moves.
+
+Each test runs in a fresh Aether with its own dynamic frame and caching off, and asserts through public calls and the
+frame's claim surface; the second test hands the seam its target directly, as an internal caller would.
+"""
+from typing import Any, Callable, Dict, Protocol, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook import Spellbook
+
+
+class Greeter(Protocol):
+    """The contract every greeter version implements."""
+
+    def greet(self) -> str:
+        """Return a greeting."""
+        ...
+
+
+class EnglishGreeter:
+    """Version 1 of the greeter index."""
+
+    def greet(self) -> str:
+        """Return the English greeting."""
+        return "hello"
+
+
+class FrenchGreeter:
+    """Version 2 of the greeter index."""
+
+    def greet(self) -> str:
+        """Return the French greeting."""
+        return "bonjour"
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_for_notch_seam() -> Any:
+    """
+    Purpose:
+        Give each test a clean Aether singleton and frame registry.
+
+    Contract:
+        - Resets before and after, so no frame claim or Book leaks between tests.
+
+    Returns:
+        Any: The generator pytest drives (yields None).
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _greeter_world(frame_name: str) -> Tuple[Spellbook, Conduit, Spell, str]:
+    """
+    Purpose:
+        EnglishGreeter active under (Greeter, 'english') in a conjured dynamic Book, FrenchGreeter staged on its index.
+
+    Args:
+        frame_name (str): The frame the Book lives on.
+
+    Returns:
+        Tuple[Spellbook, Conduit, Spell, str]: The Book, its root conduit, the active English version and French's
+            spell_id.
+    """
+    book = Spellbook(aetheric_frame=frame_name, configuration=SpellbookConfiguration(frame_name).with_defaults())
+    book.configure_aether_frame(
+        system_state="dynamic",
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=False,
+    )
+    english_id = book.bind(spell=EnglishGreeter, spellframe=Greeter, binding_name="english", existence=Existence.many)
+    root = book.conjure(dynamic=True, name=f"{frame_name}-root")
+    english = book.find_spell_by_spell_id(english_id)
+    assert english is not None
+    french_id = root.bind_inactive(
+        spell=FrenchGreeter, spell_index=english.spell_index, spellframe=Greeter, binding_name="english",
+        existence=Existence.many,
+    )
+    return book, root, english, french_id
+
+
+def _assert_english_still_serves(book: Spellbook, root: Conduit, english: Spell) -> None:
+    """
+    Purpose:
+        Assert nothing moved on English's index: it selects English, English holds the frame claim of the
+        index's address, and a meld by that address builds English.
+
+    Args:
+        book (Spellbook): The Book that owns the index.
+        root (Conduit): Its root conduit.
+        english (Spell): The version that must still be active.
+
+    Returns:
+        None.
+    """
+    index = english.spell_index
+    assert index.selected_spell_id == english.spell_id
+    assert root.get_spell_by_index_id(index.id) is english
+    assert book._aetheric_frame.get_lookup(english._key) == english.spell_id
+    assert root.meld(spellframe=Greeter, binding_name="english").greet() == "hello"
+
+
+def test_notch_whose_target_is_disposed_after_the_conduits_check_keeps_the_active_version(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        A notch whose target is disposed between the conduit's in-window check and the seam is refused, and the
+        index keeps its active version - the race `cleanup_spell`, which takes no transaction, can open.
+
+    Contract:
+        - `Conduit.notch_spell` raises RuntimeError naming the disposed spell_id and the version still active.
+        - Nothing moved: English is selected, holds the frame claim and serves a meld by address.
+        - Before the fix the seam parked English first and then raised "Owned spell_id not parked for
+          reactivation", leaving the index with no active version.
+
+    Returns:
+        None.
+    """
+    book, root, english, french_id = _greeter_world("seam-race")
+    french = book.find_spell_by_spell_id(french_id)
+    assert french is not None
+    seam: Callable[..., Spell] = Spellbook._apply_notch
+
+    def _dispose_then_notch(self: Spellbook, **kwargs: Any) -> Spell:
+        """Dispose the target where the race lands it: after the conduit's in-window check, before the seam."""
+        monkeypatch.setattr(Spellbook, "_apply_notch", seam)
+        root.cleanup_spell(spell=french)
+        return seam(self, **kwargs)
+
+    monkeypatch.setattr(Spellbook, "_apply_notch", _dispose_then_notch)
+
+    with pytest.raises(RuntimeError, match=f"spell_id '{french_id}' is not a version parked in this Spellbook") as e:
+        root.notch_spell(spell_index=english.spell_index, spell_id=french_id)
+
+    assert f"'EnglishGreeter' (spell_id {english.spell_id}) is still the active version of the index" in str(e.value)
+    assert book.find_spell_by_spell_id(french_id) is None
+    _assert_english_still_serves(book, root, english)
+
+
+def test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        A notch that lands while `cleanup_spell` is disposing its target - after the disposal's decision, before the
+        version leaves the Book - is refused, and the disposal completes.
+
+    Contract:
+        - `cleanup_spell` decides under the Book lock, then releases the version from the root ward's contracts with
+          no Book lock held; a notch run in that window (driven here from the release itself) raises RuntimeError
+          saying the version is being disposed, and nothing moves.
+        - The disposal completes: the version is gone; English is still selected, holds the frame claim and serves a
+          meld by address.
+        - Before the fix the seam found the version still parked and promoted it; the disposal then removed and
+          cleaned the version the index selected.
+
+    Returns:
+        None.
+    """
+    book, root, english, french_id = _greeter_world("seam-disposing")
+    french = book.find_spell_by_spell_id(french_id)
+    assert french is not None
+    ward_type = type(root._conduit_ward)
+    release: Callable[..., None] = ward_type._emit_spell_disposed
+    outcome: Dict[str, str] = {}
+
+    def _notch_during_release(self: Any, *args: Any, **kwargs: Any) -> None:
+        """Notch to the version while its disposal releases it from the contracts, then let the release run."""
+        try:
+            root.notch_spell(spell_index=english.spell_index, spell_id=french_id)
+            outcome["notch"] = "stood"
+        except RuntimeError as error:
+            outcome["notch"] = str(error)
+        release(self, *args, **kwargs)
+
+    monkeypatch.setattr(ward_type, "_emit_spell_disposed", _notch_during_release)
+
+    root.cleanup_spell(spell=french)
+
+    assert f"'FrenchGreeter' (spell_id {french_id}) is being disposed by cleanup_spell" in outcome["notch"]
+    assert book.find_spell_by_spell_id(french_id) is None
+    _assert_english_still_serves(book, root, english)
+
+
+def test_notch_seam_refuses_a_version_parked_in_another_index_and_moves_nothing() -> None:
+    """
+    Purpose:
+        The seam refuses a version parked in another index of the Book before anything moves.
+
+    Contract:
+        - French, split off English's index into one of its own, handed to the seam for English's index, raises
+          RuntimeError naming both indexes; French stays parked and selected by its own index.
+        - Nothing moved on English's index: English is selected, holds the frame claim and serves a meld.
+        - Before the fix French passed the seam's check and English's index selected it.
+
+    Returns:
+        None.
+    """
+    book, root, english, french_id = _greeter_world("seam-index")
+    index = english.spell_index
+    root.remove_from_spell_index(spell_id=french_id, source_index=index)
+    french = book.find_spell_by_spell_id(french_id)
+    assert french is not None
+    french_index = french.spell_index
+    assert french_index is not index
+
+    with pytest.raises(RuntimeError, match=f"is parked in SpellIndex {french_index.id}, not in SpellIndex {index.id}"):
+        book._apply_notch(spell_index=index, spell=french)
+
+    assert french_index.selected_spell_id == french_id
+    assert book._spells.get(french_index) is None
+    _assert_english_still_serves(book, root, english)
+
+
+def test_notch_still_moves_the_index_to_a_version_parked_on_it() -> None:
+    """
+    Purpose:
+        Control: the seam's new check admits a version staged on the index, and the notch stands.
+
+    Contract:
+        - `Conduit.notch_spell` to French makes it the index's active version; a meld by address builds French.
+
+    Returns:
+        None.
+    """
+    book, root, english, french_id = _greeter_world("seam-control")
+    index = english.spell_index
+
+    root.notch_spell(spell_index=index, spell_id=french_id)
+
+    assert index.selected_spell_id == french_id
+    assert root.get_spell_by_index_id(index.id) is book.find_spell_by_spell_id(french_id)
+    assert root.meld(spellframe=Greeter, binding_name="english").greet() == "bonjour"
+================================================================================
+END FILE: tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py
@@ -107312,7 +108198,7 @@ END FILE: tests/integration/melder/aether/test_aether_frame_lookups.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_change_control_transactions.py
-CONTENT SHA256: fb3fc05fb089375e8f05f1dbcadaaf6c639c8df3679508e1a02c4875d57ae22b
+CONTENT SHA256: 639a5e71031523d23100e5dc3b538cbb9316d0ed13cb17ecaa46cfe0f1bffb74
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -108462,7 +109348,7 @@ def test_change_control_transfer_transaction_registers_live_registry_session() -
         )
         assert len(sessions) == 1
         session = sessions[0]
-        assert str(session.request.request_type) == "transfer_ownership"
+        assert str(session.request.request_type) == "TRANSFER_OWNERSHIP"
         assert set(session.request.conduit_ids) == {owner.id, target.id}
         assert session.staged.binding_keys == (spell.key,)
         assert session.staged.metadata["target_conduit_id"] == target.id
@@ -136646,7 +137532,7 @@ END FILE: tests/integration/melder/crystallizer/test_crystallizer_aether_twin_in
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py
-CONTENT SHA256: a7c988f379ec2132420c0de502afe22dc6be88cc808fde750626a2afac8ddf32
+CONTENT SHA256: 6db48126c8745125fea7111129e84f0ff42db2606ad646d700babfe05db3e600
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -136887,10 +137773,10 @@ def test_nexus_enable_disable_flip_the_recorded_state():
 def test_nexus_cleanup_records_cleaned_while_the_record_lives():
     """
     Purpose:
-        Verify the live-world teardown state ("cleaned") is recorded.
+        Verify the live-world teardown state ("CLEANED") is recorded.
     Contract:
         nexus.cleanup() with the crystallizer alive flips the recorded
-        state to "cleaned"; the twin remains configured-history.
+        state to "CLEANED"; the twin remains configured-history.
     Returns:
         None.
     Raises:
@@ -136901,7 +137787,7 @@ def test_nexus_cleanup_records_cleaned_while_the_record_lives():
     nexus.activate(configuration=NexusConfiguration().with_defaults())
     nexus.cleanup()
     summary = crystallizer.describe_profile()
-    assert summary["nexus_state"] == "cleaned"
+    assert summary["nexus_state"] == "CLEANED"
     assert summary["has_nexus_crystal"] is True
 
 
@@ -136912,7 +137798,7 @@ def test_mutation_research_lifecycle_records_all_three_states():
     Contract:
         Configuration activation emits the twin; activate records
         "enabled"; deactivate records "disabled"; cleanup (record alive)
-        records "cleaned"; the twin survives all three.
+        records "CLEANED"; the twin survives all three.
     Returns:
         None.
     Raises:
@@ -136933,7 +137819,7 @@ def test_mutation_research_lifecycle_records_all_three_states():
     )
     research.cleanup()
     summary = crystallizer.describe_profile()
-    assert summary["mutation_research_state"] == "cleaned"
+    assert summary["mutation_research_state"] == "CLEANED"
     assert summary["has_mutation_research_crystal"] is True
 
 
@@ -182033,6 +182919,118 @@ def test_cli_check_returns_failure_for_drift(tmp_path: Path) -> None:
     assert tool.run(["check"]) == 1
 ================================================================================
 END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/architecture_and_design/test_lifetime_pages_name_every_existence_member.py
+CONTENT SHA256: 6e50a69f0a5474220cbf73cca90152ace10070138bbbb9a7cb903e32d4facdb5
+SOURCE ENCODING: utf-8
+================================================================================
+"""Regression: the lifetime design pages name every `Existence` member.
+
+Symptom:
+    `Existence.managed_spell_quantity` became the seventh lifetime (0.2.8241-0.2.8246), but
+    `architecture_and_design/02_architecture/ownership_and_lifetimes.md` and
+    `architecture_and_design/05_engineering_drawings/README.md` still enumerated six
+    (issue #255). Nothing failed: the pages are prose, and no test tied them to the enum.
+
+Contract under test:
+    Each page names every member of `Existence` as a code span - the member name in
+    backticks, the form both pages use for lifetimes - so a member added to the enum
+    fails here until both pages describe it.
+
+Scope note:
+    The check proves that a page names a member, not that the page describes it
+    correctly; that stays a review duty against the source. The diagrams the pages embed
+    are not checked: they are drawings, not prose.
+"""
+
+from pathlib import Path
+from typing import List, Tuple
+
+import pytest
+
+from melder.aether.spellbook.existence.existence import Existence
+
+
+def _lifetime_page_relative_paths() -> Tuple[str, ...]:
+    """
+    Return the repository-relative paths of the design pages that enumerate lifetimes.
+
+    Contract:
+        - Exactly the two pages issue #255 found enumerating six lifetimes. A page that
+          starts enumerating lifetimes later belongs in this tuple too.
+        - Paths use forward slashes and are resolved against the repository root by
+          `_read_page`.
+
+    Returns:
+        Tuple[str, ...]: The page paths, in the order the documentation links them.
+    """
+    return (
+        "architecture_and_design/02_architecture/ownership_and_lifetimes.md",
+        "architecture_and_design/05_engineering_drawings/README.md",
+    )
+
+
+def _read_page(relative_path: str) -> str:
+    """
+    Read one design page from the repository as text.
+
+    Args:
+        relative_path: Repository-relative page path from `_lifetime_page_relative_paths`.
+
+    Returns:
+        str: The page's full text, decoded as UTF-8.
+
+    Raises:
+        FileNotFoundError: If the page was moved or deleted. The test then errors instead
+            of passing without having read a page.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    return (repo_root / relative_path).read_text(encoding="utf-8")
+
+
+def _members_missing_from(page_text: str) -> List[str]:
+    """
+    Return the names of the `Existence` members a page does not name, in enum order.
+
+    Contract:
+        - A member counts as named when its code span (`` `<name>` ``) occurs in the page.
+          The bare name would make the check vacuous for two members: `unique` occurs
+          inside `unique_per_conduit`, and `many` is an ordinary English word.
+        - Iterates the live enum, so a member added later is checked without editing
+          this test.
+
+    Args:
+        page_text: The page's full text.
+
+    Returns:
+        List[str]: Names of the members absent from the page; empty when it names all.
+    """
+    return [member.name for member in Existence if f"`{member.name}`" not in page_text]
+
+
+@pytest.mark.parametrize("relative_path", _lifetime_page_relative_paths())
+def test_lifetime_page_names_every_existence_member(relative_path: str) -> None:
+    """
+    A lifetime design page names every `Existence` member, so none goes missing silently.
+
+    Contract:
+        Fails with the page path and the missing member names when the page lacks the
+        code span of at least one member.
+
+    Args:
+        relative_path: Repository-relative path of the page under test.
+
+    Returns:
+        None.
+    """
+    missing = _members_missing_from(_read_page(relative_path))
+    assert missing == [], (
+        f"{relative_path} does not name Existence member(s) {missing}; "
+        "describe each lifetime on the page (issue #255)."
+    )
+================================================================================
+END FILE: tests/unit/architecture_and_design/test_lifetime_pages_name_every_existence_member.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/conftest.py
@@ -233902,11 +234900,10 @@ END FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_cluster_m
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_conflict_manager.py
-CONTENT SHA256: 0a767d5f1e5fb6f2a0c1da52a95fc47299ada2183f3446ac9e3942e0d3af7361
+CONTENT SHA256: a7600e97f09bc2ae61ada85daaf4543f92ae2c986d65f3e32e7ac8832d8ff583
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
-from threading import Event, RLock, Thread
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
     ChangeControlConflictManager,
@@ -233915,6 +234912,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
     ChangeControlTransactionRequest,
     ChangeTransactionType,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_conflict_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
@@ -233945,51 +234943,24 @@ def test_conflict_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
     Contract:
         - A second cleanup caller may pass the outer `_cleaned` check.
         - The inner `_cleaned` check inside the lock returns safely without error.
+        - The handshake holds the first caller inside the lock until the second has passed the outer check and
+          is about to block; the first caller then runs the real cleanup, and the second must return at the inner
+          check. Without that check the teardown would run twice and a caller would raise on an attribute the
+          other had already deleted.
+        - Both callers must finish without raising; the manager must read cleaned with its `_lock` dropped.
+        - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+          signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
     Returns:
         None.
     Raises:
         AssertionError: If concurrent cleanup raises or leaves the manager dirty.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first: Event = Event()
-            self._second_attempted: Event = Event()
-            self._lock: RLock = RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb) -> None:
-            self._lock.release()
-
     manager = ChangeControlConflictManager()
-    coordinated_lock = _CoordinatedLock()
-    manager._lock = coordinated_lock
-    failures: list[BaseException] = []
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        try:
-            manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(manager.cleanup)
 
-    first = Thread(target=_run_cleanup, name="cleanup-first")
-    second = Thread(target=_run_cleanup, name="cleanup-second")
-
-    first.start()
-    assert coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert manager._cleaned is True
     assert not hasattr(manager, '_lock')
 
@@ -234710,11 +235681,9 @@ END FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_devops_tr
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_embargo_manager.py
-CONTENT SHA256: f80e9817a78498868f865a6961ab2d4cf47d1eef1dd6a3232df58e675a7c9824
+CONTENT SHA256: daac2eeb17610bf03c3a11219560b102a395c5fe57e48c3d0021b0da5b1b6fee
 SOURCE ENCODING: utf-8
 ================================================================================
-from threading import Event, RLock, Thread
-
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
@@ -234726,25 +235695,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-
-
-class _CoordinatedLock:
-    def __init__(self) -> None:
-        self._entered_first: Event = Event()
-        self._second_attempted: Event = Event()
-        self._lock: RLock = RLock()
-
-    def __enter__(self):
-        if self._entered_first.is_set():
-            self._second_attempted.set()
-        self._lock.acquire()
-        if not self._entered_first.is_set():
-            self._entered_first.set()
-            assert self._second_attempted.wait(timeout=1.0)
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        self._lock.release()
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_embargo_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
@@ -234785,31 +235736,24 @@ def test_embargo_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
     Contract:
         - A second cleanup caller may pass the outer `_cleaned` check.
         - The inner `_cleaned` check inside the lock returns safely without error.
+        - The handshake holds the first caller inside the lock until the second has passed the outer check and
+          is about to block; the first caller then runs the real cleanup, and the second must return at the inner
+          check. Without that check the teardown would run twice and a caller would raise on an attribute the
+          other had already deleted.
+        - Both callers must finish without raising; the manager must read cleaned with its `_lock` dropped.
+        - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+          signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
     Returns:
         None.
     Raises:
         AssertionError: If concurrent cleanup raises or leaves the manager dirty.
     """
     manager = ChangeControlEmbargoManager()
-    manager._lock = _CoordinatedLock()
-    failures: list[BaseException] = []
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        try:
-            manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(manager.cleanup)
 
-    first = Thread(target=_run_cleanup, name="embargo-cleanup-first")
-    second = Thread(target=_run_cleanup, name="embargo-cleanup-second")
-
-    first.start()
-    assert manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert manager._cleaned is True
     assert not hasattr(manager, '_lock')
 
@@ -236507,11 +237451,9 @@ END FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_link_fami
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_orchestrator.py
-CONTENT SHA256: e54b50fd4288927205b84f4e2f9de1de0052888f712558669255ff04603aa1af
+CONTENT SHA256: ef66e62512070ecb266666836273a1c5aba5af4d634ca35becb2460001fdf387
 SOURCE ENCODING: utf-8
 ================================================================================
-from threading import Event, RLock, Thread
-
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager import (
@@ -236529,25 +237471,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-
-
-class _CoordinatedLock:
-    def __init__(self) -> None:
-        self._entered_first: Event = Event()
-        self._second_attempted: Event = Event()
-        self._lock: RLock = RLock()
-
-    def __enter__(self):
-        if self._entered_first.is_set():
-            self._second_attempted.set()
-        self._lock.acquire()
-        if not self._entered_first.is_set():
-            self._entered_first.set()
-            assert self._second_attempted.wait(timeout=1.0)
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        self._lock.release()
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_managers():
@@ -236611,31 +237535,24 @@ def test_orchestrator_cleanup_rechecks_cleaned_inside_lock() -> None:
     Contract:
         - A second cleanup caller may pass the outer `_cleaned` check.
         - The inner `_cleaned` check inside the lock returns safely without error.
+        - The handshake holds the first caller inside the lock until the second has passed the outer check and
+          is about to block; the first caller then runs the real cleanup, and the second must return at the inner
+          check. Without that check the teardown would run twice and a caller would raise on an attribute the
+          other had already deleted.
+        - Both callers must finish without raising; the orchestrator must read cleaned with its `_lock` dropped.
+        - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+          signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
     Returns:
         None.
     Raises:
         AssertionError: If concurrent cleanup raises or leaves the orchestrator dirty.
     """
     orchestrator = ChangeControlOrchestrator()
-    orchestrator._lock = _CoordinatedLock()
-    failures: list[BaseException] = []
+    handshake = CleanupRecheckHandshake()
+    orchestrator._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        try:
-            orchestrator.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(orchestrator.cleanup)
 
-    first = Thread(target=_run_cleanup, name="orchestrator-cleanup-first")
-    second = Thread(target=_run_cleanup, name="orchestrator-cleanup-second")
-
-    first.start()
-    assert orchestrator._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert orchestrator._cleaned is True
     assert not hasattr(orchestrator, '_lock')
 
@@ -237581,11 +238498,9 @@ END FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acq
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_transaction_manager.py
-CONTENT SHA256: 4040809225ae454631d7836f331f971c2bed9bd7e77d2a1d5566f9d4e6e7d688
+CONTENT SHA256: ec82bfe8ea427cdec9ed66f97ad3327781e292f32108123d16186e29a54a3207
 SOURCE ENCODING: utf-8
 ================================================================================
-from threading import Event, RLock, Thread
-
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
@@ -237594,25 +238509,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-
-
-class _CoordinatedLock:
-    def __init__(self) -> None:
-        self._entered_first: Event = Event()
-        self._second_attempted: Event = Event()
-        self._lock: RLock = RLock()
-
-    def __enter__(self):
-        if self._entered_first.is_set():
-            self._second_attempted.set()
-        self._lock.acquire()
-        if not self._entered_first.is_set():
-            self._entered_first.set()
-            assert self._second_attempted.wait(timeout=1.0)
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        self._lock.release()
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_transaction_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
@@ -237657,31 +238554,24 @@ def test_transaction_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
     Contract:
         - A second cleanup caller may pass the outer `_cleaned` check.
         - The inner `_cleaned` check inside the lock returns safely without error.
+        - The handshake holds the first caller inside the lock until the second has passed the outer check and
+          is about to block; the first caller then runs the real cleanup, and the second must return at the inner
+          check. Without that check the teardown would run twice and a caller would raise on an attribute the
+          other had already deleted.
+        - Both callers must finish without raising; the manager must read cleaned with its `_lock` dropped.
+        - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+          signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
     Returns:
         None.
     Raises:
         AssertionError: If concurrent cleanup raises or leaves the manager dirty.
     """
     manager = ChangeControlTransactionManager()
-    manager._lock = _CoordinatedLock()
-    failures: list[BaseException] = []
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        try:
-            manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(manager.cleanup)
 
-    first = Thread(target=_run_cleanup, name="tx-cleanup-first")
-    second = Thread(target=_run_cleanup, name="tx-cleanup-second")
-
-    first.start()
-    assert manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert manager._cleaned is True
     assert not hasattr(manager, '_lock')
 
@@ -241623,15 +242513,15 @@ END FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_transfer_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/incident_manager/test_incident.py
-CONTENT SHA256: 7c91febeae03bd19a138b80f7538995484435e198e0e078adbf994057e86a64d
+CONTENT SHA256: 524aab97f38732b1fc0173ab0582927b784a62c65e183655d9232b13b51e78ae
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
-import threading
 from threading import Thread
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -241856,52 +242746,32 @@ def test_lock_creation(incident):
     assert isinstance(incident._lock, type(RLock()))
 
 
-def test_cleanup_rechecks_cleaned_inside_lock(incident):
+def test_cleanup_rechecks_cleaned_inside_lock(incident: Incident) -> None:
     """
     Verify the inner cleanup re-check under concurrent teardown.
 
     Contract:
     - A second cleanup caller may pass the outer `_cleaned` check.
     - The inner `_cleaned` check inside the lock returns safely without error.
+    - The handshake holds the first caller inside the lock until the second has passed the outer check and is
+      about to block; the first caller then runs the real cleanup, and the second must return at the inner check.
+      Without that check the teardown would run twice and a caller would raise on an attribute the other had
+      already deleted.
+    - Both callers must finish without raising; the incident must read cleaned with its `_lock` dropped.
+    - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal
+      and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Args:
+        incident: A live incident from the `incident` fixture.
+
+    Returns:
+        None.
     """
+    handshake = CleanupRecheckHandshake()
+    incident._lock = handshake.lock
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    handshake.run(incident.cleanup)
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
-    incident._lock = _CoordinatedLock()
-    failures = []
-
-    def _run_cleanup():
-        try:
-            incident.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
-
-    first = Thread(target=_run_cleanup, name="incident-cleanup-first")
-    second = Thread(target=_run_cleanup, name="incident-cleanup-second")
-
-    first.start()
-    assert incident._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert incident._cleaned is True
     assert not hasattr(incident, '_lock')
 ================================================================================
@@ -241989,11 +242859,9 @@ END FILE: tests/unit/melder/aether/dev_ops/incident_manager/test_incident_enums_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/incident_manager/test_incident_manager.py
-CONTENT SHA256: 55541df309627b625480f731c17dafcbe40f44853dbedabbbf25ff9b581eaebc
+CONTENT SHA256: fd7e55b99c296ce86a44dc7eb82d2774f3428c28969affe34c58d37483354977
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -242002,6 +242870,7 @@ from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager impo
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident import Incident
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status import IncidentStatus
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -242180,52 +243049,32 @@ def test_methods_raise_after_cleanup(manager):
         manager.list_incidents()
 
 
-def test_cleanup_rechecks_cleaned_inside_lock(manager):
+def test_cleanup_rechecks_cleaned_inside_lock(manager: IncidentManager) -> None:
     """
     Verify the inner cleanup re-check under concurrent teardown.
 
     Contract:
     - A second cleanup caller may pass the outer `_cleaned` check.
     - The inner `_cleaned` check inside the lock returns safely without error.
+    - The handshake holds the first caller inside the lock until the second has passed the outer check and is
+      about to block; the first caller then runs the real cleanup, and the second must return at the inner check.
+      Without that check the teardown would run twice and a caller would raise on an attribute the other had
+      already deleted.
+    - Both callers must finish without raising; the manager must read cleaned with its `_lock` dropped.
+    - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal
+      and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Args:
+        manager: A live incident manager from the `manager` fixture.
+
+    Returns:
+        None.
     """
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    handshake.run(manager.cleanup)
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
-    manager._lock = _CoordinatedLock()
-    failures = []
-
-    def _run_cleanup():
-        try:
-            manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
-
-    first = threading.Thread(target=_run_cleanup, name="incident-manager-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="incident-manager-cleanup-second")
-
-    first.start()
-    assert manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert manager._cleaned is True
     assert not hasattr(manager, '_lock')
 ================================================================================
@@ -242233,10 +243082,9 @@ END FILE: tests/unit/melder/aether/dev_ops/incident_manager/test_incident_manage
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager.py
-CONTENT SHA256: 6d31414207ca509431a11a039eae73a4b9e6a90f37292787e462c730e274658c
+CONTENT SHA256: 38c357583d662236f1ab81f2094c3c1902a6a4891f3b6cace33e348bbd8362bf
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
 from typing import FrozenSet, Optional
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
@@ -242246,6 +243094,7 @@ from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import (
     RiskManager as _RuntimeRiskManager,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 class _ResolutionStateStub:
@@ -242549,48 +243398,27 @@ def test_cleanup_clears_tracking_and_is_idempotent() -> None:
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
-    """Verify the inner cleanup re-check under concurrent teardown."""
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the risk manager reads cleaned with its
+    `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could
+    lose its signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     resolution_state = _ResolutionStateStub(SpellValidity.valid)
     states = _SpellSystemStatesStub(resolution_state)
     risk_manager = RiskManager(states)
-    risk_manager._lock = _CoordinatedLock()
-    failures = []
+    handshake = CleanupRecheckHandshake()
+    risk_manager._lock = handshake.lock
 
-    def _run_cleanup():
-        try:
-            risk_manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(risk_manager.cleanup)
 
-    first = threading.Thread(target=_run_cleanup, name="risk-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="risk-cleanup-second")
-
-    first.start()
-    assert risk_manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert risk_manager._cleaned is True
     assert not hasattr(risk_manager, '_lock')
 
@@ -243284,11 +244112,9 @@ END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_change_reaso
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_conduit_resolution_state.py
-CONTENT SHA256: ab16ed1aca199ce8fe84b478571b6dca0be1776f96f1e66f567d39694cfb94b5
+CONTENT SHA256: c446d958d49f4001382d338cdc1307e20f30678b3669be628a34657f93130e68
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import (
@@ -243302,6 +244128,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _make_diagnostic(*, code: str, message: str) -> SystemDiagnostic:
@@ -243881,46 +244708,25 @@ def test_internal_helpers_cover_none_and_exception_tolerance() -> None:
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
-    """Verify the inner cleanup re-check under concurrent teardown."""
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the state reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     state = ConduitResolutionState("cid")
-    state._lock = _CoordinatedLock()
-    failures = []
+    handshake = CleanupRecheckHandshake()
+    state._lock = handshake.lock
 
-    def _run_cleanup():
-        try:
-            state.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(state.cleanup)
 
-    first = threading.Thread(target=_run_cleanup, name="crs-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="crs-cleanup-second")
-
-    first.start()
-    assert state._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert state._cleaned is True
     assert not hasattr(state, '_lock')
 ================================================================================
@@ -244192,15 +244998,15 @@ END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_state_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_state.py
-CONTENT SHA256: 8e4b4d164e27f2bd9070f44f52b16e58f84bda9f2b49333b11ebb2df02717dd9
+CONTENT SHA256: 7ba2f097911b7062515a1e6638f49441a769a9225c0ccdf83e4b6894717f5f53
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
-import threading
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -244433,48 +245239,28 @@ def test_cleanup_idempotent(state):
     state.cleanup()
 
 
-def test_cleanup_rechecks_cleaned_inside_lock(state):
+def test_cleanup_rechecks_cleaned_inside_lock(state: SpellSystemState) -> None:
     """
     Verify the inner cleanup re-check under concurrent teardown.
+
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the state reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Args:
+        state: A live spell system state from the `state` fixture.
+
+    Returns:
+        None.
     """
+    handshake = CleanupRecheckHandshake()
+    state._lock = handshake.lock
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    handshake.run(state.cleanup)
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
-    state._lock = _CoordinatedLock()
-    failures = []
-
-    def _run_cleanup():
-        try:
-            state.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
-
-    first = threading.Thread(target=_run_cleanup, name="sss-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="sss-cleanup-second")
-
-    first.start()
-    assert state._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert state._cleaned is True
     assert not hasattr(state, '_lock')
 
@@ -246786,7 +247572,7 @@ END FILE: tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_validi
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/test_dev_ops_manager.py
-CONTENT SHA256: 886be72547181c8af4be8fa732391c83615a4322c0c69eb0a522ffb1b3d79ee7
+CONTENT SHA256: 04eec9d26394c78ee7ed3513af8bc0ce55707912963bdd5122ac4ecdcfcebe78
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -246798,6 +247584,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -247407,52 +248194,33 @@ def test_revalidate_dirty_roots_does_not_return_value(manager):
     assert manager.revalidate_dirty_roots("conduit-1") is None
 
 
-def test_cleanup_rechecks_cleaned_inside_lock(manager):
+def test_cleanup_rechecks_cleaned_inside_lock(manager: DevOpsManager) -> None:
     """
     Verify the inner cleanup re-check under concurrent teardown.
 
     Contract:
     - A second cleanup caller may pass the outer `_cleaned` check.
     - The inner `_cleaned` check inside the lock returns safely without error.
+    - The handshake holds the first caller inside the lock until the second has passed the outer check and is
+      about to block; the first caller then runs the real cleanup, and the second must return at the inner check.
+      Without that check the teardown would run twice and a caller would raise on an attribute the other had
+      already deleted.
+    - Both callers must finish without raising; the manager must read cleaned with its `_lock` dropped.
+    - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal
+      and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Args:
+        manager: A live DevOpsManager from the `manager` fixture; its incident and change-control managers and
+            its SpellSystemStates are mocks.
+
+    Returns:
+        None.
     """
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    handshake.run(manager.cleanup)
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
-    manager._lock = _CoordinatedLock()
-    failures = []
-
-    def _run_cleanup():
-        try:
-            manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
-
-    first = threading.Thread(target=_run_cleanup, name="devops-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="devops-cleanup-second")
-
-    first.start()
-    assert manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert manager._cleaned is True
     assert not hasattr(manager, '_lock')
 ================================================================================
@@ -259430,11 +260198,10 @@ END FILE: tests/unit/melder/aether/test_configuration_reload_lanes.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_builder.py
-CONTENT SHA256: 8483e3ab20930585d17b5e091da325b613d79258527f96843f9336fefe493ef8
+CONTENT SHA256: 489cafc14e29ccf7d0eab10a7d68a4e25925d36dd395f3ae59db94a1e9f0088f
 SOURCE ENCODING: utf-8
 ================================================================================
 import json
-import threading
 
 import pytest
 
@@ -259452,6 +260219,7 @@ from melder.nexus.acl.configurations.profiles.frame_acl_profile import (
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_acl_builder_begin_change_seeds_typed_draft_from_current_config() -> None:
@@ -259661,49 +260429,25 @@ def test_frame_acl_builder_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread marks the builder cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup, including the open draft, and marks the
+    builder cleaned. The second caller must return at the inner recheck - without it the teardown would run twice
+    and a caller would raise on an attribute the other had already deleted - so both callers finish without
+    raising and the builder reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not
+    by timing: the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
     builder.begin_change("view")
-    coordinated_lock = _CoordinatedLock()
-    builder._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    builder._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(builder.cleanup)
 
-    def _run_cleanup() -> None:
-        builder.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert builder.cleaned is True
     assert not hasattr(builder, '_lock')
 
@@ -260269,11 +261013,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_codegen_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_codegen_configuration.py
-CONTENT SHA256: a46d706f603505ad08a40bb70620992499fff004567a8b117f89393a372e8480
+CONTENT SHA256: eac76562733c88ff0625e7940e4371e88ec0f6c66427833d801f481961f14741
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.frame_acl_codegen_configuration import (
@@ -260284,6 +261026,7 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
 )
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_ruleset(name: str, rule_name: str = "allow_read") -> FrameACLRuleSet:
@@ -260509,50 +261252,25 @@ def test_frame_acl_codegen_configuration_cleanup_rechecks_cleaned_inside_lock() 
     """
     Verify cleanup returns early when another thread cleans under the lock.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup under the lock. The second caller must
+    return at the inner recheck - without it the teardown would run twice and a caller would raise on an attribute
+    the other had already deleted - so both callers finish without raising and the configuration reads cleaned
+    with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock
+    could lose its signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     configuration = FrameACLCodegenConfiguration(
         profile_name="safe",
         profile_version="0.0.1",
     )
-    coordinated_lock = _CoordinatedLock()
-    configuration._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    configuration._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(configuration.cleanup)
 
-    def _run_cleanup() -> None:
-        configuration.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert configuration.cleaned is True
     assert not hasattr(configuration, '_lock')
 ================================================================================
@@ -260725,11 +261443,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_codegen_permissive_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_codegen_profile.py
-CONTENT SHA256: 755bcfacba192f6f1c1119c7e2d08aa8cbef65c2f3fe4edf5dff2a9e6aaa289e
+CONTENT SHA256: 9bd102c5e1db42961fe973cf1b33fd65d8322a9b073dd9cd0436a86969d55bb6
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -260737,6 +261453,7 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
 )
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_ruleset(name: str) -> FrameACLRuleSet:
@@ -260868,47 +261585,22 @@ def test_frame_acl_codegen_profile_cleanup_rechecks_cleaned_inside_lock() -> Non
     """
     Verify cleanup returns early when another thread already cleaned the profile.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the profile reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     profile = FrameACLCodegenProfile("custom")
-    coordinated_lock = _CoordinatedLock()
-    profile._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    profile._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(profile.cleanup)
 
-    def _run_cleanup() -> None:
-        profile.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert profile.cleaned is True
     assert not hasattr(profile, '_lock')
 ================================================================================
@@ -261642,11 +262334,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_command_configuration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_command_profile.py
-CONTENT SHA256: 92b57c786c3cc6da7a08203e6d52a05f8d7159074789dbf65f439caef2fbe527
+CONTENT SHA256: 20e9532357d78d3a9937d48210c11e195d81bfed4c2800e5cfc387221d137226
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
@@ -261658,6 +262348,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
     FrameACLRuleSet,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_acl_command_profile_init_rejects_empty_identity_fields() -> None:
@@ -261767,54 +262458,41 @@ def test_frame_acl_command_profile_cleanup_rechecks_cleaned_inside_lock() -> Non
     """
     Verify cleanup returns early when another thread marks the profile cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block, then marks the profile cleaned, as a cleanup racing in from elsewhere would. Both
+    callers must return at the inner recheck and finish without raising - without it the teardown would run
+    twice and the second run would raise on attributes the first had already deleted - and the profile must read
+    cleaned. The handshake also fails the test if either caller is still running after its bounded join. The
+    callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal and
+    failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self, profile: FrameACLCommandProfile) -> None:
-            self._profile = profile
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._profile._cleaned = True
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     profile = FrameACLCommandProfile("safe")
-    profile._lock = _CoordinatedLock(profile)
 
-    thread = threading.Thread(target=profile.cleanup)
-    thread.start()
-    assert profile._lock._entered_first.wait(timeout=1.0)
-    profile.cleanup()
-    thread.join(timeout=1.0)
+    def _mark_cleaned() -> None:
+        """Mark the profile cleaned while the first caller holds the lock and the second waits for it."""
+        profile._cleaned = True
+
+    handshake = CleanupRecheckHandshake(on_holder_ready=_mark_cleaned)
+    profile._lock = handshake.lock
+
+    handshake.run(profile.cleanup)
 
     assert profile.cleaned is True
-    assert thread.is_alive() is False
 ================================================================================
 END FILE: tests/unit/melder/aether/test_frame_acl_command_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_compiled_access_surface.py
-CONTENT SHA256: 58c731e720ca2439be3bfb19108b62321e721afab11689f87d3dfb0ec8d41396
+CONTENT SHA256: ee0037df104aeabc47798d77a38656dd8a8d25566d62d48359c7f7bdaa31dc9a
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_surface() -> CompiledFrameACLAccessSurface:
@@ -261895,47 +262573,22 @@ def test_compiled_access_surface_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the surface.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the surface reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     surface = _build_surface()
-    coordinated_lock = _CoordinatedLock()
-    surface._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    surface._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(surface.cleanup)
 
-    def _run_cleanup() -> None:
-        surface.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert surface.cleaned is True
     assert not hasattr(surface, '_lock')
 
@@ -263257,11 +263910,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_configuration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_configuration_chain.py
-CONTENT SHA256: f6d9c1b0ebfbca4b7afa17dcd5bf2d06b3ba7d5528064b4a5ba4dbd1d9c41bf6
+CONTENT SHA256: 3a3d6f5d163357423c5cea6f7140812f3c5e84595afe25043ce8dd7f1d1d0a7f
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.frame_acl_configuration_chain import (
@@ -263273,6 +263924,7 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _make_locked_view_configuration(
@@ -263581,51 +264233,27 @@ def test_chain_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread cleans under the lock.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup under the lock, including its stored
+    configurations. The second caller must return at the inner recheck - without it the teardown would run twice
+    and a caller would raise on an attribute the other had already deleted - so both callers finish without
+    raising and the chain reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by
+    timing: the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     chain = FrameACLConfigurationChain(
         family_name="view",
         contract_name="default",
         default_configuration=_make_locked_view_configuration(marker="v1"),
     )
-    coordinated_lock = _CoordinatedLock()
-    chain._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    chain._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(chain.cleanup)
 
-    def _run_cleanup() -> None:
-        chain.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert chain.cleaned is True
     assert not hasattr(chain, '_lock')
 ================================================================================
@@ -263633,11 +264261,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_configuration_chain.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_container.py
-CONTENT SHA256: d30fee3214008a118c36675521028da86d976404ecafaecb8593117c722032c9
+CONTENT SHA256: c36b9f33790bfcfa2e610af0561a2d524fdd90784fea188ab3dd849feabcd128
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
@@ -263647,6 +264273,7 @@ from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_valida
     FrameACLSetCompatibilityValidator,
 )
 from melder.nexus.acl.validator.frame_acl_validator import FrameACLValidator
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_acl_container_builds_family_defaults() -> None:
@@ -263869,47 +264496,23 @@ def test_frame_acl_container_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the container.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup, including the owned builder, validators
+    and configuration chains. The second caller must return at the inner recheck - without it the teardown would
+    run twice and a caller would raise on an attribute the other had already deleted - so both callers finish
+    without raising and the container reads cleaned with its `_lock` dropped. The callers are ordered by the
+    handshake, not by timing: the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     container = FrameACLContainer("ops")
-    coordinated_lock = _CoordinatedLock()
-    container._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    container._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(container.cleanup)
 
-    def _run_cleanup() -> None:
-        container.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert container.cleaned is True
     assert not hasattr(container, '_lock')
 ================================================================================
@@ -263917,17 +264520,16 @@ END FILE: tests/unit/melder/aether/test_frame_acl_container.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_manager.py
-CONTENT SHA256: 1b484dd5577ea68846bc0a4df08dca6de60339203bf4143c0110eae394f4cf37
+CONTENT SHA256: 7d6d2d6946e4accaba68b60579b74afedb78120d3152d2b03496051f2ada283f
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.nexus.acl.frame_acl_container import FrameACLContainer
 from melder.nexus.frame_acl_manager import FrameACLManager
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 from tests._nexus_viewer_matrix_support import build_descriptor
 
 
@@ -264119,48 +264721,24 @@ def test_frame_acl_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the manager.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup, including the owned `ops` container. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the manager
+    reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier
+    hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     manager = FrameACLManager()
     manager._ensure_frame_acl_container("ops")
-    coordinated_lock = _CoordinatedLock()
-    manager._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(manager.cleanup)
 
-    def _run_cleanup() -> None:
-        manager.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert manager.cleaned is True
     assert not hasattr(manager, '_lock')
 ================================================================================
@@ -264168,11 +264746,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_profile.py
-CONTENT SHA256: 4eb6839155412c99d2affc4701634433a23e853704b1ebee79f9533d994d03b0
+CONTENT SHA256: 6cc842c92ea599c4e54dbf8cfacef95410ea247c286f0e9d80e3b64795714c8a
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -264194,6 +264770,7 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
     FrameACLViewProfile,
 )
 from melder.nexus.frame_acl_manager import FrameACLManager
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_acl_rule_requires_valid_core_fields() -> None:
@@ -264368,47 +264945,22 @@ def test_frame_acl_ruleset_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the ruleset.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the ruleset reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     ruleset = FrameACLRuleSet("spell_rules")
-    coordinated_lock = _CoordinatedLock()
-    ruleset._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    ruleset._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(ruleset.cleanup)
 
-    def _run_cleanup() -> None:
-        ruleset.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert ruleset.cleaned is True
     assert not hasattr(ruleset, '_lock')
 
@@ -264695,51 +265247,26 @@ def test_frame_acl_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the profile.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the profile reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     profile = FrameACLProfile(
         "support",
         view_profile=FrameACLViewProfile.create_default(),
         codegen_profile=FrameACLCodegenProfile.create_default(),
     )
-    coordinated_lock = _CoordinatedLock()
-    profile._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    profile._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(profile.cleanup)
 
-    def _run_cleanup() -> None:
-        profile.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert profile.cleaned is True
     assert not hasattr(profile, '_lock')
 
@@ -264766,50 +265293,26 @@ def test_frame_acl_view_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify reusable view profile cleanup returns early when already cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup, so the profile is already cleaned when the
+    second caller takes the lock. The second caller must return at the inner recheck - without it the teardown
+    would run twice and a caller would raise on an attribute the other had already deleted - so both callers
+    finish without raising and the profile reads cleaned with its `_lock` dropped. The callers are ordered by the
+    handshake, not by timing: the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     profile = FrameACLViewProfile(
         "custom",
         minimum_spell_payload_type="general",
     )
-    coordinated_lock = _CoordinatedLock()
-    profile._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    profile._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(profile.cleanup)
 
-    def _run_cleanup() -> None:
-        profile.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert profile.cleaned is True
     assert not hasattr(profile, '_lock')
 
@@ -264870,11 +265373,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_profile_builder.py
-CONTENT SHA256: d783dce059e0b09adc1d4a0b67b7ac9a060117b4539b31932fc69970e869d2ad
+CONTENT SHA256: 84c46c71db48d00118550ff354152bcd15051506e8124a8ff3d842e1a496ec42
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -264895,6 +265396,7 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile_builde
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_acl_profile_builder_exposes_id_and_registry_snapshots() -> None:
@@ -265165,47 +265667,23 @@ def test_frame_acl_profile_builder_cleanup_rechecks_cleaned_inside_lock() -> Non
     """
     Verify cleanup returns early when another thread already cleaned the builder.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup, including the registered profiles and the
+    family builders. The second caller must return at the inner recheck - without it the teardown would run twice
+    and a caller would raise on an attribute the other had already deleted - so both callers finish without
+    raising and the builder reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not
+    by timing: the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     builder = FrameACLProfileBuilder()
-    coordinated_lock = _CoordinatedLock()
-    builder._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    builder._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(builder.cleanup)
 
-    def _run_cleanup() -> None:
-        builder.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert builder.cleaned is True
     assert not hasattr(builder, '_lock')
 ================================================================================
@@ -267255,11 +267733,9 @@ END FILE: tests/unit/melder/aether/test_frame_acl_view_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_acl_view_configuration.py
-CONTENT SHA256: 0937f7922ce5a79682e8af5e791cfd451ea49850ad1743e26836752c4e96af2c
+CONTENT SHA256: a4f30d72dbc37ab96f98d075ca92b33035a516ca5e431e6e718fdf27611fcd84
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.frame_acl_view_configuration import (
@@ -267270,6 +267746,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import Fra
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_ruleset(
@@ -267577,51 +268054,26 @@ def test_frame_acl_view_configuration_cleanup_rechecks_cleaned_inside_lock() -> 
     """
     Verify cleanup returns early when another thread already cleaned under the lock.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup under the lock. The second caller must
+    return at the inner recheck - without it the teardown would run twice and a caller would raise on an attribute
+    the other had already deleted - so both callers finish without raising and the configuration reads cleaned
+    with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock
+    could lose its signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     configuration = FrameACLViewConfiguration(
         profile_name="safe",
         profile_version="0.0.1",
         minimum_spell_payload_type="general",
     )
-    coordinated_lock = _CoordinatedLock()
-    configuration._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    configuration._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(configuration.cleanup)
 
-    def _run_cleanup() -> None:
-        configuration.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert configuration.cleaned is True
     assert not hasattr(configuration, '_lock')
 ================================================================================
@@ -267825,11 +268277,10 @@ END FILE: tests/unit/melder/aether/test_frame_acl_view_safe_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_descriptor_manager.py
-CONTENT SHA256: c2e92bc54fb9efdd9a391c6c93faeaaf0036703054b66ff50ddf511ced207512
+CONTENT SHA256: 1a00f4076aaf86e36be4475d8c18f4261a9bb76aa3f8d13ee7de48867a0d7aa6
 SOURCE ENCODING: utf-8
 ================================================================================
 import types
-import threading
 
 import pytest
 
@@ -267849,6 +268300,7 @@ from melder.nexus.frame_descriptor.spell_descriptor_payload import (
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.configuration.system_state import SystemState
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 @pytest.fixture(autouse=True)
@@ -268189,49 +268641,25 @@ def test_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the manager.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup, including the owned `ops` descriptor. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the manager
+    reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier
+    hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(aether)
     manager._get_or_create_frame_descriptor("ops")
-    coordinated_lock = _CoordinatedLock()
-    manager._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(manager.cleanup)
 
-    def _run_cleanup() -> None:
-        manager.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert manager.cleaned is True
     assert not hasattr(manager, '_lock')
 
@@ -268398,16 +268826,188 @@ END FILE: tests/unit/melder/aether/test_frame_descriptor_payload.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_link_contract_profiles.py
-CONTENT SHA256: 908969282e68cd5411cd6df8361db148b6e2deb9ca929f558414fac8adb9445c
+CONTENT SHA256: 59b88c7d616a970a3c695b033a6c484517713214830db6ae39d5c05786a78195
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
+from operator import attrgetter, methodcaller
+from types import MemberDescriptorType, TracebackType
+from typing import Callable, Optional, Tuple, Type
 
 import pytest
 
 from melder.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
+
+
+class _LockReadHook:
+    """
+    Stand-in for the `_lock` slot of a per-test `FrameLinkContract` subclass that runs one armed callback first.
+
+    Purpose:
+        Reproduce on one thread the free-threaded window between a caller's outer `_cleaned` check and its load of
+        `self._lock`: the armed callback (a complete `cleanup()`) runs inside the caller's next `_lock` read, before
+        the slot is read, so the caller then loads `_lock` from a contract another cleanup has just torn down. The
+        order comes from that nesting, never from timing (GitHub #271).
+
+    Contract:
+        - Reads, writes and deletes go to the real `FrameLinkContract._lock` slot.
+        - `arm(callback)` makes the next read run `callback` first. The callback is disarmed before it runs, so the
+          reads it makes itself (the nested cleanup's own `with self._lock`) read the slot plainly.
+    """
+
+    def __init__(self, slot: MemberDescriptorType) -> None:
+        """
+        Wrap the real slot descriptor, unarmed.
+
+        Args:
+            slot: `FrameLinkContract.__dict__["_lock"]`, the descriptor that stores the contract's lock.
+
+        Returns:
+            None.
+        """
+        self._slot: MemberDescriptorType = slot
+        self._callback: Optional[Callable[[], None]] = None
+
+    def arm(self, callback: Callable[[], None]) -> None:
+        """
+        Run `callback` at the start of the next `_lock` read.
+
+        Args:
+            callback: What overtakes the reader between its outer check and its lock load.
+
+        Returns:
+            None.
+        """
+        self._callback = callback
+
+    def __get__(self, instance: Optional[FrameLinkContract], owner: Optional[type] = None) -> object:
+        """
+        Run the armed callback once, then read the real slot.
+
+        Args:
+            instance: The contract whose `_lock` is read, or None for class access.
+            owner: The class the attribute was looked up on.
+
+        Returns:
+            object: The stored lock, or this hook for class access.
+
+        Raises:
+            AttributeError: When the slot is empty because a cleanup deleted `_lock`.
+        """
+        if instance is None:
+            return self
+        callback, self._callback = self._callback, None
+        if callback is not None:
+            callback()
+        return self._slot.__get__(instance, owner)
+
+    def __set__(self, instance: FrameLinkContract, value: object) -> None:
+        """
+        Store `value` in the real slot, as `__init__` does.
+
+        Args:
+            instance: The contract being written.
+            value: The lock to store.
+
+        Returns:
+            None.
+        """
+        self._slot.__set__(instance, value)
+
+    def __delete__(self, instance: FrameLinkContract) -> None:
+        """
+        Empty the real slot, as a `del self._lock` does.
+
+        Args:
+            instance: The contract being written.
+
+        Returns:
+            None.
+        """
+        self._slot.__delete__(instance)
+
+
+def _contract_with_lock_read_hook() -> Tuple[FrameLinkContract, _LockReadHook]:
+    """
+    Build a live contract whose `_lock` is read through a fresh, unarmed `_LockReadHook`.
+
+    Returns:
+        Tuple[FrameLinkContract, _LockReadHook]: The contract - a subclass that inherits every method unchanged - and
+        its hook.
+    """
+    hook = _LockReadHook(FrameLinkContract.__dict__["_lock"])
+
+    class _LockReadHookedContract(FrameLinkContract):
+        """`FrameLinkContract` whose `_lock` slot is read through `hook`; nothing else differs."""
+
+        __slots__ = ()
+        _lock = hook
+
+    contract = _LockReadHookedContract(rift_id="rift-1", frame_name="ops", metadata={"rift_name": "pricing_rift"})
+    return contract, hook
+
+
+class _CleanupBeforeAcquireLock:
+    """
+    Stand-in for a contract's `_lock` whose first entry runs a complete `cleanup()` before it acquires.
+
+    Purpose:
+        Reproduce on one thread a read that loaded `_lock` and then waited on it while a concurrent cleanup tore the
+        contract down: by the time the read holds the lock, the contract is cleaned and its state deleted. The nested
+        entry (the cleanup's own `with self._lock`) acquires without running the cleanup again (GitHub #271).
+
+    Contract:
+        - Wraps one real `RLock`; `__exit__` releases it and never suppresses the block's exception.
+    """
+
+    def __init__(self, contract: FrameLinkContract) -> None:
+        """
+        Borrow the contract and prepare an unheld `RLock` with the cleanup pending.
+
+        Args:
+            contract: The contract whose `_lock` this object replaces.
+
+        Returns:
+            None.
+        """
+        self._contract: FrameLinkContract = contract
+        self._lock: threading.RLock = threading.RLock()
+        self._cleanup_pending: bool = True
+
+    def __enter__(self) -> _CleanupBeforeAcquireLock:
+        """
+        Run the pending cleanup once, then acquire.
+
+        Returns:
+            _CleanupBeforeAcquireLock: This lock, as `with` binds it.
+        """
+        if self._cleanup_pending:
+            self._cleanup_pending = False
+            self._contract.cleanup()
+        self._lock.acquire()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc: Optional[BaseException],
+            tb: Optional[TracebackType],
+    ) -> None:
+        """
+        Release the matching acquisition; never suppress the block's exception.
+
+        Args:
+            exc_type: The exception type raised in the block, or None.
+            exc: The exception raised in the block, or None.
+            tb: Its traceback, or None.
+
+        Returns:
+            None.
+        """
+        self._lock.release()
 
 
 def test_frame_link_contract_defaults_to_frame_name_selection() -> None:
@@ -268504,38 +269104,31 @@ def test_frame_link_contract_describe_and_clone_include_selection() -> None:
 
 
 def test_frame_link_contract_cleanup_rechecks_cleaned_inside_lock() -> None:
-    class _CoordinatedLock:
-        def __init__(self, contract: FrameLinkContract) -> None:
-            self._contract = contract
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    """
+    Verify a second cleanup caller that passed the outer check returns at the inner `_cleaned` recheck.
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._contract._cleaned = True
-            return self
+    The handshake holds the first caller inside the lock until the second has passed the outer check and is about
+    to block, then marks the contract cleaned, as a cleanup racing in from elsewhere would. Both callers must
+    finish without raising - without the inner recheck they would clear state that is already gone - and the
+    contract must read cleaned. The callers are ordered by the handshake, not by timing: the earlier hand-made
+    lock could lose its signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     contract = FrameLinkContract(
         rift_id="rift-1",
         frame_name="ops",
     )
-    contract._lock = _CoordinatedLock(contract)
 
-    first = threading.Thread(target=contract.cleanup)
-    second = threading.Thread(target=contract.cleanup)
-    first.start()
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
+    def _mark_cleaned() -> None:
+        """Mark the contract cleaned while the first caller holds the lock and the second waits for it."""
+        contract._cleaned = True
+
+    handshake = CleanupRecheckHandshake(on_holder_ready=_mark_cleaned)
+    contract._lock = handshake.lock
+
+    handshake.run(contract.cleanup)
 
     assert contract.cleaned is True
 
@@ -268556,21 +269149,173 @@ def test_frame_link_contract_cleanup_is_idempotent() -> None:
     contract.cleanup()
 
     assert contract.cleaned is True
+
+
+def test_frame_link_contract_cleanup_tears_down_owned_state() -> None:
+    """
+    Verify a real cleanup clears the selection and metadata maps and deletes the owned fields, as documented.
+
+    The in-lock recheck test above marks the contract cleaned by hand, so its callers return before any teardown;
+    this one runs the actual teardown. The maps are held from before the cleanup, so the test can see they were
+    cleared and not merely dropped (GitHub #206 requirement 3).
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract(rift_id="rift-1", frame_name="ops", metadata={"rift_name": "pricing_rift"})
+    selection = contract._selected_contract_names
+    metadata = contract._metadata
+
+    contract.cleanup()
+
+    assert contract.cleaned is True
+    assert selection == {}
+    assert metadata == {}
+    for field_name in ("_id", "_rift_id", "_frame_name", "_selected_contract_names", "_metadata"):
+        with pytest.raises(AttributeError):
+            getattr(contract, field_name)
+
+
+@pytest.mark.parametrize(
+    "read",
+    [
+        pytest.param(attrgetter("contract_id"), id="contract_id"),
+        pytest.param(attrgetter("rift_id"), id="rift_id"),
+        pytest.param(attrgetter("frame_name"), id="frame_name"),
+        pytest.param(attrgetter("metadata"), id="metadata"),
+        pytest.param(methodcaller("get_selected_contract_names"), id="get_selected_contract_names"),
+        pytest.param(methodcaller("get_selected_contract_name"), id="get_selected_contract_name"),
+        pytest.param(methodcaller("describe"), id="describe"),
+        pytest.param(methodcaller("clone"), id="clone"),
+    ],
+)
+def test_frame_link_contract_reads_raise_cleaned_runtime_error_after_cleanup(
+        read: Callable[[FrameLinkContract], object],
+) -> None:
+    """
+    Verify every public read of a cleaned contract raises the documented `RuntimeError`.
+
+    Args:
+        read: One public property or method read of the contract.
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract(rift_id="rift-1", frame_name="ops", metadata={"rift_name": "pricing_rift"})
+    contract.cleanup()
+
+    with pytest.raises(RuntimeError, match="FrameLinkContract has already been cleaned"):
+        read(contract)
+
+
+def test_frame_link_contract_concurrent_cleanup_tears_down_once_and_both_callers_return() -> None:
+    """
+    Verify two concurrent cleanups tear the contract down once and both return, with the GIL off as on.
+
+    The handshake holds the first caller inside the lock until the second has passed the outer check and is about to
+    block, then lets the first run the real teardown. The second must return at the in-lock recheck: had it torn
+    down again it would raise on the state the first deleted, and the handshake reports any caller's error. A third
+    call afterwards returns too (GitHub #206 requirement 3).
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract(rift_id="rift-1", frame_name="ops", metadata={"rift_name": "pricing_rift"})
+    selection = contract._selected_contract_names
+    handshake = CleanupRecheckHandshake()
+    contract._lock = handshake.lock
+
+    handshake.run(contract.cleanup)
+
+    assert contract.cleaned is True
+    assert selection == {}
+    with pytest.raises(RuntimeError, match="FrameLinkContract has already been cleaned"):
+        contract.describe()
+    contract.cleanup()
+
+
+def test_frame_link_contract_cleanup_after_concurrent_teardown_raises_no_missing_lock_error() -> None:
+    """
+    A `cleanup()` that passed its outer `_cleaned` check while another cleanup ran to completion returns quietly.
+
+    Symptom (GitHub #271): cleanup ended with `del self._lock`, so a second caller past its outer check but not yet
+    holding the lock raised `AttributeError: ... object has no attribute '_lock'` instead of returning at the
+    in-lock recheck - Cleanable's idempotence broken on free-threaded builds. The hook runs the first cleanup inside
+    the second caller's `_lock` read, which is exactly that interleaving with no thread to time.
+
+    Returns:
+        None.
+    """
+    contract, hook = _contract_with_lock_read_hook()
+    hook.arm(contract.cleanup)
+
+    contract.cleanup()
+
+    assert contract.cleaned is True
+    # check_cleaned() names the runtime class, here the hooked subclass.
+    with pytest.raises(RuntimeError, match="has already been cleaned"):
+        contract.frame_name
+
+
+@pytest.mark.parametrize(
+    "read",
+    [
+        pytest.param(methodcaller("get_selected_contract_names"), id="get_selected_contract_names"),
+        pytest.param(methodcaller("get_selected_contract_name"), id="get_selected_contract_name"),
+        pytest.param(methodcaller("describe"), id="describe"),
+        pytest.param(methodcaller("clone"), id="clone"),
+    ],
+)
+@pytest.mark.parametrize("window", ["before_lock_load", "while_waiting_on_lock"])
+def test_frame_link_contract_locked_read_racing_cleanup_raises_cleaned_error_not_attribute_error(
+        read: Callable[[FrameLinkContract], object],
+        window: str,
+) -> None:
+    """
+    A lock-guarded read overtaken by a concurrent cleanup raises the documented `RuntimeError`, not `AttributeError`.
+
+    Symptom (GitHub #271): these four reads check `_cleaned` and then take `_lock` - the lock cleanup sets `_cleaned`
+    and deletes the state under - but did not check again under it. Overtaken before its lock load, a read raised
+    `AttributeError: ... no attribute '_lock'`; overtaken while it waited on the lock, it raised `AttributeError` for
+    the deleted selection or ids. Cleanable's pattern (check, acquire, check again under the lock) gives the
+    documented error in both windows.
+
+    Args:
+        read: One lock-guarded read of the contract.
+        window: Where the cleanup overtakes the read: before its lock load, or while it waits on the lock.
+
+    Returns:
+        None.
+    """
+    if window == "before_lock_load":
+        contract, hook = _contract_with_lock_read_hook()
+        hook.arm(contract.cleanup)
+    else:
+        contract = FrameLinkContract(rift_id="rift-1", frame_name="ops", metadata={"rift_name": "pricing_rift"})
+        contract._lock = _CleanupBeforeAcquireLock(contract)
+
+    # check_cleaned() names the runtime class, which is the hooked subclass in the first window.
+    with pytest.raises(RuntimeError, match="has already been cleaned"):
+        read(contract)
+
+    assert contract.cleaned is True
 ================================================================================
 END FILE: tests/unit/melder/aether/test_frame_link_contract_profiles.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_frame_link_runtime_contracts.py
-CONTENT SHA256: 748ed0305ad4ae589c4d1ccd4b0448f983f09051788ed51de6fd7cf94f7f3478
+CONTENT SHA256: 1bf49ea8d0632dc73be59dbc7456da4e15bb3d70f37ddecfbe0384f60959d945
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
+from operator import attrgetter, methodcaller
 from types import TracebackType
-from typing import Optional, Type
+from typing import Callable, Optional, Type
 
 import pytest
 
 from melder.nexus.rift.frame_link.frame_link import FrameLink
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_link_defaults_display_name_to_source_id() -> None:
@@ -268655,6 +269400,8 @@ def test_frame_link_cleanup_clears_owned_state() -> None:
     assert not hasattr(link, '_source_id')
     assert not hasattr(link, '_display_name')
     assert not hasattr(link, '_metadata')
+    assert not hasattr(link, '_link_id')
+    assert not hasattr(link, '_lock')
     link.cleanup()
 
 
@@ -268754,6 +269501,67 @@ def test_frame_link_cleanup_rechecks_cleaned_inside_lock() -> None:
     assert link.cleaned is True
     with pytest.raises(RuntimeError, match="already been cleaned"):
         link.metadata
+    link.cleanup()
+
+
+@pytest.mark.parametrize(
+    "read",
+    [
+        pytest.param(attrgetter("link_id"), id="link_id"),
+        pytest.param(attrgetter("frame_name"), id="frame_name"),
+        pytest.param(attrgetter("source_kind"), id="source_kind"),
+        pytest.param(attrgetter("source_id"), id="source_id"),
+        pytest.param(attrgetter("display_name"), id="display_name"),
+        pytest.param(attrgetter("metadata"), id="metadata"),
+        pytest.param(methodcaller("clone"), id="clone"),
+    ],
+)
+def test_frame_link_reads_raise_cleaned_runtime_error_after_cleanup(read: Callable[[FrameLink], object]) -> None:
+    """
+    Verify every public read of a cleaned link raises the documented `RuntimeError`.
+
+    Args:
+        read: One public property or method read of the link.
+
+    Returns:
+        None.
+    """
+    link = FrameLink(frame_name="ops", source_kind="spell", source_id="spell-1", metadata={"source": "compiled"})
+    link.cleanup()
+
+    with pytest.raises(RuntimeError, match="FrameLink has already been cleaned"):
+        read(link)
+
+
+def test_frame_link_concurrent_cleanup_tears_down_once_and_both_callers_return() -> None:
+    """
+    Verify two concurrent cleanups tear the link down once and both return, with the GIL off as on.
+
+    The handshake holds the first caller inside the lock until the second has passed the outer check and is about to
+    block, then lets the first run the real teardown. The second must return at the in-lock recheck: had it torn
+    down again it would raise on the state the first deleted, and the handshake reports any caller's error. The
+    metadata map is held from before the cleanup, so the test sees it was cleared; a third call returns too
+    (GitHub #206 requirement 3).
+
+    Returns:
+        None.
+    """
+    link = FrameLink(
+        frame_name="ops",
+        source_kind="spell",
+        source_id="spell-1",
+        metadata={"record_key": ("book-1", "spell-1")},
+    )
+    metadata = link._metadata
+    handshake = CleanupRecheckHandshake()
+    link._lock = handshake.lock
+
+    handshake.run(link.cleanup)
+
+    assert link.cleaned is True
+    assert metadata == {}
+    with pytest.raises(RuntimeError, match="FrameLink has already been cleaned"):
+        link.clone()
     link.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/aether/test_frame_link_runtime_contracts.py
@@ -278396,11 +279204,9 @@ END FILE: tests/unit/melder/aether/test_nexus.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus_configuration.py
-CONTENT SHA256: 80c7c8f095dc177cc44e50261cf11f208fa879e50d7ca2c50e5cb604fe6bf4f0
+CONTENT SHA256: 498a230fb6a98bd31a3d4016dc26754cae05295b253f3b07f901aaf28ec4e88a
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.configuration.nexus_configuration import (
@@ -278411,6 +279217,7 @@ from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_valid_configuration() -> NexusConfiguration:
@@ -278457,47 +279264,22 @@ def test_nexus_configuration_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the config.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the config reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     configuration = NexusConfiguration()
-    coordinated_lock = _CoordinatedLock()
-    configuration._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    configuration._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(configuration.cleanup)
 
-    def _run_cleanup() -> None:
-        configuration.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert configuration.cleaned is True
     assert not hasattr(configuration, '_lock')
 
@@ -284096,11 +284878,9 @@ END FILE: tests/unit/melder/aether/test_rift_access_mode.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_rift_configuration.py
-CONTENT SHA256: 3d2962cd61f1bcf4d35795d534a77a675451579101afaa98ffdb13a6206c23de
+CONTENT SHA256: c8e41360d52acce14f8e218742b727a415beef9dd9f7ed76002e5e3c770de030
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.nexus.configuration.rift_configuration import RiftConfiguration
@@ -284108,6 +284888,7 @@ from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _build_valid_configuration() -> RiftConfiguration:
@@ -284147,45 +284928,23 @@ def test_rift_configuration_cleanup_is_idempotent() -> None:
 def test_rift_configuration_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread already cleaned the config.
+
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the config reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Returns:
+        None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     configuration = RiftConfiguration()
-    coordinated_lock = _CoordinatedLock()
-    configuration._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    configuration._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(configuration.cleanup)
 
-    def _run_cleanup() -> None:
-        configuration.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert configuration.cleaned is True
     assert not hasattr(configuration, '_lock')
 
@@ -301105,7 +301864,7 @@ END FILE: tests/unit/melder/crystallizer/test_crystallizer_configuration_restore
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_crystallizer_gates.py
-CONTENT SHA256: 739cb8f27f39920a106134f78a579a8d8636acdec6394028bdeddc5648079cc8
+CONTENT SHA256: 9b2824db27e124bed3bea17ca8141e2396cf542c2cc7a12c9eb5503582174433
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -301239,7 +301998,7 @@ def test_recorded_unit_state_enum_contract():
     Purpose:
         Verify the state-switch enum's public shape.
     Contract:
-        Exactly three members (enabled/disabled/cleaned); each member's
+        Exactly three members (enabled/disabled/CLEANED); each member's
         value equals its name (describe consumers read stable strings).
     Returns:
         None.
@@ -301247,7 +302006,7 @@ def test_recorded_unit_state_enum_contract():
         AssertionError: If the enum shape drifts.
     """
     assert {member.name for member in RecordedUnitState} == {
-        "enabled", "disabled", "cleaned",
+        "enabled", "disabled", "CLEANED",
     }
     for member in RecordedUnitState:
         assert member.value == member.name
@@ -337086,11 +337845,10 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_require
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_parameter_requirements.py
-CONTENT SHA256: 6edb464816cc9d0ea821483feb10acf14da9bd5dde53a0af3f16ab0e8416b76a
+CONTENT SHA256: 0cf54c4ab9878e5e6f287710c789005bde74c7a0f34652fe34168585363ac3f2
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
-import threading
 
 import pytest
 
@@ -337101,6 +337859,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _make_requirement(
@@ -337182,47 +337941,41 @@ def test_cleanup_nulls_and_blocks_property_access():
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
-    class _CoordinatedLock:
-        def __init__(self, requirement: SpellParameterRequirement) -> None:
-            self._requirement = requirement
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    """
+    Verify a second cleanup caller that passed the outer check returns at the inner `_cleaned` recheck.
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._requirement._cleaned = True
-            return self
+    The handshake holds the first caller inside the lock until the second has passed the outer check and is about
+    to block, then marks the requirement cleaned, as a cleanup racing in from elsewhere would. Both callers must
+    return at the inner recheck and finish without raising - without it the teardown would run twice and the
+    second run would raise on attributes the first had already deleted - and the requirement must read cleaned.
+    The handshake also fails the test if either caller is still running after its bounded join. The callers are
+    ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal and failed on CI
+    (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     req = _make_requirement()
-    req._lock = _CoordinatedLock(req)
 
-    thread = threading.Thread(target=req.cleanup)
-    thread.start()
-    assert req._lock._entered_first.wait(timeout=1.0)
-    req.cleanup()
-    thread.join(timeout=1.0)
+    def _mark_cleaned() -> None:
+        """Mark the requirement cleaned while the first caller holds the lock and the second waits for it."""
+        req._cleaned = True
+
+    handshake = CleanupRecheckHandshake(on_holder_ready=_mark_cleaned)
+    req._lock = handshake.lock
+
+    handshake.run(req.cleanup)
 
     assert req.cleaned is True
-    assert thread.is_alive() is False
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_parameter_requirements.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_requirements.py
-CONTENT SHA256: 80c0849fc2e5a06ed39defd663ad474e63a53250df07b7bf7a50c396f61d22be
+CONTENT SHA256: c04451a4b7ce04525f7f1583db235611b0daa77e53093fa1bc7a0a4b1c7eae30
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
-import threading
 
 import pytest
 
@@ -337237,6 +337990,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requ
     SpellRequirements,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _param(name: str, shape: ParameterDIShape, has_default: bool = False):
@@ -337379,28 +338133,17 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread marks the object cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup and marks the requirements cleaned. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the
+    requirements read cleaned with their `_lock` dropped. The callers are ordered by the handshake, not by timing:
+    the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     reqs = SpellRequirements(
         spell_id="sid",
         spell_type=SpellType.SPELL,
@@ -337409,24 +338152,11 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
         binding_name=None,
         parameters=[],
     )
-    coordinated_lock = _CoordinatedLock()
-    reqs._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    reqs._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(reqs.cleanup)
 
-    def _run_cleanup() -> None:
-        reqs.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert reqs.cleaned is True
     assert not hasattr(reqs, '_lock')
 ================================================================================
@@ -337434,13 +338164,12 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_require
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_requirements_finder.py
-CONTENT SHA256: 2cee845c90ff35e8824556e75a29eb2317795fcdf088a9aa6c14aefdf0ef3348
+CONTENT SHA256: eb3de0e566131f1ef20d61bac2d68e6f4ff1cfb8bf0796f542316d03e341a848
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
 import builtins
 import inspect
-import threading
 import typing
 from types import SimpleNamespace
 from typing import List, Optional, Union, get_args, get_origin
@@ -337472,6 +338201,7 @@ from melder.utilities.custom_exceptions.operation_cancelled_error import (
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEventSignal,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 class _StubSpellbook:
@@ -337565,28 +338295,28 @@ def test_build_requirements_is_cached_until_cleanup():
     assert r3 is not r1
 
 
-def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside_lock():
+def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup swallows a requirements cleanup error, and a second concurrent caller returns at the inner
+    `_cleaned` recheck.
+
+    First phase, single-threaded: a requirements object whose `cleanup()` raises RuntimeError must not stop the
+    finder's cleanup, which still marks the finder cleaned.
+
+    Second phase, on a fresh finder: the handshake holds the first caller inside the lock until the second has
+    passed the outer `_cleaned` check and is about to block; the first caller then runs the real cleanup. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the finder
+    reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier
+    hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Returns:
+        None.
+    """
     class ExplodingRequirements:
         def cleanup(self):
             raise RuntimeError("boom")
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
 
     finder = SpellRequirementsFinder(_make_spell(lambda: None))
     finder._requirements = ExplodingRequirements()
@@ -337594,23 +338324,11 @@ def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside
     assert finder.cleaned is True
 
     finder = SpellRequirementsFinder(_make_spell(lambda: None))
-    coordinated_lock = _CoordinatedLock()
-    finder._lock = coordinated_lock
-    thread_results = []
+    handshake = CleanupRecheckHandshake()
+    finder._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        finder.cleanup()
-        thread_results.append(True)
+    handshake.run(finder.cleanup)
 
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert finder.cleaned is True
     assert not hasattr(finder, '_lock')
 
@@ -340428,11 +341146,9 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/test_spell_ex
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_symbolic_dependency.py
-CONTENT SHA256: af03e6fee0fe3828b3e2eeac4a0a0873914e50db45475cc2dbcd6ec57f0b8e78
+CONTENT SHA256: 9446aa5480b0c60ca41b39096e0dc9986eeadfb83c5724c6dbecc412fb840414
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -340441,6 +341157,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency import (
     SpellSymbolicDependency,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _dep(**overrides):
@@ -340590,47 +341307,23 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread marks the dependency cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup and marks the dependency cleaned. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the
+    dependency reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by timing:
+    the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     dep = _dep()
-    coordinated_lock = _CoordinatedLock()
-    dep._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    dep._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(dep.cleanup)
 
-    def _run_cleanup() -> None:
-        dep.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert dep.cleaned is True
     assert not hasattr(dep, '_lock')
 ================================================================================
@@ -340638,16 +341331,15 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_sy
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/symbolic_graph/test_spell_symbolic_graph.py
-CONTENT SHA256: c0642ce1f4a43e4c7226143ca0c66fbeaf9578a6fc13ba82a575bc51017fd034
+CONTENT SHA256: 54ce76900486560ee0e223d50ccc97f60220ba11d5bf8e1cd14b37d4d2e161c7
 SOURCE ENCODING: utf-8
 ================================================================================
-import threading
-
 import pytest
 
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 class _Dep:
@@ -340759,47 +341451,23 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread marks the graph cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup and marks the graph cleaned. The second
+    caller must return at the inner recheck - without it the teardown would run twice and a caller would raise on
+    an attribute the other had already deleted - so both callers finish without raising and the graph reads
+    cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier
+    hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     graph = _graph([])
-    coordinated_lock = _CoordinatedLock()
-    graph._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    graph._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(graph.cleanup)
 
-    def _run_cleanup() -> None:
-        graph.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert graph.cleaned is True
     assert not hasattr(graph, '_lock')
 
@@ -373697,6 +374365,48 @@ def test_managed_spell_quantity_surface_is_loaded():
         assert name in melder.__all__
 ================================================================================
 END FILE: tests/unit/melder/test_package_public_surface.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/test_package_ships_no_scratch_modules.py
+CONTENT SHA256: bd3a18bf0b8319d6daadeab625847662676426c4557490f08614bab3a055fa3b
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit test: the melder package ships no scratch module.
+
+WHY THIS EXISTS. TASK-2026-10-16-remove_scratch_marker_from_src (GitHub #256): a 35-byte scratch marker,
+`generalized_cache_runtime_rows_SCRATCH.py` (`# scratch marker - replaced below`), sat under
+`src/melder/.../generalized/compilers/` from 6d0568f2e until 0.2.8284. Nothing imported it, but it shipped in the
+wheel and the generated system documents listed it as a module. This test fails if a scratch-named module ever
+lands under the package again.
+"""
+from pathlib import Path
+from typing import List
+
+import melder
+
+
+def test_no_scratch_module_ships_in_the_melder_package() -> None:
+    """
+    Verify no Python module under the melder package carries "scratch" in its file name.
+
+    Contract:
+        - Walks the imported package's directory (what a build ships), every `.py` file at any depth.
+        - Fails naming each offending path, relative to the package, so the leftover is easy to find.
+
+    Returns:
+        None.
+    """
+    package_root = Path(melder.__file__).resolve().parent
+    offenders: List[str] = sorted(
+        path.relative_to(package_root).as_posix()
+        for path in package_root.rglob("*.py")
+        if "scratch" in path.name.lower()
+    )
+
+    assert offenders == [], f"Scratch modules ship in the melder package: {offenders}"
+================================================================================
+END FILE: tests/unit/melder/test_package_ships_no_scratch_modules.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/test_package_version_metadata.py

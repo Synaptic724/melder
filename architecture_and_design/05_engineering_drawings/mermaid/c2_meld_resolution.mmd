@@ -1,6 +1,6 @@
 flowchart LR
     accTitle: Melder C2 meld resolution
-    accDescr: A caller enters through Conduit meld. The conduit admits the request through its CreationGate, Meld resolves a Spell, lineage and dirty-root gates may lazily rerun structural and resolution phases, CreationContext executes the compiled creation lane, and Existence selects owner, conduit, or SpellSpace lifetime storage before the instance returns.
+    accDescr: A caller enters through Conduit meld. The conduit admits the request through its CreationGate, Meld resolves a Spell, lineage and dirty-root gates may lazily rerun structural and resolution phases, CreationContext executes the compiled creation lane, and Existence selects owner, conduit, or SpellSpace lifetime storage, or leases a managed object from the pool in its owner root's store, before the instance returns.
 
     caller["Caller"]
 
@@ -20,6 +20,7 @@ flowchart LR
         owner["Owner Creations<br/>unique · lineage · cluster"]
         local["ConduitCreations<br/>per-conduit · many"]
         request["SpellSpace Creations<br/>request-local"]
+        managed["Managed pool<br/>owner root's store · leased"]
         failure["Typed refusal<br/>validation · dirty root · scope"]
         result["Resolved instance<br/>post-resolve hook"]
 
@@ -35,10 +36,12 @@ flowchart LR
         context -->|"execute"| lifetime
         lifetime -->|"shared owner"| owner
         lifetime -->|"caller scope"| local
-        lifetime -->|"active request"| request
+        lifetime -->|"leased SpellSpace only"| request
+        lifetime -->|"managed lease"| managed
         owner --> result
         local --> result
         request --> result
+        managed --> result
     end
 
     caller -->|"meld(target, overrides)"| conduit
@@ -54,5 +57,5 @@ flowchart LR
     class conduit,resolver,context,result execution
     class gates,states,change governance
     class structural,resolution definition
-    class owner,local,request storage
+    class owner,local,request,managed storage
     class failure failure
