@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus.py",
- "source_sha256": "d98e825a39690950515fcff4382d6cf308c546d191a89c7c54b1f48e15573ecc",
+ "source_sha256": "3bf099c0ff5443511cf3ba5782030ef25e495061c223b0546be64c7e71a144ca",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus": {
@@ -23,7 +23,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "9b8ad52e4f1709dde861fb00877b610e82383e581ccab663f44918ddc4dbd689"
+   "semantics_authored_against": ""
   },
   "melder.nexus.nexus.Nexus": {
    "id": "melder.nexus.nexus.Nexus",
@@ -93,11 +93,11 @@
     "set_rift_gate_entry_mode"
    ],
    "shape": {
-    "method_count": 95,
+    "method_count": 96,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e171048a919013dfd6bb82de4b7f4f187e93ba9a645bd3f01f7e2e6a61413b58",
+   "span_sha256": "8aac0c85fa771a7fd823a7de2073a6a74e9e6b96a4cf01d3dc18af737bb85b7e",
    "role": "Public AR root.",
    "responsibilities": [
     "creates and registers live Rift instances",
@@ -106,7 +106,9 @@
     "owns frame ACL management",
     "coordinates projection refresh across affected Rifts",
     "facades existing-ID pooled publication without refreshing admitted Rift commands",
-    "keeps its installed policy while active: configure, and activate with another configuration, refuse until deactivate"
+    "keeps its installed policy while active: configure, and activate with another configuration, refuse until deactivate",
+    "reserves and gives back target-frame budget slots for Rift attaches under its class-level lock",
+    "removes a Rift by marking it cleaned and taking its attached frames in one step inside its locked registry phase, decrementing exactly those frames, and tearing it down after releasing its lock"
    ],
    "owns_state": [
     "_rifts_by_id",
@@ -114,7 +116,8 @@
     "_frame_acl_manager",
     "_frame_manager",
     "_rift_gate_controller",
-    "_configuration"
+    "_configuration",
+    "_target_frame_ref_counts"
    ],
    "phases": [
     "init",
@@ -122,7 +125,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "fed73958c9e7ff2514407cade997110c9ba5faba67627aa9f61918a6d7895ab5"
+   "semantics_authored_against": "8aac0c85fa771a7fd823a7de2073a6a74e9e6b96a4cf01d3dc18af737bb85b7e"
   }
  },
  "edges_out": [

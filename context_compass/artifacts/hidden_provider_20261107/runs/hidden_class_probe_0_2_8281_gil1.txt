@@ -1,0 +1,843 @@
+hidden_class_probe on melder 0.2.8281, python 3.14.7, gil_enabled=True
+[protocol | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNSZYRBPBM7YQ6FXCP0T>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNVWHQ50AKB89JYTSX7S>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it: list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name=None) - use list[Greeter]. Gather it where it is bound, as shown, bind English bare, or make the parameter optional. [collection_socket_no_providers]
+[protocol | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBNW9H40VTTHZG3C8S65V>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNWGQDG4TKE440WS0C7A>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[protocol | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[protocol | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNX2V9W291HZ8C3VCKFX>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name=None) - use SpellMap(spellframe=Greeter). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNXHSMT24C5PBKK9M84Y>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNY10WZHD90NGJCWAJBV>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it: list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use list[Greeter]. Gather it where it is bound, as shown, bind English bare, or make the parameter optional. [collection_socket_no_providers]
+[protocol_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBNYDSA2E1FGDB93SCJGZ>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNYKQ6PBEDFMS2QX33A8>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol_named | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNZ5QFHXB48J33MYY9MV>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[protocol_named | spellmap_named | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+[protocol_named | spellmap_named | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+[protocol_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBNZNQDY8CZSZ24WZA10Q>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', 'english')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+[category | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP0GG8Q5125SD7VZSNDC>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP11H7SBRGFA00MDKCDZ>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it: list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name=None) - use list['greeters']. Gather it where it is bound, as shown, bind English bare, or make the parameter optional. [collection_socket_no_providers]
+[category | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBP1DBBZTQJTWE99R77Z5>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP1KQHRR36YGJKV3MJSR>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[category | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[category | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP240CN2PJ9QXBD5TVFP>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name=None) - use SpellMap(spellframe='greeters'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[category_named | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category_named | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP2MKH1B18T9SJ0X33QJ>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category_named | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category_named | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP33AEKE2YPP8GBAMREY>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[category_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it: list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='greeters', binding_name='english') - use list['greeters']. Gather it where it is bound, as shown, bind English bare, or make the parameter optional. [collection_socket_no_providers]
+[category_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBP3GJS4DMH5T66MEFRGT>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP3QQG6YGC5YSZEG9GWX>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category_named | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[category_named | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[category_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP49DVVSBP9SB7RNNM14>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[category_named | spellmap_named | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+[category_named | spellmap_named | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+[category_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP4TNZJSWD49S7J7BNC6>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', 'english')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed' has the default SpellMap(English, binding_name='english'), a class lookup that reaches English only where it is bound bare under the binding name 'english', but English is bound only where that lookup does not reach: English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare under the binding name 'english'. [HIDDEN_PROVIDER]
+[bare_named | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP5DZDPG4WCM8QFF7TXV>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP5X03S9KFREX0STRBJD>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it: list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is bound only under a binding name: English at (spellframe=None, binding_name='english') - use list['English']. Gather it where it is bound, as shown, bind English bare, or make the parameter optional. [collection_socket_no_providers]
+[bare_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBP6A9AD310AQTS1PEFG7>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[bare_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP6HMRPN58J363HHR40Y>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[bare_named | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP739GGJZ6KQQ895BWZ7>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe=None, binding_name='english') - use SpellMap(English, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[bare_named | spellmap_named | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBP79Z0JETZQD316QJ6PW>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[bare_named | spellmap_named | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBP7G7KKWM2FXBM78SYJJ>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[bare_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP7P29FVWMB7EVA6AY12>
+    late bind consumer: ok -> 325b7a3f15c2e2b6360eb1c582e6a67e20e7a82ab937f89c283aae1c1482a706
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[two_frames | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP88T0T6MFA7VP4XAGKA>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP8VGNV47J7PT59FYV4D>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'); English at (spellframe='greeters', binding_name='english') - use SpellMap(spellframe='greeters', binding_name='english'). Ask for it where it is bound - the SpellMap of the one it needs, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it: list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use list[Greeter]; English at (spellframe='greeters', binding_name='english') - use list['greeters']. Gather it where it is bound, as shown, bind English bare, or make the parameter optional. [collection_socket_no_providers]
+[two_frames | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBP992J5M8A8574Z5QDF4>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[two_frames | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBP9FWZP1649NSQDV50WB>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[two_frames | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[two_frames | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPA2BSNH4RXXFDAFCHHH>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the default binding, but English is bound only where that lookup does not reach: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Point the SpellMap at the address it means, as shown, or bind English bare. [HIDDEN_PROVIDER]
+[CONTROL_bare | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPA8HMEFGF5HVZ76YKHG>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPAFZ0WPCQT1GX11BDTY>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPAMMEZX03KAV4XJ0K84>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPAX13RC9V6QA0VKGR4D>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPB48F8219DBTVJF44WK>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPBAREPV1PVGFCMGPFMV>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | list_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPBK8MX2H7QWSN546N89>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPBTN55PPQV1EBDC4NYE>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPC36J8N91XCRZ32R58H>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | spellmap_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPCEQHXQDB8G8571RGA6>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare | spellmap_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPCQAS4BHP29XD6D3YP9>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPD02HH4D1QYHSF38HJ8>
+    late bind consumer: ok -> 8b42bd043aeac301c05baa0171a22939d146c736e7c6bf9a2b518ab9ee5eed57
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPDCPT8C1C8FJKXHRC5T>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPDNYH3P1R2B2Y4Y6ZDN>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPDZBRCKM6BEK54JQPYH>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPE96QDQAEHSZMMGPW15>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPEHNGBQ2MYHBMRRQVWK>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPEQYBR3D4FMCQ320DWW>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | list_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPF0YAFGQH23DD5MBG9B>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPF8XTZQQDRT2DBFDA44>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPFFTKN0VKGE8Z25G75T>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | spellmap_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPFSNNDTDVPX6A3EARQ6>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | spellmap_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPG1NY3CJ9Q6298SBE9A>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPG8P2WQJA99173S9WEJ>
+    late bind consumer: ok -> 8b42bd043aeac301c05baa0171a22939d146c736e7c6bf9a2b518ab9ee5eed57
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_none | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPGH7MQTWFZTF3W4Y7W5>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPGQSA4QEENARN0EZD2W>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPGV8S5MKB8V222DJD13>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPH4YWME3PSVD0H9S8DJ>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPH94D4FMFEXX1KB1NDD>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPHE513FDRD7QYSKKWXW>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[CONTROL_none | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VRBPHTMXCZW81QW99HK9NS>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_none | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPHY7ZSC9N4Z24BHRQV3>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_none | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_none | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_none | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VRBPJDN7YS25EMD45E4W61>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[AMBIGUOUS control | ByProtocol (greeter: Greeter) | dynamic late-bound consumer]
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+    consumer still registered after a refused bind: True
+    sockets: greeter:AMBIGUOUS_INPUT targets=0 refs=2 key=('greeter', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+[ORDER framed | single_class | dynamic: consumer conjured unresolved, English bound late]
+    sockets before: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    late bind English: ok -> 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+    sockets after meld: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+[ORDER bare | single_class | dynamic: consumer conjured unresolved, English bound late]
+    sockets before: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    late bind English: ok -> 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f
+    meld(consumer): ok -> SingleClass
+    sockets after meld: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+[DOOR | meld(English) with English under Greeter | automatic]
+    meld(English): RAISES KeyError
+        | "[MELD] No spell found for frame='english', binding='__default__'."

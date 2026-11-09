@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py",
- "source_sha256": "541777c9412ed2a24539dd0aef75af8956e8412b6dd53f0b7258a2c7bff1fa69",
+ "source_sha256": "d3f869611b5eca352caa3f004dd50f985e181752217d0f55c14ea0e4dafe251b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering": {
@@ -158,7 +158,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7ac6ae712ceca7638512943cc18134d9d5083e50a652222ce5a30e69ba6971fb",
+   "span_sha256": "f6bc51e54bd14c22e80bb7a21b2ca7083c637bdabb00293e01705539e5c6b620",
    "include": true,
    "role": "Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.",
    "responsibilities": [

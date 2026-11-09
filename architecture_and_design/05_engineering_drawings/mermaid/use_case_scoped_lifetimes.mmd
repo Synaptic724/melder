@@ -1,6 +1,6 @@
 flowchart LR
     accTitle: Scoped lifetime use cases
-    accDescr: A developer selects an Existence policy when binding. Application code resolves objects whose reuse boundary may be the AethericFrame, conduit lineage or cluster, one Conduit, an active SpellSpace, or one meld call. Operators can inspect live-creation status without constructing and clean scopes deterministically in narrow-to-broad order.
+    accDescr: A developer selects an Existence policy when binding. Application code resolves objects whose reuse boundary may be the AethericFrame, conduit lineage or cluster, one Conduit, a leased SpellSpace, one meld call, or a root-owned pool that leases each object until its holder releases it through ReleaseManagedSpell. Operators can inspect live-creation status without constructing and clean scopes deterministically in narrow-to-broad order.
 
     developer["Developer / service author"]
     app["Application workload"]
@@ -13,8 +13,9 @@ flowchart LR
         frame(["Frame singleton<br/>unique"])
         shared(["Shared subsystem instance<br/>unique_per_conduit_lineage<br/>unique_per_conduit_cluster"])
         conduit(["Conduit-local instance<br/>unique_per_conduit"])
-        request(["Active request instance<br/>unique_per_spell_space"])
+        request(["Request-local instance<br/>unique_per_spell_space<br/>only via a leased SpellSpace"])
         transient(["New instance per resolve<br/>many"])
+        managed(["Leased pool object<br/>managed_spell_quantity<br/>released via ReleaseManagedSpell"])
         probe(["Inspect live status<br/>no-create probe<br/>presence · scope · count"])
         cleanup(["Clean deterministic scopes<br/>narrow before broad"])
 
@@ -24,10 +25,12 @@ flowchart LR
         resolve -.->|"selects"| conduit
         resolve -.->|"selects"| request
         resolve -.->|"selects"| transient
+        resolve -.->|"selects"| managed
         request -.->|"requires"| cleanup
         conduit -.->|"owned by"| cleanup
         shared -.->|"owned by"| cleanup
         frame -.->|"owned by"| cleanup
+        managed -.->|"idle objects owned by"| cleanup
     end
 
     developer --> choose
@@ -43,5 +46,5 @@ flowchart LR
     class developer,app,operator actor
     class choose definition
     class frame,shared shared
-    class resolve,conduit,request,transient execution
+    class resolve,conduit,request,transient,managed execution
     class probe,cleanup governance

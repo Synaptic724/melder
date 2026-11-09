@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py",
- "source_sha256": "d37f41768ea519b5be249692b34accf6148a2c1044811e4a611a625e2811ff23",
+ "source_sha256": "b2c9e41533a26f644a438ec804bed3fdc1fafabc05bfc8563c87a558bfa18a17",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager": {
@@ -49,7 +49,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "42fe43c76a5907e06e6f2ea2f71474d3e4cb446028f7abdc080d1a251258d5c0",
+   "span_sha256": "b8dc69fe13ae727108d8e7e07d491f8925a4922bc4cde325ddd76d2caec113e1",
    "role": "Transaction-bookkeeping root for change-control admission.",
    "responsibilities": [
     "builds immutable transaction requests before admission",

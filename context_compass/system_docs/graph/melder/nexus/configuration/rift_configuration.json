@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_configuration.py",
- "source_sha256": "dfbd3cf426712ee53c26f7fd00da5265483d5d2a57bea1cf09e2fefc27f5a6e8",
+ "source_sha256": "1cff4ac9f5b28d67767abe3f6ab22d61cdd158d3704aaa4b313b8af2f2b7dd43",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_configuration": {
@@ -26,7 +26,7 @@
    "label": "RiftConfiguration",
    "kind": "class",
    "file": "src/melder/nexus/configuration/rift_configuration.py",
-   "lineno": 11,
+   "lineno": 12,
    "bases": [
     "Cleanable"
    ],
@@ -56,7 +56,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "03170b610118805d89398df2b45dfcf1578113c0978f3842cad6fa9ec2cc5de8",
+   "span_sha256": "f31b5eaf32baea71c9a585611164cf649504974f0ce453f9d09d4fe123f04f10",
    "role": "Per-Rift configuration object used to build one live Rift.",
    "responsibilities": [
     "stores typed room/runtime defaults for one Rift",
@@ -111,6 +111,7 @@
  "published_aliases": [],
  "imports": {
   "threading": "threading",
+  "Enum": "enum.Enum",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",

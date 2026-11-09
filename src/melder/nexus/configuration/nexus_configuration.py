@@ -663,17 +663,17 @@ class NexusConfiguration(Cleanable):
             if crystallizer.activated:
                 configuration_payload: Dict[str, object] = {}
                 for property_name, property_value in self._properties.items():
-                    if (
-                            isinstance(property_value, (str, int, float, bool))
-                            or property_value is None
-                    ):
-                        configuration_payload[property_name] = property_value
-                    elif isinstance(property_value, Enum):
+                    if isinstance(property_value, Enum):
                         # Record fidelity: member NAME round-trips through
                         # the reload lane's enum conversion.
                         configuration_payload[property_name] = (
                             property_value.name
                         )
+                    elif (
+                            isinstance(property_value, (str, int, float, bool))
+                            or property_value is None
+                    ):
+                        configuration_payload[property_name] = property_value
                     elif isinstance(
                             property_value, (list, tuple, set, frozenset)
                     ):
@@ -1895,6 +1895,10 @@ class NexusConfiguration(Cleanable):
 
         Normalize enum-backed and sequence-backed properties before storage.
 
+        Contract:
+            The legacy dynamic room selector is accepted only as a non-enum string;
+            foreign enum families are rejected by the native enum helper.
+
         Args:
             key:
                 Property name being assigned.
@@ -1911,7 +1915,7 @@ class NexusConfiguration(Cleanable):
         if key == "nexus_frame_mode":
             return EnumHelpers.convert_enum_and_check(value, NexusFrameMode)
         if key == "default_space_type":
-            if value == "dynamic":
+            if isinstance(value, str) and not isinstance(value, Enum) and value == "dynamic":
                 value = RiftSpaceType.codegen
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)
         if key == "default_validation_mode":

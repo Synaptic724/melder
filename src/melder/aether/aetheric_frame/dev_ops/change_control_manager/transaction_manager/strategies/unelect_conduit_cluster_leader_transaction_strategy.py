@@ -134,7 +134,7 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         for conduit_id in sorted(member_conduit_ids):
             scope = transaction_manager.make_scope_key_conduit(conduit_id)
             scope_keys.add(scope)
-            scope_claims.append((scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((scope, ClaimMode.EXCLUSIVE.wire_value))
 
         normalized_metadata = dict(metadata)
         normalized_metadata["transaction_identity"] = identity.describe()

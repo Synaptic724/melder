@@ -989,14 +989,34 @@ def test_probe_an_empty_conjured_frame_is_linkable():
     print("late bind pinned: spells are cargo, not a precondition")
 
 
-def test_probe_two_visible_spells_may_not_share_a_name():
-    """Lesson 30 claim: a distinct `binding_name` does NOT settle a
-    duplicate spell name.
+def test_probe_two_spells_may_share_a_name_but_never_an_address():
+    """Lesson 30 claim, CORRECTED (0.2.8206; re-measured 2026-11-07): a
+    spell NAME is not unique - an ADDRESS is.
 
-    Two INDEPENDENT binds make both spells visible at once, so a shared
-    class name makes `meld(spell_name=...)` ambiguous and the post-conjure
-    structural validator refuses. This is why 30's two generated modules
-    declare ReportBase and ReportDonor rather than Report twice."""
+    An address is (frame_key, binding_key): the spellframe, or the spell's
+    own name when it is bound bare, and the binding_name, both lowercased.
+    Two INDEPENDENT classes both NAMED Alpha, under distinct binding_names,
+    sit at two addresses: both bind - the second one AFTER conjure, on this
+    dynamic frame - and each meld by ("Alpha", binding_name) builds its own
+    class. A third class NAMED Alpha bound at an address one of them holds
+    ("PROBE-DUP-ONE" is "probe-dup-one") is refused AT BIND by the
+    frame-wide claim - one active spell per address per frame,
+    `Spellbook.bind` -> `AethericFrame.claim_lookup` ->
+    `LookupContainer.claim`, RuntimeError - before any validator runs, and
+    the holder keeps serving its address.
+
+    This row used to pin the pre-0.2.8206 rule: "a distinct `binding_name`
+    does NOT settle a duplicate spell name", the post-conjure structural
+    validator refusing the second bind with DUPLICATE_SPELL_NAME; it was
+    the reason 30's two generated modules declare ReportBase and
+    ReportDonor rather than Report twice. Since 0.2.8206 Phase 4
+    (DuplicateSpellNameStrategy) checks the full address, so that bind
+    stands and the row went red (DID NOT RAISE). Every path that registers
+    a spell was re-measured on 2026-11-07 by
+    context_compass/artifacts/duplicate_address_paths_20261107 (rows P01
+    and P02, shapes N-scope and N-case, are this probe's refusing half);
+    the contract probes' potato row pins the same-name half before
+    conjure."""
     frame_name = "probe-dupname-frame"
     book = _frame(frame_name)
 
@@ -1004,26 +1024,37 @@ def test_probe_two_visible_spells_may_not_share_a_name():
         def __init__(self) -> None:
             self.tag = "a"
 
-    Beta = type("Alpha", (), {"__init__": lambda self: None})
+    # Another class NAMED Alpha with other code, so another spell_id.
+    Beta = type("Alpha", (), {"__init__": lambda self: setattr(self, "tag", "b")})
+    # A third class NAMED Alpha, for the address Alpha holds.
+    Gamma = type("Alpha", (), {"__init__": lambda self: setattr(self, "tag", "c")})
 
-    # Same order the failing run took: bind, conjure, then the SECOND bind
-    # is what trips the post-conjure structural validator.
+    # Same order the original run took: bind, conjure, then the SECOND
+    # bind - post-conjure, on this dynamic frame. It used to trip the
+    # post-conjure structural validator; since 0.2.8206 it stands, because
+    # its ADDRESS differs.
     book.bind(spell=Alpha, existence="unique", permissions="create",
               binding_name="probe-dup-one")
-    book.conjure(name="probe-dup-root")
+    root = book.conjure(name="probe-dup-root")
+    book.bind(spell=Beta, existence="unique", permissions="create",
+              binding_name="probe-dup-two")
+    assert root.meld("Alpha", binding_name="probe-dup-one").tag == "a"
+    assert root.meld("Alpha", binding_name="probe-dup-two").tag == "b"
 
-    with pytest.raises(Exception) as collision:
-        book.bind(spell=Beta, existence="unique", permissions="create",
-                  binding_name="probe-dup-two")
+    with pytest.raises(RuntimeError) as collision:
+        book.bind(spell=Gamma, existence="unique", permissions="create",
+                  binding_name="PROBE-DUP-ONE")
     message = str(collision.value)
     # Specific, not incidental: the class name would appear in almost any
-    # error, so pin the validator's own strategy verdict instead.
-    assert "DUPLICATE_SPELL_NAME" in message, message
-    assert "probe-dup-one" in message and "probe-dup-two" in message, (
-        "both binding names should appear - which is the proof that a "
-        "DISTINCT binding_name did not settle the collision"
+    # error, so pin the frame claim's own verdict and the address it names
+    # - lowercased, because an address is case-insensitive.
+    assert "Binding signature already active in this frame" in message, message
+    assert "frame_key='alpha', binding_name='probe-dup-one'" in message, message
+    assert root.meld("Alpha", binding_name="probe-dup-one").tag == "a", (
+        "the holder keeps serving its address after the refusal"
     )
-    print("duplicate name pinned: distinct binding_name did not save it")
+    print("one name, two addresses: both serve; a held address: "
+          "the second spell is refused at bind")
 
 
 def test_probe_a_part_miss_is_a_value_and_never_a_raise():

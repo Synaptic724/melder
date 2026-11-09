@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py",
- "source_sha256": "a6cdd379b592a7f68d8880a95ffc3055fa322d3ddb70e707368f05a433ab9763",
+ "source_sha256": "400b871c0426abaccdac3ea06663eaef6b9d186e4be07aeafed44204238b048a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis": {
@@ -37,7 +37,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "eb5bb7d454d2108f121ea931581c4cdb18422fcb4a6f0507812d23ab9409a327",
+   "span_sha256": "d4888d883fe9a93816683cd5a9fa51d5533ed3712706d30ea630e8224cbadd53",
    "include": true,
    "role": "One constructor parameter of one construction site, with the source of its default operand.",
    "responsibilities": [

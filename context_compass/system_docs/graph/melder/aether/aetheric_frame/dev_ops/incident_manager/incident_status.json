@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
- "source_sha256": "c1e1d14ef86ac8df0ebc1926ea0f15366a7b521bf0ebbc4836ad10ffdf5e281f",
+ "source_sha256": "00a2a597fc8a914981cfae6f916b9b71b0f0f0056c08d29561cc2a3e1c96db28",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status": {
@@ -19,18 +19,18 @@
    "label": "IncidentStatus",
    "kind": "enum",
    "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6e7b29345c89d1f840520ea3ad77ceb5a7edb93b10bbf78fc557ee052c852950",
+   "span_sha256": "bb122107d98e5ee2aceac91efcb9490653a70e6c500fe6c2f6d0bc3b60a61d57",
    "role": "Lifecycle status enum for incidents.",
    "responsibilities": [
     "labels open, acknowledged, resolved, and suppressed incident lifecycle states"
@@ -51,8 +51,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "auto": "enum.auto",
-  "Enum": "enum.Enum"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

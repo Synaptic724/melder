@@ -91,7 +91,7 @@ class RiftSpace(Cleanable):
     Registration:
         MELDER KERNEL. `StaticRiftSpace`, `CapabilityRiftSpace`, and
         `CodegenRiftSpace` are all melder-internal and constructed only inside `Rift`
-        (rift.py:917-933) from `space_type`; there is no injection seam - no room
+        (`Rift._create_primary_space_from_configuration`) from `space_type`; there is no injection seam - no room
         class kwarg, no factory hook.
 
     Subsystem Context:
@@ -281,6 +281,16 @@ class RiftSpace(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            Marks the room cleaned under the room lock and cleans its children
+            after releasing it. Agent paths take a child's lock and then the
+            room's - a weak workstation binding collected under the workstation
+            lock publishes its room event, a command leaving its action-hook
+            scope - so cleaning the children under the room lock could freeze
+            against them (GitHub #274, W4 and W6). `_cleaned`, set under the
+            lock, already refuses new room work. A cleanup that overlaps a
+            running one returns at once, before that teardown finishes.
         """
         if self._cleaned:
             return
@@ -288,38 +298,38 @@ class RiftSpace(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            if self._frame_viewer is not None:
-                self._frame_viewer.cleanup()
-            self._command_system.cleanup()
-            self._workstation.cleanup()
-            self._event_system.cleanup()
-            self._pre_category_hooks_by_name.clear()
-            self._post_category_hooks_by_name.clear()
-            self._pre_action_hooks_by_key.clear()
-            self._post_action_hooks_by_key.clear()
-            self._action_hook_keys_by_subscription_id.clear()
-            self._action_hook_depth_by_category.clear()
-            self._metadata.clear()
-            self._memory_system.cleanup()
+        # The children are cleaned after the room lock is released (GitHub #274, W4 and W6; see Threading).
+        if self._frame_viewer is not None:
+            self._frame_viewer.cleanup()
+        self._command_system.cleanup()
+        self._workstation.cleanup()
+        self._event_system.cleanup()
+        self._pre_category_hooks_by_name.clear()
+        self._post_category_hooks_by_name.clear()
+        self._pre_action_hooks_by_key.clear()
+        self._post_action_hooks_by_key.clear()
+        self._action_hook_keys_by_subscription_id.clear()
+        self._action_hook_depth_by_category.clear()
+        self._metadata.clear()
+        self._memory_system.cleanup()
 
-            del self._space_name
-            del self._owner_rift_id
-            del self._space_kind
-            del self._metadata
-            del self._frame_viewer
-            del self._rift_gate
-            del self._memory_system
-            del self._event_system
-            del self._workstation
-            del self._command_system
-            del self._pre_category_hooks_by_name
-            del self._post_category_hooks_by_name
-            del self._pre_action_hooks_by_key
-            del self._post_action_hooks_by_key
-            del self._action_hook_keys_by_subscription_id
-            del self._action_hook_depth_by_category
-            del self._id
-
+        del self._space_name
+        del self._owner_rift_id
+        del self._space_kind
+        del self._metadata
+        del self._frame_viewer
+        del self._rift_gate
+        del self._memory_system
+        del self._event_system
+        del self._workstation
+        del self._command_system
+        del self._pre_category_hooks_by_name
+        del self._post_category_hooks_by_name
+        del self._pre_action_hooks_by_key
+        del self._post_action_hooks_by_key
+        del self._action_hook_keys_by_subscription_id
+        del self._action_hook_depth_by_category
+        del self._id
         del self._lock
 
     def register_category_pre_hook(

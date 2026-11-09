@@ -236,10 +236,10 @@ def test_nexus_enable_disable_flip_the_recorded_state():
 def test_nexus_cleanup_records_cleaned_while_the_record_lives():
     """
     Purpose:
-        Verify the live-world teardown state ("cleaned") is recorded.
+        Verify the live-world teardown state ("CLEANED") is recorded.
     Contract:
         nexus.cleanup() with the crystallizer alive flips the recorded
-        state to "cleaned"; the twin remains configured-history.
+        state to "CLEANED"; the twin remains configured-history.
     Returns:
         None.
     Raises:
@@ -250,7 +250,7 @@ def test_nexus_cleanup_records_cleaned_while_the_record_lives():
     nexus.activate(configuration=NexusConfiguration().with_defaults())
     nexus.cleanup()
     summary = crystallizer.describe_profile()
-    assert summary["nexus_state"] == "cleaned"
+    assert summary["nexus_state"] == "CLEANED"
     assert summary["has_nexus_crystal"] is True
 
 
@@ -261,7 +261,7 @@ def test_mutation_research_lifecycle_records_all_three_states():
     Contract:
         Configuration activation emits the twin; activate records
         "enabled"; deactivate records "disabled"; cleanup (record alive)
-        records "cleaned"; the twin survives all three.
+        records "CLEANED"; the twin survives all three.
     Returns:
         None.
     Raises:
@@ -282,7 +282,7 @@ def test_mutation_research_lifecycle_records_all_three_states():
     )
     research.cleanup()
     summary = crystallizer.describe_profile()
-    assert summary["mutation_research_state"] == "cleaned"
+    assert summary["mutation_research_state"] == "CLEANED"
     assert summary["has_mutation_research_crystal"] is True
 
 

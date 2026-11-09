@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/general_helpers.py",
- "source_sha256": "dfcad5ec2937d9d77dada5310eb8502589ed6fe574d52b2c87655fcebd7961e3",
+ "source_sha256": "2c69eccc9ac472b4c6316dafc41bea830c50daa6cfc4419bf18f5d758dcf7cb5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.general_helpers": {
@@ -37,24 +37,25 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "e755095b1edebdeac284469bcc1e25c1641e17b8a26a8e3999ed98b1121b2fce",
+   "span_sha256": "649faf50f42909c8978bea471e4eb801775713b583e5c6d4912b937af1f53947",
    "role": "Stateless enum normalization helper.",
    "responsibilities": [
-    "converts raw strings into concrete enum members",
-    "rejects invalid or incompatible enum inputs early"
+    "resolves declared enum names and aliases case-insensitively, preserving existing lowercase-key precedence",
+    "returns requested-family members unchanged and refuses foreign enum inputs, including StrEnum",
+    "keeps type-sensitive validation results in the existing bounded 64-entry cache"
    ],
    "phases": [
     "init",
     "runtime"
    ],
-   "semantics_authored_against": "e755095b1edebdeac284469bcc1e25c1641e17b8a26a8e3999ed98b1121b2fce"
+   "semantics_authored_against": "649faf50f42909c8978bea471e4eb801775713b583e5c6d4912b937af1f53947"
   },
   "melder.utilities.helpers.general_helpers.SpellInputUtils": {
    "id": "melder.utilities.helpers.general_helpers.SpellInputUtils",
    "label": "SpellInputUtils",
    "kind": "class",
    "file": "src/melder/utilities/helpers/general_helpers.py",
-   "lineno": 112,
+   "lineno": 128,
    "bases": [],
    "markers": [],
    "public_methods": [

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
- "source_sha256": "64f8585bbffe3415971b514568d0ea9a014a38dc73e008f81912074bc31f07c8",
+ "source_sha256": "e129b889810ffff0a94806b3bd1819ee11477826772a478572b5171bc46ac5e5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile": {
@@ -22,15 +22,15 @@
    "lineno": 10,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7f49f63d865c152ee4b5e11b87444c587a04061646da9cfbbba1127163ab691b",
+   "span_sha256": "47e0b209d3dd537a7e45c8915b82713ecde6127fbff7054ca527670f925226c3",
    "role": "Enum classifying the raw binding shape of a candidate.",
    "responsibilities": [
     "labels class, callable, instance, and other binding kinds"
@@ -52,7 +52,7 @@
    "label": "SpellBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 23,
+   "lineno": 47,
    "bases": [
     "Cleanable"
    ],
@@ -87,7 +87,7 @@
    "label": "ClassBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 67,
+   "lineno": 91,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -135,7 +135,7 @@
    "label": "CallableParameterBindingSummary",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 235,
+   "lineno": 259,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -167,7 +167,7 @@
    "label": "CallableBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 270,
+   "lineno": 294,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -208,7 +208,7 @@
    "label": "InstanceBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 391,
+   "lineno": 415,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -243,7 +243,7 @@
    "label": "OtherBindingProfile",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-   "lineno": 450,
+   "lineno": 474,
    "bases": [
     "SpellBindingProfile"
    ],
@@ -310,8 +310,7 @@
  "published_aliases": [],
  "imports": {
   "inspect": "inspect",
-  "Enum": "enum.Enum",
-  "auto": "enum.auto",
+  "StrEnum": "enum.StrEnum",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "List": "typing.List",

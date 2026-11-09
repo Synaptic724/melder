@@ -1,5 +1,3 @@
-import threading
-
 import pytest
 
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
@@ -11,6 +9,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
     FrameACLRuleSet,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_acl_command_profile_init_rejects_empty_identity_fields() -> None:
@@ -120,38 +119,26 @@ def test_frame_acl_command_profile_cleanup_rechecks_cleaned_inside_lock() -> Non
     """
     Verify cleanup returns early when another thread marks the profile cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block, then marks the profile cleaned, as a cleanup racing in from elsewhere would. Both
+    callers must return at the inner recheck and finish without raising - without it the teardown would run
+    twice and the second run would raise on attributes the first had already deleted - and the profile must read
+    cleaned. The handshake also fails the test if either caller is still running after its bounded join. The
+    callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal and
+    failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self, profile: FrameACLCommandProfile) -> None:
-            self._profile = profile
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._profile._cleaned = True
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     profile = FrameACLCommandProfile("safe")
-    profile._lock = _CoordinatedLock(profile)
 
-    thread = threading.Thread(target=profile.cleanup)
-    thread.start()
-    assert profile._lock._entered_first.wait(timeout=1.0)
-    profile.cleanup()
-    thread.join(timeout=1.0)
+    def _mark_cleaned() -> None:
+        """Mark the profile cleaned while the first caller holds the lock and the second waits for it."""
+        profile._cleaned = True
+
+    handshake = CleanupRecheckHandshake(on_holder_ready=_mark_cleaned)
+    profile._lock = handshake.lock
+
+    handshake.run(profile.cleanup)
 
     assert profile.cleaned is True
-    assert thread.is_alive() is False

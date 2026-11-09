@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/staged_transaction.py",
- "source_sha256": "f698b9bd64c09a65043e02087bb9cf3d52d2e0f5ea9bed46707ed027589a1200",
+ "source_sha256": "a165746e0c46bfb3e4f7345334a473ad6ffca27e8967999ff9b83911e0ece1ae",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.staged_transaction": {
@@ -42,7 +42,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "74d9cc0fd1c4f9fc0a29f8fb52f915fca9a379615295910294f73e539faa76cc",
+   "span_sha256": "79b646b500fd28695bee94feddc9deee5cbe734a329c2b74d6b7caaa6dd86b98",
    "include": true,
    "role": "The immutable post-admission record - the inverse of a request: a request is what was ASKED FOR, this is what was GRANTED.",
    "responsibilities": [

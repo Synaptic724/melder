@@ -471,7 +471,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                         (
                             socket.param_name,
                             tuple(sorted(socket.target_spell_ids)),
-                            socket.socket_kind.value,
+                            SocketKind._legacy_code(socket.socket_kind),
                             socket.position,
                             socket.parameter_kind,
                             socket.is_collection,

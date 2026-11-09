@@ -1,0 +1,620 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [ 11%]
+........................................................................ [ 22%]
+.......................................................F................ [ 34%]
+....F................................................................... [ 45%]
+..............F......................................................... [ 57%]
+........................................................................ [ 68%]
+...........F...................................F........................ [ 80%]
+..................................F..................................... [ 91%]
+F.......................F................FF........                      [100%]
+================================== FAILURES ===================================
+____________ test_probe_policies_value_is_an_int_not_the_mode_name ____________
+[gw3] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_probe_policies_value_is_an_int_not_the_mode_name():
+        """Lesson 16 FINDING: Policies uses auto(), so `.value` is an INT.
+        Anyone reaching for `.value` to build the string argument gets a
+        number. `.name` is the string form."""
+        assert {p.name for p in md.Policies} == {
+            "default", "whitelist_all", "block_all",
+            "inbound_only", "outbound_only",
+        }
+        for policy in md.Policies:
+>           assert isinstance(policy.value, int)
+E           AssertionError: assert False
+E            +  where False = isinstance('default', int)
+E            +    where 'default' = <Policies.default: 'default'>.value
+
+UX_and_AIX_experiences\pytest_examples\test_advanced_probes.py:1090: AssertionError
+_____________ test_advanced_example_runs_green[16_ward_policies] ______________
+[gw0] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/03_advanced/16_ward_policies.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000044550866610>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_advanced_example_runs_green(path, capsys):
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences\pytest_examples\test_advanced_examples.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        # Pass the mode NAME. That is the whole API - every setter in melder
+        # that takes an enum is typed Union[Enum, str] and normalizes for you.
+        print("the five modes:", list(MODES))
+        assert {policy.name for policy in md.Policies} == set(MODES)
+    
+        # AND HERE IS WHY THE STRING IS THE RIGHT HABIT, not just the shorter
+        # one. Policies is built on auto(), so `.value` is an INT - reach for
+        # it to build the argument and you pass 3 instead of "block_all". The
+        # name is the string form. Use the literal and the trap disappears.
+>       assert isinstance(md.Policies.block_all.value, int)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences\03_advanced\16_ward_policies.py:92: AssertionError
+---------------------------- Captured stdout call -----------------------------
+the five modes: ['default', 'whitelist_all', 'block_all', 'inbound_only', 'outbound_only']
+________ test_beginner_example_runs_green[39_agent_inventory_pattern] _________
+[gw6] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000024260787470>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000024260868410>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_beginner_example_runs_green(
+        path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Execute each script with its sibling imports, matching direct Python script execution."""
+        monkeypatch.syspath_prepend(str(path.parent))
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences\pytest_examples\test_beginner_examples.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        groups: dict[str, list[str]] = {
+            "errors": [], "enums": [], "classes": [], "functions": [],
+            "metadata": [],
+        }
+        for name in md.__all__:
+            obj = getattr(md, name)
+            if name.startswith("__"):
+                groups["metadata"].append(name)
+            elif isinstance(obj, type) and issubclass(obj, BaseException):
+                groups["errors"].append(name)
+            elif isinstance(obj, type) and hasattr(obj, "__members__"):
+                groups["enums"].append(name)
+            elif isinstance(obj, type):
+                groups["classes"].append(name)
+            else:
+                groups["functions"].append(name)
+    
+        for group, names in groups.items():
+            print(f"{group:10s} ({len(names):2d}):", ", ".join(sorted(names)[:6]),
+                  "..." if len(names) > 6 else "")
+>       assert len(groups["errors"]) == 9
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences\01_beginner\39_agent_inventory_pattern.py:33: AssertionError
+---------------------------- Captured stdout call -----------------------------
+errors     (11): DeadReferenceError, HookExecutionError, InternalRegistrationError, ManagedSpellExhaustedError, MeldExecutionError, PhaseExecutionError ...
+enums      ( 9): Existence, LaneState, LaneType, ManagedSpellMode, NexusFrameMode, Permissions ...
+classes    (43): Aether, AetherConfiguration, AetherConfigurationBuilder, AethericFrameConfiguration, Cleanable, Conduit ...
+functions  ( 2): new_ulid, scan_bind 
+metadata   ( 8): __architecture__, __author__, __components__, __description__, __graph_details__, __graph_network__ ...
+_________ test_example_declares_its_surface[37_review_agent_bindings] _________
+[gw7] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py')
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_example_declares_its_surface(path: Path) -> None:
+        """Every example must declare what it covers.
+    
+        `SURFACE EXERCISED` is the line a reader trusts to know what a lesson
+        touches, and it is the one that silently rots when a lesson is
+        restructured - so its PRESENCE is enforced here even though its
+        accuracy cannot be. Expert additionally carries `VERIFY`, which records
+        whether the lesson has actually been run.
+        """
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+        docstring = ast.get_docstring(tree, clean=False) or ""
+        required = UNIVERSAL_KEYS
+        if path.parent.name == "04_expert":
+            required = UNIVERSAL_KEYS + EXPERT_ONLY_KEYS
+        missing = [key for key in required if key not in docstring]
+>       assert not missing, f"{path.name} header is missing {missing}"
+E       AssertionError: 37_review_agent_bindings.py header is missing ['VERIFY:']
+E       assert not ['VERIFY:']
+
+UX_and_AIX_experiences\pytest_examples\test_example_contract.py:98: AssertionError
+_____________ test_probe_two_visible_spells_may_not_share_a_name ______________
+[gw6] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_probe_two_visible_spells_may_not_share_a_name():
+        """Lesson 30 claim: a distinct `binding_name` does NOT settle a
+        duplicate spell name.
+    
+        Two INDEPENDENT binds make both spells visible at once, so a shared
+        class name makes `meld(spell_name=...)` ambiguous and the post-conjure
+        structural validator refuses. This is why 30's two generated modules
+        declare ReportBase and ReportDonor rather than Report twice."""
+        frame_name = "probe-dupname-frame"
+        book = _frame(frame_name)
+    
+        class Alpha:
+            def __init__(self) -> None:
+                self.tag = "a"
+    
+        Beta = type("Alpha", (), {"__init__": lambda self: None})
+    
+        # Same order the failing run took: bind, conjure, then the SECOND bind
+        # is what trips the post-conjure structural validator.
+        book.bind(spell=Alpha, existence="unique", permissions="create",
+                  binding_name="probe-dup-one")
+        book.conjure(name="probe-dup-root")
+    
+>       with pytest.raises(Exception) as collision:
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE Exception
+
+UX_and_AIX_experiences\pytest_examples\test_expert_probes.py:1015: Failed
+_________ test_probe_upgrade_to_normal_keeps_creations_and_registers __________
+[gw2] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+    def test_probe_upgrade_to_normal_keeps_creations_and_registers():
+        """Lesson 28 contract (mirrors the validated component test
+        test_component_conduit_upgrade_transfers_lesser_creations_and_
+        reuses_unique): a promoted lesser keeps its per-conduit creations
+        and becomes name-discoverable in the cloud."""
+        import sys
+        from pathlib import Path as _P
+        sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+        from _dynamic_world import dynamic_spellbook
+    
+        book = dynamic_spellbook()
+        book.bind(spell=Payload, existence="unique_per_conduit")
+        root = book.conjure(dynamic=True, name="factory-floor")
+    
+        worker = root.create_lesser_conduit()
+        before = worker.meld(spell=Payload)
+    
+        worker.upgrade_to_normal(name="worker")
+    
+>       after = worker.meld(spell=Payload)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+UX_and_AIX_experiences\pytest_examples\test_intermediate_probes.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\conduit\conduit.py:5086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:564: in meld
+    target_spell = self._resolve_spell(
+src\melder\aether\conduit\meld\meld.py:2174: in _resolve_spell
+    resolved = self._resolve_spell_by_lookup_key(lookup_key)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x000005CFCA99A300>
+lookup_key = ('payload', '__default__')
+
+    def _resolve_spell_by_lookup_key(
+            self,
+            lookup_key: tuple[str, str],
+    ) -> Spell:
+        """
+        Resolve a spell by normalized logical identity key.
+    
+        The lookup order is:
+    
+        1. local Spellbook maps
+        2. contracted-conduit maps
+    
+        This method is the orchestration point for that two-layer search and is
+        responsible for turning "not found anywhere" into one stable `KeyError`
+        contract.
+    
+        Args:
+            lookup_key:
+                A tuple (frame_key, binding_name) produced by
+                SpellInputUtils.normalize_spell_key or
+                SpellInputUtils.make_spell_key_from_parts.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell can be resolved for the given key in either
+                the local or contracted spell maps.
+            RuntimeError:
+                If a SpellIndex is found for the key, but the
+                associated spell object is missing from the expected map.
+        """
+        frame_key, bind_key = lookup_key
+    
+        # 1) Local lookup
+        local_spell = self._resolve_local_by_lookup_key(lookup_key)
+        if local_spell is not None:
+            return local_spell
+    
+        # 2) Contracted lookup
+        contracted_spell = self._resolve_contracted_by_lookup_key(lookup_key)
+        if contracted_spell is not None:
+            return contracted_spell
+    
+        # 3) Not found anywhere
+>       raise KeyError(
+            f"[MELD] No spell found for frame='{frame_key}', binding='{bind_key}'."
+        )
+E       KeyError: "[MELD] No spell found for frame='payload', binding='__default__'."
+
+src\melder\aether\conduit\meld\meld.py:2358: KeyError
+_____ test_expert_example_runs_green[09_getting_data_into_your_database] ______
+[gw3] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/04_expert/09_getting_data_into_your_database.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x00000461D8652950>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_expert_example_runs_green(path, capsys):
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences\pytest_examples\test_expert_examples.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        crystallizer = md.Crystallizer()
+        crystallizer.activate(
+            md.CrystallizerConfigurationBuilder().with_defaults().activate(),
+        )
+    
+        # THE HANDLERS GO IN THEIR OWN OBJECT, never into the record.
+        mesh = md.ExternalPersistenceManagerConfiguration()
+        mesh.with_store_handler(store)
+        mesh.with_fetch_handler(fetch)
+        mesh.with_list_units_handler(list_units)
+        crystallizer.configure_external_persistence_manager(mesh)
+        print("mesh attached - melder now has four callables and no idea what")
+        print("is behind them")
+    
+        # WHAT IS WIRED vs WHAT THE CONTRACT IS. Two questions, two doors,
+        # neither one a network call.
+        wiring = crystallizer.describe_external_persistence_manager()
+        contract = crystallizer.describe_external_interface()
+        assert isinstance(wiring, dict) and isinstance(contract, dict)
+        assert wiring.get("attached") is True, wiring
+        print()
+        print("describe_external_persistence_manager ->", len(wiring),
+              "keys (what is WIRED)")
+        print("describe_external_interface           ->", len(contract),
+              "keys (what the CONTRACT is)")
+    
+        # PRESENCE FLAGS, NEVER CALLABLES. Search the whole record payload for
+        # anything callable - a recorded world has to stay code-free.
+        leaked = [key for key, value in wiring.items() if callable(value)]
+        assert not leaked, "the record leaked a callable: %s" % leaked
+        print("  the wiring record holds no callable objects - only presence")
+        print("  flags, because executable code cannot be serialized into a")
+        print("  world record and a record that embedded yours would only")
+        print("  restore where that code already ran")
+    
+        # A WORLD WORTH SEALING.
+        spellbook_configuration = (
+            md.SpellbookConfiguration(FRAME).with_defaults().finalize()
+        )
+        book = md.Spellbook(aetheric_frame=FRAME,
+                            configuration=spellbook_configuration)
+        book.configure_aether_frame(
+            system_state="dynamic",
+            disposal=None,
+            disposal_method_names=None,
+            rift_enabled=True,
+            ai_native=True,
+        )
+        book.bind(spell=Ledger, existence="unique", permissions="create",
+                  binding_name="mesh-ledger")
+        book.conjure(name="mesh-root")
+    
+        # SEAL, THEN SHIP - one verb, two guarantees, one of them yours.
+        checkpoint_id = crystallizer.create_checkpoint()
+        assert checkpoint_id in crystallizer.list_checkpoint_ids()
+        flushed = crystallizer.flush_checkpoint(checkpoint_id)
+    
+        # THE LOCAL SEAL IS THE PART THE RETURN VALUE COVERS. Assert it.
+        assert checkpoint_id in flushed, flushed
+>       assert checkpoint_id in crystallizer.list_cached_checkpoint_ids()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences\04_expert\09_getting_data_into_your_database.py:150: AssertionError
+---------------------------- Captured stdout call -----------------------------
+mesh attached - melder now has four callables and no idea what
+is behind them
+
+describe_external_persistence_manager -> 13 keys (what is WIRED)
+describe_external_interface           -> 6 keys (what the CONTRACT is)
+  the wiring record holds no callable objects - only presence
+  flags, because executable code cannot be serialized into a
+  world record and a record that embedded yours would only
+  restore where that code already ran
+__ test_expert_example_runs_green[02_persistence_mesh_your_code_their_lanes] __
+[gw7] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/04_expert/02_persistence_mesh_your_code_their_lanes.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000034BBE434610>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_expert_example_runs_green(path, capsys):
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences\pytest_examples\test_expert_examples.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        crystallizer = md.Crystallizer()
+        crystallizer.activate(
+            md.CrystallizerConfigurationBuilder().with_defaults().activate(),
+        )
+    
+        spellbook_configuration = (
+            md.SpellbookConfiguration(FRAME).with_defaults().finalize()
+        )
+        book = md.Spellbook(aetheric_frame=FRAME,
+                            configuration=spellbook_configuration)
+        book.configure_aether_frame(
+            system_state="dynamic",
+            disposal=None,
+            disposal_method_names=None,
+            rift_enabled=True,
+            ai_native=True,
+        )
+        book.bind(spell=Ledger, existence="unique", permissions="create",
+                  binding_name="mesh-edge-ledger")
+        book.conjure(name="mesh-edge-root")
+    
+        # A WRITE LANE ONLY. No fetch handler, no list handler - deliberately
+        # a half-wired mesh, which is the whole subject of this lesson.
+        crystallizer.configure_external_persistence_manager(_mesh(store_ok))
+        wiring = crystallizer.describe_external_persistence_manager()
+        assert wiring["attached"] is True
+        print("mesh attached with a WRITE lane and no read lane")
+        print("  and the record holds no callables - only presence flags:")
+        assert not [k for k, v in wiring.items() if callable(v)]
+        print("   ", sorted(k for k in wiring if "handler" in k or "enabled" in k))
+    
+        # THE WRITE LANE WORKS.
+        checkpoint_id = crystallizer.create_checkpoint()
+        flushed = crystallizer.flush_checkpoint(checkpoint_id)
+        assert checkpoint_id in flushed
+        print()
+        print("flush_checkpoint ->", checkpoint_id[:14], "...")
+        print("  your store handler received", len(WRITTEN), "unit(s)")
+    
+        # THE READ LANE IS MISSING, AND IT REFUSES. This is the half that
+        # does NOT degrade quietly.
+        try:
+            crystallizer.reload_profile_from_external("default")
+            raise AssertionError("a missing read lane must refuse, not answer")
+        except RuntimeError as unavailable:
+            print()
+            print("reload_profile_from_external with no fetch/list lane:")
+            print("  ", str(unavailable)[:96])
+            print("  UNAVAILABLE is not EMPTY. An empty answer here would be")
+            print("  indistinguishable from `your remote has nothing`, and")
+            print("  that is the one reply that must never be guessed")
+    
+        # NOW A WRITE LANE THAT FAILS. Re-configuring replaces the manager,
+        # so the counters below start clean.
+        crystallizer.configure_external_persistence_manager(_mesh(store_broken))
+        before = crystallizer.describe_external_persistence_manager()
+        assert before["store_failure_count"] == 0, before
+        print()
+        print("re-wired with a handler that raises. store_failure_count:",
+              before["store_failure_count"])
+    
+        # THE LOCAL SEAL STILL SUCCEEDS. That is the guarantee.
+        second_id = crystallizer.create_checkpoint()
+        flushed_again = crystallizer.flush_checkpoint(second_id)
+        assert second_id in flushed_again, (
+            "the LOCAL seal must not fail because a remote handler raised"
+        )
+>       assert second_id in crystallizer.list_cached_checkpoint_ids()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences\04_expert\02_persistence_mesh_your_code_their_lanes.py:137: AssertionError
+---------------------------- Captured stdout call -----------------------------
+mesh attached with a WRITE lane and no read lane
+  and the record holds no callables - only presence flags:
+    ['delete_handler_present', 'download_handler_present', 'fetch_handler_present', 'list_handler_present', 'list_units_handler_present', 'store_handler_present', 'upload_handler_present']
+
+flush_checkpoint -> 01M6V4XK4T63BX ...
+  your store handler received 1 unit(s)
+
+reload_profile_from_external with no fetch/list lane:
+   ExternalPersistenceManager has no list handler attached; attach one via with_list_handler(...) o
+  UNAVAILABLE is not EMPTY. An empty answer here would be
+  indistinguishable from `your remote has nothing`, and
+  that is the one reply that must never be guessed
+
+re-wired with a handler that raises. store_failure_count: 0
+__ test_expert_example_runs_green[27_a_world_that_outlives_its_own_runtime] ___
+[gw4] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000040618655010>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_expert_example_runs_green(path, capsys):
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences\pytest_examples\test_expert_examples.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        crystallizer, conduit, commands = build_world()
+        vault = conduit.meld("Vault", binding_name="outlive-vault")
+        vault.contents.append("written before any codegen")
+        print("world up; custody recording:", crystallizer.activated)
+    
+        # Two codegen edits, each materialized - running is not keeping, so
+        # each gets an address of its own.
+        for label, code in (("edit-1", FIRST_EDIT), ("edit-2", SECOND_EDIT)):
+            commands.validate_codegen(code, frame_name=FRAME)
+            commands.execute_codegen(code, frame_name=FRAME)
+            commands.materialize_codegen(
+                code,
+                module_name="outlive_policy_%s" % label.replace("-", "_"),
+                frame_name=FRAME,
+            )
+            vault.contents.append(label)
+        print("two edits materialized; vault holds", len(vault.contents),
+              "entries")
+    
+        # SEAL. Minting puts it in the LEDGER - memory, which the next step
+        # destroys.
+        checkpoint_id = crystallizer.create_checkpoint()
+        assert checkpoint_id in crystallizer.list_checkpoint_ids()
+    
+        # FLUSH. THIS is what survives. Skip it and the rest of this script
+        # has nothing to load, with no error to say why.
+        flushed = crystallizer.flush_checkpoint(checkpoint_id)
+        assert checkpoint_id in flushed
+>       assert checkpoint_id in crystallizer.list_cached_checkpoint_ids()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences\04_expert\27_a_world_that_outlives_its_own_runtime.py:141: AssertionError
+---------------------------- Captured stdout call -----------------------------
+world up; custody recording: True
+two edits materialized; vault holds 3 entries
+________ test_expert_example_runs_green[24_loading_a_whole_world_back] ________
+[gw5] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000026B52643510>
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_expert_example_runs_green(path, capsys):
+        module = _load(path)
+>       module.main()
+
+UX_and_AIX_experiences\pytest_examples\test_expert_examples.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def main() -> None:
+        """Seal and replay a complete world while keeping its in-memory recorder alive.
+    
+        Contract:
+            Establish recording posture before binds, retire original runtime claims
+            before replay and assert that rebuilt application state starts fresh.
+            A retained ordinary Ledger reference has no disposer in this example.
+        Returns:
+            None.
+        """
+        # Custody first - nothing is recorded into a crystallizer that is not
+        # yet recording (expert 22's ordering law).
+        crystallizer = md.Crystallizer()
+        crystallizer.activate(
+            md.CrystallizerConfigurationBuilder().with_defaults().activate(),
+        )
+        research = md.MutationResearch()
+        configuration = research.create_configuration()
+        configuration.with_defaults().activate()
+        research.activate(configuration)
+        print("custody recording:", crystallizer.activated)
+    
+        # A REAL WORLD with two spells and a live object.
+        # A RECORDED WORLD MUST BE BORN CONFIGURED. With custody active, a
+        # dynamic conjure REFUSES if any bind ran before the configuration
+        # was finalized - the profile record and default bootstrap would
+        # otherwise durably persist binds made against unsettled config.
+        spellbook_configuration = (
+            md.SpellbookConfiguration(FRAME).with_defaults().finalize()
+        )
+        book = md.Spellbook(aetheric_frame=FRAME,
+                            configuration=spellbook_configuration)
+        # Establish dynamic recording posture before binding custody. Configuring
+        # the frame afterward cannot retroactively record earlier automatic binds.
+        book.configure_aether_frame(
+            system_state="dynamic",
+            disposal=None,
+            disposal_method_names=None,
+        )
+        book.bind(spell=Ledger, existence="unique",
+                  permissions="create", binding_name="restore-ledger")
+        book.bind(spell=Auditor, existence="many",
+                  permissions="create", binding_name="restore-auditor")
+        conduit = book.conjure(name="restore-root")
+        ledger = conduit.meld("Ledger", binding_name="restore-ledger")
+        ledger.entries.append("before the checkpoint")
+        print("world up; ledger holds", len(ledger.entries), "entry")
+    
+        # 1. SEAL IT. A checkpoint is minted, not overwritten.
+        first_id = crystallizer.create_checkpoint()
+        second_id = crystallizer.create_checkpoint()
+        assert first_id != second_id
+        ledger_of_ids = crystallizer.list_checkpoint_ids()
+        print()
+        print("two checkpoints minted:", first_id[:10], "...,", second_id[:10])
+        print("list_checkpoint_ids() ->", len(ledger_of_ids),
+              "in ledger creation order")
+        print("  checkpoints ACCUMULATE - there is no 'the' checkpoint, and")
+        print("  the id is the whole handle")
+    
+        # 2. WHAT IS ACTUALLY IN ONE?
+        described = crystallizer.describe_checkpoint(second_id)
+        print()
+        print("describe_checkpoint keys:", sorted(described)[:8])
+        counts = described.get("captured_counts")
+        if isinstance(counts, dict):
+            live = {k: v for k, v in counts.items() if v}
+            print("captured:", live)
+    
+        # 3. SEAL IT INTO THE CACHE. Advanced 18's warning still applies -
+        #    the cache is FIFO bounded, so a flush can evict an older entry.
+        flushed = crystallizer.flush_checkpoint(second_id)
+        assert second_id in flushed
+        cached = crystallizer.list_cached_checkpoint_ids()
+>       assert second_id in cached
+               ^^^^^^^^^^^^^^^^^^^
+E       AssertionError
+
+UX_and_AIX_experiences\04_expert\24_loading_a_whole_world_back.py:153: AssertionError
+---------------------------- Captured stdout call -----------------------------
+custody recording: True
+world up; ledger holds 1 entry
+
+two checkpoints minted: 01M6V4XRQ6 ..., 01M6V4XRQM
+list_checkpoint_ids() -> 2 in ledger creation order
+  checkpoints ACCUMULATE - there is no 'the' checkpoint, and
+  the id is the whole handle
+
+describe_checkpoint keys: ['captured_counts', 'checkpoint_id', 'checkpoint_number', 'created_at', 'description', 'journal_entry_count', 'profile_name', 'sequence_range']
+captured: {'crystallizer': 1}
+=========================== short test summary info ===========================
+FAILED UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py::test_probe_policies_value_is_an_int_not_the_mode_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_advanced_examples.py::test_advanced_example_runs_green[16_ward_policies]
+FAILED UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py::test_beginner_example_runs_green[39_agent_inventory_pattern]
+FAILED UX_and_AIX_experiences/pytest_examples/test_example_contract.py::test_example_declares_its_surface[37_review_agent_bindings]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py::test_probe_upgrade_to_normal_keeps_creations_and_registers
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[09_getting_data_into_your_database]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[02_persistence_mesh_your_code_their_lanes]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[27_a_world_that_outlives_its_own_runtime]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[24_loading_a_whole_world_back]
+10 failed, 617 passed in 15.78s

@@ -1639,7 +1639,7 @@ class Conduit(Cleanable):
 
     def _transaction_blocked_for_current_posture(
             self,
-            transaction_name: Optional[ChangeTransactionType],
+            transaction_name: Optional[Union[str, ChangeTransactionType]],
     ) -> bool:
         """
         Internal
@@ -1653,29 +1653,30 @@ class Conduit(Cleanable):
         """
         if not transaction_name:
             return False
+        transaction_token = ChangeTransactionType._comparison_token(transaction_name)
         frame_configuration = self._spellbook._aetheric_frame_configuration
         if frame_configuration is None:
-            return transaction_name != ChangeTransactionType.BIND and not self.__dynamic_environment__
-        if transaction_name == ChangeTransactionType.BIND:
+            return transaction_token != "bind" and not self.__dynamic_environment__
+        if transaction_token == "bind":
             return self._bind_family_blocked_for_current_posture()
         if frame_configuration.disable_all_transactions_after_conjure:
             return True
-        if transaction_name == ChangeTransactionType.LINK:
+        if transaction_token == "link":
             return (
                 frame_configuration.disable_linking
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == ChangeTransactionType.TRANSFER_OWNERSHIP:
+        if transaction_token == "transfer_ownership":
             return (
                 frame_configuration.disable_transfer_of_ownership
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == ChangeTransactionType.CLUSTER_LINK:
+        if transaction_token == "cluster_link":
             return (
                 frame_configuration.disable_conduit_cluster
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == ChangeTransactionType.MUTATION:
+        if transaction_token == "mutation":
             return (
                 frame_configuration.disable_mutations
                 or frame_configuration.system_state is not SystemState.dynamic
@@ -2738,9 +2739,9 @@ class Conduit(Cleanable):
               it enforces even though it can never be told to enforce something
               else.
             - Available on lesser conduits, which also cannot be written to.
-            - Returns the `Policies` MEMBER, not its name. Use `.name` for the
-              string form; `.value` is an integer because `Policies` is built
-              on `auto()`.
+            - Returns the `Policies` MEMBER, not its name. `Policies` is a
+              StrEnum: `.value` equals `.name`, and the member compares equal
+              to that string.
             - The returned member may be passed straight back into
               `set_new_policy`, which accepts a member or its string name.
 
@@ -3481,7 +3482,7 @@ class Conduit(Cleanable):
 
     def begin_transaction(
             self,
-            transaction_type: ChangeTransactionType,
+            transaction_type: Union[str, ChangeTransactionType],
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -3509,7 +3510,7 @@ class Conduit(Cleanable):
             - Link and transfer transactions require dynamic mode.
         Args:
             transaction_type:
-                Transaction type string value (e.g. "bind", "link").
+                A member, its exact name, or its historical lowercase value.
             conduit_ids:
                 Optional list of conduits participating in non-link requests.
                 Link transactions require explicit conduit objects.
@@ -3550,7 +3551,7 @@ class Conduit(Cleanable):
         mediator = self._get_required_transaction_mediator()
         existing_request = mediator.get_active_request()
 
-        request_type_value = transaction_type
+        request_type_value = ChangeTransactionType._comparison_token(transaction_type)
 
         dynamic_only = {
             "link",
@@ -3592,7 +3593,7 @@ class Conduit(Cleanable):
                 if conduit._id not in conduit_values:
                     conduit_values.append(conduit._id)
 
-        if request_type_value == ChangeTransactionType.LINK:
+        if request_type_value == "link":
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
@@ -3612,7 +3613,7 @@ class Conduit(Cleanable):
                 metadata=link_metadata,
             )
             return
-        if request_type_value == ChangeTransactionType.UNLINK:
+        if request_type_value == "unlink":
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
@@ -3632,7 +3633,7 @@ class Conduit(Cleanable):
                 metadata=unlink_metadata,
             )
             return
-        if request_type_value == ChangeTransactionType.BIND:
+        if request_type_value == "bind":
             self._spellbook.begin_transaction(
                 ChangeTransactionType.BIND,
                 conduit_id=self._id,
@@ -3642,7 +3643,7 @@ class Conduit(Cleanable):
                 metadata=metadata,
             )
             return
-        if request_type_value == ChangeTransactionType.TRANSFER_OWNERSHIP:
+        if request_type_value == "transfer_ownership":
             transfer_metadata = dict(metadata) if metadata is not None else {}
             transfer_metadata.setdefault(
                 "origin_surface",
@@ -3685,7 +3686,7 @@ class Conduit(Cleanable):
 
     def end_transaction(
             self,
-            transaction_type: Optional[ChangeTransactionType] = None,
+            transaction_type: Optional[Union[str, ChangeTransactionType]] = None,
             *,
             success: bool = True,
     ) -> None:
@@ -3718,7 +3719,7 @@ class Conduit(Cleanable):
         if self._conduit_state is not ConduitState.normal:
             self._logger.error("end_transaction called when conduit is not normal", "end_transaction")
             raise RuntimeError("Only normal conduits can end change transactions.")
-        if transaction_type == ChangeTransactionType.BIND:
+        if ChangeTransactionType._comparison_token(transaction_type) == "bind":
             self._spellbook.end_transaction(ChangeTransactionType.BIND, success=success)
             return
         self._get_required_transaction_mediator().end_transaction(
@@ -3729,7 +3730,7 @@ class Conduit(Cleanable):
     @contextmanager
     def transaction(
             self,
-            transaction_type: ChangeTransactionType,
+            transaction_type: Union[str, ChangeTransactionType],
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -3754,7 +3755,7 @@ class Conduit(Cleanable):
             - Link and transfer transactions require dynamic mode.
         Args:
             transaction_type:
-                Transaction type string value (e.g. "bind", "link").
+                A member, its exact name, or its historical lowercase value.
             conduit_ids:
                 Optional list of conduits participating in non-link requests.
                 Link transactions require explicit conduit objects.
@@ -4319,6 +4320,14 @@ class Conduit(Cleanable):
             - Borrowers are unshared (`force_unshare`) or repointed at the
               target; with `include_dependencies`, each direct dependency this
               conduit owns is transferred with the same options.
+            - Source and target live in one aetheric frame. A transfer to a
+              conduit of another frame is refused before anything starts, as a
+              link across frames is (the owner's ruling, 2026-11-07: a frame is
+              a world with its own addresses, links and contracts). Until
+              0.2.8280 such a transfer ran: the target's Spellbook could hold
+              two active spells at one address, and the source frame's address
+              claim kept naming the moved spell, so no Book of that frame could
+              bind the address again.
             - Uses the normal `TRANSFER_OWNERSHIP` transaction path before the
               existing `TransferOfOwnership` execution helper runs.
             - Keeps request planning and admission in the mediator/strategy
@@ -4359,6 +4368,14 @@ class Conduit(Cleanable):
 
         Returns:
             dict: Preflight summary of the transfer plan.
+
+        Raises:
+            RuntimeError: When this conduit is cleaned or not a normal root,
+                when the frame posture disables ownership transfer, when the
+                world is not dynamic, or when `target_conduit` belongs to
+                another aetheric frame ("Cannot transfer spell ownership across
+                different AethericFrames: <source> != <target>. ..."); each is
+                raised before the transaction opens, so nothing has moved.
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -4372,6 +4389,22 @@ class Conduit(Cleanable):
             )
         if not self.__dynamic_environment__:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
+        if target_conduit._aetheric_frame_name != self._aetheric_frame_name:
+            # A frame is a world with its own addresses, links and contracts: a
+            # spell's stewardship never crosses one, as a link never does
+            # (`ConduitWard._link`). Refused before the transaction and its
+            # preflight, which would read the target against a foreign frame.
+            self._logger.error(
+                "transfer_spell_ownership: target conduit is in a different aetheric frame",
+                "transfer_spell_ownership",
+            )
+            raise RuntimeError(
+                "Cannot transfer spell ownership across different AethericFrames: "
+                f"{self._aetheric_frame_name} != {target_conduit._aetheric_frame_name}. "
+                "An aetheric frame is a world with its own addresses, links and contracts, so a spell's "
+                "stewardship moves only between conduits of one frame, as links do. To use the spell in "
+                "the other frame, bind it in a Spellbook of that frame."
+            )
         with self.transaction(
                 ChangeTransactionType.TRANSFER_OWNERSHIP,
                 metadata=self._build_transfer_transaction_metadata(
@@ -5704,8 +5737,13 @@ class Conduit(Cleanable):
             - THE TARGET IS CHECKED before the transaction starts and again inside the
               held window: it must be a version this conduit's Spellbook owns and a member
               of `spell_index`. The second check runs under the notch seal (the Spellbook
-              and its conduits claimed EXCLUSIVE), so no other index operation can move the
-              target between that check and the switch. A refused call changes nothing.
+              and its conduits claimed EXCLUSIVE), so no other index operation admitted
+              through the mediator can move the target between that check and the switch.
+              `cleanup_spell` takes no transaction, so the Spellbook's seam checks the target
+              once more under its own lock and refuses one disposed, moved or being disposed
+              meanwhile (0.2.8285, TASK-2026-10-16-notch_seam_checks_incoming_before_parking;
+              corrected 2026-11-08: this said no other index operation could move it). A
+              refused call changes nothing.
             - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create, bind or
               remove anything. The previous member stays in the index, parked, and a
               notch back by its spell_id restores it.
@@ -6937,7 +6975,7 @@ class Conduit(Cleanable):
                 "Call begin_transaction('link') on the borrower and include both "
                 "borrower and peer conduits."
             )
-        if request.request_type not in (
+        if ChangeTransactionType._comparison_token(request.request_type) not in (
                 "link",
                 "cluster_link",
                 "cluster_join",

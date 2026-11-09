@@ -1,0 +1,5 @@
+command: .venv_new/Scripts/python.exe -X gil=0 -m pytest tests/integration/melder/aether/conduit/test_one_active_spell_per_address_integration.py tests/integration/melder/crystallizer/test_graft_refuses_an_address_the_host_frame_serves_integration.py -q -p no:cacheprovider  (run 2026-11-07T16:50:26Z, melder 0.2.8280)
+........................................................................ [ 62%]
+...........................................                              [100%]
+115 passed in 30.11s
+exit status: 0

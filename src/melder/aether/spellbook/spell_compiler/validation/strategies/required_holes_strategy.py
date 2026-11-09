@@ -37,6 +37,11 @@ class RequiredHolesStrategy(SpellValidationStrategy):
       spell provides) with the expected type, so a forgotten binding is visible
       at conjure even though constructing the spell without the value only fails
       at meld.
+    - Skips an UNRESOLVED_INPUT socket that carries hidden candidates
+      (`hidden_spell_ids`, 2026-11-07): its class IS registered, under a
+      spellframe or a binding name, and `HiddenProviderStrategy` refuses the
+      spell with HIDDEN_PROVIDER naming where - a warning saying no registered
+      spell provides it would contradict that error.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -88,7 +93,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         - Reads reference-only required inputs from SpellSystemStates without
           taking ownership of their topology or changing declaration facts.
         - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket,
-          naming the expected type from the Phase-1 annotation.
+          naming the expected type from the Phase-1 annotation - except a socket
+          with hidden candidates, which HIDDEN_PROVIDER reports as an error.
 
         Raises:
             RuntimeError: If an UNRESOLVED_INPUT socket has no matching Phase-1
@@ -133,6 +139,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
             return
         for socket in topology.sockets:
             if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                if socket.hidden_spell_ids:
+                    # The class is bound under a spellframe or a binding name:
+                    # HiddenProviderStrategy refuses the spell naming where.
+                    continue
                 expected_type = self._expected_type_for(requirements, socket.param_name)
                 context.issues.append(
                     SpellValidationIssue(

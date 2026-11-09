@@ -206,7 +206,7 @@ class TransactionStrategy(ABC):
         """
         for region in staged.regions():
             information_registry.report_fact(
-                fact_family=staged.transaction_type.value,
+                fact_family=staged.transaction_type.wire_value,
                 region=region,
                 reporter=staged.request_id,
             )

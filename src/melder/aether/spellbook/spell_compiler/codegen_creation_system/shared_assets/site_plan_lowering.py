@@ -1516,7 +1516,7 @@ class SitePlanEmission(Cleanable):
         """
         site_index = self._site_index(self._steps[index])
         winners = self._winners
-        unresolved = SocketKind.UNRESOLVED_INPUT.value
+        unresolved = SocketKind._legacy_code(SocketKind.UNRESOLVED_INPUT)
         return tuple(
             param.name for param in self._site_graph.sites[site_index].params
             if param.socket_kind_value == unresolved and (site_index, param.name) not in winners

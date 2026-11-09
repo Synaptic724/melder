@@ -771,7 +771,14 @@ def test_phase6_broken_spell_is_invalid_and_conduit_state_invalid() -> None:
 
 
 def test_phase6_cycle_raises_at_root_blueprints() -> None:
-    """A two-spell cycle raises during Phase-5 blueprint construction."""
+    """
+    A two-spell cycle raises during Phase-5 blueprint construction.
+
+    Alpha and Beta are bound bare (no spellframe, the default binding), so each
+    class annotation reaches the other spell and the cycle forms: a class lookup
+    reaches only a spell bound bare (2026-11-07). Their addresses are their own
+    names, as under the spellframes "Alpha" and "Beta" they were bound with before.
+    """
     spellbook = _make_spellbook()
 
     class Alpha:
@@ -783,8 +790,8 @@ def test_phase6_cycle_raises_at_root_blueprints() -> None:
             self.alpha = alpha
 
     try:
-        alpha_id = spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create", spellframe="Alpha")
-        beta_id = spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create", spellframe="Beta")
+        alpha_id = spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create")
+        beta_id = spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create")
         for spell_id in (alpha_id, beta_id):
             spell = _get_spell(spellbook, spell_id)
             _phases_1_4(spell)
@@ -976,7 +983,14 @@ def test_e2e_existence_many_creates_new_instances() -> None:
 
 
 def test_e2e_conjure_raises_validation_error_on_cycle() -> None:
-    """A dependency cycle blocks conjure with SpellbookValidationError."""
+    """
+    A dependency cycle blocks conjure with SpellbookValidationError.
+
+    Alpha and Beta are bound bare (no spellframe, the default binding), so each
+    class annotation reaches the other spell and the cycle forms: a class lookup
+    reaches only a spell bound bare (2026-11-07). Their addresses are their own
+    names, as under the spellframes "Alpha" and "Beta" they were bound with before.
+    """
     spellbook = _make_spellbook()
 
     class Alpha:
@@ -988,8 +1002,8 @@ def test_e2e_conjure_raises_validation_error_on_cycle() -> None:
             self.alpha = alpha
 
     try:
-        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create", spellframe="Alpha")
-        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create", spellframe="Beta")
+        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create")
+        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create")
         with pytest.raises(SpellbookValidationError):
             spellbook.conjure(name="root")
     finally:

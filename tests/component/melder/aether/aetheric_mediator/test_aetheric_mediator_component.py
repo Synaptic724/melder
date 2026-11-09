@@ -374,7 +374,9 @@ def test_disjoint_frames_run_in_parallel_and_whole_world_excludes_them(plane):
             transaction_type=TransactionType.CHECKPOINT_LOAD,
             submitter=_who("whole"),
         )
-    assert AdmissionReason.WAIT_TIMEOUT.value in str(excinfo.value)
+    # Refusal texts keep the historical lowercase code; the member's value has
+    # been "WAIT_TIMEOUT" since 0.2.8277 (AdmissionResult.describe).
+    assert AdmissionReason.WAIT_TIMEOUT.name.lower() in str(excinfo.value)
     assert ScopeKey.world() in str(excinfo.value)
 
     first.leave()
@@ -447,7 +449,8 @@ def test_commit_stamps_freshness_before_releasing(plane):
 
     fact = plane.reporting.get_fact(ScopeKey.frame("A"))
     assert fact is not None
-    assert fact["fact_family"] == TransactionType.FORMATION_LOAD.value
+    # Facts carry the lowercase wire token, not the member's uppercase value.
+    assert fact["fact_family"] == TransactionType.FORMATION_LOAD.wire_value
     stale = plane.reporting.stale_regions(
         regions=(ScopeKey.frame("A"), "frame:NEVER"), max_age_seconds=3600.0
     )

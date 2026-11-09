@@ -20,6 +20,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.spellbook import Spellbook
@@ -34,9 +35,16 @@ class NativeService:
 
 
 class NativeConsumer:
-    """The consumer: requires a NativeService, which the graph injects."""
+    """
+    The consumer: requires a NativeService, which the graph injects.
 
-    def __init__(self, service: NativeService) -> None:
+    The service is named by its frame address, ("native_probe", "NativeService"), through a SpellMap default. The
+    reported sequence binds the service under that spellframe and binding name, and a class annotation alone reaches
+    only a spell bound bare - no spellframe, the default binding (2026-11-07) - so the frame is what reaches it.
+    """
+
+    def __init__(self,
+                 service: NativeService = SpellMap(spellframe="native_probe", binding_name="NativeService")) -> None:
         """Keep the injected service so identity can be checked."""
         self.service: NativeService = service
 
@@ -56,7 +64,8 @@ class InjectedProviderWorld:
     Contract:
         - Every root is a dynamic conjure of its own Spellbook on its own frame. The service and consumer pair is
           bound at spellframe "native_probe" on the live root after conjure, unless a case binds it on the Book
-          before conjure or not at all.
+          before conjure or not at all. The consumer reaches the service by that frame address (its SpellMap
+          default), as the direct melds do.
         - Worlds live in the process Aether, which the `world` fixture replaces before and after each case.
         - A cached world clears its frame's conjure cache folder first unless told to keep it (a warm start), and
           every folder it resolved is removed at teardown.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py",
- "source_sha256": "bff4efb777500eb6c16a166ce54a7e8341cf3b34ec0a6ed8eb8ce3a76a9e3ac8",
+ "source_sha256": "f6d0e6540908560c0110ce245007250943321fd24fdac13479f99ce9a7f098ba",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy": {
@@ -19,7 +19,7 @@
    "label": "TransactionStrategy",
    "kind": "abstract",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py",
-   "lineno": 20,
+   "lineno": 23,
    "bases": [],
    "markers": [
     "ABC"
@@ -35,7 +35,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "753a8999770e0d9e6f18e5150c4e7806b55c109bc4da373c4f6f2bf793284148",
+   "span_sha256": "2a315bd0cd63eb9ce334889ecda62df08aa165e75f0111e1eda328208b73abfe",
    "role": "Abstract contract for mediator-registered transaction strategy classes.",
    "responsibilities": [
     "defines build_start_plan, on_start, and on_end hooks for transaction families",
@@ -58,6 +58,7 @@
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
   "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
   "ChangeControlStagedMutation": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
   "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"

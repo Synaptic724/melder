@@ -4,7 +4,7 @@
     "melder_version": "0.1.2",
     "verified_commit": "7b31be6d7665",
     "last_verified": "2026-08-29",
-    "last_rendered": "2026-08-29T01:31:02Z",
+    "last_rendered": "2026-11-08T14:46:07Z",
     "renderer_package": "@mermaid-js/mermaid-cli",
     "renderer_version": "11.15.0",
     "renderer_config": "diagrams/mermaid-config.json"
@@ -319,8 +319,8 @@
       "name": "ownership_lifetimes",
       "source": "diagrams/source/ownership_lifetimes.mmd",
       "rendered": "diagrams/rendered/ownership_lifetimes.svg",
-      "source_sha256": "3af5b5656e910f5deb16841eef6481a0b91d064be674a0dfbbeb2dcc8398cc68",
-      "rendered_sha256": "61654e7f64d9ddbdf12c0328effe8d327f7272e83e0f10626b750b123cc25b75"
+      "source_sha256": "5b15e7a600f3b2db3ab18af958036dfe270213f72473d656b85174f546f1490e",
+      "rendered_sha256": "26f1e6a4b5c30520646af80c94a5775d5e29858816e685cd578b6e5d51a53480"
     },
     {
       "name": "bind_conjure_meld",

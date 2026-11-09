@@ -1,4 +1,5 @@
 import threading
+from enum import Enum
 from typing import Dict, Optional, Tuple, Type, Union
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
@@ -550,6 +551,10 @@ class RiftConfiguration(Cleanable):
 
         Normalize enum-backed properties before storage.
 
+        Contract:
+            The legacy dynamic room selector is accepted only as a non-enum string;
+            foreign enum families are rejected by the native enum helper.
+
         Args:
             key:
                 Property name being assigned.
@@ -560,7 +565,7 @@ class RiftConfiguration(Cleanable):
             object: Normalized property value.
         """
         if key == "space_type":
-            if value == "dynamic":
+            if isinstance(value, str) and not isinstance(value, Enum) and value == "dynamic":
                 value = RiftSpaceType.codegen
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)
         if key == "validation_mode":

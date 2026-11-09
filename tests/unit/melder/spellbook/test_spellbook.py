@@ -88,6 +88,9 @@ class DummySpell:
         self.spell_name = spell_name or spell_id
         self._spells_in_index = versions or {spell_id}
         self.user_created_object = existing_object
+        # The bound object, as Spell exposes it: `CompilerPhase3._hidden_type_key` reads it (2026-11-07) to tell a
+        # Protocol's own definition apart when a contracted copy announces its class name.
+        self.spell = existing_object
         self.cleaned = False
         self.cleanup_calls = 0
         self.permissions = Permissions.read
@@ -1662,7 +1665,7 @@ def test_end_transaction_guard_and_abort_paths(monkeypatch):
             mediator_state["session"]
             if (
                 mediator_state["session"] is not None
-                and kwargs.get("transaction_type") == "bind"
+                and kwargs.get("transaction_type") is spellbook_module.ChangeTransactionType.BIND
                 and mediator_state["session"].request.request_type == "bind"
             )
             else None
@@ -1969,6 +1972,13 @@ def test_risk_manager_bridge_helpers_cover_success_none_and_error_paths(monkeypa
 
 
 def test_add_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
+    """
+    A granted copy is published in every contracted map and announced once conjured.
+
+    The copy is bound under the spellframe "Frame", so since 2026-11-07 (patch hidden_provider_2026_11_07, the owner's
+    D1 = B) its announce also carries its class name ("spellname") beside its frame key: a consumer that compiled with
+    that class unresolved waits under the class name, and this copy's arrival is what makes Phase 4 refuse it.
+    """
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._contracted_spells = {}
@@ -2007,9 +2017,53 @@ def test_add_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
     assert sb._contracted_spells["peer"][idx] is spell
     assert sb._lookup_contracted_spells["peer"] == {("frame", "binding"): idx}
     assert sb._contracted_spell_ids["peer"] == {"sid-1", "sid-2"}
-    assert dirty_calls == [{"frame"}]
+    assert dirty_calls == [{"frame", "spellname"}]
     assert staged_calls == ["peer"]
     assert risk_calls == [("borrower", spell)]
+
+
+@pytest.mark.parametrize(
+    ("spellframe", "binding_name", "key", "announced"),
+    [
+        pytest.param(None, None, ("spellname", "__default__"), {"spellname"}, id="bare-default"),
+        pytest.param(None, "named", ("spellname", "named"), {"spellname"}, id="bare-named"),
+        pytest.param("Frame", "binding", ("frame", "binding"), {"frame", "spellname"}, id="framed"),
+    ],
+)
+def test_granted_copy_announces_its_class_name_only_when_framed(
+        spellframe: Optional[str],
+        binding_name: Optional[str],
+        key: tuple,
+        announced: set,
+) -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07): a framed copy's grant announces its class name beside its frame key,
+    in the one collection-dependent mark; a bare copy - default or named binding - announces its frame key, which
+    already is its class name, and nothing more.
+    """
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_spell_ids = {}
+    sb._contracted_spells_by_id = {}
+    sb._conjured = True
+    sb._conduit = DummyConduit("borrower", "borrower")
+    dirty_calls: list = []
+    sb._mark_collection_dependents_dirty = lambda frame_keys: dirty_calls.append(frame_keys)
+    sb._mark_contract_dependents_dirty = lambda contract_keys: None
+    sb._try_update_staged_contract_keys = lambda conduit_id: None
+    sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
+    idx = DummySpellIndex(versions={"sid-1"}, sid="lineage", current="sid-1")
+    idx._attach_contracted = lambda owner, conduit_id, spell: None
+    spell = DummySpell(spell_id="sid-1", versions={"sid-1"}, spell_name="SpellName", binding_name=binding_name,
+                       spellframe=spellframe)
+    spell.spell_index = idx
+    spell.key = key
+
+    sb._add_contracted_spell(spell, "peer")
+
+    assert dirty_calls == [announced]
 
 
 def test_remove_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
@@ -2680,7 +2734,7 @@ def test_check_system_state_dynamic_policy_rejected_when_dynamic_disabled():
     with pytest.raises(RuntimeError) as excinfo:
         SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, dynamic=False)
     message = str(excinfo.value)
-    assert "policy=Policies.whitelist_all" in message
+    assert "policy=whitelist_all" in message
     assert "allowed=default" in message
 
 

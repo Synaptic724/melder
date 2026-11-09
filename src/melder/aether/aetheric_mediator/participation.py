@@ -22,8 +22,8 @@ the same edge with a different word than the three subsystems it reports on
 would send every reader searching for the wrong term.
 """
 
-from enum import StrEnum
-from typing import Any, Dict, Mapping, Tuple
+from enum import Enum, StrEnum
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 
 class ParticipationState(StrEnum):
@@ -45,9 +45,11 @@ class ParticipationState(StrEnum):
           of prose, and it is why this is an enum rather than a bool - the bool
           was already there and it could not say WHY a subsystem was silent.
         - `StrEnum`, matching `ClaimMode`, `TransactionType`, `ScopePrefix`,
-          `OutcomePolicy` and `SessionStatus`, because these values TRAVEL:
-          they land in registry rows, `describe()` output, and logs, and must
-          survive string-oriented APIs without special casing.
+          `OutcomePolicy` and `SessionStatus`, because members travel through
+          string-oriented APIs. The registry stores members and renders the
+          historical lowercase tokens in detached descriptions and logs.
+        - Values match their uppercase member names. The four former lowercase
+          values remain readable for historical by-value and pickle inputs.
         - THERE IS NO TRANSITIONAL MEMBER, and that is deliberate. There is no
           `ACTIVATING`, because the edges that move this value run inside
           `apply_commit_delta`, which runs at commit WHILE the transaction
@@ -100,10 +102,39 @@ class ParticipationState(StrEnum):
         Only ACTIVE emits; check `emits` rather than comparing members by hand.
     """
 
-    REGISTERED = "registered"
-    CONFIGURED = "configured"
-    ACTIVE = "active"
-    INACTIVE = "inactive"
+    REGISTERED = "REGISTERED"
+    CONFIGURED = "CONFIGURED"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ParticipationState]:
+        """
+        Resolve exactly the four historical lowercase participation values.
+
+        Contract:
+            Raw legacy strings retain their original by-value and pickle
+            meaning. Other enum families, mixed case, whitespace and unknown
+            values are not normalized here; returning None preserves the
+            standard ValueError for an unrecognized value.
+
+        Args:
+            value: The unrecognized value offered to the enum constructor.
+
+        Returns:
+            Optional[ParticipationState]: The matching legacy member, or None.
+        """
+        if not isinstance(value, str) or isinstance(value, Enum):
+            return None
+        if value == "registered":
+            return cls.REGISTERED
+        if value == "configured":
+            return cls.CONFIGURED
+        if value == "active":
+            return cls.ACTIVE
+        if value == "inactive":
+            return cls.INACTIVE
+        return None
 
     @property
     def emits(self) -> bool:

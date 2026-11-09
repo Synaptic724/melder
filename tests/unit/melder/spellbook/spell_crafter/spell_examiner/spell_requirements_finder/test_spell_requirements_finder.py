@@ -1,7 +1,6 @@
 import ast
 import builtins
 import inspect
-import threading
 import typing
 from types import SimpleNamespace
 from typing import List, Optional, Union, get_args, get_origin
@@ -33,6 +32,7 @@ from melder.utilities.custom_exceptions.operation_cancelled_error import (
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEventSignal,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 class _StubSpellbook:
@@ -126,28 +126,28 @@ def test_build_requirements_is_cached_until_cleanup():
     assert r3 is not r1
 
 
-def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside_lock():
+def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup swallows a requirements cleanup error, and a second concurrent caller returns at the inner
+    `_cleaned` recheck.
+
+    First phase, single-threaded: a requirements object whose `cleanup()` raises RuntimeError must not stop the
+    finder's cleanup, which still marks the finder cleaned.
+
+    Second phase, on a fresh finder: the handshake holds the first caller inside the lock until the second has
+    passed the outer `_cleaned` check and is about to block; the first caller then runs the real cleanup. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the finder
+    reads cleaned with its `_lock` dropped. The callers are ordered by the handshake, not by timing: the earlier
+    hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Returns:
+        None.
+    """
     class ExplodingRequirements:
         def cleanup(self):
             raise RuntimeError("boom")
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
 
     finder = SpellRequirementsFinder(_make_spell(lambda: None))
     finder._requirements = ExplodingRequirements()
@@ -155,23 +155,11 @@ def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside
     assert finder.cleaned is True
 
     finder = SpellRequirementsFinder(_make_spell(lambda: None))
-    coordinated_lock = _CoordinatedLock()
-    finder._lock = coordinated_lock
-    thread_results = []
+    handshake = CleanupRecheckHandshake()
+    finder._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        finder.cleanup()
-        thread_results.append(True)
+    handshake.run(finder.cleanup)
 
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert finder.cleaned is True
     assert not hasattr(finder, '_lock')
 

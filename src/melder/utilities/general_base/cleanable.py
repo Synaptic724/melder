@@ -23,7 +23,9 @@ class Cleanable(ABC):
         - Require subclasses to implement deterministic teardown.
 
     Contract:
-        - `cleanup()` must be idempotent.
+        - `cleanup()` must be idempotent for calls that do not overlap: a second
+          call after the first has finished returns. Calls that do overlap are
+          covered under Threading.
         - Subclasses must set `_cleaned = True` when cleanup completes.
         - `check_cleaned()` is the canonical guard for rejecting use-after-clean.
         - `using_cleanup()` provides a separate helper context that guarantees
@@ -39,6 +41,15 @@ class Cleanable(ABC):
         lock, and the established pattern is to check `_cleaned`, acquire, then
         re-check inside the lock. On free-threaded builds that double-check is
         not optional.
+        By default a subclass deletes that lock last, with its other owned
+        fields, so a second `cleanup()` already waiting on the lock returns, but
+        one that loads the lock only after it is deleted raises
+        `AttributeError`: cleaning one object from two threads at once is the
+        caller's mistake. A subclass whose cleanup a Melder path can overlap -
+        another cleanup or a read it races - keeps its lock after cleanup and
+        documents it (`Spell`, `Creations` and `FrameLinkContract` do), so that
+        caller meets `_cleaned` under the lock. A kept lock references nothing,
+        so it never keeps the object alive.
 
     Lifecycle / Cleanup:
         Live on construction, cleaned exactly once. The repository teardown order

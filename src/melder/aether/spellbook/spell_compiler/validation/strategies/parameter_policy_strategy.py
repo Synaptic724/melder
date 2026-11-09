@@ -121,9 +121,10 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
                     )
                 continue
 
-            if param.di_shape in (
-                ParameterDIShape.SINGLE_BY_ANNOTATION,
-                ParameterDIShape.COLLECTION_BY_ANNOTATION,
+            di_shape = param.di_shape
+            if (
+                di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+                or di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
             ):
                 if annotation is None:
                     context.issues.append(

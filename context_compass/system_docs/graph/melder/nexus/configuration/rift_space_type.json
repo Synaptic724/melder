@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_space_type.py",
- "source_sha256": "f4086d1685c31b0463d196fb0db5fc1827cc097975374762e06d898133ce30d5",
+ "source_sha256": "9a3e8bdd52017aaf103df1c20614c58aab9720bb5df962d76642b9235dc420b2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_space_type": {
@@ -28,7 +28,7 @@
    "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -36,28 +36,27 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "48c0c4dcc8700da0245950e8486d31028ff0c0fcd039893fc66645d294396be1",
+   "span_sha256": "57d5f3cbfaf00a9068bac7315be3a38481db130ae791118b114dd7a563c19cc5",
    "role": "Enum of supported top-level Rift room types.",
    "responsibilities": [
-    "labels static, capability, codegen, and legacy dynamic room types"
+    "labels static, capability and codegen Rift room types"
    ],
    "owns_state": [
     "static",
     "capability",
-    "codegen",
-    "dynamic"
+    "codegen"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "17ea39fed41af71b9fa0ddd03324adfb511e37b298a425d104057e27a7189271"
+   "semantics_authored_against": "57d5f3cbfaf00a9068bac7315be3a38481db130ae791118b114dd7a563c19cc5"
   }
  },
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum"
+  "StrEnum": "enum.StrEnum"
  },
  "collapse_candidate": null
 }

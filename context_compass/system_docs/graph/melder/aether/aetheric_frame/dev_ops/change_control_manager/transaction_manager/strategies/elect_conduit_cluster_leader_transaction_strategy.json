@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py",
- "source_sha256": "c89a41ab624c428f05710ed4c09c1720d94b57e2e79af9fc557893f7543728d2",
+ "source_sha256": "a68d60158087efb5f204d55985d267259b90a4b14ce0ba6031b779a288701eb3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c30f2a7e3f9f6bc86a15de5e396eed67f7613367a012a3fb24c8932349664f8b",
+   "span_sha256": "4ef66ae150babded00a98f97f148cffb48ef2bd8fd608bb31dfde7ff105e12f1",
    "include": true,
    "role": "Activation half of the cluster's OPTIONAL leader layer; a light envelope, because inert clusters hard-error at the door so nothing can be mid-create.",
    "responsibilities": [

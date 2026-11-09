@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/frame_viewer.py",
- "source_sha256": "ced7ac875af3c0e44466a48856022adfb2583c5d67aa883cb34c6cb88ddbcdbd",
+ "source_sha256": "46f8b3751c93011630f79345d0e2a6206eae8463765f859a2b6c3bc11b2d2b41",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.frame_viewer": {
@@ -187,26 +187,25 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "52265bee1c5e90f0a731e1135fac9b6233996976093f9c8b7e7207cad1530b78",
+   "span_sha256": "2c2d8e9059b77f759edb80d7048df8ed641454f074afb0610081c01099bc7324",
    "role": "Projection-backed room viewer asset.",
    "responsibilities": [
-    "holds the current per-frame projection-set references for the room",
-    "owns the helper cache for frame, conduit, and spell view surfaces",
+    "reads current view projections from its borrowed Rift on demand, caching no projection and no helper",
+    "builds the view, frame, conduit and spell helper surfaces per call, owned by the call",
     "provides the visible frame-local query surface",
-    "delegates registered relationship navigation to the current ACL-filtered spell viewer"
+    "delegates registered relationship navigation to the current ACL-filtered spell viewer",
+    "a read overlapping a frame link or an ACL refresh can raise the cleaned RuntimeError of the projection it read; a retry reads the new projection"
    ],
    "owns_state": [
-    "_projection_sets_by_frame_name",
-    "_view_multiframe",
-    "_helper_surfaces_by_frame_name",
-    "_default_view_frame_name"
+    "_id",
+    "_lock"
    ],
    "phases": [
     "refresh",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "8e693ae451acb2c66e077c130221a0ec7d50fd43f3976571de9e631ecfebae68"
+   "semantics_authored_against": "2c2d8e9059b77f759edb80d7048df8ed641454f074afb0610081c01099bc7324"
   }
  },
  "edges_out": [

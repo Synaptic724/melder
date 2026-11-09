@@ -8,7 +8,7 @@ def test_conduit_state_str_returns_lowercase_name() -> None:
     assert str(ConduitState.normal) == "normal"
     assert str(ConduitState.lesser) == "lesser"
     assert str(ConduitState.pooled_lesser) == "pooled_lesser"
-    assert str(ConduitState.cleaned) == "cleaned"
+    assert str(ConduitState.CLEANED) == "cleaned"
 
 
 def test_conduit_state_resolve_accepts_enum_members() -> None:
@@ -23,7 +23,7 @@ def test_conduit_state_resolve_accepts_lowercase_strings() -> None:
     assert ConduitState.resolve("normal") is ConduitState.normal
     assert ConduitState.resolve("lesser") is ConduitState.lesser
     assert ConduitState.resolve("pooled_lesser") is ConduitState.pooled_lesser
-    assert ConduitState.resolve("cleaned") is ConduitState.cleaned
+    assert ConduitState.resolve("cleaned") is ConduitState.CLEANED
 
 
 def test_conduit_state_resolve_rejects_none() -> None:

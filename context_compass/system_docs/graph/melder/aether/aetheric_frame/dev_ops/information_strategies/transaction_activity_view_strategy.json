@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
- "source_sha256": "6474edaaab00d4b3cbcf7b360c4e74a13e9b4067bfcd5152d726efa2cfca08e8",
+ "source_sha256": "87cff7036dfc83211f5208d3a651846cdb90ea3a67f30de6080fae61b2cbc6fe",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy": {
@@ -19,7 +19,7 @@
    "label": "TransactionActivityViewStrategy",
    "kind": "class",
    "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
-   "lineno": 16,
+   "lineno": 19,
    "bases": [
     "DevopsInformationStrategy"
    ],
@@ -32,7 +32,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cd638ff7597070f826f5c9e96cbb6367ed665a982032af5dcd8db993777a1dca",
+   "span_sha256": "a1a440c013b6d089ba753936c8e2cb8d3223e3a40357f4ecee2c3ed395edd7b6",
    "role": "Registry-backed dev-ops information strategy for live transaction activity views.",
    "responsibilities": [
     "queries in-flight transaction ids by identity, scope, or transaction type",
@@ -66,6 +66,7 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Dict": "typing.Dict",
   "List": "typing.List",
+  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
   "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
   "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
   "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"

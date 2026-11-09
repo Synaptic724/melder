@@ -1,0 +1,19 @@
+STEP 4 final run of tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py on melder 0.2.8281, -X gil=1 (2026-11-07T20:38:52Z)
+
+........................................................................ [ 61%]
+......................................xx.xxx.                            [100%]
+============================== warnings summary ===============================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_consumer_waiting_in_the_target_is_refused_once_a_transfer_brings_its_class_in_framed - EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): transfer_spell_ownership announces only the arriving spell's frame key - its commit resolves the staged binding keys in the source Book, which no longer holds the spell - so the waiting consumer is never re-gated and melds as an unresolved input where its fresh twin is refused (measured 0.2.8281; finding a of patch hidden_provider_2026_11_07, S1 matrix cell H2)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_dependent_melded_during_a_refusal_melds_as_its_fresh_twin_once_the_refusal_lifts - EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): a dependent melded while its dependency was refused is left invalid (broken_spell_in_dag) and nothing re-gates it when the refusal lifts, so it keeps a refusal its fresh twin no longer gives - after AMBIGUOUS_PROVIDER as after HIDDEN_PROVIDER, and before this patch (measured 0.2.8281 and on 0733b3b65; finding d of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[remove_spell_from_contract-False] - EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[remove_index_from_contract-True] - EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[sever_link-False] - EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+112 passed, 5 xfailed, 1 warning in 1.72s

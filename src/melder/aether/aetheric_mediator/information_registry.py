@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Tuple
 
 from melder.aether.aetheric_mediator.participation import ParticipationState
 from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
+from melder.aether.aetheric_mediator.transaction_type import TransactionType
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -852,7 +853,7 @@ class InformationRegistry(Cleanable):
             copies of the field list is how one of them ends up missing a field
             the other has.
 
-            `state` is rendered as its string value rather than the member, so
+            `state` is rendered as its historical lowercase token, not the member, so
             the result survives logging and serialisation without special
             casing. `emits` is rendered ALONGSIDE it rather than left for the
             reader to derive - a consumer reading a log line should not have to
@@ -868,7 +869,7 @@ class InformationRegistry(Cleanable):
         state = row["state"]
         return {
             "subsystem_name": subsystem_name,
-            "state": state.value,
+            "state": state.name.lower(),
             "emits": state.emits,
             "conditions": dict(row["conditions"]),
             "reporter": row["reporter"],
@@ -993,7 +994,8 @@ class InformationRegistry(Cleanable):
         Return live request ids of one transaction type.
 
         Args:
-            transaction_type: The type value to query.
+            transaction_type: A historical lowercase token, canonical value,
+                or transaction member to query.
 
         Returns:
             Tuple[str, ...]: Live request ids, sorted.
@@ -1002,11 +1004,15 @@ class InformationRegistry(Cleanable):
             RuntimeError: If the registry has been cleaned.
         """
         self.check_cleaned()
+        if isinstance(transaction_type, str):
+            member = TransactionType.__members__.get(transaction_type)
+            if member is not None:
+                transaction_type = member.wire_value
         with self._lock:
             return tuple(sorted(
                 staged.request_id
                 for staged in self._active.values()
-                if staged.transaction_type.value == transaction_type
+                if staged.transaction_type.wire_value == transaction_type
             ))
 
     def describe(self) -> Dict[str, object]:

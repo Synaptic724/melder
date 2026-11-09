@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_types/spell_types.py",
- "source_sha256": "38bcf0cf262047c15885ba771208c02234e26d3b15aba62a0f672dbc8a097147",
+ "source_sha256": "4c7cbc97ececb66ec49351bcb3787f40658bd1687e288fb1fb9584dc8a9c4347",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_types.spell_types": {
@@ -19,18 +19,18 @@
    "label": "SpellType",
    "kind": "enum",
    "file": "src/melder/aether/spellbook/spell_types/spell_types.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4784b162ce6aa4e446588f5de574715f66642f6724d4398da6a70c277c863575",
+   "span_sha256": "da5af61b041b6c6cff28a40bcc2926c0c6386e94c42cb960f1f56e0ff996b360",
    "role": "Canonical runtime binding-family classification enum for bound spells.",
    "responsibilities": [
     "labels class, existing-creation, method, and lambda spell families"
@@ -61,8 +61,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

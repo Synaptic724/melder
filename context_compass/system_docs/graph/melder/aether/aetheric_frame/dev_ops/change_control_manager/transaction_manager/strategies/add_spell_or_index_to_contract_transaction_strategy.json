@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py",
- "source_sha256": "500c4fce517684cb3bdd2beb9067836286c64c2e7fc7d318546daece6d2b1b09",
+ "source_sha256": "d6e5c64ad712cfebe590ca556a4ae6a2eda60f552695889835ef2d75942e97e3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f1b5092e20ec78fbf42d8008724982ec117cdf4cd41c52fe4eda78ccba856fbf",
+   "span_sha256": "26e3051b29f84aedd48b1f8c5e6803314d694444a7789bcae68172b9acf1184b",
    "include": true,
    "role": "Grant half of the standalone contract-mutation pair: a self-admitting envelope for an add that would otherwise ride inside a link or cluster transaction.",
    "responsibilities": [

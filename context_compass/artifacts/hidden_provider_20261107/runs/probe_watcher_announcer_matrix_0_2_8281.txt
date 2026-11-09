@@ -1,0 +1,1487 @@
+probe_watcher_announcer_matrix.py on 0.2.8281, every cell, the GIL off then on - the S1 matrix re-run after
+patch hidden_provider_2026_11_07 (melder_0's implementation subagent, 2026-11-07T19:40:06Z); interpreter:
+3.14.7 free-threaded build: 1.
+===== A1 (-X gil=0)
+cell A1 (melder 0.2.8281, GIL off): single class English | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A2 (-X gil=0)
+cell A2 (melder 0.2.8281, GIL off): single class English | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A3 (-X gil=0)
+cell A3 (melder 0.2.8281, GIL off): single class English | provider Protocol frame (Greeter,'greeter') | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A4 (-X gil=0)
+cell A4 (melder 0.2.8281, GIL off): single class English | existing object bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (bare)                      -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A5 (-X gil=0)
+cell A5 (melder 0.2.8281, GIL off): single class English | existing object category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (category)                  -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A6 (-X gil=0)
+cell A6 (melder 0.2.8281, GIL off): single Protocol Greeter | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A7 (-X gil=0)
+cell A7 (melder 0.2.8281, GIL off): single name 'English' | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['byname'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A8 (-X gil=0)
+cell A8 (melder 0.2.8281, GIL off): single name 'English' | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A9 (-X gil=0)
+cell A9 (melder 0.2.8281, GIL off): single name 'English' | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A10 (-X gil=0)
+cell A10 (melder 0.2.8281, GIL off): single Protocol Greeter | provider category named 'greeter' (no match) | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (category_greeter)            -> ok, at greeter/__default__
+    [diag] watch ['english', 'greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== B1 (-X gil=0)
+cell B1 (melder 0.2.8281, GIL off): collection list[English] | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B2 (-X gil=0)
+cell B2 (melder 0.2.8281, GIL off): collection list[English] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> []
+    [diag] edge  ['01M6VRCS'] -> ['01M6VRCS']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live []; fresh []
+[exit 0]
+
+===== B3 (-X gil=0)
+cell B3 (melder 0.2.8281, GIL off): collection list[English] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> []
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live []; fresh []
+[exit 0]
+
+===== B4 (-X gil=0)
+cell B4 (melder 0.2.8281, GIL off): collection list[Greeter] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ListByProtocol']
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['listbyprotocol'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B5 (-X gil=0)
+cell B5 (melder 0.2.8281, GIL off): collection list['langs'] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== C1 (-X gil=0)
+cell C1 (melder 0.2.8281, GIL off): single class English | index under Protocol frame | notch away to French and back
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 538, in <lambda>
+    lambda: notch_back(ByClass, meld_single, "protocol", French)),
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 284, in notch_back
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='greeter') - use SpellMap(spellframe=Greeter, binding_name='greeter'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== C2 (-X gil=0)
+cell C2 (melder 0.2.8281, GIL off): single class English | index under category 'langs' | notch away to French and back
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 540, in <lambda>
+    lambda: notch_back(ByClass, meld_single, "category", French)),
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 284, in notch_back
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== C3 (-X gil=0)
+cell C3 (melder 0.2.8281, GIL off): single Protocol Greeter | index under Protocol frame | notch to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByProtocol']
+    [diag] watch ['french', 'greeter'] -> []
+  meld the consumer (French active)                        -> French
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ByProtocol']
+    [diag] watch ['english', 'greeter'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== C4 (-X gil=0)
+cell C4 (melder 0.2.8281, GIL off): collection list[English] | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> []
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> []
+    [diag] watch ['french', 'langs'] -> []
+  meld the consumer (French active)                        -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['english', 'langs'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> []
+  dispose + bind the consumer again, meld (FRESH)          -> []
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live []; fresh []
+[exit 0]
+
+===== C5 (-X gil=0)
+cell C5 (melder 0.2.8281, GIL off): single name 'English' | index under category 'langs' | notch away to French and back
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 546, in <lambda>
+    lambda: notch_back(ByName, meld_single, "category", French)),
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 284, in notch_back
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByName.
+ByName:
+  - Parameter 'greeter' on spell 'ByName' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== C6 (-X gil=0)
+cell C6 (melder 0.2.8281, GIL off): collection list['langs'] | index under category 'langs' | notch to French and back
+  meld the consumer (English active)                       -> [English]
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ListByLabel']
+    [diag] watch ['french', 'langs'] -> ['ListByLabel']
+  meld the consumer (French active)                        -> [French]
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ListByLabel']
+    [diag] watch ['english', 'langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== I1 (-X gil=0)
+cell I1 (melder 0.2.8281, GIL off): single class English | index under 'langs' | remove_from_spell_index / add_to_spell_index of a parked one
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 304, in cell_index_moves
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== I2 (-X gil=0)
+cell I2 (melder 0.2.8281, GIL off): single class English | French active under 'langs' | bind_inactive English, notch to it
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  bind_inactive English onto the 'langs' index             -> ok
+  meld the consumer (English parked)                       -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch to English                                         -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active)                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== E1 (-X gil=0)
+cell E1 (melder 0.2.8281, GIL off): single class English, resolved | a second English (category) arrives | bind after conjure
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCT'] -> ['01M6VRCT']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== D1 (-X gil=0)
+cell D1 (melder 0.2.8281, GIL off): single class English, AMBIGUOUS | one competitor disposed | cleanup_spell
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  dispose + bind the consumer again (compile it AMBIGUOUS) -> ok
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (two providers)                        -> English
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, one provider left)              -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== D2 (-X gil=0)
+cell D2 (melder 0.2.8281, GIL off): collection list[English], two members | one disposed | cleanup_spell
+  meld the consumer (two members)                          -> [English]
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== D3 (-X gil=0)
+cell D3 (melder 0.2.8281, GIL off): single class English, resolved (bare) | provider disposed | cleanup_spell
+  meld the consumer                                        -> English
+  cleanup_spell(English)                                   -> ok
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV', 'ByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises RuntimeError: RootResolutionBlueprint has already been cleaned. 
+  meld the consumer again (LIVE, second meld)              -> raises RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> cod
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises RuntimeError; fresh raises UnresolvedInputError; the second live meld raises RuntimeError
+[exit 0]
+
+===== F1 (-X gil=0)
+cell F1 (melder 0.2.8281, GIL off): OVERRIDE_REQUIRED Protocol Greeter (definition bound resolvable=False) | provider Protocol frame
+  meld the consumer (no provider yet)                      -> raises TypeError: ByProtocol.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== F2 (-X gil=0)
+cell F2 (melder 0.2.8281, GIL off): OVERRIDE_REQUIRED class English (definition bound resolvable=False) | Edited.English category
+  meld the consumer (no provider yet)                      -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+  dispose + bind the consumer again, meld (FRESH)          -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live raises TypeError; fresh raises TypeError
+[exit 0]
+
+===== G1 (-X gil=0)
+cell G1 (melder 0.2.8281, GIL off): single class English in a borrower | owner's English bare | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== G2 (-X gil=0)
+cell G2 (melder 0.2.8281, GIL off): single class English in a borrower | owner's English Protocol frame | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english', 'greeter'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== G3 (-X gil=0)
+cell G3 (melder 0.2.8281, GIL off): single class English in a borrower | owner's English category | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== G4 (-X gil=0)
+cell G4 (melder 0.2.8281, GIL off): single class English in a borrower, resolved to the borrowed copy | remove_spell_from_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  (arrival: live English, fresh English; the consumer is now compiled against the borrowed copy)
+  borrower.remove_spell_from_contract(English, owner)      -> True
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, contract removed)               -> English
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live English; fresh raises UnresolvedInputError
+[exit 0]
+
+===== H1 (-X gil=0)
+cell H1 (melder 0.2.8281, GIL off): single class English in the target | owner's English bare | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== H2 (-X gil=0)
+cell H2 (melder 0.2.8281, GIL off): single class English in the target | owner's English Protocol frame | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+  VERDICT: MISS - live raises UnresolvedInputError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== H3 (-X gil=0)
+cell H3 (melder 0.2.8281, GIL off): single class English, resolved at home | English transferred away | transfer_spell_ownership
+  meld the consumer at home                                -> English
+  home.transfer_spell_ownership(English -> other)          -> ok
+    [diag] edge  ['English'] -> ['English', 'ByClass']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6VRCV'] -> ['01M6VRCV']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== P1a (-X gil=0)
+cell P1a (melder 0.2.8281, GIL off): Phase 4 binding-key cycle: CycZ under category 'cycb' (CycA's annotated name) | conjure
+  conjure (CycZ under category 'cycb')                     -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: CycA. codes=['HIDDEN_PROVIDER']
+  VERDICT: MISS - conjure raises SpellbookValidationError; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+
+===== P1b (-X gil=0)
+cell P1b (melder 0.2.8281, GIL off): Phase 4 binding-key cycle control: CycZ under category 'zz' | conjure
+  conjure (CycZ under category 'zz')                       -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: CycA. codes=['HIDDEN_PROVIDER']
+  VERDICT: MISS - conjure raises SpellbookValidationError; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+
+===== A1 (-X gil=1)
+cell A1 (melder 0.2.8281, GIL on): single class English | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A2 (-X gil=1)
+cell A2 (melder 0.2.8281, GIL on): single class English | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A3 (-X gil=1)
+cell A3 (melder 0.2.8281, GIL on): single class English | provider Protocol frame (Greeter,'greeter') | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A4 (-X gil=1)
+cell A4 (melder 0.2.8281, GIL on): single class English | existing object bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (bare)                      -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A5 (-X gil=1)
+cell A5 (melder 0.2.8281, GIL on): single class English | existing object category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English() after conjure (category)                  -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A6 (-X gil=1)
+cell A6 (melder 0.2.8281, GIL on): single Protocol Greeter | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A7 (-X gil=1)
+cell A7 (melder 0.2.8281, GIL on): single name 'English' | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+    [diag] watch ['byname'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== A8 (-X gil=1)
+cell A8 (melder 0.2.8281, GIL on): single name 'English' | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A9 (-X gil=1)
+cell A9 (melder 0.2.8281, GIL on): single name 'English' | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByName' (7069b10d3148028791b7d5d577006ac5d0a944f7d9ab753b7f3ce254f4d6f7dc)  codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByName']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByName. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== A10 (-X gil=1)
+cell A10 (melder 0.2.8281, GIL on): single Protocol Greeter | provider category named 'greeter' (no match) | bind after conjure
+  meld the consumer (no provider yet)                      -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  bind English after conjure (category_greeter)            -> ok, at greeter/__default__
+    [diag] watch ['english', 'greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByProtocol' (3a7ae2ddcd27a3314ee440ac812c6b026971d13a33892364ff503274ec0a56 codes=['MELD']
+    [diag] edge  ['01M6VRCW'] -> ['01M6VRCW']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== B1 (-X gil=1)
+cell B1 (melder 0.2.8281, GIL on): collection list[English] | provider bare | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (bare)                        -> ok, at english/__default__
+    [diag] watch ['english'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B2 (-X gil=1)
+cell B2 (melder 0.2.8281, GIL on): collection list[English] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> []
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live []; fresh []
+[exit 0]
+
+===== B3 (-X gil=1)
+cell B3 (melder 0.2.8281, GIL on): collection list[English] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> []
+  dispose + bind the consumer again, meld (FRESH)          -> []
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live []; fresh []
+[exit 0]
+
+===== B4 (-X gil=1)
+cell B4 (melder 0.2.8281, GIL on): collection list[Greeter] | provider Protocol frame | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ListByProtocol']
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbyprotocol'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== B5 (-X gil=1)
+cell B5 (melder 0.2.8281, GIL on): collection list['langs'] | provider category 'langs' | bind after conjure
+  meld the consumer (no provider yet)                      -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  bind English after conjure (category)                    -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== C1 (-X gil=1)
+cell C1 (melder 0.2.8281, GIL on): single class English | index under Protocol frame | notch away to French and back
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 538, in <lambda>
+    lambda: notch_back(ByClass, meld_single, "protocol", French)),
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 284, in notch_back
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='greeter') - use SpellMap(spellframe=Greeter, binding_name='greeter'). Ask for it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== C2 (-X gil=1)
+cell C2 (melder 0.2.8281, GIL on): single class English | index under category 'langs' | notch away to French and back
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 540, in <lambda>
+    lambda: notch_back(ByClass, meld_single, "category", French)),
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 284, in notch_back
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== C3 (-X gil=1)
+cell C3 (melder 0.2.8281, GIL on): single Protocol Greeter | index under Protocol frame | notch to French and back
+  meld the consumer (English active)                       -> English
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ByProtocol']
+    [diag] watch ['french', 'greeter'] -> []
+  meld the consumer (French active)                        -> French
+    [diag] consumer validity valid; sockets [('NORMAL', ('greeter', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ByProtocol']
+    [diag] watch ['english', 'greeter'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('greeter', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== C4 (-X gil=1)
+cell C4 (melder 0.2.8281, GIL on): collection list[English] | index under category 'langs' | notch away to French and back
+  meld the consumer (English active)                       -> []
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> []
+    [diag] watch ['french', 'langs'] -> []
+  meld the consumer (French active)                        -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['english', 'langs'] -> ['ListByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> []
+  dispose + bind the consumer again, meld (FRESH)          -> []
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live []; fresh []
+[exit 0]
+
+===== C5 (-X gil=1)
+cell C5 (melder 0.2.8281, GIL on): single name 'English' | index under category 'langs' | notch away to French and back
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 546, in <lambda>
+    lambda: notch_back(ByName, meld_single, "category", French)),
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 284, in notch_back
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByName.
+ByName:
+  - Parameter 'greeter' on spell 'ByName' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== C6 (-X gil=1)
+cell C6 (melder 0.2.8281, GIL on): collection list['langs'] | index under category 'langs' | notch to French and back
+  meld the consumer (English active)                       -> [English]
+  notch to French                                          -> French
+    [diag] walk  ['French'] -> ['ListByLabel']
+    [diag] watch ['french', 'langs'] -> ['ListByLabel']
+  meld the consumer (French active)                        -> [French]
+    [diag] consumer validity valid; sockets [('NORMAL', ('langs', '__default__'))]
+  notch back to English                                    -> English
+    [diag] walk  ['English'] -> ['ListByLabel']
+    [diag] watch ['english', 'langs'] -> ['ListByLabel']
+    [diag] consumer validity gated; sockets [('NORMAL', ('langs', '__default__'))]
+  meld the consumer (LIVE, English active again)           -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCX'] -> ['01M6VRCX']
+    [diag] watch ['listbylabel'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== I1 (-X gil=1)
+cell I1 (melder 0.2.8281, GIL on): single class English | index under 'langs' | remove_from_spell_index / add_to_spell_index of a parked one
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 602, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 598, in main
+    run()
+    ~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\dependency_watchers_20261107\probes\probe_watcher_announcer_matrix.py", line 304, in cell_index_moves
+    world = book.conjure(dynamic=True, name="world")
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8067, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<3 lines>...
+        validation_warnings=validation_warnings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 8399, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 236, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_name=resolved_conduit_name,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 355, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1582, in run_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        message_prefix="Spellbook structural pipeline completed with broken spells; ",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 2270, in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spellframe: English at (spellframe='langs', binding_name=None) - use SpellMap(spellframe='langs'). Ask for it where it is bound - the SpellMap shown, as the parameter's default - or bind English bare. [HIDDEN_PROVIDER]
+[exit 1]
+
+===== I2 (-X gil=1)
+cell I2 (melder 0.2.8281, GIL on): single class English | French active under 'langs' | bind_inactive English, notch to it
+  meld the consumer (French active)                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  bind_inactive English onto the 'langs' index             -> ok
+  meld the consumer (English parked)                       -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch to English                                         -> English
+    [diag] walk  ['English'] -> []
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE, English active)                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== E1 (-X gil=1)
+cell E1 (melder 0.2.8281, GIL on): single class English, resolved | a second English (category) arrives | bind after conjure
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== D1 (-X gil=1)
+cell D1 (melder 0.2.8281, GIL on): single class English, AMBIGUOUS | one competitor disposed | cleanup_spell
+  meld the consumer (English only)                         -> English
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  dispose + bind the consumer again (compile it AMBIGUOUS) -> ok
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (two providers)                        -> English
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, one provider left)              -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== D2 (-X gil=1)
+cell D2 (melder 0.2.8281, GIL on): collection list[English], two members | one disposed | cleanup_spell
+  meld the consumer (two members)                          -> [English]
+  cleanup_spell(Edited.English)                            -> ok
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> [English]
+  dispose + bind the consumer again, meld (FRESH)          -> [English]
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['listbyclass'] -> []
+  VERDICT: OK - live [English]; fresh [English]
+[exit 0]
+
+===== D3 (-X gil=1)
+cell D3 (melder 0.2.8281, GIL on): single class English, resolved (bare) | provider disposed | cleanup_spell
+  meld the consumer                                        -> English
+  cleanup_spell(English)                                   -> ok
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY', 'ByClass']
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises RuntimeError: RootResolutionBlueprint has already been cleaned. 
+  meld the consumer again (LIVE, second meld)              -> raises RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> cod
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises RuntimeError; fresh raises UnresolvedInputError; the second live meld raises RuntimeError
+[exit 0]
+
+===== F1 (-X gil=1)
+cell F1 (melder 0.2.8281, GIL on): OVERRIDE_REQUIRED Protocol Greeter (definition bound resolvable=False) | provider Protocol frame
+  meld the consumer (no provider yet)                      -> raises TypeError: ByProtocol.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  bind English after conjure (protocol)                    -> ok, at greeter/greeter
+    [diag] watch ['english', 'greeter'] -> ['ByProtocol']
+    [diag] consumer validity gated; sockets [('OVERRIDE_REQUIRED', ('greeter', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byprotocol'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== F2 (-X gil=1)
+cell F2 (melder 0.2.8281, GIL on): OVERRIDE_REQUIRED class English (definition bound resolvable=False) | Edited.English category
+  meld the consumer (no provider yet)                      -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+    [diag] consumer validity valid; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  bind Edited.English after conjure (category)             -> ok, at langs/__default__
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('OVERRIDE_REQUIRED', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+  dispose + bind the consumer again, meld (FRESH)          -> raises TypeError: ByClass.__init__() missing 1 required positional argument: 'greeter'
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live raises TypeError; fresh raises TypeError
+[exit 0]
+
+===== G1 (-X gil=1)
+cell G1 (melder 0.2.8281, GIL on): single class English in a borrower | owner's English bare | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live English; fresh English
+[exit 0]
+
+===== G2 (-X gil=1)
+cell G2 (melder 0.2.8281, GIL on): single class English in a borrower | owner's English Protocol frame | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english', 'greeter'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== G3 (-X gil=1)
+cell G3 (melder 0.2.8281, GIL on): single class English in a borrower | owner's English category | link + add_spell_to_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english', 'langs'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+  VERDICT: OK - live raises SpellbookValidationError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== G4 (-X gil=1)
+cell G4 (melder 0.2.8281, GIL on): single class English in a borrower, resolved to the borrowed copy | remove_spell_from_contract
+  meld the consumer in the borrower                        -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.link(borrower)                                     -> True
+  borrower.add_spell_to_contract(English, owner)           -> True
+    [diag] watch ['english'] -> ['ByClass']
+    [diag] consumer validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> English
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  (arrival: live English, fresh English; the consumer is now compiled against the borrowed copy)
+  borrower.remove_spell_from_contract(English, owner)      -> True
+    [diag] consumer validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE, contract removed)               -> English
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live English; fresh raises UnresolvedInputError
+[exit 0]
+
+===== H1 (-X gil=1)
+cell H1 (melder 0.2.8281, GIL on): single class English in the target | owner's English bare | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> English
+    [diag] edge  ['01M6VRCY'] -> ['01M6VRCY']
+    [diag] watch ['byclass'] -> []
+  VERDICT: MISS - live raises UnresolvedInputError; fresh English
+[exit 0]
+
+===== H2 (-X gil=1)
+cell H2 (melder 0.2.8281, GIL on): single class English in the target | owner's English Protocol frame | transfer_spell_ownership
+  meld the consumer in the target                          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  owner.transfer_spell_ownership(English -> target)        -> ok
+    [diag] edge  ['English'] -> ['English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['greeter'] -> []
+    [diag] consumer validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass. codes=['HIDDEN_PROVIDER']
+    [diag] edge  ['01M6VRCZ'] -> ['01M6VRCZ']
+  VERDICT: MISS - live raises UnresolvedInputError; fresh raises SpellbookValidationError
+[exit 0]
+
+===== H3 (-X gil=1)
+cell H3 (melder 0.2.8281, GIL on): single class English, resolved at home | English transferred away | transfer_spell_ownership
+  meld the consumer at home                                -> English
+  home.transfer_spell_ownership(English -> other)          -> ok
+    [diag] edge  ['English'] -> ['ByClass', 'English']
+    [diag] edge  ['English'] -> ['English']
+    [diag] watch ['english'] -> []
+    [diag] consumer validity gated; sockets [('NORMAL', ('english', '__default__'))]
+  meld the consumer (LIVE)                                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+  dispose + bind the consumer again, meld (FRESH)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b) codes=['MELD']
+    [diag] edge  ['01M6VRCZ'] -> ['01M6VRCZ']
+    [diag] watch ['byclass'] -> []
+  VERDICT: OK - live raises UnresolvedInputError; fresh raises UnresolvedInputError
+[exit 0]
+
+===== P1a (-X gil=1)
+cell P1a (melder 0.2.8281, GIL on): Phase 4 binding-key cycle: CycZ under category 'cycb' (CycA's annotated name) | conjure
+  conjure (CycZ under category 'cycb')                     -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: CycA. codes=['HIDDEN_PROVIDER']
+  VERDICT: MISS - conjure raises SpellbookValidationError; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+
+===== P1b (-X gil=1)
+cell P1b (melder 0.2.8281, GIL on): Phase 4 binding-key cycle control: CycZ under category 'zz' | conjure
+  conjure (CycZ under category 'zz')                       -> raises SpellbookValidationError: Spellbook validation failed. Broken spells: CycA. codes=['HIDDEN_PROVIDER']
+  VERDICT: MISS - conjure raises SpellbookValidationError; the same world with CycZ under 'zz' is cell P1b
+[exit 0]
+

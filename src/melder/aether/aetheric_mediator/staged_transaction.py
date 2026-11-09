@@ -320,13 +320,13 @@ class StagedTransaction(Cleanable):
 
     def describe(self) -> str:
         """
-        Render this staged transaction as one diagnostic line.
+        Render this staged transaction with its historical type token.
 
         Returns:
             str: Type, submitter, request id, and granted scopes.
         """
         return "{0} by {1}:{2} [{3}] granted {4}".format(
-            self.transaction_type.value,
+            self.transaction_type.wire_value,
             self.submitter_kind,
             self.submitter_id,
             self.request_id,

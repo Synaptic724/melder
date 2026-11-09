@@ -1,10 +1,12 @@
 import threading
+from operator import attrgetter, methodcaller
 from types import TracebackType
-from typing import Optional, Type
+from typing import Callable, Optional, Type
 
 import pytest
 
 from melder.nexus.rift.frame_link.frame_link import FrameLink
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_frame_link_defaults_display_name_to_source_id() -> None:
@@ -89,6 +91,8 @@ def test_frame_link_cleanup_clears_owned_state() -> None:
     assert not hasattr(link, '_source_id')
     assert not hasattr(link, '_display_name')
     assert not hasattr(link, '_metadata')
+    assert not hasattr(link, '_link_id')
+    assert not hasattr(link, '_lock')
     link.cleanup()
 
 
@@ -188,4 +192,65 @@ def test_frame_link_cleanup_rechecks_cleaned_inside_lock() -> None:
     assert link.cleaned is True
     with pytest.raises(RuntimeError, match="already been cleaned"):
         link.metadata
+    link.cleanup()
+
+
+@pytest.mark.parametrize(
+    "read",
+    [
+        pytest.param(attrgetter("link_id"), id="link_id"),
+        pytest.param(attrgetter("frame_name"), id="frame_name"),
+        pytest.param(attrgetter("source_kind"), id="source_kind"),
+        pytest.param(attrgetter("source_id"), id="source_id"),
+        pytest.param(attrgetter("display_name"), id="display_name"),
+        pytest.param(attrgetter("metadata"), id="metadata"),
+        pytest.param(methodcaller("clone"), id="clone"),
+    ],
+)
+def test_frame_link_reads_raise_cleaned_runtime_error_after_cleanup(read: Callable[[FrameLink], object]) -> None:
+    """
+    Verify every public read of a cleaned link raises the documented `RuntimeError`.
+
+    Args:
+        read: One public property or method read of the link.
+
+    Returns:
+        None.
+    """
+    link = FrameLink(frame_name="ops", source_kind="spell", source_id="spell-1", metadata={"source": "compiled"})
+    link.cleanup()
+
+    with pytest.raises(RuntimeError, match="FrameLink has already been cleaned"):
+        read(link)
+
+
+def test_frame_link_concurrent_cleanup_tears_down_once_and_both_callers_return() -> None:
+    """
+    Verify two concurrent cleanups tear the link down once and both return, with the GIL off as on.
+
+    The handshake holds the first caller inside the lock until the second has passed the outer check and is about to
+    block, then lets the first run the real teardown. The second must return at the in-lock recheck: had it torn
+    down again it would raise on the state the first deleted, and the handshake reports any caller's error. The
+    metadata map is held from before the cleanup, so the test sees it was cleared; a third call returns too
+    (GitHub #206 requirement 3).
+
+    Returns:
+        None.
+    """
+    link = FrameLink(
+        frame_name="ops",
+        source_kind="spell",
+        source_id="spell-1",
+        metadata={"record_key": ("book-1", "spell-1")},
+    )
+    metadata = link._metadata
+    handshake = CleanupRecheckHandshake()
+    link._lock = handshake.lock
+
+    handshake.run(link.cleanup)
+
+    assert link.cleaned is True
+    assert metadata == {}
+    with pytest.raises(RuntimeError, match="FrameLink has already been cleaned"):
+        link.clone()
     link.cleanup()

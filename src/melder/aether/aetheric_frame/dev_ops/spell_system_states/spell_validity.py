@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class SpellValidity(Enum):
+class SpellValidity(StrEnum):
     """
     Coarse validity gate used for both structural and resolution state.
+
+    Values exactly match member names. Historical numeric values 1-6 remain
+    readable by value, including in older enum pickle payloads.
 
     Usage:
         - Structural validity (global): stored on SpellSystemState and
@@ -27,7 +31,7 @@ class SpellValidity(Enum):
         - disabled:
             Explicitly turned off by policy. Hard "do not resolve" regardless of
             other flags.
-        - cleaned:
+        - CLEANED:
             Index state has been removed during Spellbook cleanup. Hard
             "do not resolve" until re-registered and validated.
 
@@ -66,7 +70,7 @@ class SpellValidity(Enum):
         SpellIndex starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
         the structural phases on first resolution rather than requiring an
         eager frame-wide validation pass at bind time.
-        `disabled` and `cleaned` are both hard refusals but for different
+        `disabled` and `CLEANED` are both hard refusals but for different
         reasons - policy versus lifecycle - and keeping them distinct is what
         lets diagnostics tell "someone turned this off" apart from "this was
         torn down", which are very different operator problems.
@@ -77,9 +81,31 @@ class SpellValidity(Enum):
         access: internal. Coarse validity gate used for both structural and resolution state.
         Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    unknown = auto()
-    valid = auto()
-    gated = auto()
-    invalid = auto()
-    disabled = auto()
-    cleaned = auto()
+    unknown = "unknown"
+    valid = "valid"
+    gated = "gated"
+    invalid = "invalid"
+    disabled = "disabled"
+    CLEANED = "CLEANED"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SpellValidity]:
+        """
+        Resolve a historical numeric validity to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, SpellValidity] = {
+            1: cls.unknown,
+            2: cls.valid,
+            3: cls.gated,
+            4: cls.invalid,
+            5: cls.disabled,
+            6: cls.CLEANED,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

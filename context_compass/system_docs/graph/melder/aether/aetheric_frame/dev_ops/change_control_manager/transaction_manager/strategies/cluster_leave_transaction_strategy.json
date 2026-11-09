@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_leave_transaction_strategy.py",
- "source_sha256": "2a3fd9b60995bde38106cc5931fc579bd2065f517c7f3afe64e4fd14b94b5c3e",
+ "source_sha256": "b2c8ed5bc2bfeb7b4766ffc91342d985380f9c7367d39ed0a58419aa035d27f8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a851e9defa4995f155566fcf6eefecbb2655a523d91322802e81354c1ca51bc2",
+   "span_sha256": "ac7d0e1376a4f69cd4e71c02f2c2398830a87322f6fb99e01286cf3387ef2188",
    "include": true,
    "role": "Exact inverse of cluster-join: scope isolation for a conduit's EXIT, with matching claim modes because an exit mutates the same surfaces an entry does.",
    "responsibilities": [

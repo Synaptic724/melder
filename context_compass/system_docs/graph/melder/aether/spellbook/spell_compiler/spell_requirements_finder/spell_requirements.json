@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements.py",
- "source_sha256": "996ac98d938ad1955b99ad5df641dc13a12368f53a5de78727caece0b3f005b6",
+ "source_sha256": "b436f7ec8994f40c56f875901bb854cf7e7d777e43cf8752dff464caa6ea87b9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements": {
@@ -42,7 +42,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "41bd1131e9a34072e72d9d04f10311fe5296dd229a65ddc37a1db89d454c2f85",
+   "span_sha256": "0547ac9b42e9ab274598693da04cbe775a956879db1940e5bbf05aa60fb2ec06",
    "role": "Per-spell Phase 1 DI requirements artifact.",
    "responsibilities": [
     "records spell identity, spellframe, existence, and binding metadata",

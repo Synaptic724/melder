@@ -1,9 +1,13 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
 
-class SpellState(Enum):
+class SpellState(StrEnum):
     """
     Fine-grained state flags for a spell index.
+
+    Values exactly match member names. Historical numeric values 1-14 remain
+    readable by value, including in older enum pickle payloads.
 
     These are orthogonal markers explaining **why** an index is in a
     particular validity state, and what kind of follow-up work is needed.
@@ -71,23 +75,53 @@ class SpellState(Enum):
         read it to understand the runtime, do not drive it directly.
     """
     # Topology / graph-level
-    new_index = auto()             # first time we see this index
-    structure_changed = auto()       # profile / wiring changed
-    dependencies_changed = auto()    # direct deps set changed
-    impacted_by_dependency = auto()  # downstream of something that changed
+    new_index = "new_index"             # first time we see this index
+    structure_changed = "structure_changed"       # profile / wiring changed
+    dependencies_changed = "dependencies_changed"    # direct deps set changed
+    impacted_by_dependency = "impacted_by_dependency"  # downstream of something that changed
 
     # Contracts / sockets / mutation
-    contract_unvalidated = auto()    # has SpellContracts; needs a pass
-    contract_violation = auto()      # contract failed; usually -> invalid
-    mutation_candidate = auto()      # current version comes from MutationLab
-    mutation_quarantined = auto()    # candidate exists but not allowed in prod
-    mutation_failed = auto()         # last mutation release failed
+    contract_unvalidated = "contract_unvalidated"    # has SpellContracts; needs a pass
+    contract_violation = "contract_violation"      # contract failed; usually -> invalid
+    mutation_candidate = "mutation_candidate"      # current version comes from MutationLab
+    mutation_quarantined = "mutation_quarantined"    # candidate exists but not allowed in prod
+    mutation_failed = "mutation_failed"         # last mutation release failed
 
     # Ops / incidents / policy
-    has_open_incident = auto()       # critical/blocking incident open
-    anchored_component = auto()      # infra / non-mutable component
-    config_missing = auto()          # required config not present
-    transfer_in_progress = auto()    # ownership transfer is actively blocking resolution
+    has_open_incident = "has_open_incident"       # critical/blocking incident open
+    anchored_component = "anchored_component"      # infra / non-mutable component
+    config_missing = "config_missing"          # required config not present
+    transfer_in_progress = "transfer_in_progress"    # ownership transfer is actively blocking resolution
 
     # Capability (registration)
-    non_resolvable = auto()          # selected version bound resolvable=False; owes no resolution verdict
+    non_resolvable = "non_resolvable"          # selected version bound resolvable=False; owes no resolution verdict
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SpellState]:
+        """
+        Resolve a historical numeric flag to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, SpellState] = {
+            1: cls.new_index,
+            2: cls.structure_changed,
+            3: cls.dependencies_changed,
+            4: cls.impacted_by_dependency,
+            5: cls.contract_unvalidated,
+            6: cls.contract_violation,
+            7: cls.mutation_candidate,
+            8: cls.mutation_quarantined,
+            9: cls.mutation_failed,
+            10: cls.has_open_incident,
+            11: cls.anchored_component,
+            12: cls.config_missing,
+            13: cls.transfer_in_progress,
+            14: cls.non_resolvable,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

@@ -1,0 +1,30 @@
+targeted run: the 20 changed and new test files of patch hidden_provider_2026_11_07 on melder 0.2.8281, -X gil=1 (2026-11-07T19:43:10Z)
+files: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py tests/unit/melder/spellbook/spell_crafter/validation/test_hidden_provider_report.py tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_hidden_provider_strategy.py tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_required_holes_strategy.py tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_ambiguous_provider_strategy.py tests/unit/melder/spellbook/spell_crafter/system/validation/test_empty_collection_strategy.py tests/unit/melder/utilities/custom_exceptions/test_unresolved_input_error.py tests/unit/melder/spellbook/spell_compiler/structural_snapshot/test_structural_snapshot.py tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager.py tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states.py tests/unit/melder/spellbook/test_spellbook.py tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_hydrate.py tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py tests/integration/melder/spellbook/test_cache_schema_version_integration.py tests/integration/melder/aether/conduit/test_annotation_category_collision_integration.py tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py 
+
+........................................................................ [  9%]
+........................................................................ [ 18%]
+........................................................................ [ 27%]
+........................................................................ [ 36%]
+........................................................................ [ 45%]
+........................................................................ [ 54%]
+........................................................................ [ 63%]
+........................................................................ [ 72%]
+........................................................................ [ 81%]
+........................................................................ [ 90%]
+........................................................................ [ 99%]
+.xxxxx                                                                   [100%]
+============================== warnings summary ===============================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_consumer_is_released_when_cleanup_spell_disposes_its_only_hidden_provider - EPIC-2026-10-25-dependency_watchers_listen_for_names: this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[remove_spell_from_contract-False] - EPIC-2026-10-25-dependency_watchers_listen_for_names: this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[remove_index_from_contract-True] - EPIC-2026-10-25-dependency_watchers_listen_for_names: this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[sever_link-False] - EPIC-2026-10-25-dependency_watchers_listen_for_names: this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+XFAIL tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py::test_refused_borrower_is_released_when_its_only_hidden_provider_leaves_the_contract[lender_cleanup_spell-False] - EPIC-2026-10-25-dependency_watchers_listen_for_names: this departure announces no frame key, so the refused consumer is never re-gated and keeps a refusal its fresh twin no longer gives (measured 0.2.8281; the departure UNKNOWN of patch hidden_provider_2026_11_07)
+793 passed, 5 xfailed, 1 warning in 8.80s

@@ -111,9 +111,9 @@ finally:
 
 | Parameter | Meaning |
 |---|---|
-| `store: Store` without a default | Infer a required provider. |
+| `store: Store` without a default | Infer a required provider: the `Store` bound **bare** (no `spellframe`, no `binding_name`). A class annotation never reaches a Store bound under a spellframe or a binding name - ask through the frame (a Protocol annotation, a frame `SpellMap`) or the name (`md.SpellMap(Store, binding_name=...)`). |
 | `store: Store = ordinary_value` | Keep the Python default; **ordinary defaults suppress inferred DI**. |
-| `store = md.SpellMap(Store)` | Explicit local DI selector. |
+| `store = md.SpellMap(Store)` | Explicit local DI selector for `Store` bound bare under the default binding; `md.SpellMap(Store, binding_name="primary")` selects a bare `Store` bound under that name. |
 | `store = md.SpellMap(spellframe=StoreProtocol, binding_name="primary")` | Explicit category/role; exactly one provider must match. |
 | `handlers: list[HandlerProtocol]` | Collection DI over matching providers; do not invent an ordering guarantee. |
 | `store = md.SpellContract(spellframe=StoreProtocol, binding_name="primary")` | Intentional late socket, for a dynamic world; wire provider/link/grant before using it. |

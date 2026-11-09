@@ -1,5 +1,3 @@
-from threading import Event, RLock, Thread
-
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
@@ -8,25 +6,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-
-
-class _CoordinatedLock:
-    def __init__(self) -> None:
-        self._entered_first: Event = Event()
-        self._second_attempted: Event = Event()
-        self._lock: RLock = RLock()
-
-    def __enter__(self):
-        if self._entered_first.is_set():
-            self._second_attempted.set()
-        self._lock.acquire()
-        if not self._entered_first.is_set():
-            self._entered_first.set()
-            assert self._second_attempted.wait(timeout=1.0)
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        self._lock.release()
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def test_transaction_manager_cleanup_is_idempotent_and_blocks_reuse() -> None:
@@ -71,31 +51,24 @@ def test_transaction_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
     Contract:
         - A second cleanup caller may pass the outer `_cleaned` check.
         - The inner `_cleaned` check inside the lock returns safely without error.
+        - The handshake holds the first caller inside the lock until the second has passed the outer check and
+          is about to block; the first caller then runs the real cleanup, and the second must return at the inner
+          check. Without that check the teardown would run twice and a caller would raise on an attribute the
+          other had already deleted.
+        - Both callers must finish without raising; the manager must read cleaned with its `_lock` dropped.
+        - The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+          signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
     Returns:
         None.
     Raises:
         AssertionError: If concurrent cleanup raises or leaves the manager dirty.
     """
     manager = ChangeControlTransactionManager()
-    manager._lock = _CoordinatedLock()
-    failures: list[BaseException] = []
+    handshake = CleanupRecheckHandshake()
+    manager._lock = handshake.lock
 
-    def _run_cleanup() -> None:
-        try:
-            manager.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
+    handshake.run(manager.cleanup)
 
-    first = Thread(target=_run_cleanup, name="tx-cleanup-first")
-    second = Thread(target=_run_cleanup, name="tx-cleanup-second")
-
-    first.start()
-    assert manager._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert manager._cleaned is True
     assert not hasattr(manager, '_lock')
 

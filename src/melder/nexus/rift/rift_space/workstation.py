@@ -32,8 +32,9 @@ class Workstation(Cleanable):
         - Explicit weak binding raises when the supplied value cannot be
           weak-referenced; it never silently degrades to strong storage.
         - Tracks at most one active target binding at a time.
-        - `cleanup_target(...)` acts only on the currently selected target and
-          then clears target selection.
+        - `cleanup_target(...)` acts only on the target selected when it starts
+          and then clears target selection, unless another agent selected a
+          different target meanwhile.
         - `call_target(...)` invokes the currently selected callable target and
           may bind the return value back into the workstation.
         - Cleanup clears workstation-owned binding state but does not attempt
@@ -65,9 +66,23 @@ class Workstation(Cleanable):
         the opposite of what was requested, and the caller would have no way to
         detect it.
         Separating object, attribute, and method stores keeps those namespaces
-        from colliding, and the single active target reflects that a room is one
-        person's workspace - a canvas with several simultaneous "current" things
-        would make every target-relative command ambiguous.
+        from colliding, and the single active target keeps target-relative
+        commands unambiguous - a canvas with several simultaneous "current"
+        things would make every one of them ambiguous. Agents working in one
+        room share that one target (see Threading).
+
+    Threading:
+        One workstation per room, shared by every agent working in that room
+        (the owner, 2026-11-08: agents can work in the same workstation at the
+        same time). They share its one active target and its binding names, so
+        one agent can select another target, or rebind a name, under another;
+        coordinating that is the agents' business. The workstation lock keeps
+        the binding stores and the selection consistent and is never held while
+        agent code runs: `call_target` and `cleanup_target` resolve the target
+        under it and call the target, or its cleanup methods, after releasing
+        it (GitHub #274, W5), so agents' calls run concurrently. Whether the
+        target's own methods are safe to call from several threads at once is
+        the target's business, not Melder's (the owner, 2026-11-08).
 
     AGENT_ACCESS: public
 
@@ -515,6 +530,15 @@ class Workstation(Cleanable):
         """
         Call cleanup methods on the current target and then clear target selection.
 
+        Contract:
+            - Cleans the target selected when the call starts; the cleanup
+              methods run in the order given.
+            - Clears the selection afterwards only while it still names the
+              binding just cleaned (by name and store): a target another agent
+              selected while the cleanup methods ran stays selected.
+            - Returns without clearing when a teardown cleaned the workstation
+              meanwhile; one landing just before the lock raises AttributeError.
+
         Args:
             *method_names:
                 Optional ordered cleanup method names. When omitted, the
@@ -529,30 +553,49 @@ class Workstation(Cleanable):
                 If no target is selected, a method name is empty, or no cleanup
                 method can be resolved on the current target.
             RuntimeError:
-                If one resolved cleanup method is not callable.
+                If the workstation is cleaned, or one resolved cleanup method is
+                not callable.
+
+        Threading:
+            Resolves the target under the workstation lock and runs its cleanup
+            methods - agent code - after releasing it, so another agent's use
+            of this workstation does not wait on them and a cleanup method that
+            uses this room cannot freeze against it (GitHub #274, W5). The
+            selection is cleared under the lock again.
         """
         self.check_cleaned()
         with self._lock:
-            target = self.get_target()
-            cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
-            resolved_any = False
-            for method_name in cleanup_names:
-                if not method_name:
-                    raise ValueError("cleanup method names cannot be empty.")
-                method = getattr(target, method_name, None)
-                if method is None:
-                    continue
-                if not callable(method):
-                    raise RuntimeError(
-                        "Target cleanup attribute '{0}' is not callable.".format(
-                            method_name
-                        )
+            if self._target_name is None or self._target_store is None:
+                raise ValueError("Workstation has no active target.")
+            target_name = self._target_name
+            target_store = self._target_store
+            _, _, target = self._resolve_binding(target_name, store=target_store)
+        cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
+        resolved_any = False
+        for method_name in cleanup_names:
+            if not method_name:
+                raise ValueError("cleanup method names cannot be empty.")
+            method = getattr(target, method_name, None)
+            if method is None:
+                continue
+            if not callable(method):
+                raise RuntimeError(
+                    "Target cleanup attribute '{0}' is not callable.".format(
+                        method_name
                     )
-                method()
-                resolved_any = True
-            if not resolved_any:
-                raise ValueError("No cleanup method was found on the active target.")
-            self._clear_target_locked()
+                )
+            method()
+            resolved_any = True
+        if not resolved_any:
+            raise ValueError("No cleanup method was found on the active target.")
+        if self._cleaned:
+            # A teardown cleaned this workstation while the cleanup methods ran; its selection went with it.
+            return
+        with self._lock:
+            # Clear the selection only while it still names the binding just cleaned: another agent may have
+            # selected a different target while the cleanup methods ran outside the lock (GitHub #274, W5).
+            if self._target_name == target_name and self._target_store == target_store:
+                self._clear_target_locked()
 
     def call_target(
             self,
@@ -565,7 +608,9 @@ class Workstation(Cleanable):
         Invoke the current target and optionally bind the return value.
 
         Contract:
-            - Resolves the current target through the logical store layer.
+            - Resolves the current target through the logical store layer and
+              calls the target selected when the call starts; another agent
+              selecting a different target meanwhile does not change it.
             - When `bind_as_name` is supplied, the return value is rebound
               through the normal workstation bind path with `weak_ref=None`,
               which means the room default applies.
@@ -588,22 +633,30 @@ class Workstation(Cleanable):
             ValueError:
                 If no target is selected or `bind_as_store` is invalid.
             RuntimeError:
-                If the target is not callable.
+                If the target is not callable, or the workstation is cleaned -
+                also when a teardown cleaned it while the target ran and
+                `bind_as_name` asks to bind the result.
+
+        Threading:
+            Resolves the target under the workstation lock and calls it - agent
+            code - after releasing it, so agents sharing this workstation run
+            their calls concurrently and a target that uses this room through a
+            command cannot freeze against another command reading the target
+            (GitHub #274, W5).
         """
         self.check_cleaned()
-        with self._lock:
-            target = self.get_target()
-            if not callable(target):
-                raise RuntimeError("Active target is not callable.")
-            result = target(*args, **kwargs)
-            if bind_as_name is not None:
-                self._bind(
-                    bind_as_store,
-                    bind_as_name,
-                    result,
-                    weak_ref=None,
-                )
-            return result
+        target = self.get_target()
+        if not callable(target):
+            raise RuntimeError("Active target is not callable.")
+        result = target(*args, **kwargs)
+        if bind_as_name is not None:
+            self._bind(
+                bind_as_store,
+                bind_as_name,
+                result,
+                weak_ref=None,
+            )
+        return result
 
     def _bind(
             self,

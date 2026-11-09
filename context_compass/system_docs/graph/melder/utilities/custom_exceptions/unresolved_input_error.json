@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/unresolved_input_error.py",
- "source_sha256": "47177e20a26628787192e7e79a9d9a964aa42f73e59f5c2cb73c9d4da667fa5b",
+ "source_sha256": "76454d5c6e79c8146f5973bbef1cd26957f9dadd254767dba90fa5bc2aa5b9f4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.unresolved_input_error": {
@@ -26,7 +26,7 @@
    "label": "UnresolvedInputError",
    "kind": "class",
    "file": "src/melder/utilities/custom_exceptions/unresolved_input_error.py",
-   "lineno": 15,
+   "lineno": 18,
    "bases": [
     "MeldExecutionError"
    ],
@@ -36,27 +36,29 @@
     "for_unsupplied"
    ],
    "shape": {
-    "method_count": 4,
+    "method_count": 6,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8c781b5f1f2aa84706399d76f53b8ad4ea83287e44b88f6c114ab3da766babe8",
+   "span_sha256": "e0e49d7077016466c57775eddf20f7af8e6d08b7408740d6e4fcc396f82ef6ad",
    "include": true,
    "role": "MeldExecutionError subclass for an UNRESOLVED_INPUT socket the constructing call did not supply.",
    "responsibilities": [
     "names the first missing parameter and its expected type, and lists every missing parameter in signature order",
     "for_unsupplied builds the error for sockets a plan or solo call target knows are unsupplied, before any construction (no cause)",
     "expected_type_name renders Optional, ForwardRef, quoted-string and class annotations as one display name shared with the Phase-4 warning",
-    "reads the expected type from the constructor signature when the error is built, because Phase 1-4 artifacts are released after resolution"
+    "reads the expected type from the constructor signature when the error is built, because Phase 1-4 artifacts are released after resolution",
+    "on the failure path looks up, live, the spells of the first missing parameter's class that a class lookup cannot reach (_hidden_candidates: Phase 3's annotation helpers and CompilerPhase3._hidden_type_key over a copy of the consumer's Book pool, method and lambda spells excluded) and, with any, renders HiddenProviderReport.unresolved_input_message and carries their ids in hidden_spell_ids (0.2.8281)"
    ],
    "owns_state": [
     "expected_type",
-    "unresolved_params"
+    "unresolved_params",
+    "hidden_spell_ids"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "8c781b5f1f2aa84706399d76f53b8ad4ea83287e44b88f6c114ab3da766babe8"
+   "semantics_authored_against": "e0e49d7077016466c57775eddf20f7af8e6d08b7408740d6e4fcc396f82ef6ad"
   }
  },
  "edges_out": [
@@ -73,6 +75,12 @@
    "to_label": "RuntimeError",
    "relation": "creates",
    "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "to_label": "CompilerPhase3",
+   "relation": "creates",
+   "confidence": "candidate"
   }
  ],
  "published_aliases": [],
@@ -84,10 +92,14 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Collection": "typing.Collection",
+  "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "CompilerPhase3": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
+  "HiddenProviderReport": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+  "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor"
@@ -103,6 +115,28 @@
    "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
    "relation": "uses",
    "why": "for_unsupplied reads the consumer's live Phase-3 topology to select the named UNRESOLVED_INPUT sockets.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "to": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+   "relation": "uses",
+   "why": "UnresolvedInputError renders where an unsupplied input's class is bound through HiddenProviderReport.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "to": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
+   "relation": "uses",
+   "why": "UnresolvedInputError classifies the missing parameter's annotation and finds its hidden candidates with Phase 3's helpers and CompilerPhase3._hidden_type_key.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime"

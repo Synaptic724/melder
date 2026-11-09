@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 
 
 
-class RiftAccessMode(Enum):
+class RiftAccessMode(StrEnum):
     """
     Internal
 
@@ -16,6 +16,11 @@ class RiftAccessMode(Enum):
             configured access token.
         system_only:
             Direct Rift lookup is reserved for trusted internal/system flows.
+
+    Contract:
+        Member names and values are unchanged strings. Members compare as strings,
+        including equal-valued members of other StrEnum families. Callers that need
+        family identity must validate the concrete enum type.
 
     Threading:
         Immutable enum members; safe to read from any thread.

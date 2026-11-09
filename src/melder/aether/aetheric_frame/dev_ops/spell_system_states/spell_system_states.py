@@ -1253,7 +1253,7 @@ class SpellSystemStates(Cleanable):
         if callback is not None:
             callback(
                 index_id,
-                SpellValidity.cleaned,
+                SpellValidity.CLEANED,
             )
         removed_state.cleanup()
         return removed_state
@@ -1907,6 +1907,13 @@ class SpellSystemStates(Cleanable):
               dependency-changed and its next meld re-resolves it into a NORMAL edge.
             - An AMBIGUOUS_INPUT socket is watched the same way (2026-10-04), so
               removing one of the competing providers re-gates the consumer.
+            - An UNRESOLVED_INPUT socket is also watched under its
+              `hidden_frame_keys` (2026-11-07, patch hidden_provider_2026_11_07):
+              the addresses of the spells of its class a class lookup does not
+              reach, which made Phase 4 refuse the consumer (HIDDEN_PROVIDER);
+              a change announced at one of them (a notch of that index, for
+              instance) re-gates the consumer, so a refusal whose cause moved
+              away is re-checked at its next meld.
             - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
@@ -1925,6 +1932,8 @@ class SpellSystemStates(Cleanable):
             if socket.dependency_key is None:
                 continue
             frames.add(socket.dependency_key[0])
+            if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                frames.update(socket.hidden_frame_keys)
         return frames
 
     def _extract_contract_keys(

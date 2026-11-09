@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py",
- "source_sha256": "873a7b87c9e0d1aca9d0b2a2c4e2f8f7025f982b80baac463843e76612b4d950",
+ "source_sha256": "11c6d2e39a0d92e6fdb1364c7810caf498378fd1bda9a951a1df10b45d99d11a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager": {
@@ -72,7 +72,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "71ff6c8b6d86862720d147bf96a00d932ade1fbc29cbd5de334d26a8dd2d6ae4",
+   "span_sha256": "bdc0a822bd5c674db994eae7914c64109be44d00f026cb9c911ca4a77facb877",
    "role": "Conduit-local risk aggregator for validation gating.",
    "responsibilities": [
     "tracks structural and resolution risk per conduit",

@@ -183,7 +183,7 @@ def test_unregister_index_triggers_risk_manager(
 
     Contract:
     - register_index notifies with SpellValidity.gated.
-    - unregister_index notifies with SpellValidity.cleaned.
+    - unregister_index notifies with SpellValidity.CLEANED.
     """
     risk_manager = MagicMock()
     states_manager.set_risk_manager(risk_manager)
@@ -193,7 +193,7 @@ def test_unregister_index_triggers_risk_manager(
 
     calls = risk_manager.on_structural_validity_change.call_args_list
     assert calls[0] == call("idx-1", SpellValidity.gated)
-    assert calls[-1] == call("idx-1", SpellValidity.cleaned)
+    assert calls[-1] == call("idx-1", SpellValidity.CLEANED)
     assert len(calls) == 2
 
 def test_unregister_index_marks_dependents_gated(
@@ -482,6 +482,48 @@ def test_conduit_resolution_state_guards_invalid_ids_and_cleaned_manager(
 # ----------------------------------------------------------------------
 # 8. Topology Indexing and Dirty Propagation
 # ----------------------------------------------------------------------
+
+def test_refused_consumer_is_regated_by_a_change_at_its_hidden_candidates_address(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07): an UNRESOLVED_INPUT socket that recorded hidden candidates refuses
+    its spell (HIDDEN_PROVIDER) because English is bound under "greeter"; the consumer watches "greeter" beside its
+    own key "english", so a change announced at that address (a notch of English's index) re-gates it and its next
+    meld re-checks the refusal. A collection socket's hidden ids add no watch (the consumer is not refused), and a
+    socket of another kind never adds `hidden_frame_keys`.
+    """
+    spell = _build_owned_spell("book-1")
+    index = SpellIndex("spell-hidden-1")
+    states_manager.register_index(index, owner_spellbook_id=spell._spellbook._id)
+    states_manager.consume_dirty_indexes()
+    topology = SpellLocalTopology(index.selected_spell_id, [
+        SpellSocketDescriptor(
+            spell_id=index.selected_spell_id, param_name="greeter", position=0,
+            socket_kind=SocketKind.UNRESOLVED_INPUT, is_collection=False, is_optional=False, target_spell_ids=(),
+            dependency_key=("english", "__default__"), hidden_spell_ids=("english-sid",),
+            hidden_frame_keys=("greeter",),
+        ),
+        SpellSocketDescriptor(
+            spell_id=index.selected_spell_id, param_name="greeters", position=1,
+            socket_kind=SocketKind.NORMAL, is_collection=True, is_optional=False, target_spell_ids=(),
+            dependency_key=("french", "__default__"), hidden_spell_ids=("french-sid",),
+            hidden_frame_keys=("tongues",),
+        ),
+    ])
+    states_manager.register_local_topology(index, topology)
+
+    assert states_manager.mark_collection_dependents_dirty(spellbook_id="book-1", frame_keys=["tongues"]) == set()
+    assert states_manager.mark_collection_dependents_dirty(spellbook_id="book-1", frame_keys=["greeter"]) == {index.id}
+    state = states_manager.get_by_index_id(index.id)
+    assert state is not None
+    assert state.validity is SpellValidity.gated
+    assert state.change_reason is SpellStateChangeReason.dependencies_changed
+    state.clear_dirty(last_validated_at=1.0)
+    states_manager.consume_dirty_indexes()
+    assert states_manager.mark_collection_dependents_dirty(spellbook_id="book-1", frame_keys=["english"]) == {index.id}
+    assert states_manager.mark_collection_dependents_dirty(spellbook_id="book-1", frame_keys=["french"]) == {index.id}
+
 
 def test_register_local_topology_builds_collection_and_contract_indexes(
     states_manager: SpellSystemStates,
