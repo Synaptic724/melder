@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 
 
 
-class RiftSpaceType(Enum):
+class RiftSpaceType(StrEnum):
     """
     Internal
 
@@ -26,6 +26,11 @@ class RiftSpaceType(Enum):
         Either the alias was removed and the prose was not, or it never landed.
         Corrected 2026-08-02.
 
+    Contract:
+        Member names and values are unchanged strings. Members compare as strings,
+        including equal-valued members of other StrEnum families. Callers that need
+        family identity must validate the concrete enum type.
+
     Threading:
         Immutable enum members; safe to read from any thread.
 
@@ -44,10 +49,11 @@ class RiftSpaceType(Enum):
         switching. That is what makes the posture a real boundary rather than a
         mode flag - an agent cannot escalate from static to capability by
         switching rooms, it must obtain a differently configured Rift.
-        The three members above are the whole set. An input naming anything
-        else - including the historical `dynamic` - fails at normalization
-        rather than falling back, which is the correct behaviour for a value
-        that fixes a security-shaped posture for the life of the Rift.
+        The three members above are the whole set. Direct enum construction
+        rejects `dynamic`. Nexus and Rift configuration accept that exact raw
+        legacy string as an alias for `codegen` before family validation; a
+        foreign enum is not accepted through that alias. The selected room
+        posture remains fixed for the life of the Rift.
 
     AGENT_ACCESS: public
 

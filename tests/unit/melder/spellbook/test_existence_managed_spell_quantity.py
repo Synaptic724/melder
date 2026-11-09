@@ -34,17 +34,19 @@ def test_managed_spell_quantity_is_appended_after_the_six_existing_members() -> 
     ]
 
 
-def test_existing_member_values_are_unchanged_by_the_seventh_member() -> None:
+def test_historical_numeric_values_reconstruct_the_same_members() -> None:
     """
     Purpose:
-        Appending the member leaves every existing `auto()` value where it was.
+        Preserve the original number-to-member mapping after string migration.
     Contract:
-        The six original members keep the values 1-6; the new member takes 7.
+        Direct values equal member names; old numbers 1-7 still reconstruct the
+        same six original members and appended managed member.
     """
-    assert Existence.unique.value == 1
-    assert Existence.unique_per_conduit.value == 2
-    assert Existence.many.value == 3
-    assert Existence.unique_per_conduit_cluster.value == 4
-    assert Existence.unique_per_conduit_lineage.value == 5
-    assert Existence.unique_per_spell_space.value == 6
-    assert Existence.managed_spell_quantity.value == 7
+    assert Existence(1) is Existence.unique
+    assert Existence(2) is Existence.unique_per_conduit
+    assert Existence(3) is Existence.many
+    assert Existence(4) is Existence.unique_per_conduit_cluster
+    assert Existence(5) is Existence.unique_per_conduit_lineage
+    assert Existence(6) is Existence.unique_per_spell_space
+    assert Existence(7) is Existence.managed_spell_quantity
+    assert all(member.value == member.name for member in Existence)

@@ -26,8 +26,21 @@ class SpellMap(Cleanable):
 
     - `SpellMap(MyService)`
       Direct type-based DI where the spell itself supplies the lookup identity.
-    - `SpellMap(ILogic)`
-      Frame-based DI where a Protocol / interface acts as the lookup frame.
+      It is a class lookup (2026-11-07): it reaches only MyService bound bare -
+      no spellframe and the default binding - as a `MyService` annotation and
+      `meld(MyService)` do. A MyService bound under a spellframe is reached
+      through the frame (`SpellMap(spellframe=..., binding_name=...)`).
+    - `SpellMap(MyService, binding_name="primary")`
+      The named class lookup: MyService bound bare under that binding name.
+    - `SpellMap(ILogic)` with a Protocol as `spell`
+      Matches by identity, as every `spell` does: it reaches only a spell whose
+      bound object is ILogic itself - the Protocol's own definition, bound
+      `resolvable=False`, whose value the meld supplies by override - and never
+      an implementation, so with only implementations bound it fails at
+      conjure. To inject an implementation filed under the Protocol, name the
+      frame: `SpellMap(spellframe=ILogic, binding_name=...)`. (Corrected
+      2026-11-07: this shape was described as frame-based DI, which Phase 3
+      never did.)
     - `SpellMap(MyService, spellframe=ILogic, binding_name="primary")`
       Fully explicit spell + frame + binding declaration.
     - `SpellMap(spell=None, spellframe=ILogic, binding_name="primary")`
@@ -42,7 +55,7 @@ class SpellMap(Cleanable):
             self.repo = repo
 
     class UsesLogic:
-        def __init__(self, logic=SpellMap(ILogic, binding_name="primary")):
+        def __init__(self, logic=SpellMap(spellframe=ILogic, binding_name="primary")):
             self.logic = logic
 
     class UsesConfig:
@@ -94,10 +107,12 @@ class SpellMap(Cleanable):
         The four supported shapes exist because DI identity in Melder is a
         (spell, frame, binding) triple rather than a single type key, and
         different call sites know different parts of it. Passing a concrete
-        class supplies the whole identity; passing a Protocol supplies a frame
-        and asks the graph to find the implementation; the frame-only form
-        (`spell=None`) exists for the case where the caller deliberately knows
-        NOTHING but the contract and the binding name.
+        class supplies the whole identity (a class lookup: that class bound
+        bare); a Protocol passed as `spell` is matched by identity too, so it
+        names the Protocol's own definition, never an implementation; the
+        frame-only form (`spell=None`) exists for the case where the caller
+        deliberately knows NOTHING but the contract and the binding name, and
+        is how an implementation filed under a Protocol is injected.
         Ambiguity is a build-time failure, not a runtime one: a SpellMap
         default that resolves to zero or to multiple candidates raises rather
         than silently picking. That is the whole reason the explicit
@@ -108,8 +123,10 @@ class SpellMap(Cleanable):
 
     AGENT_PURPOSE:
         access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a
-        constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or
-        frame-only with spell=None. Zero or multiple matches raise at build time.
+        constructor default: SpellMap(MyRepo) for MyRepo bound bare, SpellMap(MyRepo,
+        binding_name='primary') for MyRepo bound bare under that name, or
+        SpellMap(spellframe=ILogic, binding_name='primary') for a spell filed under a frame.
+        Zero or multiple matches raise at build time.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -137,7 +154,9 @@ class SpellMap(Cleanable):
                 When not `None`, this is typically:
 
                 - the concrete implementation class
-                - a Protocol used as a frame-like identity
+                - a Protocol, matched by identity like any `spell`: it names
+                  the Protocol's own definition (bound `resolvable=False`),
+                  never an implementation - pass it as `spellframe` for that
                 - a callable spell target
                 - or another resolver-supported object
 
@@ -147,6 +166,10 @@ class SpellMap(Cleanable):
                   grouping identity and `spell` acts as the concrete spell side
                   of the declaration
                 - if `spellframe` is omitted, `spell` itself supplies the DI key
+                  and Phase 3 treats it as a class lookup (2026-11-07): only
+                  `spell` bound with no spellframe is reached - under the
+                  default binding when `binding_name` is omitted, under
+                  `binding_name` when it is given
                 - if `spell` is `None`, `spellframe` must be present and becomes
                   the sole DI identity
 

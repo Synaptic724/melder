@@ -1,0 +1,121 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py",
+ "source_sha256": "f78246fdf26502451036bce279c85729853f76b4603c88bcff5244867d59056d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy",
+   "label": "hidden_provider_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding the Phase-4 strategy that refuses a class lookup whose class is bound only under a spellframe or a binding name (HIDDEN_PROVIDER).",
+   "responsibilities": [
+    "exports HiddenProviderStrategy for SpellValidationSystem registration"
+   ],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy",
+   "label": "HiddenProviderStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py",
+   "lineno": 20,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "9c3cc37c161c5fe09047031f0e421b7ce58b4823dbe60bd56bdebd9d09157663",
+   "include": true,
+   "role": "Phase-4 strategy: one HIDDEN_PROVIDER error per UNRESOLVED_INPUT socket that carries hidden candidates, naming where the class is bound and the lookup that reaches each place.",
+   "responsibilities": [
+    "reads the spell's Phase-3 topology and selects the UNRESOLVED_INPUT sockets whose hidden_spell_ids is not empty; every other socket is ignored",
+    "picks the form from the parameter's Phase-1 requirement: HiddenProviderReport.spellmap_message for a SPELLMAP_DEFAULT with a captured SpellMap, annotation_message otherwise, the expected type rendered by UnresolvedInputError.expected_type_name",
+    "finds each candidate with _find_candidate - Spellbook.find_spell_by_spell_id, then the Book's borrowed copies peer by peer through Spellbook._find_contracted_spell_by_id, lock-free - so a borrowed candidate renders as an owned one; an id neither finds renders spell id <id>",
+    "offers no meld override: the error marks the spell broken, conjure raises SpellbookValidationError and the meld gate refuses every meld of it, override or not",
+    "carries spell_id, parameter_name, lookup, expected_type or spellmap, dependency_key and the described candidates with their use in details; mutates no graph, topology or spell"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": "9c3cc37c161c5fe09047031f0e421b7ce58b4823dbe60bd56bdebd9d09157663"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+  "HiddenProviderReport": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellParameterRequirement": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy",
+  "label": "HiddenProviderStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+   "relation": "uses",
+   "why": "HiddenProviderStrategy renders every HIDDEN_PROVIDER message and candidate entry through HiddenProviderReport.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy.HiddenProviderStrategy",
+   "to": "melder.aether.spellbook.spellbook.Spellbook",
+   "relation": "uses",
+   "why": "HiddenProviderStrategy finds hidden candidates through the Book's own and borrowed spell lookups.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  }
+ ]
+}

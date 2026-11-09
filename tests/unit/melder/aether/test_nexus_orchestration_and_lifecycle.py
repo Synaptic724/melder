@@ -311,10 +311,12 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
             self.rift_name = "alpha"
             self.cleaned = False
 
-        def list_assigned_frame_names(self):
+        def _mark_cleaned_for_removal(self):
+            # remove_rift marks the Rift and takes its attached frames in one step (GitHub #274, the R4 residual).
+            cleanup_calls.append("rift_mark")
             return ("ops", "finance")
 
-        def cleanup(self) -> None:
+        def _clean_owned_state(self) -> None:
             self.cleaned = True
             cleanup_calls.append("rift_cleanup")
 
@@ -348,6 +350,7 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
 
     assert cleanup_calls == [
         "unregister",
+        "rift_mark",
         ("frame_remove", "nexus-frame"),
         "rift_cleanup",
     ]

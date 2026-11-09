@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, ClassVar
 from melder.utilities.general_base.cleanable import Cleanable
 
 
-class TransitionAct(enum.Enum):
+class TransitionAct(enum.StrEnum):
     """
     World-entry act vocabulary for the mutation-research journal.
 
@@ -59,6 +59,11 @@ class TransitionAct(enum.Enum):
           scope acts carry the composition's content-addressed sha in
           `to_spell_id` (the same sha namespace as spell identities); the
           member roster and composition ancestry ride `metadata`.
+
+    String contract:
+        Names and values match. Members compare as strings, including equal-valued
+        members of other StrEnum families; callers needing family identity must check
+        the concrete enum type.
 
     AGENT_ACCESS: internal
 
@@ -507,6 +512,8 @@ class TransitionEntry(Cleanable):
               value, an int `sequence`, and a string `lane_id`. Missing or
               wrong-typed values among these raise `ValueError`; an unknown act
               string raises from the `TransitionAct(...)` lookup.
+            - A foreign enum act is refused even if its string matches; a
+              same-family string-backed act is accepted.
             - TOLERANT OF WRONG-TYPED OPTIONALS: a non-dict `metadata` is treated
               as absent rather than raising, so a partially-corrupt payload still
               yields a valid entry.
@@ -530,7 +537,13 @@ class TransitionEntry(Cleanable):
         if not isinstance(payload, dict):
             raise ValueError("payload must be a dict produced by describe().")
         act_value = payload.get("act")
-        if not isinstance(act_value, str):
+        if (
+                not isinstance(act_value, str)
+                or (
+                        isinstance(act_value, enum.Enum)
+                        and not isinstance(act_value, TransitionAct)
+                )
+        ):
             raise ValueError("payload is missing a valid 'act' value.")
         sequence = payload.get("sequence")
         lane_id = payload.get("lane_id")

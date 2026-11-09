@@ -14,10 +14,16 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.cancellation_event_signal import (
         CancellationEvent,
     )
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+        SpellSocketDescriptor,
+    )
 
 
 # Melder imports
 from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import (
+    HiddenProviderReport,
+)
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
@@ -65,6 +71,11 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
           without a resolvable mode are treated as non-dynamic (fail-fast).
         - Optional collection sockets are skipped: an optional list[Frame] may
           legitimately wire nothing (the constructor default applies).
+        - A `list[Class]` left empty because its class is bound only under a
+          spellframe or a binding name carries Phase 3's hidden candidates
+          (`SpellSocketDescriptor.hidden_spell_ids`, 2026-11-07); its message
+          names where the class is bound and the list that gathers it
+          (`_diagnostic_for`), at the same severity.
         - Reads only; never mutates Phase 5/6 inputs.
         - Honors cancellation between spells.
     """
@@ -160,35 +171,108 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
                 if socket.target_spell_ids:
                     continue
 
-                if spell_is_dynamic:
-                    severity = SystemDiagnosticSeverity.WARNING
-                    remediation = (
-                        "An empty list will be injected at construction; bind "
-                        "implementations under its frame or add them via a "
-                        "post-conjure contract to populate it."
-                    )
-                else:
-                    severity = SystemDiagnosticSeverity.ERROR
-                    remediation = (
-                        "Bind at least one implementation under its frame, "
-                        "make the parameter optional, or run the book in "
-                        "dynamic mode if members arrive via contracts."
-                    )
                 diagnostics.append(
-                    SystemDiagnostic(
-                        code="collection_socket_no_providers",
-                        message=(
-                            f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
-                            f"parameter '{socket.param_name}' is a required list[...] "
-                            "dependency, but no provider is wired into it. "
-                            f"{remediation}"
-                        ),
-                        severity=severity,
+                    self._diagnostic_for(
                         spell_id=spell_id,
-                        root_id=spell_id,
-                        details={
-                            "spell_id": spell_id,
-                            "param_name": socket.param_name,
-                        },
+                        socket=socket,
+                        spell_lookup=spell_lookup,
+                        spell_is_dynamic=spell_is_dynamic,
                     )
                 )
+
+    @staticmethod
+    def _diagnostic_for(
+            *,
+            spell_id: str,
+            socket: SpellSocketDescriptor,
+            spell_lookup: Mapping[str, Spell],
+            spell_is_dynamic: bool,
+    ) -> SystemDiagnostic:
+        """
+        Build the collection_socket_no_providers diagnostic for one empty required collection socket.
+
+        Purpose:
+            Keep the mode-scoped wording in one place and, since 2026-11-07
+            (patch hidden_provider_2026_11_07), name where the class of a
+            `list[Class]` is bound when Phase 3 recorded hidden candidates: the
+            class IS registered, under a spellframe or a binding name, where a
+            class lookup does not gather it, and "bind implementations under its
+            frame" would send the user the wrong way.
+
+        Contract:
+            - Severity: WARNING in a dynamic Book (`[]` is injected), ERROR
+              otherwise - unchanged by hidden candidates (the owner's D3).
+            - Without hidden candidates (or none of them found in
+              `spell_lookup`) the message is byte-identical to the text before
+              2026-11-07.
+            - With them: "... but no provider is wired into it: list[T] gathers
+              T only where it is bound bare (no spellframe, the default
+              binding), and T is bound only <where>: <entries>." followed by
+              "Gather it where it is bound, as shown, bind T bare, or make the
+              parameter optional." (ERROR) or "An empty list will be injected at
+              construction; gather it where it is bound, as shown, or bind T
+              bare to populate it." (WARNING); `details` gains
+              "hidden_candidates" (the described candidates with their `use`).
+            - Candidates are rendered from `spell_lookup`, the visible spells of
+              this scope; an id it does not hold renders as `spell id <id>`.
+
+        Args:
+            spell_id: The consumer spell id.
+            socket: Its empty required collection socket.
+            spell_lookup: Visible spell_ids to spell objects for this scope.
+            spell_is_dynamic: Whether the consumer's Book is dynamic.
+
+        Returns:
+            SystemDiagnostic: The diagnostic to append.
+        """
+        candidates = [
+            HiddenProviderReport.describe(candidate_id, spell_lookup.get(candidate_id))
+            for candidate_id in socket.hidden_spell_ids
+        ]
+        clause, type_name = HiddenProviderReport.collection_clause(candidates)
+        details: Dict[str, object] = {
+            "spell_id": spell_id,
+            "param_name": socket.param_name,
+        }
+        if type_name is not None:
+            details["hidden_candidates"] = HiddenProviderReport.with_uses(
+                candidates, shape=HiddenProviderReport.SHAPE_LIST,
+            )
+        if spell_is_dynamic:
+            severity = SystemDiagnosticSeverity.WARNING
+            if type_name is None:
+                remediation = (
+                    " An empty list will be injected at construction; bind "
+                    "implementations under its frame or add them via a "
+                    "post-conjure contract to populate it."
+                )
+            else:
+                remediation = (
+                    " An empty list will be injected at construction; gather it where it is bound, as shown, "
+                    f"or bind {type_name} bare to populate it."
+                )
+        else:
+            severity = SystemDiagnosticSeverity.ERROR
+            if type_name is None:
+                remediation = (
+                    " Bind at least one implementation under its frame, "
+                    "make the parameter optional, or run the book in "
+                    "dynamic mode if members arrive via contracts."
+                )
+            else:
+                remediation = (
+                    f" Gather it where it is bound, as shown, bind {type_name} bare, or make the parameter optional."
+                )
+        return SystemDiagnostic(
+            code="collection_socket_no_providers",
+            message=(
+                f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
+                f"parameter '{socket.param_name}' is a required list[...] "
+                f"dependency, but no provider is wired into it{clause or '.'}"
+                f"{remediation}"
+            ),
+            severity=severity,
+            spell_id=spell_id,
+            root_id=spell_id,
+            details=details,
+        )

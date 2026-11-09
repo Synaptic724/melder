@@ -81,7 +81,7 @@ class SpellSiteParam:
                 `inspect.Parameter` kind name (for example "POSITIONAL_OR_KEYWORD"),
                 or None when unknown.
             socket_kind_value:
-                `SocketKind` value of the Phase-3 socket.
+                Historical numeric code of the Phase-3 `SocketKind`.
             is_collection:
                 True for a collection DI socket (the value is a list).
             is_optional:

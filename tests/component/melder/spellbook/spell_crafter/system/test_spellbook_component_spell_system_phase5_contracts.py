@@ -72,7 +72,12 @@ def _bind_graph(
         Bind a dependency graph and return ids keyed by class.
     Contract:
         - Each class is bound as a unique spell with create permissions.
-        - Spellframes match class names for forward-ref DI resolution.
+        - Each class is bound bare (no spellframe, the default binding), so its
+          address is its own name and the graph's forward-ref class annotations
+          reach it: a class lookup reaches only a spell bound bare (2026-11-07).
+          Before, each was bound under a spellframe spelled as its class name:
+          the same address, but a spellframe now hides the class from those
+          annotations.
         - Returned mapping contains an entry for every class.
     Args:
         spellbook: Spellbook used to bind the classes.
@@ -86,7 +91,6 @@ def _bind_graph(
             spell=cls,
             existence=Existence.unique,
             permissions="create",
-            spellframe=cls.__name__,
         )
         ids[cls] = spell_id
     return ids
@@ -138,6 +142,11 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
         - Contracted dependency spell ids appear in the system index.
         - Root blueprints include contracted dependency nodes.
         - Contracted dependencies are not treated as roots.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -177,7 +186,6 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
 
         owner = owner_book.conjure(dynamic=True, name="owner")
@@ -319,6 +327,11 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
     Contract:
         - Contracted spell ids appear in the system index and DAG.
         - Uncontracted remote spell ids are filtered out.
+        - The owner binds BasicService bare (no spellframe, the default
+          binding), so the borrower's Consumer reaches the contracted spell by
+          its class annotation and the DAG holds it: a class lookup reaches only
+          a spell bound bare (2026-11-07). Its address is its own name, as under
+          the spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -378,7 +391,6 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe=BasicService.__name__,
         )
         remote_id = remote_book.bind(
             spell=RemoteOnly,

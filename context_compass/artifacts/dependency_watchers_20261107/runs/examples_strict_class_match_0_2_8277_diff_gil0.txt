@@ -1,0 +1,3 @@
+shipped: 627 tests - failed 10, passed 617 (context_compass/artifacts/dependency_watchers_20261107/runs/examples_strict_class_match_0_2_8277_strict0_gil0.xml)
+strict: 627 tests - failed 10, passed 617 (context_compass/artifacts/dependency_watchers_20261107/runs/examples_strict_class_match_0_2_8277_strict1_gil0.xml)
+differing tests: 0 in 0 files

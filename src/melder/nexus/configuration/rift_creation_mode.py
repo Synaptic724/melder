@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 
 
 
-class RiftCreationMode(Enum):
+class RiftCreationMode(StrEnum):
     """
     Internal
 
@@ -17,6 +17,11 @@ class RiftCreationMode(Enum):
         prebuilt_only:
             New Rift creation is blocked; only prebuilt/external Rift shells may
             be programmed into the system.
+
+    Contract:
+        Member names and values are unchanged strings. Members compare as strings,
+        including equal-valued members of other StrEnum families. Callers that need
+        family identity must validate the concrete enum type.
 
     Threading:
         Immutable enum members; safe to read from any thread.

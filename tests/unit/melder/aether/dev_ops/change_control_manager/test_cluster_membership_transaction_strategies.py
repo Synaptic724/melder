@@ -103,14 +103,14 @@ def test_change_transaction_type_has_cluster_membership_values() -> None:
     Purpose:
         Verify the enum exposes the cluster-membership transaction values.
     Contract:
-        - CLUSTER_JOIN/CLUSTER_LEAVE equal their stable string payloads.
+        - CLUSTER_JOIN/CLUSTER_LEAVE equal their exact member-name strings.
     Returns:
         None.
     Raises:
         AssertionError: If the enum values drift.
     """
-    assert ChangeTransactionType.CLUSTER_JOIN == "cluster_join"
-    assert ChangeTransactionType.CLUSTER_LEAVE == "cluster_leave"
+    assert ChangeTransactionType.CLUSTER_JOIN == "CLUSTER_JOIN"
+    assert ChangeTransactionType.CLUSTER_LEAVE == "CLUSTER_LEAVE"
 
 
 def test_builder_resolves_cluster_join_from_enum_and_string() -> None:
@@ -240,8 +240,8 @@ def test_cluster_join_strategy_claims_spellbooks_intent_conduits_exclusive() -> 
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
 
@@ -474,8 +474,8 @@ def test_cluster_leave_strategy_claims_spellbooks_intent_conduits_exclusive() ->
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "ix"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "ix"
     assert "scope:conduit:conduit-1" not in scope_claims
     assert "scope:conduit_ward:conduit-1" not in scope_claims
 

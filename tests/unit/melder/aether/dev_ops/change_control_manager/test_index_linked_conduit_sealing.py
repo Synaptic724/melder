@@ -92,9 +92,9 @@ def test_notch_seals_acting_conduit_and_its_linked_conduits() -> None:
     plan = _notch_plan(transaction_manager, registry, acting_conduit_id="conduit-A")
     scope_claims = dict(plan["scope_claims"])
 
-    assert scope_claims["scope:conduit:conduit-A"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-B"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-C"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-A"] == "x"
+    assert scope_claims["scope:conduit:conduit-B"] == "x"
+    assert scope_claims["scope:conduit:conduit-C"] == "x"
 
 
 def test_add_to_index_seals_linked_conduits() -> None:
@@ -121,8 +121,8 @@ def test_add_to_index_seals_linked_conduits() -> None:
     )
     scope_claims = dict(plan["scope_claims"])
 
-    assert scope_claims["scope:conduit:conduit-A"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-B"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-A"] == "x"
+    assert scope_claims["scope:conduit:conduit-B"] == "x"
 
 
 def test_remove_from_index_seals_linked_conduits() -> None:
@@ -149,8 +149,8 @@ def test_remove_from_index_seals_linked_conduits() -> None:
     )
     scope_claims = dict(plan["scope_claims"])
 
-    assert scope_claims["scope:conduit:conduit-A"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-C"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-A"] == "x"
+    assert scope_claims["scope:conduit:conduit-C"] == "x"
 
 
 # ---------------------------------------------------------------------------

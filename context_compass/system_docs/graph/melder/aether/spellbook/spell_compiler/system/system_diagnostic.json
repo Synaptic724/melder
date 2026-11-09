@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py",
- "source_sha256": "cb2b19ceb3afe44a5ff03f74ce367b24b6074ae5946a93f5e35f8502f6d7ad75",
+ "source_sha256": "6779446f63705529a59e621cfab5a63637d6e263cd9beacee81b77ea7ad3639e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.system_diagnostic": {
@@ -22,15 +22,15 @@
    "lineno": 8,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dc33b5438fc6931b6f461b44ddde5abffe1b2dae11baa42c95a9cbb08d5f305e",
+   "span_sha256": "50af289398c5ed9bf2ad6103e0d32343101002c4a5fbebd33023ab5880a1ca90",
    "include": true,
    "role": "The severity bucket for system-level validation diagnostics.",
    "responsibilities": [
@@ -46,7 +46,7 @@
    "label": "SystemDiagnostic",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py",
-   "lineno": 14,
+   "lineno": 38,
    "bases": [
     "Cleanable"
    ],
@@ -107,8 +107,7 @@
  ],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto",
+  "StrEnum": "enum.StrEnum",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",

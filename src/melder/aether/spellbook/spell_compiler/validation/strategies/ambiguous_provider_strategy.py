@@ -28,8 +28,10 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
     - One `AMBIGUOUS_PROVIDER` error per `AMBIGUOUS_INPUT` socket of the spell's Phase-3 topology.
     - The message names the parameter, the expected type (rendered as the meld-time
       `UnresolvedInputError` renders it), each candidate as `<spell_name> at (spellframe=...,
-      binding_name=...)` ordered by address, and the three ways out: a `SpellMap`
-      default on the parameter, a meld override, or a single provider of the type.
+      binding_name=...)` ordered by address, and the two ways out: a `SpellMap`
+      default on the parameter, or a single provider of the type. A meld override is not
+      offered (2026-11-07, the owner's D4): the error refuses the spell, and the meld gate
+      refuses every meld of a refused spell, override or not.
     - `details` carries `spell_id`, `parameter_name`, `expected_type` and `candidates` (a list of
       `{spell_id, spell_name, spellframe, binding_name}`), so tooling can act without parsing text.
     - A candidate the spellbook can no longer find (removed between phases) is rendered by id only.
@@ -40,7 +42,9 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
 
     Subsystem Context:
         One built-in of the `validation/strategies` family, registered into `SpellValidationSystem`
-        after `RequiredHolesStrategy` (which reports the sibling UNRESOLVED_INPUT sockets as warnings).
+        after `RequiredHolesStrategy` (which reports the sibling UNRESOLVED_INPUT sockets as warnings)
+        and before `HiddenProviderStrategy` (an UNRESOLVED_INPUT whose class is bound only where a
+        class lookup does not reach).
 
     System Context:
         Phase 4 (validation) of the conjure pipeline. Its error marks the spell broken: conjure refuses
@@ -105,8 +109,7 @@ class AmbiguousProviderStrategy(SpellValidationStrategy):
                         f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
                         f"{expected_type}, but {len(candidates)} registered spells provide it: {rendered}. "
                         f"Select one with a SpellMap default on the parameter "
-                        f"(SpellMap(spellframe=..., binding_name=...)), supply it at meld with "
-                        f"override={{{socket.param_name!r}: ...}}, or bind only one provider of this type."
+                        f"(SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type."
                     ),
                     details={
                         "spell_id": spell.spell_id,

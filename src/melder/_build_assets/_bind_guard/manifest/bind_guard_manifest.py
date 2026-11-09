@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8275"
-SOURCE_SHA256 = "54ed22cf8d8c0b8b80467be315fe75e7c8b9d6f501c28b1770d0e56f3f6f8f69"
-ENTRY_COUNT = 629
+BUILT_FOR_VERSION = "0.2.8300"
+SOURCE_SHA256 = "7f7f63fa906022710be3d4630e6320c83da7af85d926783bdc8df29bb0e5668a"
+ENTRY_COUNT = 631
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -354,6 +354,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy', 'VisibilityGapStrategy'),
     ('melder.aether.spellbook.spell_compiler.topology.spell_local_topology', 'SpellLocalTopology'),
     ('melder.aether.spellbook.spell_compiler.topology.spell_local_topology', 'SpellSocketDescriptor'),
+    ('melder.aether.spellbook.spell_compiler.validation.hidden_provider_report', 'HiddenProviderReport'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_context', 'SpellValidationContext'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_issue', 'SpellValidationIssue'),
     ('melder.aether.spellbook.spell_compiler.validation.spell_validation_result', 'SpellValidationResult'),
@@ -366,6 +367,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy', 'DanglingDependenciesStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy', 'DuplicateSpellNameStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy', 'ExistingCreationCompatibilityStrategy'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy', 'HiddenProviderStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy', 'ParameterPolicyStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy', 'RequiredHolesStrategy'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy', 'ResolutionFramePresenceStrategy'),

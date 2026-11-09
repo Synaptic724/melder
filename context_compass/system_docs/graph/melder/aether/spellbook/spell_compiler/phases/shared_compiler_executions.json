@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
- "source_sha256": "6fdaf22b3b30fbb4476b1a88d87b74eaf33cbf4fba9982d4bdf9b3664a16e9ac",
+ "source_sha256": "c1c217503c6f847c6b4441ce9652f49dd6a6080d603237121fb48de675e1a2b1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions": {
@@ -19,7 +19,7 @@
    "label": "SharedCompilerExecutions",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
-   "lineno": 17,
+   "lineno": 18,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -58,7 +58,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "57f2e35375c564337f501a247ff881ca4eddf3342a4a30ec60c91aea13605431",
+   "span_sha256": "fd807421492245e226cdbff2648f1eec90d00245a150774f41295afda8f7949a",
    "role": "Shared static execution helper surface for compiler phases.",
    "responsibilities": [
     "owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases",
@@ -87,6 +87,7 @@
   "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
   "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
   "CodegenSignature": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature",
   "Spell": "melder.aether.spellbook.spell.Spell",

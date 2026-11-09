@@ -1,0 +1,4 @@
+command: .venv_new/Scripts/python.exe -X gil=0 -m pytest UX_and_AIX_experiences/pytest_examples/test_expert_probes.py -q -p no:cacheprovider  (run 2026-11-07T16:52:31Z, melder 0.2.8280)
+...............................................                          [100%]
+47 passed in 12.99s
+exit status: 0

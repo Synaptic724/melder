@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
- "source_sha256": "24e60a9186eac62d891562942b78e60fe361fe00839249c3133e7d0a27e49edd",
+ "source_sha256": "ed907efac8109f1c06f40cfef2baa0d7fa642227e8d5ffde77d311a270970273",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason": {
@@ -19,18 +19,18 @@
    "label": "SpellStateChangeReason",
    "kind": "enum",
    "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c4e34f6102d03b6bac38a9ad9ffbb7a35fbe9aebbbc7c0b4622a4aa23f964927",
+   "span_sha256": "8ca89b08064dd384239b8062701048a289532fbe9b484752d0e04768ccfb51fc",
    "role": "Coarse latest-transition reason enum for one lineage.",
    "responsibilities": [
     "labels the latest event that changed a lineage state or validity posture"
@@ -73,8 +73,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

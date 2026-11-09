@@ -1,5 +1,7 @@
 import pytest
 from threading import RLock
+from types import SimpleNamespace
+from typing import Protocol
 from unittest.mock import MagicMock
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
@@ -551,6 +553,99 @@ def test_default_dirty_marker_marks_collection_and_contract_dependents(manager, 
         spellbook_id="spellbook-1",
         contract_keys={("frame-a", "binding-a")},
         change_reason=SpellStateChangeReason.contract_unvalidated,
+    )
+
+
+class _GreeterProtocol(Protocol):
+    """A Protocol bound as its own definition in the announce cases below."""
+
+    def greet(self) -> str: ...
+
+
+@pytest.mark.parametrize(
+    ("spell", "binding_key", "announced"),
+    [
+        pytest.param(SimpleNamespace(spell=object(), spell_name="English", spellframe="greeters", binding_name=None),
+                     ("greeters", "__default__"), {"greeters", "english"}, id="framed-category"),
+        pytest.param(SimpleNamespace(spell=object(), spell_name="English", spellframe=_GreeterProtocol,
+                                     binding_name="english"),
+                     ("_greeterprotocol", "english"), {"_greeterprotocol", "english"}, id="framed-protocol-named"),
+        pytest.param(SimpleNamespace(spell=object(), spell_name="English", spellframe=None, binding_name="english"),
+                     ("english", "english"), {"english"}, id="bare-named"),
+        pytest.param(SimpleNamespace(spell=object(), spell_name="English", spellframe=None, binding_name=None),
+                     ("english", "__default__"), {"english"}, id="bare-default"),
+        pytest.param(SimpleNamespace(spell=_GreeterProtocol, spell_name="_GreeterProtocol", spellframe="defs",
+                                     binding_name=None),
+                     ("defs", "__default__"), {"defs"}, id="framed-protocol-definition"),
+    ],
+)
+def test_default_dirty_marker_announces_a_framed_spells_class_name_in_the_one_mark(
+        manager: ChangeControlManager,
+        mock_sss: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+        spell: SimpleNamespace,
+        binding_key: tuple,
+        announced: set,
+) -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07, the owner's D1 = B): a consumer that compiled with a class
+    unresolved waits under the class name, so the commit of a spell of that class bound under a spellframe must mark
+    the class name too, or the consumer is never re-checked and refused (HIDDEN_PROVIDER) while a twin compiled after
+    the bind is. The type key joins the frame keys in the single `mark_collection_dependents_dirty` call; a bare
+    spell's frame key already is its class name, and a Protocol's own definition announces nothing more.
+    """
+    book = object()
+    monkeypatch.setattr(ChangeControlManager, "_resolve_spellbook_for_staged", lambda self, staged: book)
+    monkeypatch.setattr(
+        ChangeControlManager,
+        "_resolve_spells_for_binding_keys",
+        lambda self, spellbook, binding_keys: [spell] if spellbook is book else [],
+    )
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-dirty-marker-type-key",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=("conduit-1",),
+        scope_keys=(),
+        binding_keys=(binding_key,),
+        contract_keys=(),
+        metadata=None,
+    )
+
+    manager._default_dirty_marker(staged)
+
+    mock_sss.mark_collection_dependents_dirty.assert_called_once_with(
+        spellbook_id="spellbook-1",
+        frame_keys=announced,
+    )
+    mock_sss.mark_contract_dependents_dirty.assert_not_called()
+
+
+def test_default_dirty_marker_announces_only_frame_keys_when_no_staged_spell_resolves(
+        manager: ChangeControlManager,
+        mock_sss: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A departed spell (nothing resolves under its key) announces its frame key alone; the marker never raises."""
+    monkeypatch.setattr(ChangeControlManager, "_resolve_spellbook_for_staged", lambda self, staged: None)
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-dirty-marker-departed",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=("conduit-1",),
+        scope_keys=(),
+        binding_keys=(("greeters", "english"),),
+        contract_keys=(),
+        metadata=None,
+    )
+
+    manager._default_dirty_marker(staged)
+
+    mock_sss.mark_collection_dependents_dirty.assert_called_once_with(
+        spellbook_id="spellbook-1",
+        frame_keys={"greeters"},
     )
 
 

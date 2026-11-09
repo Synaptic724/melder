@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/configuration/system_state.py",
- "source_sha256": "6c011368031d1f9dc21db7c9706ed87cf523f0828589e05a9322b23f51948dcb",
+ "source_sha256": "c4e4b52a83774d335907d1e8d0a28b8b12c5ee0ad8b24a3928982a8572b8ce21",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.configuration.system_state": {
@@ -19,18 +19,18 @@
    "label": "SystemState",
    "kind": "enum",
    "file": "src/melder/aether/spellbook/configuration/system_state.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a7d83c11ddbe3d9917b1bb6177885c6944ee1942814c0eb4be81a09fea91beb5",
+   "span_sha256": "d159472c03189fa350ea7ca99078edca077da469e9ee8641eec9b429dfcef021",
    "role": "High-level runtime posture enum for a spellbook/system.",
    "responsibilities": [
     "labels automatic and dynamic runtime posture modes"
@@ -49,8 +49,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

@@ -19,7 +19,7 @@
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Monthly downloads](https://api.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 [![Lifetime downloads](https://api.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
-[![GitHub stars](https://img.shields.io/github/stars/Synaptic724/melder)](https://github.com/Synaptic724/melder)
+[![Stars](https://img.shields.io/github/stars/Synaptic724/melder?style=social)](https://github.com/Synaptic724/melder/stargazers)
 
 [![CI](https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg)](https://github.com/Synaptic724/melder/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg)](https://codecov.io/gh/Synaptic724/melder)
@@ -125,6 +125,8 @@ meld  →  resolve instances             (as often as you like)
 ```
 
 `conjure()` checks the registered graph, including cycles and ambiguous providers.
+It also refuses a class lookup whose class is bound only under a spellframe or a
+binding name (`HIDDEN_PROVIDER`), naming where it is bound.
 A typed parameter with no registered provider can remain a caller-supplied input:
 the constructing `meld()` must supply it through `override`, or it raises
 `UnresolvedInputError`. Dynamic changes can also require validation at a later meld.
@@ -386,8 +388,10 @@ server = conduit.meld("Server")
 
 **`conjure()` prepares the registered graph.** Requirements extraction, graph
 construction, cycle detection, and runtime compilation run there. Cycles and
-ambiguous providers refuse startup. A typed parameter with no provider can be
-supplied at `meld(override={...})`; omitting it when construction needs it raises
+ambiguous providers refuse startup, and so does a class lookup whose class is
+bound only under a spellframe or a binding name (`HIDDEN_PROVIDER`, naming where
+it is bound). A typed parameter with no provider can be supplied at
+`meld(override={...})`; omitting it when construction needs it raises
 `UnresolvedInputError`. Ordinary Python parameter defaults remain defaults.
 
 > **One book, one conjure.** A Spellbook produces exactly one conduit, ever.
@@ -450,18 +454,33 @@ book.bind(spell=EmailHandler, existence="unique",
           spellframe=Handler, binding_name="email")
 ```
 
+A spellframe is the spell's **interface**: think of it as a dict keyed by
+`binding_name`. Bound under a frame, a spell is reached **through the frame** —
+a `Handler` annotation, `list[Handler]`, `SpellMap(spellframe=Handler,
+binding_name="email")` or `meld(spellframe=Handler, binding_name="email")` —
+and never by its own class: `handler: EmailHandler` and `meld(EmailHandler)`
+do not find this `EmailHandler`, just as a service registered under an
+interface hides its own type in Autofac. Like a dict, `meld(spellframe=Handler)`
+with no `binding_name` reads the default slot (a `KeyError` when every member is
+named), while a `Handler` annotation selects the frame's single implementation
+and refuses several with `AMBIGUOUS_PROVIDER`.
+
 ## 🟢 Dependency Injection
 <sub>**Beginner → Intermediate.** Annotations, explicit targets, collections.</sub>
 
 Annotate a constructor parameter. Melder builds the graph.
 
-What an annotation selects depends on what it is. A **class** selects the spells of that type — a class
-bound bare, or an existing object of that class — and nothing else: a category that happens to share the
-class's name does not turn its members into providers. A **Protocol** selects the spells bound under it as
-their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at runtime, resolves by name to a
-type or a contract, never to a string category. `list[...]` gathers the group the annotation's kind names:
-every spell of the class, every implementer of the Protocol, or — for a string — every member of the
-category or type of that name.
+What an annotation selects depends on what it is. A **class** selects only the spell of that class bound
+**bare** — no `spellframe` and no `binding_name`, the class itself or an existing object of it — which is
+exactly what `meld(TheClass)` returns. A spell bound under a spellframe is reached through its frame, and a
+spell bound under a binding name through that name (`SpellMap(TheClass, binding_name=...)`); a category that
+happens to share the class's name does not turn its members into providers either. When the class is bound
+only under a spellframe or a binding name, `conjure()` refuses the consumer with `HIDDEN_PROVIDER`, naming
+each place it is bound and the `SpellMap` that reaches it. A **Protocol** selects
+the spells bound under it as their contract. A **`TYPE_CHECKING`-only import**, which leaves a string at
+runtime, resolves by name to a bare type or a contract, never to a string category. `list[...]` gathers the
+group the annotation's kind names: the bare spell of the class, every implementer of the Protocol, or — for
+a string — every member of the category or type of that name.
 
 ```python
 import melder as md
@@ -507,12 +526,17 @@ class Consumer:
 ```
 
 `SpellMap` takes the full address: a concrete spell, a `spellframe`, a
-`binding_name`, or a combination. It obeys an **exactly-one law** — a target
-that matches zero spells or several fails at `conjure()`, not at runtime.
+`binding_name`, or a combination. `SpellMap(PrimaryStore)` is a class lookup:
+it reaches `PrimaryStore` bound bare under the default binding;
+`SpellMap(PrimaryStore, binding_name="primary")` reaches it bound bare under
+that name; a store bound under a spellframe is named through the frame,
+`SpellMap(spellframe=Store, binding_name="primary")`. It obeys an
+**exactly-one law** — a target that matches zero spells or several fails at
+`conjure()`, not at runtime.
 When a single Protocol-annotated parameter has several registered implementations,
 `conjure()` refuses with an `AMBIGUOUS_PROVIDER`
 report that lists every candidate's address and the fix — a `SpellMap`
-default, a meld `override`, or one provider — never a guess.
+default or one provider — never a guess.
 Registering the same class twice is instead refused as a duplicate spell identity
 at registration; another binding name does not make it a different spell.
 
@@ -1517,15 +1541,12 @@ long-form guides and API reference belong in the hosted documentation site.
 
 ## License
 
-GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see
+Apache License 2.0 (Apache-2.0) — see
 [LICENSE](https://github.com/Synaptic724/melder/blob/prod/LICENSE).
 
-The AGPL's network clause applies: if you run a modified version of Melder™ as a
-service that users interact with over a network, you must offer those users the
-corresponding source of your modified version.
-
 **Trademark.** Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI
-Systems. The AGPL grants rights in the software, not in the name — forks and
+Systems. The Apache License grants rights in the software, not in the name (its
+section 6 grants no permission to use trade names or marks) — forks and
 redistributions must not use the Melder name or marks in a way that suggests
 endorsement by, or origin from, the trademark holder. See
 [NOTICE](https://github.com/Synaptic724/melder/blob/prod/NOTICE).

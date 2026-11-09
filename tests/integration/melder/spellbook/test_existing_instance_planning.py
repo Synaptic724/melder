@@ -34,9 +34,15 @@ class ExistingValue:
 
 
 class ValueConsumer:
-    """Borrow an existing non-callable object through ordinary type-hint DI."""
+    """Borrow an existing non-callable object through ordinary type-hint DI.
 
-    def __init__(self, value: ExistingValue) -> None:
+    The parameter names IExistingValue, the contract the tests frame the value under. Since 2026-11-07 an
+    existing object follows the class rule - a spellframe hides it from class lookups - so an
+    `ExistingValue` annotation would reach only an object bound bare (no spellframe, the default binding);
+    the Protocol keeps the dependency edge on the same framed existing value.
+    """
+
+    def __init__(self, value: IExistingValue) -> None:
         """Retain the exact supplied value without acquiring its lifecycle."""
         self.value = value
 

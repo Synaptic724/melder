@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
- "source_sha256": "087c45af1a73fd01b8e863876d05ca6662999a538341499127c4e90461dfa21d",
+ "source_sha256": "6c0f342a553b2ef2c8221dc2062513660336e41b8dcf875ee73b444f82c33a65",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "561cdc30ca40c9b0f9095d29c31da49adca159885a2cc2e0707151aa0d9c788b",
+   "span_sha256": "90af2f75755c916fe47339749267d2069dee7d862b24b1f859e8151987b39c52",
    "include": true,
    "role": "Warns about list[T] elements and forward references Melder cannot inject, reading Phase-1 requirements annotations; container parameters are caller inputs it leaves to RequiredHolesStrategy.",
    "responsibilities": [

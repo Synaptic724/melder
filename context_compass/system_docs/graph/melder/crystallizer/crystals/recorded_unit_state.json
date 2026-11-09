@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/recorded_unit_state.py",
- "source_sha256": "559c4771a52ede5d345ca69913b7c680d9f5f37ce0f4e4afbb28c92db0558d54",
+ "source_sha256": "c3e3930f16612621ff2ea11cdc31a21e89a501421362028a6ee307251d3fc550",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.recorded_unit_state": {
@@ -25,35 +25,36 @@
    "label": "RecordedUnitState",
    "kind": "enum",
    "file": "src/melder/crystallizer/crystals/recorded_unit_state.py",
-   "lineno": 4,
+   "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "363422e331e7621d3866df5b2d9185c2357ce446848d839dc60799dfd4a1368d",
+   "span_sha256": "df3970a2ad26d6bd5f8211b2ecb1f2e2301afee7a4a974d633477994e892e7f5",
    "include": true,
    "role": "Recorded lifecycle state for state-switch tracked singletons such as Nexus and MutationResearch.",
    "responsibilities": [
-    "distinguish enabled / disabled / cleaned without evicting the twin"
+    "distinguish enabled / disabled / CLEANED without evicting the twin; CLEANED has value CLEANED and accepts the old cleaned value"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "363422e331e7621d3866df5b2d9185c2357ce446848d839dc60799dfd4a1368d"
+   "semantics_authored_against": "df3970a2ad26d6bd5f8211b2ecb1f2e2301afee7a4a974d633477994e892e7f5"
   }
  },
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "enum": "enum"
+  "enum": "enum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

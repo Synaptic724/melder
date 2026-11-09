@@ -1,0 +1,6 @@
+shipped: 15648 tests - failed 18, passed 15572, skipped 32, xfailed 26 (context_compass/artifacts/dependency_watchers_20261107/runs/suite_strict_class_match_0_2_8277_strict0_gil0.xml)
+strict: 15648 tests - failed 19, passed 15571, skipped 32, xfailed 26 (context_compass/artifacts/dependency_watchers_20261107/runs/suite_strict_spellmap_0_2_8277_gil0.xml)
+differing tests: 1 in 1 files
+tests.component.melder.spellbook.test_spellbook_component_spell_crafter
+  passed -> failed  tests.component.melder.spellbook.test_spellbook_component_spell_crafter::test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_matches
+      AssertionError: Regex pattern did not match.

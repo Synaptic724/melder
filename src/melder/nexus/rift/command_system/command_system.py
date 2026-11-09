@@ -45,9 +45,17 @@ class CommandSystem(Cleanable):
         and workstation but does not clean those children itself.
 
     Threading:
-        Room-confined. It holds no cross-room state and takes no lock of its
-        own; the ACL projections it enforces against are refreshed by the owning
-        Rift.
+        Room-confined: it holds no cross-room state, and the ACL projections it
+        enforces against are refreshed by the owning Rift. Every public command
+        enters the room's action-hook scope and holds a `RiftGate` ticket while
+        it runs; most also do their work under the command lock (`self._lock`),
+        so those commands take turns within one room. The target commands -
+        `get_target_attribute`, `get_target_method` and `execute_target_method` -
+        take no command lock: reading an attribute or calling a method of the
+        target runs agent code, the workstation's own lock covers the target
+        lookup, and agents sharing the room must not wait on each other's
+        target code (GitHub #274, W5). (Corrected 2026-11-08: this said the
+        class takes no lock of its own.)
 
     Registration:
         MELDER KERNEL. The three postures are melder-internal and constructed by their
@@ -443,16 +451,19 @@ class CommandSystem(Cleanable):
             )
         )
 
-    def _get_target_method_locked(
+    def _get_target_method(
             self,
             method_name: str,
     ) -> Callable[..., object]:
         """
-        Resolve one callable from the current workstation target while the
-        command lock is already held.
+        Resolve one callable from the current workstation target.
 
         Contract:
-            - Requires the caller to hold `self._lock`.
+            - Takes no command lock: the workstation's own lock covers the
+              target lookup, and the attribute read can run agent code (a
+              property), which must not run under a Melder lock (GitHub #274,
+              W5). Renamed from `_get_target_method_locked`, which required the
+              command lock, when that requirement went.
             - Enforces the same validation contract as
               `get_target_method(...)`.
 
@@ -1031,12 +1042,17 @@ class CommandSystem(Cleanable):
                 If `attribute_name` is empty.
             AttributeError:
                 If the target does not expose the requested attribute.
+
+        Threading:
+            Holds a `RiftGate` ticket but no command lock: the attribute read
+            can run agent code (a property), and the workstation's own lock
+            covers the target lookup (GitHub #274, W5).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="get_target_attribute",
                 frame_name=None,
-        ), self._lock:
+        ):
             if not attribute_name:
                 raise ValueError("attribute_name cannot be empty.")
             target = self._workstation.get_target()
@@ -1063,13 +1079,17 @@ class CommandSystem(Cleanable):
                 If the target does not expose the requested method.
             RuntimeError:
                 If the resolved attribute is not callable.
+
+        Threading:
+            Holds a `RiftGate` ticket but no command lock, as
+            `get_target_attribute` (GitHub #274, W5).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="get_target_method",
                 frame_name=None,
-        ), self._lock:
-            return self._get_target_method_locked(method_name)
+        ):
+            return self._get_target_method(method_name)
 
     def execute_target_method(
             self,
@@ -1101,13 +1121,20 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Method return value.
+
+        Threading:
+            Holds a `RiftGate` ticket but no command lock while the method -
+            agent code - runs, so other commands in the room do not wait on it
+            and a method that runs a command of this room cannot freeze against
+            it (GitHub #274, W5). Binding the result takes the workstation's
+            own lock.
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="execute_target_method",
                 frame_name=None,
-        ), self._lock:
-            method = self._get_target_method_locked(method_name)
+        ):
+            method = self._get_target_method(method_name)
             result = method(*args, **kwargs)
             if bind_as_name is not None:
                 self._bind_result(

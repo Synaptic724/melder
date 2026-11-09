@@ -1,9 +1,13 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
 
-class ManagedSpellMode(Enum):
+class ManagedSpellMode(StrEnum):
     """
     How a managed spell's pool answers a lease when no idle object is waiting.
+
+    Values exactly match member names. Historical numeric values 1-3 remain
+    readable by value, including in older enum pickle payloads.
 
     `ManagedSpellMode` is chosen at bind, beside `Existence.managed_spell_quantity`, through the
     `managed_spell_mode` option (the member or its name). It decides what a miss does - build, refuse or wait -
@@ -48,7 +52,7 @@ class ManagedSpellMode(Enum):
         objects up to the limit, default 256), limited_quantity (at most N alive, refuses at N), queue (at most N
         alive, waits up to a timeout for a release, then refuses). Pass it or its name as managed_spell_mode.
     """
-    elastic = auto()
+    elastic = "elastic"
     """
     A miss **always builds**; idle objects are kept up to `managed_spell_limit` (default 256).
 
@@ -57,7 +61,7 @@ class ManagedSpellMode(Enum):
     - Takes no timeout.
     """
 
-    limited_quantity = auto()
+    limited_quantity = "limited_quantity"
     """
     At most `managed_spell_limit` objects **alive at once** (idle plus out).
 
@@ -65,7 +69,7 @@ class ManagedSpellMode(Enum):
     - The limit is required; the mode takes no timeout.
     """
 
-    queue = auto()
+    queue = "queue"
     """
     At most `managed_spell_limit` objects alive at once; at the limit a lease **waits** for a release.
 
@@ -89,3 +93,22 @@ class ManagedSpellMode(Enum):
             str: The member name.
         """
         return self.name
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ManagedSpellMode]:
+        """
+        Resolve a historical numeric pool mode to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, ManagedSpellMode] = {
+            1: cls.elastic,
+            2: cls.limited_quantity,
+            3: cls.queue,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

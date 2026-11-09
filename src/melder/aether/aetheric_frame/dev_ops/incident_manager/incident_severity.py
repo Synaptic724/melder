@@ -1,11 +1,14 @@
-from enum import auto, Enum
+from enum import StrEnum
+from typing import Optional
 
-class IncidentSeverity(Enum):
+class IncidentSeverity(StrEnum):
     """
     Severity classification for incidents recorded by `IncidentManager`.
 
     Contract:
-    - Values are ordered conceptually from lowest urgency to highest urgency.
+    - Members are ordered conceptually from lowest urgency to highest urgency.
+      Their string values exactly match their names; the historical numeric
+      values 1-4 remain accepted by value, including old pickle payloads.
     - The enum is descriptive only; higher-level tooling decides what policy or
       escalation behavior each level should trigger.
 
@@ -42,7 +45,27 @@ class IncidentSeverity(Enum):
         access: internal. Severity classification for incidents recorded by `IncidentManager`.
         Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    info = auto()
-    warning = auto()
-    error = auto()
-    critical = auto()
+    info = "info"
+    warning = "warning"
+    error = "error"
+    critical = "critical"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[IncidentSeverity]:
+        """
+        Resolve a historical numeric severity to its original member.
+
+        Exact current strings use ordinary enum lookup. Values equal to the
+        four old integer values retain by-value and old-pickle readability.
+        Unknown or unhashable inputs return None for normal ValueError.
+        """
+        legacy_values: dict[object, IncidentSeverity] = {
+            1: cls.info,
+            2: cls.warning,
+            3: cls.error,
+            4: cls.critical,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

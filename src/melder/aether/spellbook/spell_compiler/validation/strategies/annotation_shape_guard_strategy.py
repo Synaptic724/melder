@@ -107,9 +107,10 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
-            if param.di_shape in (
-                ParameterDIShape.SPELLMAP_DEFAULT,
-                ParameterDIShape.SPELL_CONTRACT,
+            di_shape = param.di_shape
+            if (
+                di_shape is ParameterDIShape.SPELLMAP_DEFAULT
+                or di_shape is ParameterDIShape.SPELL_CONTRACT
             ):
                 # An explicit SpellMap/SpellContract default overrides the
                 # annotation, so its raw shape must not be judged for DI.

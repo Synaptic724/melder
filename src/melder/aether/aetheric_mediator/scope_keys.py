@@ -10,7 +10,8 @@ transaction proceeds believing it is isolated when it is not. That failure mode
 is why this helper exists rather than callers formatting their own strings.
 """
 
-from enum import StrEnum
+from enum import Enum, StrEnum
+from typing import Optional
 
 
 class ScopePrefix(StrEnum):
@@ -22,6 +23,7 @@ class ScopePrefix(StrEnum):
         rather than as three loose class strings.
 
     Contract:
+        - Values match member names; the exact historical lowercase values remain readable.
         - CLOSED. Adding a level means adding a member here and a builder on
           `ScopeKey`. A caller reaching for a prefix that is not a member is
           the signal that a level is missing, not an invitation to format a
@@ -48,9 +50,35 @@ class ScopePrefix(StrEnum):
         frame, subsystem. Build keys through `ScopeKey`, never by hand.
     """
 
-    WORLD = "world"
-    FRAME = "frame"
-    SUBSYSTEM = "subsystem"
+    WORLD = "WORLD"
+    FRAME = "FRAME"
+    SUBSYSTEM = "SUBSYSTEM"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ScopePrefix]:
+        """
+        Resolve exactly the historical lowercase scope-prefix values.
+
+        Contract:
+            Legacy strings preserve by-value and pickle reads. Other enum
+            families and unknown or differently cased values are not coerced;
+            returning None leaves the standard ValueError intact.
+
+        Args:
+            value: The unrecognized value offered to the enum constructor.
+
+        Returns:
+            Optional[ScopePrefix]: The legacy member, or None.
+        """
+        if not isinstance(value, str) or isinstance(value, Enum):
+            return None
+        if value == "world":
+            return cls.WORLD
+        if value == "frame":
+            return cls.FRAME
+        if value == "subsystem":
+            return cls.SUBSYSTEM
+        return None
 
 
 class ScopeKey:
@@ -109,7 +137,7 @@ class ScopeKey:
         Returns:
             str: The world scope key.
         """
-        return ScopePrefix.WORLD.value
+        return ScopePrefix.WORLD.name.lower()
 
     @staticmethod
     def frame(frame_name: str) -> str:
@@ -130,7 +158,7 @@ class ScopeKey:
                 "ScopeKey.frame requires a non-empty frame name; an empty key "
                 "collides with every other empty-named claim."
             )
-        return "{0}:{1}".format(ScopePrefix.FRAME.value, frame_name)
+        return "{0}:{1}".format(ScopePrefix.FRAME.name.lower(), frame_name)
 
     @staticmethod
     def subsystem(subsystem_name: str) -> str:
@@ -155,7 +183,7 @@ class ScopeKey:
             raise ValueError(
                 "ScopeKey.subsystem requires a non-empty subsystem name."
             )
-        return "{0}:{1}".format(ScopePrefix.SUBSYSTEM.value, subsystem_name)
+        return "{0}:{1}".format(ScopePrefix.SUBSYSTEM.name.lower(), subsystem_name)
 
     @staticmethod
     def is_world(scope_key: str) -> bool:
@@ -168,4 +196,4 @@ class ScopeKey:
         Returns:
             bool: True when the key is the world root.
         """
-        return scope_key == ScopePrefix.WORLD.value
+        return scope_key == ScopePrefix.WORLD.name.lower()

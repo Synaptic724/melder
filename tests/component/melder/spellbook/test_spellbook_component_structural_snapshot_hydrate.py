@@ -136,7 +136,8 @@ def _registry_snapshot(book: Spellbook, spell_ids: Tuple[str, ...]) -> Dict[str,
             "flags": tuple(sorted(flag.name for flag in state.flags)),
             "sockets": tuple(
                 (s.param_name, s.position, s.socket_kind.name, s.is_collection, s.is_optional, s.target_spell_ids,
-                 s.dependency_key, s.contract_key, s.referenced_spell_ids, s.parameter_kind)
+                 s.dependency_key, s.contract_key, s.referenced_spell_ids, s.parameter_kind,
+                 s.hidden_spell_ids, s.hidden_frame_keys)
                 for s in topology.sockets
             ),
         }

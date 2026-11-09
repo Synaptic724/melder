@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__license__.py",
- "source_sha256": "fdacc9edcd065b54c0e53877eab98e9bfe06b0340e39bb248063bfb55e013809",
+ "source_sha256": "7895d4a5e13ecb557ec93a3af9911e0a178c7bcfe820c56dcad934ca9ec71669",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.__license__": {
@@ -12,14 +12,15 @@
    "lineno": 1,
    "role": "Top-level license metadata module.",
    "responsibilities": [
-    "stores the package license label and embedded license context"
+    "stores the package license label, the SPDX identifier pyproject.toml declares (Apache-2.0 since 0.2.8279), and the embedded Apache License 2.0 header as informational context, not runtime logic"
    ],
    "owns_state": [
     "__license__"
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],

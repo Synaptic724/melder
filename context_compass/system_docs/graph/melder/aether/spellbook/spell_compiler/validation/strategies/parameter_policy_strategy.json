@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
- "source_sha256": "4a31565aa60fbf18e22c95860d398d6d98dfda2dbf65ab8415809747b556c76d",
+ "source_sha256": "6f90bfe5698b40ddb4f3463942844542b0ae0a45f94423ee15b55056d2f5593e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d0369ac7f6ae250e913d62f275f579cd00e818e399723b17772e66d56070977d",
+   "span_sha256": "e00a765c5ffe36e7cee8476bb3f72fab5b6ec1e0b872eeff6daacd34d6468df8",
    "include": true,
    "role": "The DI-annotation policy pass over Phase-1 parameters and their ParameterDIShape.",
    "responsibilities": [

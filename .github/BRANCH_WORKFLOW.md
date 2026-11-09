@@ -400,9 +400,11 @@ repository and its owner (with their numeric ids), the workflow on
 `release_candidate`, this commit, a GitHub-hosted runner, public visibility and the
 `pypitest` environment, and, for a file this run uploaded, this run and attempt;
 and the attested statement names exactly the file and its sha256. The verifier is
-the publishing action's own signing toolchain, installed from a hash-pinned lock,
-and it must first verify a recorded genuine attestation and refuse two tampered
-copies of it, so a tool that cannot check fails the run instead of passing it.
+the publishing action's own signing toolchain (pypi-attestations and sigstore at
+the action's versions, with a few transitive pins raised to security floors),
+installed from a hash-pinned lock, and it must first verify a recorded genuine
+attestation and refuse two tampered copies of it, so a tool that cannot check
+fails the run instead of passing it.
 
 Commit and promote this workflow into release_candidate to switch. Wait for
 package-ready to succeed, then rerun any prod PR check that already failed

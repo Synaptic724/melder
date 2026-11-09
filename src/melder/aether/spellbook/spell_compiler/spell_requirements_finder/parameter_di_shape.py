@@ -1,9 +1,13 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class ParameterDIShape(Enum):
+class ParameterDIShape(StrEnum):
     """
     High-level classification of how a single parameter is expected to be
     satisfied during resolution.
+
+    Values exactly match member names. Historical numeric values 1-6 remain
+    readable by value, including in older enum pickle payloads.
 
     This is a **Phase 1 artifact** - it does not perform lookups or graph
     building; it just describes what the parameter *wants*.
@@ -62,9 +66,31 @@ class ParameterDIShape(Enum):
         IGNORE / PLAIN / SINGLE_BY_ANNOTATION / COLLECTION_BY_ANNOTATION / SPELLMAP_DEFAULT /
         SPELL_CONTRACT. Describes intent only - it performs no lookups.
     """
-    IGNORE = auto()
-    PLAIN = auto()
-    SINGLE_BY_ANNOTATION = auto()
-    COLLECTION_BY_ANNOTATION = auto()
-    SPELLMAP_DEFAULT = auto()
-    SPELL_CONTRACT = auto()
+    IGNORE = "IGNORE"
+    PLAIN = "PLAIN"
+    SINGLE_BY_ANNOTATION = "SINGLE_BY_ANNOTATION"
+    COLLECTION_BY_ANNOTATION = "COLLECTION_BY_ANNOTATION"
+    SPELLMAP_DEFAULT = "SPELLMAP_DEFAULT"
+    SPELL_CONTRACT = "SPELL_CONTRACT"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ParameterDIShape]:
+        """
+        Resolve a historical numeric DI shape to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, ParameterDIShape] = {
+            1: cls.IGNORE,
+            2: cls.PLAIN,
+            3: cls.SINGLE_BY_ANNOTATION,
+            4: cls.COLLECTION_BY_ANNOTATION,
+            5: cls.SPELLMAP_DEFAULT,
+            6: cls.SPELL_CONTRACT,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

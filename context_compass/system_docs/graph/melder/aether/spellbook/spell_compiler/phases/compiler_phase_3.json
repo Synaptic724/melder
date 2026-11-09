@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "53752a0e51495e9995629a9b71029475b1f747f160bb0cf68c751c520ec2cacf",
+ "source_sha256": "646c9eb0f995ddb7f8b68d7280e70ebcffe6a96e76099c6cf4d42d27db7ba8b0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -22,18 +22,18 @@
    "label": "CompilerPhase3",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
-   "lineno": 66,
+   "lineno": 68,
    "bases": [],
    "markers": [],
    "public_methods": [
     "run"
    ],
    "shape": {
-    "method_count": 26,
+    "method_count": 32,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "ddf8745b8f23336fb1d78a952965674dd79eea3f62c6e6da22ac6b4c04c41a67",
+   "span_sha256": "bd183dee0c13f0ed9d134c5dd793c0447edf3bf7465c5349f0ee16a026e5cb05",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
@@ -41,18 +41,20 @@
     "publishes direct dependency ids and SpellLocalTopology into SpellSystemStates",
     "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology",
     "republishes enabled late-compiled Nexus records after local topology is available",
-    "records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises",
+    "records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter has no candidate; when its class lookup misses a class bound only under a spellframe or a binding name the socket also carries those spells (hidden_spell_ids, sorted, one per SpellIndex, and their address frame keys, hidden_frame_keys; method and lambda spells dropped) and Phase 4 refuses the consumer with HIDDEN_PROVIDER (0.2.8281)",
     "scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan",
-    "matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type-or-contract for a single string and the frame key for a string collection - so a string category never provides for a same-named class",
-    "indexes candidates once per resolution pass into four buckets (by_type, by_label, by_contract, by_definition) read through _index_buckets_for; one predicate (_matches_annotation) serves the scan and the index; _eq_safe_object is kept only as the structural snapshot's replayability rule",
+    "matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type key, contract keys and definition key for a single string and the frame key for a string collection - so a string category never provides for a same-named class",
+    "answers a class lookup - a class annotation, list[Class], a single string's type part, SpellMap(spell=X) without a spellframe - only with a spell bound with no spellframe and the default binding (_answers_class_lookup, 0.2.8278): a spellframe or a binding name hides the spell's own type, as a declared service hides the component's type in Autofac, so only such a spell offers its type key and enters by_type, while contract, definition and label matching are unchanged",
+    "indexes candidates once per resolution pass into five buckets (by_type, by_label, by_contract, by_definition and, since 0.2.8281, by_hidden_type) read through _index_buckets_for (a single-socket name reads by_type, by_contract and by_definition); the scan (_matches_annotation over _spell_keys_for) and the index read one table and one class-lookup predicate, so their membership is equal; _eq_safe_object is kept only as the structural snapshot's replayability rule",
     "records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)",
-    "resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226)"
+    "resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another; a miss whose spell is registered elsewhere returns empty into hidden_out on Phase 3's own call, so the socket becomes UNRESOLVED_INPUT with those registrations (0.2.8281), while a direct caller gets the RuntimeError with a sentence naming where the spell is bound (_spellmap_hidden_sentence)",
+    "names a class lookup's hidden candidates with one predicate, _hidden_type_key - the type key of a spell bound under a spellframe or a binding name, None for one bound bare under the default binding and for a Protocol's own definition - read from the by_hidden_type bucket or the pool scan (_hidden_class_candidates); _record_unresolved_miss records them per shape: a single or SpellMap socket gets ids and frame keys, a required list[Class] resolvable ids only (it stays NORMAL for Phase 6's report), an optional collection nothing (0.2.8281)"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "dbe8c6e04316910263f762230b92cc4db81b642f39b5cb52d2ac24aa9066cdac"
+   "semantics_authored_against": "bd183dee0c13f0ed9d134c5dd793c0447edf3bf7465c5349f0ee16a026e5cb05"
   }
  },
  "edges_out": [],
@@ -112,9 +114,11 @@
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
   "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
   "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
+  "HiddenProviderReport": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
   "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
   "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
   "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
@@ -198,6 +202,17 @@
    "to": "melder.utilities.helpers.general_helpers.SpellInputUtils",
    "relation": "uses",
    "why": "CompilerPhase3 uses SpellInputUtils when normalizing annotation-derived dependency keys.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
+   "to": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+   "relation": "uses",
+   "why": "CompilerPhase3 renders the SpellMap RuntimeError's sentence naming where a missed spell is bound through HiddenProviderReport.",
    "cardinality": "one_to_one",
    "phase": [
     "validation"

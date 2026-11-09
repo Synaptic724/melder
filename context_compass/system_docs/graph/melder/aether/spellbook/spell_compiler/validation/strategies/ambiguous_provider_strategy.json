@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py",
- "source_sha256": "111a14a692ae19c5caf81b39f06e74302487799b70cd1bee1cc4c662937bd9bb",
+ "source_sha256": "8e4a581fbbb24d8836961fc65a8f4df0135b6e3b509576aae6bf0c9701a5c4ff",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy": {
@@ -38,20 +38,20 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "51b7ed46226c68855ba3b4766b3f91990ef416210ca31240b779e7943dbb20c7",
+   "span_sha256": "b2c0930e59ef176c59b0967874ff7f4b9a0b8903fe83803cc0ead934b3d24cd0",
    "include": true,
    "role": "Phase-4 strategy: one AMBIGUOUS_PROVIDER error per AMBIGUOUS_INPUT socket, naming the parameter, the expected type, every candidate's address and the remedies.",
    "responsibilities": [
     "reads the spell's Phase-3 topology and selects the AMBIGUOUS_INPUT sockets Phase 3 recorded instead of raising (0.2.8224)",
     "describes each referenced candidate through the spellbook as {spell_id, spell_name, spellframe, binding_name}, ordered by address; an unknown id renders by id",
-    "renders the expected type with UnresolvedInputError.expected_type_name and names the three remedies: a SpellMap default, a meld override, one provider",
+    "renders the expected type with UnresolvedInputError.expected_type_name and names the two remedies: a SpellMap default or one provider - no meld override, since the meld gate refuses every meld of a refused spell, override or not (0.2.8281, the owner's D4)",
     "emits severity error so conjure refuses the spell through SpellbookValidationError; never mutates topology, graph or spell"
    ],
    "owns_state": [],
    "phases": [
     "validation"
    ],
-   "semantics_authored_against": "51b7ed46226c68855ba3b4766b3f91990ef416210ca31240b779e7943dbb20c7"
+   "semantics_authored_against": "b2c0930e59ef176c59b0967874ff7f4b9a0b8903fe83803cc0ead934b3d24cd0"
   }
  },
  "edges_out": [

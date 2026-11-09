@@ -48,3 +48,9 @@ context_compass/system_docs/**/*.md text eol=lf
 # LLM support bundles carry byte hashes and line-range indexes. Pin the whole
 # generated/support lane so Windows and Linux produce identical proofs.
 llm_support/** text eol=lf
+
+# The architecture drawings' manifest (architecture_and_design/manifest.json) records the byte hash of each
+# Mermaid source, and `architecture_and_design/tools/architecture_docs.py check` compares them. A Windows
+# checkout with `core.autocrlf=true` gave the sources CRLF while the manifest holds their LF hashes, so the check
+# reported every source stale on such a checkout (found 2026-11-08, GitHub #255). Pin them LF.
+architecture_and_design/diagrams/source/*.mmd text eol=lf

@@ -73,6 +73,13 @@ class FrameViewer(Cleanable):
     Threading:
         Uses one instance `threading.RLock` to serialize cleanup and
         multi-step viewer-state mutation and teardown.
+        A read that overlaps a frame link or an ACL refresh of its frame can
+        meet the projection set that refresh replaces: the Rift cleans the old
+        set when it installs the new one, and the read raises the cleaned
+        RuntimeError of the projection object it was reading (for example
+        "CompiledFrameACLAccessSurface has already been cleaned. "). The read
+        changed nothing; retry it and it reads the new projection (GitHub #274,
+        V1; the owner, 2026-11-08).
 
     Lifecycle:
         Cleanup clears only viewer-owned references. It does not cleanup the

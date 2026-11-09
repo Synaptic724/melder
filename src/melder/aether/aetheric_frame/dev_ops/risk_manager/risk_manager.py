@@ -571,12 +571,12 @@ class RiskManager(Cleanable):
             spell: Spell instance to inspect.
         Returns:
             Optional[SpellValidity]:
-                Structural validity when available, SpellValidity.cleaned when the
+                Structural validity when available, SpellValidity.CLEANED when the
                 spell is cleaned, or SpellValidity.unknown when no SpellIndex state
                 is available.
         """
         if spell._cleaned:
-            return SpellValidity.cleaned
+            return SpellValidity.CLEANED
         state = spell.system_state
         if state is None:
             return SpellValidity.unknown

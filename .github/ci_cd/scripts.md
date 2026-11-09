@@ -142,11 +142,13 @@ agree, and a small bind, conjure and meld scenario must work with the GIL off.
 - `provenance/`: the provenance checks' tool, used by `testpypi_provenance.py` and `pypi_provenance.py`.
   `.github/provenance/verify_attestations.py` is the verifier, the one script under `.github/` that imports
   packages outside the standard library, so it never runs on a bare interpreter.
-  `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it.
+  `.github/provenance/requirements.txt` is its hashed lock; its header gives the command that regenerates it and
+  the security floors that raise some of the action's transitive pins past published advisories.
   `.github/provenance/known_good_provenance.json` is the recorded control: PyPI's provenance of the
   pypi-attestations wheel the lock installs. Moving the tool is one change: the publishing action's pin in
-  `release-candidate.yml` and `python-publish.yml`, the lock at the versions that action signs with, and the control
-  re-recorded for the new pypi-attestations wheel with `ProvenanceControl` updated ([extending.md](extending.md)).
+  `release-candidate.yml` and `python-publish.yml`, the lock at the versions that action signs with (raised to the
+  header's floors), and the control re-recorded for the new pypi-attestations wheel with `ProvenanceControl` updated
+  ([extending.md](extending.md)).
 - `python/`: the Python release manifests ([python_versions.md](python_versions.md)).
 - `rulesets/`: `dev.json`, `preprod.json`, `release_candidate.json` and `prod.json` are the branch protection
   payloads. Each requires a pull request and the `CI / merge-ready` status from the GitHub Actions app (ID 15368)

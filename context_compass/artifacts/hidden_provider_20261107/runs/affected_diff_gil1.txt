@@ -1,0 +1,69 @@
+shipped: 248 tests - passed 248 (C:/Users/Mark/AppData/Local/Temp/claude/d719220bfde2ecb3/64cce2cf-02cd-4f69-8be3-6081fe0ed943/scratchpad/hidden_class_probe/affected_mode0_gil1.xml)
+strict: 248 tests - failed 30, passed 218 (C:/Users/Mark/AppData/Local/Temp/claude/d719220bfde2ecb3/64cce2cf-02cd-4f69-8be3-6081fe0ed943/scratchpad/hidden_class_probe/affected_mode1_gil1.xml)
+differing tests: 30 in 6 files
+tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_frame[A8-name-category]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByName.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_consumer_waiting_by_name_stays_unresolved_for_a_provider_bound_under_a_frame[A9-name-protocol]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByName.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_contract[G2-protocol]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_borrower_stays_unresolved_for_a_framed_provider_granted_by_contract[G3-category]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_consumer_stays_unresolved_across_a_notch_of_a_framed_provider[C1-protocol-index]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_consumer_stays_unresolved_across_a_notch_of_a_framed_provider[C2-category-index]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame[A2-class-category]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame[A3-class-protocol]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_consumer_stays_unresolved_for_a_provider_bound_under_a_frame[A5-object-category]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByClass.
+  passed -> failed  tests.component.melder.aether.conduit.test_conduit_component_waiting_consumer_wakes_for_its_provider::test_waiting_consumer_stays_unresolved_for_a_version_notched_in_under_a_category
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: LateByClass.
+tests.integration.melder.aether.conduit.test_annotation_category_collision_integration
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_many_category_members_never_become_providers_for_the_type
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: ManagerA.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category[False-class]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterWithClass.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category[False-string]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterWithString.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category[False-unbound_string]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterUnbound.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category[True-class]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterWithClass.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category[True-string]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterWithString.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_spectrum_annotation_does_not_reach_a_spectrum_filed_under_a_category[True-unbound_string]
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterUnbound.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_two_framed_providers_of_the_annotated_type_leave_the_class_lookup_unresolved
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: CenterWithClass.
+  passed -> failed  tests.integration.melder.aether.conduit.test_annotation_category_collision_integration::test_two_same_named_classes_in_two_categories_leave_the_class_consumer_unresolved
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: MCPScanner.
+tests.integration.melder.conduit.test_conduit_integration_notch_revalidation
+  passed -> failed  tests.integration.melder.conduit.test_conduit_integration_notch_revalidation::test_c4_a_class_annotation_never_reaches_a_framed_index_while_its_frame_follows_every_notch
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: PClass.
+tests.integration.melder.spellbook.test_spellbook_integration_resolution_break_matrix
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_break_matrix::test_b1_dependency_only_under_binding_defers_and_conjures
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: NeedsEngineConcrete.
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_break_matrix::test_b3_spellmap_without_binding_name_fails_conjure_on_binding_only_registration
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: NeedsConfigViaMap.
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_break_matrix::test_e2_concrete_default_binding_missing_defers_and_conjures
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: NeedsEngineConcrete.
+tests.integration.melder.spellbook.test_spellbook_integration_resolution_contract_more
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_contract_more::test_spellmap_explicit_class_with_wrong_binding_name_raises
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: _Service.
+  passed -> failed  tests.integration.melder.spellbook.test_spellbook_integration_resolution_contract_more::test_type_hint_di_concrete_class_bound_only_under_binding_names_is_unresolved
+      melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed. Broken spells: _Consumer.
+tests.unit.melder.spellbook.spell_compiler.phases.test_compiler_phase_3
+  passed -> failed  tests.unit.melder.spellbook.spell_compiler.phases.test_compiler_phase_3::test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name[IProvider-None-None]
+      Failed: DID NOT RAISE RuntimeError
+  passed -> failed  tests.unit.melder.spellbook.spell_compiler.phases.test_compiler_phase_3::test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name[None-None-v1]
+      Failed: DID NOT RAISE RuntimeError
+  passed -> failed  tests.unit.melder.spellbook.spell_compiler.phases.test_compiler_phase_3::test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name[None-v1-None]
+      Failed: DID NOT RAISE RuntimeError
+  passed -> failed  tests.unit.melder.spellbook.spell_compiler.phases.test_compiler_phase_3::test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name[agents-None-None]
+      Failed: DID NOT RAISE RuntimeError
+  passed -> failed  tests.unit.melder.spellbook.spell_compiler.phases.test_compiler_phase_3::test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an_address_it_does_not_name[agents-v1-v1]
+      Failed: DID NOT RAISE RuntimeError

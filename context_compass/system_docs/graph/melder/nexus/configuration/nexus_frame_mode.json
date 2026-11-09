@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/nexus_frame_mode.py",
- "source_sha256": "c78acdae8d9fe916c2be144aec7f42f890cbbd34cff0578894a12699f549e72c",
+ "source_sha256": "e625bc121f27b4e116259f93ad01122a01e11326abf86874f779a440bdec6e30",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.nexus_frame_mode": {
@@ -28,7 +28,7 @@
    "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -36,7 +36,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ca11c37faf31d096524bafdc92e747f65c1e1615f3f867b3fea115c41519f3d2",
+   "span_sha256": "b675360eb72b1e278fa1a8c1b25e728e13bac9ef035d9bdf401ded708b0353a6",
    "role": "Topology mode enum for Nexus-assigned internal frames.",
    "responsibilities": [
     "labels single, indexed, and one-per-workspace Nexus frame allocation modes"
@@ -56,7 +56,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum"
+  "StrEnum": "enum.StrEnum"
  },
  "collapse_candidate": null
 }

@@ -1,0 +1,94 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py",
+ "source_sha256": "3e84df6bedeb60ff9af8d40988f0a1214d2ce130e3bb50a7eb9297087f7ff601",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report",
+   "label": "hidden_provider_report",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Module holding the one renderer of where a class lookup's class is bound, shared by the reports that name hidden providers.",
+   "responsibilities": [
+    "exports HiddenProviderReport"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+   "label": "HiddenProviderReport",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py",
+   "lineno": 10,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "annotation_message",
+    "collection_clause",
+    "describe",
+    "described_count",
+    "entries",
+    "entry",
+    "is_default_binding",
+    "lookup",
+    "ordered",
+    "protocol_clause",
+    "spell_display_name",
+    "spellmap_message",
+    "spellmap_runtime_suffix",
+    "spellmap_text",
+    "unresolved_input_message",
+    "where",
+    "with_uses"
+   ],
+   "shape": {
+    "method_count": 17,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "d1345c04b3a03204c46b3c496af4a812eb1cc6e0e4af1d9004e5bca4256bde92",
+   "include": true,
+   "role": "Pure, stateless renderer of hidden candidates, shared by HIDDEN_PROVIDER, Phase 6's empty-collection report, UnresolvedInputError and Phase 3's SpellMap RuntimeError.",
+   "responsibilities": [
+    "describes a candidate id and its spell, or None, as a value dict of spell_id, spell_name, spellframe (a string category as itself, a Protocol by its __name__), spellframe_kind and binding_name (describe)",
+    "orders candidates by spellframe, binding_name and spell_name and renders each as '<Name> at (spellframe=..., binding_name=...) - use <lookup>', or 'spell id <id>' when it is not described",
+    "renders the lookup that reaches a candidate per shape: SpellMap(spellframe=P, binding_name='b') or SpellMap(Name, binding_name='b') for the single and SpellMap shapes, list[P], list['c'] or list['Name'] for the list shape",
+    "counts the SpellMaps the entries show (described_count), so a closing sentence never points at a SpellMap no entry shows",
+    "renders the annotation, SpellMap, collection, unresolved-input and Phase 3 RuntimeError texts; reads bind-time fields only, takes no lock and holds no state"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "d1345c04b3a03204c46b3c496af4a812eb1cc6e0e4af1d9004e5bca4256bde92"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "SpellframeKind": "melder.aether.spellbook.spellframe_kind.spellframe_kind.SpellframeKind",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "Spell": "melder.aether.spellbook.spell.Spell"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report",
+  "class": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+  "label": "HiddenProviderReport"
+ }
+}

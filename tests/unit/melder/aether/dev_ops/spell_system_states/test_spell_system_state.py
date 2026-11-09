@@ -1,9 +1,9 @@
 import pytest
-import threading
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -236,48 +236,28 @@ def test_cleanup_idempotent(state):
     state.cleanup()
 
 
-def test_cleanup_rechecks_cleaned_inside_lock(state):
+def test_cleanup_rechecks_cleaned_inside_lock(state: SpellSystemState) -> None:
     """
     Verify the inner cleanup re-check under concurrent teardown.
+
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup. The second caller must return at the
+    inner recheck - without it the teardown would run twice and a caller would raise on an attribute the other
+    had already deleted - so both callers finish without raising and the state reads cleaned with its `_lock`
+    dropped. The callers are ordered by the handshake, not by timing: the earlier hand-made lock could lose its
+    signal and failed on CI (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
+    Args:
+        state: A live spell system state from the `state` fixture.
+
+    Returns:
+        None.
     """
+    handshake = CleanupRecheckHandshake()
+    state._lock = handshake.lock
 
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    handshake.run(state.cleanup)
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
-    state._lock = _CoordinatedLock()
-    failures = []
-
-    def _run_cleanup():
-        try:
-            state.cleanup()
-        except BaseException as exc:
-            failures.append(exc)
-
-    first = threading.Thread(target=_run_cleanup, name="sss-cleanup-first")
-    second = threading.Thread(target=_run_cleanup, name="sss-cleanup-second")
-
-    first.start()
-    assert state._lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join()
-    second.join()
-
-    assert failures == []
     assert state._cleaned is True
     assert not hasattr(state, '_lock')
 

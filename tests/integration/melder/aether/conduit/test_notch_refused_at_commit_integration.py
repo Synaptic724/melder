@@ -9,10 +9,13 @@ the index by address (measured on 0.2.8255, and on 0.2.8260, where a spell_id is
 With the fix the notch runs the check inside its window and, when the check fails, puts the structure back before
 it raises: the owner's answer (a), "refuse it and throw and move on". Until it lands these tests fail.
 
-Two broken versions are used. `SelfMade`'s constructor takes its own class (SELF_DEPENDENCY at Phase 4).
-`TimedGreeter`'s constructor needs a `Clock` while two are registered (AMBIGUOUS_PROVIDER): nothing in it loops, so
-it shows the half-switch follows any failing check, not recursion. Each is only checked once it is active, because
-a parked version is not in the pool Phase 3 resolves against.
+Two broken versions are used. `SelfMade`'s constructor takes a `Greeter`, the contract every version is staged
+under, so once SelfMade is active that parameter resolves to SelfMade itself (SELF_DEPENDENCY at Phase 4). It took
+its own class until 2026-11-07, when a class lookup stopped reaching a spell bound under a spellframe: that
+annotation would now compile to an unresolved input and the notch would stand, so the Protocol keeps the refusal a
+failed structural check. `TimedGreeter`'s constructor needs a `Clock` while two are registered (AMBIGUOUS_PROVIDER):
+nothing in it loops, so it shows the half-switch follows any failing check, not recursion. Each is only checked once
+it is active, because a parked version is not in the pool Phase 3 resolves against.
 
 Worlds follow probe N1-N3 (artifacts/correctness_defects_20261017/probes/probe_failed_notch_commit.py): a dynamic
 frame with caching off, English active on the lender's index and, when a borrower is asked for, a second Book that
@@ -62,14 +65,23 @@ class French:
 
 
 class SelfMade:
-    """A broken version: its constructor takes its own class (SELF_DEPENDENCY once it is active)."""
+    """
+    A broken version: its constructor takes a `Greeter`, the contract it is staged under, so once it is the index's
+    active version that parameter resolves to SelfMade itself (SELF_DEPENDENCY once it is active).
 
-    def __init__(self, other: SelfMade) -> None:
+    Until 2026-11-07 the parameter named SelfMade's own class. A class lookup now reaches only a spell bound bare (no
+    spellframe, the default binding), and every version here is staged under (Greeter, 'greeter'), so that annotation
+    would compile to an unresolved input, not a self-dependency; the Protocol annotation reaches the active version
+    through the frame and keeps the failure a structural one.
+    """
+
+    def __init__(self, other: Greeter) -> None:
         """
         Keep the other instance.
 
         Args:
-            other: Another instance of this class; no meld can supply one.
+            other: Another Greeter; once SelfMade is the index's active version the only Greeter the lender's Book
+                resolves is SelfMade itself, so no meld can supply one.
         """
         self.other = other
 

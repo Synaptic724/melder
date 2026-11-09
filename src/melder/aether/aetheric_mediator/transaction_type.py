@@ -10,6 +10,7 @@ threading a new ad-hoc string through the plane.
 """
 
 from enum import StrEnum
+from typing import Optional
 
 
 class TransactionType(StrEnum):
@@ -26,9 +27,10 @@ class TransactionType(StrEnum):
           registering its strategy. If a caller finds itself wanting to pass a
           string that is not a member, that is the signal a strategy is
           missing - not an invitation to widen the type.
-        - Values are STABLE. They travel into request payloads, admission
-          evidence, activity indexes, and logs; renaming one breaks stored
-          evidence and anything grepping for it.
+        - Values exactly match member names. Historical lowercase reporting
+          tokens remain available via `wire_value` and are still emitted in
+          request payloads, admission evidence, activity indexes, and logs.
+          Old lowercase values also remain readable by enum construction.
         - `StrEnum` so members pass through string-oriented APIs (logging,
           JSON, dict keys) without special casing, matching DevOps.
         - Read paths are NOT modelled here. Reads never enter this plane, the
@@ -84,11 +86,39 @@ class TransactionType(StrEnum):
         Every member pairs with a registered strategy.
     """
 
-    FRAME_CREATE = "frame_create"
-    CHECKPOINT_LOAD = "checkpoint_load"
-    FORMATION_LOAD = "formation_load"
-    INDEX_GRAFT = "index_graft"
-    SUBSYSTEM_CONFIGURE = "subsystem_configure"
-    SUBSYSTEM_ACTIVATE = "subsystem_activate"
-    SUBSYSTEM_DEACTIVATE = "subsystem_deactivate"
-    AGENT_REPAIR = "agent_repair"
+    FRAME_CREATE = "FRAME_CREATE"
+    CHECKPOINT_LOAD = "CHECKPOINT_LOAD"
+    FORMATION_LOAD = "FORMATION_LOAD"
+    INDEX_GRAFT = "INDEX_GRAFT"
+    SUBSYSTEM_CONFIGURE = "SUBSYSTEM_CONFIGURE"
+    SUBSYSTEM_ACTIVATE = "SUBSYSTEM_ACTIVATE"
+    SUBSYSTEM_DEACTIVATE = "SUBSYSTEM_DEACTIVATE"
+    AGENT_REPAIR = "AGENT_REPAIR"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[TransactionType]:
+        """
+        Resolve the exact historical lowercase transaction values.
+
+        Args:
+            value: A value not already matched by the enum constructor.
+
+        Returns:
+            Optional[TransactionType]: The historical member, or None when
+                the value is not an exact legacy token.
+        """
+        if isinstance(value, str):
+            for member in cls:
+                if value == member.name.lower():
+                    return member
+        return None
+
+    @property
+    def wire_value(self) -> str:
+        """
+        Return the historical lowercase token used in reporting records.
+
+        Returns:
+            str: The original transaction value, unchanged at wire boundaries.
+        """
+        return self.name.lower()

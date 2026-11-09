@@ -14,6 +14,7 @@ from typing import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlAdmissionResult,
+    ChangeTransactionType,
 )
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
     ChangeControlStagedMutation,
@@ -423,9 +424,13 @@ class ChangeControlOrchestrator(Cleanable):
                 owner_request_id=request.request_id,
                 claims=scope_claims,
                 reason_tag=(
-                    request.request_type.value
-                    if hasattr(request.request_type, "value")
-                    else str(request.request_type)
+                    request.request_type.wire_value
+                    if isinstance(request.request_type, ChangeTransactionType)
+                    else (
+                        request.request_type.value
+                        if hasattr(request.request_type, "value")
+                        else str(request.request_type)
+                    )
                 ),
             )
             if not decision.acquired:
