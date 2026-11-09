@@ -198,18 +198,18 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
         for spellbook_id in sorted(spellbook_ids):
             scope = transaction_manager.make_scope_key_spellbook(spellbook_id)
             scope_keys.add(scope)
-            scope_claims.append((scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((scope, ClaimMode.EXCLUSIVE.wire_value))
         for conduit_id in sorted(conduit_ids):
             scope = transaction_manager.make_scope_key_conduit(conduit_id)
             scope_keys.add(scope)
-            scope_claims.append((scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((scope, ClaimMode.EXCLUSIVE.wire_value))
         if binding_key is not None:
             scope = transaction_manager.make_scope_key_binding(
                 binding_key[0],
                 binding_key[1],
             )
             scope_keys.add(scope)
-            scope_claims.append((scope, ClaimMode.EXCLUSIVE.value))
+            scope_claims.append((scope, ClaimMode.EXCLUSIVE.wire_value))
         return scope_keys, scope_claims
 
     @staticmethod

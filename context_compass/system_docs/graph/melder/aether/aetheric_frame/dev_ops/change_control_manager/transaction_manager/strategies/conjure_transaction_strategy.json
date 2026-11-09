@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py",
- "source_sha256": "1e72f1e06fc1df6770068dcaee77716943dc4da3ee832f874ebdebe59983fd71",
+ "source_sha256": "1f6841c214b0daa62f8f8f66e5c0868c6886d1836e95487277ef7760aa990f6e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b5e7a4b0f8ac7d6b9a93bce0cbd7fb28610fe6b884915f7f5488148be49506cb",
+   "span_sha256": "685511e67c841258e7eea9c6f4b60067d92c2eec5559ba15f1ea2392268a4501",
    "include": true,
    "role": "The genesis member of the transaction family: spellbook -> root conduit, the event every conduit-scoped strategy presupposes.",
    "responsibilities": [

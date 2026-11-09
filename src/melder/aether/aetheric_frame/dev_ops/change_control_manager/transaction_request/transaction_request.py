@@ -15,8 +15,8 @@ class ChangeTransactionType(StrEnum):
         change-control admission system.
 
     Contract:
-        - Values must remain stable because they become part of transaction
-          request payloads and logs.
+        - Values match member names exactly. Historical lowercase inputs and
+          reporting tokens remain available for requests and logs.
         - Uses `StrEnum` so runtime callers can pass members through normal
           string-oriented APIs without special casing.
         - No "scan" or "embargo" transaction types are modeled here.
@@ -59,22 +59,75 @@ class ChangeTransactionType(StrEnum):
         access: internal. Change-control transaction types. Melder kernel machinery: read it to
         understand the runtime, do not drive it directly.
     """
-    BIND = "bind"
-    CONJURE = "conjure"
-    LINK = "link"
-    TRANSFER_OWNERSHIP = "transfer_ownership"
-    MUTATION = "mutation"
-    CLUSTER_LINK = "cluster_link"
-    UNLINK = "unlink"
-    ADD_SPELL_OR_INDEX_TO_CONTRACT = "add_spell_or_index_to_contract"
-    REMOVE_SPELL_OR_INDEX_FROM_CONTRACT = "remove_spell_or_index_from_contract"
-    NOTCH = "notch"
-    ADD_TO_INDEX = "add_to_index"
-    REMOVE_FROM_INDEX = "remove_from_index"
-    ELECT_CONDUIT_CLUSTER_LEADER = "elect_conduit_cluster_leader"
-    UNELECT_CONDUIT_CLUSTER_LEADER = "unelect_conduit_cluster_leader"
-    CLUSTER_JOIN = "cluster_join"
-    CLUSTER_LEAVE = "cluster_leave"
+    BIND = "BIND"
+    CONJURE = "CONJURE"
+    LINK = "LINK"
+    TRANSFER_OWNERSHIP = "TRANSFER_OWNERSHIP"
+    MUTATION = "MUTATION"
+    CLUSTER_LINK = "CLUSTER_LINK"
+    UNLINK = "UNLINK"
+    ADD_SPELL_OR_INDEX_TO_CONTRACT = "ADD_SPELL_OR_INDEX_TO_CONTRACT"
+    REMOVE_SPELL_OR_INDEX_FROM_CONTRACT = "REMOVE_SPELL_OR_INDEX_FROM_CONTRACT"
+    NOTCH = "NOTCH"
+    ADD_TO_INDEX = "ADD_TO_INDEX"
+    REMOVE_FROM_INDEX = "REMOVE_FROM_INDEX"
+    ELECT_CONDUIT_CLUSTER_LEADER = "ELECT_CONDUIT_CLUSTER_LEADER"
+    UNELECT_CONDUIT_CLUSTER_LEADER = "UNELECT_CONDUIT_CLUSTER_LEADER"
+    CLUSTER_JOIN = "CLUSTER_JOIN"
+    CLUSTER_LEAVE = "CLUSTER_LEAVE"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ChangeTransactionType]:
+        """
+        Resolve the exact historical lowercase transaction values.
+
+        Args:
+            value: An input not already matched by the enum constructor.
+
+        Returns:
+            Optional[ChangeTransactionType]: The original member, or None for
+                an unrecognized token.
+        """
+        if isinstance(value, str):
+            for member in cls:
+                if value == member.name.lower():
+                    return member
+        return None
+
+    @property
+    def wire_value(self) -> str:
+        """
+        Return the original lowercase token used in operational records.
+
+        Returns:
+            str: The historical value of this transaction type.
+        """
+        return self.name.lower()
+
+    @classmethod
+    def _comparison_token(cls, value: object) -> object:
+        """
+        Project recognized transaction forms to their historical comparison token.
+
+        Contract:
+            This enum's members and exact canonical plain strings use their
+            historical lowercase value. Other objects, including unrecognized
+            strings and foreign enum members, are returned unchanged. The enum's
+            own value, equality, hash and serialized representation do not change.
+
+        Args:
+            value: Transaction value to compare without changing the request.
+
+        Returns:
+            object: The historical token for a recognized form, else the input.
+        """
+        if isinstance(value, cls):
+            return value.wire_value
+        if type(value) is str:
+            member = cls.__members__.get(value)
+            if member is not None:
+                return member.wire_value
+        return value
 
 
 @dataclass(frozen=True)

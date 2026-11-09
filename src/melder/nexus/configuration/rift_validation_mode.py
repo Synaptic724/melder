@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 
 
 
-class RiftValidationMode(Enum):
+class RiftValidationMode(StrEnum):
     """
     Internal
 
@@ -17,6 +17,11 @@ class RiftValidationMode(Enum):
         unsafe:
             Minimize validation barriers for trusted/internal flows that need
             maximum freedom over safety checks.
+
+    Contract:
+        Member names and values are unchanged strings. Members compare as strings,
+        including equal-valued members of other StrEnum families. Callers that need
+        family identity must validate the concrete enum type.
 
     Threading:
         Immutable enum members; safe to read from any thread.

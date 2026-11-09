@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/target_spec.py",
- "source_sha256": "6b478f1e4c5136377fb8e7dcc2ae7d0d6de74aae05bccfdceb3917de89c74ff5",
+ "source_sha256": "c335532ed2e343cd4be2b83352dbef429ea64bd7ccdc8cd5c4320953fcf2d945",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.target_spec": {
@@ -22,15 +22,15 @@
    "lineno": 8,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f862a6dc0ea8e6ce9bedcba63f5f23b9bbd3ebf5607f44bc2c46c078b0c61229",
+   "span_sha256": "773e4dbc0b1502be0ecc6a37faa843d1d66fff9b97fad197eeed81621fcffc96",
    "role": "Enum of supported override targeting modes.",
    "responsibilities": [
     "labels path, unique, and broadcast targeting semantics"
@@ -50,7 +50,7 @@
    "label": "TargetSpec",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/target_spec.py",
-   "lineno": 37,
+   "lineno": 59,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -96,8 +96,8 @@
  "published_aliases": [],
  "imports": {
   "dataclass": "dataclasses.dataclass",
-  "Enum": "enum.Enum",
-  "auto": "enum.auto",
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "ClassVar": "typing.ClassVar"
  },

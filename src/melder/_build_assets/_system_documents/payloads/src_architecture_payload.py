@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 5260
-CONTENT_SHA256 = '33a833e00a2f7b9c00e47e1e60952f03de9dd0e8cecf13a480b45c9ec2e1e654'
+LINE_COUNT = 6189
+CONTENT_SHA256 = 'a6a680cd144c8cca3c29f6db28f5a22b2658e37dc5fb52d1b82ca9336ca493c9'
 
 TEXT = """# Src Architecture (C4)
 
@@ -79,7 +79,7 @@ and ask the owner when the intent is unclear.
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-10-25T14:22:13Z
+- Updated: 2026-11-08T20:18:11Z
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -223,6 +223,23 @@ Each item must include:
   `src/melder/aether/spellbook/bind/spell_code_digest.py:SpellCodeDigest._code_digest` with the same targets
   digested on two patch releases. Current status: uninvestigated (one patch release installed).
 
+- UNKNOWN (an open gap, for the owner's decision): how a notch should end when a `cleanup_spell` disposes its
+  OUTGOING version while the incoming one's structural check runs. Read from the code, not probed: after the seam
+  has switched the index, the outgoing version is parked, so `cleanup_spell` may dispose it (no transaction orders
+  it against the notch); when `_check_notched_version` then fails, `_revert_refused_notch` runs the seam back toward
+  that version, `_refuse_unparked_incoming` refuses it (being disposed, or no longer parked), and the reversal
+  raises its RuntimeError "notch_spell refused '<name>' (spell_id <id>) but could not put the index back to ...
+  This is a Melder bug; please report it with this message." with the refused version left active and its Phase
+  1-4 artifacts not reset. Before 0.2.8285 the same overlap also ended in that error, with the index left with no
+  active version. A disposal of the notch's target is closed (Operational Invariants, 0.2.8285). Why it matters:
+  a refused version keeps serving the address, under an error that calls itself a Melder bug. Where to
+  investigate: `src/melder/aether/spellbook/spellbook.py:Spellbook._revert_refused_notch`,
+  `Spellbook._refuse_unparked_incoming` and `Spellbook._dispose_spell` (its parked branch), with a component test
+  that disposes the outgoing version from inside a failing structural check of the incoming one. Ordering
+  `cleanup_spell` against an in-flight notch is the design question. Current status: uninvestigated (a non-goal of
+  patch small_fixes_2026_11_08, recorded there as a risk); GitHub #273, filed 2026-11-08 and not started, would bring
+  `cleanup_spell` into the frame mediator's scope, which is the owner's decision.
+
 ## System Context (C4)
 Melder is a Dependency Graph Runtime embedded into user systems. User code
 binds classes/functions/instances into a Spellbook, then conjures Conduits to
@@ -320,9 +337,20 @@ Dependencies include:
   `clear_mutation_override()`, emitting the `mutation_contract_set` /
   `mutation_contract_cleared` change reasons.
 - ParameterDIShape: Phase 1 classification of how a parameter should resolve.
+- Class lookup: a request that names a class - a class annotation, `list[Class]`, the type part of a single string
+  annotation, `SpellMap(spell=Class)` without a spellframe. It reaches a spell only when the spell is bound bare: no
+  spellframe and the default binding, an existing object through its class (0.2.8278). A spell bound under a
+  spellframe is reached through the frame - Melder's interface dict, keyed by binding name - and a bare spell bound
+  under a binding name through that name (`SpellMap(Class, binding_name=...)`, `meld(Class, binding_name=...)`).
+- Hidden provider: a spell of the class a class lookup names that the lookup cannot reach - bound under a spellframe
+  or a binding name, never a Protocol's own definition (`CompilerPhase3._hidden_type_key`, 0.2.8281). When a class
+  lookup finds nothing, Phase 3 records the class's hidden providers on the socket (`hidden_spell_ids`,
+  `hidden_frame_keys`) and Phase 4 refuses the consumer with the error HIDDEN_PROVIDER, naming each address and the
+  lookup that reaches it; an empty required `list[Class]` names them in its Phase 6 report instead.
 - Unresolved input: a single typed constructor parameter that no registered spell provides. It compiles as
   an UNRESOLVED_INPUT socket; the constructing meld supplies it by override, and `UnresolvedInputError`
-  names it when a construction would go without it (2026-09-26).
+  names it when a construction would go without it (2026-09-26). Since 0.2.8281 a class lookup whose class is
+  registered only under a spellframe or a binding name is no such input: its consumer is refused (HIDDEN_PROVIDER).
 - Key-set plan: the code one override key set compiles to in a `SitePlanOverrideRuntime`; it builds only what
   the payload does not supply. The empty key set is the normal plan of the many_only and generalized
   families (2026-09-26).
@@ -433,15 +461,19 @@ External interfaces are Python APIs:
   parked version can be named by its spell_id or by the Spell they return. Every version of an index is bound
   the way its first version was (0.2.8273): `bind_inactive` and `add_to_spell_index` refuse a version bound
   another way (ValueError) before anything is registered or moved, and a notch, which never moves the index's
-  address, refuses an address another spell holds (RuntimeError) with nothing moved.
+  address, refuses an address another spell holds (RuntimeError) with nothing moved. A target a `cleanup_spell`
+  is disposing, or has taken off the Book's maps, after the in-window check - `cleanup_spell` takes no
+  transaction - is refused by the seam with RuntimeError "notch_spell refused: '<name>' (spell_id <id>) is being
+  disposed by cleanup_spell, ..." or "notch_spell refused: spell_id '<id>' is not a version parked in this
+  Spellbook - ..." and nothing moved (0.2.8285).
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5678, 5813 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5842-6060 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5711, 5860 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5908-6126 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6062, 6160 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6183, 6258 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4704 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4742 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6128, 6226 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6249, 6324 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4829 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4867 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -556,11 +588,13 @@ the versions, compositions pin specific ones, and the creation stores key object
 so a `unique` can have one live object per version while agents iterate on one object and converge
 on the version they want (corrected 2026-10-15: this paragraph called the borrower update a missing
 fan-out). A notch names its target by spell_id or by Spell and checks that it is the Book's version of that
-index before anything moves; the two index moves take a spell_id the same way (0.2.8249). A notch whose
+index before anything moves; the two index moves take a spell_id the same way (0.2.8249). The seam checks the
+version it is handed once more, under the Book lock and before anything moves, so a target disposed, or being
+disposed, since the conduit's check is refused and the index keeps its active version (0.2.8285). A notch whose
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262). Every version of an index is bound the way its first version was, so a notch moves which version
 serves the index's address, never the address, and refuses an address another spell holds (0.2.8273).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, remeasured 2026-10-25 at 0.2.8273);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, remeasured 2026-11-08 at 0.2.8285);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -583,9 +617,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
   tagging any user-extensible base silently made user subclasses unbindable.
 - `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs imported from the
   hand-written loader `melder._build_assets._bind_guard.bind_guard`, which re-exports it
-  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (629 at
-  0.2.8267: `HolderDisposalEntry` left; 630 at 0.2.8257: `SpellCodeDigest` and `BindingManifest` joined; 628 at
-  0.2.8246: the managed-spell classes joined at 0.2.8242-0.2.8244; 620 at 0.2.8216). The TRUTH is the COMMITTED
+  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (631 at
+  0.2.8281: `HiddenProviderStrategy` and `HiddenProviderReport` joined; 629 at 0.2.8267: `HolderDisposalEntry` left;
+  630 at 0.2.8257: `SpellCodeDigest` and `BindingManifest` joined; 628 at 0.2.8246: the managed-spell classes joined
+  at 0.2.8242-0.2.8244; 620 at 0.2.8216). The TRUTH is the COMMITTED
   manifest `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.meldercache`
   under `__melder_cache__/__bind_guard__/` that is an ACCELERATOR and never the source.
   The manifest module is imported lazily on cache miss only, so a warm process never
@@ -595,7 +630,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
   Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
   `ProtocolCrafter` remain importable and usable while being unbindable.
 - The only live enforcement call site is
-  `src/melder/aether/spellbook/bind/bind.py:726` (in `Bind._bind_logic`) -
+  `src/melder/aether/spellbook/bind/bind.py:727` (in `Bind._bind_logic`) -
   `assert_allowed(spell, context="bind")`, a direct call to the
   module-level function. Identity resolution is factored into the pure helper
   `_internal_identity_of(candidate)` in the same module.
@@ -605,7 +640,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
   `raising=True`, so if the enforcement seam is ever renamed or moved again, the tests
   fail immediately instead of silently creating an attribute nothing reads. That matters
   because `test_bind.py` neutralizes the guard for its whole file via an autouse
-  fixture; a silently-dead patch would let the real manifest (629 entries at 0.2.8267) begin refusing
+  fixture; a silently-dead patch would let the real manifest (631 entries at 0.2.8281) begin refusing
   binds mid-suite with no signal pointing back at the fixture. Preserve `raising=True`
   if these sites are ever touched.
 - The guard is entirely absent from the package root: `melder/__init__.py` neither
@@ -893,7 +928,12 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
    - Fires `on_conduit_post_unlink` hook on success.
 
 ### Sequence: Transfer Spell Ownership
-1. `Conduit.transfer_spell_ownership(...)` validates dynamic mode.
+1. `Conduit.transfer_spell_ownership(...)` checks, before anything starts and each with a RuntimeError: the conduit is
+   not cleaned and is a normal root, the frame posture allows ownership transfer, the world is dynamic, and the
+   target conduit is in this conduit's aetheric frame (0.2.8280: "Cannot transfer spell ownership across different
+   AethericFrames: <source> != <target>. ...", as `link` refuses a cross-frame peer). Only then does it open the
+   `TRANSFER_OWNERSHIP` transaction, whose metadata (`_build_transfer_transaction_metadata`) runs the read-only
+   preflight below, and hand the move to `ConduitWard._transfer_spell_ownership`.
 2. `TransferOfOwnership.preflight()` captures borrowers, deps, creations.
 3. `TransferOfOwnership.execute()`:
    - Marks lineage disabled (transfer_in_progress) and flips registries under lock.
@@ -942,7 +982,15 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
    `_apply_remove_from_index(...)`. THE ENTRY AND THE SEAM ARE DIFFERENT
    METHODS; the entry is what the Conduit calls, the seam is what mutates.
 5. The seams execute the member-store work inside that held window:
-   - notch first moves the index's address claim from the outgoing version
+   - notch first checks, under the Book lock, that the incoming version is the
+     one parked in this Book under its spell_id, parked in the index and not
+     being disposed by a `cleanup_spell`, and refuses it otherwise, nothing moved
+     (`_refuse_unparked_incoming`, 0.2.8285; until then it parked the outgoing
+     member before the promotion checked the incoming one, so a target
+     `cleanup_spell` took off the Book's maps after step 4's check left the index
+     with no active version, and one a disposal had decided on but not yet
+     removed was promoted and then cleaned while the index selected it); then it
+     moves the index's address claim from the outgoing version
      to the incoming one by compare-and-set (`AethericFrame.repoint_lookup`)
      and refuses, nothing moved, an address another spell holds (0.2.8273);
      then it parks the outgoing active member, promotes the incoming parked
@@ -986,15 +1034,16 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4169-5082 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4169-4430 (`_apply_notch`, `_refuse_taken_address`)
-   - src/melder/aether/spellbook/spellbook.py:4742-4847
-   - src/melder/aether/spellbook/spellbook.py:4962-5082
+   - src/melder/aether/spellbook/spellbook.py:4190-4555 (`_apply_notch`, `_refuse_unparked_incoming`,
+     `_refuse_taken_address`; remeasured 2026-11-08 at 0.2.8285)
+   - src/melder/aether/spellbook/spellbook.py:4867-4972
+   - src/melder/aether/spellbook/spellbook.py:5087-5207
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
-   - src/melder/aether/conduit/conduit.py:5678-5840
-   - src/melder/aether/conduit/conduit.py:5842-6060
-   - src/melder/aether/conduit/conduit.py:6062-6271
-   - src/melder/aether/conduit/conduit.py:6352-6381
-   - src/melder/aether/conduit/conduit.py:6383-6426
+   - src/melder/aether/conduit/conduit.py:5711-5906
+   - src/melder/aether/conduit/conduit.py:5908-6126
+   - src/melder/aether/conduit/conduit.py:6128-6337
+   - src/melder/aether/conduit/conduit.py:6448-6477
+   - src/melder/aether/conduit/conduit.py:6479-6522
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
@@ -1037,10 +1086,16 @@ to report.
    `finally`, whatever a child raised, and cleans the logger last.
 4. `AetherUtilitySystem.cleanup()` clears the channel-resolver and
    default-logger providers and resets singleton state for tests.
-5. `Nexus.cleanup()` cleans registered Rifts, Nexus frame records, logger state.
-6. `Rift.cleanup()` cleans the one owned space, the owned config snapshot, the
-   owned `RiftGate`, and engaged `FrameLinkContract` objects, then clears
-   Rift-local metadata, logger last.
+5. `Nexus.cleanup()` cleans registered Rifts, Nexus frame records, logger state. It calls each Rift's `cleanup()`
+   under the Nexus lock (src_components, Unknowns).
+6. `Rift.cleanup()` marks the Rift cleaned under its lock (`_mark_cleaned`) and then, with no Rift lock held
+   (`_clean_owned_state`), cleans the one owned space, the owned config snapshot and the owned `RiftGate`, clears
+   Rift-local metadata, cleans the projection sets and the engaged `FrameLinkContract` objects, logger last; it
+   keeps `_lock` (0.2.8289). The room does the same: `RiftSpace.cleanup()` marks itself under the room lock, then
+   cleans its viewer, command system, workstation, event system and memory system. `Nexus.remove_rift` marks the
+   Rift inside its registry phase (`Rift._mark_cleaned_for_removal`) and runs `_clean_owned_state` after the Nexus
+   lock (0.2.8291, GitHub #274) (corrected 2026-11-08: this step named no lock, left out the projection sets and
+   put the metadata after the contracts).
 7. `Creations.cleanup()` calls each Spell's established methods in list order and may raise
    `ExceptionGroup` - it AGGREGATES failures rather than stopping at the first, so a
    single bad object cannot strand the rest of the scope. Since 0.2.80 that holds per
@@ -1070,7 +1125,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5627-5629 (the check and the raise)
+  - src/melder/aether/conduit/conduit.py:5660-5662 (the check and the raise)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
   - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
@@ -1089,6 +1144,270 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A notch's seam checks its incoming version before anything moves (2026-11-08, 0.2.8285;
+  TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254; the owner's word, chat 2026-11-08: "yeah do
+  the small fixes and flaky CI test please"; patch small_fixes_2026_11_08): `Spellbook._apply_notch`, under the Book
+  lock, right after its no-op return for the active version and before the address claim moves (its step 0a), runs
+  `_refuse_unparked_incoming`. The incoming version must be the one `_inactive_spells` holds under its spell_id, its
+  index - read through `Spell._spell_index_unless_cleaned`, so a cleaned version reads None instead of raising -
+  must be the index passed, and no `cleanup_spell` may be disposing it (its spell_id in `_disposing_spell_ids`).
+  Otherwise the seam logs at ERROR and raises RuntimeError, nothing moved: "notch_spell refused: spell_id '<id>' is
+  not a version parked in this Spellbook - it was disposed, is active, or was never staged here - so the notch did
+  not happen and nothing moved; '<name>' (spell_id <id>) is still the active version of the index. Stage the version
+  on this index with bind_inactive, which returns the spell_id to pass, and notch again." ("...; the index still has
+  no active version." on an index with none); "notch_spell refused: '<name>' (spell_id <id>) is being disposed by
+  cleanup_spell, so the notch did not happen and nothing moved; <the same tail>." (no remedy to offer); or
+  "notch_spell refused: '<name>' (spell_id <id>) is parked in SpellIndex <other>, not in SpellIndex <index>, so the
+  notch did not happen and nothing moved; <the same tail>. Notch it through its own index, or move it into this one
+  with add_to_spell_index first." `Conduit.notch_spell` checks its target before the transaction and again inside
+  the window (`_owned_notch_target`, 0.2.8249), but `cleanup_spell` is not admitted through a transaction, so a
+  disposal of the target can overlap the notch. `_dispose_spell` marks the version in `_disposing_spell_ids` in its
+  Book-locked decision, releases it from the contracts with no Book lock held - the version still parked - and only
+  then pops it from `_inactive_spells` and the index and cleans it; a cleaned Spell keeps its spell_id. So the seam
+  refuses, by name, a target whose disposal has decided or popped it, and a disposal that decides after the seam's
+  section finds the version active. Until 0.2.8285 the seam moved the claim, parked the outgoing version and
+  cleaned its creation context before `_reactivate_owned_spell` checked the incoming one: a target already popped
+  raised AttributeError "'Spell' object has no attribute 'spell_index'" (once cleaned) or RuntimeError "Owned
+  spell_id not parked for reactivation (spell_id=<id>)." and left the index with no active version; a target still
+  parked while its disposal released its contracts was promoted, and the disposal then dropped it from the index's
+  members and cleaned it while the index selected it; and a version parked in another index of the Book passed the
+  check and was promoted, filed under its own index while this one was repointed to it. The refusal raises before
+  `_notch_spell`'s `try`, as `_refuse_taken_address`'s does, so no reversal runs and `Conduit.notch_spell` ends the
+  transaction as failed with no borrower fan-out. A notch to the active version is still a no-op, a notch that
+  passes the check is unchanged, and the seam's compensation - the claim given back when the park or the promotion
+  raises - now covers only an unexpected error from those two; `_reactivate_owned_spell` keeps its checks for its
+  other callers. Not changed: the conduit's two checks, the notch transaction, `_revert_refused_notch`, and
+  `cleanup_spell`, which stays outside the transaction mediator - so a disposal of the OUTGOING version while the
+  incoming one's structural check runs is still not ordered against the notch (an open gap, see Unknowns). Locks:
+  no lock or lock-order edge is added - the spell's own lock is taken under the Book lock, the order Book teardown
+  and conjure's ownership stamping take.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch`, `Spellbook._refuse_unparked_incoming`,
+  `Spellbook._dispose_spell`, `src/melder/aether/spellbook/spell.py:Spell._spell_index_unless_cleaned`,
+  `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit.cleanup_spell` and
+  `tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py` (the overlapping
+  disposal: `test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused`).
+- A class lookup that finds its class only where it cannot reach refuses its consumer and says where (2026-11-07,
+  0.2.8281, HIDDEN_PROVIDER; part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check, GitHub #245, of
+  EPIC-2026-11-07-spellframe_hides_the_concrete_class; the owner's rule for part (a) and his calls D1-D5, approved in
+  chat, 2026-11-07; patch hidden_provider_2026_11_07): Phase 3 resolves exactly as before - no socket gains a target,
+  no NORMAL socket changes kind - and when a class lookup (a class annotation, the type part of a single string
+  annotation, `Optional[Class]` without a default, `list[Class]`, `SpellMap(spell=Class)` without a spellframe) comes
+  back empty, the miss branch of `_build_local_frame_dag` (`_record_unresolved_miss`) also records the spells of that
+  class the lookup cannot reach, its hidden candidates. One predicate decides them, `CompilerPhase3._hidden_type_key`:
+  the type key of a spell bound under a spellframe or a binding name, None for a spell that answers a class lookup
+  and for a Protocol's own definition. It is read on the index path from the pass-scoped index's fifth bucket
+  `by_hidden_type` and on the scan path over the pool (`_hidden_class_candidates`), so both name the same spells, one
+  per SpellIndex under its selected id. They land on the socket's descriptor as
+  `SpellSocketDescriptor.hidden_spell_ids` (sorted) and `hidden_frame_keys` (their sorted address frame keys): a
+  single socket stays UNRESOLVED_INPUT, drops method and lambda spells and keeps non-resolvable framed definitions; a
+  required `list[Class]` keeps its NORMAL socket, resolvable spells only and no frame keys; a Protocol annotation and
+  a string collection record none. A
+  `SpellMap(spell=X)` miss with X registered elsewhere no longer raises in Phase 3: `_resolve_spellmap_default`,
+  given `hidden_out`, returns empty and the socket becomes UNRESOLVED_INPUT with X's registrations (a direct caller
+  without `hidden_out` still gets the RuntimeError, with one sentence naming where X is bound); X bound nowhere, a
+  frame-named miss and several candidates raise as before. Phase 4's `HiddenProviderStrategy`, registered right after
+  `AmbiguousProviderStrategy`, emits one error HIDDEN_PROVIDER per UNRESOLVED_INPUT socket with hidden candidates -
+  "Parameter 'greeter' on spell 'Host' expects English, but a class lookup reaches English only where it is bound bare
+  (no spellframe, the default binding), and English is bound only under a spellframe: English at
+  (spellframe='Greeter', binding_name='english') - use SpellMap(spellframe=Greeter, binding_name='english'). Ask for
+  it where it is bound - the SpellMap shown, as the parameter's default, or a Greeter annotation while that spell is
+  the only one bound under Greeter - or bind English bare.", or for a SpellMap default "Parameter 'greeter' on spell
+  'Host' has the default SpellMap(English), a class lookup that reaches English only where it is bound bare under the
+  default binding, but English is bound only where that lookup does not reach: <entries>. Point the SpellMap at the
+  address it means, as shown, or bind English bare." - and `RequiredHolesStrategy` skips those sockets, so no
+  UNRESOLVED_INPUT warning says nothing provides them. The error is an ordinary user-fixable one (not internal,
+  gating, restating or superseded) and marks the spell broken: conjure raises SpellbookValidationError; a late bind
+  into a dynamic world raises it and the spell stays registered and refused; every meld of it raises the same report
+  at the meld gate, with or without an override. Every report renders a candidate through `HiddenProviderReport` as
+  "<Name> at (spellframe=..., binding_name=...) - use <lookup>", in address order; a candidate the Book owns or
+  borrows renders alike (`HiddenProviderStrategy._find_candidate`: `Spellbook.find_spell_by_spell_id`, then the
+  borrowed copies peer by peer through `Spellbook._find_contracted_spell_by_id`, lock-free), and an id neither finds
+  renders `spell id <id>` with no lookup. The closing sentence counts the SpellMaps the entries show
+  (`HiddenProviderReport.described_count`): the annotation form reads "the SpellMap shown" for one, "the SpellMap of
+  the one it needs" for several and "Ask for it where it is bound, or bind English bare." for none; the SpellMap form
+  reads "as shown" for one or more and "Point the SpellMap at the address it means, or bind English bare." for none.
+  A spell bound under a spellframe or a binding name announces its type key beside its frame key - the commit's
+  `ChangeControlManager._default_dirty_marker` for bind, notch and link commits (`_hidden_type_keys_for_staged`, in
+  the same single `mark_collection_dependents_dirty` call) and `Spellbook._add_contracted_spell` for contract
+  grants. So a consumer that compiled with its class unresolved, waiting under the class name, is re-gated and refused
+  at its next meld, as its twin bound afterwards is refused at bind (one answer, the owner's D1); a bare spell adds
+  nothing (its frame key is its type key) and still wakes such a consumer into NORMAL.
+  `SpellSystemStates._extract_collection_frame_keys` also watches an UNRESOLVED_INPUT socket under its
+  `hidden_frame_keys`, so a change announced at a hidden candidate's address re-gates the refused consumer: a notch of
+  that index to a class of another name releases it to UNRESOLVED_INPUT. Phase 6's `collection_socket_no_providers`
+  names the hidden candidates of an empty required `list[Class]` at its usual severity - ERROR when the Book is not
+  dynamic ("Spell 'Host' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it:
+  list[English] gathers English only where it is bound bare (no spellframe, the default binding), and English is
+  bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') - use list[Greeter].
+  Gather it where it is bound, as shown, bind English bare, or make the parameter optional."), WARNING with `[]`
+  injected when it is ("... An empty list will be injected at construction; gather it where it is bound, as shown,
+  or bind English bare to populate it.", the owner's D3); without candidates both texts are unchanged.
+  `UnresolvedInputError` looks the
+  candidates up live in the consumer's Book pool on its failure path (a socket that recorded them never reaches a
+  meld) and names them - "Host.greeter expects English, but this meld did not supply it and a class lookup reaches
+  English only where it is bound bare (no spellframe, the default binding), while English is bound only under a
+  spellframe: <entries>. Supply it with override={'greeter': ...} when melding Host, a path key ending in '>greeter'
+  (or '**greeter') when Host is built as a dependency, ask for it where it is bound, as shown, or bind English bare.",
+  carrying their ids as `hidden_spell_ids`. AMBIGUOUS_PROVIDER no longer offers a meld override (the owner's D4):
+  "... Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), or bind only
+  one provider of this type." The structural snapshot's socket rows carry the two fields (12 fields, `PAYLOAD_FORMAT`
+  3), and the creation cache is generation 27 (`class_lookup_hidden_providers`): an older bundle could replay a valid
+  verdict Phase 4 now refuses. Not changed: what resolves, the meld doors, SpellMap misses with X bound nowhere or
+  frame-named, the dynamic empty-list policy and Phase 8's signature rows. Locks: none added - the predicate reads
+  bind-time fields only, the bucket lives in the pass-scoped resolution cache with the other four, the announcers
+  resolve the staged spells with the helpers the structural validator uses (the Book lock taken briefly, as there)
+  and still make one mark call per commit and per grant, and the watch keys are computed at topology registration.
+  Open LIVE != FRESH gaps, each pinned by a strict xfail on EPIC-2026-10-25-dependency_watchers_listen_for_names
+  (GitHub #210): a transfer that brings a framed provider of the class into the consumer's root announces only its
+  frame key (cell H2 of the epic's S1 matrix), so the waiting consumer melds as UNRESOLVED_INPUT (its
+  UnresolvedInputError names where the class is bound) while a fresh twin is refused; three contract and link
+  departures - `remove_spell_from_contract`, `remove_index_from_contract` and `sever_link` - mark no collection
+  dependents, so a borrower refused because of a lent copy keeps a refusal its fresh twin no longer gives; and a
+  dependent melded while its dependency was refused stays invalid after the refusal lifts ("No validation error was
+  recorded for this spell; ..."). That last gap predates HIDDEN_PROVIDER: on the pre-patch tree (0733b3b65) a
+  dependent melded while its dependency was refused with AMBIGUOUS_PROVIDER stays invalid the same way, measured in
+  both GIL modes - nothing re-gates such a dependent once the refusal lifts. Not a gap: a refused consumer whose
+  hidden provider is disposed by `cleanup_spell` - in the consumer's own Book, or by a lender of a granted provider -
+  also keeps its refusal, and that is accepted behaviour under the owner's ruling (chat, 2026-11-07: "if a spell is
+  cleaned it means its cleaned its fine thats not really a bug"): the errors a consumer meets after its provider's
+  `cleanup_spell` are the caller's to handle.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._hidden_type_key`,
+  `CompilerPhase3._build_candidate_index`, `CompilerPhase3._hidden_class_candidates`,
+  `CompilerPhase3._record_unresolved_miss`, `CompilerPhase3._resolve_spellmap_default`,
+  `CompilerPhase3._build_local_topology`,
+  `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:SpellSocketDescriptor`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py:HiddenProviderStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py:HiddenProviderReport`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:EmptyCollectionStrategy._diagnostic_for`,
+  `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError._hidden_candidates`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._hidden_type_keys_for_staged`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._add_contracted_spell`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`,
+  `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.PAYLOAD_FORMAT`,
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY` and
+  `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`.
+- A spell's stewardship stays inside one aetheric frame, as its links do (2026-11-07, 0.2.8280; part (b) of
+  TASK-2026-11-07-spellframe_ambiguity_validation_check, EPIC-2026-11-07-spellframe_hides_the_concrete_class, on the
+  owner's ruling in chat, 2026-11-07: "they shouldn't be able to transfer between frames thats an illegal operation
+  ... you cannot link between frames either"): `Conduit.transfer_spell_ownership` refuses a target conduit whose
+  aetheric frame is not this conduit's, as `ConduitWard._link` refuses a cross-frame peer, with RuntimeError "Cannot
+  transfer spell ownership across different AethericFrames: <source> != <target>. ..." naming the remedy (bind the
+  spell in a Spellbook of the target frame), logged at ERROR. The check runs after the cleaned, normal-root,
+  frame-posture and dynamic-mode checks and before the `TRANSFER_OWNERSHIP` transaction opens - before
+  `_build_transfer_transaction_metadata` and its read-only `TransferOfOwnership` preflight, which would otherwise
+  read the target against a foreign frame - so a refusal starts nothing: no transaction, no preflight footprint, no
+  move. A frame is a world with its own addresses, links and contracts, so a spell's stewardship, links and
+  contracts stay inside one frame, and one active spell per address per frame (the 0.2.8273 notch rule and the
+  frame-wide claim) holds through every transfer. Measured before the fix (the part (b) probe): a transfer to a root
+  of another frame gave the target Book two active spells at one address (DUPLICATE_SPELL_NAME on meld), left the
+  source frame's address claim naming the moved spell, so no Book of that frame could bind the address again, and
+  never claimed the address in the target frame, so a later bind there registered a second active spell. Not
+  changed: transfers between conduits of one frame - their options, preflight and steps - and links. Locks: none -
+  the check compares the two conduits' `_aetheric_frame_name`, fixed at construction, and takes no lock, as `_link`
+  does.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`,
+  `Conduit._build_transfer_transaction_metadata` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._link`.
+- A class lookup reaches only a spell bound bare (2026-11-07, 0.2.8278;
+  TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class,
+  on the owner's rulings in chat, 2026-11-07: "do what autofac would do ... thats our compass", then "ok yes to all
+  your statements" for the thirteen points he was shown; SUPERSEDED in part at 0.2.8281 by the HIDDEN_PROVIDER entry
+  above: a miss whose class is bound only under a spellframe or a binding name refuses its consumer instead of leaving
+  an UNRESOLVED_INPUT a meld could supply, an empty required `list[Class]` names those bindings, and a `SpellMap(X)`
+  miss of that kind refuses through the readable report instead of raising RuntimeError; the rule of what a class
+  lookup reaches stands): a class lookup - a class annotation on a single or a
+  `list[...]` socket, the type part of a single string annotation (a `TYPE_CHECKING` name) and `SpellMap(spell=X)`
+  without a spellframe - reaches a spell only when it is bound bare, with no spellframe and a binding name that
+  normalizes to the default binding (`CompilerPhase3._answers_class_lookup`); an existing object answers through its
+  class the same way. This is Autofac's rule that a declared service hides the component's own type: a spellframe is
+  the spell's interface - Melder's interface dict, keyed by binding name - so a spell bound under one is reached
+  through the frame (a Protocol annotation, `list[Protocol]`, `list["label"]`, `SpellMap(spellframe=F,
+  binding_name=b)`, `meld(spellframe=F, binding_name=b)`), and a bare spell bound under a binding name through that
+  name (`SpellMap(X, binding_name=b)`, `meld(X, binding_name=b)`). In Phase 3's matching table a spell offers its
+  type key only when it answers a class lookup, so a class annotation and `list[Class]` skip a framed or named spell;
+  a single string annotation still reaches such a spell through the Protocol it records (its contract keys), and a
+  Protocol's own definition through its definition key whatever its binding - a name may stand for a contract, and
+  definition matching is unchanged. `_build_candidate_index` files only answering spells in `by_type` and the index
+  path reads `by_type`, `by_contract` and `by_definition` for a single-socket name, so the scan and the index paths
+  read one predicate and keep equal membership. `_resolve_spellmap_default`'s explicit-spell branch without a
+  spellframe skips an X bound under any spellframe and, with no binding_name given, an X bound under a binding name;
+  `SpellMap(X, binding_name=b)` reaches X bound bare under b; `SpellMap(X, spellframe=F, ...)` and the frame-only
+  form are unchanged. A single socket left with no candidate compiles UNRESOLVED_INPUT, like any missing provider; a
+  required `list[Class]` left empty meets the existing empty-collection rule; a SpellMap that finds none raises the
+  existing RuntimeError at conjure (Failure Modes, Breaking 0.2.8278). A class annotation's watch key
+  (`_dependency_key_for_dep`: its name and the default binding) is now the address of every provider it can match,
+  so a waiting consumer and an announced bind, notch or grant agree by construction and S1's key split cannot occur
+  for class annotations (Failure Modes, Fixed in 0.2.8278). Kept, as dict behaviour: `meld(spellframe=F)` with no
+  binding name reads the frame's default slot (KeyError when every member is named) while an `F` annotation selects
+  the frame's single implementation; ambiguity stays an error (AMBIGUOUS_PROVIDER); there is no AsSelf-style option;
+  a conjure-time error naming where a hidden class is bound is part (a) of
+  TASK-2026-11-07-spellframe_ambiguity_validation_check, not this change (it landed at 0.2.8281: the HIDDEN_PROVIDER
+  entry above). Not changed: Bind and addresses; the meld
+  doors, which look a spell up by address - `meld(X)` reads X's name and the default binding, the address a bare X
+  holds and also the address of an X bound under a string category spelled as X's own name, which a class annotation
+  no longer reaches (the upgrade drops that spellframe; the address stays); SpellContract (`canonical_key`); Protocol,
+  definition and label matching. Locks: none added - the predicate reads only bind-time fields (spellframe, binding
+  name), which are pass-invariant, and takes no lock; the candidate index stays pass-scoped in the resolution pass
+  cache. The creation cache is generation 26 (`class_lookup_bare_spells`): neither a structural payload's key nor the
+  world stamp moves when the matching rule changes, so a same-release bundle could replay a phase 3 row matched under
+  the old rule; the release change already cold-starts every older bundle (generation 9), and the bump records why,
+  as generations 18 and 20 did for the earlier matching rules.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
+  `CompilerPhase3._spell_keys_for`, `CompilerPhase3._build_candidate_index`, `CompilerPhase3._index_buckets_for`,
+  `CompilerPhase3._resolve_spellmap_default`, `CompilerPhase3._dependency_key_for_dep`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._resolve_spell`,
+  `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.structural_key`,
+  `StructuralSnapshot.world_stamp` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
+- String-backed enum compatibility: the five Nexus/Rift modes, SpellframeKind and the three
+  research lane/transition enums retain their existing names and string values as StrEnum members.
+  String and same-valued cross-family equality is intentional. Nexus and Rift configuration reject
+  foreign enum families at their typed boundaries; Nexus records plain member names, and research
+  payload readers preserve their established foreign-family failure or fallback behavior.
+  ParticipationState, OutcomePolicy, SessionStatus and ScopePrefix have uppercase name-matching
+  values. Exact former lowercase values remain readable by value and old pickle. Participant rows,
+  session descriptions/errors and scope-key builders retain their historical lowercase strings;
+  frame-create claims still conflict on the existing world key. The fallback rejects foreign enum
+  families for old values; ordinary enum lookup still handles equal canonical values. Other selected
+  enums, including formerly numeric ones, now use exact member-name strings. Tested historical inputs
+  remain readable; SocketKind projects historical integer compiler rows. DevOps bind, posture, contract
+  and structural-commit checks recognize legacy, canonical and member forms. Only the actual NOTCH
+  member takes the compiled-member shortcut; raw notch spellings use the historical string path.
+  Its session describe returns the stored request type, so an enum renders uppercase while a raw
+  lowercase input stays lowercase. Bind now
+  rejects foreign managed-mode enums; SpellSystemState ignores non-family flag writes and returns
+  false for non-family probes. These are intentional input-boundary changes.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:SocketKind._legacy_code`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:ChangeTransactionType._comparison_token`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.begin_transaction`,
+  `src/melder/aether/conduit/conduit.py:Conduit._require_link_transaction_for_contract`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._default_structural_validator`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py:TransactionSession.describe`,
+  `src/melder/aether/spellbook/bind/bind.py:Bind._normalize_managed_mode` and
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py:SpellSystemState.update_flags`.
+  EVIDENCE: `src/melder/nexus/configuration/nexus_configuration.py:NexusConfiguration._convert_property_value_if_needed`,
+  `src/melder/mutation_research/research_set/research_lane.py:ResearchLane.from_payload`,
+  `src/melder/mutation_research/research_set/transition_entry.py:TransitionEntry.from_payload`,
+  `src/melder/aether/aetheric_mediator/information_registry.py:InformationRegistry._render_participant_locked`,
+  `src/melder/aether/aetheric_mediator/transaction_session.py:TransactionSession.describe` and
+  `src/melder/aether/aetheric_mediator/scope_keys.py:ScopeKey`.
+- Terminal Python attributes are `SpellValidity.CLEANED`, `ConduitState.CLEANED` and
+  `RecordedUnitState.CLEANED` (0.2.8276), with no lowercase Python aliases. Names and order stay;
+  values now match member names. Historical numeric validity/conduit values and the recorded
+  lowercase `"cleaned"` value remain readable.
+  Native declared-name lookup is case-insensitive, includes aliases, keeps an existing lowercase-key
+  answer first and rejects foreign enums even after an equal raw string warmed its type-sensitive
+  bounded cache. Conduit string rendering stays lowercase. Nexus/MR cleanup emits the canonical
+  member; the passive profile journals and captures its name. Both restore drivers recognize final
+  `"CLEANED"` and legacy `"cleaned"`, report the existing shortfall and skip reconstruction before
+  configuration. Raw later-wins chronology, disabled replay, public verbs and major-5 admission stay.
+  EVIDENCE: `src/melder/utilities/helpers/general_helpers.py:EnumHelpers.convert_enum_and_check`,
+  `src/melder/crystallizer/persistence/persistence_profile.py:PersistenceProfile.record_nexus_state`,
+  `PersistenceProfile.record_mutation_research_state`, `PersistenceProfile.capture_segment_since`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._replay_nexus` and
+  `RestoreEngine._replay_mutation_research`.
 - A store files each binding's objects apart, on one shelf per spell_id (2026-10-25, 0.2.8274;
   STORY-2026-10-25-creations_store_slots_by_binding, on the owner's go in chat, 2026-10-25: "yeah go ahead and
   implement this, it makes sense", for the shelf/slot design he was shown): a Creations store files an object, its
@@ -1752,11 +2071,14 @@ each entry in `src_components.md`; this list is the set that crosses components.
   check and the switch, and a refusal there ends the transaction as failed (its `on_end` reopens the frozen gates)
   before `Spellbook._notch_spell` runs. The resolved Spell is rebound to `spell`, so the transaction metadata, the
   seam and the fan-out read one object and a valid call behaves as before; a notch to the active version stays a
-  no-op. The checks exist because the seam cannot be handed a foreign target: `_apply_notch` parks the outgoing
-  version before `_reactivate_owned_spell` checks the incoming one, and files it under its own `spell_index`.
-  `Conduit.cleanup_spell` is not admitted through a transaction, so a disposal of the target between the in-window
-  check and the seam's Book lock still meets that park-first order (pre-existing; filed for the seam). No lock or
-  lock-order edge is added: `_get_owned_spell` takes the Book lock alone and the identity reads take none.
+  no-op. The checks exist because the seam could not be handed a foreign target: until 0.2.8285 `_apply_notch`
+  parked the outgoing version before `_reactivate_owned_spell` checked the incoming one, and filed a version of
+  another index under its own `spell_index`. `Conduit.cleanup_spell` is not admitted through a transaction, so a
+  disposal of the target between the in-window check and the seam's Book lock met that park-first order; since
+  0.2.8285 the seam checks the incoming version first and refuses both cases with nothing moved (the seam-check
+  entry, 0.2.8285; corrected 2026-11-08: this said the seam parks first and called the disposal race pre-existing
+  and filed for the seam). No lock or lock-order edge is added: `_get_owned_spell` takes the Book lock alone and the
+  identity reads take none.
   `add_to_spell_index` and `remove_from_spell_index` take the same two forms (0.2.8249, the owner's extension):
   `_resolve_spell_to_move` runs the shared `_check_spell_argument` - its messages name the verb - and resolves a
   spell_id through `_owned_spell_by_id` (`_get_owned_spell`), refusing one the Book does not own before the
@@ -1766,8 +2088,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._resolve_notch_target`,
   `Conduit._owned_notch_target`, `Conduit._check_spell_argument`, `Conduit._resolve_spell_to_move`,
   `Conduit._owned_spell_by_id`, `src/melder/aether/spellbook/spellbook.py:Spellbook._get_owned_spell`,
-  `Spellbook._apply_notch`, `Spellbook._reactivate_owned_spell`, `Spellbook._apply_add_to_index`,
-  `Spellbook._apply_remove_from_index` and
+  `Spellbook._apply_notch`, `Spellbook._refuse_unparked_incoming` (0.2.8285), `Spellbook._reactivate_owned_spell`,
+  `Spellbook._apply_add_to_index`, `Spellbook._apply_remove_from_index` and
   `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:NotchTransactionStrategy._seal_scope_keys`.
 - Parked versions are wired at conjure (2026-10-16, 0.2.8248): after conjure every version a Book owns carries the
   owner stamp - `Spell._add_owned_conduit` with the root's id, name and store, its dynamic flag and gate controller
@@ -2089,8 +2411,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`,
   `CompilerPhase3._spellmap_frame_matches` and
   `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot.annotation_refs`.
-- Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below): a spellframe is a
-  string category or a `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
+- Annotation matching by kind (2026-10-04, 0.2.8222; supersedes the 0.2.8218 address-key rule below; SUPERSEDED in
+  part at 0.2.8278 by the class-lookup entry above: a class annotation, `list[Class]` and a single string's type
+  part select only spells bound with no spellframe and the default binding, so "spells of that type (a class bound
+  bare, an existing object of that class)" below now means those bound so, an existing object included; `by_type`
+  files only such spells, and a single string reaches a Protocol's own definition through its definition key; the
+  kind rule, Protocol and category matching and the four buckets stand): a spellframe is a string category or a
+  `typing.Protocol` contract and nothing else - `Bind._classify_spellframe` records the kind
   (`SpellframeKind.none` / `category` / `contract`) and the Protocol on the Spell (`spellframe_kind`,
   `implemented_protocols`) and raises `TypeError` for a concrete class or any other object. Phase 3 reads the
   annotation's kind: a class annotation selects spells of that type (a class bound bare, an existing object of
@@ -2268,7 +2595,15 @@ each entry in `src_components.md`; this list is the set that crosses components.
   before constructing the object that owns the socket (key-set plans and the solo call target, 2026-09-26);
   a stored object never demands the
   input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
-  never refuses these parameters.
+  never refuses these parameters. Since 0.2.8278 a class registered only under a spellframe or a binding name is no
+  match for a class annotation (a class lookup reaches only a spell bound bare; the 0.2.8278 entry above), so its
+  consumer compiles this socket too, and for a class annotation the kept key (its name, the default binding) is the
+  address of every provider that can match it. SUPERSEDED in part at 0.2.8281 (the HIDDEN_PROVIDER entry above):
+  such a socket also carries the class's hidden candidates (`hidden_spell_ids`, `hidden_frame_keys`) and Phase 4
+  refuses its spell at conjure, a late bind and every meld, override or not - so conjure does refuse that shape; a
+  `SpellMap(X)` socket that misses an X registered elsewhere is UNRESOLVED_INPUT too, refused the same way; and the
+  socket is also watched under its `hidden_frame_keys`. A parameter whose class is registered nowhere keeps this
+  entry's behaviour.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`.
 - Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
@@ -2297,9 +2632,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   slots, which is why a cleaned Spellbook cannot be re-conjured rather than
   merely refusing to be: the state that would answer the question is gone.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:271 (`_conjured` initialised)
-  - src/melder/aether/spellbook/spellbook.py:780 (ownership check reads it)
-  - src/melder/aether/spellbook/spellbook.py:838 (deleted on cleanup)
+  - src/melder/aether/spellbook/spellbook.py:272 (`_conjured` initialised)
+  - src/melder/aether/spellbook/spellbook.py:781 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:839 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Disposal order is established at bind: both groups contribute and book order owns shared
   names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
@@ -2344,10 +2679,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7792-7835
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7822-7834,
-    effective-mode return :7835; remeasured 2026-10-25 at 0.2.8273)
-  - src/melder/aether/spellbook/spellbook.py:8048
+  - src/melder/aether/spellbook/spellbook.py:7917-7960
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7947-7959,
+    effective-mode return :7960; remeasured 2026-11-08 at 0.2.8285)
+  - src/melder/aether/spellbook/spellbook.py:8173
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2376,7 +2711,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   frame twin is missing from a bundle - without the frame there is nothing to
   ask.
   EVIDENCE:
-  - src/melder/aether/spellbook/configuration/system_state.py:32-49
+  - src/melder/aether/spellbook/configuration/system_state.py:SystemState
   - src/melder/aether/spellbook/spellbook_creation_system.py:1288-1335
 - Method/lambda spells must use `Existence.unique`, because a method or lambda
   has no stable identity to share: two resolutions of a non-unique existence
@@ -2407,6 +2742,277 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
+- Fixed in 0.2.8291: a Rift removal no longer freezes against agents at work in its room, and an attach landing
+  inside it keeps no frame-budget count (GitHub #274: W4, W6, C3 and R4's residual). `RiftSpace.cleanup` cleaned
+  its children under the room lock and `Rift.cleanup` cleaned the room under the Rift lock, while agent paths take
+  a child's lock and then the room's or the Rift's. W4: an agent whose `call_target` held the workstation lock
+  across its target (until 0.2.8290, the entry below) left a room command's action-hook scope through the room
+  lock. W6: a weak workstation binding collected under the workstation lock - a rebind drops an object that is
+  also bound weakly - publishes its room event through `RiftSpace._publish_runtime_event`, which takes the room
+  lock. C3: `CommandSystem.link_frame` holds the command lock across `Rift.create_frame_link`, whose refresh takes
+  the Rift lock to apply its sets. Each met a `Nexus.remove_rift` that held the room or the Rift lock while it
+  waited for the workstation or the command lock: a deadlock. R4's residual: `remove_rift` decremented the frames
+  the Rift listed in its locked registry phase and cleaned the Rift after that phase, so an attach that published
+  in between kept its count - the cleanup cleaned the contract and nothing decremented. Now `RiftSpace.cleanup`
+  sets `_cleaned` under the room lock and cleans its children after releasing it, and `Rift.cleanup` is
+  `_mark_cleaned` (the Rift lock, once; the caller that marks owns the teardown) followed by `_clean_owned_state`,
+  run with no Rift lock: the room, the configuration snapshot, the gate, the metadata, the projection sets and the
+  frame-link contracts, the logger last, every field deleted but `_lock`. `remove_rift` marks the Rift inside its
+  registry phase - Nexus lock, then Rift lock, the order `Nexus.cleanup` takes - through
+  `Rift._mark_cleaned_for_removal`, which returns the frames attached at the mark; it decrements exactly those,
+  disposes the orphaned Nexus-managed frames after the Nexus lock, then runs `_clean_owned_state`. An attach
+  publishes under the same Rift lock, so it lands before the mark - its frame decremented there - or after it, and
+  then gives its own reservation back through `Nexus._release_target_frame` and raises RuntimeError "Rift has
+  already been cleaned. ". A cleanup that overlaps a running one returns at once, before that teardown finishes.
+  Left open (src_components, Unknowns; GitHub #274): an agent call that passed its checks before the mark still
+  meets the teardown's deleted fields (AttributeError) or a child's cleaned RuntimeError. The owner's direction
+  (chat 2026-11-08) is to synchronize agents leaving the way `CreationGate` is used: a generic gate tags agents
+  going in, closes the door, waits for them to leave, then cleans up. `RiftGate` is proposed as that gate, and its
+  details (#274's questions 5a-5d) wait on the owner (corrected 2026-11-08: this said the owner chose a RiftGate
+  drain). And `Nexus.cleanup` still cleans every Rift under the Nexus lock, which an attaching agent takes while it
+  holds the command lock - UNKNOWN whether the two can freeze, read from the code and not probed.
+  EVIDENCE:
+  - `src/melder/nexus/rift/rift_space/rift_space.py:268-333` (`RiftSpace.cleanup`)
+  - `src/melder/nexus/rift/rift_space/rift_space.py:741-850` (`_entered_action_hook_scope`,
+    `_publish_runtime_event`: the room lock an agent path takes)
+  - `src/melder/nexus/rift/rift_space/workstation.py:661-710`, `:809-829`, `:874-942` (`_bind` drops the old
+    binding under the workstation lock; the weak binding's callback publishes)
+  - `src/melder/nexus/rift/rift.py:78-106` (the class Threading and Lifecycle / Cleanup text)
+  - `src/melder/nexus/rift/rift.py:278-424` (`cleanup`, `_mark_cleaned`, `_mark_cleaned_for_removal`,
+    `_clean_owned_state`)
+  - `src/melder/nexus/rift/rift.py:559-678` (`create_frame_link`), `:786-854` (`_apply_projection_sets`)
+  - `src/melder/nexus/nexus.py:1266-1334` (`remove_rift`), `:306-381` (`Nexus.cleanup`), `:3499-3557`
+    (`_reserve_target_frame`, `_release_target_frame`)
+  - `src/melder/nexus/rift/command_system/command_system.py:1148-1164` (`link_frame`)
+  - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
+    (`test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish`,
+    `test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_both_finish`,
+    `test_rift_removal_and_a_link_frame_refresh_both_finish`,
+    `test_attach_landing_inside_rift_removal_leaves_no_budget_count`)
+  - `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py`
+    (`test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup`: the mark precedes the frame removal)
+- Fixed in 0.2.8290: agent code runs outside Melder's locks, so agents sharing a room no longer wait on each
+  other's code or freeze on it (GitHub #274, W5; the owner, 2026-11-08: agents can work in the same workstation at
+  the same time). `Workstation.call_target` held the workstation lock while the target ran and `cleanup_target`
+  while the target's cleanup methods ran; `CommandSystem.get_target_attribute`, `get_target_method` and
+  `execute_target_method` held the command lock while they read the attribute - a property is agent code - or
+  ran the method; `CodegenCommandSystem.execute_codegen` held it across `CodegenSystem.execute_codegen_request`,
+  which runs the script. Every other use of that workstation or command system in the room waited, and agent code
+  that waited on another agent's call in the room - a target joining another agent's `get_target_attribute`, a
+  method or a script joining another agent's `list_conduit_names` - never returned. Now `call_target` resolves the
+  target through `get_target`, under the workstation lock, and calls it holding none; a requested result binding
+  goes through `_bind`, which raises the cleaned RuntimeError when a teardown cleaned the workstation meanwhile.
+  `cleanup_target` takes the selected name, store and target under the lock, runs the cleanup methods without it,
+  returns when the workstation was cleaned meanwhile (a teardown landing just before it retakes the lock raises
+  AttributeError instead, as its docstring now says), and otherwise clears the selection under the lock only while
+  it still names that binding, so a target another agent selected meanwhile stays selected. The three target
+  commands keep the room's action-hook scope and their `RiftGate` ticket but take no command lock
+  (`_get_target_method_locked` is renamed `_get_target_method`), and `execute_codegen` reads the attached engine
+  under the command lock and runs the request after releasing it, its ticket still held. The `Workstation` class
+  docstring gains Threading - one workstation per room, shared by its agents, who coordinate the shared target and
+  names themselves; whether a target's methods are safe from several threads is the target's business (the owner,
+  2026-11-08) - and `CommandSystem`'s is corrected (it said the class takes no lock of its own). Unchanged, and
+  open questions for the owner (src_components, Unknowns): the engine's own locks - `execute_codegen_request` holds
+  the engine lock for the whole request and `CodegenExecutor.execute` its own across the `exec` - so a room's
+  scripts still run one at a time; `materialize_codegen` executes the new module under the command lock, and
+  capability `meld` runs `Conduit.meld`, which constructs spells, under it.
+  EVIDENCE:
+  - `src/melder/nexus/rift/rift_space/workstation.py:74-85` (the class Threading), `:493-512` (`get_target`),
+    `:529-659` (`cleanup_target`, `call_target`), `:661-710` (`_bind`)
+  - `src/melder/nexus/rift/command_system/command_system.py:47-58` (the class Threading), `:454-493`
+    (`_get_target_method`), `:1029-1146` (`get_target_attribute`, `get_target_method`, `execute_target_method`)
+  - `src/melder/nexus/rift/command_system/codegen_command_system.py:671-748` (`execute_codegen`), `:750-944`
+    (`materialize_codegen`)
+  - `src/melder/nexus/rift/command_system/capability_command_system.py:1026-1089` (`meld`)
+  - `src/melder/nexus/rift/codegen_system/codegen_system.py:298-345` (`execute_codegen_request`)
+  - `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:79-127` (`execute`)
+  - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
+    (`test_call_target_runs_its_target_without_blocking_another_agents_target_read`,
+    `test_execute_target_method_runs_its_method_without_blocking_another_agents_command`,
+    `test_cleanup_target_keeps_the_target_selected_while_its_cleanup_ran`,
+    `test_execute_codegen_runs_the_engine_without_blocking_another_agents_command`)
+- Fixed in 0.2.8289: two Rift races leave the frame budget and the projection sets right (GitHub #274, R4 and R5; a
+  Rift is used by several agents at once by design). R4: `Rift.create_frame_link` checked that the frame was new,
+  reserved it in Nexus's target-frame budget (`Nexus._reserve_target_frame`) and wrote its `FrameLinkContract`
+  with nothing ordering it against another attach, so two concurrent attaches of one frame both reserved and the
+  second replaced the first contract: that contract was never cleaned, and the frame's budget count reached 2 and
+  stayed at 1 after `Nexus.remove_rift`, which decrements once per assigned frame, so the slot was used up for
+  good. An attach whose Rift a removal cleaned after the reservation raised AttributeError on the fields the
+  cleanup had deleted, and its reservation was never given back. The reservation still runs without the Rift lock,
+  which Nexus forbids holding across it; the contract is now published under the Rift lock with a re-check, and an
+  attach that finds the frame already published, or the Rift cleaned, publishes nothing and gives its reservation
+  back through the new `Nexus._release_target_frame` (the decrement `remove_rift` applies, under the Nexus lock),
+  reached through a local `nexus` because a removal deletes `_nexus`. The losing attach of a live Rift returns as
+  a repeat attach does; on a cleaned Rift it raises RuntimeError "Rift has already been cleaned. " (it raised
+  AttributeError). R5: `Rift._apply_projection_sets` checked `_cleaned` before its lock, so a projection refresh
+  overtaken by `Nexus.remove_rift` after Nexus built its sets raised the cleaned error with those sets uncleaned,
+  and one that waited on the Rift lock raised AttributeError on the deleted projection registry. It now checks
+  `_cleaned` only under the lock and, on a cleaned Rift, cleans the incoming sets and raises the same
+  RuntimeError. The Rift keeps `_lock` after cleanup for these two checks - its cleanup never deleted it - and its
+  class, `cleanup`, `create_frame_link` and `_apply_projection_sets` docstrings now say so: the documented
+  exception to `Cleanable`'s lock rule. Unchanged: attaches and refreshes that do not race, the validation before
+  the reservation, and the public `CommandSystem.link_frame`, which calls `create_frame_link` under the room
+  command system's lock. Left open (GitHub #274): a removal that lands before the reservation, or before Nexus
+  builds a refresh's sets, still meets the Rift's unlocked reads (R2 and the unlocked reads, src_components
+  Unknowns) (corrected 2026-11-08: this also left open the budget count an attach kept when it published after
+  `remove_rift`'s locked registry phase listed the Rift's frames and before its `rift.cleanup` - the cleanup cleaned
+  the contract and nothing decremented - which was one of #274's open teardown questions and is fixed in 0.2.8291,
+  the entry above).
+  EVIDENCE (remapped 2026-11-08 at 0.2.8292):
+  - `src/melder/nexus/rift/rift.py:78-106` (the class Threading and Lifecycle / Cleanup text; it read 78-96)
+  - `src/melder/nexus/rift/rift.py:278-311`, `:373-424` (`cleanup`, `_clean_owned_state`; it keeps `_lock`; it
+    read 268-321)
+  - `src/melder/nexus/rift/rift.py:559-678` (`create_frame_link`; it read 456-572)
+  - `src/melder/nexus/rift/rift.py:740-854` (`refresh_runtime_projections`, `_apply_projection_sets`; it read
+    634-748)
+  - `src/melder/nexus/nexus.py:1266-1334` (`remove_rift`; it read 1264-1312)
+  - `src/melder/nexus/nexus.py:3499-3557` (`_reserve_target_frame`, `_release_target_frame`; it read 3477-3535)
+  - `src/melder/nexus/nexus.py:3594-3614` (`_decrement_ref_count`; it read 3572-3592)
+  - `src/melder/nexus/rift/command_system/command_system.py:1148-1164` (`link_frame`; it read 1121-1137)
+  - `src/melder/utilities/general_base/cleanable.py:38-52` (the lock policy)
+  - `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`
+    (`test_two_attaches_of_one_frame_keep_one_contract_and_one_budget_count`,
+    `test_attach_racing_rift_removal_gives_its_reservation_back`,
+    `test_refresh_racing_rift_removal_cleans_its_fresh_projection_sets`)
+- Fixed in 0.2.8288: a frame-link contract's cleanup, and the contract reads racing it, raise the documented errors
+  (GitHub #271). `FrameLinkContract.cleanup()` checks `_cleaned`, takes `_lock`, checks again under it and tears
+  the state down there, but ended with `del self._lock`, so a second concurrent `cleanup()` past its outer check
+  raised AttributeError "... object has no attribute '_lock'" instead of returning. It now keeps `_lock` as a
+  documented post-cleanup tombstone - the exception the owner allows, since `Nexus.remove_rift` can race a
+  projection build - so the second call takes it, finds `_cleaned` set and returns, and the state is torn down once
+  (D1). `FrameLink.cleanup()` deletes `_lock` last, under the owner's rule to fully clear every object (chat
+  2026-11-08, "sure your plan here is fine"; nothing in Melder cleans a FrameLink): a second call already waiting on
+  the lock returns, and one that loads `_lock` after the deletion raises AttributeError, cleaning one link from two
+  threads being the caller's mistake; `Cleanable`'s docstring states that default and the kept-lock exception
+  (corrected 2026-11-08: this said both classes keep the lock). `FrameLinkContract.get_selected_contract_names()`,
+  `get_selected_contract_name()`, `describe()` and `clone()` checked `_cleaned` and then took `_lock` without
+  checking again, so a cleanup that overtook them raised AttributeError for the missing lock or for the selection
+  and ids it had deleted. Each now checks again under `_lock` and raises RuntimeError "FrameLinkContract has already
+  been cleaned. " (D2). The window is reachable in the runtime: `Nexus.create_frame_projection_sets_for_rift`
+  reads a Rift's contracts while `Nexus.remove_rift`, which cleans the Rift outside the Nexus lock, tears them down.
+  Not changed, and left open (src_components, Unknowns; GitHub #274, filed): the unlocked property reads of both
+  classes and `FrameLink.clone`, `Rift.get_selected_contract_names` racing `Rift.cleanup`, and two concurrent
+  `Rift.create_frame_link` calls for one frame (corrected 2026-11-08: the last is fixed in 0.2.8289, the entry
+  above, but for one residual, which 0.2.8291 fixed; the other two stay open).
+  EVIDENCE: `src/melder/nexus/rift/frame_link/frame_link_contract.py:124-162` (cleanup), `:188-281` (the four reads),
+  `src/melder/nexus/rift/frame_link/frame_link.py:132-168` (cleanup), `src/melder/nexus/nexus.py:1266-1334`
+  (`remove_rift`), `:2498-2559` (`create_frame_projection_sets_for_rift`) (the two nexus.py ranges remapped
+  2026-11-08 at 0.2.8292; they read 1264-1312 and 2476-2537),
+  `src/melder/utilities/general_base/cleanable.py:38-52` (the lock policy),
+  `tests/unit/melder/aether/test_frame_link_contract_profiles.py`
+  (`test_frame_link_contract_locked_read_racing_cleanup_raises_cleaned_error_not_attribute_error`,
+  `test_frame_link_contract_cleanup_after_concurrent_teardown_raises_no_missing_lock_error`) and
+  `tests/unit/melder/aether/test_frame_link_runtime_contracts.py` (`test_frame_link_cleanup_clears_owned_state`:
+  the link's lock is deleted).
+- Fixed in 0.2.8285: a notch whose target is disposed meanwhile leaves the index as it was. `Conduit.notch_spell`
+  checks its target before the transaction and again inside the window, but `cleanup_spell` takes no transaction,
+  so a `cleanup_spell` of that target on another thread could overlap the notch. When the disposal had taken the
+  target off the Book's maps before the seam's Book lock, the seam moved the address claim and parked the index's
+  active version before it checked the incoming one, raised AttributeError "'Spell' object has no attribute
+  'spell_index'" (the target already cleaned) or RuntimeError "Owned spell_id not parked for reactivation
+  (spell_id=<id>)." (its disposal still running), and left the index with no active version. When the disposal had
+  decided but was still releasing the target's contracts, the target was still parked: the notch stood, and the
+  disposal then dropped the version from the index's members and cleaned it while the index selected it. And a
+  version parked in another index of the Book, handed to the seam without the conduit's checks, was promoted while
+  this index was repointed to it. Each now raises RuntimeError before anything moves - "notch_spell refused: spell_id
+  '<id>' is not a version parked in this Spellbook - it was disposed, is active, or was never staged here - so the
+  notch did not happen and nothing moved; '<name>' (spell_id <id>) is still the active version of the index. Stage
+  the version on this index with bind_inactive, which returns the spell_id to pass, and notch again.", "notch_spell
+  refused: '<name>' (spell_id <id>) is being disposed by cleanup_spell, so the notch did not happen and nothing
+  moved; '<name>' (spell_id <id>) is still the active version of the index." or "notch_spell refused: '<name>'
+  (spell_id <id>) is parked in SpellIndex <other>, not in SpellIndex <index>, so the notch did not happen and
+  nothing moved; ... Notch it through its own index, or move it into this one with add_to_spell_index first." - the
+  transaction ends as failed, no borrower fan-out runs, the index keeps its active version, claim and routes, and a
+  disposal in flight completes. Notches that succeed are unchanged. A `cleanup_spell` of the outgoing version while
+  the incoming one's structural check runs is not covered (see Unknowns).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch`, `Spellbook._refuse_unparked_incoming`
+  and `tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py`
+  (`test_notch_whose_target_is_disposed_after_the_conduits_check_keeps_the_active_version`,
+  `test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused`).
+- Breaking (0.2.8281): a consumer whose class lookup - a class annotation, a single string annotation's type part,
+  `Optional[Class]` without a default, `SpellMap(Class)` or `SpellMap(Class, binding_name=b)` - finds no spell bound
+  bare while its class is bound under a spellframe or a binding name is refused with the Phase 4 error
+  HIDDEN_PROVIDER. Conjure raises SpellbookValidationError, the block reading "  - Parameter 'greeter' on spell 'Host'
+  expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default
+  binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') -
+  use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the
+  parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English
+  bare. [HIDDEN_PROVIDER]"; a late bind into a dynamic world raises the same report and the spell stays registered
+  and refused; every meld of it raises the same report, with or without an override; a consumer compiled before such
+  a class was bound under a frame is refused at its next meld. Through 0.2.8280 such a consumer conjured with an
+  UNRESOLVED_INPUT socket - melded by override, or raising UnresolvedInputError "... nothing registered provides it
+  ..." - and `SpellMap(Class)` failed conjure with PhaseExecutionError "... SpellMap default could not be resolved
+  ..." (a bare RuntimeError at a late bind or meld). Remedy: ask for the class where it is bound - the SpellMap the
+  message shows, as the parameter's default, or a Protocol annotation while the spell is its frame's only
+  implementation - bind the class bare, or give the parameter an ordinary Python default (a PLAIN parameter is never
+  looked up). An empty required `list[Class]` keeps `collection_socket_no_providers` (an error that refuses conjure
+  when the Book is not dynamic, a warning with `[]` injected when it is), its text now naming the bindings and the
+  `list[...]` that gathers each; `UnresolvedInputError` names them too when it still arises; AMBIGUOUS_PROVIDER's text
+  no longer offers "supply it at meld with override=...". A creation-cache bundle written before is cold once
+  (generation 27).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py:HiddenProviderStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py:HiddenProviderReport.annotation_message`,
+  `HiddenProviderReport.spellmap_message`,
+  `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._record_unresolved_miss` and
+  `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`.
+- Breaking (0.2.8280): `Conduit.transfer_spell_ownership` to a conduit of another aetheric frame raises RuntimeError
+  "Cannot transfer spell ownership across different AethericFrames: <source> != <target>. An aetheric frame is a
+  world with its own addresses, links and contracts, so a spell's stewardship moves only between conduits of one
+  frame, as links do. To use the spell in the other frame, bind it in a Spellbook of that frame." before the
+  `TRANSFER_OWNERSHIP` transaction opens, and nothing starts: the source keeps the spell and still melds it, and the
+  target frame is untouched. Through 0.2.8279 such a transfer ran: the target Book could hold two active spells at
+  one address (DUPLICATE_SPELL_NAME on meld), the source frame's address claim kept naming the moved spell, so no
+  Book of that frame could bind the address again, and the target frame never claimed the address, so a later bind
+  there registered a second active spell. Remedy: transfer only between conduits of one frame; to use the spell in
+  another frame, bind it in a Spellbook of that frame.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.transfer_spell_ownership`.
+- Breaking (0.2.8278): a consumer annotated with a class - `greeter: English`, `list[English]`, or a single string
+  annotation naming the class (a `TYPE_CHECKING` import) - no longer resolves an English bound under a spellframe or
+  under a binding name, an existing object alike; only an English bound bare (no spellframe, the default binding)
+  answers it. A single socket left with no candidate compiles UNRESOLVED_INPUT: conjure succeeds (the socket is listed
+  only by `conjure(validation_warnings=True)`), and melding the consumer raises UnresolvedInputError (a
+  MeldExecutionError) unless the meld supplies the parameter - "[MELD] Execution failed for spell 'Host' (<spell_id>)
+  at node <spell_id> (parameter 'greeter'): Host.greeter expects English, but nothing registered provides it and this
+  meld did not supply it. Supply it with override={'greeter': ...} when melding Host, ... or bind a provider for
+  English." The text says nothing registered provides it even when English is registered under a frame or a name;
+  part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check is where conjure learns to name where it is
+  bound. A required `list[English]` left with no member refuses its spell at conjure in an automatic world with
+  SpellbookValidationError "... is a required list[...] dependency, but no provider is wired into it. ...
+  [collection_socket_no_providers]" and injects `[]` in a dynamic one. A class consumer that two same-named classes
+  under two categories, or a bare and a framed one, made AMBIGUOUS_PROVIDER at conjure now compiles UNRESOLVED_INPUT,
+  or resolves the bare one. `SpellMap(English)` - no spellframe - reaches only an English bound bare under the
+  default binding, and `SpellMap(English, binding_name="v1")` only an English bound bare under "v1"; a miss refuses
+  at conjure with PhaseExecutionError (a RuntimeError) "Phase 'local_frame' encountered 1 error(s). Resolution
+  pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter
+  'greeter' on spell 'Host'. SpellMap=<SpellMap spell=<class '...English'> spellframe=None binding_name=None
+  override=None>." How to upgrade: (1) a class bound under a Protocol - annotate the Protocol (`greeter: Greeter`) or
+  use `SpellMap(spellframe=Greeter, binding_name="english")`; (2) a class bound under a string category spelled as
+  its own name (`spellframe="English"`) - drop the spellframe: a bare class is addressed by its own name, so its
+  address does not change; (3) a bare class bound with a binding name - `SpellMap(English, binding_name="v1")`, or
+  drop the binding name; (4) `SpellMap(English)` aimed at a framed or named English - add its `spellframe` and
+  `binding_name`. Unchanged: Protocol annotations, `list[Protocol]`, `list["category"]`, a string naming a Protocol,
+  frame-addressed SpellMaps, every meld door, SpellContract, and AMBIGUOUS_PROVIDER for two implementations of one
+  Protocol. A creation-cache bundle written before is cold once (generation 26). SUPERSEDED in part at 0.2.8281
+  (Breaking 0.2.8281 above): where the class is registered under a spellframe or a binding name, the single socket no
+  longer compiles UNRESOLVED_INPUT for a meld to supply and `SpellMap(English)` no longer fails with
+  PhaseExecutionError - both refuse with HIDDEN_PROVIDER, the conjure-time error this entry said part (a) would
+  bring, naming where English is bound; the empty `list[English]` text names the bindings; a class registered
+  nowhere keeps this entry's behaviour, and the four upgrade paths stand.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
+  `CompilerPhase3._resolve_spellmap_default`,
+  `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`,
+  `src/melder/utilities/custom_exceptions/phase_execution_error.py:PhaseExecutionError` and
+  `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:EmptyCollectionStrategy.run`.
+- Fixed in 0.2.8278: a consumer annotated with a class and compiled before its provider - bound under a spellframe -
+  arrived waited under the class name (`_dependency_key_for_dep`: the annotation's name and the default binding)
+  while the provider's bind, notch or contract grant announced its frame, so it was never re-resolved: its melds
+  raised UnresolvedInputError while a fresh conjure of the same world resolved it (S1's key split,
+  EPIC-2026-10-25-dependency_watchers_listen_for_names). A class lookup now reaches only a bare spell, whose address
+  is that watch key, so the live and the fresh world agree by construction: a framed provider is no provider for the
+  class, and a bare one announces the key its consumer waits under. S1's other misses stay on that epic.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._answers_class_lookup`,
+  `CompilerPhase3._dependency_key_for_dep` and
+  `tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py`.
 - Breaking (0.2.8274): a class bound again under another binding after `cleanup_spell` - another existence, other
   disposal names, any other binding field - no longer meets the removed definition's objects in a store: its first
   meld builds a new object (a slotted rebind returned the removed definition's object, or its Python list), and its
@@ -2750,7 +3356,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   annotation the kind rule does not select it for), SpellbookValidationError naming a dependency whose refreshed
   structure is broken or not valid. Before, one built before the notch went on building the old version, and one
   never built raised RuntimeError "many_only manifest references unknown spell_id '<the old version id>'" on
-  every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused.
+  every meld; a dependent two hops away that did compile recorded a visibility failure and stayed refused. Since
+  0.2.8278 the parenthetical case cannot arise for a class annotation, nor for a single string annotation's type
+  part: a class lookup reaches only a spell bound bare (Operational Invariants, 0.2.8278), and every version of an
+  index is bound the way its first version was (0.2.8273), so such an annotation selects every version of a bare
+  index - all carry the class's name - and no version of a framed or named one; a string's contract part reads the
+  Protocol every version of a framed index records alike.
   EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._apply_notch` and
   `src/melder/aether/conduit/meld/meld.py:Meld._refresh_stale_dependencies`.
 - Fixed in 0.2.8250: a contract consumer whose borrowed provider changed without a notch of the owner's index kept
@@ -3067,7 +3678,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `__cause__` (2026-09-26; until then it was raised from the binding TypeError). It names the consumer,
   parameter, expected type and override keys, and lists every missing input. A TypeError from a constructor
   body with every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
-  typed parameter with no provider; two or more providers still refuse the spell (next entry).
+  typed parameter with no provider; two or more providers still refuse the spell (next entry). Since 0.2.8281 a class
+  lookup whose class is registered only under a spellframe or a binding name is refused at conjure (HIDDEN_PROVIDER,
+  Breaking 0.2.8281 above); when the error still arises with such a class bound - one bound after the consumer
+  compiled and nothing re-gated it - its text names where the class is bound and the `SpellMap` that reaches it, and
+  `hidden_spell_ids` lists them.
   EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
 - A single typed parameter that two or more registered resolvable spells provide refuses its spell through the
   readable report (0.2.8224): Phase 3 records an `AMBIGUOUS_INPUT` socket (no target, no edge, the candidates as
@@ -3079,7 +3694,15 @@ each entry in `src_components.md`; this list is the set that crosses components.
   bind only one provider of this type. [AMBIGUOUS_PROVIDER]" - and a consumer late-bound into a dynamic world is
   refused at that bind and at its melds. Before 0.2.8224 this was a `RuntimeError("SpellCrafter Phase 3: multiple DI
   candidates ...")` out of the compiler, never reaching the report. Ambiguity stays an error by owner ruling
-  (2026-10-04): never a warning, never an input the meld picks.
+  (2026-10-04): never a warning, never an input the meld picks. Since 0.2.8278 the example's two ScanProfiles, each
+  bound under a string category, no longer answer a `ScanProfile` annotation (a class lookup reaches only a spell
+  bound bare; Operational Invariants, 0.2.8278): that `profile` parameter compiles UNRESOLVED_INPUT instead, and the
+  message stands for the candidates a lookup still reaches - two implementations of one Protocol, for instance.
+  SUPERSEDED in part at 0.2.8281 (Breaking 0.2.8281 above): the quoted remedy no longer offers "supply it at meld
+  with override={'profile': ...}" - the message ends "Select one with a SpellMap default on the parameter
+  (SpellMap(spellframe=..., binding_name=...)), or bind only one provider of this type." (the owner's D4: a refused
+  spell's melds are refused, override or not); and the example's `profile` parameter is refused with HIDDEN_PROVIDER,
+  naming both ScanProfiles and the `SpellMap` that reaches each, instead of compiling UNRESOLVED_INPUT.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
   and `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py:AmbiguousProviderStrategy.validate`.
 - An override key that names no socket, a UNIQUE key that matches more than one, or equal-rank keys with
@@ -3137,14 +3760,18 @@ each entry in `src_components.md`; this list is the set that crosses components.
   diagnosing one should check the world's posture before checking the operation:
   a single posture setting explains all four at once, and it is the common
   cause.
-- SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError.
+- SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError - except, since 0.2.8281, a
+  `SpellMap(X)` or `SpellMap(X, binding_name=b)` without a spellframe that misses an X registered elsewhere: Phase 3
+  records it and Phase 4 refuses the consumer with HIDDEN_PROVIDER through SpellbookValidationError (Breaking
+  0.2.8281 above). X registered nowhere, a frame-named miss and several candidates still raise RuntimeError.
 - A non-string `binding_name` on a SpellMap or SpellContract raises TypeError (0.2.8226); a SpellMap default matches
   its provider's binding name and string category in any case.
   EVIDENCE:
   `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._resolve_spellmap_default`.
 - SpellContract requires at least `spell` or `spellframe` (ValueError).
 - Ownership transfer raises RuntimeError when dynamic mode is disabled (same
-  posture gate as linking, severing and upgrade).
+  posture gate as linking, severing and upgrade), and since 0.2.8280 when the target conduit is in another
+  aetheric frame (the Breaking 0.2.8280 entry above), as linking does.
 
 ## Promoted Patch Decisions (re-absorbed 2026-08-02)
 
@@ -3327,6 +3954,85 @@ shortfall honesty, R-A covenant) are unchanged.
 
 
 ## C1 Code Map (Core Only)
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py`
+  start_line: 1
+  end_line: 261
+  loc: 261
+  verified_at: 2026-11-07T20:43:01Z
+  note: Phase-4 HIDDEN_PROVIDER: refuses a class lookup whose class is bound only under a spellframe or a binding name.
+- path: `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py`
+  start_line: 1
+  end_line: 551
+  loc: 551
+  verified_at: 2026-11-07T20:43:01Z
+  note: the one renderer of where a class lookup's class is bound, shared by four reports.
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py`
+  start_line: 1
+  end_line: 290
+  loc: 290
+  verified_at: 2026-11-02T12:02:57Z
+- path: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
+  start_line: 1
+  end_line: 108
+  loc: 108
+  verified_at: 2026-11-07T20:43:01Z
+- path: `src/melder/nexus/configuration/rift_access_mode.py`
+  start_line: 1
+  end_line: 52
+  loc: 52
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/rift_creation_mode.py`
+  start_line: 1
+  end_line: 53
+  loc: 53
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/nexus_frame_mode.py`
+  start_line: 1
+  end_line: 58
+  loc: 58
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/rift_space_type.py`
+  start_line: 1
+  end_line: 68
+  loc: 68
+  verified_at: 2026-11-01T23:31:59Z
+- path: `src/melder/nexus/configuration/rift_validation_mode.py`
+  start_line: 1
+  end_line: 53
+  loc: 53
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/nexus_configuration.py`
+  start_line: 1
+  end_line: 1962
+  loc: 1962
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/nexus/configuration/rift_configuration.py`
+  start_line: 1
+  end_line: 573
+  loc: 573
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/aether/aetheric_mediator/participation.py`
+  start_line: 1
+  end_line: 245
+  loc: 245
+  verified_at: 2026-11-01T23:23:03Z
+- path: `src/melder/utilities/helpers/general_helpers.py`
+  start_line: 1
+  end_line: 502
+  loc: 502
+  verified_at: 2026-11-01T13:44:23Z
+
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py`
+  start_line: 1
+  end_line: 111
+  loc: 111
+  verified_at: 2026-11-02T12:02:57Z
+
+- path: `src/melder/crystallizer/crystals/recorded_unit_state.py`
+  start_line: 1
+  end_line: 86
+  loc: 86
+  verified_at: 2026-11-02T12:02:57Z
 
 Ranges are MEASURED, never estimated: `start_line`/`end_line` are the file's own extent and `loc` is its line count,
 read from disk at `verified_at`. A directory is never an entry; it is expanded into its modules. `note` is a short
@@ -3364,12 +4070,13 @@ Package root:
     committed manifest via an accelerator cache.
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 651
-  loc: 651
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 653
+  loc: 653
+  verified_at: 2026-11-08T15:30:59Z
   note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
     edit by hand.
-    629 entries at 0.2.8267 (`HolderDisposalEntry` left; 630 at 0.2.8257), measured on this landing's rebuild output.
+    631 entries at 0.2.8281 (`HiddenProviderStrategy` and `HiddenProviderReport` joined; 629 at 0.2.8267), measured
+    on this landing's rebuild output.
 - path: `src/melder/_build_assets/_bind_guard/_builder.py`
   start_line: 1
   end_line: 387
@@ -3419,9 +4126,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8625
-  loc: 8625
-  verified_at: 2026-10-25T14:22:13Z
+  end_line: 8742
+  loc: 8742
+  verified_at: 2026-11-08T12:50:22Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -3437,9 +4144,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1545
-  loc: 1545
-  verified_at: 2026-10-25T11:29:20Z
+  end_line: 1547
+  loc: 1547
+  verified_at: 2026-11-02T12:02:57Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/spell_code_digest.py`
   start_line: 1
@@ -3455,9 +4162,9 @@ Spellbook and binding:
   note: `BindingManifest`: a spell's binding as a value record and its SHA256, the binding hash (0.2.8258).
 - path: `src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py`
   start_line: 1
-  end_line: 47
-  loc: 47
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 51
+  loc: 51
+  verified_at: 2026-11-01T23:23:03Z
   note: `SpellframeKind` - none / category / contract, the kind a binding records (0.2.8222).
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -3473,27 +4180,27 @@ Spellbook and binding:
   note: stable index that categorizes/targets spells and holds the active selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 2048
-  loc: 2048
-  verified_at: 2026-10-25T12:41:30Z
+  end_line: 2050
+  loc: 2050
+  verified_at: 2026-11-08T12:50:22Z
   note: spell metadata and hooks.
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
-  end_line: 165
-  loc: 165
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 192
+  loc: 192
+  verified_at: 2026-11-08T15:30:59Z
   note: existence modes.
 - path: `src/melder/aether/spellbook/existence/managed_spell_mode.py`
   start_line: 1
-  end_line: 91
-  loc: 91
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 114
+  loc: 114
+  verified_at: 2026-11-02T12:02:57Z
   note: `ManagedSpellMode`: elastic, limited_quantity, queue (0.2.8242).
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
-  end_line: 101
-  loc: 101
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 135
+  loc: 135
+  verified_at: 2026-11-02T12:02:57Z
   note: spell type classification.
 
 Configuration and hooks:
@@ -3542,9 +4249,9 @@ Configuration and hooks:
   note: properties, hooks, freeze.
 - path: `src/melder/aether/spellbook/configuration/system_state.py`
   start_line: 1
-  end_line: 54
-  loc: 54
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 76
+  loc: 76
+  verified_at: 2026-11-02T12:02:57Z
   note: automatic vs dynamic.
 - path: `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py`
   start_line: 1
@@ -3555,6 +4262,14 @@ Configuration and hooks:
 
 SpellCompiler and validation:
 
+- path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
+  start_line: 1
+  end_line: 1775
+  loc: 1775
+  verified_at: 2026-11-07T20:43:01Z
+  note: phase 3: resolves each constructor socket to provider spells (annotation matching by kind, the class-lookup
+    predicate, SpellMap defaults) and records the local topology, UNRESOLVED_INPUT and AMBIGUOUS_INPUT sockets, and
+    the hidden candidates of a class lookup that misses.
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
   start_line: 1
   end_line: 729
@@ -3569,15 +4284,15 @@ SpellCompiler and validation:
   note: per-spell phase artifacts.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
   start_line: 1
-  end_line: 354
-  loc: 354
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 361
+  loc: 361
+  verified_at: 2026-11-07T20:43:01Z
   note: phase 4 validation.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py`
   start_line: 1
-  end_line: 198
-  loc: 198
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 201
+  loc: 201
+  verified_at: 2026-11-07T20:43:01Z
   note: Phase-4 refusal of a single typed parameter with several providers.
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
   start_line: 1
@@ -3593,9 +4308,9 @@ SpellCompiler and validation:
   note: phase 6 validation.
 - path: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
   start_line: 1
-  end_line: 70
-  loc: 70
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 96
+  loc: 96
+  verified_at: 2026-11-02T12:02:57Z
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
@@ -3648,14 +4363,14 @@ Aether and frames:
   start_line: 1
   end_line: 1636
   loc: 1636
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: the record: custody keyed by custody key (per frame under per-frame spell ids,
     0.2.8214), journal and checkpoint capture.
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
   end_line: 3178
   loc: 3178
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: staged restore driver.
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
@@ -3683,7 +4398,7 @@ Aether and frames:
   start_line: 1
   end_line: 4005
   loc: 4005
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: hosted mutation-research root owned by Aether (ResearchSet registry + composition emission).
 - path: `src/melder/mutation_research/research_set/grouped_research_node.py`
   start_line: 1
@@ -3705,9 +4420,9 @@ Aether and frames:
   note: `ResearchJournal`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_lane.py`
   start_line: 1
-  end_line: 988
-  loc: 988
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1016
+  loc: 1016
+  verified_at: 2026-11-01T23:23:03Z
   note: `ResearchLane` with `LaneState` and `LaneType`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_node.py`
   start_line: 1
@@ -3729,9 +4444,9 @@ Aether and frames:
   note: `ResidenceRegistry`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/transition_entry.py`
   start_line: 1
-  end_line: 551
-  loc: 551
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 564
+  loc: 564
+  verified_at: 2026-11-01T23:23:03Z
   note: `TransitionEntry` with `TransitionAct`, part of the formal research record.
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
@@ -3763,15 +4478,15 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: serialized admission decision point.
 - path: `src/melder/aether/aetheric_mediator/transaction_session.py`
   start_line: 1
-  end_line: 1035
-  loc: 1035
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1099
+  loc: 1099
+  verified_at: 2026-11-01T23:23:03Z
   note: live transaction span, joins, inverses, outcome policy.
 - path: `src/melder/aether/aetheric_mediator/information_registry.py`
   start_line: 1
-  end_line: 1057
-  loc: 1057
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1063
+  loc: 1063
+  verified_at: 2026-11-02T12:02:57Z
   note: fact baselines plus live activity indexes.
 - path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
   start_line: 1
@@ -3793,21 +4508,21 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: claimant identity; caller-owned, borrowed by the plane.
 - path: `src/melder/aether/aetheric_mediator/claim_mode.py`
   start_line: 1
-  end_line: 174
-  loc: 174
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 206
+  loc: 206
+  verified_at: 2026-11-02T12:02:57Z
   note: claim vocabulary and the static compatibility matrix.
 - path: `src/melder/aether/aetheric_mediator/scope_keys.py`
   start_line: 1
-  end_line: 171
-  loc: 171
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 199
+  loc: 199
+  verified_at: 2026-11-01T23:23:03Z
   note: canonical scope-key builders over the `ScopePrefix` vocabulary.
 - path: `src/melder/aether/aetheric_mediator/transaction_type.py`
   start_line: 1
-  end_line: 94
-  loc: 94
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 124
+  loc: 124
+  verified_at: 2026-11-02T12:02:57Z
   note: closed transaction vocabulary (PROVISIONAL membership).
 - path: `src/melder/aether/aetheric_mediator/transaction_request.py`
   start_line: 1
@@ -3823,16 +4538,17 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: post-admission record consumed by commit hooks and reporting.
 - path: `src/melder/aether/aetheric_mediator/admission_result.py`
   start_line: 1
-  end_line: 311
-  loc: 311
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 340
+  loc: 340
+  verified_at: 2026-11-02T12:02:57Z
   note: admission verdict; evidence, never a bare bool.
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
-  end_line: 3589
-  loc: 3589
-  verified_at: 2026-10-25T12:02:52Z
-  note: public AR singleton root.
+  end_line: 3639
+  loc: 3639
+  verified_at: 2026-11-08T23:37:21Z
+  note: public AR singleton root; remeasured at 0.2.8292 (it read 3617; 3589 before 0.2.8289's
+    `_release_target_frame`) after `remove_rift`'s mark and the class Threading correction.
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
   end_line: 871
@@ -3859,22 +4575,23 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: fluent authored-frame builder for Nexus-managed frames.
 - path: `src/melder/nexus/rift/rift.py`
   start_line: 1
-  end_line: 1151
-  loc: 1151
-  verified_at: 2026-10-24T22:31:53Z
-  note: live Rift runtime object.
+  end_line: 1324
+  loc: 1324
+  verified_at: 2026-11-08T23:10:09Z
+  note: live Rift runtime object; remeasured at 0.2.8292 (it read 1218; 1151 before 0.2.8289's attach publish and
+    apply checks) after the mark and teardown split and `create_frame_link` marked public.
 - path: `src/melder/nexus/rift/frame_link/frame_link_contract.py`
   start_line: 1
-  end_line: 238
-  loc: 238
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 302
+  loc: 302
+  verified_at: 2026-11-08T15:30:59Z
   note: per-frame ACL selection contract for one Rift/frame pair.
 - path: `src/melder/nexus/rift/frame_link/frame_link.py`
   start_line: 1
-  end_line: 231
-  loc: 231
-  verified_at: 2026-10-24T22:31:53Z
-  note: Rift-local frame-link wrapper over the contract surface.
+  end_line: 256
+  loc: 256
+  verified_at: 2026-11-08T16:21:51Z
+  note: view-safe frame target entry the viewers build on demand (corrected 2026-11-08: it said a contract wrapper).
 - path: `src/melder/nexus/rift/rift_gate/rift_gate.py`
   start_line: 1
   end_line: 411
@@ -3889,10 +4606,11 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: Nexus-owned coordinator for per-Rift gates.
 - path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
   start_line: 1
-  end_line: 6673
-  loc: 6673
-  verified_at: 2026-10-24T22:31:53Z
-  note: Rift-backed public viewer host.
+  end_line: 6680
+  loc: 6680
+  verified_at: 2026-11-08T23:10:09Z
+  note: Rift-backed public viewer host; remeasured at 0.2.8292 (it read 6673) after the class Threading's note on
+    a read overlapping a refresh.
 - path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
   start_line: 1
   end_line: 3134
@@ -3925,10 +4643,11 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: static-room viewer overlay.
 - path: `src/melder/nexus/rift/rift_space/rift_space.py`
   start_line: 1
-  end_line: 990
-  loc: 990
-  verified_at: 2026-10-24T22:31:53Z
-  note: base room/workspace object.
+  end_line: 1000
+  loc: 1000
+  verified_at: 2026-11-08T23:37:21Z
+  note: base room/workspace object; remeasured at 0.2.8292 (it read 990) after its cleanup moved the children's
+    teardown outside the room lock.
 - path: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
   start_line: 1
   end_line: 290
@@ -3961,10 +4680,11 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: broad manual non-codegen room type.
 - path: `src/melder/nexus/rift/rift_space/workstation.py`
   start_line: 1
-  end_line: 947
-  loc: 947
-  verified_at: 2026-10-24T22:31:53Z
-  note: room-local binding canvas.
+  end_line: 1000
+  loc: 1000
+  verified_at: 2026-11-08T23:37:21Z
+  note: room-local binding canvas; remeasured at 0.2.8292 (it read 947) after the target call and the target
+    cleanup moved outside its lock.
 - path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
   start_line: 1
   end_line: 435
@@ -3979,10 +4699,11 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: immutable room-memory record object.
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1823
-  loc: 1823
-  verified_at: 2026-10-24T22:31:53Z
-  note: shared room-local command surface.
+  end_line: 1850
+  loc: 1850
+  verified_at: 2026-11-08T23:10:09Z
+  note: shared room-local command surface; remeasured at 0.2.8292 (it read 1823) after the target commands
+    dropped the command lock.
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
   end_line: 789
@@ -3997,10 +4718,11 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: capability command posture.
 - path: `src/melder/nexus/rift/command_system/codegen_command_system.py`
   start_line: 1
-  end_line: 2111
-  loc: 2111
-  verified_at: 2026-10-25T12:08:19Z
-  note: codegen command posture.
+  end_line: 2120
+  loc: 2120
+  verified_at: 2026-11-08T23:10:09Z
+  note: codegen command posture; remeasured at 0.2.8292 (it read 2111) after `execute_codegen` ran the engine
+    outside the command lock.
 - path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
   start_line: 1
   end_line: 773
@@ -4130,9 +4852,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8011
-  loc: 8011
-  verified_at: 2026-10-25T14:22:13Z
+  end_line: 8049
+  loc: 8049
+  verified_at: 2026-11-08T12:50:22Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -4142,27 +4864,27 @@ Conduit runtime:
   note: root-owned lesser pool.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
-  end_line: 94
-  loc: 94
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 119
+  loc: 119
+  verified_at: 2026-11-02T12:02:57Z
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
   end_line: 4063
   loc: 4063
-  verified_at: 2026-10-25T14:22:13Z
+  verified_at: 2026-11-01T13:44:23Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
-  end_line: 75
-  loc: 75
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 100
+  loc: 100
+  verified_at: 2026-11-02T12:02:57Z
   note: policy enum.
 - path: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
   start_line: 1
-  end_line: 65
-  loc: 65
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 86
+  loc: 86
+  verified_at: 2026-11-02T12:02:57Z
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
@@ -4197,7 +4919,7 @@ Resolution and creations:
   start_line: 1
   end_line: 2501
   loc: 2501
-  verified_at: 2026-10-25T12:41:30Z
+  verified_at: 2026-11-08T15:30:59Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -4207,9 +4929,9 @@ Resolution and creations:
   note: compiled execution lanes and runtime dispatch.
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
   start_line: 1
-  end_line: 359
-  loc: 359
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 382
+  loc: 382
+  verified_at: 2026-11-07T15:20:59Z
   note: SpellMap descriptor.
 - path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
@@ -4264,9 +4986,9 @@ Control plane:
   note: frame-local topology and transaction mirror.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 2052
-  loc: 2052
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 2061
+  loc: 2061
+  verified_at: 2026-11-07T20:43:01Z
   note: lineage registry.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
@@ -4276,36 +4998,36 @@ Control plane:
   note: lineage state.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py`
   start_line: 1
-  end_line: 93
-  loc: 93
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 127
+  loc: 127
+  verified_at: 2026-11-02T12:02:57Z
   note: lineage flags.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py`
   start_line: 1
-  end_line: 99
-  loc: 99
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 146
+  loc: 146
+  verified_at: 2026-11-02T12:02:57Z
   note: change reasons.
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
-  end_line: 1683
-  loc: 1683
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 1739
+  loc: 1739
+  verified_at: 2026-11-07T20:43:01Z
   note: change control.
 - path: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
   start_line: 1
   end_line: 751
   loc: 751
-  verified_at: 2026-10-24T22:31:53Z
+  verified_at: 2026-11-01T13:44:23Z
   note: risk gating.
 
 Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 1138
-  loc: 1138
-  verified_at: 2026-10-25T11:29:20Z
+  end_line: 1157
+  loc: 1157
+  verified_at: 2026-11-07T20:43:01Z
   note: release-bound creation-cache admission, the envelope's world stamp and atomic persistence.
 
 - path: `src/melder/utilities/general_base/abstract_elastic_pool.py`
@@ -4317,9 +5039,9 @@ Utilities:
     outside the lock, the fixed-capacity eviction (0.2.8234).
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
-  end_line: 429
-  loc: 429
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 440
+  loc: 440
+  verified_at: 2026-11-08T16:21:51Z
   note: cleanup contract.
 - path: `src/melder/utilities/synchronization/phase_scheduler.py`
   start_line: 1
@@ -4471,9 +5193,14 @@ inputs use existing execution, Nexus exposes references, and durable replay pres
 ```text
 conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> Phase-4 warning (conjure succeeds;
          listed only by conjure(validation_warnings=True))
+         class lookup whose class is bound only under a spellframe or a binding name (0.2.8281)
+             -> UNRESOLVED_INPUT socket + hidden candidates -> Phase-4 error HIDDEN_PROVIDER
+                (conjure, a late bind and every meld refused, override or not)
 meld:    value supplied -> constructor receives it
          value missing  -> UnresolvedInputError (a MeldExecutionError) before construction
+                           (naming where the class is bound, when it is)
 bind:    matching provider added later -> consumer re-resolves -> normal dependency edge
+         framed or named provider of the class added later -> type key announced -> refused at the next meld
 ```
 
 ```mermaid
@@ -4485,6 +5212,10 @@ flowchart LR
   M -->|No| E[UnresolvedInputError before construction]
   B[Later matching bind] --> R[Re-resolve to a normal edge]
   U --> R
+  H[Class bound only under a spellframe or a binding name] --> HU[UNRESOLVED_INPUT socket with hidden candidates]
+  HU --> HP[Phase-4 error HIDDEN_PROVIDER: conjure, late bind and every meld refused]
+  F[Later framed bind, notch or grant of the class] --> T[Type key announced]
+  T --> HP
 ```
 
 ### Override Key-Set Plans
@@ -4708,6 +5439,26 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 `binding_changes` (0.2.8258).
 
 ## Information Sources
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/hidden_provider_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/hidden_provider_report.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py`
+- `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py`
+- `src/melder/utilities/custom_exceptions/phase_execution_error.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py`
+- `src/melder/nexus/configuration/rift_access_mode.py`
+- `src/melder/nexus/configuration/rift_creation_mode.py`
+- `src/melder/nexus/configuration/nexus_frame_mode.py`
+- `src/melder/nexus/configuration/rift_space_type.py`
+- `src/melder/nexus/configuration/rift_validation_mode.py`
+- `src/melder/nexus/configuration/rift_configuration.py`
+- `src/melder/mutation_research/research_set/research_lane.py`
+- `src/melder/mutation_research/research_set/transition_entry.py`
+- `src/melder/aether/aetheric_mediator/participation.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py`
+- `src/melder/aether/conduit/conduit_state/conduit_state.py`
+- `src/melder/crystallizer/crystals/recorded_unit_state.py`
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py`
@@ -4821,6 +5572,7 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/nexus/acl/frame_acl_compiler.py`
 - `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
 - `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
+- `src/melder/nexus/rift/frame_viewer/frame_viewer.py` (its class Threading, 0.2.8292)
 - `src/melder/nexus/rift/rift_space/rift_space.py`
 - `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
 - `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
@@ -4876,6 +5628,183 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+2026-11-08 agent code runs outside Melder's locks and a Rift's teardown no longer freezes against its agents
+(0.2.8290-0.2.8292, GitHub #274; the owner, 2026-11-08: agents can work in the same workstation at the same time).
+0.2.8290 (W5): `Workstation.call_target` and `cleanup_target` run the target and its cleanup methods after
+releasing the workstation lock, `cleanup_target` clearing the selection only while it still names the binding it
+cleaned; `CommandSystem`'s three target commands take no command lock; `CodegenCommandSystem.execute_codegen` runs
+the engine after releasing it. 0.2.8291: `RiftSpace.cleanup` and `Rift.cleanup` mark themselves cleaned under their
+own lock and clean their children after releasing it (W4, W6, C3), and `Nexus.remove_rift` marks the Rift and takes
+its attached frames in one step inside its registry phase, then tears it down after the Nexus lock, so an attach
+landing inside the removal gives its reservation back (R4's residual, left open by 0.2.8289). 0.2.8292,
+documentation in source: `Rift.create_frame_link` is public (it said Internal), `FrameViewer`'s Threading says a
+read overlapping a frame link or ACL refresh can raise the cleaned RuntimeError of the projection it read and a
+retry reads the new one (V1), and `Nexus`'s Threading names its one lock, the class-level `Nexus._lock` (it named an
+instance lock too). Two new fixed failure modes carry 0.2.8290 and 0.2.8291; the 0.2.8289 entry's open list, and
+its handoff entry below, are corrected in place (the residual is fixed); the Cleanup sequence's Rift step names the
+mark and the unlocked teardown, and its Nexus step the Nexus lock; the code map remeasures the seven changed files;
+and every numeric citation into the moved lines of rift.py, nexus.py and command_system.py - the 0.2.8289 and
+0.2.8288 entries' - is remapped. Four docstrings this pass found wrong were then corrected in source, line counts
+unchanged: `Nexus.remove_rift`'s Raises (a Rift cleaned outside Nexus loses only its id-registry entry; its name,
+gate and counts stay), `Nexus.cleanup`'s Threading (the one class-level lock), `Workstation.cleanup_target`'s
+contract (a teardown landing just before its lock raises AttributeError) and `RiftSpace`'s Registration (it cited
+a stale rift.py line range; it names `Rift._create_primary_space_from_configuration`). Left open (src_components,
+Unknowns; GitHub #274): an agent racing a removal still meets raw AttributeError or cleaned errors - the owner's
+direction is a generic gate that tags agents going in and waits for them to leave before the cleanup, as
+`CreationGate` is used; `RiftGate` is proposed as that gate, its details (questions 5a-5d) waiting on him
+(corrected 2026-11-08: this said the owner chose a RiftGate drain); the engine locks, `materialize_codegen` and
+capability `meld` still serialize a room's agents, a question for the owner; and `Nexus.cleanup` still tears Rifts
+down under the Nexus lock (UNKNOWN, read from the code, not probed). Where to start: src_components, Component: AR
+Runtime Surface (Nexus, Rift, RiftSpace), then its Unknowns entry.
+
+2026-11-08 two Rift races fixed (0.2.8289, GitHub #274, R4 and R5; the owner, chat 2026-11-08: "Go fix R4 and R5
+first"). `Rift.create_frame_link` publishes its contract under the Rift lock with a re-check, so a second attach of
+one frame, or a Rift cleaned meanwhile, publishes nothing and gives its target-frame budget reservation back through
+the new `Nexus._release_target_frame`, and an attach overtaken by a removal after its reservation raises RuntimeError
+"Rift has already been cleaned. " (it raised AttributeError); `Rift._apply_projection_sets` checks `_cleaned` only
+under the lock and cleans the projection sets a removal left it holding before it raises the same error. The Rift
+keeps `_lock` after cleanup for these two checks, as its docstrings now say, its class docstring naming the windows:
+a removal landing earlier can still hit the unlocked reads (corrected 2026-11-08: this said any attach overtaken by
+a removal raises the cleaned error). A new fixed failure mode carries it, the 0.2.8288 entry's
+open list is corrected in place (its last item is fixed), and the code map remeasures rift.py (1218 lines) and
+nexus.py (3617 lines); no numeric citation in this document pointed into the moved lines. Left open, in
+src_components' Unknowns and on GitHub #274: the budget count an attach still leaves when it publishes after
+`remove_rift`'s registry phase and before its `rift.cleanup`, one of #274's teardown questions (corrected 2026-11-08:
+fixed in 0.2.8291, the entry above); R2 and the unlocked
+reads; and the rest of #274 - its teardown deadlocks and the owner's questions - which waits for the owner. Where to
+start: src_components, Component: AR Runtime Surface (Nexus, Rift, RiftSpace), then its Unknowns entry.
+
+2026-11-08 three changes after the notch seam (0.2.8286-0.2.8288). 0.2.8286 (GitHub #270, documentation in source):
+the `Existence` member docstrings of `unique_per_conduit_cluster` (one instance per cluster, held in the cluster's own
+team store, `ConduitCluster._team_store`, which member roots reach through their `ClusterCreations` facade while a
+leader is elected) and `unique_per_spell_space` (a pooled, request-local scope a conduit leases out, built only by
+the space's own meld door) match the runtime, and the `Meld` docstring counts seven modes, naming the managed lease.
+This document's Existence statements already agreed; the code map re-verifies existence.py, meld.py and the
+regenerated bind-guard manifest, whose line counts did not change. 0.2.8287 (GitHub #255): the packaged C2
+meld-resolution drawing gained the managed pool box; this document cites no packaged drawing, and the graph carries
+Python sources only. 0.2.8288 (GitHub #271): a frame-link contract's cleanup keeps `_lock` as a documented tombstone,
+so a second concurrent cleanup returns (D1), while `FrameLink`'s deletes its lock last, on the owner's decision (chat
+2026-11-08) to fully clear every object - nothing in Melder cleans a link - and `Cleanable`'s docstring now states
+that default and the kept-lock exception (corrected 2026-11-08: this said both classes keep the lock); the four
+lock-guarded reads of `FrameLinkContract` check `_cleaned` again under the lock and raise the cleaned RuntimeError
+when a cleanup overtakes them (D2): a new fixed failure mode, and the code map remeasures frame_link_contract.py (302
+lines), frame_link.py (256 lines), whose note is corrected (it called the link a contract wrapper), and cleanable.py
+(440 lines). Left open, read from the code and not probed (src_components, Unknowns; GitHub #274, filed for Rift
+thread safety): the unlocked reads of both classes and `FrameLink.clone` (L6), `Rift.get_selected_contract_names`
+racing `Rift.cleanup` (R2), and two concurrent `Rift.create_frame_link` calls for one frame (R4) (corrected
+2026-11-08: R4 was fixed in 0.2.8289 - the entry above - but for one residual, which 0.2.8291 fixed). The notch Unknowns
+entry names GitHub #273, filed to bring `cleanup_spell` into the frame mediator's scope. No numeric citation moved
+in the round's first pass (none pointed into the two frame-link files, and the other edits kept their line counts);
+the owner's FrameLink follow-up moved frame_link.py's lines by 3, and its citations were remapped. Where to start:
+src_components, Component: AR Runtime Surface (Nexus, Rift, RiftSpace), then its Unknowns entry.
+
+2026-11-08 the notch seam also refuses a version being disposed (0.2.8285, within
+TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254): the docs pass read `_dispose_spell` and found
+that a `cleanup_spell` which has decided on a parked version releases its contracts with no Book lock held while the
+version stays parked; a component test that notches from inside that release
+(`test_notch_landing_while_cleanup_spell_disposes_its_target_is_refused`) saw the notch stand and the disposal then
+clean the version the index selected. `_refuse_unparked_incoming` now also refuses a version whose spell_id is in
+`_disposing_spell_ids`, with RuntimeError "notch_spell refused: '<name>' (spell_id <id>) is being disposed by
+cleanup_spell, ...", nothing moved. The seam-check invariant, the fixed failure mode, the boundary's notch line, the
+mutation sequence's step 5 and the architecture summary carry it, and the Unknowns entry keeps only the overlap still
+open - a `cleanup_spell` of the outgoing version during the incoming one's structural check, whose failing check
+then meets `_revert_refused_notch`'s Melder-bug error - for the owner's decision. In source, `Conduit.notch_spell`'s
+docstring (it said no other index operation could move the target) and `Spell._spell_index_unless_cleaned`'s list
+of readers were corrected. Numeric citations into spellbook.py past the edit moved 15 more lines, and into
+conduit.py past its docstring 5 lines; both were remapped line by line, and the code map remeasures spellbook.py,
+conduit.py and spell.py. Where to start: src_components, Component: Spellbook Core (Binding and Conjure).
+
+2026-11-08 two small fixes on the owner's word (chat 2026-11-08: "yeah do the small fixes and flaky CI test please";
+patch small_fixes_2026_11_08). 0.2.8284 (TASK-2026-10-16-remove_scratch_marker_from_src, GitHub #256): the
+unimported 35-byte module `generalized_cache_runtime_rows_SCRATCH.py` left the generalized compilers package and the
+wheel; this document never named it (the component map's inventory and the graph did). 0.2.8285
+(TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254): `Spellbook._apply_notch` checks its incoming
+version first (`_refuse_unparked_incoming`, its step 0a) - the version parked in this Book under its spell_id and
+parked in the index passed - and refuses it with nothing moved, so a `cleanup_spell` that takes the target off the
+Book's maps between the conduit's in-window check and the seam's Book lock (it takes no transaction) leaves the
+index's active version in place instead of an index with no active version, and a version parked in another index
+is no longer promoted under this one. A new first operational invariant, a fixed failure mode, the notch line of
+the boundary entry, the SpellIndex mutation sequence's step 5 and the architecture summary carry it; the 0.2.8249
+target invariant, which called the disposal race pre-existing and filed for the seam, is corrected in place. Numeric
+citations into spellbook.py past the edit moved 89 lines (the `_apply_notch` and `_refuse_taken_address` range grew
+to take in the new method) and were remapped line by line; the code map remeasures spellbook.py. Not changed:
+`cleanup_spell` stays outside the transaction mediator. New in Unknowns, read from the code and not probed: a
+disposal that decides before the seam's section and pops after it, and one of the outgoing version during the
+structural check, still meet a notch (corrected 2026-11-08: the first was closed the same day by the being-disposed
+refusal - the entry above; the second stays open). Where to start: src_components, Component: Spellbook Core
+(Binding and Conjure), then the notch flow.
+
+2026-11-07 a class lookup that finds its class only where it cannot reach refuses its consumer and says where
+(0.2.8281, HIDDEN_PROVIDER; part (a) of TASK-2026-11-07-spellframe_ambiguity_validation_check, GitHub #245, on the
+owner's approval of the design and his calls D1-D5; patch hidden_provider_2026_11_07): Phase 3 records the spells of
+a missed class bound under a spellframe or a binding name as the socket's hidden candidates (`_hidden_type_key`, the
+`by_hidden_type` bucket, `hidden_spell_ids` and `hidden_frame_keys`), and Phase 4's `HiddenProviderStrategy` refuses
+a single or SpellMap socket that carries them - at conjure, at a late bind and at every meld, override or not; Phase
+6's empty-`list[Class]` report and `UnresolvedInputError` name the same addresses through one renderer
+(`HiddenProviderReport`); a framed or named spell's bind, notch, link and contract grant announce its type key, and a
+refused consumer also watches its hidden candidates' frames; AMBIGUOUS_PROVIDER drops its override remedy; snapshot
+rows are format 3 and the creation cache is generation 27. The glossary (one new term, the unresolved-input term
+pointed at it), a new first operational invariant (the 0.2.8278 class-lookup and 2026-09-26 unresolved-input entries
+marked superseded in part), a Breaking failure mode (the 0.2.8278 Breaking entry, the 0.2.8224 ambiguity entry, the
+UnresolvedInputError entry and the SpellMap RuntimeError line pointed at it), the Unresolved Input Resolution diagram
+and the sources carry it; the component map carries the per-component contracts. The report wording is the patch's
+final STEP 3: a borrowed candidate renders as an owned one, an unfound id as `spell id <id>`, and the closing sentence
+counts the SpellMaps shown. The C1 code map remeasures the eight changed files it holds and adds the two new modules;
+the line citations into spellbook.py and change_control_manager.py moved with the patch's insertions (the
+`_run_structural_phases` precondition citation, stale before this pass, points at its docstring line again). The
+asset rebuild put `HiddenProviderStrategy` and `HiddenProviderReport` in the bind guard: the guardrail's count (631)
+and the manifest's C1 entry carry it. Open LIVE != FRESH gaps, each pinned by a strict xfail on
+EPIC-2026-10-25-dependency_watchers_listen_for_names (GitHub #210): a transfer arrival that announces only the frame
+key, three contract and link departures that mark no collection dependents, and a dependent left invalid after a
+refusal lifts - a gap that predates HIDDEN_PROVIDER (AMBIGUOUS_PROVIDER leaves it on the pre-patch tree). A
+provider's `cleanup_spell` leaving a refusal standing is accepted behaviour under the owner's ruling, not a gap. Still
+unknown: see Unknowns. Where to start: src_components, Component: SpellCompiler and Validation Pipeline ("Hidden
+providers refused"), then Subcomponent: Spell Validation Strategies.
+
+2026-11-07 a spell's stewardship stays inside one aetheric frame (0.2.8280; part (b) of
+TASK-2026-11-07-spellframe_ambiguity_validation_check, on the owner's ruling "they shouldn't be able to transfer
+between frames thats an illegal operation ... you cannot link between frames either"; patch
+transfer_within_one_frame_2026_11_07): `Conduit.transfer_spell_ownership` refuses a target conduit of another frame
+with RuntimeError "Cannot transfer spell ownership across different AethericFrames: ..." after its dynamic-mode check
+and before the `TRANSFER_OWNERSHIP` transaction and its preflight, so nothing starts; the part (b) probe had shown a
+cross-frame transfer leaving two active spells at one address in the target Book and the source frame's claim
+naming the moved spell. A new first operational invariant, a Breaking failure mode (the transfer posture line
+pointed at it), the transfer sequence's step 1 and the code map (conduit.py remeasured) carry it; the component map
+carries the per-component contracts. Numeric citations into conduit.py past the edit moved 32 lines and were
+remapped line by line; the 0.2.8278 entries' pointers now name the class-lookup entry instead of "the first entry".
+Measured on 0.2.8280: a transfer to a cleaned target conduit still fails with AttributeError (on
+`_aetheric_frame_name` now, on `_spellbook` before), as it did. Still unknown: see Unknowns. Where to start:
+src_components, Subcomponent: Ownership Transfer.
+
+2026-11-07 a class lookup reaches only a spell bound bare (0.2.8278;
+TASK-2026-11-07-class_annotation_selects_only_bare_spells of EPIC-2026-11-07-spellframe_hides_the_concrete_class, on
+the owner's rulings "do what autofac would do ... thats our compass" and "ok yes to all your statements"; patch
+class_lookup_bare_spells_2026_11_07): a class annotation, `list[Class]`, a single string annotation's type part and
+`SpellMap(spell=Class)` without a spellframe reach a spell only when it is bound with no spellframe and the default
+binding (`CompilerPhase3._answers_class_lookup`, read by the scan path, the index path and SpellMap's explicit
+branch); a framed spell is reached through its frame - Melder's interface dict, keyed by binding name - and a bare
+named one through its binding name; a string naming a Protocol still finds the Protocol's own definition; S1's key
+split cannot occur for class annotations; the creation cache is generation 26. The glossary (one new term), a new
+first operational invariant (the 0.2.8222 annotation-kind entry marked superseded in part, the unresolved-input entry
+pointed at it), a Breaking and a fixed failure mode (the 0.2.8224 ambiguity example and the 0.2.8250 notch entry's
+class-annotation case annotated), the sources and the code map (caching_system.py and spell_map.py remeasured,
+compiler_phase_3.py added) carry it; the component map carries the per-component contracts. Measured on 0.2.8278,
+the GIL off and on: the class meld door answers by address, so `meld(English)` still returns an English bound under
+the string category "English", which a class annotation no longer reaches; a required `list[Class]` left with no
+member refuses at conjure in an automatic world. Still unknown: see Unknowns. Where to start: src_components,
+Component: SpellCompiler and Validation Pipeline ("Class lookups reach only bare spells"), then the Breaking entry's
+upgrade paths.
+
+String-backed enum compatibility: selected native families use exact member-name string values.
+Historical readers and selected persisted, claim and diagnostic projections retain their contracts;
+direct values and some direct diagnostics change. Start at Operational Invariants and
+the String Enum Value and Persistence Compatibility component; unknown external consumers stay unknown.
+
+2026-11-01 terminal names (0.2.8276; representation updated in 0.2.8277): three canonical CLEANED
+Python attributes initially retained bases and values; their values now match their names. Native declared-name lookup preserves case and family contracts;
+canonical lifecycle emission and admitted legacy cleaned reads preserve terminal intent. The source
+and test maps describe their own boundaries; real public cache tests cover both drivers, live-state
+controls and unsupported-major refusal. Ownership/transfer contracts and other unknowns stay.
 
 2026-10-25 a lender's notch moves its borrowers inside its frozen window (0.2.8275; TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout,
 design 2): the race of an in-flight borrower meld against the notch's fan-out is closed - the borrowers' lineages are

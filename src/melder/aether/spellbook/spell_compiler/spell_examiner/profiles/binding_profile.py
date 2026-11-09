@@ -1,5 +1,5 @@
 import inspect
-from enum import Enum, auto
+from enum import StrEnum
 from typing import Any, Dict, List, Optional, ClassVar
 
 
@@ -7,17 +7,41 @@ from typing import Any, Dict, List, Optional, ClassVar
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 
-class SpellBindingKind(Enum):
+class SpellBindingKind(StrEnum):
     """
     High-level classification of what is being bound.
 
     This is intentionally small and orthogonal to SpellType - it answers
     "what raw object did the user give us" before we project into SpellType.
+    Values are the exact member names. Historical numeric values 1 through 4
+    remain valid by-value inputs, including in older enum pickle payloads;
+    the value returned by each member is now its name rather than an integer.
     """
-    CLASS = auto()
-    CALLABLE = auto()
-    INSTANCE = auto()
-    OTHER = auto()
+    CLASS = "CLASS"
+    CALLABLE = "CALLABLE"
+    INSTANCE = "INSTANCE"
+    OTHER = "OTHER"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SpellBindingKind]:
+        """
+        Resolve an old numeric value to its original binding kind.
+
+        The ordinary enum lookup handles the canonical strings first. Unknown
+        or unhashable inputs return None so Enum raises its normal ValueError.
+        Numeric values equal to the old integer keys retain the former lookup
+        behavior, allowing old value-based pickle payloads to load.
+        """
+        legacy_values: dict[object, SpellBindingKind] = {
+            1: cls.CLASS,
+            2: cls.CALLABLE,
+            3: cls.INSTANCE,
+            4: cls.OTHER,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None
 
 
 class SpellBindingProfile(Cleanable):

@@ -1,0 +1,39 @@
+meld_door_check.py on 0.2.8277 (melder_0, 2026-11-07T10:05:23Z; .venv_new 3.14.7 free-threaded build), the GIL off then on.
+===== -X gil=0
+bare, GIL off - before English is bound:
+  meld(spell_id=<ByClass id>)                    -> raises UnresolvedInputError
+  meld(ByClass)          [by class]              -> raises UnresolvedInputError
+  meld('ByClass')        [by name]               -> raises UnresolvedInputError
+after binding English bare:
+  meld(spell_id=<ByClass id>)                    -> English
+  meld(ByClass)          [by class]              -> English
+  meld('ByClass')        [by name]               -> English
+  meld(spell_id=<English id>)  [the provider]    -> English
+category, GIL off - before English is bound:
+  meld(spell_id=<ByClass id>)                    -> raises UnresolvedInputError
+  meld(ByClass)          [by class]              -> raises UnresolvedInputError
+  meld('ByClass')        [by name]               -> raises UnresolvedInputError
+after binding English under the category 'langs':
+  meld(spell_id=<ByClass id>)                    -> raises UnresolvedInputError
+  meld(ByClass)          [by class]              -> raises UnresolvedInputError
+  meld('ByClass')        [by name]               -> raises UnresolvedInputError
+  meld(spell_id=<English id>)  [the provider]    -> English
+===== -X gil=1
+bare, GIL on - before English is bound:
+  meld(spell_id=<ByClass id>)                    -> raises UnresolvedInputError
+  meld(ByClass)          [by class]              -> raises UnresolvedInputError
+  meld('ByClass')        [by name]               -> raises UnresolvedInputError
+after binding English bare:
+  meld(spell_id=<ByClass id>)                    -> English
+  meld(ByClass)          [by class]              -> English
+  meld('ByClass')        [by name]               -> English
+  meld(spell_id=<English id>)  [the provider]    -> English
+category, GIL on - before English is bound:
+  meld(spell_id=<ByClass id>)                    -> raises UnresolvedInputError
+  meld(ByClass)          [by class]              -> raises UnresolvedInputError
+  meld('ByClass')        [by name]               -> raises UnresolvedInputError
+after binding English under the category 'langs':
+  meld(spell_id=<ByClass id>)                    -> raises UnresolvedInputError
+  meld(ByClass)          [by class]              -> raises UnresolvedInputError
+  meld('ByClass')        [by name]               -> raises UnresolvedInputError
+  meld(spell_id=<English id>)  [the provider]    -> English

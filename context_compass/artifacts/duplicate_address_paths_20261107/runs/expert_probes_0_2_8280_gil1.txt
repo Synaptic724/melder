@@ -1,0 +1,12 @@
+command: .venv_new/Scripts/python.exe -X gil=1 -m pytest UX_and_AIX_experiences/pytest_examples/test_expert_probes.py -q -p no:cacheprovider  (run 2026-11-07T16:52:45Z, melder 0.2.8280)
+...............................................                          [100%]
+============================== warnings summary ===============================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+47 passed, 1 warning in 12.99s
+exit status: 0

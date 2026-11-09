@@ -213,7 +213,7 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
         spellbook_scope_claims: Tuple[Tuple[str, str], ...] = tuple(
             (
                 transaction_manager.make_scope_key_spellbook(affected_spellbook_id),
-                ClaimMode.INTENT.value,
+                ClaimMode.INTENT.wire_value,
             )
             for affected_spellbook_id in sorted(affected_spellbook_ids)
         )

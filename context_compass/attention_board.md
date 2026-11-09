@@ -49,6 +49,8 @@ Purpose
 - Active-work routing board.
 - Attention-only summary for fast re-entry.
 - Canonical detail lives in linked tickets.
+- Unused in `github_issues` mode: each ticket issue carries its own `## Route`
+  (`agent_onboarding/default/general/skills/github/issues_backend.md`).
 
 Attention details rule
 - Keep this board compact and operational.
@@ -87,10 +89,11 @@ Active detail entry format (add actual entries only inside the USER-DEFINED regi
 
 Message alert rules
 - Apply only when `agent_communication.backend` resolves to `mailbox`. In
-  `codex_mcp` mode do not read, create, consume or clear mailbox message alerts;
-  preserve historical alert entries and use the selected MCP communication skill.
-- Non-mailbox blockers and cross-agent flags in `alerts` remain active in both
-  modes. Skip only mailbox message notices, not the board's other attention data.
+  `codex_mcp` or `claude_internal_communication` mode do not read, create,
+  consume or clear mailbox message alerts; preserve historical alert entries and
+  use the selected transport's skill.
+- Non-mailbox blockers and cross-agent flags in `alerts` remain active in every
+  mode. Skip only mailbox message notices, not the board's other attention data.
 - Senders add one line per message sent on `mailbox_board.md`:
   `- NEW MESSAGE for <agent_name> (from <agent_name>, <DATETIME>)`.
 - The named recipient clears their line in the same pass that consumes the
@@ -107,9 +110,10 @@ Message alert rules
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
 | correctness_defects | in_progress | handoff | claude | melder_1 | none | S2 landed at 0.2.8273 and is turned in; the stuck consumer is its own epic (row dependency_watchers_epic); S5, S11 and the recorded-world finding wait for the owner. | Defects where Melder's structure is wrong or stuck, a story each with a reproducer; the rest recorded as checked. | Every planned area swept and its defects filed as stories, or the owner redirects. | tickets/epics/2026-10-17_correctness_defects_epic.md | 2026-10-25T12:26:46Z | REQUIRED |
-| many_child_ownership_epic | in_progress | handoff | claude | melder_1 | none | Ask the owner whether to close the epic on his removal decision. | The owner's removal decision recorded and carried out at 0.2.8267; the epic closed on his word. | The owner closes the epic or redirects. | tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md | 2026-10-24T22:06:33Z | HELPFUL |
-| pypi_provenance_epic | blocked | handoff | claude | melder_2 | S3's promotion with its RC run, the owner's PyPI publisher (D2) and the first attested final release, and S6's keep-or-drop | At the first final release that carries S3, read Release / provenance first; then the owner retires PYPI_API_TOKEN (S4). | Every Melder file on TestPyPI and PyPI carries verified PEP 740 provenance, both upload tokens retired, S6 decided. | The owner shares the hosted runs and accepts the epic, or redirects. | tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md | 2026-10-25T08:27:53Z | REQUIRED |
-| dependency_watchers_epic | ready | discovery | claude | melder_1 | none | S1 - the watcher and announcer matrix (the probe-and-purge lane landed at 0.2.8269). | Why a waiting consumer misses its provider, mapped for every watcher and announcer; then the fixes on the owner's word. | S1's matrix and the fix options are on the epic for the owner, or he redirects. | tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md | 2026-10-25T08:22:32Z | REQUIRED |
+| dependency_watchers_epic | ready | handoff | claude | melder_0 | none | The key split moved to row spellframe_hides_class_epic (the owner's option B); S1's other misses (H1/H2, D1, G4, E1, P1a) wait for his word, one at a time. | Why a waiting consumer misses its provider, mapped for every watcher and announcer; then the fixes on the owner's word. | S1's matrix and the fix options are on the epic for the owner, or he redirects. | tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md | 2026-11-07T10:03:26Z | REQUIRED |
+| spellframe_hides_class_epic | in_progress | implementation | claude | melder_0 | none | T3 part (a): mapped, notched 0.2.8281, release note folded; src and tests in flight (subagent). Checked out 18:37:27Z for the GitHub Issues move - after the switch: record STEP 2's report, docs merge, full suite both modes; rebuild held. | Class lookups agree with the class meld door - a spellframe or a binding name hides a class (Autofac) - plus the owner's Phase 4 check. | The rule and the check landed and accepted, or the owner redirects. | tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md | 2026-11-07T18:37:27Z | REQUIRED |
+| license_metadata_to_apache | in_progress | implementation | claude | melder_0 | owner hold: no asset rebuild for now (chat 2026-11-07) | Edits, release note, notch 0.2.8279 and graph done; the asset and llm_support rebuild with both checks waits for the owner's word. | Every license statement agrees with the owner's Apache-2.0 LICENSE. | No AGPL statement outside history; checks OK, or the owner redirects. | tickets/tasks/2026-11-07_license_metadata_to_apache_task.md | 2026-11-07T15:44:27Z | REQUIRED |
+| dependabot_ci_requirements | in_progress | implementation | claude | melder_0 | owner hold: no asset rebuild for now (chat 2026-11-07) | All 26 alerts' pins bumped (floors kept, the owner's call); the docs-lock urllib3 bump and BRANCH_WORKFLOW line in flight; the rebuild waits for the owner's word. | The 26 open Dependabot alerts' pins at or above their patched versions. | Every named pin bumped and tests/unit/github_workflows green, or the owner redirects. | tickets/tasks/2026-11-07_dependabot_ci_requirements_task.md | 2026-11-07T15:44:27Z | REQUIRED |
 | index_binding_risks_epic | ready | discovery | claude | melder_1 | none | Parked on the owner's word (2026-10-25): every open label documented; investigations wait for his go, GAP-1 first. | What can break around one binding per index - GAP-1 first - investigated and decided on the owner's word. | Every label has a verdict on the epic, or the owner redirects. | tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md | 2026-10-25T14:58:20Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
@@ -119,40 +123,40 @@ Message alert rules
   SWITCH_TRIGGER: Every planned area swept and its defects filed as stories, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-17_correctness_defects_epic.md
-- WORK_ITEM: many_child_ownership_epic
-  SWITCH_TRIGGER: The owner closes the epic or redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-20_reassess_many_child_disposal_ownership_epic.md
-- WORK_ITEM: pypi_provenance_epic
-  SWITCH_TRIGGER: The owner shares the hosted runs and accepts the epic, or redirects.
-  RESUME_HIERARCHY:
-    - tickets/epics/2026-10-24_pypi_provenance_attestations_epic.md
 - WORK_ITEM: dependency_watchers_epic
   SWITCH_TRIGGER: S1's matrix and the fix options are on the epic for the owner, or he redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_dependency_watchers_listen_for_names_epic.md
+    - tickets/stories/2026-10-25_map_dependency_watchers_and_announcers_story.md
+- WORK_ITEM: license_metadata_to_apache
+  SWITCH_TRIGGER: No AGPL statement outside history; checks OK, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-11-07_license_metadata_to_apache_task.md
+- WORK_ITEM: dependabot_ci_requirements
+  SWITCH_TRIGGER: Every named pin bumped and tests/unit/github_workflows green, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/tasks/2026-11-07_dependabot_ci_requirements_task.md
 - WORK_ITEM: index_binding_risks_epic
   SWITCH_TRIGGER: Every label has a verdict on the epic, or the owner redirects.
   RESUME_HIERARCHY:
     - tickets/epics/2026-10-25_index_binding_risks_and_gaps_epic.md
+- WORK_ITEM: spellframe_hides_class_epic
+  SWITCH_TRIGGER: The rule and the check landed and accepted, or the owner redirects.
+  RESUME_HIERARCHY:
+    - tickets/epics/2026-11-07_spellframe_hides_the_concrete_class_epic.md
+    - tickets/tasks/2026-11-07_spellframe_ambiguity_validation_check_task.md
 <!-- END USER-DEFINED: active_attention_details -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| creations_many_disposal_docstrings | done | melder_3 | tickets/tasks/completed/2026-10-25_creations_many_disposal_docstrings_task.md | Notched 0.2.8268: the creations.py `many` disposal docstrings state the store since 0.2.8257; src_components, both code maps and the graph follow; two rebind outcomes to the owner (S3); rebuild after closure. | 2026-10-25T02:36:15Z |
-| pypi_provenance_release | done | melder_2 | tickets/stories/completed/2026-10-25_pypi_trusted_publishing_and_provenance_story.md | PyPI by Trusted Publishing with attestations; Release / provenance checks every released file after the upload; no upload token in any workflow; the users' check documented; no notch; hosted Not run; rebuild after closure. | 2026-10-25T03:20:31Z |
-| probe_purge_every_version | done | melder_1 | tickets/stories/completed/2026-10-25_probe_and_purge_reach_every_version_story.md | Notched 0.2.8269: purge and the live-creation probes reach any version by its spell_id, active or parked, owned or borrowed; purge refuses a unique version with no owner store; rebuild after closure. | 2026-10-25T08:22:32Z |
-| codegen_open_file_d10 | done | melder_0 | tickets/tasks/completed/2026-10-10_deny_file_access_under_safe_codegen_task.md | Notched 0.2.8270: `open` refused under safe, hybrid and precision and the no-projection default; `pathlib` a permissive-only root (the owner's B); every profile's file posture pinned; rebuild after closure. | 2026-10-25T08:44:04Z |
-| rebind_live_store_tests | done | melder_3 | tickets/tasks/completed/2026-10-25_rebind_while_old_objects_are_alive_tests_task.md | Component tests prove the two rebind defects as strict xfails with six controls, the GIL off and on; the tests pair records them; no notch; closed into the owner's fix (row creations_store_slots), whose end-of-pass rebuild covers it. | 2026-10-25T10:39:44Z |
-| codegen_dynamic_import_d11 | done | melder_0 | tickets/tasks/completed/2026-10-10_enforce_import_policy_on_dynamic_imports_task.md | Notched 0.2.8271: dynamic imports answer to the codegen import gate - a `__import__` call or reference refused wherever an import list applies (A) and the runtime `__import__` wrapped to check each root (B); import statements of allowed roots still run, full_access unconstrained; the four strict xfails pass plus five cases; rebuild after closure. | 2026-10-25T10:52:15Z |
-| codegen_materialize_d20 | done | melder_0 | tickets/tasks/completed/2026-10-10_refuse_materializing_over_live_modules_task.md | Notched 0.2.8272: materialize_codegen refuses loaded, core, stdlib and installed names under every profile; `materialize_modules` rules narrow; room builtins; failed materializes leave sys.modules as found; rebuild after closure. | 2026-10-25T12:11:19Z |
-| codegen_room_policy_epic | done | melder_0 | tickets/epics/completed/2026-10-25_codegen_room_policy_defects_epic.md | D-10, D-11 and D-20 closed at 0.2.8270-0.2.8272 on the owner's decisions; each Breaking change in the running note. | 2026-10-25T12:11:19Z |
-| notch_signature_s2 | done | melder_1 | tickets/stories/completed/2026-10-17_notch_moves_signature_by_incoming_key_only_story.md | Notched 0.2.8273: every version of a SpellIndex is bound the way its first version was; staging and moves refuse another binding, a notch a held address; records below 5.0.0 refused; rebuild after closure. | 2026-10-25T12:26:46Z |
-| creations_store_slots | done | melder_3 | tickets/stories/completed/2026-10-25_creations_store_slots_by_binding_story.md | Notched 0.2.8274: a Creations store files each binding's objects in its own slot (`Spell.store_key`) on one shelf per spell_id; S1-S9 fixed, purge and the probes cover every binding, cache generation 25; the asset and bundle rebuild not run, on the owner's word. | 2026-10-25T14:05:41Z |
-| notch_fanout_race | done | melder_0 | tickets/tasks/completed/2026-10-16_order_inflight_borrower_melds_against_notch_fanout_task.md | Notched 0.2.8275: a lender's notch moves its borrowers inside its frozen window (borrowers sealed and frozen), a failed fan-out undoes it; race 0 of 20; xfail deleted; rebuild after closure. | 2026-10-25T14:24:32Z |
-| notch_fanout_epic | done | melder_0 | tickets/epics/completed/2026-10-25_notch_fanout_inflight_melds_epic.md | The borrower-meld-vs-notch race closed at 0.2.8275 (design 2). | 2026-10-25T14:24:32Z |
+| many_child_ownership_epic | done | melder_1 | tickets/epics/completed/2026-10-20_reassess_many_child_disposal_ownership_epic.md | Closed on the owner's word 2026-11-07 (by melder_0): the holder-ownership removal landed at 0.2.8267. | 2026-11-07T07:54:24Z |
+| pypi_provenance_epic | done | melder_2 | tickets/epics/completed/2026-10-24_pypi_provenance_attestations_epic.md | Closed on the owner's word 2026-11-07 (by melder_0; melder_2 finished it): Trusted Publishing with PEP 740 provenance for TestPyPI and PyPI; the owner-owed steps stay his. | 2026-11-07T07:54:24Z |
+| board_cleanup_20261107 | done | melder_0 | tickets/tasks/completed/2026-11-07_strip_old_board_state_task.md | Boards stripped to live state on the owner's word (55 KB -> 26 KB); two epics closed done on his picks; finished tickets' artifact rows dropped, files kept. | 2026-11-07T07:54:59Z |
+| readme_stars_badge_gh191 | done | melder_0 | tickets/tasks/completed/2026-11-07_readme_stars_badge_gh191_task.md | README stars badge in the social style linking to stargazers (GitHub #191); one line, no notch; running-note line added. | 2026-11-07T08:03:29Z |
+| spellframe_epic_t1_inventory | done | melder_0 | tickets/tasks/completed/2026-11-07_inventory_class_resolution_of_framed_spells_task.md | T1 of the spellframe epic: Phase 3's change list, 106 tests in 20 files, the owner's E1-E3 on Autofac's model; read-only, no notch. | 2026-11-07T11:57:30Z |
+| spellframe_epic_t2_class_lookup | done | melder_0 | tickets/tasks/completed/2026-11-07_class_annotation_selects_only_bare_spells_task.md | T2: a class lookup reaches only a bare spell (Autofac); notched 0.2.8278, release note Breaking; 106 tests + C4 moved to the new rule; cache gen 26; uncommitted. | 2026-11-07T15:06:23Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -164,4 +168,5 @@ Message alert rules
 - Device VM Python: bare `python3` is CPython 3.10; load a 3.14 interpreter in every device command.
 - Device VM disk: `/sessions` is full; run tests with `TMPDIR` under /tmp and delete scratch trees when a lane lands.
 - Mailbox IDs: melder_0 sends `M0-<seq>`, melder_1 `M1-<seq>`; the ID leads CLAIM and a reply cites it.
+2026-11-07: moved to GitHub Issues (`work_tracking.backend: github_issues`). Nothing reads this board any more; the live records start at the header issue: https://github.com/Synaptic724/melder/issues/263
 <!-- END USER-DEFINED: notes -->

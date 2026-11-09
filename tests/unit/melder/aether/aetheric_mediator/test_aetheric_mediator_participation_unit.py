@@ -281,7 +281,7 @@ def test_a_commit_delta_still_stamps_the_fact_baseline(registry, submitter):
     )
     baseline = registry.get_fact(ScopeKey.subsystem(SUBSYSTEM))
     assert baseline is not None
-    assert baseline["fact_family"] == TransactionType.SUBSYSTEM_ACTIVATE.value
+    assert baseline["fact_family"] == "subsystem_activate"
 
 
 def test_an_unnameable_subject_records_nothing(registry, submitter):

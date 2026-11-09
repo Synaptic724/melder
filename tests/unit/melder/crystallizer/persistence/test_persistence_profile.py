@@ -416,10 +416,10 @@ def test_state_switches_flip_markers_and_retain_twins():
     profile.record(nexus_twin)
     profile.record(mr_twin)
     profile.record_nexus_state(RecordedUnitState.disabled)
-    profile.record_mutation_research_state(RecordedUnitState.cleaned)
+    profile.record_mutation_research_state(RecordedUnitState.CLEANED)
     summary = profile.describe()
     assert summary["nexus_state"] == "disabled"
-    assert summary["mutation_research_state"] == "cleaned"
+    assert summary["mutation_research_state"] == "CLEANED"
     assert summary["has_nexus_crystal"] is True
     assert summary["has_mutation_research_crystal"] is True
     assert nexus_twin.cleaned is False and mr_twin.cleaned is False

@@ -1,6 +1,7 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class Permissions(Enum):
+class Permissions(StrEnum):
     """
     Capability ceiling for a spell in ward-local and contracted views.
 
@@ -11,9 +12,10 @@ class Permissions(Enum):
     - on each contract detail, as the capability actually granted to a peer for
       that spell
 
-    The values are ordered by how much downstream behavior they permit, and the
+    The members describe how much downstream behavior they permit, and the
     ward logic deliberately never escalates a contracted spell beyond the
-    spell's own local permission.
+    spell's own local permission. Values are exact member-name strings; the
+    historical numeric values 1-3 remain readable by value and in old pickles.
 
     - `read`:
       the spell may be resolved and inspected through a contract, but it
@@ -60,6 +62,25 @@ class Permissions(Enum):
         (creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A
         contract never grants more than the spell's own permission.
     """
-    read = auto()   # Allows read/resolve access only.
-    create = auto() # Allows creation-capable use and implies read.
-    block = auto()  # Blocks sharing/contracting in normal flows.
+    read = "read"   # Allows read/resolve access only.
+    create = "create" # Allows creation-capable use and implies read.
+    block = "block"  # Blocks sharing/contracting in normal flows.
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[Permissions]:
+        """
+        Resolve a historical numeric permission to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, Permissions] = {
+            1: cls.read,
+            2: cls.create,
+            3: cls.block,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

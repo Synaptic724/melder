@@ -1,10 +1,14 @@
 import enum
+from typing import Optional
 
 
-class RecordedUnitState(enum.Enum):
+class RecordedUnitState(enum.StrEnum):
     """
     Recorded lifecycle state for singleton units the record tracks by
     state-switch instead of eviction (MutationResearch, Nexus).
+
+    Values match member names. The historical lowercase cleaned value remains
+    readable by value, including in older enum pickle payloads.
 
     Purpose:
         A disabled/deactivated singleton keeps its installed configuration,
@@ -16,7 +20,7 @@ class RecordedUnitState(enum.Enum):
     Guidance:
         Interpret this enum together with the retained singleton twin. `disabled`
         is not absence: configuration still exists and restore may rebuild then
-        deactivate the unit. `cleaned` is terminal recorded intent and prevents
+        deactivate the unit. `CLEANED` is terminal recorded intent and prevents
         restore from silently resurrecting a unit whose teardown was observed.
         Do not reuse this enum for ordinary removable twins; their absence is
         represented by eviction/tombstones instead.
@@ -25,7 +29,7 @@ class RecordedUnitState(enum.Enum):
         - enabled: the unit is configured and live (`enable()`/`activate()`).
         - disabled: the unit was turned off but keeps its configuration
           (`disable()`/`deactivate()`); the twin remains valid.
-        - cleaned: the unit was torn down while the record lived; the twin
+        - CLEANED: the unit was torn down while the record lived; the twin
           remains as configured history, and restore must not re-enable it.
 
     Threading:
@@ -50,7 +54,7 @@ class RecordedUnitState(enum.Enum):
         One node of the V3 crystallizer's serialize-then-restore model, encoding a
         subtle honesty rule: for a configured singleton, "turned off" is NOT the
         same as "gone." `disabled` keeps configuration so restore can rebuild then
-        deactivate; `cleaned` is terminal recorded intent that forbids restore
+        deactivate; `CLEANED` is terminal recorded intent that forbids restore
         from silently resurrecting a unit whose teardown was observed. Representing
         that as a switch beside a retained twin - rather than a tombstone/eviction,
         which is how ordinary removable twins express absence - is what lets the
@@ -66,4 +70,17 @@ class RecordedUnitState(enum.Enum):
 
     enabled = "enabled"
     disabled = "disabled"
-    cleaned = "cleaned"
+    CLEANED = "CLEANED"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[RecordedUnitState]:
+        """
+        Resolve the historical lowercase terminal value to CLEANED.
+
+        Current values use ordinary enum lookup. Only the exact old string
+        remains accepted here; other values return None so construction raises
+        the normal ValueError. This preserves old enum pickle payloads.
+        """
+        if isinstance(value, str) and value == "cleaned":
+            return cls.CLEANED
+        return None

@@ -68,16 +68,26 @@ class EnumHelpers:
     # + policies/system states, as both string and member-passthrough keys.
     # 8 caused eviction churn on the exact path the cache exists to serve
     # (found 2026-07-19 during the strings-first UX ruling).
-    @lru_cache(maxsize=64)
-    def convert_enum_and_check(value: str | Enum, enum: Type[T]) -> T:
+    # Equal strings and StrEnum members must not share validation results.
+    @lru_cache(maxsize=64, typed=True)
+    def convert_enum_and_check(value: Union[str, Enum], enum: Type[T]) -> T:
         """
         Convert one raw value into a concrete enum member of the requested type.
 
         Contract:
-        - Accepts either a string or an enum member.
+        - Accepts a raw string name or a member of the requested enum family.
         - Returns the input unchanged when it is already an instance of the
           requested enum type.
-        - Interprets string inputs by lowercased enum member name.
+        - Matches declared names case-insensitively, including aliases. An
+          existing lowercase key keeps precedence over case-colliding names.
+        - Rejects foreign enum members, including string-valued members.
+        - Keeps a bounded, type-sensitive cache so a raw string cannot bypass
+          another input type's validation through equality.
+
+        Raises:
+            ValueError: For None, a foreign enum member, an incompatible input
+                type, or a string that does not name a member. Values and
+                surrounding whitespace are not alternative name syntax.
 
         Returns:
             T: The resolved enum member. Accepts a member or its string name and raises
@@ -95,10 +105,16 @@ class EnumHelpers:
         if isinstance(value, enum):
             return value
 
-        if isinstance(value, str):
+        if isinstance(value, str) and not isinstance(value, Enum):
+            normalized_name = value.lower()
             try:
-                return enum[value.lower()]
+                return enum[normalized_name]
             except KeyError:
+                # Keep the old lowercase-key answer before searching declared
+                # names, which may themselves use uppercase or mixed casing.
+                for name, member in enum.__members__.items():
+                    if name.lower() == normalized_name:
+                        return member
                 valid_options = [e.name for e in enum]
                 raise ValueError(
                     f"Invalid value '{value}' for enum {enum.__name__}. "

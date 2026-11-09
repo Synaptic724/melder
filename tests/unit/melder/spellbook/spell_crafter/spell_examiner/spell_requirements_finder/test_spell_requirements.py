@@ -1,5 +1,4 @@
 import inspect
-import threading
 
 import pytest
 
@@ -14,6 +13,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requ
     SpellRequirements,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _param(name: str, shape: ParameterDIShape, has_default: bool = False):
@@ -156,28 +156,17 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread marks the object cleaned.
 
+    The handshake holds the first caller inside the lock until the second has passed the outer `_cleaned` check
+    and is about to block; the first caller then runs the real cleanup and marks the requirements cleaned. The
+    second caller must return at the inner recheck - without it the teardown would run twice and a caller would
+    raise on an attribute the other had already deleted - so both callers finish without raising and the
+    requirements read cleaned with their `_lock` dropped. The callers are ordered by the handshake, not by timing:
+    the earlier hand-made lock could lose its signal and failed on CI (GitHub #206;
+    TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
+
     Returns:
         None.
     """
-
-    class _CoordinatedLock:
-        def __init__(self) -> None:
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
-
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
     reqs = SpellRequirements(
         spell_id="sid",
         spell_type=SpellType.SPELL,
@@ -186,23 +175,10 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
         binding_name=None,
         parameters=[],
     )
-    coordinated_lock = _CoordinatedLock()
-    reqs._lock = coordinated_lock
+    handshake = CleanupRecheckHandshake()
+    reqs._lock = handshake.lock
 
-    thread_results = []
+    handshake.run(reqs.cleanup)
 
-    def _run_cleanup() -> None:
-        reqs.cleanup()
-        thread_results.append(True)
-
-    first = threading.Thread(target=_run_cleanup)
-    second = threading.Thread(target=_run_cleanup)
-    first.start()
-    coordinated_lock._entered_first.wait(timeout=1.0)
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert thread_results == [True, True]
     assert reqs.cleaned is True
     assert not hasattr(reqs, '_lock')

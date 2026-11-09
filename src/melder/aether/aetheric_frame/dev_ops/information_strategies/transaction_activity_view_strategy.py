@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING, Dict, List
 
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.aether.aetheric_frame.dev_ops.devops_information_strategy import (
     DevopsInformationStrategy,
 )
@@ -127,6 +130,8 @@ class TransactionActivityViewStrategy(DevopsInformationStrategy):
                 InformationFreshnessInspector.normalize_region(str(scope_key))
             )
         elif transaction_type is not None:
+            if isinstance(transaction_type, ChangeTransactionType):
+                transaction_type = transaction_type.wire_value
             if not transaction_type:
                 raise ValueError("transaction_type must not be empty.")
             transaction_ids = (

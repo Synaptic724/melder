@@ -289,7 +289,7 @@ def test_transaction_mediator_begin_transaction_uses_custom_admission_function()
     )
 
     assert len(seen) == 1
-    assert seen[0].request_type == ChangeTransactionType.BIND
+    assert seen[0].request_type == "bind"
     mediator.end_transaction_by_request_id(session.request.request_id, success=True)
 
 

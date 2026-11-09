@@ -181,7 +181,7 @@ class BindTransactionStrategy(TransactionStrategy):
             "scope_claims": (
                 (
                     transaction_manager.make_scope_key_spellbook(identity.owner_id),
-                    ClaimMode.INTENT.value,
+                    ClaimMode.INTENT.wire_value,
                 ),
             ),
             "scope_hashes": explicit_scope_hashes,
@@ -284,12 +284,12 @@ class BindTransactionStrategy(TransactionStrategy):
             "scope_claims": (
                 (
                     transaction_manager.make_scope_key_spellbook(identity.owner_id),
-                    ClaimMode.INTENT.value,
+                    ClaimMode.INTENT.wire_value,
                 ),
             ) + tuple(
                 (
                     transaction_manager.make_scope_key_cluster(cluster_id),
-                    ClaimMode.INTENT.value,
+                    ClaimMode.INTENT.wire_value,
                 )
                 for cluster_id in sorted(cluster_ids)
             ),

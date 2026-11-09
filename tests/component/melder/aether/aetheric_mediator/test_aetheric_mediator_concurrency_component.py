@@ -36,10 +36,15 @@ Run:
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Mapping, Sequence
+
+    from melder.aether.aetheric_mediator.transaction_session import (
+        TransactionSession,
+    )
 
 import pytest
 
@@ -163,6 +168,133 @@ def _drive(plane, identity, transaction_type, metadata, hold=HOLD_SECONDS):
         session.leave()
         plane.commit(session)
     return True
+
+
+def _row_is_torn(row: Mapping[str, object]) -> bool:
+    """
+    Report whether one rendered participant row's two halves disagree.
+
+    A row is torn when `emits` is not what its `state` token means. The token is
+    DECODED through `ParticipationState` and the member's own `emits` is read,
+    never compared with `ParticipationState.ACTIVE.value`: rows keep the
+    historical lowercase token ("active") while the member value has been
+    "ACTIVE" since 0.2.8277, so that comparison called every consistent ACTIVE
+    row torn. Decoding applies the enum's own emission rule, so a later change
+    to how the token is spelled cannot show up here as false tears.
+
+    Args:
+        row: One row from `plane.reporting.describe_participants()`.
+
+    Returns:
+        bool: True when `emits` disagrees with the state the token names.
+
+    Raises:
+        ValueError: If the token names no participation state.
+    """
+    return row["emits"] != ParticipationState(row["state"]).emits
+
+
+def _noting_plane(plane: Mediator, admitted: List[str]) -> SimpleNamespace:
+    """
+    Return a stand-in plane for `_drive` that notes every admitted request id.
+
+    `_drive` reports only WHETHER it committed, while the lifecycle strategies
+    hand the registry `staged.request_id` as a row's `reporter`. A test that
+    must know which commit a sampled row names needs that id, so this forwards
+    to the real plane: `begin` opens the session through it and appends
+    `session.staged.request_id` to `admitted`, and `commit` IS the real
+    plane's. Admission, the hold, commit and refusal stay exactly `_drive`'s;
+    nothing in the pipeline is replaced.
+
+    Threading:
+        The stand-in and `admitted` belong to ONE writer thread. Neither is
+        locked, so neither may be shared.
+
+    Args:
+        plane: The real plane. Borrowed; never cleaned here.
+        admitted: The caller's list, appended in admission order. A refused
+            `begin` raises before appending, so after `_drive` returns True
+            the LAST entry is the request id that committed.
+
+    Returns:
+        SimpleNamespace: An object carrying the `begin` and `commit` that
+            `_drive` calls, and nothing else.
+    """
+    def begin_and_note(
+            *,
+            transaction_type: TransactionType,
+            submitter: Identity,
+            metadata: Optional[Mapping[str, object]] = None,
+    ) -> TransactionSession:
+        """
+        Open the session `_drive` asked for and note its request id.
+
+        Args:
+            transaction_type: Forwarded to `Mediator.begin`.
+            submitter: Forwarded to `Mediator.begin`.
+            metadata: Forwarded to `Mediator.begin`.
+
+        Returns:
+            TransactionSession: The session the real plane opened.
+
+        Raises:
+            RuntimeError: If `Mediator.begin` refuses admission or the plane
+                is cleaned. Nothing is noted.
+            KeyError: If no strategy is registered for the transaction type.
+                Nothing is noted.
+        """
+        session = plane.begin(
+            transaction_type=transaction_type,
+            submitter=submitter,
+            metadata=metadata,
+        )
+        admitted.append(session.staged.request_id)
+        return session
+
+    return SimpleNamespace(begin=begin_and_note, commit=plane.commit)
+
+
+def _row_mixes_commits(
+        row: Mapping[str, object],
+        commits: Mapping[
+            str, Tuple[ParticipationState, Optional[Dict[str, object]]]
+        ],
+) -> bool:
+    """
+    Report whether one rendered participant row carries fields of two commits.
+
+    `InformationRegistry.set_participation` is ATOMIC: ONE lock acquisition
+    writes a row's `state`, its `reporter` and, when the edge announced any,
+    its `conditions`. In a whole row the reporter therefore names the commit
+    that wrote the state beside it, and - when that commit announced
+    conditions - the conditions beside it too. `_row_is_torn` cannot see a row
+    that breaks this, because `emits` is rendered FROM `state`.
+
+    A commit that announced no conditions (a deactivation) keeps the previous
+    ones by contract, so for its rows only the state is checked.
+
+    Args:
+        row: One row from `plane.reporting.describe_participants()`.
+        commits: Every committed write, keyed by the request id the registry
+            stores as `reporter`, giving the state that commit wrote and the
+            conditions it announced, or None when it announced none.
+
+    Returns:
+        bool: True when the row's state is not the one its reporter wrote, or
+            its conditions are not the ones its reporter announced.
+
+    Raises:
+        KeyError: If the row's reporter is not a key of `commits`; callers
+            check for unknown reporters first.
+        ValueError: If the row's state token names no participation state.
+    """
+    written_state, written_conditions = commits[row["reporter"]]
+    if ParticipationState(row["state"]) is not written_state:
+        return True
+    return (
+        written_conditions is not None
+        and row["conditions"] != written_conditions
+    )
 
 
 # --------------------------------------------------------------------------
@@ -413,7 +545,6 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
     # writer's `finally`, so the FIRST writer to finish stopped the reader and
     # the row was only sampled during the opening moments of the race. The
     # reader must outlive every writer or it is watching an empty room.
-    running = threading.Semaphore(0)
     remaining = {"writers": THREADS}
 
     def writer(index):
@@ -433,10 +564,11 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
                 for _ in range(ROUNDS):
                     _drive(plane, identity, transaction_type, metadata)
             finally:
-                identity.cleanup()
+                # Count down BEFORE cleaning the identity, so the reader stops
+                # even if that cleanup raises.
                 with bookkeeping:
                     remaining["writers"] -= 1
-                running.release()
+                identity.cleanup()
         return worker
 
     def reader(barrier):
@@ -448,9 +580,7 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
                 if remaining["writers"] == 0:
                     break
             for row in plane.reporting.describe_participants():
-                if row["emits"] != (
-                        row["state"] == ParticipationState.ACTIVE.value
-                ):
+                if _row_is_torn(row):
                     with bookkeeping:
                         failures.append(row)
             checks += 1
@@ -474,6 +604,227 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
         final is ParticipationState.ACTIVE
     )
     assert plane.describe()["claims"]["scope_count"] == 0
+
+
+def test_a_consistent_active_row_is_not_reported_as_torn(plane: Mediator) -> None:
+    """
+    Regression: every consistent ACTIVE participant row was reported as torn.
+
+    The racing test above compared the row's lowercase `state` token with
+    `ParticipationState.ACTIVE.value`, which is "ACTIVE" since 0.2.8277, so each
+    ACTIVE sample counted as a tear and the test failed on rows that were whole.
+    This proves the detector itself, single-threaded: the real row after each
+    lifecycle edge reads as whole, and a row whose halves disagree, in either
+    direction, reads as torn.
+    """
+    identity = Identity(kind="subsystem", identity_id="detector-control")
+    try:
+        for transaction_type, metadata in (
+            (TransactionType.SUBSYSTEM_ACTIVATE,
+             {"subsystem_name": "crystallizer", "worker_count": 2}),
+            (TransactionType.SUBSYSTEM_DEACTIVATE,
+             {"subsystem_name": "crystallizer"}),
+        ):
+            assert _drive(plane, identity, transaction_type, metadata, hold=0)
+            (row,) = plane.reporting.describe_participants()
+            assert _row_is_torn(row) is False, row
+    finally:
+        identity.cleanup()
+    assert _row_is_torn({"state": "active", "emits": False}) is True
+    assert _row_is_torn({"state": "inactive", "emits": True}) is True
+
+
+def test_racing_lifecycle_edges_never_mix_two_commits_in_one_row(
+        plane: Mediator,
+) -> None:
+    """
+    THE ATOMIC CONTRACT ON `set_participation`, which the torn-row test above
+    cannot see: a row's `state`, `conditions` and `reporter` come from ONE
+    commit.
+
+    `test_racing_lifecycle_edges_never_leave_a_torn_row` compares `emits` with
+    `state`, but the registry RENDERS `emits` from `state`, so those two agree
+    by construction. A `set_participation` that wrote `state` under one lock
+    acquisition and `conditions` and `reporter` under a second would still
+    pass it, while a reader between the two saw the subsystem ACTIVE beside
+    the request id of the deactivation before it. This test checks the fields
+    that are written rather than derived.
+
+    Writers race activate against deactivate on ONE subsystem through the real
+    pipeline, each activation announcing `worker_count` equal to its writer
+    index so its conditions name it. Each writer drives `_drive` through
+    `_noting_plane` and records, for every request id that committed, the state
+    that commit wrote and the conditions it announced - None for a
+    deactivation, which keeps the previous ones by contract. Several readers
+    render the row continuously and keep every distinct sample.
+
+    The cross-check runs AFTER every thread has joined, against the complete
+    record, so a sample read before its writer recorded the commit cannot fail
+    spuriously. The readers must also have seen the row in both states:
+    otherwise they never overlapped a transition, and no split write could
+    have been visible to them.
+    """
+    # SEVERAL READERS, NOT ONE, and the number is measured rather than chosen.
+    # A split write frees the lock only for the instant between its two
+    # acquisitions, and only a reader already contending for the lock can land
+    # there. With the GIL off and `set_participation` patched to write `state`
+    # and then `conditions`/`reporter` in two acquisitions, ONE reader caught
+    # the split in 15 of 20 runs; four caught it in 30 of 30, each run holding
+    # between 7 and 26 mixed rows. On the real verb every reader finds nothing.
+    readers = THREADS // 2
+    commits = {}
+    observed = {}
+    samples = []
+    finished = []
+    bookkeeping = threading.RLock()
+    # Set by the LAST writer to finish, so every reader outlives every writer -
+    # the same countdown reasoning as the torn-row test above.
+    writers_done = threading.Event()
+    remaining = {"writers": THREADS}
+
+    def writer(index: int) -> Callable[[threading.Barrier], None]:
+        """Build one worker that commits one lifecycle edge and records what it wrote."""
+        activating = index % 2 == 0
+        transaction_type = (
+            TransactionType.SUBSYSTEM_ACTIVATE if activating
+            else TransactionType.SUBSYSTEM_DEACTIVATE
+        )
+        metadata = {"subsystem_name": "crystallizer"}
+        announced = None
+        if activating:
+            announced = {"worker_count": index}
+            metadata.update(announced)
+        written = (
+            ParticipationState.ACTIVE if activating
+            else ParticipationState.INACTIVE,
+            announced,
+        )
+
+        def worker(barrier: threading.Barrier) -> None:
+            """Commit the edge ROUNDS times, recording every request id that committed."""
+            identity = Identity(kind="subsystem", identity_id=f"m-{index}")
+            admitted = []
+            noting_plane = _noting_plane(plane, admitted)
+            try:
+                barrier.wait()
+                for _ in range(ROUNDS):
+                    if _drive(noting_plane, identity, transaction_type, metadata):
+                        with bookkeeping:
+                            commits[admitted[-1]] = written
+                with bookkeeping:
+                    finished.append(index)
+            finally:
+                # Count down BEFORE cleaning the identity, so the readers stop
+                # even if that cleanup raises.
+                with bookkeeping:
+                    remaining["writers"] -= 1
+                    if remaining["writers"] == 0:
+                        writers_done.set()
+                identity.cleanup()
+        return worker
+
+    def reader(barrier: threading.Barrier) -> None:
+        """Render the row until every writer is done, keeping each distinct sample."""
+        barrier.wait()
+        distinct = {}
+        checks = 0
+        while not writers_done.is_set():
+            for row in plane.reporting.describe_participants():
+                distinct.setdefault(
+                    (row["state"], row["reporter"],
+                     tuple(sorted(row["conditions"].items()))),
+                    row,
+                )
+            checks += 1
+        with bookkeeping:
+            observed.update(distinct)
+            samples.append(checks)
+
+    _run([writer(index) for index in range(THREADS)] + [reader] * readers)
+
+    assert len(finished) == THREADS, "a writer died before recording its commits"
+    rows = list(observed.values())
+    unknown = sorted({
+        row["reporter"] for row in rows if row["reporter"] not in commits
+    })
+    assert not unknown, (
+        "sampled rows name reporter(s) that no writer recorded as a commit: "
+        "{0}".format(unknown)
+    )
+    mixed = [row for row in rows if _row_mixes_commits(row, commits)]
+    assert not mixed, (
+        "{0} sampled row(s) carry fields of two commits; first: {1}, but its "
+        "reporter's commit wrote {2}".format(
+            len(mixed), mixed[0], commits[mixed[0]["reporter"]]
+        )
+    )
+    assert len(samples) == readers and min(samples) > 100, (
+        "the readers sampled the row {0} time(s) each - they did not overlap "
+        "the writers, so they proved nothing".format(samples)
+    )
+    seen_states = {ParticipationState(row["state"]) for row in rows}
+    assert seen_states == {
+        ParticipationState.ACTIVE, ParticipationState.INACTIVE
+    }, (
+        "the readers saw only {0} - they never watched an activate/deactivate "
+        "transition, so a split write could not have reached them".format(
+            sorted(seen_states)
+        )
+    )
+    assert plane.describe()["claims"]["scope_count"] == 0
+
+
+def test_a_row_mixing_two_commits_is_reported_as_mixed(plane: Mediator) -> None:
+    """
+    The control for `_row_mixes_commits`, single-threaded, as
+    `test_a_consistent_active_row_is_not_reported_as_torn` is for `_row_is_torn`.
+
+    Real rows after activate, deactivate and re-activate read as whole against
+    the record of what each commit wrote - including the deactivated row, which
+    keeps conditions its own commit never announced. Each row also names, as
+    its reporter, the request id `_noting_plane` noted, which is the premise
+    the racing test keys its record on. Rows assembled from two of those
+    commits, the shapes a split write exposes, read as mixed: a new state
+    beside the previous commit's reporter, in both directions, and a new state
+    and reporter beside conditions that commit did not announce. Without this
+    the racing test could pass because the checker never says yes.
+    """
+    identity = Identity(kind="subsystem", identity_id="mixed-control")
+    admitted = []
+    noting_plane = _noting_plane(plane, admitted)
+    commits = {}
+    rows = []
+    try:
+        for transaction_type, written in (
+            (TransactionType.SUBSYSTEM_ACTIVATE,
+             (ParticipationState.ACTIVE, {"worker_count": 2})),
+            (TransactionType.SUBSYSTEM_DEACTIVATE,
+             (ParticipationState.INACTIVE, None)),
+            (TransactionType.SUBSYSTEM_ACTIVATE,
+             (ParticipationState.ACTIVE, {"worker_count": 4})),
+        ):
+            metadata = {"subsystem_name": "crystallizer", **(written[1] or {})}
+            assert _drive(
+                noting_plane, identity, transaction_type, metadata, hold=0
+            )
+            commits[admitted[-1]] = written
+            (row,) = plane.reporting.describe_participants()
+            assert row["reporter"] == admitted[-1], row
+            assert _row_mixes_commits(row, commits) is False, row
+            rows.append(row)
+    finally:
+        identity.cleanup()
+    activated, deactivated, reactivated = rows
+    assert deactivated["conditions"] == {"worker_count": 2}
+    assert _row_mixes_commits(
+        {**activated, "state": deactivated["state"]}, commits
+    ) is True
+    assert _row_mixes_commits(
+        {**deactivated, "state": reactivated["state"]}, commits
+    ) is True
+    assert _row_mixes_commits(
+        {**reactivated, "conditions": activated["conditions"]}, commits
+    ) is True
 
 
 def test_disjoint_subsystems_all_land_with_no_lost_updates(plane):

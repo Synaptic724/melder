@@ -254,7 +254,7 @@ class ChangeControlTransactionManager(Cleanable):
                 ClaimMode,
             )
             normalized_scope_claims = tuple(
-                (scope_key, ClaimMode(raw_mode).value)
+                (scope_key, ClaimMode(raw_mode).wire_value)
                 for scope_key, raw_mode in scope_claims
                 if scope_key
             )

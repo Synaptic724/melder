@@ -49,4 +49,5 @@ the local ticket files and attention board remain the complete work route.
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
+2026-11-07: moved to GitHub Issues (`work_tracking.backend: github_issues`). Nothing reads this board any more; the live records start at the header issue: https://github.com/Synaptic724/melder/issues/263
 <!-- END USER-DEFINED: notes -->

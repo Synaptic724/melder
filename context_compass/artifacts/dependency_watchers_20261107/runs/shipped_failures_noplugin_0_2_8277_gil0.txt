@@ -1,0 +1,58 @@
+FFFF.........FFFFF                                                       [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert 'WAIT_TIMEOUT' in 'transaction checkpoint_load by crystallizer:whole [c815750c372b47808babbd0a4ba9726c] claiming world=x was refused: re...ended, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)'
+     +  where 'WAIT_TIMEOUT' = <AdmissionReason.WAIT_TIMEOUT: 'WAIT_TIMEOUT'>.value
+     +    where <AdmissionReason.WAIT_TIMEOUT: 'WAIT_TIMEOUT'> = AdmissionReason.WAIT_TIMEOUT
+     +  and   'transaction checkpoint_load by crystallizer:whole [c815750c372b47808babbd0a4ba9726c] claiming world=x was refused: re...ended, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)' = str(RuntimeError('transaction checkpoint_load by crystallizer:whole [c815750c372b47808babbd0a4ba9726c] claiming world=x wa...nded, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)'))
+     +    where RuntimeError('transaction checkpoint_load by crystallizer:whole [c815750c372b47808babbd0a4ba9726c] claiming world=x wa...nded, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)') = <ExceptionInfo RuntimeError('transaction checkpoint_load by crystallizer:whole [c815750c372b47808babbd0a4ba9726c] clai...t_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)') tblen=2>.value
+C:\Users\Mark\PycharmProjects\melder_private\tests\component\melder\aether\aetheric_mediator\test_aetheric_mediator_component.py:377: AssertionError: assert 'WAIT_TIMEOUT' in 'transaction checkpoint_load by crystallizer:whole [c815750c372b47808babbd0a4ba9726c] claiming world=x was refused: re...ended, wait_timeout]: world held ix by crystallizer:one (requested x); world held ix by crystallizer:two (requested x)'
+E   AssertionError: assert 'formation_load' == 'FORMATION_LOAD'
+      
+      - FORMATION_LOAD
+      + formation_load
+C:\Users\Mark\PycharmProjects\melder_private\tests\component\melder\aether\aetheric_mediator\test_aetheric_mediator_component.py:450: AssertionError: assert 'formation_load' == 'FORMATION_LOAD'
+E   AssertionError: assert 'BIND' == 'bind'
+      
+      - bind
+      + BIND
+C:\Users\Mark\PycharmProjects\melder_private\tests\component\melder\aether\dev_ops\change_control_manager\test_transaction_surface_component.py:135: AssertionError: assert 'BIND' == 'bind'
+E   AssertionError: torn participant row observed 47154 time(s); first: {'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 0}, 'reporter': '52d1ffaeac2a4bee9df06d597376e00a', 'announced_at': 1794048494.2384503, 'state_changed_at': 1794048494.2421348}
+    assert not [{'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 0}, ...}, {'subsy.....}, {'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 0}, ...}, ...]
+C:\Users\Mark\PycharmProjects\melder_private\tests\component\melder\aether\aetheric_mediator\test_aetheric_mediator_concurrency_component.py:462: AssertionError: torn participant row observed 47154 time(s); first: {'subsystem_name': 'crystallizer', 'state': 'active', 'emits': True, 'conditions': {'worker_count': 0}, 'reporter': '52d1ffaeac2a4bee9df06d597376e00a', 'announced_at': 1794048494.2384503, 'state_changed_at': 1794048494.2421348}
+E   AssertionError: assert not True
+     +  where True = isinstance(<Policies.block_all: 'block_all'>, str)
+C:\Users\Mark\PycharmProjects\melder_private\tests\component\melder\aether\conduit\test_conduit_component_policy_reader.py:113: AssertionError: assert not True
+E   AssertionError: assert 'TRANSFER_OWNERSHIP' == 'transfer_ownership'
+      
+      - transfer_ownership
+      + TRANSFER_OWNERSHIP
+C:\Users\Mark\PycharmProjects\melder_private\tests\integration\melder\aether\test_aether_integration_change_control_transactions.py:1148: AssertionError: assert 'TRANSFER_OWNERSHIP' == 'transfer_ownership'
+E   AssertionError: assert {'CLEANED', '...d', 'enabled'} == {'cleaned', '...d', 'enabled'}
+      
+      Extra items in the left set:
+      'CLEANED'
+      Extra items in the right set:
+      'cleaned'
+      Use -v to get more diff
+C:\Users\Mark\PycharmProjects\melder_private\tests\unit\melder\crystallizer\test_crystallizer_gates.py:139: AssertionError: assert {'CLEANED', '...d', 'enabled'} == {'cleaned', '...d', 'enabled'}
+E   AssertionError: assert 'CLEANED' == 'cleaned'
+      
+      - cleaned
+      + CLEANED
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py:253: AssertionError: assert 'CLEANED' == 'cleaned'
+E   AssertionError: assert 'CLEANED' == 'cleaned'
+      
+      - cleaned
+      + CLEANED
+/sessions/rcw-01y9fvdxngfz65nliarhkobj/mnt/melder_private/tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py:285: AssertionError: assert 'CLEANED' == 'cleaned'
+=========================== short test summary info ===========================
+FAILED tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py::test_disjoint_frames_run_in_parallel_and_whole_world_excludes_them
+FAILED tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py::test_commit_stamps_freshness_before_releasing
+FAILED tests/component/melder/aether/dev_ops/change_control_manager/test_transaction_surface_component.py::test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks
+FAILED tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py::test_racing_lifecycle_edges_never_leave_a_torn_row
+FAILED tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py::test_the_read_is_not_a_memo_of_the_last_argument
+FAILED tests/integration/melder/aether/test_aether_integration_change_control_transactions.py::test_change_control_transfer_transaction_registers_live_registry_session
+FAILED tests/unit/melder/crystallizer/test_crystallizer_gates.py::test_recorded_unit_state_enum_contract
+FAILED tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py::test_nexus_cleanup_records_cleaned_while_the_record_lives
+FAILED tests/integration/melder/crystallizer/test_crystallizer_lifecycle_integration.py::test_mutation_research_lifecycle_records_all_three_states
+9 failed, 9 passed in 1.48s

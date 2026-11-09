@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/transaction_session.py",
- "source_sha256": "c52214127d25cd6ba680b2081fa8e91403c57b6d6f75c15ad6537b752e147ee5",
+ "source_sha256": "def623a3207776e521b73d5b335da823f3ceaaab7c566220f617f9d8d4d364dc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.transaction_session": {
@@ -26,11 +26,11 @@
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4b7ca53f4245fdd60f72983401ecbff1e26d814618e7539c6844a0d096d28a97",
+   "span_sha256": "15495c0d9c2c9fcd7c9c5d71626d2e62f421cfe4f7aaab4146ad2b897d470fa4",
    "include": true,
    "role": "What a transaction does to the world when it fails - an EXPLICIT per-transaction choice rather than an accident of whichever path raised.",
    "responsibilities": [
@@ -47,18 +47,18 @@
    "label": "SessionStatus",
    "kind": "enum",
    "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 64,
+   "lineno": 91,
    "bases": [],
    "markers": [
     "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3d9974b7c7499d3740d62dc94cc148cf6c8556220abceb259d089aaae655059e",
+   "span_sha256": "62136f3814860cdd01f6dfa6996ad87f60ed6460bb5cc5886e8082c1e7bd66dd",
    "include": true,
    "role": "The lifecycle state of one session, in which BROKEN is a DISTINCT TERMINAL STATE and deliberately not a flavour of ABORTED.",
    "responsibilities": [
@@ -75,7 +75,7 @@
    "label": "_RollbackAction",
    "kind": "class",
    "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 93,
+   "lineno": 155,
    "bases": [
     "Cleanable"
    ],
@@ -111,7 +111,7 @@
    "label": "TransactionSession",
    "kind": "class",
    "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 180,
+   "lineno": 242,
    "bases": [
     "Cleanable"
    ],
@@ -144,7 +144,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6716ad1e4e127fb8f3a22590d2939c540f949bdf8ea4f27c9438408fd73926a0",
+   "span_sha256": "ddad4a05dcb5851d7868ea92028434ac035cfc3bd78f4581e4fd369a0fed084b",
    "include": true,
    "role": "One live transaction span owned by exactly one root thread: everything true about a transaction between admission and its terminal state.",
    "responsibilities": [
@@ -222,6 +222,7 @@
  "published_aliases": [],
  "imports": {
   "threading": "threading",
+  "Enum": "enum.Enum",
   "StrEnum": "enum.StrEnum",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",

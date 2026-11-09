@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/research_lane.py",
- "source_sha256": "2df4ff9aa8edbc57758b4e3bd5dc6419c9da19fbac9b48242e2e4d0b6ba2c732",
+ "source_sha256": "67db07ba9308c5fe068fe8ae2a67390de8260bd2f6783fbe47212e57f3f80070",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.research_lane": {
@@ -29,7 +29,7 @@
    "lineno": 49,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ec05ce2f7b629bdfd97911ae1c70b3c3fe7d2f0f753b10532c7d68144c3b55b0",
+   "span_sha256": "c353bb6e07db14cd6eae0818cccb0ab481c5343e259a3764cb5f266ef625e122",
    "include": true,
    "role": "Lifecycle vocabulary for a lane: open, joined or archived.",
    "responsibilities": [
@@ -53,10 +53,10 @@
    "label": "LaneType",
    "kind": "enum",
    "file": "src/melder/mutation_research/research_set/research_lane.py",
-   "lineno": 96,
+   "lineno": 101,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
@@ -64,7 +64,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cf19735b8e011f5ef0d275b88f60be5bb41c9b83ccf427796f32520e0090cc77",
+   "span_sha256": "df4c7029467ad9f9b599030401c2af9e37b565ed3f95602d42325c7c513b7959",
    "include": true,
    "role": "Policy vocabulary classifying a lane as development, experiment, production or test.",
    "responsibilities": [
@@ -80,7 +80,7 @@
    "label": "ResearchLane",
    "kind": "class",
    "file": "src/melder/mutation_research/research_set/research_lane.py",
-   "lineno": 144,
+   "lineno": 154,
    "bases": [
     "Cleanable"
    ],
@@ -110,7 +110,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f2eb526ac4be9d05693ad6efced788378c668992449c50921b9bf3672d514254",
+   "span_sha256": "5d34d58261c0221c34be1cb6bb3cf7eb854b7a44db9a16b434f02d1291f946d8",
    "role": "One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).",
    "responsibilities": [
     "holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)",

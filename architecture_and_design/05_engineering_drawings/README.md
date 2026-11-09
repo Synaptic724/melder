@@ -6,6 +6,8 @@ Depth: high-to-source-bridge
 Status: current
 Verified against: Melder 0.1.2 / git 7b31be6d7665
 Last verified: 2026-08-29
+Lifetimes verified against: Melder 0.2.8283 (text), 0.2.8286 (drawings) / git db1b97e8cef5
+Lifetimes last verified: 2026-11-08 (Scoped Lifetime Use Cases text and drawing; C2 lifetime stores)
 Diagram source: 05_engineering_drawings/mermaid (semantic companions)
 Source anchors:
 - README.md
@@ -13,6 +15,9 @@ Source anchors:
 - src/melder/aether/spellbook/spellbook.py
 - src/melder/aether/conduit/conduit.py
 - src/melder/aether/conduit/meld/meld.py
+- src/melder/aether/spellbook/existence/existence.py
+- src/melder/aether/conduit/creations/managed_spell_quantity.py
+- src/melder/aether/conduit/creations/release_managed_spell.py
 - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py
 - src/melder/nexus/nexus.py
 - src/melder/nexus/rift/rift.py
@@ -167,19 +172,24 @@ and a preview is not a mutation.
 ### Scoped Lifetime Use Cases
 
 Existence is the ownership and reuse contract for a resolved object. It is selected
-when a spell is bound, then Meld routes the resulting instance into the matching
-owner's store:
+when a spell is bound, then Meld resolves each instance against the matching owner's
+store:
 
 - `unique` belongs to one AethericFrame;
 - `unique_per_conduit_lineage` and `unique_per_conduit_cluster` share within an
   explicitly related subsystem boundary;
 - `unique_per_conduit` belongs to one Conduit;
-- `unique_per_spell_space` requires an active request-local SpellSpace;
-- `many` creates a new instance for each resolution.
+- `unique_per_spell_space` is melded only through a leased request-local SpellSpace;
+- `many` creates a new instance for each resolution;
+- `managed_spell_quantity` leases objects from a pool the owning root keeps per spell
+  version; the holder gives each one back through `ReleaseManagedSpell`, and the pool
+  reuses it.
 
 The no-create probe answers whether a matching live object already exists without
 changing runtime state. Cleanup then composes two orderings: narrow scopes before broad
-owners, and newest-created objects before their dependencies.
+owners, and newest-created objects before their dependencies. A root's store cleans its
+managed pools first, disposing their idle objects; objects still out stay with their
+holders.
 
 ![Scoped lifetime use cases](svg/use_case_scoped_lifetimes.svg)
 
@@ -234,8 +244,9 @@ links remain same-frame only.
 
 `import melder` creates the package-root document views and the Aether singleton, but
 it creates no frame. Aether hosts the shared utility, load, continuity, and access
-roots. The first Spellbook lazily establishes its named frame, binds definitions, and
-conjures one root Conduit.
+roots, and builds `ReleaseManagedSpell` last: the registry that routes each released
+managed object back to its pool. The first Spellbook lazily establishes its named
+frame, binds definitions, and conjures one root Conduit.
 
 Ownership then narrows. The frame owns its registries and control plane. A Conduit owns
 Meld, CreationGate, ConduitWard, ConduitCreations, and its narrower scope pools. The

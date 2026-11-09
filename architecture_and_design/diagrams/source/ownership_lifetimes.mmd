@@ -1,6 +1,6 @@
 flowchart TB
     accTitle: Melder ownership and lifetime map
-    accDescr: Aetheric frames contain frame-wide unique objects and root conduits. Conduits own scoped objects, lineages may share objects with child conduits, spell spaces own request-local objects, and many creates a fresh object per meld. Cleanup moves from narrow scopes toward broad owners.
+    accDescr: Aetheric frames contain frame-wide unique objects and root conduits. Conduits own scoped objects, lineages may share objects with child conduits, leased spell spaces own request-local objects, and many creates a fresh object per meld. A root conduit keeps one pool per managed_spell_quantity spell version; the pool leases objects to holders, who own them until they release them through ReleaseManagedSpell. Cleanup moves from narrow scopes toward broad owners, and a root disposes its pools' idle objects first.
 
     frame["AethericFrame\nunique"]
     conduit["Conduit\nunique_per_conduit"]
@@ -17,18 +17,28 @@ flowchart TB
         many["Meld call\nmany"]
     end
 
+    subgraph pooled["Leased from a root-owned pool"]
+        direction TB
+        managed["Pool per spell version\nmanaged_spell_quantity"]
+        holder["Holder\nowns the object while out"]
+    end
+
     cleanup["Cleanup order\nnarrow scopes before owners\nnewest creations first"]
 
     frame -->|"owns root scope"| conduit
     conduit -->|"shares down tree"| lineage
     conduit -->|"joins named group"| cluster
-    conduit -->|"opens request-local scope"| spellspace
+    conduit -->|"leases request-local scope"| spellspace
     conduit -->|"creates fresh"| many
+    conduit -->|"root keeps pool"| managed
+    managed -->|"leases object"| holder
+    holder -.->|"ReleaseManagedSpell"| managed
 
     lineage -.-> cleanup
     cluster -.-> cleanup
     spellspace -.-> cleanup
     many -.-> cleanup
+    managed -.->|"idle objects first"| cleanup
     cleanup -.->|"before owner"| conduit
     conduit -.->|"before frame"| frame
 
@@ -37,6 +47,6 @@ flowchart TB
     classDef narrow fill:#eaf7ef,stroke:#3f7a56,color:#153824
     classDef note fill:#f7f9fc,stroke:#7b8ba8,color:#10213d
     class frame broad
-    class conduit,lineage,cluster scope
+    class conduit,lineage,cluster,managed scope
     class spellspace,many narrow
-    class cleanup note
+    class holder,cleanup note

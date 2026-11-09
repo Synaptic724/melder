@@ -1,0 +1,79 @@
+command: .venv_new/Scripts/python.exe -X gil=1 -m pytest <the files below> -q -p no:cacheprovider  (run 2026-11-07T16:51:50Z, melder 0.2.8280)
+files (grep -rl transfer_spell_ownership tests, excluding this lane's own file): tests/component/melder/aether/conduit/test_conduit_component_probe_and_purge_reach_every_version.py tests/component/melder/aether/conduit/test_conduit_component_store_slots_by_binding.py tests/component/melder/aether/conduit/test_conduit_component_transactions.py tests/component/melder/aether/conduit/test_conduit_component_transfer_footprint.py tests/component/melder/aether/dev_ops/spell_system_states/test_non_resolvable_validation_flag_component.py tests/component/melder/spellbook/test_spellbook_component_find_spell_by_spell_id.py tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py tests/integration/melder/aether/conduit/test_index_link_meld_and_probes_integration.py tests/integration/melder/aether/conduit/test_index_transfer_ownership_integration.py tests/integration/melder/aether/conduit/test_spell_id_lookup_returns_that_spell_integration.py tests/integration/melder/aether/test_aether_integration_change_control_transactions.py tests/integration/melder/conduit/test_conduit_integration_holder_cleanup_leaves_its_many_children.py tests/integration/melder/conduit/test_conduit_integration_lifecycle.py tests/integration/melder/conduit/test_conduit_integration_managed_transfer.py tests/integration/melder/conduit/test_conduit_integration_specialization_deopt_matrix.py tests/integration/melder/conduit/test_conduit_integration_spell_contract_variants.py tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py tests/integration/melder/spellbook/test_separated_version_is_known_to_its_frame_integration.py tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py tests/unit/melder/aether/conduit/test_conduit_dynamic.py 
+........................................................................ [ 17%]
+........................................................................ [ 34%]
+..............F......................................................... [ 51%]
+........................................................................ [ 69%]
+........................................................................ [ 86%]
+........................................................                 [100%]
+================================== FAILURES ===================================
+__ test_change_control_transfer_transaction_registers_live_registry_session ___
+
+    def test_change_control_transfer_transaction_registers_live_registry_session() -> None:
+        """
+        Purpose:
+            Validate transfer transactions are mirrored through the live dev-ops registry.
+        Contract:
+            - A conduit-side transfer transaction creates one live session visible
+              by conduit identity and type.
+            - The staged metadata retains the target conduit and stable spell lineage.
+        Returns:
+            None.
+        Raises:
+            AssertionError: If the live transfer-session mirror is incorrect.
+        """
+        frame_name = "frame-cc-transfer-registry"
+        configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
+        owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+        target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
+        spell_id = owner_book.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        target = target_book.conjure(dynamic=True, name="target")
+        change_control = Aether()._get_change_control_manager(frame_name)
+        registry = change_control.devops_information_registry()
+        assert registry is not None
+        spell = _get_local_spell_by_version_id(owner_book, spell_id)
+        assert spell is not None
+    
+        owner.begin_transaction(
+            "transfer_ownership",
+            metadata=owner._build_transfer_transaction_metadata(
+                spell=spell_id,
+                target_conduit=target,
+                move_creations=False,
+                include_dependencies=False,
+                force_unshare=True,
+                invalidate_after_transfer=True,
+                mark_dependencies_dirty=False,
+            ),
+        )
+        try:
+            sessions = registry.list_live_transactions_for_identity(
+                owner_kind="conduit",
+                owner_id=owner.id,
+            )
+            assert len(sessions) == 1
+            session = sessions[0]
+>           assert str(session.request.request_type) == "transfer_ownership"
+E           AssertionError: assert 'TRANSFER_OWNERSHIP' == 'transfer_ownership'
+E             
+E             - transfer_ownership
+E             + TRANSFER_OWNERSHIP
+
+tests\integration\melder\aether\test_aether_integration_change_control_transactions.py:1148: AssertionError
+============================== warnings summary ===============================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/melder/aether/test_aether_integration_change_control_transactions.py::test_change_control_transfer_transaction_registers_live_registry_session
+1 failed, 415 passed, 1 warning in 8.86s
+exit status: 1

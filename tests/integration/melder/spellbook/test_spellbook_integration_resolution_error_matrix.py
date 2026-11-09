@@ -328,7 +328,14 @@ def test_bind_duplicate_frame_binding_key_raises() -> None:
 # Section 3 - conjure / compile faults
 # =========================================================================== #
 def test_conjure_with_cycle_raises() -> None:
-    """A dependency cycle must block conjure (SpellbookValidationError)."""
+    """
+    A dependency cycle must block conjure (SpellbookValidationError).
+
+    Alpha and Beta are bound bare (no spellframe, the default binding), so each
+    class annotation reaches the other spell and the cycle forms: a class lookup
+    reaches only a spell bound bare (2026-11-07). Their addresses are their own
+    names, as under the spellframes "Alpha" and "Beta" they were bound with before.
+    """
     spellbook = _make_spellbook()
 
     class Alpha:
@@ -340,8 +347,8 @@ def test_conjure_with_cycle_raises() -> None:
             self.alpha = alpha
 
     try:
-        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create", spellframe="Alpha")
-        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create", spellframe="Beta")
+        spellbook.bind(spell=Alpha, existence=Existence.unique, permissions="create")
+        spellbook.bind(spell=Beta, existence=Existence.unique, permissions="create")
         with pytest.raises(Exception):
             spellbook.conjure(name="root")
     finally:

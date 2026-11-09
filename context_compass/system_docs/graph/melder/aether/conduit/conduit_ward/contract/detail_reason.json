@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
- "source_sha256": "a70dde69008286a2fec06b418f8d928baf4411677c7daf4781eac91b8835a7f9",
+ "source_sha256": "150411dc00a51e8e1f0b19345f544ef62cf4eff5d96fc0c91a55314e9ee47d25",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.contract.detail_reason": {
@@ -25,18 +25,18 @@
    "label": "DetailReason",
    "kind": "enum",
    "file": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "79739009deff633b548eade9c3d82691d1fc939a22cf6aacce88e24deee9d698",
+   "span_sha256": "177f27a2e6d2a4b4c341f0ae09619b5e66d3b02ccbcb2e0fe77b929d563624e9",
    "role": "Reason enum for why one contract detail exists.",
    "responsibilities": [
     "labels root, dependency, manual, and other contract-detail causes"
@@ -57,8 +57,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

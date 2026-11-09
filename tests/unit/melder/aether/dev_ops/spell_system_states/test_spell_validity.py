@@ -15,7 +15,7 @@ def test_spell_validity_exposes_the_full_expected_member_set() -> None:
         "gated",
         "invalid",
         "disabled",
-        "cleaned",
+        "CLEANED",
     )
 
 
@@ -24,11 +24,11 @@ def test_spell_validity_terminal_states_are_distinct_enum_members() -> None:
     Verify the terminal policy states remain distinct.
 
     Contract:
-    - `disabled` and `cleaned` are separate terminal states, not aliases.
+    - `disabled` and `CLEANED` are separate terminal states, not aliases.
     - Each enum member keeps a unique value.
     """
     values = {member.value for member in SpellValidity}
 
-    assert SpellValidity.disabled is not SpellValidity.cleaned
-    assert SpellValidity.disabled.value != SpellValidity.cleaned.value
+    assert SpellValidity.disabled is not SpellValidity.CLEANED
+    assert SpellValidity.disabled.value != SpellValidity.CLEANED.value
     assert len(values) == len(list(SpellValidity))

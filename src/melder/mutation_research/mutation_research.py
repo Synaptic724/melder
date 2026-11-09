@@ -323,7 +323,7 @@ class MutationResearch(Cleanable):
                         and self._crystallizer.activated
                 ):
                     self._crystallizer.emit_mutation_research_state(
-                        RecordedUnitState.cleaned
+                        RecordedUnitState.CLEANED
                     )
             except Exception:
                 pass

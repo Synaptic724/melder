@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
- "source_sha256": "1fac29b4dafa14239f079fb3a73395860712a43474b46521ca8fe6250a1c7c45",
+ "source_sha256": "7c8ea89ad312d696c7e0018bd8e4d8d0f50937c74de2c912c663785a328321bf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.socket_kind": {
@@ -19,42 +19,45 @@
    "label": "SocketKind",
    "kind": "enum",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
-   "lineno": 5,
+   "lineno": 6,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ced1cdcd80dfe2b15ece348eb9aa356b024c83399ccf85fc4c70314f58a2279f",
+   "span_sha256": "977f0e28dd3c17b88d08ba966c35e3a4f69ea91e646beffed166a764ad00ddb1",
    "role": "Enum classifying the kind of socket represented by a DAG edge.",
    "responsibilities": [
-    "labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED and UNRESOLVED_INPUT categories",
-    "UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call",
-    "AMBIGUOUS_INPUT (0.2.8224): a single typed dependency with several resolvable providers - no target, candidates as references, frame key kept; refused by Phase 4"
+    "labels the NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED, UNRESOLVED_INPUT and AMBIGUOUS_INPUT categories as a StrEnum whose values are the member names; the historical integers 1-5 stay readable (_missing_) and are projected for numeric compiler rows (_legacy_code)",
+    "UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call; when its class is registered only under a spellframe or a binding name the socket carries those spells (hidden_spell_ids) and Phase 4 refuses the spell with HIDDEN_PROVIDER, so it never reaches planning (0.2.8281)",
+    "AMBIGUOUS_INPUT (0.2.8224): a single typed dependency with several resolvable providers - no target, candidates as references, frame key kept; refused by Phase 4 with the remedies a SpellMap default or one provider (no meld override since 0.2.8281)"
    ],
    "owns_state": [
     "NORMAL",
     "SPELL_CONTRACT",
-    "OVERRIDE_REQUIRED"
+    "OVERRIDE_REQUIRED",
+    "UNRESOLVED_INPUT",
+    "AMBIGUOUS_INPUT"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "ced1cdcd80dfe2b15ece348eb9aa356b024c83399ccf85fc4c70314f58a2279f"
+   "semantics_authored_against": "977f0e28dd3c17b88d08ba966c35e3a4f69ea91e646beffed166a764ad00ddb1"
   }
  },
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Any": "typing.Any",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

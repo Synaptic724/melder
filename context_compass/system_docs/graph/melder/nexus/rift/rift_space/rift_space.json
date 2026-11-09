@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/rift_space.py",
- "source_sha256": "89b358dfe5d7cf904754d07e1a12b31c254161648d1a5ed0ace5d9c13442dd99",
+ "source_sha256": "65db8b70ba36674bbbb5e6dbd09c3eafd2356faeb92f481df62c537bf261374a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.rift_space": {
@@ -48,13 +48,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f8a9527700c1643e1fb85a2fa00d637a0a5b09aef6863a1f6847dbe0a548cd07",
+   "span_sha256": "5dd34d0a3516b8b4e0952ef45d294a9e03e761f7305d58b04af71f50223460f2",
    "role": "Room-local workspace object.",
    "responsibilities": [
     "owns the room-local viewer asset",
     "owns the workstation",
     "owns the room-local command system",
-    "owns room-local event and memory systems"
+    "owns room-local event and memory systems",
+    "cleans up by marking itself cleaned under its lock and cleaning its children after releasing it"
    ],
    "owns_state": [
     "_frame_viewer",
@@ -68,7 +69,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f8a9527700c1643e1fb85a2fa00d637a0a5b09aef6863a1f6847dbe0a548cd07"
+   "semantics_authored_against": "5dd34d0a3516b8b4e0952ef45d294a9e03e761f7305d58b04af71f50223460f2"
   }
  },
  "edges_out": [

@@ -246,7 +246,7 @@ class StrategyBuilder(Cleanable):
             raise KeyError(
                 "no strategy registered for transaction type {0!r}; a "
                 "transaction whose claim set cannot be computed must not "
-                "run.".format(transaction_type.value)
+                "run.".format(transaction_type.wire_value)
             )
         return strategy
 
@@ -293,7 +293,7 @@ class StrategyBuilder(Cleanable):
         Return a detached view of the registration table.
 
         Returns:
-            Dict[str, Optional[str]]: Type value to strategy class name, with
+            Dict[str, Optional[str]]: Historical type token to strategy class name, with
                 None for unserved members so gaps are visible at a glance.
 
         Raises:
@@ -303,7 +303,7 @@ class StrategyBuilder(Cleanable):
         with self._lock:
             table = dict(self._strategies)
         return {
-            member.value: (
+            member.wire_value: (
                 table[member].__name__ if member in table else None
             )
             for member in TransactionType

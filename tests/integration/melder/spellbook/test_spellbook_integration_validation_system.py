@@ -829,6 +829,11 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
         Validate conjure raises SpellbookValidationError for broken spells.
     Contract:
         - A circular dependency triggers SpellbookValidationError.
+        - Alpha and Beta are bound bare (no spellframe, the default binding), so
+          each class annotation reaches the other spell and the cycle forms: a
+          class lookup reaches only a spell bound bare (2026-11-07). Their
+          addresses are their own names, as under the spellframes 'Alpha' and
+          'Beta' they were bound with before.
     Returns:
         None.
     Raises:
@@ -845,7 +850,7 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
         Contract:
             - Declares a Beta dependency via forward reference annotation.
         Args:
-            beta: Dependency spelled by the Beta spellframe.
+            beta: Dependency on the Beta spell, bound bare (its address is its own name).
         """
 
         def __init__(self, beta: Beta) -> None:
@@ -868,7 +873,7 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
         Contract:
             - Declares an Alpha dependency via forward reference annotation.
         Args:
-            alpha: Dependency spelled by the Alpha spellframe.
+            alpha: Dependency on the Alpha spell, bound bare (its address is its own name).
         """
 
         def __init__(self, alpha: Alpha) -> None:
@@ -889,13 +894,11 @@ def test_spellbook_conjure_raises_validation_error_for_cycle() -> None:
             spell=Alpha,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Alpha",
         )
         spellbook.bind(
             spell=Beta,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Beta",
         )
 
         with pytest.raises(SpellbookValidationError, match="Broken spells"):
@@ -1441,6 +1444,11 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
     Contract:
         - missing_phase4_validation is not reported when Phase 4 ran for all nodes.
         - root_not_viable is not emitted when dependencies are validated.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the root has a dependency
+          to validate: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -1478,7 +1486,6 @@ def test_spell_validation_phase6_reports_missing_phase4_validation_and_root_not_
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -1509,6 +1516,11 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
         Validate system validation detects index cycles and graph mismatches.
     Contract:
         - Phase 5 root blueprint build raises on cycles in the DAG.
+        - Alpha and Beta are bound bare (no spellframe, the default binding), so
+          each class annotation reaches the other spell and the cycle forms: a
+          class lookup reaches only a spell bound bare (2026-11-07). Their
+          addresses are their own names, as under the spellframes 'Alpha' and
+          'Beta' they were bound with before.
     Returns:
         None.
     Raises:
@@ -1593,13 +1605,11 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
             spell=Alpha,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Alpha",
         )
         beta_id = spellbook.bind(
             spell=Beta,
             existence=Existence.unique,
             permissions="create",
-            spellframe="Beta",
         )
 
         root_spell = _get_spell_by_version_id(spellbook, root_id)
@@ -1632,6 +1642,11 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
     Contract:
         - missing_index_node is reported for the missing dependency node.
         - root_not_viable is reported for the affected root.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the removed node is the
+          root's dependency: a class lookup reaches only a spell bound bare
+          (2026-11-07). Its address is its own name, as under the spellframe
+          'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -1669,7 +1684,6 @@ def test_spell_validation_phase6_reports_missing_index_node() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,
@@ -1716,6 +1730,11 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
     Contract:
         - edge_mismatch_index is reported when the index omits a dependency edge.
         - root_not_viable is reported for the affected root.
+        - BasicService is bound bare (no spellframe, the default binding), so
+          Consumer's class annotation reaches it and the blueprint holds the
+          edge the index then omits: a class lookup reaches only a spell bound
+          bare (2026-11-07). Its address is its own name, as under the
+          spellframe 'BasicService' it was bound with before.
     Returns:
         None.
     Raises:
@@ -1753,7 +1772,6 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",
-            spellframe="BasicService",
         )
         consumer_id = spellbook.bind(
             spell=Consumer,

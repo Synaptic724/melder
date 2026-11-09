@@ -1,0 +1,105 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [ 11%]
+.........................F...............F.............................. [ 22%]
+...............................F........................................ [ 34%]
+........................................................................ [ 45%]
+........................................................................ [ 57%]
+.......................................................F................ [ 68%]
+................................................F....................... [ 80%]
+..................................F..................................... [ 91%]
+................F..F.....................F...F.....                      [100%]
+================================== FAILURES ===================================
+[gw3] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError: assert False
+     +  where False = isinstance('default', int)
+     +    where 'default' = <Policies.default: 'default'>.value
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\pytest_examples\test_advanced_probes.py:1090: AssertionError: assert False
+[gw0] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError
+---------------------------- Captured stdout call -----------------------------
+the five modes: ['default', 'whitelist_all', 'block_all', 'inbound_only', 'outbound_only']
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\03_advanced\16_ward_policies.py:92: AssertionError
+[gw6] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError
+---------------------------- Captured stdout call -----------------------------
+errors     (11): DeadReferenceError, HookExecutionError, InternalRegistrationError, ManagedSpellExhaustedError, MeldExecutionError, PhaseExecutionError ...
+enums      ( 9): Existence, LaneState, LaneType, ManagedSpellMode, NexusFrameMode, Permissions ...
+classes    (43): Aether, AetherConfiguration, AetherConfigurationBuilder, AethericFrameConfiguration, Cleanable, Conduit ...
+functions  ( 2): new_ulid, scan_bind 
+metadata   ( 8): __architecture__, __author__, __components__, __description__, __graph_details__, __graph_network__ ...
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\39_agent_inventory_pattern.py:33: AssertionError
+[gw4] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError: 37_review_agent_bindings.py header is missing ['VERIFY:']
+    assert not ['VERIFY:']
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\pytest_examples\test_example_contract.py:98: AssertionError: 37_review_agent_bindings.py header is missing ['VERIFY:']
+[gw5] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   Failed: DID NOT RAISE Exception
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\pytest_examples\test_expert_probes.py:1015: Failed: DID NOT RAISE Exception
+[gw1] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   KeyError: "[MELD] No spell found for frame='payload', binding='__default__'."
+C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\conduit\meld\meld.py:2358: KeyError: "[MELD] No spell found for frame='payload', binding='__default__'."
+[gw4] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError
+---------------------------- Captured stdout call -----------------------------
+mesh attached with a WRITE lane and no read lane
+  and the record holds no callables - only presence flags:
+    ['delete_handler_present', 'download_handler_present', 'fetch_handler_present', 'list_handler_present', 'list_units_handler_present', 'store_handler_present', 'upload_handler_present']
+
+flush_checkpoint -> 01M6TS1Z8H7F80 ...
+  your store handler received 1 unit(s)
+
+reload_profile_from_external with no fetch/list lane:
+   ExternalPersistenceManager has no list handler attached; attach one via with_list_handler(...) o
+  UNAVAILABLE is not EMPTY. An empty answer here would be
+  indistinguishable from `your remote has nothing`, and
+  that is the one reply that must never be guessed
+
+re-wired with a handler that raises. store_failure_count: 0
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\04_expert\02_persistence_mesh_your_code_their_lanes.py:137: AssertionError
+[gw2] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError
+---------------------------- Captured stdout call -----------------------------
+mesh attached - melder now has four callables and no idea what
+is behind them
+
+describe_external_persistence_manager -> 13 keys (what is WIRED)
+describe_external_interface           -> 6 keys (what the CONTRACT is)
+  the wiring record holds no callable objects - only presence
+  flags, because executable code cannot be serialized into a
+  world record and a record that embedded yours would only
+  restore where that code already ran
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\04_expert\09_getting_data_into_your_database.py:150: AssertionError
+[gw7] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError
+---------------------------- Captured stdout call -----------------------------
+world up; custody recording: True
+two edits materialized; vault holds 3 entries
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\04_expert\27_a_world_that_outlives_its_own_runtime.py:141: AssertionError
+[gw3] win32 -- Python 3.14.7 C:\Users\Mark\PycharmProjects\melder_private\.venv_new\Scripts\python.exe
+E   AssertionError
+---------------------------- Captured stdout call -----------------------------
+custody recording: True
+world up; ledger holds 1 entry
+
+two checkpoints minted: 01M6TS2998 ..., 01M6TS299T
+list_checkpoint_ids() -> 2 in ledger creation order
+  checkpoints ACCUMULATE - there is no 'the' checkpoint, and
+  the id is the whole handle
+
+describe_checkpoint keys: ['captured_counts', 'checkpoint_id', 'checkpoint_number', 'created_at', 'description', 'journal_entry_count', 'profile_name', 'sequence_range']
+captured: {'crystallizer': 1}
+C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\04_expert\24_loading_a_whole_world_back.py:153: AssertionError
+=========================== short test summary info ===========================
+FAILED UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py::test_probe_policies_value_is_an_int_not_the_mode_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_advanced_examples.py::test_advanced_example_runs_green[16_ward_policies]
+FAILED UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py::test_beginner_example_runs_green[39_agent_inventory_pattern]
+FAILED UX_and_AIX_experiences/pytest_examples/test_example_contract.py::test_example_declares_its_surface[37_review_agent_bindings]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_probes.py::test_probe_two_visible_spells_may_not_share_a_name
+FAILED UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py::test_probe_upgrade_to_normal_keeps_creations_and_registers
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[02_persistence_mesh_your_code_their_lanes]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[09_getting_data_into_your_database]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[27_a_world_that_outlives_its_own_runtime]
+FAILED UX_and_AIX_experiences/pytest_examples/test_expert_examples.py::test_expert_example_runs_green[24_loading_a_whole_world_back]
+10 failed, 617 passed in 27.06s

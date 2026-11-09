@@ -195,11 +195,11 @@ def test_every_constructor_parameter_is_listed_with_its_source() -> None:
     graph = _build(root, specs, topologies)
 
     assert [param.as_row()[:8] for param in graph.sites[0].params] == [
-        ("a", 0, "POSITIONAL_ONLY", SocketKind.NORMAL.value, False, False, "dependency", "a"),
-        ("work", 1, "POSITIONAL_OR_KEYWORD", SocketKind.UNRESOLVED_INPUT.value, False, False, "unresolved_input", None),
-        ("ref", 2, "POSITIONAL_OR_KEYWORD", SocketKind.OVERRIDE_REQUIRED.value, False, False, "override_required", None),
-        ("n", 3, "POSITIONAL_OR_KEYWORD", SocketKind.NORMAL.value, False, True, "plain", None),
-        ("k", 4, "KEYWORD_ONLY", SocketKind.NORMAL.value, False, True, "plain", None),
+        ("a", 0, "POSITIONAL_ONLY", 1, False, False, "dependency", "a"),
+        ("work", 1, "POSITIONAL_OR_KEYWORD", 4, False, False, "unresolved_input", None),
+        ("ref", 2, "POSITIONAL_OR_KEYWORD", 3, False, False, "override_required", None),
+        ("n", 3, "POSITIONAL_OR_KEYWORD", 1, False, True, "plain", None),
+        ("k", 4, "KEYWORD_ONLY", 1, False, True, "plain", None),
     ]
 
 
@@ -216,8 +216,8 @@ def test_site_without_topology_takes_rows_from_injection_sources() -> None:
     graph = _build(root, specs, {})
 
     assert [param.as_row() for param in graph.sites[0].params] == [
-        ("a", -1, None, SocketKind.NORMAL.value, False, False, "dependency", None, (1,)),
-        ("work", 1, "KEYWORD_ONLY", SocketKind.UNRESOLVED_INPUT.value, False, False, "unresolved_input", None, ()),
+        ("a", -1, None, 1, False, False, "dependency", None, (1,)),
+        ("work", 1, "KEYWORD_ONLY", 4, False, False, "unresolved_input", None, ()),
     ]
     assert graph.sites[1].params == ()
 

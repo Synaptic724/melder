@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "1835bbc844f0c865092ea5482505deda1d601caff466470cc60f402836e45d8c",
+ "source_sha256": "d29b3d2692f62fd9e9a8887123ffa78853241e4d80d12ba1ace78250fdef0f89",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -19,7 +19,7 @@
    "label": "Bind",
    "kind": "class",
    "file": "src/melder/aether/spellbook/bind/bind.py",
-   "lineno": 128,
+   "lineno": 129,
    "bases": [
     "Cleanable"
    ],
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "79f6332ef89112713a6d4216198595d482b7bd09a4425ed0c6d46f647f1b64bf",
+   "span_sha256": "ba3b22982ffc629350757e3193fda9244130bf0f31c2de2174db2c1a5faebaa5",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
@@ -131,6 +131,7 @@
   "inspect": "inspect",
   "threading": "threading",
   "math": "math",
+  "Enum": "enum.Enum",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Callable": "typing.Callable",

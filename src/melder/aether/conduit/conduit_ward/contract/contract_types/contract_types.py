@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class ContractTypes(Enum):
+class ContractTypes(StrEnum):
     """
     Perspective label for a `Detail` stored inside one side of a `Contract`.
+
+    Values match the member names exactly. Historical numeric values 1 and 2
+    remain accepted by value, including in older enum pickle payloads.
 
     The ward contract model is symmetric at the pair level, but it is not a
     single shared detail table. Each participating ward stores its own detail
@@ -52,5 +56,23 @@ class ContractTypes(Enum):
         `Contract`. Melder kernel machinery: read it to understand the runtime, do not drive it
         directly.
     """
-    initiated = auto()
-    received = auto()
+    initiated = "initiated"
+    received = "received"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ContractTypes]:
+        """
+        Resolve a historical numeric perspective to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, ContractTypes] = {
+            1: cls.initiated,
+            2: cls.received,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

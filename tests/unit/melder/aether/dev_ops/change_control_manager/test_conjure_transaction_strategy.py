@@ -65,7 +65,7 @@ def test_conjure_seals_only_the_owning_spellbook_exclusive() -> None:
     )
 
     spellbook_scope = transaction_manager.make_scope_key_spellbook("spellbook-1")
-    assert dict(plan["scope_claims"]) == {spellbook_scope: ClaimMode.EXCLUSIVE.value}
+    assert dict(plan["scope_claims"]) == {spellbook_scope: "x"}
     assert plan["scope_keys"] == (spellbook_scope,)
     assert plan["conduit_ids"] == tuple()
     assert plan["binding_keys"] == tuple()
@@ -130,7 +130,7 @@ def test_conjure_falls_back_to_identity_owner_when_metadata_omits_spellbook_id()
     )
 
     spellbook_scope = transaction_manager.make_scope_key_spellbook("spellbook-fallback")
-    assert dict(plan["scope_claims"]) == {spellbook_scope: ClaimMode.EXCLUSIVE.value}
+    assert dict(plan["scope_claims"]) == {spellbook_scope: "x"}
     assert plan["initiator_conduit_id"] == "spellbook:spellbook-fallback"
 
 

@@ -2,9 +2,12 @@ import annotationlib
 import inspect
 import types
 import typing
-from typing import TYPE_CHECKING, Any, Collection, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Tuple
 
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
+from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import HiddenProviderReport
+from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 if TYPE_CHECKING:
@@ -36,7 +39,10 @@ class UnresolvedInputError(MeldExecutionError):
         melding the consumer itself, a path key ending in `>param` (or a broadcast
         `**param`) when the consumer is built as a dependency. Or bind a provider
         for the expected type; the consumer re-resolves into a normal dependency
-        on its next meld.
+        on its next meld. When the expected class is registered, but only under a
+        spellframe or a binding name - where a class lookup does not reach it -
+        the message names each such address and the lookup that reaches it, and
+        `hidden_spell_ids` lists those spells (2026-11-07).
 
     Contract:
         - A `MeldExecutionError`: code that catches `MeldExecutionError` keeps
@@ -48,11 +54,22 @@ class UnresolvedInputError(MeldExecutionError):
         - `unresolved_params` lists every missing unresolved parameter of the
           consumer, in signature order.
         - `inner` is None: nothing has been called when it is raised.
+        - The text says "nothing registered provides it" only when nothing does.
+          When the first missing parameter is a class lookup whose class is
+          bound only under a spellframe or a binding name (found live in the
+          consumer's Spellbook pool on this failure path, patch
+          hidden_provider_2026_11_07), the text names each address and the
+          `SpellMap` that reaches it, and `hidden_spell_ids` carries their ids.
+          A socket whose Phase 3 recorded such candidates refuses its spell in
+          Phase 4 (HIDDEN_PROVIDER), so this arises with candidates only where
+          they appeared after the consumer compiled and nothing re-gated it.
 
     Owned State:
         - Inherited `spell_id`, `spell_name`, `node_id`, `param_name`, `inner`.
         - `expected_type`: display name of the first missing parameter's type.
         - `unresolved_params`: names of all missing unresolved parameters.
+        - `hidden_spell_ids`: sorted ids of the spells of the expected class a
+          class lookup does not reach; empty when there are none.
 
     Registration:
         A public exception type; import, raise, and catch freely. Like every
@@ -79,6 +96,7 @@ class UnresolvedInputError(MeldExecutionError):
     __slots__ = (
         "expected_type",
         "unresolved_params",
+        "hidden_spell_ids",
     )
 
     def __init__(
@@ -92,6 +110,7 @@ class UnresolvedInputError(MeldExecutionError):
             inner: Optional[BaseException] = None,
             expected_type: str,
             unresolved_params: Tuple[str, ...],
+            hidden_spell_ids: Tuple[str, ...] = (),
     ) -> None:
         """
         Construct an unresolved-input failure.
@@ -116,6 +135,10 @@ class UnresolvedInputError(MeldExecutionError):
             unresolved_params:
                 Every missing unresolved parameter of the consumer, in signature
                 order. Never empty.
+            hidden_spell_ids:
+                Ids of the spells of the first missing parameter's class that a
+                class lookup does not reach (bound under a spellframe or a
+                binding name), sorted; empty (the default) when there are none.
 
         Contract:
             - Preserves every `MeldExecutionError` field unchanged.
@@ -133,6 +156,7 @@ class UnresolvedInputError(MeldExecutionError):
         )
         self.expected_type: str = expected_type
         self.unresolved_params: Tuple[str, ...] = unresolved_params
+        self.hidden_spell_ids: Tuple[str, ...] = hidden_spell_ids
 
     @staticmethod
     def expected_type_name(annotation: Any) -> str:
@@ -228,6 +252,16 @@ class UnresolvedInputError(MeldExecutionError):
         """
         Build the error from the consumer's missing UNRESOLVED_INPUT sockets.
 
+        Contract:
+            - The first missing socket (lowest position) names the type; the
+              others are listed as "Also not supplied".
+            - When the first socket's class lookup finds its class bound only
+              under a spellframe or a binding name (`_hidden_candidates`, a live
+              read of the consumer's pool), the text is
+              `HiddenProviderReport.unresolved_input_message` and
+              `hidden_spell_ids` carries the candidates; otherwise the text says
+              nothing registered provides it, unchanged since 2026-09-26.
+
         Args:
             spell: The consumer.
             missing: Its unsupplied UNRESOLVED_INPUT sockets (any order; sorted here).
@@ -240,12 +274,21 @@ class UnresolvedInputError(MeldExecutionError):
         consumer = spell.spell_name
         param_name = first.param_name
         expected_type = cls._constructor_expected_type(spell, first)
-        message = (
-            f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
-            f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
-            f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
-            f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
-        )
+        candidates = cls._hidden_candidates(spell, cls._constructor_annotation(spell, first))
+        if candidates:
+            message = HiddenProviderReport.unresolved_input_message(
+                consumer_name=consumer,
+                param_name=param_name,
+                expected_type=expected_type,
+                candidates=candidates,
+            )
+        else:
+            message = (
+                f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
+                f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+                f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
+                f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
+            )
         if len(missing) > 1:
             others = ", ".join(repr(socket.param_name) for socket in missing[1:])
             message += f" Also not supplied: {others}."
@@ -259,7 +302,43 @@ class UnresolvedInputError(MeldExecutionError):
             inner=None,
             expected_type=expected_type,
             unresolved_params=tuple(socket.param_name for socket in missing),
+            hidden_spell_ids=tuple(sorted(
+                candidate["spell_id"] for candidate in candidates if candidate["spell_id"] is not None
+            )),
         )
+
+    @staticmethod
+    def _constructor_annotation(spell: Spell, socket: SpellSocketDescriptor) -> object:
+        """
+        Read one unresolved parameter's annotation from the consumer's constructor signature.
+
+        Contract:
+            - Phase-1 requirements are released after resolution, so this re-reads
+              the constructor signature with FORWARDREF annotations (a name that
+              only exists under TYPE_CHECKING stays its written name).
+            - Returns `inspect.Parameter.empty` when the signature cannot be read
+              (TypeError, ValueError) or does not annotate the parameter.
+            - Failure path only.
+
+        Args:
+            spell: The consumer whose construction failed.
+            socket: One of its missing UNRESOLVED_INPUT sockets.
+
+        Returns:
+            object: The annotation, or `inspect.Parameter.empty`.
+        """
+        try:
+            signature = inspect.signature(
+                spell.spell,
+                annotation_format=annotationlib.Format.FORWARDREF,
+            )
+        except (TypeError, ValueError):
+            return inspect.Parameter.empty
+        parameter = signature.parameters.get(socket.param_name)
+        if parameter is None:
+            return inspect.Parameter.empty
+        annotation: object = parameter.annotation
+        return annotation
 
     @staticmethod
     def _constructor_expected_type(spell: Spell, socket: SpellSocketDescriptor) -> str:
@@ -267,10 +346,8 @@ class UnresolvedInputError(MeldExecutionError):
         Name one unresolved parameter's expected type at meld time.
 
         Contract:
-            - Phase-1 requirements are released after resolution, so this re-reads
-              the constructor signature with FORWARDREF annotations (a name that
-              only exists under TYPE_CHECKING stays its written name) and applies
-              `expected_type_name`.
+            - Renders the constructor annotation (`_constructor_annotation`)
+              with `expected_type_name`.
             - When the signature cannot be read or does not annotate the
               parameter, the socket's watched frame key names the type instead.
             - Failure path only.
@@ -282,17 +359,59 @@ class UnresolvedInputError(MeldExecutionError):
         Returns:
             str: Display name of the expected type.
         """
-        try:
-            signature = inspect.signature(
-                spell.spell,
-                annotation_format=annotationlib.Format.FORWARDREF,
-            )
-        except (TypeError, ValueError):
-            signature = None
-        if signature is not None:
-            parameter = signature.parameters.get(socket.param_name)
-            if parameter is not None and parameter.annotation is not inspect.Parameter.empty:
-                return UnresolvedInputError.expected_type_name(parameter.annotation)
+        annotation = UnresolvedInputError._constructor_annotation(spell, socket)
+        if annotation is not inspect.Parameter.empty:
+            return UnresolvedInputError.expected_type_name(annotation)
         if socket.dependency_key is not None:
             return socket.dependency_key[0]
         return "an unregistered type"
+
+    @staticmethod
+    def _hidden_candidates(spell: Spell, annotation: object) -> List[Dict[str, Optional[str]]]:
+        """
+        Find, live, the spells of a class lookup's class that the lookup cannot reach.
+
+        Purpose:
+            A socket whose Phase 3 recorded hidden candidates refuses its spell
+            in Phase 4 (HIDDEN_PROVIDER), so this error never sees them recorded.
+            It still arises when such a spell was bound after the consumer
+            compiled and nothing re-gated the consumer - then "nothing
+            registered provides it" would mislead - so the failure path looks
+            them up itself (patch hidden_provider_2026_11_07).
+
+        Contract:
+            - Empty for an unreadable annotation and for a Protocol annotation
+              (a contract lookup, not a class lookup).
+            - Otherwise the spells of the consumer's Spellbook pool whose
+              `CompilerPhase3._hidden_type_key` equals the annotation's key (the
+              single-socket rule: method and lambda spells excluded), one per
+              SpellIndex under its selected id, described by
+              `HiddenProviderReport.describe` in id order.
+            - Iterates a copy of the pool: a concurrent bind may change the live
+              dict, which this failure path does not lock.
+            - Failure path only; raises nothing of its own.
+
+        Args:
+            spell: The consumer whose construction failed.
+            annotation: The first missing parameter's annotation (`_constructor_annotation`).
+
+        Returns:
+            List[Dict[str, Optional[str]]]: The described candidates, possibly empty.
+        """
+        if annotation is inspect.Parameter.empty:
+            return []
+        normalized = CompilerPhase3()._normalize_annotation_for_matching(annotation)
+        if CompilerPhase3._annotation_kind(normalized) == CompilerPhase3._KIND_CONTRACT:
+            return []
+        key = CompilerPhase3._annotation_key(normalized)
+        found: Dict[str, Spell] = {}
+        for pooled in spell._spellbook._spell_id_pool.copy().values():
+            if pooled.spell_type in (
+                    SpellType.METHOD,
+                    SpellType.METHOD_WITH_BINDING_NAME,
+                    SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            ):
+                continue
+            if CompilerPhase3._hidden_type_key(pooled) == key:
+                found[pooled.spell_index.selected_spell_id] = pooled
+        return [HiddenProviderReport.describe(spell_id, found[spell_id]) for spell_id in sorted(found)]

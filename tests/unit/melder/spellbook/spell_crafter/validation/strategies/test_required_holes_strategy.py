@@ -3,6 +3,11 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
     SpellValidationContext,
 )
@@ -515,3 +520,37 @@ def test_validate_container_hole_names_list_only_collection_injection() -> None:
     for name in ("payload", "labels", "anything"):
         assert "list[T]" not in messages[name]
     assert all(issue.code == "REQUIRED_HOLE" for issue in issues)
+
+
+def test_hidden_provider_socket_is_not_also_reported_as_an_unresolved_input_warning() -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07): an UNRESOLVED_INPUT socket that recorded hidden candidates - its
+    class IS bound, under a spellframe or a binding name - is refused by HiddenProviderStrategy; RequiredHoles must
+    not add a warning saying no registered spell provides it. A socket without hidden candidates keeps its warning.
+    """
+    class _Missing:
+        """A type nothing registers."""
+
+    topology = SpellLocalTopology("consumer", [
+        SpellSocketDescriptor(
+            spell_id="consumer", param_name="greeter", position=0, socket_kind=SocketKind.UNRESOLVED_INPUT,
+            is_collection=False, is_optional=False, target_spell_ids=(), dependency_key=("english", "__default__"),
+            hidden_spell_ids=("english-sid",), hidden_frame_keys=("greeter",),
+        ),
+        SpellSocketDescriptor(
+            spell_id="consumer", param_name="other", position=1, socket_kind=SocketKind.UNRESOLVED_INPUT,
+            is_collection=False, is_optional=False, target_spell_ids=(), dependency_key=("_missing", "__default__"),
+        ),
+    ])
+    spell = _SpellStub("Host")
+    spell.spell_id = "consumer"
+    spell._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: topology)
+    requirements = SimpleNamespace(
+        iter_required_holes=lambda: iter(()),
+        parameters=[SimpleNamespace(name="greeter", annotation=object), SimpleNamespace(name="other", annotation=_Missing)],
+    )
+    issues: List[SpellValidationIssue] = []
+
+    RequiredHolesStrategy().validate(_make_context(spell=spell, requirements=requirements, issues=issues))
+
+    assert [(issue.code, issue.details["parameter_name"]) for issue in issues] == [("UNRESOLVED_INPUT", "other")]

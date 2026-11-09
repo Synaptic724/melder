@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class Policies(Enum):
+class Policies(StrEnum):
     """
     Runtime policy mode for conduit-to-conduit contracting.
+
+    Values match the member names exactly. Historical numeric values 1-5
+    remain accepted by value, including in older enum pickle payloads.
 
     These policies primarily matter in dynamic mode, where wards are allowed to
     form and sever contracts at runtime. They describe how permissive a ward is
@@ -68,8 +72,29 @@ class Policies(Enum):
         outbound_only. Pass to conjure(...). Only default is legal when dynamic=False.
         whitelist_all is the one mode that can override a per-spell block.
     """
-    default = auto()
-    whitelist_all = auto()
-    block_all = auto()
-    inbound_only = auto()
-    outbound_only = auto()
+    default = "default"
+    whitelist_all = "whitelist_all"
+    block_all = "block_all"
+    inbound_only = "inbound_only"
+    outbound_only = "outbound_only"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[Policies]:
+        """
+        Resolve a historical numeric policy to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, Policies] = {
+            1: cls.default,
+            2: cls.whitelist_all,
+            3: cls.block_all,
+            4: cls.inbound_only,
+            5: cls.outbound_only,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

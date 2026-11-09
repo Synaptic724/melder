@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/command_system.py",
- "source_sha256": "83750344a906095da4b7e7168b741324b812c7137c4378def715bf21f66ccca2",
+ "source_sha256": "2f783f3eab5b6c935a82b623ab1cc7c641ef6cb08a2d711d7c8072954fb48951",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.command_system": {
@@ -50,7 +50,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "da6ff4bdb742f5b55fde6cf80d44b6aa3a37f673bc7bcb87ddcd35a078a39de3",
+   "span_sha256": "4efd1b4cc60c7133e02602ad321a4d2ad65ff11cdf2c4e329a31aa6bcdea0064",
    "role": "Room-local mediated command layer.",
    "responsibilities": [
     "resolves room-scoped records and runtime objects",
@@ -59,7 +59,8 @@
     "enforces room and ACL posture on command paths",
     "resolves named access by the exact authorized published ID and rejects changed live names",
     "resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors",
-    "answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused"
+    "answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused",
+    "runs get_target_attribute, get_target_method and execute_target_method with no command lock, so agent code there never runs under it"
    ],
    "owns_state": [
     "_id",
@@ -70,7 +71,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "32a28f2ca44565fdb76f430467f89431d108e17f81757b8588e82cc667db5de9"
+   "semantics_authored_against": "4efd1b4cc60c7133e02602ad321a4d2ad65ff11cdf2c4e329a31aa6bcdea0064"
   }
  },
  "edges_out": [

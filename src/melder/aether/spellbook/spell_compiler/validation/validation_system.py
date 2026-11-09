@@ -34,6 +34,9 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.required_holes
 from melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy import (
     AmbiguousProviderStrategy,
 )
+from melder.aether.spellbook.spell_compiler.validation.strategies.hidden_provider_strategy import (
+    HiddenProviderStrategy,
+)
 from melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy import \
     ResolutionFramePresenceStrategy
 from melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy import SelfDependencyStrategy
@@ -170,6 +173,9 @@ class SpellValidationSystem(Cleanable):
         * SelfDependencyStrategy
         * CircularDependencyStrategy
         * RequiredHolesStrategy
+        * AmbiguousProviderStrategy
+        * HiddenProviderStrategy (2026-11-07: a class lookup whose class is
+          bound only under a spellframe or a binding name)
         * DuplicateSpellNameStrategy
         * AnnotationShapeGuardStrategy
         * SpellMapShapeValidationStrategy
@@ -185,6 +191,7 @@ class SpellValidationSystem(Cleanable):
         self.register_strategy(CircularDependencyStrategy())
         self.register_strategy(RequiredHolesStrategy())
         self.register_strategy(AmbiguousProviderStrategy())
+        self.register_strategy(HiddenProviderStrategy())
         self.register_strategy(DuplicateSpellNameStrategy())
         self.register_strategy(AnnotationShapeGuardStrategy())
         self.register_strategy(SpellMapShapeValidationStrategy())

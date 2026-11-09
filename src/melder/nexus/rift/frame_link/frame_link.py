@@ -27,6 +27,20 @@ class FrameLink(Cleanable):
         Built by `FrameViewer` as part of the available-target surface for one
         assigned frame.
 
+    Threading:
+        `_lock` serializes `cleanup()` against itself only: it checks
+        `_cleaned`, takes `_lock`, then checks again under it - Cleanable's
+        double-check - so a second `cleanup()` already waiting on the lock
+        returns. `cleanup()` then deletes `_lock`, as Melder's cleanup rule
+        asks, so a second call that loads `_lock` only after that raises
+        `AttributeError`: cleaning one link from two threads at once is the
+        caller's mistake, and nothing in Melder cleans a link. The reads
+        (`link_id`, `frame_name`, `source_kind`, `source_id`, `display_name`,
+        `metadata`, `clone`) take no lock: one that races `cleanup()` past its
+        check can raise `AttributeError`, and `metadata` or `clone` can see the
+        metadata map cleanup has already cleared, so such a clone carries
+        empty metadata (GitHub #271).
+
     Registration:
         MELDER KERNEL - guarded. Produced by viewer helpers as ACL-filtered
         output.
@@ -122,6 +136,14 @@ class FrameLink(Cleanable):
         Contract:
             - Clears owned metadata and identity references.
             - Leaves the link unusable after cleanup.
+            - Deletes `_lock` last, after releasing it, so nothing the link
+              owned outlives the cleanup.
+
+        Threading:
+            Checks `_cleaned`, takes `_lock`, checks again under it, and sets
+            `_cleaned` and deletes the state under it. A second call already
+            waiting on the lock returns; one that loads `_lock` after it is
+            deleted raises `AttributeError` (GitHub #271).
 
         Returns:
             None.
@@ -140,6 +162,9 @@ class FrameLink(Cleanable):
             del self._display_name
             del self._metadata
             del self._link_id
+        # Deleted last, per Melder's cleanup rule (the owner, 2026-11-08, GitHub #271): a cleanup()
+        # that loads `_lock` after this line raises AttributeError; nothing in Melder cleans a link
+        # from two threads.
         del self._lock
 
     @classmethod

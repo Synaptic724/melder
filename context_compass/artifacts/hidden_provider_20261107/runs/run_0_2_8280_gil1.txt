@@ -1,0 +1,709 @@
+C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+hidden_class_probe on melder 0.2.8280, python 3.14.7, gil_enabled=True
+[protocol | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECCEBXH6YSPKV8EXSJDY>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[protocol | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECE9R66B1E084WEQZ9CK>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[protocol | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECEFCFN9S29ZGN39JPJ9>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[protocol | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECERESWV7P4H7C2FPWYS>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[protocol | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECF189NHQP9Y95PXW7K1>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[protocol | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECF86RSRN81A5WYFSCG5>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[protocol | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[protocol | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECFVMFJBJJ4G44NR86GY>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECG20ZA4ZDWKY4FQHAVR>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[protocol | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[protocol | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECGY3JJPP1K7P51B8CE2>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[protocol_named | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECH532NKR24WQ9A8Z5ZZ>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[protocol_named | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECHCZ1AVVN9GC6750S0Y>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[protocol_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECHKG9PF4PTR2TNMXAVW>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[protocol_named | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECHTR3GMG62KBJZQCJXW>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[protocol_named | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECJ18PYQ2V1Q213NKH4Q>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[protocol_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECJ8EAA1H6VH5AHTAC11>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[protocol_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[protocol_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECJRME3N6RANQT1XPGGR>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECJZEK46BK7EJGQ1WFKR>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol_named | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[protocol_named | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[protocol_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECKPZN7QFHTFAXETEG1J>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[protocol_named | spellmap_named | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+[protocol_named | spellmap_named | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+[protocol_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECM6HRX1VS3XQR2ZXW1W>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+[category | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECMDFX5VGNAYDMDRWRTZ>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[category | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECMNZ36ZX5QE28KYSHYG>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[category | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECMTSCF0923Y53WWDZKS>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[category | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECN3JJKJ9709FNRAC13F>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[category | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECN9NZ7DX92X4G83M8FP>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[category | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECNG9QFQ8KMH6YDPT302>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[category | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[category | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECNYH2D3180SHE9AZXYG>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECP65FA93JTAR12K69WH>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[category | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[category | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECPTG8CMVQNG34SQD8NW>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[category_named | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECQ3Y480NZ4411BFNX0S>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[category_named | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECQAP9AZ9P7CBMVJ9B1N>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[category_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECQHE4C5CX3C7BWECAJE>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[category_named | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECQSXC4KTYPS2KF8VCNR>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[category_named | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECR0ZBKPVM2MS50MNCFE>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[category_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECR72G5J2NVPGH6E3ZCM>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[category_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[category_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECRNJWA45RWAT61JWE6R>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECRW0JXHGJBATZQ7TQ3M>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category_named | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[category_named | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[category_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECSF1P6EK26GKCHQV5CE>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[category_named | spellmap_named | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+[category_named | spellmap_named | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+[category_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECT0TPVWTJ2MN1J15P8K>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapNamed'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name='english' override=None>.
+[bare_named | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECT78K3ZXWXTA2N7682T>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[bare_named | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECTE57TQAS5ZZMTQ2MAJ>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[bare_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECTP1G3QG97HQ6HVTAPV>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[bare_named | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECV45GA03SGRVSAVWGHM>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[bare_named | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECVF9FVCPQZWBT8Y0YXQ>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[bare_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECVNBGJVM1N08T9FNVRK>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[bare_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[bare_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECW5AETDRZWXR9QAA8XY>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[bare_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECWB5RYY68MC3ZCP281A>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[bare_named | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[bare_named | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[bare_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECX0C9SNVZ59SSQC82MW>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[bare_named | spellmap_named | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECX7Y7YNKHADVXNZSYQQ>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[bare_named | spellmap_named | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECXF08BTQCXK8J6EFVZ4>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[bare_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECXN847S5H36ASG62AD9>
+    late bind consumer: ok -> 325b7a3f15c2e2b6360eb1c582e6a67e20e7a82ab937f89c283aae1c1482a706
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[two_frames | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECXZCCYFTDX79V5WHE81>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[two_frames | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECY7VF4ZQ97ETJEWYP5T>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[two_frames | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECYFEP2864VGA1TVK67B>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[two_frames | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFECYWDRQ8RDZ3RAT6SW9H>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[two_frames | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECZ63S7ZMX435GAWD5D0>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[two_frames | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFECZEWEQFJPV6Q19BH3MF>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[two_frames | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[two_frames | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFECZXYGAV2M4PES4RRVZQ>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[two_frames | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED0463WVDH1YEZG8F2PW>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[two_frames | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[two_frames | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[two_frames | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED0QR50CHRX8GMADD90R>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_bare | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED0YR9B91H7SP274RV18>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED15WYEKYX8ZQ2TVFG10>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED1DCDECSYGXSAYSF7T7>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED1Q30MC56KVZV2KVX5P>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED2073N4F02BWVW4KSTH>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED291FYGM158471BJJCY>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | list_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED2MFPZTTFZA10Z39GB7>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED2WDDZHB0E6FBB957ZZ>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED3279S923T6N07S3EBE>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | spellmap_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED3E7ZMVMFV3XKFBEZAC>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare | spellmap_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED3P9AT0527YZAWZK0ER>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED3XX6AZFGM40YGC4ATW>
+    late bind consumer: ok -> 8b42bd043aeac301c05baa0171a22939d146c736e7c6bf9a2b518ab9ee5eed57
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED47ZZA09N3M9JPJKWAD>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED4HZVCXE46SWZDKH0SG>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED4QJKSNYMGT1X0JY65K>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED5115T6AEHNAATWYA6Z>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED595C5NYKQ1GFF5JT27>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED5F8KQPGJFYZT8ZJCFH>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | list_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED5SAAYNM3RP1WWAWBV1>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED61B2XX20KM8XM8ZY9W>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED681JQH96PXW0D2DFKB>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | spellmap_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED6JETAAN8WY7PRJVYWF>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | spellmap_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED6V99YKPSARKQARRXFA>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED73DSEJWXXMNFTTBYNT>
+    late bind consumer: ok -> 8b42bd043aeac301c05baa0171a22939d146c736e7c6bf9a2b518ab9ee5eed57
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_none | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED7D7SY8M2RT67F0GZ82>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED7KDZRPE6DV060A8P9K>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED7R5J3A110HZ0W6N8B0>
+    late bind consumer: ok -> 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VFED813JEY6PX7JRD24VXP>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED88211XZ5TR6ZGGR66R>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED8EJP2YND7R0JY1ZK2A>
+    late bind consumer: ok -> 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934) at node 75af96dfe121059a1c8f7c026a1eb2941e7149a6f0513d3dc07f327c8c299934 (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[CONTROL_none | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VFED8XZTTMHTJFKRBZ982M>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_none | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED91GS9QJVVD4PEZPVZC>
+    late bind consumer: ok -> acbe37bc7243d94fe0729c5d6ccd6052305a9d41a8c99dae76252277500f2e1c
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_none | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_none | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_none | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VFED9GN6HPZ2CTR385ZBAQ>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class '__main__.English'> spellframe=None binding_name=None override=None>.
+[AMBIGUOUS control | ByProtocol (greeter: Greeter) | dynamic late-bound consumer]
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'greeter': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+    consumer still registered after a refused bind: True
+    sockets: greeter:AMBIGUOUS_INPUT targets=0 refs=2 key=('greeter', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'greeter': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'greeter': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+[ORDER framed | single_class | dynamic: consumer conjured unresolved, English bound late]
+    sockets before: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    late bind English: ok -> 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc) at node 52042e5c78e900ea39cad4da7a2f5300c581c04ceba4f70ef7979f2ea087dbdc (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    sockets after meld: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+[ORDER bare | single_class | dynamic: consumer conjured unresolved, English bound late]
+    sockets before: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    late bind English: ok -> 677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f
+    meld(consumer): ok -> SingleClass
+    sockets after meld: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+[DOOR | meld(English) with English under Greeter | automatic]
+    meld(English): RAISES KeyError
+        | "[MELD] No spell found for frame='english', binding='__default__'."

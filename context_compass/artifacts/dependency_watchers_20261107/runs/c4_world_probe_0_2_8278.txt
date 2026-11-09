@@ -1,0 +1,7 @@
+c4_world_probe.py on 0.2.8278 (melder_0, 2026-11-07T15:02:51Z; .venv_new 3.14.7 free-threaded build): C4's world through a class annotation and through the frame.
+-X gil=0
+  class annotation  dep: Dep         before=raises UnresolvedInputError after_notch=raises UnresolvedInputError  after_notch_back=raises UnresolvedInputError meld(spellframe='Dep')=d1
+  frame  SpellMap(spellframe='Dep')  before=d1         after_notch=d2                           after_notch_back=d1         meld(spellframe='Dep')=d1
+-X gil=1
+  class annotation  dep: Dep         before=raises UnresolvedInputError after_notch=raises UnresolvedInputError  after_notch_back=raises UnresolvedInputError meld(spellframe='Dep')=d1
+  frame  SpellMap(spellframe='Dep')  before=d1         after_notch=d2                           after_notch_back=d1         meld(spellframe='Dep')=d1

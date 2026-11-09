@@ -57,7 +57,7 @@ class StructuralSnapshot:
           registered `SpellLocalTopology`, the SpellIndex's `SpellSystemState`
           (validity and the `contract_unvalidated` flag) and the bind-time
           profile requirements (annotation type references for the key).
-        - Payload schema (`PAYLOAD_FORMAT` 2):
+        - Payload schema (`PAYLOAD_FORMAT` 3):
           ``{"key": {"format", "spell_id", "binding_hash", "annotation_refs"},
              "world_stamp": str, "replayable": bool,
              "phase3": {"dependency_ids": [...], "sockets": [...]},
@@ -65,7 +65,13 @@ class StructuralSnapshot:
           where a socket row is the `SpellSocketDescriptor` fields in order
           ``(param_name, position, socket_kind_name, is_collection,
           is_optional, target_spell_ids, dependency_key, contract_key,
-          referenced_spell_ids, parameter_kind)``.
+          referenced_spell_ids, parameter_kind, hidden_spell_ids,
+          hidden_frame_keys)``. The last two (format 3, 2026-11-07) are the
+          hidden candidates of a class-lookup miss: a valid dynamic spell's
+          empty required `list[Class]` socket can carry `hidden_spell_ids`, so
+          a replay must restore them for the topology to equal the cold one; a
+          socket that refuses its spell (HIDDEN_PROVIDER) is never replayed,
+          because only `valid` and `gated` payloads are.
         - The ordered local frame is NOT stored: it is the sorted distinct
           dependency ids (without the spell itself) followed by the spell id,
           the same law phase 3 applies.
@@ -135,7 +141,9 @@ class StructuralSnapshot:
 
     # Format 2 (EPIC-2026-10-18-spell_identity_is_the_code, S2): the key carries the spell's
     # binding hash beside its spell_id, which became the code digest alone.
-    PAYLOAD_FORMAT: ClassVar[int] = 2
+    # Format 3 (patch hidden_provider_2026_11_07): a socket row carries the descriptor's
+    # `hidden_spell_ids` and `hidden_frame_keys` (12 fields); a format-2 payload misses.
+    PAYLOAD_FORMAT: ClassVar[int] = 3
 
     @staticmethod
     def type_refs(value: Any) -> List[Tuple[str, str]]:
@@ -423,6 +431,8 @@ class StructuralSnapshot:
                 None if descriptor.contract_key is None else tuple(descriptor.contract_key),
                 tuple(descriptor.referenced_spell_ids),
                 descriptor.parameter_kind,
+                tuple(descriptor.hidden_spell_ids),
+                tuple(descriptor.hidden_frame_keys),
             ))
         return {
             "key": key,
@@ -446,8 +456,9 @@ class StructuralSnapshot:
         Contract:
             - Format `PAYLOAD_FORMAT`, the key's spell id equal to `spell_id`,
               a string world stamp, a bool `replayable`, `phase3.dependency_ids`
-              a list of str, `phase3.sockets` a list of 10-tuples whose socket
-              kind names a `SocketKind` member and whose id fields are tuples
+              a list of str, `phase3.sockets` a list of 12-tuples whose socket
+              kind names a `SocketKind` member and whose id and key fields
+              (targets, references, hidden ids, hidden frame keys) are tuples
               of str, and `phase4.validity` one of the replayable validities
               (`valid`, `gated`) with a bool `contract_unvalidated`.
             - Never raises: any shape violation is False.
@@ -507,11 +518,12 @@ class StructuralSnapshot:
             bool:
                 True when the row rebuilds into a descriptor.
         """
-        if not isinstance(row, tuple) or len(row) != 10:
+        if not isinstance(row, tuple) or len(row) != 12:
             return False
         (
             param_name, position, socket_kind_name, is_collection, is_optional,
             target_spell_ids, dependency_key, contract_key, referenced_spell_ids, parameter_kind,
+            hidden_spell_ids, hidden_frame_keys,
         ) = row
         if not isinstance(param_name, str) or not isinstance(position, int):
             return False
@@ -519,7 +531,7 @@ class StructuralSnapshot:
             return False
         if not isinstance(is_collection, bool) or not isinstance(is_optional, bool):
             return False
-        for ids in (target_spell_ids, referenced_spell_ids):
+        for ids in (target_spell_ids, referenced_spell_ids, hidden_spell_ids, hidden_frame_keys):
             if not isinstance(ids, tuple) or not all(isinstance(item, str) for item in ids):
                 return False
         for pair in (dependency_key, contract_key):
@@ -558,6 +570,7 @@ class StructuralSnapshot:
             (
                 param_name, position, socket_kind_name, is_collection, is_optional,
                 target_spell_ids, dependency_key, contract_key, referenced_spell_ids, parameter_kind,
+                hidden_spell_ids, hidden_frame_keys,
             ) = row
             descriptors.append(
                 SpellSocketDescriptor(
@@ -572,6 +585,8 @@ class StructuralSnapshot:
                     contract_key=None if contract_key is None else (contract_key[0], contract_key[1]),
                     referenced_spell_ids=tuple(referenced_spell_ids),
                     parameter_kind=parameter_kind,
+                    hidden_spell_ids=tuple(hidden_spell_ids),
+                    hidden_frame_keys=tuple(hidden_frame_keys),
                 )
             )
         return SpellLocalTopology(spell_id=spell_id, sockets=descriptors)

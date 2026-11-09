@@ -1,0 +1,123 @@
+diag_class_annotated_consumer_after_notch_back.py (artifacts/correctness_defects_20261017/probes) on 0.2.8277, every case, the GIL off then on (melder_0, 2026-11-07T08:58:35Z; STORY-2026-10-25-map_dependency_watchers_and_announcers); .venv_new 3.14.7 free-threaded build, -W ignore, run from a scratch cwd.
+===== framed on the 0.2.8277 tree (-X gil=0)
+case framed
+  English greeter/greeter, French greeter/greeter
+  meld ByClass (English active)                -> English
+    validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch to French                              -> French
+  meld ByClass (French active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                        -> English
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English active again)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare on the 0.2.8277 tree (-X gil=0)
+case bare
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\correctness_defects_20261017\probes\diag_class_annotated_consumer_after_notch_back.py", line 125, in <module>
+    notch_case(case == "framed")
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\correctness_defects_20261017\probes\diag_class_annotated_consumer_after_notch_back.py", line 89, in notch_case
+    french_id = world.bind_inactive(spell=French, spell_index=index, existence="many", permissions="create", **frame)
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\conduit\conduit.py", line 4126, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 6240, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\bind\spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M6TKPB2PJHPD7GW7S4BXKX2G keeps the binding its first version was bound with - no spellframe (bare, addressed by its own name 'English') and the default binding name - and 'French' (spell_id 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd) is bound with no spellframe (bare, addressed by its own name 'French') and the default binding name. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+[exit 1]
+
+===== framed_bind_later on the 0.2.8277 tree (-X gil=0)
+case framed_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at greeter/greeter
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare_bind_later on the 0.2.8277 tree (-X gil=0)
+case bare_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at english/__default__
+    validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> English
+  meld ByClass a second time                   -> English
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== framed on the 0.2.8277 tree (-X gil=1)
+case framed
+  English greeter/greeter, French greeter/greeter
+  meld ByClass (English active)                -> English
+    validity valid; sockets [('NORMAL', ('english', '__default__'))]
+  notch to French                              -> French
+  meld ByClass (French active)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  notch back to English                        -> English
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English active again)          -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare on the 0.2.8277 tree (-X gil=1)
+case bare
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\correctness_defects_20261017\probes\diag_class_annotated_consumer_after_notch_back.py", line 125, in <module>
+    notch_case(case == "framed")
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\context_compass\artifacts\correctness_defects_20261017\probes\diag_class_annotated_consumer_after_notch_back.py", line 89, in notch_case
+    french_id = world.bind_inactive(spell=French, spell_index=index, existence="many", permissions="create", **frame)
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\conduit\conduit.py", line 4126, in bind_inactive
+    new_spell_id = self._spellbook.bind_inactive(
+        spell=spell,
+    ...<11 lines>...
+        **kwargs,
+    )
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 6240, in bind_inactive
+    spell_index.check_admits(new_spell, verb="bind_inactive")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\bind\spell_index.py", line 713, in check_admits
+    raise ValueError(
+    ...<5 lines>...
+    )
+ValueError: bind_inactive refused: SpellIndex 01M6TKPD259QN13ECH2E893YXX keeps the binding its first version was bound with - no spellframe (bare, addressed by its own name 'English') and the default binding name - and 'French' (spell_id 20d8d67e61430e627745bd1ff23c7d2c152a29663e3e2e8989384b1819e267cd) is bound with no spellframe (bare, addressed by its own name 'French') and the default binding name. Every version of an index is bound the same way, so a notch never moves its address: stage an edited class with the index's spellframe and binding_name. A renamed class or a new binding name is a new spell: bind it on its own.
+[exit 1]
+
+===== framed_bind_later on the 0.2.8277 tree (-X gil=1)
+case framed_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at greeter/greeter
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  meld ByClass a second time                   -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+
+===== bare_bind_later on the 0.2.8277 tree (-X gil=1)
+case bare_bind_later
+  meld ByClass (no English bound)              -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf141f781bdb32cf891b13b)
+    validity valid; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  English bound after conjure at english/__default__
+    validity gated; sockets [('UNRESOLVED_INPUT', ('english', '__default__'))]
+  meld ByClass (English bound)                 -> English
+  meld ByClass a second time                   -> English
+  rebind ByClass (same spell_id: True), then meld -> English
+[exit 0]
+

@@ -1,9 +1,13 @@
-from enum import Enum, auto
+from enum import Enum, StrEnum
+from typing import Optional
 from melder.utilities.helpers.general_helpers import EnumHelpers
 
-class ConduitState(Enum):
+class ConduitState(StrEnum):
     """
     Lifecycle classification for a conduit instance.
+
+    Values exactly match member names. Historical numeric values 1-4 remain
+    readable by direct enum construction, including in older pickle payloads.
 
     This enum is the compact runtime label used to distinguish whether a
     conduit is a normal/root-visible conduit, a lesser lineage child, or an
@@ -16,7 +20,7 @@ class ConduitState(Enum):
           parent/root conduit until it is upgraded.
         - `pooled_lesser` means an idle lesser shell retained for reuse and
           not currently attached to an active parent lineage.
-        - `cleaned` means teardown has completed and the conduit should be
+        - `CLEANED` means teardown has completed and the conduit should be
           treated as unusable.
 
     Threading:
@@ -40,7 +44,7 @@ class ConduitState(Enum):
         `Conduit.upgrade_to_normal(...)` (dynamic mode only); `pooled_lesser` is
         the idle shell the `ConduitPool` retains for reuse, deliberately
         detached from any active parent lineage so a reused shell cannot inherit
-        stale ancestry; and `cleaned` is terminal - nothing transitions out of
+        stale ancestry; and `CLEANED` is terminal - nothing transitions out of
         it, which is what makes post-cleanup use a contract violation rather
         than a recoverable state.
         The `normal` / `lesser` distinction is what the rest of the runtime
@@ -54,10 +58,31 @@ class ConduitState(Enum):
         access: internal. Lifecycle classification for a conduit instance. Melder kernel
         machinery: read it to understand the runtime, do not drive it directly.
     """
-    normal = auto()
-    lesser = auto()
-    pooled_lesser = auto()
-    cleaned = auto()
+    normal = "normal"
+    lesser = "lesser"
+    pooled_lesser = "pooled_lesser"
+    CLEANED = "CLEANED"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ConduitState]:
+        """
+        Resolve a historical numeric conduit state to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integers remain readable; unknown or unhashable inputs return None
+        so enum construction raises its normal ValueError. The separate
+        resolve() API still accepts names or same-family members only.
+        """
+        legacy_values: dict[object, ConduitState] = {
+            1: cls.normal,
+            2: cls.lesser,
+            3: cls.pooled_lesser,
+            4: cls.CLEANED,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None
 
     def __str__(self) -> str:
         """
@@ -72,7 +97,7 @@ class ConduitState(Enum):
 
         Args:
             value:
-                Either a lowercase string (`"normal"`, `"lesser"`, etc.), an
+                Either a case-insensitive member name (`"normal"`, `"lesser"`, etc.), an
                 enum member, or `None`.
 
         Returns:

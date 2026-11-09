@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py",
- "source_sha256": "3b8c0fcf24bd5d2882d519f1c945c6753e0006bae42d857b62dbd663c13db5dc",
+ "source_sha256": "b50f6e2107fec03ea06e82a74bec69e8a02eafdeb9784bd96ac0228f4cc3702d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "54b9e898d664905a7452447f634d0d85247c9d5072654c69e6c9b75266e0bd7c",
+   "span_sha256": "14c99598851baafab8057a3f849c62f67469532320ea61725e0915a2ba174270",
    "include": true,
    "role": "Move-in flow of the three SpellIndex mutations: a spell leaves its current index and joins the target.",
    "responsibilities": [

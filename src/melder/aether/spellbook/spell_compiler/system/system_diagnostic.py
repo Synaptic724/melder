@@ -1,14 +1,38 @@
-from enum import Enum, auto
+from enum import StrEnum
 from typing import Any, Dict, Optional, ClassVar
 
 
 
 from melder.utilities.general_base.cleanable import Cleanable
 
-class SystemDiagnosticSeverity(Enum):
-    """Severity bucket for system-level validation diagnostics."""
-    ERROR = auto()
-    WARNING = auto()
+class SystemDiagnosticSeverity(StrEnum):
+    """
+    Severity bucket for system-level validation diagnostics.
+
+    Values exactly match their member names. Historical numeric values 1 and 2
+    remain readable by value, including in old pickle payloads. Validation
+    distinguishes the members by identity when deciding errors and warnings.
+    """
+    ERROR = "ERROR"
+    WARNING = "WARNING"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SystemDiagnosticSeverity]:
+        """
+        Resolve a historical numeric severity to its original member.
+
+        Canonical strings use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so normal enum construction raises ValueError.
+        """
+        legacy_values: dict[object, SystemDiagnosticSeverity] = {
+            1: cls.ERROR,
+            2: cls.WARNING,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None
 
 
 class SystemDiagnostic(Cleanable):

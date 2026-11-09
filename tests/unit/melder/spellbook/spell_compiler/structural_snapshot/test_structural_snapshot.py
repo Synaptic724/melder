@@ -4,7 +4,8 @@ Unit contracts for the structural snapshot capture seam.
 Every value the seam writes is address-free: type references are (module, qualname) rows, the world
 stamp is a digest over the sorted `<spell_id>=<binding_hash>` entries and the posture name, and the
 payload rows hold spell ids and enum names only. A spell's binding hash (S2) sits in its key beside its
-spell_id (payload format 2), so a payload captured for one binding is never replayed for another. The
+spell_id (payload format 2), so a payload captured for one binding is never replayed for another; since format 3
+(patch hidden_provider_2026_11_07) a socket row also carries the descriptor's hidden-candidate fields. The
 stubs here mirror the shapes the seam borrows (requirements, profile, registry).
 """
 
@@ -326,11 +327,16 @@ def test_bind_time_requirements_tolerates_missing_profile_links() -> None:
 
 
 def test_structural_key_holds_format_id_and_sorted_refs() -> None:
-    """The key is value-only: format 2, the spell id, its binding hash and the sorted annotation refs."""
+    """
+    The key is value-only: format 3, the spell id, its binding hash and the sorted annotation refs.
+
+    Format 3 (patch hidden_provider_2026_11_07): socket rows carry the descriptor's hidden-candidate fields, so a
+    format-2 payload - written before them - never replays.
+    """
     requirements = _Requirements([_Parameter(ParameterDIShape.SINGLE_BY_ANNOTATION, annotation=_Alpha)], _sid("s"))
     spell = _Spell(_sid("s"), requirements=requirements)
     assert StructuralSnapshot.bind_time_requirements(spell) is requirements
-    assert StructuralSnapshot.PAYLOAD_FORMAT == 2
+    assert StructuralSnapshot.PAYLOAD_FORMAT == 3
     assert StructuralSnapshot.structural_key(spell) == {
         "format": StructuralSnapshot.PAYLOAD_FORMAT,
         "spell_id": _sid("s"),
@@ -449,7 +455,7 @@ def test_build_payload_renders_phase3_and_phase4_rows_from_durable_state() -> No
     payload = StructuralSnapshot.build_payload(consumer, book._spell_system_states, world_stamp="stamp", replayable=True)
     assert payload == {
         "key": {
-            "format": 2, "spell_id": consumer_id, "binding_hash": _binding_hash(consumer_id),
+            "format": 3, "spell_id": consumer_id, "binding_hash": _binding_hash(consumer_id),
             "annotation_refs": [(__name__, "_Alpha")],
         },
         "world_stamp": "stamp",
@@ -458,7 +464,7 @@ def test_build_payload_renders_phase3_and_phase4_rows_from_durable_state() -> No
             "dependency_ids": [provider_id],
             "sockets": [(
                 "alpha", 0, "NORMAL", False, False, (provider_id,), ("annotation", "_Alpha"), None,
-                (provider_id,), "POSITIONAL_OR_KEYWORD",
+                (provider_id,), "POSITIONAL_OR_KEYWORD", (), (),
             )],
         },
         "phase4": {"validity": "gated", "contract_unvalidated": True},
@@ -578,16 +584,20 @@ def test_capture_marks_every_payload_non_replayable_for_an_eq_risky_pool(tmp_pat
 # --------------------------------------------------------------------------- #
 
 def _good_payload(spell_id: str) -> Dict[str, Any]:
+    """A format-3 payload whose one socket row carries every descriptor field, the two hidden-candidate fields too."""
     return {
         "key": {
-            "format": 2, "spell_id": spell_id, "binding_hash": _binding_hash(spell_id),
+            "format": 3, "spell_id": spell_id, "binding_hash": _binding_hash(spell_id),
             "annotation_refs": [("m", "T")],
         },
         "world_stamp": "stamp",
         "replayable": True,
         "phase3": {
             "dependency_ids": [_sid("dep")],
-            "sockets": [("alpha", 0, "NORMAL", False, True, (_sid("dep"),), ("k", "v"), None, (_sid("dep"),), "KEYWORD_ONLY")],
+            "sockets": [(
+                "alpha", 0, "NORMAL", True, False, (), ("k", "v"), None, (), "KEYWORD_ONLY",
+                (_sid("hidden"),), (),
+            )],
         },
         "phase4": {"validity": "gated", "contract_unvalidated": True},
     }
@@ -616,11 +626,24 @@ def _mutate(payload: Dict[str, Any], path: Tuple[Any, ...], value: Any) -> Dict[
         pytest.param(("phase3", "dependency_ids"), [1], id="dep-not-str"),
         pytest.param(("phase3", "sockets"), (), id="sockets-not-list"),
         pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL"), id="short-row"),
-        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NOPE", False, True, (), None, None, (), None), id="bad-kind"),
-        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", 0, True, (), None, None, (), None), id="flag-not-bool"),
-        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, ["x"], None, None, (), None), id="targets-not-tuple"),
-        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), ("k",), None, (), None), id="key-not-pair"),
-        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), 3), id="kind-not-str"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), None),
+                     id="format-2-ten-field-row"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NOPE", False, True, (), None, None, (), None, (), ()),
+                     id="bad-kind"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", 0, True, (), None, None, (), None, (), ()),
+                     id="flag-not-bool"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, ["x"], None, None, (), None, (), ()),
+                     id="targets-not-tuple"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), ("k",), None, (), None, (), ()),
+                     id="key-not-pair"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), 3, (), ()),
+                     id="kind-not-str"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), None, ["x"], ()),
+                     id="hidden-ids-not-tuple"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), None, (1,), ()),
+                     id="hidden-id-not-str"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), None, (), "frame"),
+                     id="hidden-frames-not-tuple"),
         pytest.param(("phase4", "validity"), "invalid", id="validity-not-replayable"),
         pytest.param(("phase4", "contract_unvalidated"), None, id="flag-none"),
     ],
@@ -639,7 +662,7 @@ def test_payload_well_formed_rejects_non_dict_shapes() -> None:
     assert StructuralSnapshot.payload_well_formed([], spell_id) is False
     assert StructuralSnapshot.payload_well_formed({"key": None}, spell_id) is False
     no_sections = {
-        "key": {"format": 2, "spell_id": spell_id, "binding_hash": _binding_hash(spell_id), "annotation_refs": []},
+        "key": {"format": 3, "spell_id": spell_id, "binding_hash": _binding_hash(spell_id), "annotation_refs": []},
         "world_stamp": "s", "replayable": True, "phase3": None, "phase4": {},
     }
     assert StructuralSnapshot.payload_well_formed(no_sections, spell_id) is False
@@ -654,6 +677,38 @@ def test_rebuild_topology_round_trips_the_captured_socket_rows() -> None:
     assert rebuilt.spell_id == consumer_id
     assert rebuilt.sockets == registry.topologies["idx-consumer"].sockets
     assert rebuilt.get_sockets_for_param("alpha") == registry.topologies["idx-consumer"].get_sockets_for_param("alpha")
+
+
+def test_replayed_topology_keeps_the_hidden_candidates_of_an_empty_class_list() -> None:
+    """
+    Regression (patch hidden_provider_2026_11_07): a socket row carries `hidden_spell_ids` and `hidden_frame_keys`,
+    so a replayed topology equals the cold one - a valid dynamic spell's empty required `list[Class]` socket names its
+    hidden candidates in Phase 6, cold and warm alike. Before format 3 the rows had ten fields and a replay would have
+    dropped them.
+    """
+    book, consumer, _provider_id, consumer_id = _consumer_world()
+    registry = book._spell_system_states
+    hidden_id, other_hidden_id = _sid("framed English"), _sid("named English")
+    registry.topologies["idx-consumer"] = SpellLocalTopology(consumer_id, [
+        SpellSocketDescriptor(
+            spell_id=consumer_id, param_name="greeters", position=0, socket_kind=SocketKind.NORMAL,
+            is_collection=True, is_optional=False, target_spell_ids=(), dependency_key=("english", "__default__"),
+            parameter_kind="POSITIONAL_OR_KEYWORD", hidden_spell_ids=(hidden_id, other_hidden_id),
+        ),
+        SpellSocketDescriptor(
+            spell_id=consumer_id, param_name="greeter", position=1, socket_kind=SocketKind.UNRESOLVED_INPUT,
+            is_collection=False, is_optional=False, target_spell_ids=(), dependency_key=("english", "__default__"),
+            parameter_kind="POSITIONAL_OR_KEYWORD", hidden_spell_ids=(hidden_id,),
+            hidden_frame_keys=("greeter", "greeters"),
+        ),
+    ])
+    payload = StructuralSnapshot.build_payload(consumer, registry, world_stamp="s", replayable=True)
+    rows = payload["phase3"]["sockets"]
+    assert [row[10:] for row in rows] == [((hidden_id, other_hidden_id), ()), ((hidden_id,), ("greeter", "greeters"))]
+    assert StructuralSnapshot.payload_well_formed(payload, consumer_id) is True
+    rebuilt = StructuralSnapshot.rebuild_topology(consumer_id, rows)
+    assert rebuilt.sockets == registry.topologies["idx-consumer"].sockets
+    assert marshal.loads(marshal.dumps(payload)) == payload
 
 
 # --------------------------------------------------------------------------- #

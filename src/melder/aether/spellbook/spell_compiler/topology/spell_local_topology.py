@@ -35,6 +35,11 @@ class SpellSocketDescriptor:
             * NORMAL – standard DI edge or plain parameter socket.
             * SPELL_CONTRACT – cross-conduit spell contract socket.
             * OVERRIDE_REQUIRED – required supplied input with a descriptive target only.
+            * UNRESOLVED_INPUT – a lookup no registered spell answers; the
+              constructing call supplies it, unless `hidden_spell_ids` is set
+              and Phase 4 refuses the spell (HIDDEN_PROVIDER).
+            * AMBIGUOUS_INPUT – several resolvable providers; Phase 4 refuses
+              the spell (AMBIGUOUS_PROVIDER).
 
         is_collection:
             True if this socket is a collection DI shape (e.g. list[...]).
@@ -70,6 +75,23 @@ class SpellSocketDescriptor:
             This is populated with SPELL_CONTRACT sockets to support
             system-level contract validation.
 
+        hidden_spell_ids:
+            The spells of the class a class lookup named that the lookup does
+            not reach - bound under a spellframe or a binding name (2026-11-07,
+            HIDDEN_PROVIDER). Phase 3 records them only on a miss: on an
+            UNRESOLVED_INPUT single or SpellMap socket, whose spell Phase 4
+            then refuses with HIDDEN_PROVIDER, and on an empty required
+            class-collection socket, whose Phase 6 report names them. Sorted
+            selected spell ids, one per SpellIndex; empty everywhere else.
+            Descriptive only: never traversed, planned, published as a
+            relationship or counted as a dependency.
+
+        hidden_frame_keys:
+            The distinct address frame keys of `hidden_spell_ids`, sorted, set
+            only on an UNRESOLVED_INPUT socket. `SpellSystemStates` watches
+            them beside `dependency_key`, so a change announced at a hidden
+            candidate's address re-gates the refused consumer.
+
     Subsystem Context:
         The local socket view of the `topology` package; `SpellLocalTopology` owns a
         tuple of these, one per constructor socket.
@@ -82,8 +104,9 @@ class SpellSocketDescriptor:
 
     AGENT_PURPOSE:
         access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name,
-        position, socket_kind, is_collection/is_optional, resolved target_spell_ids, and
-        dependency_key/contract_key. Frozen value object.
+        position, socket_kind, is_collection/is_optional, resolved target_spell_ids,
+        dependency_key/contract_key, and the hidden candidates of a class-lookup miss
+        (hidden_spell_ids, hidden_frame_keys). Frozen value object.
     """
     # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
     spell_id: str
@@ -97,6 +120,8 @@ class SpellSocketDescriptor:
     contract_key: Optional[Tuple[str, str]] = None
     referenced_spell_ids: Tuple[str, ...] = ()
     parameter_kind: Optional[str] = None
+    hidden_spell_ids: Tuple[str, ...] = ()
+    hidden_frame_keys: Tuple[str, ...] = ()
 
 
 class SpellLocalTopology(Cleanable):
