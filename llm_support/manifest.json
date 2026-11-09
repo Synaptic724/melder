@@ -6078,13 +6078,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 14550626,
-        "lines": 390700,
+        "bytes": 14552263,
+        "lines": 390743,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "36d6f27cbbe3747cbb89a37d01fd08b84a953d9e22ad7fa4b06d170fe3e13c87"
+        "sha256": "b7c01b867db5ddc82924130f53dd5ab2791f35d721ffdc246329f482e4700296"
       },
-      "content_bytes": 13814650,
-      "content_lines": 381046,
+      "content_bytes": 13816287,
+      "content_lines": 381089,
       "file_count": 1206,
       "files": {
         "tests/_annotation_audit_support.py": {
@@ -10048,9 +10048,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py": {
-          "content_bytes": 42717,
-          "content_lines": 1148,
-          "content_sha256": "c7f1c73c6f2c3aeb94cae2c788c1b15a35f7d7e8ded3631bc8612c7841597803",
+          "content_bytes": 44354,
+          "content_lines": 1191,
+          "content_sha256": "7028af9c64c80959d89d270ada9354fdeb601ccb8392ed2653625f2d681b21ce",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/aetheric_mediator/test_claim_mode_strenum_657.py": {
@@ -13328,9 +13328,9 @@
         "bytes": 237442,
         "lines": 1228,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "03c1d0160202f2c245bd3e289228557673f445e0cf1cbe792dc696895bcfa982"
+        "sha256": "6c95ebfe040373cd9175332a38b8656af4bb57b05ee048a32c8877b8dbdee617"
       },
-      "source_fingerprint": "b283ac14534aad001e6d050cea49660183f3a4bc0a9f36f5d3cb2f6191ed075b"
+      "source_fingerprint": "bc998bdbef18b8c87b7e73edffb9c48186b8d5892b7b984860091eb30ad02b49"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

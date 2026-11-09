@@ -12,6 +12,7 @@ Run:
 """
 
 import threading
+from typing import Optional
 
 import pytest
 
@@ -243,10 +244,51 @@ def test_shared_holders_coexist_concurrently():
         table.cleanup()
 
 
+class _ParkSignallingCondition(threading.Condition):
+    """
+    A `threading.Condition` that sets an Event when a thread is about to wait on it.
+
+    Purpose:
+        Let a test act only once a waiter is really parked in `wait()`, so the order comes from the handshake and
+        not from how fast a thread starts. Wraps a fresh RLock, as `ClaimTable` builds its condition.
+    """
+
+    def __init__(self, parked: threading.Event) -> None:
+        """
+        Build the condition over a fresh RLock.
+
+        Args:
+            parked: Set each time a thread is about to wait.
+
+        Returns:
+            None.
+        """
+        super().__init__(threading.RLock())
+        self._parked: threading.Event = parked
+
+    def wait(self, timeout: Optional[float] = None) -> bool:
+        """
+        Signal that a thread is parking, then wait as `threading.Condition.wait` does.
+
+        Args:
+            timeout: As `threading.Condition.wait`.
+
+        Returns:
+            bool: As `threading.Condition.wait`.
+        """
+        self._parked.set()
+        return super().wait(timeout)
+
+
 def test_cleanup_wakes_parked_waiters():
     """A cleaned table must never strand a waiting thread."""
     table = ClaimTable()
     table.try_acquire(_identity("a", "1"), {"s1": ClaimMode.EXCLUSIVE})
+    # Clean only once the waiter is parked. Started and cleaned at once, the waiter could pass acquire's cleaned
+    # check and then meet the condition cleanup had deleted - AttributeError, not the RuntimeError a parked waiter
+    # gets (the macOS CI runner hit that on 2026-11-08). No waiter exists yet, so swapping the condition is safe.
+    parked = threading.Event()
+    table._condition = _ParkSignallingCondition(parked)
     outcome = []
 
     def waiter() -> None:
@@ -258,8 +300,9 @@ def test_cleanup_wakes_parked_waiters():
         except RuntimeError:
             outcome.append("raised")
 
-    thread = threading.Thread(target=waiter)
+    thread = threading.Thread(target=waiter, daemon=True)
     thread.start()
+    assert parked.wait(timeout=10.0), "the waiter never parked on the table"
     table.cleanup()
     thread.join(timeout=10.0)
     assert not thread.is_alive(), "waiter stranded on a cleaned table"
