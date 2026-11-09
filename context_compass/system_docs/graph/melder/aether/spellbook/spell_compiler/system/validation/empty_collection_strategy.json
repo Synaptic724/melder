@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py",
- "source_sha256": "38f1cde90a84f5c24eaa208f0d4cdaa9e17bbdde3b046577b1e568c8b857eade",
+ "source_sha256": "34bf81538b504db0b244f80e4fcc62bd17363d8bff53853c01609f0c82488f0a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy": {
@@ -19,7 +19,7 @@
    "label": "EmptyCollectionStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py",
-   "lineno": 31,
+   "lineno": 37,
    "bases": [
     "SpellSystemValidationStrategy"
    ],
@@ -28,22 +28,23 @@
     "run"
    ],
    "shape": {
-    "method_count": 1,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6e0e009b8dfd9787870e9417c3f5b24eb1ed1bbce776f1df1d24dea2625c697c",
+   "span_sha256": "9814f3c05efb03b1af5099a8de66c94db83e2ece518de06abf7478d82dda882f",
    "include": true,
    "role": "The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.",
    "responsibilities": [
     "read local topologies from SpellSystemStates for every scoped spell",
     "emit collection_socket_no_providers as an ERROR when the book is not dynamic - composition is final at conjure, so zero providers is a permanent wiring mistake",
-    "emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)"
+    "emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)",
+    "names the hidden candidates Phase 3 recorded on an empty required list[Class] socket - its class bound only under a spellframe or a binding name - rendered from the scope's spell_lookup through HiddenProviderReport with list lookups, in the text and in details['hidden_candidates']; severity and policy are unchanged, and with none found the text is the earlier one (0.2.8281)"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "cfe4885477b088410cdc2ace4aeb3d8ba7c36ead6468f53ecc4f1436dabe5894"
+   "semantics_authored_against": "9814f3c05efb03b1af5099a8de66c94db83e2ece518de06abf7478d82dda882f"
   }
  },
  "edges_out": [
@@ -71,6 +72,7 @@
   "Optional": "typing.Optional",
   "Set": "typing.Set",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+  "HiddenProviderReport": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
   "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
@@ -79,11 +81,25 @@
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy",
   "class": "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy",
   "label": "EmptyCollectionStrategy"
- }
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.validation.hidden_provider_report.HiddenProviderReport",
+   "relation": "uses",
+   "why": "EmptyCollectionStrategy renders the hidden candidates of an empty required list[Class] through HiddenProviderReport.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

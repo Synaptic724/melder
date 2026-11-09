@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/nexus_configuration.py",
- "source_sha256": "7b9a0405f35433ead9b89e2d9bc0dc834df96da1f57da24543417c1bbc7c3441",
+ "source_sha256": "f31045351ad3cb8abef0cdd307c500635e6e14fbbd057de6974c3d0e584a685e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.nexus_configuration": {
@@ -80,7 +80,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "09f177db4e31f762d9166ce246f29588bb001e16ca4511506cbdc0fd68dddcf4",
+   "span_sha256": "0f103b62abc7e967f2738643967e63e0a35489b2856d0eefe3a93080fb1ce4d3",
    "role": "Process-wide configuration for Nexus.",
    "responsibilities": [
     "stores typed process-wide Rift creation/access and frame-topology policy",

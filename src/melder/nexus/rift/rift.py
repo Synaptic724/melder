@@ -82,11 +82,28 @@ class Rift(Cleanable):
         (`projection_refresh_gate_enabled` and its timeout/poll settings) blocks
         new entrants at the Rift gate, drains in-flight tickets, refreshes once,
         then reopens.
+        The Rift keeps `_lock` after cleanup, the documented exception to
+        `Cleanable`'s lock rule: `create_frame_link` publishes its contract and
+        `_apply_projection_sets` installs a refresh under it, each checking
+        `_cleaned` there. A removal landing after an attach reserved its
+        budget slot, or after a refresh's sets were built, makes it give the
+        slot back or clean those sets and raise the cleaned error (GitHub
+        #274); one landing earlier can still hit the unlocked reads.
+        Cleanup marks the Rift cleaned under the lock and cleans the room after
+        releasing it, so an agent attaching through the room's command system,
+        which holds the command lock while it takes the Rift lock, cannot freeze
+        against a removal (GitHub #274, C3). `Nexus.remove_rift` marks the Rift
+        in its registry phase and decrements the target-frame budget for exactly
+        the frames attached at that moment, so an attach that publishes later
+        gives its own reservation back (the R4 residual).
 
     Lifecycle / Cleanup:
         Cleanup cleans the one owned space, the owned config snapshot, the owned
         `RiftGate`, and every engaged `FrameLinkContract`, then clears Rift-local
-        metadata and cleans the logger LAST.
+        metadata and cleans the logger LAST. It keeps `_lock` (see Threading).
+        The mark and the teardown are separate steps (`_mark_cleaned` or
+        `_mark_cleaned_for_removal`, then `_clean_owned_state`), and whoever
+        marks the Rift runs the teardown.
 
     Registration:
         MELDER KERNEL - guarded. Rifts are created and registered by `Nexus`
@@ -272,44 +289,139 @@ class Rift(Cleanable):
               teardown completes.
             - Does not attempt to clean Nexus or Aether-owned global state.
             - Leaves the Rift unusable after cleanup.
+            - Keeps `_lock`: an attach's publish and a refresh's apply check
+              `_cleaned` under it (GitHub #274).
 
         Returns:
             None.
+
+        Threading:
+            Marks the Rift cleaned under the Rift lock (`_mark_cleaned`) and
+            cleans the room and the rest after releasing it
+            (`_clean_owned_state`). Agent paths take the room's command lock
+            and then the Rift's - `CommandSystem.link_frame` attaches through
+            `create_frame_link` - so cleaning the room under the Rift lock could
+            freeze against them (GitHub #274, C3). `_cleaned`, set under the
+            lock, already makes an attach's publish and a refresh's apply back
+            out. A cleanup that overlaps a running one returns at once, before
+            that teardown finishes.
+        """
+        if not self._mark_cleaned():
+            return
+        self._clean_owned_state()
+
+    def _mark_cleaned(self) -> bool:
+        """
+        Internal
+
+        Mark this Rift cleaned under its lock, once.
+
+        Contract:
+            - Returns True to the one caller that marked it, which then owns
+              the teardown (`_clean_owned_state`); False when it was already
+              marked.
+            - Every check of `_cleaned` refuses new Rift work from here on; an
+              attach's publish and a refresh's apply read it under the same
+              lock (GitHub #274).
+
+        Returns:
+            bool: True when this call marked the Rift cleaned.
+
+        Threading:
+            Takes only the Rift lock, briefly.
         """
         if self.is_cleaned:
-            return
+            return False
         with self._lock:
             if self.is_cleaned:
-                return
+                return False
             self._cleaned = True
-            self._logger.info("Cleaning Rift runtime state.", "cleanup")
-            if self._space is not None:
-                self._space.cleanup()
-            if self._configuration is not None:
-                self._configuration.cleanup()
-            if self._rift_gate is not None:
-                self._rift_gate.cleanup()
-            self._metadata.clear()
-            for projection_set in self._projection_sets_by_frame_name.values():
-                projection_set.cleanup()
-            self._projection_sets_by_frame_name.clear()
-            for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
-                frame_link_contract.cleanup()
-            self._frame_link_contracts_by_frame_name.clear()
-            self._logger.cleanup()
+            return True
 
-            del self._projection_sets_by_frame_name
-            del self._nexus
-            del self._configuration
-            del self._rift_gate
-            del self._frame_link_contracts_by_frame_name
-            del self._space
-            del self._is_registered
-            del self._is_active
-            del self._metadata
-            del self._rift_name
-            del self._id
-            del self._logger
+    def _mark_cleaned_for_removal(self) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Mark this Rift cleaned under its lock for `Nexus.remove_rift` and return
+        the frames attached at that moment.
+
+        Contract:
+            - The caller owns the teardown and must call `_clean_owned_state`
+              next; a later `cleanup()` returns at once.
+            - An attach publishes its contract under the same lock, so it lands
+              either before this mark - its frame is in the returned names - or
+              after it, finds the Rift cleaned and gives its own reservation
+              back (GitHub #274, the R4 residual).
+
+        Returns:
+            Tuple[str, ...]: The frame names attached when the Rift was marked,
+            in attach order.
+
+        Raises:
+            RuntimeError: If the Rift is already cleaned.
+
+        Threading:
+            Takes only the Rift lock, briefly; `Nexus.remove_rift` calls it
+            under the Nexus lock (Nexus, then Rift - the order `Nexus.cleanup`
+            takes; nothing under the Rift lock takes the Nexus lock).
+        """
+        with self._lock:
+            self.check_cleaned()
+            self._cleaned = True
+            return tuple(self._frame_link_contracts_by_frame_name.keys())
+
+    def _clean_owned_state(self) -> None:
+        """
+        Internal
+
+        Clean the room and every other owned object after the Rift was marked
+        cleaned, with no Rift lock held.
+
+        Contract:
+            - Called once, by the caller that marked the Rift (`cleanup`, or
+              `Nexus.remove_rift` after `_mark_cleaned_for_removal`).
+            - Cleans the room, the configuration snapshot, the gate, the
+              projection sets and the frame-link contracts, then the logger
+              last, and deletes every field but `_lock`. No attach or refresh
+              changes the registries after the mark, so they are read here
+              without the lock.
+
+        Returns:
+            None.
+
+        Threading:
+            Runs without the Rift lock: cleaning the room takes the room's
+            child locks, which agent paths hold while they take the Rift lock
+            (GitHub #274, C3).
+        """
+        self._logger.info("Cleaning Rift runtime state.", "cleanup")
+        if self._space is not None:
+            self._space.cleanup()
+        if self._configuration is not None:
+            self._configuration.cleanup()
+        if self._rift_gate is not None:
+            self._rift_gate.cleanup()
+        self._metadata.clear()
+        for projection_set in self._projection_sets_by_frame_name.values():
+            projection_set.cleanup()
+        self._projection_sets_by_frame_name.clear()
+        for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
+            frame_link_contract.cleanup()
+        self._frame_link_contracts_by_frame_name.clear()
+        self._logger.cleanup()
+
+        del self._projection_sets_by_frame_name
+        del self._nexus
+        del self._configuration
+        del self._rift_gate
+        del self._frame_link_contracts_by_frame_name
+        del self._space
+        del self._is_registered
+        del self._is_active
+        del self._metadata
+        del self._rift_name
+        del self._id
+        del self._logger
 
     @property
     def id(self) -> str:
@@ -446,9 +558,12 @@ class Rift(Cleanable):
 
     def create_frame_link(self, frame_name: str) -> None:
         """
-        Internal
-
         Validate and engage one target frame on this Rift's frame contract.
+
+        Public: agents attach targets with it directly, or through their room's
+        `CommandSystem.link_frame`, and may call it in parallel (GitHub #274;
+        the owner, 2026-11-08). (Corrected 2026-11-08: this was marked
+        Internal while the class docstring pointed agents at it.)
 
         Args:
             frame_name:
@@ -465,9 +580,27 @@ class Rift(Cleanable):
             - Registers the frame on the Rift-local frame contract.
             - Refreshes the owned-space viewer when descriptor truth is
               available for the currently assigned frame set.
+            - Attaches a frame once: another attach of the same frame,
+              concurrent or later, keeps the published contract and the
+              frame's single budget count; a reservation that published
+              nothing is given back to Nexus.
 
         Returns:
             None.
+
+        Raises:
+            ValueError: If `frame_name` is empty, the frame has no descriptor,
+                or it fails Nexus's target-frame policy or budget.
+            RuntimeError: If the Rift is cleaned - also when a removal
+                overtakes the attach after its budget reservation, which is
+                given back first.
+
+        Threading:
+            Validation and the budget reservation run without the Rift lock,
+            which Nexus forbids holding across the reservation. The contract is
+            published under the Rift lock with a re-check, so concurrent
+            attaches of one frame publish one contract and keep one budget
+            count (GitHub #274, R4).
         """
         self.check_cleaned()
         if not frame_name:
@@ -513,17 +646,35 @@ class Rift(Cleanable):
             # attaching distinct frames cannot both pass the same empty budget
             # under the free-threaded runtime (BUG-055). Reserving first means a
             # cap refusal raises before any Rift-local state is created.
-            self._nexus._reserve_target_frame(frame_name)
-            from melder.nexus.rift.frame_link.frame_link_contract import (
-                FrameLinkContract,
-            )
-            self._frame_link_contracts_by_frame_name[frame_name] = FrameLinkContract(
-                rift_id=self._id,
-                frame_name=frame_name,
-                metadata={
-                    "rift_name": self._rift_name,
-                },
-            )
+            # `nexus` is held in a local on purpose: a removal that cleans this
+            # Rift during the attach deletes `_nexus`, and the reservation must
+            # still go back to the Nexus that holds it (GitHub #274, R4).
+            nexus = self._nexus
+            nexus._reserve_target_frame(frame_name)
+            with self._lock:
+                # Publish under the Rift lock, which cleanup keeps, checking again:
+                # two attaches of one frame both pass the unlocked check above, so
+                # the second to arrive gives its reservation back instead of
+                # replacing the first contract, and a Rift cleaned meanwhile
+                # publishes nothing (GitHub #274, R4).
+                published = (
+                    not self.is_cleaned
+                    and frame_name not in self._frame_link_contracts_by_frame_name
+                )
+                if published:
+                    from melder.nexus.rift.frame_link.frame_link_contract import (
+                        FrameLinkContract,
+                    )
+                    self._frame_link_contracts_by_frame_name[frame_name] = FrameLinkContract(
+                        rift_id=self._id,
+                        frame_name=frame_name,
+                        metadata={
+                            "rift_name": self._rift_name,
+                        },
+                    )
+            if not published:
+                nexus._release_target_frame(frame_name)
+                self.check_cleaned()
         self.refresh_runtime_projections()
 
     def _authorize_nexus_managed_frame_link(self, frame_name: str) -> bool:
@@ -653,11 +804,33 @@ class Rift(Cleanable):
                 When True, replace only the named incoming projection sets and
                 preserve unaffected installed sets.
 
+        Contract:
+            - Takes ownership of the incoming sets: they are installed, or -
+              when the Rift is cleaned - cleaned here, since no one else holds
+              them.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the Rift is cleaned, including by a removal that
+                overtook the refresh after Nexus built its sets; the incoming
+                sets are cleaned first (GitHub #274, R5).
+
+        Threading:
+            Checks `_cleaned` under the Rift lock, which cleanup keeps, and only
+            there: a check before the lock would raise with the incoming sets
+            left uncleaned.
         """
-        self.check_cleaned()
         with self._lock:
+            if self.is_cleaned:
+                # A removal cleaned this Rift after the refresh built these sets -
+                # before this call or while it waited on the lock. Nothing else
+                # will clean them, so clean them, then raise the cleaned error
+                # (GitHub #274, R5).
+                for projection_set in projection_sets_by_frame_name.values():
+                    projection_set.cleanup()
+                self.check_cleaned()
             if merge:
                 merged_projection_sets_by_frame_name = dict(
                     self._projection_sets_by_frame_name

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/codegen_command_system.py",
- "source_sha256": "d55f2798c145fd30683b3ac904a27ddb14ede129995ce2fafff748d2ada34500",
+ "source_sha256": "afe598fe112022b7c7e4bed60d58fb9794b859e07a8890b60866aef2b5002bbf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.codegen_command_system": {
@@ -83,15 +83,16 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "00741ac4bb509ba6eccc4cb0e0ab3b2cf283b9d1fecad9a01a752d24c11d938e",
+   "span_sha256": "3ff59edc74ae1627fa21a186093f1215462995141d9760e155fe7da7235889e4",
    "role": "Codegen-room command facade over the internal engine.",
    "responsibilities": [
     "preserves the selected runtime-helper subset for codegen rooms",
     "delegates validate and execute requests into the attached CodegenSystem",
     "emits full-source codegen room-memory records for top-level codegen actions",
-    "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal",
+    "owns the FULL research_* command family (34 commands: 7 record reads, 5 organization verbs, 2 campaign verbs, 9 foresight, 3 synthesis and 8 composition commands) via a non-constructing MutationResearch peek with teach-grade refusal",
     "uses lesser-aware authorized named lookup without expanding room capabilities",
-    "refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)"
+    "refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)",
+    "runs execute_codegen's engine request after releasing the command lock, its RiftGate ticket held; materialize_codegen still runs its module under that lock"
    ],
    "owns_state": [
     "_codegen_system"
@@ -99,7 +100,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "00741ac4bb509ba6eccc4cb0e0ab3b2cf283b9d1fecad9a01a752d24c11d938e"
+   "semantics_authored_against": "3ff59edc74ae1627fa21a186093f1215462995141d9760e155fe7da7235889e4"
   }
  },
  "edges_out": [

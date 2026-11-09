@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
- "source_sha256": "53499d1aba0b36d1d2e3c722086c92663fc54d42c706e1b55fdc2c46c4660772",
+ "source_sha256": "8f2a8d56e40927abc1dc60a4652e59da983a97791833096641b7c7d9d21da91d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot": {
@@ -9,7 +9,16 @@
    "label": "structural_snapshot",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The phase 3-4 structural snapshot: value rows captured into the conduit cache bundle at conjure end and replayed at the next conjure when every owned spell still matches.",
+   "responsibilities": [
+    "exports StructuralSnapshot, the capture, classification and replay helpers of the conjure-time structural cache"
+   ],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot": {
    "id": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
@@ -38,7 +47,21 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "adcb3492f656339443212f48d5791cd25a7bebf665b4941bb72eceac6d5ddaab"
+   "span_sha256": "09c00456ce07ce61649ee88ea7643060cbb677d4d5ff62068277b550bf3995e0",
+   "include": true,
+   "role": "Slot-only static helper that captures each owned spell's phase 3-4 results as marshal-safe value rows and, on a full structural hit, replays them instead of running the structural phases.",
+   "responsibilities": [
+    "builds one payload per owned spell at conjure end (capture_at_conjure_end, build_payload): the structural key (format, spell_id, binding hash, annotation type references), the world stamp, the replayable flag, phase-3 dependency ids and socket rows and the phase-4 validity and contract_unvalidated flag - values only, never index ids, objects or reprs",
+    "writes a socket row as the SpellSocketDescriptor fields in order - payload format 3 adds hidden_spell_ids and hidden_frame_keys (0.2.8281) - and rebuilds descriptors from rows (rebuild_topology)",
+    "stamps the world as a SHA-256 over the sorted pool ids with their binding hashes, the frame posture and the sorted borrowed ids with theirs (world_stamp); a pool holding an object or spellframe that overrides __eq__ is not replayable (pool_replayable, CompilerPhase3._eq_safe_object)",
+    "classifies each owned spell as a hit only when its payload is well-formed and carries the live key, the live world stamp and replayable True (classify, payload_well_formed): disabled, full_hit, partial or miss",
+    "on a full hit replays phase 3's durable writes through the registry helpers phase 3 calls, then the phase-4 verdict (hydrate_full_hit); capture is best-effort per spell, logs and drops a payload it cannot build and removes the payloads of spells no longer live, never raising into conjure"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": "09c00456ce07ce61649ee88ea7643060cbb677d4d5ff62068277b550bf3995e0"
   }
  },
  "edges_out": [],

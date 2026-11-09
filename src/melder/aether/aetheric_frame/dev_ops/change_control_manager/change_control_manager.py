@@ -40,6 +40,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -788,8 +789,8 @@ class ChangeControlManager(Cleanable):
         Phase 1-4 validation before commit completes. It is intentionally
         conservative:
 
-        - only the generalized structural-commit set participates: bind, plus
-          notch (whose staged binding key names the promoted member)
+        - bind and notch enter for enum members, exact names, or old lowercase strings;
+          only the actual notch member takes the compiled-member shortcut below
         - unconjured or unavailable spellbooks short-circuit to no-op
         - spells that already have Phase 4 results are skipped
         - notch additionally skips members that already carry a phase-5 root
@@ -809,9 +810,8 @@ class ChangeControlManager(Cleanable):
         path can fail loudly instead of accepting a broken staged mutation.
         """
         
-        if staged.request_type not in (
-            ChangeTransactionType.BIND,
-            ChangeTransactionType.NOTCH,
+        if ChangeTransactionType._comparison_token(staged.request_type) not in (
+                "bind", "notch",
         ):
             return
         if not staged.binding_keys:
@@ -847,8 +847,18 @@ class ChangeControlManager(Cleanable):
         changed frame keys and marks contract dependents dirty for changed
         contract keys, but only when the staged mutation actually names a
         spellbook and contributes relevant keys.
+
+        Since 2026-11-07 (patch hidden_provider_2026_11_07, the owner's D1 = B)
+        a staged spell bound under a spellframe also announces its class's type
+        key (`_hidden_type_keys_for_staged`), unioned into the same single
+        `mark_collection_dependents_dirty` call: a consumer that compiled with
+        that class unresolved waits under the class name, so the bind, notch or
+        link of a framed spell of its class re-gates it and its next meld
+        reruns phases 1-4 - where HIDDEN_PROVIDER refuses it, as its twin bound
+        after the change is refused at bind. A bare spell adds nothing (its
+        frame key already is its type key).
         """
-        
+
         if staged.spellbook_id is None:
             return
         if not staged.binding_keys and not staged.contract_keys:
@@ -857,6 +867,7 @@ class ChangeControlManager(Cleanable):
         frame_keys.update(
             {frame_key for frame_key, _, _ in staged.contract_keys if frame_key}
         )
+        frame_keys.update(self._hidden_type_keys_for_staged(staged))
         if not frame_keys:
             return
         self._spell_system_states.mark_collection_dependents_dirty(
@@ -875,6 +886,47 @@ class ChangeControlManager(Cleanable):
             contract_keys=contract_key_set,
             change_reason=SpellStateChangeReason.contract_unvalidated,
         )
+
+    def _hidden_type_keys_for_staged(self, staged: ChangeControlStagedMutation) -> Set[str]:
+        """
+        Return the type keys the staged spells announce beside their frame keys: those a class lookup cannot reach.
+
+        Purpose:
+            The announce half of patch hidden_provider_2026_11_07 (D1 = B): a
+            spell bound under a spellframe is no provider for a class lookup, but
+            its arrival decides whether a consumer of its class is refused
+            (HIDDEN_PROVIDER), and that consumer waits under the class name -
+            not under the spell's frame key.
+
+        Contract:
+            - Resolves the staged binding keys to live spells with the helpers
+              the structural validator uses: `_resolve_spellbook_for_staged`
+              answers None and `_resolve_spells_for_binding_keys` answers [] when
+              nothing resolves (a departed spell, a spellbook-only initiator, a
+              unit fake), so this answers an empty set then and never raises for
+              a missing spell.
+            - Keeps `CompilerPhase3._hidden_type_key` of each resolved spell that
+              has one (bound under a spellframe or a binding name, not a Protocol
+              definition); a bare spell's frame key is already its type key.
+            - Reads only; the Spellbook lock is taken briefly inside
+              `_resolve_spells_for_binding_keys`, as for the structural validator
+              earlier in the same commit dispatch.
+
+        Args:
+            staged: The committed staged mutation.
+
+        Returns:
+            Set[str]: The type keys to announce; empty when there are none.
+        """
+        if not staged.binding_keys:
+            return set()
+        spellbook = self._resolve_spellbook_for_staged(staged)
+        type_keys: Set[str] = set()
+        for spell in self._resolve_spells_for_binding_keys(spellbook, staged.binding_keys):
+            type_key = CompilerPhase3._hidden_type_key(spell)
+            if type_key is not None:
+                type_keys.add(type_key)
+        return type_keys
 
     def transaction_manager(self) -> ChangeControlTransactionManager:
         """
@@ -1045,9 +1097,13 @@ class ChangeControlManager(Cleanable):
                 owner_request_id=request_id,
                 scope_keys=scope_keys,
                 reason_tag=(
-                    staged.request_type.value
-                    if hasattr(staged.request_type, "value")
-                    else str(staged.request_type)
+                    staged.request_type.wire_value
+                    if isinstance(staged.request_type, ChangeTransactionType)
+                    else (
+                        staged.request_type.value
+                        if hasattr(staged.request_type, "value")
+                        else str(staged.request_type)
+                    )
                 ),
             )
         return True

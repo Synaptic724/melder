@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/transaction_strategy.py",
- "source_sha256": "242fb47d8af12974dac2f2b9be94a04dca2141715461afa090d4257195f2828f",
+ "source_sha256": "1845b87a81c2a0d0471af92d6cd2c829e39f3d163d172e3ea263227d201616c4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.transaction_strategy": {
@@ -35,7 +35,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cb03b95b746e08e173973dd51b211b4da165b20062ee4f382da006078bfc17ee",
+   "span_sha256": "9a917202197522d7b76f5b496f1308aa7428b6b32e0a8036f6f5717125a142bd",
    "include": true,
    "role": "The dispatch contract every transaction family implements, and where SCOPE PROPORTIONALITY is decided.",
    "responsibilities": [

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/mutation_research.py",
- "source_sha256": "5bee6950e19b25fe715620300ad20e71e6cc92804286cecc78fa94e2c693cb71",
+ "source_sha256": "5895d301fffb3f3923b0bb038ff00f23db75820b7b583a1b01326d19ffa246cd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.mutation_research": {
@@ -89,7 +89,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ece73e2c024339b819f7e65b2e52ed45a99769415b65f787f4b0252274a46107",
+   "span_sha256": "85a29462885c0e5eb626744908f1e0cec029bd0125be2e15ceb3cc84ce63ccdd",
    "role": "Aether-hosted singleton mutation-research root: the formal declaration record over the live spell world, plus the agent foresight surface (source_view / impact_view with residency join / module_graph_view / source_drift_view / preview_candidate - all read-only over crystallizer custody).",
    "responsibilities": [
     "owns the ResearchSet registry with one guaranteed default set",

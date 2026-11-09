@@ -120,9 +120,9 @@ def test_notch_seals_spellbook_conduit_and_binding_exclusive() -> None:
 
     scope_claims = dict(plan["scope_claims"])
     binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims[binding_scope] == "x"
     assert plan["metadata"]["index_mode"] == "notch"
 
 
@@ -377,11 +377,11 @@ def test_add_to_index_seals_both_sides_exclusive() -> None:
 
     scope_claims = dict(plan["scope_claims"])
     binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "x"
+    assert scope_claims["scope:spellbook:spellbook-2"] == "x"
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-2"] == "x"
+    assert scope_claims[binding_scope] == "x"
     assert plan["metadata"]["index_mode"] == "add_to_index"
 
 
@@ -457,9 +457,9 @@ def test_remove_from_index_seals_spellbook_conduit_and_binding_exclusive() -> No
 
     scope_claims = dict(plan["scope_claims"])
     binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
-    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims[binding_scope] == "x"
     assert plan["metadata"]["index_mode"] == "remove_from_index"
 
 
@@ -520,8 +520,8 @@ def test_elect_seals_member_conduits_exclusive_and_marks_mode() -> None:
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-2"] == "x"
     assert plan["conduit_ids"] == ("conduit-1", "conduit-2")
     assert plan["metadata"]["cluster_leader_mode"] == "elect"
 
@@ -607,8 +607,8 @@ def test_unelect_seals_member_conduits_exclusive_and_marks_mode() -> None:
     )
 
     scope_claims = dict(plan["scope_claims"])
-    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
-    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == "x"
+    assert scope_claims["scope:conduit:conduit-2"] == "x"
     assert plan["metadata"]["cluster_leader_mode"] == "unelect"
 
 

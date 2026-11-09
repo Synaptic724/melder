@@ -46,7 +46,7 @@ def node_identity(node: object) -> str:
     )
 
 
-class LaneState(enum.Enum):
+class LaneState(enum.StrEnum):
     """
     Lifecycle states for one research lane.
 
@@ -81,6 +81,11 @@ class LaneState(enum.Enum):
           organization snapshot machinery can restore views that contained
           it, and residence stays permanent so rediscovery still points here.
 
+    String contract:
+        Names and values match. Members compare as strings, including equal-valued
+        members of other StrEnum families; callers needing family identity must check
+        the concrete enum type.
+
     AGENT_ACCESS: public
 
     AGENT_PURPOSE:
@@ -93,7 +98,7 @@ class LaneState(enum.Enum):
     archived = "archived"
 
 
-class LaneType(enum.Enum):
+class LaneType(enum.StrEnum):
     """
     Policy vocabulary for one research lane (salvaged May classification).
 
@@ -126,6 +131,11 @@ class LaneType(enum.Enum):
           posture is on (configuration `lane_type_enforcement`, default
           off) - a type-mixing join then requires the same force=True
           supersede the divergence law already uses.
+
+    String contract:
+        Names and values match. Members compare as strings, including equal-valued
+        members of other StrEnum families; callers needing family identity must check
+        the concrete enum type.
 
     AGENT_ACCESS: public
 
@@ -246,6 +256,8 @@ class ResearchLane(Cleanable):
               default-lane type of `development`. A freshly created lane is an
               experiment until the caller says otherwise; the set passes
               `development` explicitly only for its guaranteed default lane.
+            - A raw string or LaneType member is accepted; another enum family is
+              refused even when its value equals a lane type.
             - An UNKNOWN `lane_type` raises `ValueError` naming the valid
               vocabulary, so a typo cannot silently create an untyped lane.
             - `lane_id` is minted as a fresh ULID unless one is supplied. A
@@ -296,6 +308,8 @@ class ResearchLane(Cleanable):
             self._lane_type: LaneType = LaneType.experiment
         else:
             try:
+                if isinstance(lane_type, enum.Enum) and not isinstance(lane_type, LaneType):
+                    raise ValueError("foreign lane_type enum")
                 self._lane_type = LaneType(lane_type)
             except ValueError:
                 known = [member.value for member in LaneType]
@@ -899,6 +913,8 @@ class ResearchLane(Cleanable):
               node type hydrates as a `GroupedResearchNode`, an untagged one as a
               `ResearchNode`. Back-compat is by ABSENCE - pre-grouping payloads
               have no tag and correctly rebuild as spell nodes.
+            - Foreign enum state/type values follow the same fallback as other
+              wrong-typed payloads; same-family string enums are accepted.
             - LANE-TYPE BACK-COMPAT: a payload sealed before the type vocabulary
               carries no `lane_type`, and hydrates as `development` when its name
               is `default`, `experiment` otherwise - mirroring how a fresh lane
@@ -936,7 +952,13 @@ class ResearchLane(Cleanable):
             raise ValueError("payload is missing 'name'/'lane_id' values.")
         metadata = payload.get("metadata")
         lane_type = payload.get("lane_type")
-        if not isinstance(lane_type, str):
+        if (
+                not isinstance(lane_type, str)
+                or (
+                        isinstance(lane_type, enum.Enum)
+                        and not isinstance(lane_type, LaneType)
+                )
+        ):
             # Back-compat: payloads sealed before the type vocabulary carry
             # no lane_type. The guaranteed default lane hydrates as the
             # trunk posture; every other lane hydrates as research work.
@@ -980,7 +1002,13 @@ class ResearchLane(Cleanable):
                 lane._anchor_lane_id = anchor_lane_id
                 lane._anchor_spell_id = anchor_spell_id
             state_value = payload.get("state")
-            if isinstance(state_value, str):
+            if (
+                    isinstance(state_value, str)
+                    and (
+                            not isinstance(state_value, enum.Enum)
+                            or isinstance(state_value, LaneState)
+                    )
+            ):
                 lane._state = LaneState(state_value)
             joined_into = payload.get("joined_into_lane_id")
             if isinstance(joined_into, str):

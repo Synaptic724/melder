@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/claim_table.py",
- "source_sha256": "725a1918511a1f0cc02b28c2e291b257b0eddc5e5d7382177dddb91031dcc9aa",
+ "source_sha256": "453747759b2abae359d38c4cd365dba593a04caad4a2e98ffaa9fca2692840f8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.claim_table": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a9557f79f5a72eb60109650fc3ef3657a7e6110446cda8ba0fa85624a044a66f",
+   "span_sha256": "469acda9181917606c4ce187b05304a1970cd789634fe2701b4afb60082701c4",
    "include": true,
    "role": "One reason an acquisition could not be granted - which scope, held by whom, in what mode.",
    "responsibilities": [
@@ -117,7 +117,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8ea2da2ceb784f5fbd2c8f7c0fa7c1795fdfbf55c8529a624aa7e21aca938a0d",
+   "span_sha256": "27c971e5afa93c8ea8ebb9dac54a2105a069b7dd70ea9d0f29a984d3d2ca665d",
    "include": true,
    "role": "Atomic mode-aware scope-claim table: serialises structural work BY SCOPE rather than globally, so disjoint work runs in parallel and only true overlap waits.",
    "responsibilities": [

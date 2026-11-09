@@ -3,9 +3,11 @@ TIER: beginner (25)
 GOAL: Spellframes are CATEGORIES. Organize one world's spells by the
       resolution ideas your app already has - "repositories",
       "notifiers" - and (category, name) becomes the full address.
-      The addressing FEELS like a two-level dict, but frames are NOT
-      dicts: they are grouping and contract keys. A string frame
-      groups; a Protocol frame also VALIDATES what binds under it
+      A frame IS an interface dict keyed by binding_name: a member is
+      looked up through its frame - [category][name] - and never by
+      its own class alone (a class lookup reaches only a spell bound
+      bare; owner ruling 2026-11-07). A string frame groups; a
+      Protocol frame also VALIDATES what binds under it
       (intermediate tier).
       Seed for later: when a category needs its own OWNER and its own
       resolution conditions, the category graduates into a whole

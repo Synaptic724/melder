@@ -1,0 +1,51 @@
+interface_resolution_check.py on 0.2.8278 (melder_0, 2026-11-07T13:59:04Z; .venv_new 3.14.7 free-threaded build), the GIL off then on.
+===== -X gil=0
+one_impl_no_binding_name
+  meld(spellframe=Greeter)                                   -> English
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> English
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+one_impl_with_binding_name
+  meld(spellframe=Greeter)                                   -> raises KeyError
+  meld(spellframe=Greeter, binding_name='english')           -> English
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> English
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+two_impls_with_binding_names
+  meld(spellframe=Greeter)                                   -> raises KeyError
+  meld(spellframe=Greeter, binding_name='english')           -> English
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> raises SpellbookValidationError [AMBIGUOUS_PROVIDER]
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+two_impls_no_binding_names
+  bind French under Greeter too (no binding name)            -> raises RuntimeError
+  meld(spellframe=Greeter)                                   -> English
+  meld(spellframe=Greeter, binding_name='english')           -> raises KeyError [MELD]
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> English
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+===== -X gil=1
+one_impl_no_binding_name
+  meld(spellframe=Greeter)                                   -> English
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> English
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+one_impl_with_binding_name
+  meld(spellframe=Greeter)                                   -> raises KeyError
+  meld(spellframe=Greeter, binding_name='english')           -> English
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> English
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+two_impls_with_binding_names
+  meld(spellframe=Greeter)                                   -> raises KeyError
+  meld(spellframe=Greeter, binding_name='english')           -> English
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> raises SpellbookValidationError [AMBIGUOUS_PROVIDER]
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError
+two_impls_no_binding_names
+  bind French under Greeter too (no binding name)            -> raises RuntimeError
+  meld(spellframe=Greeter)                                   -> English
+  meld(spellframe=Greeter, binding_name='english')           -> raises KeyError [MELD]
+  meld(English)  [the concrete class]                        -> raises KeyError
+  bind ByProtocol (greeter: Greeter), meld it                -> English
+  bind ByClass (greeter: English), meld it                   -> raises UnresolvedInputError

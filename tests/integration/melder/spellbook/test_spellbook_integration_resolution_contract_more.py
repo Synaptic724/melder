@@ -1291,21 +1291,33 @@ def test_bind_rejects_module_as_spell() -> None:
         )
 
 
-def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
+def test_type_hint_di_concrete_class_bound_only_under_binding_names_refuses_conjure_naming_both() -> None:
     """
     Purpose:
-        Validate ambiguous type-hint DI for one concrete class fails at build.
+        Validate type-hint DI for one concrete class does not reach the class bound
+        under binding names, and refuses the consumer naming both bindings: not
+        ambiguous, not an unresolved input.
     Contract:
         - One class is one spell (S1 of EPIC-2026-10-18-spell_identity_is_the_code):
           binding _Repo again under another binding name is refused, so the second
           provider is a version of _Repo - its name, other code - under 'secondary'.
-        - A consumer whose constructor type-hints the concrete class then has
-          two single-DI candidates, and Phase 3 rejects the ambiguity at
-          conjure with disambiguation guidance.
+        - A binding name hides the class from a class annotation (2026-11-07, the
+          owner's rulings E2-E3; Autofac's rule that a declared service hides the
+          component's own type), so a consumer whose constructor type-hints the
+          concrete class has no single-DI candidate. Before, both named bindings
+          were candidates and the ambiguity was refused at conjure
+          (AMBIGUOUS_PROVIDER) with disambiguation guidance.
+        - From 2026-11-07 conjure succeeded and melding the consumer raised
+          UnresolvedInputError unless an override supplied the value. Since patch
+          hidden_provider_2026_11_07 a class lookup whose class is bound only under
+          binding names is a HIDDEN_PROVIDER error: conjure is refused, naming both
+          bindings, the SpellMap that reaches each, and the expected type as the
+          report renders it (its qualname).
     Returns:
         None.
     Raises:
-        AssertionError: If the ambiguous conjure does not raise.
+        AssertionError: If the class annotation reaches a named binding, or the
+            refusal does not name both bindings.
     """
     class _Repo:
         """
@@ -1330,7 +1342,8 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     class _Consumer:
         """
         Purpose:
-            Provide a consumer that type-hints the ambiguous concrete class.
+            Provide a consumer that type-hints the concrete class, which is bound
+            only under binding names (formerly the ambiguous case).
         Contract:
             Stores the injected repository for assertions.
         """
@@ -1351,6 +1364,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
+    secondary = version_of(_Repo, provider="secondary")
     spellbook.bind(
         spell=_Repo,
         existence=Existence.unique,
@@ -1358,7 +1372,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         binding_name="primary",
     )
     spellbook.bind(
-        spell=version_of(_Repo, provider="secondary"),
+        spell=secondary,
         existence=Existence.unique,
         permissions="create",
         binding_name="secondary",
@@ -1368,13 +1382,22 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    # 2026-10-04: refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
-    with pytest.raises(SpellbookValidationError) as excinfo:
-        spellbook.conjure(name="ambiguous-concrete", dynamic=False)
-    text = str(excinfo.value)
-    assert "[AMBIGUOUS_PROVIDER]" in text
-    assert "_Repo at (spellframe=None, binding_name='primary')" in text
-    assert "_Repo at (spellframe=None, binding_name='secondary')" in text
+    # 2026-10-04: the ambiguity was refused through the readable report (AMBIGUOUS_PROVIDER), not a Phase-3 RuntimeError.
+    # 2026-11-07: neither named binding answers the class annotation any more, so nothing is ambiguous:
+    # conjure succeeded and the socket was an unresolved input the meld had to supply.
+    # hidden_provider_2026_11_07: a class bound only under binding names is refused at conjure, naming both bindings.
+    expected_type = _Repo.__qualname__
+    with pytest.raises(SpellbookValidationError) as caught:
+        spellbook.conjure(name="named-concrete", dynamic=False)
+    assert str(caught.value) == (
+        "Spellbook validation failed. Broken spells: _Consumer.\n_Consumer:\n"
+        f"  - Parameter 'repo' on spell '_Consumer' expects {expected_type}, but a class lookup reaches "
+        f"{expected_type} only where it is bound bare (no spellframe, the default binding), and {expected_type} is "
+        "bound only under a binding name: _Repo at (spellframe=None, binding_name='primary') - use SpellMap(_Repo, "
+        "binding_name='primary'); _Repo at (spellframe=None, binding_name='secondary') - use SpellMap(_Repo, "
+        "binding_name='secondary'). Ask for it where it is bound - the SpellMap of the one it needs, as the "
+        f"parameter's default - or bind {expected_type} bare. [HIDDEN_PROVIDER]"
+    )
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:
@@ -2772,11 +2795,15 @@ def test_spellmap_explicit_class_with_wrong_binding_name_raises() -> None:
     Purpose:
         Validate explicit SpellMap binding_name mismatches raise during resolution.
     Contract:
-        - SpellMap(explicit class, binding_name=wrong) fails during conjure.
+        - SpellMap(explicit class, binding_name=wrong) fails during conjure: since
+          patch hidden_provider_2026_11_07 with a HIDDEN_PROVIDER error naming where
+          the class is bound and the SpellMap that reaches it (Phase 3 raised a
+          PhaseExecutionError before).
     Returns:
         None.
     Raises:
-        AssertionError: If the mismatch does not raise.
+        AssertionError: If the mismatch does not raise, or its report does not name
+            the binding the class is bound under.
     """
     class _Config:
         """
@@ -2835,8 +2862,17 @@ def test_spellmap_explicit_class_with_wrong_binding_name_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError):
+    config_name = _Config.__qualname__
+    with pytest.raises(SpellbookValidationError) as caught:
         spellbook.conjure(name="root")
+    assert str(caught.value) == (
+        "Spellbook validation failed. Broken spells: _Service.\n_Service:\n"
+        f"  - Parameter 'cfg' on spell '_Service' has the default SpellMap({config_name}, binding_name='wrong'), a "
+        f"class lookup that reaches {config_name} only where it is bound bare under the binding name 'wrong', but "
+        f"{config_name} is bound only where that lookup does not reach: _Config at (spellframe=None, "
+        f"binding_name='primary') - use SpellMap({config_name}, binding_name='primary'). Point the SpellMap at the "
+        f"address it means, as shown, or bind {config_name} bare under the binding name 'wrong'. [HIDDEN_PROVIDER]"
+    )
 
 
 def test_spellmap_explicit_method_with_wrong_frame_raises() -> None:

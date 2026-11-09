@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
- "source_sha256": "af0b12de5c823907a5cae46b55959e13764ed8b6c435c6b6685306f41e37c8fb",
+ "source_sha256": "4b120d6ba2cb2de579d0748d92cbd0cf8d07d66c9d1802cde9628e91450bbcce",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy": {
@@ -40,7 +40,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1802d80dee2fed87b6ea03d1708f848d7febc0b2a10dba877ce3cf03d7174a38",
+   "span_sha256": "6d85feb43e966dbd0828347fa2dc5861377b8ea1517ea0c300f497b6c63e9470",
    "include": true,
    "role": "Builds a root's site graph from injection sources and live Phase-3 topologies; not registered in the default Phase-9 chain.",
    "responsibilities": [

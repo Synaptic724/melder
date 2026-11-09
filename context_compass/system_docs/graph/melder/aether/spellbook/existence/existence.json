@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/existence/existence.py",
- "source_sha256": "e7857a53637d5bde2e51d5fba11341163adc12c86768c8b79a5b0eb585b8a14c",
+ "source_sha256": "79e60c4814e09787a031a666f856d54ada8fc9ed726722cac00511f32f1e23ec",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.existence.existence": {
@@ -12,29 +12,30 @@
    "lineno": 1,
    "include": true,
    "role": "The lifecycle mode enum for a spell binding.",
-   "semantics_authored_against": "52b1a4c5d1881ff9577d6bd4d4b04ebfebd434bdb464dbfee57ea2817bc12b7b"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.existence.existence.Existence": {
    "id": "melder.aether.spellbook.existence.existence.Existence",
    "label": "Existence",
    "kind": "enum",
    "file": "src/melder/aether/spellbook/existence/existence.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6a644f1920e7586c5ac318311e85b4fc54f5a018def585542828c03c81eb884e",
+   "span_sha256": "26ed39476acd4a7670c161f61e6e256cf475bb4981a1a2a3e238cf9299c31d51",
    "role": "Lifecycle mode enum for a spell binding.",
    "responsibilities": [
     "labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes",
-    "managed_spell_quantity (0.2.8241): objects leased from a pool the owning root keeps per version and released back explicitly - the only member whose objects come back to Melder, and only when their holder releases them"
+    "managed_spell_quantity (0.2.8241): objects leased from a pool the owning root keeps per version and released back explicitly - the only member whose objects come back to Melder, and only when their holder releases them",
+    "values equal the member names (a StrEnum since 0.2.8277), and the historical numeric values 1-7 still resolve to their members through _missing_, so older records and enum pickles stay readable"
    ],
    "owns_state": [
     "unique",
@@ -48,15 +49,15 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "6a644f1920e7586c5ac318311e85b4fc54f5a018def585542828c03c81eb884e"
+   "semantics_authored_against": "26ed39476acd4a7670c161f61e6e256cf475bb4981a1a2a3e238cf9299c31d51"
   }
  },
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

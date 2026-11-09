@@ -1308,9 +1308,13 @@ class TransactionMediator(Cleanable):
                 owner_request_id=request_id,
                 scope_keys=scope_key_values,
                 reason_tag=(
-                    staged.request_type.value
-                    if hasattr(staged.request_type, "value")
-                    else str(staged.request_type)
+                    staged.request_type.wire_value
+                    if isinstance(staged.request_type, ChangeTransactionType)
+                    else (
+                        staged.request_type.value
+                        if hasattr(staged.request_type, "value")
+                        else str(staged.request_type)
+                    )
                 ),
             )
 
@@ -1440,7 +1444,7 @@ class TransactionMediator(Cleanable):
             return session
         except Exception:
             session.mark_abort_only(
-                f"{transaction_type.value} transaction start strategy failed.",
+                f"{transaction_type.wire_value} transaction start strategy failed.",
             )
             # end_transaction_by_request_id finalizes the root session, and
             # _finalize_root_session dispatches strategy on_end in its finally

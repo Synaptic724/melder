@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Dict, Optional
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
@@ -208,9 +211,13 @@ class TransactionStrategy(ABC):
         if devops_information_registry is None:
             return
         fact_family = (
-            staged.request_type.value
-            if hasattr(staged.request_type, "value")
-            else str(staged.request_type)
+            staged.request_type.wire_value
+            if isinstance(staged.request_type, ChangeTransactionType)
+            else (
+                staged.request_type.value
+                if hasattr(staged.request_type, "value")
+                else str(staged.request_type)
+            )
         )
         reporter = staged.request_id
         if staged.spellbook_id:

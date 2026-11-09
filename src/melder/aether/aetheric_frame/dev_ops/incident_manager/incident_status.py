@@ -1,12 +1,15 @@
-from enum import auto, Enum
+from enum import StrEnum
+from typing import Optional
 
-class IncidentStatus(Enum):
+class IncidentStatus(StrEnum):
     """
     Lifecycle status for an `Incident`.
 
     Contract:
     - Status values describe where the incident sits in the operational review
       lifecycle, not the underlying runtime condition itself.
+    - String values exactly match member names; historical numeric values 1-4
+      remain readable by value, including in older pickle payloads.
     - Status transitions are driven by `Incident` methods such as
       `acknowledge()`, `resolve()`, and `suppress()`.
 
@@ -46,7 +49,27 @@ class IncidentStatus(Enum):
         access: internal. Lifecycle status for an `Incident`. Melder kernel machinery: read it
         to understand the runtime, do not drive it directly.
     """
-    open = auto()
-    acknowledged = auto()
-    resolved = auto()
-    suppressed = auto()
+    open = "open"
+    acknowledged = "acknowledged"
+    resolved = "resolved"
+    suppressed = "suppressed"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[IncidentStatus]:
+        """
+        Resolve a historical numeric status to its original member.
+
+        Exact current strings use ordinary enum lookup. Values equal to the
+        four old integer values retain by-value and old-pickle readability.
+        Unknown or unhashable inputs return None for normal ValueError.
+        """
+        legacy_values: dict[object, IncidentStatus] = {
+            1: cls.open,
+            2: cls.acknowledged,
+            3: cls.resolved,
+            4: cls.suppressed,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

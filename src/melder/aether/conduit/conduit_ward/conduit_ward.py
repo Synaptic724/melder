@@ -286,7 +286,7 @@ class ConduitWard(Cleanable):
             self._contracts.clear()
             self._initiated_index.clear()
             self._received_index.clear()
-            self._conduit_type = self._conduit_type.cleaned
+            self._conduit_type = ConduitState.CLEANED
             self._cleaned = True
             self._logger.info(
                 "cleanup complete",

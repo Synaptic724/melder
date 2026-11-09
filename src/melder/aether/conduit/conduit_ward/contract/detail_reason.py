@@ -1,8 +1,12 @@
-from enum import Enum, auto
+from enum import StrEnum
+from typing import Optional
 
-class DetailReason(Enum):
+class DetailReason(StrEnum):
     """
     Why one `Detail` entry exists inside a contract.
+
+    Values match the member names exactly. Historical numeric values 1-4
+    remain accepted by value, including in older enum pickle payloads.
 
     The ward uses this enum to distinguish directly shared spells from
     transitive dependency-linked ones. That matters later when a root source is
@@ -43,7 +47,27 @@ class DetailReason(Enum):
         access: internal. Why one `Detail` entry exists inside a contract. Melder kernel
         machinery: read it to understand the runtime, do not drive it directly.
     """
-    root = auto()
-    dependency = auto()
-    manual = auto()
-    other = auto()
+    root = "root"
+    dependency = "dependency"
+    manual = "manual"
+    other = "other"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[DetailReason]:
+        """
+        Resolve a historical numeric reason to its original member.
+
+        Current names use ordinary enum lookup. Values equal to the old
+        integer values remain readable; unknown or unhashable inputs return
+        None so enum construction raises its normal ValueError.
+        """
+        legacy_values: dict[object, DetailReason] = {
+            1: cls.root,
+            2: cls.dependency,
+            3: cls.manual,
+            4: cls.other,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None

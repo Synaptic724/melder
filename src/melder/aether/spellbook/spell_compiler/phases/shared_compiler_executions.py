@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
     CodegenSignature,
@@ -180,7 +181,7 @@ class SharedCompilerExecutions:
                     raw_socket_kind = None
                 if raw_socket_kind is not None:
                     try:
-                        socket_kind = raw_socket_kind.value
+                        socket_kind = SocketKind._legacy_code(raw_socket_kind)
                     except AttributeError:
                         socket_kind = repr(raw_socket_kind)
                 rows.append(
@@ -892,7 +893,7 @@ class SharedCompilerExecutions:
                         socket_ref.node_id,
                         socket_ref.param_name,
                         socket_ref.param_path_id,
-                        socket_ref.socket_kind.value,
+                        SocketKind._legacy_code(socket_ref.socket_kind),
                     )
                 )
             if len(socket_rows) > 1:

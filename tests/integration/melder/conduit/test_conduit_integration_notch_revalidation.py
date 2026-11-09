@@ -9,7 +9,7 @@ Each test builds its own dynamic frame with caching off: a lender Book lends a p
 a borrower Book's consumer holds a SpellContract on that key, or one Book holds a dependency chain.
 """
 import threading
-from typing import Any, Iterator, List, Protocol, Tuple, runtime_checkable
+from typing import Any, Iterator, List, Protocol, Tuple, Union, runtime_checkable
 
 import pytest
 
@@ -18,6 +18,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
@@ -95,7 +96,7 @@ class DepB:
 
 
 class Dep:
-    """A dependency bound by its class."""
+    """A dependency filed under the category "Dep" in C4 - the address a bare bind would give it."""
 
     def tag(self) -> str:
         """Answer "d1"."""
@@ -103,7 +104,13 @@ class Dep:
 
 
 class Dep2(Dep):
-    """A subclass of Dep, which the kind rule does not select for an annotation naming Dep."""
+    """
+    A renamed subclass of Dep, staged into Dep's index under the category "Dep" (C4).
+
+    Reached through the frame, as every version of that index is; a class annotation naming Dep reaches neither
+    version, since both are bound under a spellframe (2026-11-07). Until then the type-name rule reached Dep but not
+    this subclass.
+    """
 
     def tag(self) -> str:
         """Answer "d2"."""
@@ -127,9 +134,28 @@ class QChain:
 
 
 class PClass:
-    """Depends on Dep's class."""
+    """
+    Depends on Dep's class.
+
+    A class lookup reaches only a spell bound bare - no spellframe, the default binding (2026-11-07) - so in C4's
+    world, where Dep is filed under the category "Dep", this parameter was an unresolved input; since patch
+    hidden_provider_2026_11_07 it is refused (HIDDEN_PROVIDER) while a Dep is active there, and a notch of the index to
+    Dep2, another class, makes it an unresolved input again.
+    """
 
     def __init__(self, dep: Dep) -> None:
+        """Keep the dependency."""
+        self.dep = dep
+
+
+class PFrame:
+    """
+    Depends on Dep's index through its frame: the category "Dep", the default binding (C4, 2026-11-07).
+
+    The frame is the index's address, so this consumer follows every notch of the index, renamed versions included.
+    """
+
+    def __init__(self, dep: Union[Dep, SpellMap] = SpellMap(spellframe="Dep")) -> None:
         """Keep the dependency."""
         self.dep = dep
 
@@ -496,6 +522,10 @@ def _chain(frame: str, *, by_class: bool = False) -> Tuple[Spellbook, Conduit, S
 
     By class, Dep is bound under the category "Dep" - the address a bare bind gives it - so its next version can be
     staged under the same binding: every version of an index is bound the way its first version was (2026-10-25).
+    Since 2026-11-07 a class annotation never reaches a spell bound under a spellframe, so PClass's `dep: Dep` was an
+    unresolved input in that world, and since patch hidden_provider_2026_11_07 the world refuses its conjure (PClass:
+    HIDDEN_PROVIDER); C4 pins the refusal, then walks the notches with PClass bound after conjure beside the frame
+    consumer (PFrame) that follows the index instead.
     """
     book, _ = _books(frame)
     if by_class:
@@ -563,15 +593,65 @@ def test_c3_a_chain_melded_before_a_dependency_notch_follows_it_from_either_end(
         root.cleanup()
 
 
-def test_c4_a_notch_to_a_version_the_annotation_does_not_select_raises_the_first_melds_error() -> None:
-    """C4: Dep notched to its subclass, which `dep: Dep` does not select: Q fails as a first meld would."""
-    book, root, index, _, q_cls = _chain("c4", by_class=True)
-    try:
-        assert root.meld(spell=q_cls).p.dep.tag() == "d1"
-        _notch_dep(book, root, index, by_class=True)
+def test_c4_a_class_annotation_of_a_framed_index_is_refused_until_a_notch_to_another_class() -> None:
+    """
+    C4: Dep is filed under the category "Dep" and its renamed subclass Dep2 is staged into the same index.
 
-        with pytest.raises(UnresolvedInputError, match="PClass.dep expects Dep"):
-            root.meld(spell=q_cls)
+    Contract (patch hidden_provider_2026_11_07, EPIC-2026-11-07-spellframe_hides_the_concrete_class): a class lookup
+    reaches only a spell bound bare, and a class bound only under a frame is refused - HIDDEN_PROVIDER, naming the
+    index's address. The chain bound before conjure (Dep, PClass, QClass) refuses the conjure on PClass. Bound after
+    conjure, PClass is refused at its bind and at its meld while Dep is active. The notch to Dep2 - another class -
+    announces the index's frame, which the refused PClass watches through its hidden candidate (re-gate path 6b), so it
+    melds as an unresolved input again, as a first meld would: UnresolvedInputError, and an override supplies Dep. The
+    notch back announces Dep's name (D1 = B), and PClass is refused again. The frame lookup `SpellMap(spellframe="Dep")`
+    follows the index d1 -> d2 -> d1 throughout. Until 2026-11-07 `dep: Dep` reached Dep by its type name and failed
+    only after the notch to Dep2; from 2026-11-07 it was an unresolved input before, after and back.
+    """
+    report = (
+        "Spellbook validation failed. Broken spells: PClass.\nPClass:\n"
+        "  - Parameter 'dep' on spell 'PClass' expects Dep, but a class lookup reaches Dep only where it is bound bare "
+        "(no spellframe, the default binding), and Dep is bound only under a spellframe: Dep at (spellframe='Dep', "
+        "binding_name=None) - use SpellMap(spellframe='Dep'). Ask for it where it is bound - the SpellMap shown, as "
+        "the parameter's default - or bind Dep bare. [HIDDEN_PROVIDER]"
+    )
+    with pytest.raises(SpellbookValidationError) as at_conjure:
+        _chain("c4", by_class=True)
+    assert str(at_conjure.value) == report
+
+    book, _ = _books("c4-walk")
+    dep_id = book.bind(spell=Dep, existence=Existence.many, permissions="create", spellframe="Dep")
+    book.bind(spell=PFrame, existence=Existence.many, permissions="create")
+    root = book.conjure(dynamic=True, name="root")
+    try:
+        index = book.find_spell_by_spell_id(dep_id).spell_index
+        first_id = index.selected_spell_id
+        with pytest.raises(SpellbookValidationError) as at_bind:
+            root.bind(spell=PClass, existence=Existence.many, permissions="create")
+        assert str(at_bind.value) == report
+
+        def assert_class_consumer_refused() -> None:
+            """PClass's meld raises the HIDDEN_PROVIDER report while a Dep is active in the framed index."""
+            with pytest.raises(SpellbookValidationError) as caught:
+                root.meld(spell=PClass)
+            assert str(caught.value) == report
+
+        assert_class_consumer_refused()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
+
+        _notch_dep(book, root, index, by_class=True)
+        with pytest.raises(UnresolvedInputError) as released:
+            root.meld(spell=PClass)
+        assert str(released.value).split("(parameter 'dep'): ", 1)[-1] == (
+            "PClass.dep expects Dep, but nothing registered provides it and this meld did not supply it. Supply it "
+            "with override={'dep': ...} when melding PClass, a path key ending in '>dep' (or '**dep') when PClass is "
+            "built as a dependency, or bind a provider for Dep."
+        )
+        assert root.meld(spell=PClass, override={"dep": Dep()}).dep.tag() == "d1"
+        assert root.meld(spell=PFrame).dep.tag() == "d2"
+
+        root.notch_spell(spell_index=index, spell_id=first_id)
+        assert_class_consumer_refused()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
     finally:
         root.cleanup()
 

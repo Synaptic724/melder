@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py",
- "source_sha256": "5ee7c19dea74c2673e4a7d6c2efb3a39e7d0056067e491a78f829cda8262054d",
+ "source_sha256": "e4d2a40db9d972a38d44d45074333e5581f280871121befdd3690eeae9540a92",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b93506336e2fe694834cbdcfd789387e50d9da95e43640908ae72622dac9b294",
+   "span_sha256": "4e5b2fc6283015baafdc08f8b79e813afff22981c35dd00513bcb1f186bcb22b",
    "role": "Transaction strategy for cluster-owned share and unshare requests.",
    "responsibilities": [
     "resolves participant conduits and owning cluster identity for cluster-link requests",

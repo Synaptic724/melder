@@ -1,0 +1,13 @@
+command: .venv_new/Scripts/python.exe -X gil=1 -m pytest tests/integration/melder/aether/conduit/test_one_active_spell_per_address_integration.py tests/integration/melder/crystallizer/test_graft_refuses_an_address_the_host_frame_serves_integration.py -q -p no:cacheprovider  (run 2026-11-07T16:50:57Z, melder 0.2.8280)
+........................................................................ [ 62%]
+...........................................                              [100%]
+============================== warnings summary ===============================
+src\melder\__init__.py:199
+  C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+  melder is optimized for Python built with --disable-gil (PEP 703).
+  Performance may be degraded.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+115 passed, 1 warning in 30.92s
+exit status: 0

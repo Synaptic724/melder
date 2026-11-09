@@ -1,0 +1,39 @@
+shipped: 15805 tests - failed 56, passed 15704, skipped 33, xfailed 12 (C:/Users/Mark/AppData/Local/Temp/claude/d719220bfde2ecb3/64cce2cf-02cd-4f69-8be3-6081fe0ed943/scratchpad/hidden_class_probe/suite_hidden_mode1_0_2_8280_gil0.xml)
+strict: 15805 tests - failed 58, passed 15702, skipped 33, xfailed 12 (C:/Users/Mark/AppData/Local/Temp/claude/d719220bfde2ecb3/64cce2cf-02cd-4f69-8be3-6081fe0ed943/scratchpad/hidden_class_probe/suite_hidden_mode2_0_2_8280_gil0.xml)
+differing tests: 16 in 4 files
+tests.component.melder.spellbook.test_conjure_cache_restage
+  failed -> passed  tests.component.melder.spellbook.test_conjure_cache_restage::test_repeat_world_is_a_full_hit_and_leaves_the_bundle_untouched
+      PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\tests\\component\\melder\\spellbook\\_cache_restage_full_hit\\__conjure_cache__\\restage-hit\\root.meldercache'
+tests.experimentation.test_cache_warm_meld_parity_probe
+  failed -> passed  tests.experimentation.test_cache_warm_meld_parity_probe::test_cache_warm_meld_parity_automatic
+      PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\tests\\experimentation\\_cache_parity_probe_root\\__conjure_cache__\\cache-parity-automatic\\cache-parity-automatic.meldercache'
+tests.integration.melder.spellbook.test_cache_runtime_integration
+  failed -> passed  tests.integration.melder.spellbook.test_cache_runtime_integration::test_cache_integration_missing_live_spell_ids_force_rerun[True]
+      PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\tests\\integration\\melder\\spellbook\\_cache_runtime_missing_live_ids_dynamic\\__conjure_cache__\\cache-runtime-missing-live\\root.meldercache'
+  failed -> passed  tests.integration.melder.spellbook.test_cache_runtime_integration::test_cache_integration_removed_spell_reruns_once_then_full_hits[False]
+      PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\tests\\integration\\melder\\spellbook\\_cache_runtime_removed_spell_automatic\\__conjure_cache__\\cache-runtime-surplus\\root.meldercache'
+  failed -> passed  tests.integration.melder.spellbook.test_cache_runtime_integration::test_changed_melder_release_rebuilds_same_bindings_then_reuses_cache[downgrade-True]
+      FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\tests\\integration\\melder\\spellbook\\_cache_release_1.0.1_1.0.0_True\\__conjure_cache__\\cache-release-compatibility\\root.meldercache'
+  failed -> passed  tests.integration.melder.spellbook.test_cache_runtime_integration::test_changed_melder_release_rebuilds_same_bindings_then_reuses_cache[local-version-True]
+      Failed: A previous Melder release reached cached-context publication.
+  failed -> passed  tests.integration.melder.spellbook.test_cache_runtime_integration::test_changed_melder_release_rebuilds_same_bindings_then_reuses_cache[upgrade-False]
+      PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\tests\\integration\\melder\\spellbook\\_cache_release_1.0.0_1.0.1_False'
+tests.unit.melder.spellbook.test_spellbook
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_add_contracted_spell_updates_maps_and_notifies_when_conjured
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_clearing_a_peers_copies_marks_the_keys_of_the_active_copies
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_contract_marks_run_with_the_book_lock_free
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_contracted_copy_changes_mark_nothing_before_conjure
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_every_change_of_an_active_contracted_copy_marks_the_consumers_of_its_key
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_removing_a_parked_version_keeps_the_active_copy_of_its_index
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_removing_a_version_the_book_holds_no_copy_of_raises_and_keeps_the_active_copy
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_removing_both_versions_of_an_index_in_either_order_leaves_no_copy[active_first]
+      AttributeError: 'DummySpell' object has no attribute 'spell'
+  passed -> failed  tests.unit.melder.spellbook.test_spellbook::test_removing_both_versions_of_an_index_in_either_order_leaves_no_copy[parked_first]
+      AttributeError: 'DummySpell' object has no attribute 'spell'

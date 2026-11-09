@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
- "source_sha256": "023a7ea6ac1f9d25a0a011bd7f17e61391481a7f1210d3f7abd76c02bb872d0f",
+ "source_sha256": "bfce6791c0337932985d5ed24c96dc6d071fc74ff8eef40fa5b9310d6aa29aaf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types": {
@@ -25,18 +25,18 @@
    "label": "ContractTypes",
    "kind": "enum",
    "file": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
-   "lineno": 3,
+   "lineno": 4,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [],
    "shape": {
-    "method_count": 0,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ee99ff50f0c3d123f728fbc3829160d8959520e439546291d79d0e7b33bb7574",
+   "span_sha256": "1541cfeaeaa2cba581e42b23b4dd97c1e35f8251e6094338e41e3cd1a83d4840",
    "role": "Perspective enum for contract detail entries.",
    "responsibilities": [
     "labels whether a contract detail is initiated or received from one ward perspective"
@@ -55,8 +55,8 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional"
  },
  "collapse_candidate": null
 }

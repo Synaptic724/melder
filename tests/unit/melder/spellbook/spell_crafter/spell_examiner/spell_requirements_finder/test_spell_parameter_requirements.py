@@ -1,5 +1,4 @@
 import inspect
-import threading
 
 import pytest
 
@@ -10,6 +9,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
     SpellParameterRequirement,
 )
+from tests._cleanup_recheck_support import CleanupRecheckHandshake
 
 
 def _make_requirement(
@@ -91,34 +91,29 @@ def test_cleanup_nulls_and_blocks_property_access():
 
 
 def test_cleanup_rechecks_cleaned_inside_lock() -> None:
-    class _CoordinatedLock:
-        def __init__(self, requirement: SpellParameterRequirement) -> None:
-            self._requirement = requirement
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+    """
+    Verify a second cleanup caller that passed the outer check returns at the inner `_cleaned` recheck.
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._requirement._cleaned = True
-            return self
+    The handshake holds the first caller inside the lock until the second has passed the outer check and is about
+    to block, then marks the requirement cleaned, as a cleanup racing in from elsewhere would. Both callers must
+    return at the inner recheck and finish without raising - without it the teardown would run twice and the
+    second run would raise on attributes the first had already deleted - and the requirement must read cleaned.
+    The handshake also fails the test if either caller is still running after its bounded join. The callers are
+    ordered by the handshake, not by timing: the earlier hand-made lock could lose its signal and failed on CI
+    (GitHub #206; TASK-2026-11-08-deterministic_cleanup_recheck_handshake).
 
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     req = _make_requirement()
-    req._lock = _CoordinatedLock(req)
 
-    thread = threading.Thread(target=req.cleanup)
-    thread.start()
-    assert req._lock._entered_first.wait(timeout=1.0)
-    req.cleanup()
-    thread.join(timeout=1.0)
+    def _mark_cleaned() -> None:
+        """Mark the requirement cleaned while the first caller holds the lock and the second waits for it."""
+        req._cleaned = True
+
+    handshake = CleanupRecheckHandshake(on_holder_ready=_mark_cleaned)
+    req._lock = handshake.lock
+
+    handshake.run(req.cleanup)
 
     assert req.cleaned is True
-    assert thread.is_alive() is False

@@ -1,0 +1,941 @@
+hidden_class_probe on melder 0.2.8280, python 3.14.7, gil_enabled=False
+[protocol | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69KX0Y2MZ53GSQ1YS8XQ>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69NZD360MQFK9BBV188D>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[protocol | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG69PFJPGVQAS00ZWN35J1>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69Q4ZQ0EZKNPWKDEVNAD>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69QWYWNANXB6VBKNC3TX>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69RHQNYHHKQBDQSMYQNE>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69S6EMH5GMFRGRAZ4ZR3>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[protocol_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG69SN88BGST0X7K0SAAQP>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69SXVAKGQY5ZMBKS85J6>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[protocol_named | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69TH6KQPJF27FH9T530M>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | spellmap_named | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | spellmap_named | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[protocol_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69V6F30TP2PD0RZB8XCQ>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', 'english')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69VQH8GC33HAKNS8EJKB>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69WBW2827JSCNFWJ6XTZ>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[category | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG69WV76Q0MDW8AQ9FMWM1>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69X37JBNX076QRZT7DEE>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69XS8HN8GA1S742X8C18>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name=None). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69YD15TN5SQWPGWJ24JY>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69Z1JYEBZWJZ74EBM277>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[category_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG69ZFYGCQHXYH750STXH5>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG69ZQF0K17NHJHSZFT5TK>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[category_named | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A0A5N1BKNWETBKNBQZX>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | spellmap_named | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | spellmap_named | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[category_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A0WJHXBCQRYJ5KY0PEY>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', 'english')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapNamed.
+        | SpellMapNamed:
+        |   - Parameter 'greeter' on spell 'SpellMapNamed': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A1FKQA1RFQ7BGJ68V0H>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A20DEYCAQ1KM5X1Q97F>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[bare_named | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A2EEMG045JSQYDZJGTX>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[bare_named | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A2PQTEE61ACE32XSA1V>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[bare_named | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A39A7SBPKDND1VG1G8G>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe=None, binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[bare_named | spellmap_named | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A3H0BPEKG9ASWR1MFNN>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[bare_named | spellmap_named | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A3RVWW9PYN7XXZXMX49>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[bare_named | spellmap_named | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A3ZYDX0FVH91XHJ00HA>
+    late bind consumer: ok -> 9a4a0c7e5164f27596239070f582450fef901b969882a55da8b3caebc22add19
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', 'english')
+    meld(consumer): ok -> SpellMapNamed
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapNamed
+[two_frames | single_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | single_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A4KAMY38FK7HEAN99CE>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleClass.
+        | SingleClass:
+        |   - Parameter 'greeter' on spell 'SingleClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | single_string | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | single_string | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A5AVM5A2RNXSTF7TE70>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SingleString.
+        | SingleString:
+        |   - Parameter 'greeter' on spell 'SingleString': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'); English at (spellframe='greeters', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[two_frames | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A5SXQ10GXT5CC2FVGG2>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[two_frames | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A60PQ101G78AYKPN22R>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[two_frames | spellmap_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | spellmap_class | dynamic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[two_frames | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A6Q9S95QJ0ME11VWSZR>
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: SpellMapClass.
+        | SpellMapClass:
+        |   - Parameter 'greeter' on spell 'SpellMapClass': a class lookup reaches only a spell bound bare; it is bound only at English at (spellframe='Greeter', binding_name='english'). [probe emulation] [HIDDEN_PROVIDER]
+        | 1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.
+[CONTROL_bare | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A6ZCMDBTVD2JCTN882M>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A76HD0TS62ZBQ9EB256>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A7DMDZZK3JJHXYRPEHH>
+    late bind consumer: ok -> 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A7PJHKH5QTXC9BW4J01>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A7XQBZH0YRQN4Q9APQP>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A84N69WKN54J2CCJA9Q>
+    late bind consumer: ok -> ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare | list_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A8DQFZ72ZTTRHXR8G57>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A8M5DYXVYC9FY9YQS32>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A8VQS05FAF7CC3A8J82>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare | spellmap_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A95CD5ZSEAN34PEFPP2>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare | spellmap_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A9C2P0KQBEM4BQVADFG>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6A9KS1K615E8D5CS7MNQ>
+    late bind consumer: ok -> bd845628b8a42b2a7d1a5b2946c23514035aa50999604564df4cb55909f20c02
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6A9X3GR4P59VV2VHVN30>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6AA69WX8GGGWKE94H3WV>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6AADNMRW2GTRYF03C92H>
+    late bind consumer: ok -> 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleClass
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_bare_and_framed | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6AARCSJF82S3YSFDAS1K>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6AB0MCAEE6EVKPB2623A>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6AB7DNH3WYZD8FCNYRED>
+    late bind consumer: ok -> ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SingleString
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_bare_and_framed | list_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6ABHKKZ04ACA84MA653S>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6ABSES9MRAPVAE0QJQ5F>
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6AC0HCJFQXHJX11240R1>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_bare_and_framed | spellmap_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6ACB3ET0J88G9T2Y3D7N>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | spellmap_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6ACJYGFGJ78TN38CK4E6>
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_bare_and_framed | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6ACTMX2M4SAYG4G68CPJ>
+    late bind consumer: ok -> bd845628b8a42b2a7d1a5b2946c23514035aa50999604564df4cb55909f20c02
+    sockets: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> SpellMapClass
+    meld(consumer, override={'greeter': ...}): ok -> SpellMapClass
+[CONTROL_none | single_class | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6AD3JF774TGNNNTS3G6K>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1) at node 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1 (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6AD9F3H14SMZ84D11217>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1) at node 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1 (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6ADDJY3PW1T18NDB79PC>
+    late bind consumer: ok -> 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1) at node 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1 (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleClass
+[CONTROL_none | single_string | automatic]
+    conjure: ok -> <Conduit name=root id=01M6VG6ADNPH7AP458GMWFXY9C>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d) at node ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | single_string | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6ADVCNH6TYQ6KDFWXHH5>
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d) at node ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | single_string | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6ADZYCWVZV1XAP0XSNJF>
+    late bind consumer: ok -> ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d
+    sockets: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleString' (ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d) at node ba35688157fc05f3d191b471b3ce903d606d31fa638c3fed2b78fdd7eea2222d (parameter 'greeter'): SingleString.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleString, a path key ending in '>greeter' (or '**greeter') when SingleString is built as a dependency, or bind a provider for English.
+    meld(consumer, override={'greeter': ...}): ok -> SingleString
+[CONTROL_none | list_class | automatic]
+    conjure: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ListClass.
+        | ListClass:
+        |   - Spell 'ListClass' parameter 'greeters' is a required list[...] dependency, but no provider is wired into it. Bind at least one implementation under its frame, make the parameter optional, or run the book in dynamic mode if members arrive via contracts. [collection_socket_no_providers]
+[CONTROL_none | list_class | dynamic]
+    conjure: ok -> <Conduit name=root id=01M6VG6AEDTYNKZ2XDXX97B2GW>
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_none | list_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6AEHGMV0W6SGR1VGDYBV>
+    late bind consumer: ok -> 89c4257c1e80bcc78e86ae5086c4c5ccd07bd062ac3ad02b6b9c73745aab8a31
+    sockets: greeters:NORMAL targets=0 refs=0 key=('english', '__default__')
+    meld(consumer): ok -> ListClass
+    meld(consumer, override={'greeters': ...}): ok -> ListClass
+[CONTROL_none | spellmap_class | automatic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_none | spellmap_class | dynamic]
+    conjure: RAISES PhaseExecutionError
+        | Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+        inner RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+[CONTROL_none | spellmap_class | dynamic late-bound consumer]
+    conjure: ok -> <Conduit name=root id=01M6VG6AF076VPBS8SVF8QD66E>
+    late bind consumer: RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+    sockets: no topology
+    meld(consumer): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+    meld(consumer, override={'greeter': ...}): RAISES RuntimeError
+        | SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'greeter' on spell 'SpellMapClass'. SpellMap=<SpellMap spell=<class 'hidden_class_probe.English'> spellframe=None binding_name=None override=None>.
+[AMBIGUOUS control | ByProtocol (greeter: Greeter) | dynamic late-bound consumer]
+    late bind consumer: RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'greeter': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+    consumer still registered after a refused bind: True
+    sockets: greeter:AMBIGUOUS_INPUT targets=0 refs=2 key=('greeter', '__default__')
+    meld(consumer): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'greeter': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+    meld(consumer, override={'greeter': ...}): RAISES SpellbookValidationError
+        | Spellbook validation failed. Broken spells: ByProtocol.
+        | ByProtocol:
+        |   - Parameter 'greeter' on spell 'ByProtocol' expects Greeter, but 2 registered spells provide it: English at (spellframe='Greeter', binding_name='english'); French at (spellframe='Greeter', binding_name='french'). Select one with a SpellMap default on the parameter (SpellMap(spellframe=..., binding_name=...)), supply it at meld with override={'greeter': ...}, or bind only one provider of this type. [AMBIGUOUS_PROVIDER]
+[ORDER framed | single_class | dynamic: consumer conjured unresolved, English bound late]
+    sockets before: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    late bind English: ok -> 2d097c20b0d4001da7afc3c2c391500d2e34a5df360cb9cc22629bb85809efdd
+    meld(consumer): RAISES UnresolvedInputError
+        | [MELD] Execution failed for spell 'SingleClass' (79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1) at node 79c060b69ab021135a1c548f045bf5c0eeb6883d425a7a51880218f1e0e31ba1 (parameter 'greeter'): SingleClass.greeter expects English, but nothing registered provides it and this meld did not supply it. Supply it with override={'greeter': ...} when melding SingleClass, a path key ending in '>greeter' (or '**greeter') when SingleClass is built as a dependency, or bind a provider for English.
+    sockets after meld: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+[ORDER bare | single_class | dynamic: consumer conjured unresolved, English bound late]
+    sockets before: greeter:UNRESOLVED_INPUT targets=0 refs=0 key=('english', '__default__')
+    late bind English: ok -> 2d097c20b0d4001da7afc3c2c391500d2e34a5df360cb9cc22629bb85809efdd
+    meld(consumer): ok -> SingleClass
+    sockets after meld: greeter:NORMAL targets=1 refs=0 key=('english', '__default__')
+[DOOR | meld(English) with English under Greeter | automatic]
+    meld(English): RAISES KeyError
+        | "[MELD] No spell found for frame='english', binding='__default__'."

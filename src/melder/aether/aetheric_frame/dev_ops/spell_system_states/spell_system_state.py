@@ -313,7 +313,7 @@ class SpellSystemState(Cleanable):
             flag: The SpellState member to look for.
 
         Returns:
-            bool: True when the flag is present.
+            bool: True when a SpellState member is present; False for other values.
 
         Raises:
             RuntimeError: If this state has been cleaned (`check_cleaned`).
@@ -325,7 +325,7 @@ class SpellSystemState(Cleanable):
         self.check_cleaned()
         with self._lock:
             self.check_cleaned()
-            return flag in self._flags
+            return isinstance(flag, SpellState) and flag in self._flags
 
     @property
     def change_reason(self) -> Optional[SpellStateChangeReason]:
@@ -406,7 +406,7 @@ class SpellSystemState(Cleanable):
               as one coordinated transition.
             - Publishes to `RiskManager` only when the structural validity value
               itself changes; flag-only updates stay local.
-            - Ignores None entries in add/remove flag iterables.
+            - Ignores None and non-SpellState entries in add/remove flag iterables.
 
         Returns:
             None.
@@ -429,12 +429,12 @@ class SpellSystemState(Cleanable):
 
             if flags_to_add is not None:
                 for f in flags_to_add:
-                    if f is not None:
+                    if isinstance(f, SpellState):
                         self._flags.add(f)
 
             if flags_to_remove is not None:
                 for f in flags_to_remove:
-                    if f is not None:
+                    if isinstance(f, SpellState):
                         self._flags.discard(f)
 
             if transitively_dirty is not None:
@@ -466,8 +466,8 @@ class SpellSystemState(Cleanable):
             it before it gates the index.
 
         Args:
-            flags_to_add: Flags to add; None entries are ignored.
-            flags_to_remove: Flags to remove; None entries are ignored.
+            flags_to_add: SpellState flags to add; other entries are ignored.
+            flags_to_remove: SpellState flags to remove; other entries are ignored.
 
         Contract:
             - Adds first, then removes - the order `set_validity` uses - so a flag
@@ -496,11 +496,11 @@ class SpellSystemState(Cleanable):
             before = frozenset(self._flags)
             if flags_to_add is not None:
                 for flag in flags_to_add:
-                    if flag is not None:
+                    if isinstance(flag, SpellState):
                         self._flags.add(flag)
             if flags_to_remove is not None:
                 for flag in flags_to_remove:
-                    if flag is not None:
+                    if isinstance(flag, SpellState):
                         self._flags.discard(flag)
             return self._flags != before
 

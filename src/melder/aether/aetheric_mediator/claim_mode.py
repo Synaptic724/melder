@@ -11,7 +11,7 @@ matrix is already proven in production under free-threaded 3.14t.
 """
 
 from enum import StrEnum
-from typing import ClassVar, FrozenSet, Tuple
+from typing import ClassVar, FrozenSet, Optional, Tuple
 
 
 class ClaimMode(StrEnum):
@@ -25,9 +25,9 @@ class ClaimMode(StrEnum):
         but my peers need not be".
 
     Contract:
-        - `EXCLUSIVE` ("x"): no other claim of ANY mode may coexist.
-        - `SHARED` ("s"): coexists with other `SHARED` claims ONLY.
-        - `INTENT` ("ix"): coexists with other `INTENT` claims ONLY. It is
+        - `EXCLUSIVE` (wire token "x"): no other claim of ANY mode may coexist.
+        - `SHARED` (wire token "s"): coexists with other `SHARED` claims ONLY.
+        - `INTENT` (wire token "ix"): coexists with other `INTENT` claims ONLY. It is
           the HIERARCHICAL PARENT-SCOPE MARKER - hold `ix` on the parent
           while holding `x` on the child, and disjoint children proceed in
           parallel while a whole-parent `x` still excludes every one of them.
@@ -35,9 +35,9 @@ class ClaimMode(StrEnum):
           `embargo_manager.ClaimMode`, not a parallel invention. Evidence
           written against one plane therefore reads correctly against the
           other.
-        - `StrEnum`, matching DevOps, because these values TRAVEL: they land
-          in request payloads, admission evidence, and logs, and must survive
-          string-oriented APIs without special casing.
+        - `StrEnum` values exactly match member names. The historical x/s/ix
+          tokens remain readable and `wire_value` preserves them in request
+          payloads, admission evidence, and logs.
         - Compatibility is NOT defined here. It lives in
           `ClaimCompatibility` so the matrix can be a real class attribute;
           a mapping declared inside an enum body would be swallowed as a
@@ -64,10 +64,42 @@ class ClaimMode(StrEnum):
         directly.
     """
 
-    EXCLUSIVE = "x"
-    SHARED = "s"
-    INTENT = "ix"
+    EXCLUSIVE = "EXCLUSIVE"
+    SHARED = "SHARED"
+    INTENT = "INTENT"
 
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[ClaimMode]:
+        """
+        Resolve an old x/s/ix claim token to its original member.
+
+        Unknown or unhashable inputs return None so enum construction raises
+        its normal ValueError. Exact member-name values use ordinary lookup.
+        """
+        legacy_values: dict[object, ClaimMode] = {
+            "x": cls.EXCLUSIVE,
+            "s": cls.SHARED,
+            "ix": cls.INTENT,
+        }
+        try:
+            return legacy_values.get(value)
+        except TypeError:
+            return None
+
+    @property
+    def wire_value(self) -> str:
+        """
+        Return the historical x/s/ix token used in request and evidence rows.
+
+        The enum's own value is the exact member name; this projection keeps
+        the existing detached claim representation stable.
+        """
+        if self is ClaimMode.EXCLUSIVE:
+            return "x"
+        if self is ClaimMode.SHARED:
+            return "s"
+        return "ix"
 
 class ClaimCompatibility:
     """

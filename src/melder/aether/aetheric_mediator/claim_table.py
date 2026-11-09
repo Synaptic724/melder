@@ -204,9 +204,9 @@ class ClaimBlock(Cleanable):
         self.check_cleaned()
         return "{0} held {1} by {2} (requested {3})".format(
             self._scope_key,
-            self._held_mode.value,
+            self._held_mode.wire_value,
             self._holder_description,
-            self._requested_mode.value,
+            self._requested_mode.wire_value,
         )
 
 
@@ -640,7 +640,7 @@ class ClaimTable(Cleanable):
         with self._condition:
             scopes: Dict[str, object] = {
                 scope_key: [
-                    [claim.holder.describe(), claim.mode.value]
+                    [claim.holder.describe(), claim.mode.wire_value]
                     for claim in claims
                 ]
                 for scope_key, claims in self._claims.items()

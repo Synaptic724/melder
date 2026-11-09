@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/contracts/spell_map.py",
- "source_sha256": "b670854eaa331ad49c7fd5ecbec348a024ae26ff691b5852bd10a872b422b0c7",
+ "source_sha256": "ab37cc183273dffdce467c2494100b8cc6406de605a00e951752d8d239e14578",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.contracts.spell_map": {
@@ -43,12 +43,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9c76115f786bdc45def1fad32d216163bde6acbdd907395bf39de05219fb3c08",
+   "span_sha256": "57eee33494e68334010f28300a8af9ba1cfe0de553cd7760318b7573bc989dd0",
    "role": "Declarative local DI descriptor.",
    "responsibilities": [
     "describes normal spellbook-local DI identity and optional override payload",
     "lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking",
-    "keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key Phase 3 matches by (0.2.8226)"
+    "keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key Phase 3 matches by (0.2.8226)",
+    "SpellMap(spell=X) without a spellframe is a class lookup (0.2.8278): Phase 3 reaches only X bound with no spellframe, under the default binding or under binding_name when one is given, so its canonical_key is the address of the only spell it can reach; a SpellMap naming a spellframe reads the frame as before"
    ],
    "owns_state": [
     "spell",
@@ -61,7 +62,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "9c76115f786bdc45def1fad32d216163bde6acbdd907395bf39de05219fb3c08"
+   "semantics_authored_against": "57eee33494e68334010f28300a8af9ba1cfe0de553cd7760318b7573bc989dd0"
   }
  },
  "edges_out": [

@@ -114,7 +114,11 @@ reference lives in `examples/` instead and this directory stays yours.
 ## Optional GitHub Work Tracking
 
 Local Epic/Story/Task files remain the default. An opt-in setting in
-`config/context_compass_config.yaml` chooses `local` or `github_codex_plugin`.
+`config/context_compass_config.yaml` chooses `local`, `github_codex_plugin` or
+`github_issues`. `github_issues` keeps tickets and every board (focus, claims,
+roster, messages, artifacts and context packs) in GitHub Issues in one
+repository, with one writer per record; it needs only a `repository` setting
+and an agent with access to it.
 Plugin mode requires a Codex `connection_nickname` and target `issues_repository`.
 The agent resolves that exact nickname before calling the plugin, rather than
 choosing a GitHub account implicitly. Plugin mode uses Issues for tickets, with Status
@@ -129,9 +133,12 @@ and the exact Issue destination.
 
 ## Optional MCP Messaging
 
-`agent_communication.backend` selects `mailbox` or `codex_mcp` independently of
-ticket storage. Missing means `mailbox`, preserving existing installations.
-With `codex_mcp`, agents read the MCP skill instead of mailbox message features.
+`agent_communication.backend` selects `mailbox`, `codex_mcp` or
+`claude_internal_communication` independently of ticket storage. Missing means
+`mailbox`, preserving existing installations. With `codex_mcp`, agents read the
+MCP skill instead of mailbox message features. With
+`claude_internal_communication`, a team made only of Claude agents messages through
+Claude Code's built-in agent messaging instead.
 Existing registration and setup outcomes stay in the mailbox
 board's state sections; other boards and their ownership rules do not change.
 Stored messages and alerts are left untouched. Available tools and human

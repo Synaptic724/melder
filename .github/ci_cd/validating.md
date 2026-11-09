@@ -67,3 +67,8 @@ Artifacts worth opening: `runtime-results-*` (JUnit) and `coverage-*` for each t
 - Some agent sandboxes cannot delete files in the checkout. There, a git command that refreshes the index can
   leave `.git/index.lock` behind and block the owner's commits: run only read-only git, with
   `GIT_OPTIONAL_LOCKS=0`.
+- On Windows without the symlink privilege, the provenance verifier's trust-root refresh fails ("Failed to refresh
+  TUF metadata", from tuf's `root.json` symlink, WinError 1314). Run the controls ([extending.md](extending.md),
+  "Change the provenance tool", step 4) on Linux, or locally with the verifier's `--offline` flag, which uses the
+  trust root bundled with the pinned sigstore. Build the tool environment from a GIL CPython 3.14: the lock's
+  rfc3161-client publishes only abi3 wheels, which a free-threaded interpreter cannot install.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
- "source_sha256": "4d6fe3a506343145f7fb6da080bcffc2c14056491884630b957aee5545adbc9f",
+ "source_sha256": "d45c7196e0ac19bfcf7fe4024225ec5ed5b3d4498dc6fc247c0f3129b97c3046",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ad61ff7e84b3d10709137399b5ec7d0fde50a9e077b32150e306510341e4d75b",
+   "span_sha256": "e7c9e0084ed88e2f62452a6db45e43df803194abb0d313a60b59f12c3555a580",
    "role": "Transaction strategy for conduit link requests.",
    "responsibilities": [
     "resolves participating conduit ids for one link request",

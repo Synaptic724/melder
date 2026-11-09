@@ -43,7 +43,7 @@ coverage==7.16.1
 ruff==0.16.7
 
 # --- build ---
-setuptools==84.0.0
+setuptools==84.2.1
 wheel==0.48.0
 
 # --- optional: parallel test runs (`pytest -n auto`) ---

@@ -1,0 +1,87 @@
+    [mark] ['greeter'] -> 0 reached
+    [mark] ['byclass'] -> 0 reached
+    [mark] ['english', 'greeter'] -> 1 reached
+[remove_spell_from_contract meld after grant] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+[remove_spell_from_contract state after refusal] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[remove_spell_from_contract copy in borrower pool] True
+[remove_spell_from_contract departure] True
+[remove_spell_from_contract copy in borrower pool after] False
+[remove_spell_from_contract state after departure] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[remove_spell_from_contract meld after departure] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+    [mark] ['latebyclass'] -> 0 reached
+[remove_spell_from_contract late twin bind] '2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc'
+[remove_spell_from_contract late twin meld] raises UnresolvedInputError: [MELD] Execution failed for spell 'LateByClass' (2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc) at node 2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc (parameter 'greeter'): LateByClass.greeter expects English, but nothing 
+
+    [mark] ['greeter'] -> 0 reached
+    [mark] ['byclass'] -> 0 reached
+    [mark] ['english', 'greeter'] -> 1 reached
+[sever_link meld after grant] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+[sever_link state after refusal] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[sever_link copy in borrower pool] True
+[sever_link departure] True
+[sever_link copy in borrower pool after] False
+[sever_link state after departure] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[sever_link meld after departure] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+    [mark] ['latebyclass'] -> 0 reached
+[sever_link late twin bind] '2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc'
+[sever_link late twin meld] raises UnresolvedInputError: [MELD] Execution failed for spell 'LateByClass' (2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc) at node 2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc (parameter 'greeter'): LateByClass.greeter expects English, but nothing 
+
+    [mark] ['greeter'] -> 0 reached
+    [mark] ['byclass'] -> 0 reached
+    [mark] ['english', 'greeter'] -> 1 reached
+[owner_cleanup_spell meld after grant] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+[owner_cleanup_spell state after refusal] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[owner_cleanup_spell copy in borrower pool] True
+[owner_cleanup_spell departure] None
+[owner_cleanup_spell copy in borrower pool after] False
+[owner_cleanup_spell state after departure] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[owner_cleanup_spell meld after departure] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+    [mark] ['latebyclass'] -> 0 reached
+[owner_cleanup_spell late twin bind] '2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc'
+[owner_cleanup_spell late twin meld] raises UnresolvedInputError: [MELD] Execution failed for spell 'LateByClass' (2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc) at node 2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc (parameter 'greeter'): LateByClass.greeter expects English, but nothing 
+
+    [mark] ['greeter'] -> 0 reached
+    [mark] ['byclass'] -> 0 reached
+    [mark] ['english', 'greeter'] -> 1 reached
+[index link] True
+[remove_index_from_contract meld after grant] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+[remove_index_from_contract state after refusal] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[remove_index_from_contract copy in borrower pool] True
+[remove_index_from_contract departure] None
+[remove_index_from_contract copy in borrower pool after] False
+[remove_index_from_contract state after departure] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[remove_index_from_contract meld after departure] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+    [mark] ['latebyclass'] -> 0 reached
+[remove_index_from_contract late twin bind] '2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc'
+[remove_index_from_contract late twin meld] raises UnresolvedInputError: [MELD] Execution failed for spell 'LateByClass' (2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc) at node 2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc (parameter 'greeter'): LateByClass.greeter expects English, but nothing 
+
+    [mark] ['greeter'] -> 0 reached
+[cleanup late bind] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+[cleanup state after refusal] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[cleanup departure] None
+[cleanup english in pool after] False
+[cleanup state after departure] validity=invalid sockets=[('UNRESOLVED_INPUT', ('677a47a3c52107a430b423e6676496133f62651ff4bf99c6491383fe22ecfb1f',), ('greeter',))]
+[cleanup meld after] raises SpellbookValidationError: Spellbook validation failed. Broken spells: ByClass.
+ByClass:
+  - Parameter 'greeter' on spell 'ByClass' expects English, but a class lookup reaches English only where it is bound bare (no spellframe, the default binding), and English is bound only under a spe
+    [mark] ['latebyclass'] -> 0 reached
+[cleanup late twin bind] '2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc'
+[cleanup late twin meld] raises UnresolvedInputError: [MELD] Execution failed for spell 'LateByClass' (2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc) at node 2b10adcb789d89fcbc189fe5728ffb8d92c49cd97478e844a0d70357a8ff6cbc (parameter 'greeter'): LateByClass.greeter expects English, but nothing 

@@ -1,0 +1,19 @@
+binding_name_and_spellmap_check.py on 0.2.8277 (melder_0, 2026-11-07T10:05:25Z; .venv_new 3.14.7 free-threaded build), the GIL off then on.
+===== -X gil=0
+binding_name_only (GIL off)
+  meld(ByClass), nothing bound yet                               -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf14
+  meld(ByClass) after bind(English, binding_name='v1'), no frame -> English
+spellmap_waiting (GIL off)
+  conjure with ByMap and nothing at ('langs','v1')               -> raises PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeEr
+spellmap_late_bind (GIL off)
+  bind(ByMap) after conjure, English already at ('langs','v1')   -> ok
+  meld(ByMap)                                                    -> English
+===== -X gil=1
+binding_name_only (GIL on)
+  meld(ByClass), nothing bound yet                               -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByClass' (d12f04368bfe7344dcd4b0cb9354ef7db34ece78caf14
+  meld(ByClass) after bind(English, binding_name='v1'), no frame -> English
+spellmap_waiting (GIL on)
+  conjure with ByMap and nothing at ('langs','v1')               -> raises PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeEr
+spellmap_late_bind (GIL on)
+  bind(ByMap) after conjure, English already at ('langs','v1')   -> ok
+  meld(ByMap)                                                    -> English

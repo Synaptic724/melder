@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_link/frame_link_contract.py",
- "source_sha256": "c92e10546dacb34cab951d93c29be6c033fd07dd40ec24f78b5487c6a5705635",
+ "source_sha256": "005e2f5c3ce4c7a6dd80782232f20b1848a8fd992e9599870a104de6c1beb7ad",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_link.frame_link_contract": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "The per-frame ACL SELECTION for one Rift - which named contract it picked in each family - distinct from the ACL containers themselves.",
-   "semantics_authored_against": "c92e10546dacb34cab951d93c29be6c033fd07dd40ec24f78b5487c6a5705635"
+   "semantics_authored_against": ""
   },
   "melder.nexus.rift.frame_link.frame_link_contract.FrameLinkContract": {
    "id": "melder.nexus.rift.frame_link.frame_link_contract.FrameLinkContract",
@@ -40,11 +40,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8901fe6aac896505bc9122b2e9234804650df1b4b3292c7850cfe860e5428500",
+   "span_sha256": "be7c3b1beb2c9561889f00548fecfb255163802ee00cb9f35e8891dba7f16376",
    "role": "Per-frame ACL contract selection for one Rift.",
    "responsibilities": [
     "stores selected view, command, and codegen contract names for one frame",
-    "owns the per-frame contract identity for one Rift/frame pair"
+    "owns the per-frame contract identity for one Rift/frame pair",
+    "tears its state down once under _lock and keeps _lock after cleanup as a documented tombstone, so a second concurrent cleanup returns; get_selected_contract_names, get_selected_contract_name, describe and clone check _cleaned again under _lock and raise the cleaned RuntimeError when a cleanup overtakes them; the contract_id, rift_id, frame_name and metadata properties take no lock (0.2.8288, GitHub #271)"
    ],
    "owns_state": [
     "_frame_name",
@@ -56,7 +57,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "8901fe6aac896505bc9122b2e9234804650df1b4b3292c7850cfe860e5428500"
+   "semantics_authored_against": "be7c3b1beb2c9561889f00548fecfb255163802ee00cb9f35e8891dba7f16376"
   }
  },
  "edges_out": [

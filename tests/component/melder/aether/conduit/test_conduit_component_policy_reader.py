@@ -110,7 +110,9 @@ def test_the_read_is_not_a_memo_of_the_last_argument() -> None:
     conduit.set_new_policy("block_all")
     observed = conduit.policy
     assert isinstance(observed, Policies)
-    assert not isinstance(observed, str)
+    # `Policies` is a StrEnum since 0.2.8277, so the member IS a str; what must
+    # not come back is the plain string that went in.
+    assert type(observed) is not str
     assert observed.name == "block_all"
 
 

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/participation.py",
- "source_sha256": "c4b26186822ef46fd376de02b27cb3c6fc4f8fd2f786739260f6c5743f763cb7",
+ "source_sha256": "f45840ccdbe38765b3e82563affbfc183ae992eb0b59ff6f2f027f4d632b23d1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.participation": {
@@ -30,11 +30,11 @@
     "emits"
    ],
    "shape": {
-    "method_count": 1,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cd494ef645a0c9b3ff516123b86f920a3584050a8d981b07b4cd0e6eb4e24132",
+   "span_sha256": "fc25427e6e7c9fc11109a47bab3600568b0e1750152dc25cca0e2f567f8654b1",
    "include": true,
    "role": "The state a subsystem is in from the plane's point of view - and the single place the rule 'emit only when active' is written down as code rather than prose.",
    "responsibilities": [
@@ -54,7 +54,7 @@
    "label": "ParticipationConditions",
    "kind": "class",
    "file": "src/melder/aether/aetheric_mediator/participation.py",
-   "lineno": 130,
+   "lineno": 161,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -83,10 +83,12 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "Enum": "enum.Enum",
   "StrEnum": "enum.StrEnum",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
   "Tuple": "typing.Tuple"
  },
  "collapse_candidate": null

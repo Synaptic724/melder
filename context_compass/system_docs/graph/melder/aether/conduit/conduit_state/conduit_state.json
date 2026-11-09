@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_state/conduit_state.py",
- "source_sha256": "32f325d3fb04a0e653521a2e2cb3abcd09dd47b9888fe06fe870ceb31e4b5429",
+ "source_sha256": "65a253cb2648c012aa151e9d5d33323a55b08996484ee373e965f7e235d1b53d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_state.conduit_state": {
@@ -25,33 +25,35 @@
    "label": "ConduitState",
    "kind": "enum",
    "file": "src/melder/aether/conduit/conduit_state/conduit_state.py",
-   "lineno": 4,
+   "lineno": 5,
    "bases": [],
    "markers": [
-    "Enum"
+    "StrEnum"
    ],
    "public_methods": [
     "resolve"
    ],
    "shape": {
-    "method_count": 1,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "09f63f0abd3dba0930c42ead3c1f20b5c913ec3967c58b95619b832676262fbc",
+   "span_sha256": "1d51d061282683933cf704fe0977828b3a87e1c3ea299cd03ba68d782f54fff1",
    "role": "Lifecycle classification enum for conduit instances.",
    "responsibilities": [
-    "distinguishes normal, lesser, and cleaned conduit states"
+    "distinguishes normal, lesser, pooled_lesser, and CLEANED with exact-name string values and historical ordinal readers",
+    "resolve accepts case-insensitive declared names; string rendering stays lowercase"
    ],
    "owns_state": [
     "normal",
     "lesser",
-    "cleaned"
+    "pooled_lesser",
+    "CLEANED"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "09f63f0abd3dba0930c42ead3c1f20b5c913ec3967c58b95619b832676262fbc"
+   "semantics_authored_against": "1d51d061282683933cf704fe0977828b3a87e1c3ea299cd03ba68d782f54fff1"
   }
  },
  "edges_out": [],
@@ -66,7 +68,8 @@
  "published_aliases": [],
  "imports": {
   "Enum": "enum.Enum",
-  "auto": "enum.auto",
+  "StrEnum": "enum.StrEnum",
+  "Optional": "typing.Optional",
   "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers"
  },
  "collapse_candidate": null

@@ -484,13 +484,13 @@ class AethericFrameConfiguration(Cleanable):
             if crystallizer.activated:
                 posture_payload: Dict[str, object] = {}
                 for posture_name, posture_value in self.describe_posture().items():
-                    if (
+                    if isinstance(posture_value, SystemState):
+                        posture_payload[posture_name] = posture_value.name
+                    elif (
                             isinstance(posture_value, (str, int, float, bool))
                             or posture_value is None
                     ):
                         posture_payload[posture_name] = posture_value
-                    elif isinstance(posture_value, SystemState):
-                        posture_payload[posture_name] = posture_value.name
                     else:
                         posture_payload[posture_name] = str(posture_value)
                 crystallizer.emit(

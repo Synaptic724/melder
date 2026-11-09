@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
- "source_sha256": "5798cbfeb3243f2de1a4cee4df32a25dea6efe820077295e26fd46511a242b24",
+ "source_sha256": "455082e9cafff2b18c78559a0fda4eb3fa2f565d93ce0a7d7bbaf85e5905b017",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager": {
@@ -19,18 +19,20 @@
    "label": "ClaimMode",
    "kind": "enum",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-   "lineno": 18,
+   "lineno": 21,
    "bases": [],
    "markers": [
     "StrEnum"
    ],
-   "public_methods": [],
+   "public_methods": [
+    "wire_value"
+   ],
    "shape": {
-    "method_count": 0,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f59d1882e92e8da251d50f19be9b9c701f5077e82e2b9ad74541e1fbb57e82ab",
+   "span_sha256": "fc2f6c3168b7160359aa45d060987974b76b626261528287fbc012cfd40adc7b",
    "role": "Enum of scope-key claim strengths for admission gating.",
    "responsibilities": [
     "classifies how strongly one transaction claims one scope key",
@@ -51,7 +53,7 @@
    "label": "ChangeControlEmbargoRecord",
    "kind": "class",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-   "lineno": 71,
+   "lineno": 108,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -78,7 +80,7 @@
    "label": "AcquisitionDecision",
    "kind": "class",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-   "lineno": 126,
+   "lineno": 163,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -105,7 +107,7 @@
    "label": "ChangeControlEmbargoManager",
    "kind": "class",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-   "lineno": 175,
+   "lineno": 212,
    "bases": [
     "Cleanable"
    ],
@@ -132,7 +134,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d56f597729dc932206e6598ee0e9876536aae21e76a3075ac683620ccc8668af",
+   "span_sha256": "72d641b597f0db6b3e02d1fab951a826c521ad5ffec571b7c653c04f82a70af7",
    "role": "Scope-key embargo registry for transaction-driven gating.",
    "responsibilities": [
     "tracks temporary embargoes opened by admitted requests",
@@ -212,6 +214,7 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "ClassVar": "typing.ClassVar",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
   "ChangeControlTransactionRequest": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
   "ChangeControlStagedMutation": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation"
  },

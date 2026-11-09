@@ -229,10 +229,10 @@ class SpellRequirements(Cleanable):
 
         for param in self._parameters:
             di_shape = param.di_shape
-            if di_shape in (
-                    ParameterDIShape.SINGLE_BY_ANNOTATION,
-                    ParameterDIShape.COLLECTION_BY_ANNOTATION,
-                    ParameterDIShape.SPELLMAP_DEFAULT,
+            if (
+                    di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+                    or di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION
+                    or di_shape is ParameterDIShape.SPELLMAP_DEFAULT
             ):
                 yield param
 

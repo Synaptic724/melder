@@ -10,7 +10,7 @@ BROKEN ON PURPOSE so an agent can repair it.
 """
 
 import threading
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import Callable, Dict, List, Optional, Tuple
 
 from melder.aether.aetheric_mediator.identity import Identity
@@ -44,6 +44,9 @@ class OutcomePolicy(StrEnum):
         "leave it for an agent" a decision with a ledger attached, instead of
         the silent partial state that arises when nobody chose anything.
 
+    String contract:
+        Values match their names; exact historical lowercase values remain readable.
+
     Threading:
         Stateless enum; safe to share across threads.
 
@@ -57,8 +60,32 @@ class OutcomePolicy(StrEnum):
         or leave the world broken with a ledger for agent repair.
     """
 
-    UNWIND = "unwind"
-    LEAVE_BROKEN = "leave_broken"
+    UNWIND = "UNWIND"
+    LEAVE_BROKEN = "LEAVE_BROKEN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[OutcomePolicy]:
+        """
+        Resolve exactly the two historical lowercase outcome-policy values.
+
+        Contract:
+            Raw legacy strings keep their by-value and pickle meaning. Other
+            enum families and unknown or differently cased values are not
+            normalized here; returning None preserves the usual ValueError.
+
+        Args:
+            value: The unrecognized value offered to the enum constructor.
+
+        Returns:
+            Optional[OutcomePolicy]: The legacy member, or None.
+        """
+        if not isinstance(value, str) or isinstance(value, Enum):
+            return None
+        if value == "unwind":
+            return cls.UNWIND
+        if value == "leave_broken":
+            return cls.LEAVE_BROKEN
+        return None
 
 
 class SessionStatus(StrEnum):
@@ -72,6 +99,9 @@ class SessionStatus(StrEnum):
         Collapsing the two would erase exactly the distinction an agent needs
         to know whether there is anything to go and fix.
 
+    String contract:
+        Values match their names; exact historical lowercase values remain readable.
+
     Registration:
         MELDER KERNEL - guarded. Status vocabulary; never bound.
 
@@ -82,12 +112,44 @@ class SessionStatus(StrEnum):
         distinct from ABORTED - it means repairable residue exists.
     """
 
-    OPEN = "open"
-    COMMITTING = "committing"
-    COMMITTED = "committed"
-    ABORTING = "aborting"
-    ABORTED = "aborted"
-    BROKEN = "broken"
+    OPEN = "OPEN"
+    COMMITTING = "COMMITTING"
+    COMMITTED = "COMMITTED"
+    ABORTING = "ABORTING"
+    ABORTED = "ABORTED"
+    BROKEN = "BROKEN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[SessionStatus]:
+        """
+        Resolve exactly the six historical lowercase session-status values.
+
+        Contract:
+            Raw legacy strings keep their by-value and pickle meaning. Other
+            enum families and unknown or differently cased values are not
+            normalized here; returning None preserves the usual ValueError.
+
+        Args:
+            value: The unrecognized value offered to the enum constructor.
+
+        Returns:
+            Optional[SessionStatus]: The legacy member, or None.
+        """
+        if not isinstance(value, str) or isinstance(value, Enum):
+            return None
+        if value == "open":
+            return cls.OPEN
+        if value == "committing":
+            return cls.COMMITTING
+        if value == "committed":
+            return cls.COMMITTED
+        if value == "aborting":
+            return cls.ABORTING
+        if value == "aborted":
+            return cls.ABORTED
+        if value == "broken":
+            return cls.BROKEN
+        return None
 
 
 class _RollbackAction(Cleanable):
@@ -573,7 +635,7 @@ class TransactionSession(Cleanable):
                 raise RuntimeError(
                     "cannot mark session for request {0!r} abort-only in "
                     "terminal status {1}.".format(
-                        self._request.request_id, self._status.value
+                        self._request.request_id, self._status.name.lower()
                     )
                 )
             if self._abort_only_reason is None:
@@ -611,7 +673,7 @@ class TransactionSession(Cleanable):
             if self._status is not SessionStatus.OPEN:
                 raise RuntimeError(
                     "cannot join session for request {0!r} in status "
-                    "{1}.".format(self._request.request_id, self._status.value)
+                    "{1}.".format(self._request.request_id, self._status.name.lower())
                 )
             self._depth += 1
             return self._depth
@@ -674,7 +736,7 @@ class TransactionSession(Cleanable):
             if self._status is not SessionStatus.OPEN:
                 raise RuntimeError(
                     "cannot register a rollback action on a session in status "
-                    "{0}.".format(self._status.value)
+                    "{0}.".format(self._status.name.lower())
                 )
             self._rollback_actions.append(
                 _RollbackAction(action=action, description=description)
@@ -710,7 +772,7 @@ class TransactionSession(Cleanable):
             if self._status is not SessionStatus.OPEN:
                 raise RuntimeError(
                     "cannot begin committing a session in status {0}.".format(
-                        self._status.value
+                        self._status.name.lower()
                     )
                 )
             if self._abort_only_reason is not None:
@@ -756,7 +818,7 @@ class TransactionSession(Cleanable):
                 raise RuntimeError(
                     "cannot mark a session committed from status {0}; it must "
                     "be COMMITTING, which means its commit pipeline ran.".format(
-                        self._status.value
+                        self._status.name.lower()
                     )
                 )
             self._status = SessionStatus.COMMITTED
@@ -800,7 +862,7 @@ class TransactionSession(Cleanable):
             ):
                 raise RuntimeError(
                     "cannot fail a session already in status {0}.".format(
-                        self._status.value
+                        self._status.name.lower()
                     )
                 )
             self._failure_reason = reason
@@ -1002,6 +1064,8 @@ class TransactionSession(Cleanable):
         """
         Return a detached snapshot of this session.
 
+        Transaction type, status and outcome policy retain historical lowercase tokens.
+
         Contract:
             Values only - safe to log or ship. Includes unwind failures so
             they are visible even when no caller inspected the `fail` return.
@@ -1016,11 +1080,11 @@ class TransactionSession(Cleanable):
         with self._lock:
             return {
                 "request_id": self._request.request_id,
-                "transaction_type": self._request.transaction_type.value,
+                "transaction_type": self._request.transaction_type.wire_value,
                 "holder": self._holder.describe(),
                 "owner_thread_id": self._owner_thread_id,
-                "status": self._status.value,
-                "outcome_policy": self._outcome_policy.value,
+                "status": self._status.name.lower(),
+                "outcome_policy": self._outcome_policy.name.lower(),
                 "depth": self._depth,
                 "failure_reason": self._failure_reason,
                 "registered_inverses": [
