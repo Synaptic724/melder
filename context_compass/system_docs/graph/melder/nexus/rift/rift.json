@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift.py",
- "source_sha256": "cb62caff825712a23704f4587dd6880fb7ceda4bf477ab257030e9d07287e9a3",
+ "source_sha256": "efd5ef2e4c6c482d44c9ae70db882d6f7e5726113dad3fdd005590c57a8153ba",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift": {
@@ -19,7 +19,7 @@
    "label": "Rift",
    "kind": "class",
    "file": "src/melder/nexus/rift/rift.py",
-   "lineno": 26,
+   "lineno": 27,
    "bases": [
     "Cleanable"
    ],
@@ -50,11 +50,11 @@
     "space"
    ],
    "shape": {
-    "method_count": 39,
+    "method_count": 42,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "45c830e613ba27de1ef96fc190973f50ad19fdb6035d07d907b079ccd79e18d4",
+   "span_sha256": "0697657a28b8ec846b6fbf5b8b6166bd63ae07ef49cc1a6b1414012f194f505f",
    "role": "Live AR session object.",
    "responsibilities": [
     "owns exactly one primary room",
@@ -63,7 +63,8 @@
     "refreshes room assets from current projection state",
     "attaches each frame once, giving back a target-frame budget reservation that published nothing",
     "keeps its lock after cleanup: an attach overtaken by removal after its reservation, or a refresh after its sets were built, meets the cleaned state under it",
-    "cleans up in two steps - marks itself cleaned under its lock, then tears the room and the rest down with no lock held, the caller that marked running the teardown; Nexus.remove_rift marks it through _mark_cleaned_for_removal, which returns the frames attached at the mark"
+    "cleans up in two steps - marks itself cleaned under its lock, then tears the room and the rest down with no lock held, the caller that marked running the teardown; Nexus.remove_rift marks it through _mark_cleaned_for_removal, which returns the frames attached at the mark",
+    "holds the calling thread's gate ticket in its seven agent doors (get_frame_link_contract, create_frame_link, get_frame_viewer, get_nexus_frame, create_nexus_frame and the two accessible-frame listings); the methods Nexus calls while it refreshes, registers or removes the Rift stay untagged and reach the untagged _get_frame_link_contract and _create_frame_link"
    ],
    "owns_state": [
     "_space",
@@ -78,7 +79,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "45c830e613ba27de1ef96fc190973f50ad19fdb6035d07d907b079ccd79e18d4"
+   "semantics_authored_against": "0697657a28b8ec846b6fbf5b8b6166bd63ae07ef49cc1a6b1414012f194f505f"
   }
  },
  "edges_out": [
@@ -147,9 +148,11 @@
  ],
  "published_aliases": [],
  "imports": {
+  "contextmanager": "contextlib.contextmanager",
   "threading": "threading",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
+  "Iterator": "typing.Iterator",
   "Optional": "typing.Optional",
   "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",

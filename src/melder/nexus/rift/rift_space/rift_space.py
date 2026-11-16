@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Callable, Dict, Iterator, Optional, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift
@@ -82,6 +82,14 @@ class RiftSpace(Cleanable):
         Room-local state is confined to the room; the viewer reads current
         projection truth from the owning Rift on demand rather than holding a
         second registry that could drift.
+        Every agent door of the room holds the room's `RiftGate` ticket while
+        it runs (GitHub #274, step 3): workstation calls, viewer reads and
+        commands through their own objects, and the hook registration methods
+        here. A removal therefore waits for them; a teardown can still run while
+        a thread is inside an action - the thread's own removal of its Rift, a
+        Nexus cleanup past its drain deadline, a direct `Rift.cleanup` - so the
+        action-hook scope's exit skips its bookkeeping on a room cleaned
+        meanwhile. The properties and internal callbacks take no ticket.
 
     Lifecycle / Cleanup:
         Created during Rift creation from `space_type` and cleaned with its
@@ -223,6 +231,7 @@ class RiftSpace(Cleanable):
                 space_kind == RiftSpaceType.static.value
             ),
             event_publisher=self._publish_runtime_event,
+            rift_gate=self._rift_gate,
         )
         self._command_system: CommandSystem = self._create_command_system(rift)
         self._pre_category_hooks_by_name: Dict[
@@ -356,23 +365,27 @@ class RiftSpace(Cleanable):
               those present at registration time.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); the registry write itself takes the
+            room lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
         self.check_cleaned()
-        return self._register_category_hook(
-            phase="pre",
-            category=category,
-            callback=callback,
-        )
+        with self._entered_door():
+            return self._register_category_hook(
+                phase="pre",
+                category=category,
+                callback=callback,
+            )
 
     def register_category_post_hook(
             self,
@@ -396,23 +409,27 @@ class RiftSpace(Cleanable):
             - Category-wide, including actions added later.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); the registry write itself takes the
+            room lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
         self.check_cleaned()
-        return self._register_category_hook(
-            phase="post",
-            category=category,
-            callback=callback,
-        )
+        with self._entered_door():
+            return self._register_category_hook(
+                phase="post",
+                category=category,
+                callback=callback,
+            )
 
     @property
     def space_id(self) -> str:
@@ -623,24 +640,33 @@ class RiftSpace(Cleanable):
         Contract:
             - Fires BEFORE one NAMED action only, narrower than the category hook.
             - Returns a SUBSCRIPTION ID; keep it for unregistration.
-            - NOTE: unlike its `post` counterpart and the category hooks, this method
-              does NOT perform its own cleaned-state check before delegating.
+            - Checks the cleaned state itself, like its `post` counterpart and the
+              category hooks. (Corrected 2026-11-09: it used to leave that check to
+              the delegate; the check must now come before the gate is read.)
 
         Threading:
-            Registration is serialized by the underlying hook registry.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); registration is serialized by the
+            underlying hook registry.
 
         Lifecycle / Cleanup:
-            Not directly guarded; the delegate performs registration.
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
-        return self._register_action_hook(
-            phase="pre",
-            category=category,
-            action_name=action_name,
-            callback=callback,
-        )
+        self.check_cleaned()
+        with self._entered_door():
+            return self._register_action_hook(
+                phase="pre",
+                category=category,
+                action_name=action_name,
+                callback=callback,
+            )
 
     def register_action_post_hook(
             self,
@@ -664,24 +690,28 @@ class RiftSpace(Cleanable):
             - Returns a SUBSCRIPTION ID; keep it for unregistration.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); the registry write itself takes the
+            room lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
         self.check_cleaned()
-        return self._register_action_hook(
-            phase="post",
-            category=category,
-            action_name=action_name,
-            callback=callback,
-        )
+        with self._entered_door():
+            return self._register_action_hook(
+                phase="post",
+                category=category,
+                action_name=action_name,
+                callback=callback,
+            )
 
     def unregister_action_hook(self, subscription_id: str) -> None:
         """
@@ -699,13 +729,16 @@ class RiftSpace(Cleanable):
               error, so success does not prove the hook existed.
 
         Threading:
-            Reads under `self._lock`, so the result is a coherent snapshot.
+            Holds the room's `RiftGate` ticket while it unregisters, when the
+            room has a gate (GitHub #274, step 3), and mutates the registries
+            under `self._lock`.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             None.
@@ -713,7 +746,7 @@ class RiftSpace(Cleanable):
         self.check_cleaned()
         if not subscription_id:
             raise ValueError("subscription_id cannot be empty.")
-        with self._lock:
+        with self._entered_door(), self._lock:
             hook_key = self._action_hook_keys_by_subscription_id.pop(
                 subscription_id,
                 None,
@@ -739,6 +772,38 @@ class RiftSpace(Cleanable):
                 action_registry.pop((category, action_name), None)
 
     @contextmanager
+    def _entered_door(self) -> Iterator[None]:
+        """
+        Hold the room's Rift gate for one agent call into the room, when the
+        room has a gate.
+
+        Contract:
+            - Admits the calling thread at the gate - a thread already inside
+              the Rift passes by re-entry - and releases the admission when the
+              call returns or raises. A room without a gate runs the call as is.
+            - The gate is held in a local: a teardown during the call - the same
+              thread's removal of its own Rift, or one that did not wait for it -
+              deletes the room's field, and the release after a cleaned gate is a
+              quiet no-op.
+
+        Yields:
+            None.
+
+        Raises:
+            RuntimeError: If the gate refuses the call (terminally closed, or
+                disabled in "raise" entry mode).
+        """
+        rift_gate = self._rift_gate
+        if rift_gate is None:
+            yield
+            return
+        rift_gate.admit_ticket()
+        try:
+            yield
+        finally:
+            rift_gate.unregister_ticket()
+
+    @contextmanager
     def _entered_action_hook_scope(
             self,
             *,
@@ -754,6 +819,11 @@ class RiftSpace(Cleanable):
               viewer/helper calls do not double-fire hooks.
             - Fires post hooks only when the matching top-level entry exits
               after pre hooks completed successfully.
+            - On a room cleaned while the action ran, the exit skips the depth
+              bookkeeping and the post hooks: the cleanup took the hook state
+              with it. Under the Rift gate that cleanup is the thread's own
+              removal of its Rift (GitHub #274, design 5c); only a teardown that
+              did not wait for the thread (past a drain deadline) races this exit.
         """
         self.check_cleaned()
         self._validate_action_hook_category(category)
@@ -789,30 +859,33 @@ class RiftSpace(Cleanable):
                 pre_completed = True
             yield
         finally:
-            post_action_callbacks: Tuple[Callable[[], None], ...] = tuple()
-            post_category_callbacks: Tuple[Callable[[], None], ...] = tuple()
-            with self._lock:
-                current_depth = self._action_hook_depth_by_category[category]
-                next_depth = current_depth - 1
-                self._action_hook_depth_by_category[category] = next_depth
-                if top_level and pre_completed and next_depth == 0:
-                    post_action_callbacks = tuple(
-                        self._post_action_hooks_by_key.get(
-                            (category, action_name),
-                            {},
-                        ).values()
-                    )
-                    post_category_callbacks = tuple(
-                        self._post_category_hooks_by_name.get(
-                            category,
-                            {},
-                        ).values()
-                    )
-            if top_level and pre_completed:
-                for callback in post_action_callbacks:
-                    callback()
-                for callback in post_category_callbacks:
-                    callback()
+            # A room cleaned during the action took its hook state with it: no depth to restore, no post hook to run.
+            # Under the Rift gate: this thread removed its own Rift (GitHub #274, 5c), or a teardown did not wait.
+            if not self._cleaned:
+                post_action_callbacks: Tuple[Callable[[], None], ...] = tuple()
+                post_category_callbacks: Tuple[Callable[[], None], ...] = tuple()
+                with self._lock:
+                    current_depth = self._action_hook_depth_by_category[category]
+                    next_depth = current_depth - 1
+                    self._action_hook_depth_by_category[category] = next_depth
+                    if top_level and pre_completed and next_depth == 0:
+                        post_action_callbacks = tuple(
+                            self._post_action_hooks_by_key.get(
+                                (category, action_name),
+                                {},
+                            ).values()
+                        )
+                        post_category_callbacks = tuple(
+                            self._post_category_hooks_by_name.get(
+                                category,
+                                {},
+                            ).values()
+                        )
+                if top_level and pre_completed:
+                    for callback in post_action_callbacks:
+                        callback()
+                    for callback in post_category_callbacks:
+                        callback()
 
     def _publish_runtime_event(self, event_payload: Dict[str, object]) -> None:
         """

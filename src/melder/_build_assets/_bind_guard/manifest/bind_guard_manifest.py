@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8300"
-SOURCE_SHA256 = "7f7f63fa906022710be3d4630e6320c83da7af85d926783bdc8df29bb0e5668a"
-ENTRY_COUNT = 631
+BUILT_FOR_VERSION = "0.2.8303"
+SOURCE_SHA256 = "b50bf873228857cb75dcadb7eaebdc0714dca8dc3a096174cde09266a49efbb9"
+ENTRY_COUNT = 633
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -572,6 +572,8 @@ ENTRIES = (
     ('melder.nexus.rift.projection.view_projection', 'ViewProjection'),
     ('melder.nexus.rift.rift', 'Rift'),
     ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGate'),
+    ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGateDrainTimeoutError'),
+    ('melder.nexus.rift.rift_gate.rift_gate', '_RiftGateHolder'),
     ('melder.nexus.rift.rift_gate_controller.rift_gate_controller', 'RiftGateController'),
     ('melder.nexus.rift.rift_space.capability_rift_space', 'CapabilityRiftSpace'),
     ('melder.nexus.rift.rift_space.codegen_rift_space', 'CodegenRiftSpace'),

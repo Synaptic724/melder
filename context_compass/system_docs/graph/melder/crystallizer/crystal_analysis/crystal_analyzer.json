@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
- "source_sha256": "414aba835762cd4f121d7145254fe852fd3f0974fa547981d9f7a0adb746e23c",
+ "source_sha256": "75b5ed4b85aef2d6b263d2ebc96d25fda72eea5edb4b0045d6229dcb5c84cc25",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.crystal_analyzer": {
@@ -12,15 +12,16 @@
    "lineno": 1,
    "role": "Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).",
    "responsibilities": [
-    "walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)",
-    "classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)",
+    "walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves), resolving and classifying each distinct module once per pass (0.2.8302)",
+    "classifies via the first-match custody chain (synthetic/user_source/site_package/fallback); user_source never claims a module inside a Python environment (0.2.8302)",
     "runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)",
     "analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)",
-    "public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths"
+    "public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths/resolve_environment_root_paths"
    ],
    "owns_state": [
     "custody strategy chain",
-    "fact strategy list"
+    "fact strategy list",
+    "per-pass module paths and custody matches"
    ],
    "phases": [
     "runtime"
@@ -31,7 +32,7 @@
    "label": "CrystalAnalyzer",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
-   "lineno": 77,
+   "lineno": 83,
    "bases": [
     "Cleanable"
    ],
@@ -40,21 +41,23 @@
     "analyze_payload",
     "analyze_spell_root",
     "cleanup",
+    "resolve_environment_root_paths",
     "resolve_file_extension",
     "resolve_module_path",
     "resolve_site_package_root_paths",
     "resolve_user_root_paths"
    ],
    "shape": {
-    "method_count": 19,
+    "method_count": 21,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4dd4ebfdccddbd0f9b2d0cb28c82f3bc463725e95a9f75bb882b1234f719b01a",
+   "span_sha256": "a7634dd4564b21ba2c7df8f37c3ef531678789ad7c586505fc87ea3a397c4c13",
    "include": true,
    "role": "Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.",
    "responsibilities": [
-    "consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies",
+    "consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies, and the default user_source strategy is given the environment roots (resolve_environment_root_paths: site roots plus the interpreter prefixes) so it never claims a module inside a Python environment (0.2.8302)",
+    "resolve each distinct module's path and run the custody chain once per analyze_spell_root pass, keyed by module name and module object, and empty those answers when the pass ends (0.2.8302)",
     "drive ONE ast.walk per module and dispatch every node to the fact strategies",
     "own its strategy instances and clean them children-first; the shared syntax memo survives instance cleanup"
    ],
@@ -63,14 +66,16 @@
     "_fact_strategies",
     "_retain_user_sources",
     "_site_package_dependency_descent",
-    "_uses_default_fact_strategies"
+    "_uses_default_fact_strategies",
+    "_pass_module_paths",
+    "_pass_custody"
    ],
    "phases": [
     "bind",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4dd4ebfdccddbd0f9b2d0cb28c82f3bc463725e95a9f75bb882b1234f719b01a"
+   "semantics_authored_against": "a7634dd4564b21ba2c7df8f37c3ef531678789ad7c586505fc87ea3a397c4c13"
   }
  },
  "edges_out": [

@@ -5,14 +5,18 @@ residual): several agents work in one Rift at once, and one may remove it while 
 - Agent code runs outside Melder's locks (W5): the target `Workstation.call_target` runs, the method
   `CommandSystem.execute_target_method` runs and the engine call of `CodegenCommandSystem.execute_codegen` can wait
   on another agent's command; `cleanup_target` keeps a selection made while the target's cleanup ran.
-- `Nexus.remove_rift` finishes while an agent is mid-command (W4), while a weak workstation binding's collection
-  callback publishes under the workstation lock (W6) and while `link_frame` refreshes (C3): the Rift and its room
-  mark themselves cleaned under their own lock and clean their children after releasing it.
-- An attach that lands inside `remove_rift` keeps no target-frame budget count (R4 residual).
+- `Nexus.remove_rift` and an agent both finish while the agent is mid-command (W4), while a weak workstation
+  binding's collection callback publishes under the workstation lock (W6) and while `link_frame` refreshes (C3).
+  Since the Rift gate (GitHub #274, step 3) the removal drains the gate first: it closes it, waits for the agent to
+  leave and only then tears the Rift down, so the agent's call completes and the teardown finds no thread inside.
+  The Rift and its room still mark themselves cleaned under their own lock and clean their children after
+  releasing it.
+- An attach that lands inside `remove_rift` keeps no target-frame budget count (R4 residual), driven through the
+  untagged `Rift._create_frame_link`; through the public `create_frame_link` door the removal waits for the attach.
 
 Order between agents comes from nesting or from `threading.Event` handshakes set at fixed points - a lock stand-in's
-first entry by a watched thread, a room action hook, a patched Nexus or engine step - never from sleeps. Every agent
-thread is a daemon joined within `_Handshake.BOUND_SECONDS`, so a deadlock fails its test instead of hanging the
+first entry by a watched thread, a room action hook, a patched Nexus, gate or engine step - never from sleeps. Every
+agent thread is a daemon joined within `_Handshake.BOUND_SECONDS`, so a deadlock fails its test instead of hanging the
 suite.
 """
 import threading
@@ -35,6 +39,7 @@ from melder.nexus.rift.command_system.capability_command_system import Capabilit
 from melder.nexus.rift.command_system.codegen_command_system import CodegenCommandSystem
 from melder.nexus.rift.command_system.command_system import CommandSystem
 from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 if TYPE_CHECKING:
@@ -393,6 +398,70 @@ class _HandshakeLock:
             _Handshake.wait(self._proceed, "The go-ahead for {0} at the lock".format(self._watched_name))
 
 
+def _announce_the_removal_closing_the_gate(
+        monkeypatch: pytest.MonkeyPatch,
+        remover: _Agent,
+        closed: threading.Event,
+) -> None:
+    """
+    Set `closed` when the removal has closed the Rift's gate - the point from which it waits for the agents inside.
+
+    Contract:
+        - Patches `RiftGate.close_terminally`: on the remover's thread it closes the gate, then sets `closed`. Every
+          other call closes plainly.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close_terminally` for this test only.
+        remover: The agent running `Nexus.remove_rift`.
+        closed: Set once the removal closed the gate.
+
+    Returns:
+        None.
+    """
+    original_close = RiftGate.close_terminally
+
+    def close_then_announce(self: RiftGate) -> None:
+        """Close the gate; on the removal's thread, announce it."""
+        original_close(self)
+        if threading.current_thread() is remover.thread:
+            closed.set()
+
+    monkeypatch.setattr(RiftGate, "close_terminally", close_then_announce)
+
+
+def _count_the_threads_inside_at_teardown(
+        monkeypatch: pytest.MonkeyPatch,
+        remover: _Agent,
+        rift_gate: RiftGate,
+        counts: List[int],
+) -> None:
+    """
+    Record how many threads are inside the Rift when the removal starts tearing it down.
+
+    Contract:
+        - Patches `Rift._clean_owned_state`: on the remover's thread it appends `rift_gate.active_ticket_count()` to
+          `counts` - the gate is still live there, it is cleaned inside the teardown - then tears down.
+
+    Args:
+        monkeypatch: Patches `Rift._clean_owned_state` for this test only.
+        remover: The agent running `Nexus.remove_rift`.
+        rift_gate: The Rift's gate, taken before the removal.
+        counts: Receives the count.
+
+    Returns:
+        None.
+    """
+    original_teardown = Rift._clean_owned_state
+
+    def count_then_tear_down(self: Rift) -> None:
+        """On the removal's thread, count the threads inside; then tear down."""
+        if threading.current_thread() is remover.thread:
+            counts.append(rift_gate.active_ticket_count())
+        original_teardown(self)
+
+    monkeypatch.setattr(Rift, "_clean_owned_state", count_then_tear_down)
+
+
 def _reset_runtime_singletons() -> None:
     """
     Give every test a fresh Melder world.
@@ -660,18 +729,26 @@ def test_execute_codegen_runs_the_engine_without_blocking_another_agents_command
     assert payload == {"accepted": True, "frame_name": "default", "result": 1}
 
 
-def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish() -> None:
+def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    `Nexus.remove_rift` and an agent whose `call_target` target is inside a room command both finish.
+    `Nexus.remove_rift` and an agent whose `call_target` target is inside a room command both finish: the removal
+    waits for the agent to leave, then tears the room down.
 
     Purpose:
-        Pin W4. The agent is held inside the command's action-hook scope by a pre-hook until the removal reaches
-        the workstation lock (announced by a lock stand-in) or finishes; then both must end within the bound. The
-        removal must succeed; the agent may fail, since its room went away under it.
+        Pin W4 under the Rift gate (GitHub #274, step 3). The agent is held inside the command's action-hook scope by
+        a pre-hook until the removal has closed the Rift's gate (`RiftGate.close_terminally`, patched to announce it)
+        or finished; then both must end within the bound. The removal drains the gate before its teardown, so the
+        agent's command and `call_target` now return normally, and the teardown - which cleans the workstation and
+        the room - finds no thread inside the Rift.
 
     Symptom (GitHub #274, W4): the agent held the workstation lock across its target (`call_target`) and needed the
     room lock to leave the command, while the removal held the room lock across `RiftSpace.cleanup` and needed the
     workstation lock to clean the workstation: a deadlock.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close_terminally` and `Rift._clean_owned_state` for this test only.
 
     Returns:
         None.
@@ -682,27 +759,30 @@ def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish
     workstation = space.workstation
     command_system = space.command_system
     inside_the_command = threading.Event()
-    removal_progressed = threading.Event()
+    removal_closed_the_gate = threading.Event()
+    threads_inside_at_teardown: List[int] = []
 
     def remove_the_rift() -> None:
         """Remove the Rift; announce the end too, so the agent is never left waiting on a removal that is over."""
         try:
             nexus.remove_rift(rift_id)
         finally:
-            removal_progressed.set()
+            removal_closed_the_gate.set()
 
-    def hold_the_command_until_the_removal_progressed() -> None:
-        """Pre-hook: hold the agent inside the command until the removal reached the workstation lock."""
+    def hold_the_command_until_the_removal_closed_the_gate() -> None:
+        """Pre-hook: hold the agent inside the command until the removal closed the Rift's gate."""
         inside_the_command.set()
-        _Handshake.wait(removal_progressed, "The removal reaching the workstation lock")
+        _Handshake.wait(removal_closed_the_gate, "The removal closing the Rift's gate")
 
     agent = _Agent("agent", workstation.call_target)
     remover = _Agent("remover", remove_the_rift)
-    workstation._lock = _HandshakeLock(watched=remover.thread, reached=removal_progressed)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_closed_the_gate)
+    _count_the_threads_inside_at_teardown(monkeypatch, remover, rift.rift_gate, threads_inside_at_teardown)
+    expected_methods = command_system.list_supported_command_methods()
     space.register_action_pre_hook(
         "command",
         "list_supported_command_methods",
-        hold_the_command_until_the_removal_progressed,
+        hold_the_command_until_the_removal_closed_the_gate,
     )
     workstation.bind_method(
         "helper",
@@ -722,21 +802,37 @@ def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish
         )
     )
     agent.reraise_schedule_failure()
+    assert agent.raised is None, "The agent's call_target raised {0!r}: the removal tore its room down under it.".format(
+        agent.raised
+    )
+    assert agent.returned == expected_methods
     assert remover.raised is None
+    assert threads_inside_at_teardown == [0], (
+        "The removal tore the Rift down with {0} thread(s) inside.".format(threads_inside_at_teardown)
+    )
+    assert nexus.has_rift(rift_id) is False
 
 
-def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_both_finish() -> None:
+def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_both_finish(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    `Nexus.remove_rift` and a rebind whose dropped object's weak alias publishes a room event both finish.
+    `Nexus.remove_rift` and a rebind whose dropped object's weak alias publishes a room event both finish: the removal
+    waits for the rebind to leave, then tears the room down.
 
     Purpose:
-        Pin W6. The binder rebinds a name whose old object is also weakly bound, so the old object dies under the
-        workstation lock and its weak binding's collection callback publishes a room event. A stand-in room lock
-        holds that publish at its entry until the removal reaches the workstation lock (or finishes); then both
-        must end within the bound, and the removal and the rebind must succeed.
+        Pin W6 under the Rift gate (GitHub #274, step 3). The binder rebinds a name whose old object is also weakly
+        bound, so the old object dies under the workstation lock and its weak binding's collection callback
+        publishes a room event. A stand-in room lock holds that publish at its entry until the removal has closed the
+        Rift's gate (`RiftGate.close_terminally`, patched to announce it) or finished; then both must end within the
+        bound, and the removal and the rebind must succeed. The rebind holds the gate (`bind_object` is an agent
+        door), so the removal waits for it and its teardown finds no thread inside the Rift.
 
     Symptom (GitHub #274, W6): the callback needed the room lock while its thread held the workstation lock, and
     the removal held the room lock across `RiftSpace.cleanup` while it needed the workstation lock: a deadlock.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close_terminally` and `Rift._clean_owned_state` for this test only.
 
     Returns:
         None.
@@ -747,6 +843,7 @@ def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_bo
     workstation = space.workstation
     publish_reached_the_room_lock = threading.Event()
     removal_progressed = threading.Event()
+    threads_inside_at_teardown: List[int] = []
 
     def rebind_a_name_whose_old_object_is_weakly_bound() -> None:
         """Bind a tool strongly and weakly, then rebind its strong name so it dies under the workstation lock."""
@@ -766,12 +863,13 @@ def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_bo
 
     binder = _Agent("binder", rebind_a_name_whose_old_object_is_weakly_bound)
     remover = _Agent("remover", remove_the_rift)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_progressed)
+    _count_the_threads_inside_at_teardown(monkeypatch, remover, rift.rift_gate, threads_inside_at_teardown)
     space._lock = _HandshakeLock(
         watched=binder.thread,
         reached=publish_reached_the_room_lock,
         proceed=removal_progressed,
     )
-    workstation._lock = _HandshakeLock(watched=remover.thread, reached=removal_progressed)
 
     binder.start()
     _Handshake.wait(publish_reached_the_room_lock, "The weak binding's collection event reaching the room lock")
@@ -782,25 +880,34 @@ def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_bo
         "{0} still running after {1} s: Nexus.remove_rift and a weak binding's collection event deadlocked "
         "(W6).".format(still_running, _Handshake.BOUND_SECONDS)
     )
+    binder.reraise_schedule_failure()
     assert remover.raised is None
     assert binder.raised is None
+    assert threads_inside_at_teardown == [0], (
+        "The removal tore the Rift down with {0} thread(s) inside.".format(threads_inside_at_teardown)
+    )
+    assert nexus.has_rift(rift_id) is False
 
 
 def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    `Nexus.remove_rift` and a `command_system.link_frame` whose refresh is under way both finish.
+    `Nexus.remove_rift` and a `command_system.link_frame` whose refresh is under way both finish: the removal waits
+    for the link to finish, then tears the Rift down.
 
     Purpose:
-        Pin C3. A patched `Nexus.create_frame_projection_sets_for_rift` holds the link's refresh, with its sets
-        built, until the removal reaches the command lock (announced by a lock stand-in) or finishes; then both must
-        end within the bound. The removal must succeed; the link may fail, since its Rift went away under it.
+        Pin C3 under the Rift gate (GitHub #274, step 3). A patched `Nexus.create_frame_projection_sets_for_rift`
+        holds the link's refresh, with its sets built, until the removal has closed the Rift's gate
+        (`RiftGate.close_terminally`, patched to announce it) or finished; then both must end within the bound. The
+        link is a command and holds the gate, so the removal waits for it: the link now completes, and the
+        teardown - which cleans the command system under the command lock - finds no thread inside the Rift.
 
     Symptom (GitHub #274, C3): `link_frame` held the command lock across the refresh, which needs the Rift lock to
     apply its sets, while the removal held the Rift lock across `Rift.cleanup` and needed the command lock to clean
     the command system: a deadlock.
 
     Args:
-        monkeypatch: Patches `Nexus.create_frame_projection_sets_for_rift` for this test only.
+        monkeypatch: Patches `Nexus.create_frame_projection_sets_for_rift`, `RiftGate.close_terminally` and
+            `Rift._clean_owned_state` for this test only.
 
     Returns:
         None.
@@ -810,6 +917,7 @@ def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.M
     command_system = rift.space.command_system
     sets_built = threading.Event()
     removal_progressed = threading.Event()
+    threads_inside_at_teardown: List[int] = []
 
     def remove_the_rift() -> None:
         """Remove the Rift; announce the end too, so the link is never left waiting on a removal that is over."""
@@ -827,15 +935,16 @@ def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.M
             *args: object,
             **kwargs: object,
     ) -> Dict[str, FrameProjectionSet]:
-        """Build the link's sets, then hold its refresh until the removal reached the command lock."""
+        """Build the link's sets, then hold its refresh until the removal closed the Rift's gate."""
         projection_sets = original_build(self, *args, **kwargs)
         if threading.current_thread() is linker.thread:
             sets_built.set()
-            _Handshake.wait(removal_progressed, "The removal reaching the command lock")
+            _Handshake.wait(removal_progressed, "The removal closing the Rift's gate")
         return projection_sets
 
     monkeypatch.setattr(Nexus, "create_frame_projection_sets_for_rift", build_then_wait_for_the_removal)
-    command_system._lock = _HandshakeLock(watched=remover.thread, reached=removal_progressed)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_progressed)
+    _count_the_threads_inside_at_teardown(monkeypatch, remover, rift.rift_gate, threads_inside_at_teardown)
 
     linker.start()
     _Handshake.wait(sets_built, "The link's refresh building its projection sets")
@@ -849,7 +958,14 @@ def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.M
         )
     )
     linker.reraise_schedule_failure()
+    assert linker.raised is None, "The link raised {0!r}: the removal tore its Rift down under it.".format(
+        linker.raised
+    )
     assert remover.raised is None
+    assert threads_inside_at_teardown == [0], (
+        "The removal tore the Rift down with {0} thread(s) inside.".format(threads_inside_at_teardown)
+    )
+    assert nexus.has_rift(rift_id) is False
 
 
 def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -866,6 +982,10 @@ def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: 
         phase - until the attach has finished, so the attach publishes in between. The teardown is
         `Rift._clean_owned_state` since the fix; before it, `remove_rift` called `Rift.cleanup` at that point, where
         this test held it when it failed first.
+        The attach runs through the untagged `Rift._create_frame_link`: since the Rift gate (GitHub #274, step 3)
+        the public `create_frame_link` door holds the removal off until the attach finished (pinned by the next
+        test), so only a path without a ticket can still land an attach inside a removal - and the residual guard
+        must keep covering it.
 
     Symptom (GitHub #274, R4 residual): the removal decremented the frames it listed in its registry phase, the
     attach published `ledger` after that list and before the Rift was cleaned, and the `ledger` count was never
@@ -914,7 +1034,7 @@ def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: 
     monkeypatch.setattr(Rift, "_clean_owned_state", hold_the_teardown_until_the_attach_finished)
 
     try:
-        rift.create_frame_link("ledger")
+        rift._create_frame_link("ledger")
     except AssertionError:
         raise
     except Exception as error:
@@ -937,3 +1057,101 @@ def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: 
         "The attach that landed inside remove_rift raised {0!r}, not the cleaned RuntimeError.".format(attach_errors)
     )
     assert "Rift has already been cleaned" in str(attach_errors[0])
+
+
+def test_attach_through_create_frame_link_holds_a_removal_started_inside_it_until_it_finished(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    An attach through the public `create_frame_link` door holds off a removal started inside it: the attach
+    publishes, refreshes and returns normally, and only then does the removal tear the Rift down and give the
+    frame's budget count back.
+
+    Purpose:
+        Pin the ordering the Rift gate gives the R4 schedule (GitHub #274, step 3). As in the residual test above,
+        the removal starts on another thread from inside the attach's budget reservation; the attach then waits only
+        until the removal has closed the gate (`RiftGate.close_terminally`, patched to announce it). The door holds
+        the attaching thread's ticket, so the removal must wait for the attach to leave: when the attach refreshes -
+        still inside the door - the removal has not started its teardown, and the removal's registry phase then
+        finds `ledger` attached and decrements it with `default`.
+
+    Args:
+        monkeypatch: Patches `Nexus._reserve_target_frame`, `RiftGate.close_terminally`,
+            `Rift.refresh_runtime_projections` and `Rift._clean_owned_state` for this test only.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(ledger_frame=True)
+    rift_id = rift.id
+    attacher = threading.current_thread()
+    removal_closed_the_gate = threading.Event()
+    teardown_started = threading.Event()
+    reservations: List[str] = []
+    teardown_started_inside_the_attach: List[bool] = []
+    attach_errors: List[Exception] = []
+
+    def remove_the_rift() -> None:
+        """Remove the Rift; announce the end too, so the attach is never left waiting on a removal that is over."""
+        try:
+            nexus.remove_rift(rift_id)
+        finally:
+            removal_closed_the_gate.set()
+
+    remover = _Agent("remover", remove_the_rift)
+    original_reserve = Nexus._reserve_target_frame
+    original_refresh = Rift.refresh_runtime_projections
+    original_teardown = Rift._clean_owned_state
+
+    def reserve_then_start_the_removal(self: Nexus, target_frame_name: str) -> None:
+        """Reserve the slot; on the first reservation, start the removal and wait until it closed the gate."""
+        original_reserve(self, target_frame_name)
+        if not reservations:
+            reservations.append(target_frame_name)
+            remover.start()
+            _Handshake.wait(removal_closed_the_gate, "The removal closing the Rift's gate")
+
+    def note_the_teardown_then_refresh(
+            self: Rift,
+            *,
+            frame_names: Optional[Sequence[str]] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        """On the attaching thread, still inside the door, note whether the removal started its teardown."""
+        if threading.current_thread() is attacher and reservations:
+            teardown_started_inside_the_attach.append(teardown_started.is_set())
+        return original_refresh(self, frame_names=frame_names)
+
+    def announce_then_tear_down(self: Rift) -> None:
+        """On the removal's thread, announce the teardown; then tear down."""
+        if threading.current_thread() is remover.thread:
+            teardown_started.set()
+        original_teardown(self)
+
+    monkeypatch.setattr(Nexus, "_reserve_target_frame", reserve_then_start_the_removal)
+    monkeypatch.setattr(Rift, "refresh_runtime_projections", note_the_teardown_then_refresh)
+    monkeypatch.setattr(Rift, "_clean_owned_state", announce_then_tear_down)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_closed_the_gate)
+
+    try:
+        rift.create_frame_link("ledger")
+    except AssertionError:
+        raise
+    except Exception as error:
+        attach_errors.append(error)
+    removal_finished = remover.join_within_bound()
+
+    assert reservations == ["ledger"]
+    assert attach_errors == [], "The attach raised {0!r}: the removal did not wait for it.".format(attach_errors)
+    assert teardown_started_inside_the_attach == [False], (
+        "The removal started tearing the Rift down while the attach was still inside create_frame_link."
+    )
+    assert removal_finished, "Nexus.remove_rift did not finish within {0} s.".format(_Handshake.BOUND_SECONDS)
+    remover.reraise_schedule_failure()
+    assert remover.raised is None
+    assert "ledger" not in nexus._target_frame_ref_counts, (
+        "The attach that published before the removal's registry phase kept a budget count: {0}.".format(
+            nexus._target_frame_ref_counts
+        )
+    )
+    assert "default" not in nexus._target_frame_ref_counts
+    assert nexus.has_rift(rift_id) is False

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: bc998bdbef18b8c87b7e73edffb9c48186b8d5892b7b984860091eb30ad02b49
-FILE COUNT: 1206
+SOURCE FINGERPRINT: 535d7b4a94fe1bc4acddf4de4f5f4130bc462b42d8ab57995c32c54adab5cb8d
+FILE COUNT: 1210
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -1442,7 +1442,7 @@ END FILE: tests/_frame_posture_test_support.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/_nexus_viewer_matrix_support.py
-CONTENT SHA256: 5222f8887497a4fe0392d6bac024df3186a794d2650bf33307b41b0099d1c0f6
+CONTENT SHA256: 27dc3bad53d1ee0187e989767c740f481ae8de7b788bf77580620cd55e181890
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Dict, Optional, Sequence, Tuple
@@ -1473,6 +1473,7 @@ from melder.nexus.rift.projection.command_projection import CommandProjection
 from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 
@@ -1484,6 +1485,10 @@ class ViewerProjectionRiftDouble:
     Purpose:
         Let direct `FrameViewer` fixtures follow the live ownership model
         without requiring a full `Rift` runtime object.
+
+    Contract:
+        - Owns one open `RiftGate`, as a live Rift does: every viewer read takes
+          the calling thread's ticket on `rift.rift_gate` (GitHub #274, step 3).
     """
 
     def __init__(
@@ -1497,6 +1502,7 @@ class ViewerProjectionRiftDouble:
     ) -> None:
         self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
         self._id = rift_id
+        self._rift_gate = RiftGate()
         self._selected_contract_names_by_frame_name = (
             dict(selected_contract_names_by_frame_name)
             if selected_contract_names_by_frame_name is not None
@@ -1513,6 +1519,16 @@ class ViewerProjectionRiftDouble:
     @property
     def id(self) -> str:
         return self._id
+
+    @property
+    def rift_gate(self) -> RiftGate:
+        """
+        Return the double's gate, the one every viewer read takes its ticket on.
+
+        Returns:
+            RiftGate: The double's open gate.
+        """
+        return self._rift_gate
 
     def list_assigned_frame_names(self) -> Tuple[str, ...]:
         return tuple(sorted(self._projection_sets_by_frame_name.keys()))
@@ -37981,7 +37997,7 @@ END FILE: tests/component/melder/aether/test_nexus_viewer_general_helper_compone
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py
-CONTENT SHA256: 679c84638da7e5e92c2c935e5009367b2b2f920a993081f6656acd4325bcc927
+CONTENT SHA256: 826e83330f50ed9814c977f704e024900ab1587428af71f6ba5c0ba33881075c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -37991,14 +38007,18 @@ residual): several agents work in one Rift at once, and one may remove it while 
 - Agent code runs outside Melder's locks (W5): the target `Workstation.call_target` runs, the method
   `CommandSystem.execute_target_method` runs and the engine call of `CodegenCommandSystem.execute_codegen` can wait
   on another agent's command; `cleanup_target` keeps a selection made while the target's cleanup ran.
-- `Nexus.remove_rift` finishes while an agent is mid-command (W4), while a weak workstation binding's collection
-  callback publishes under the workstation lock (W6) and while `link_frame` refreshes (C3): the Rift and its room
-  mark themselves cleaned under their own lock and clean their children after releasing it.
-- An attach that lands inside `remove_rift` keeps no target-frame budget count (R4 residual).
+- `Nexus.remove_rift` and an agent both finish while the agent is mid-command (W4), while a weak workstation
+  binding's collection callback publishes under the workstation lock (W6) and while `link_frame` refreshes (C3).
+  Since the Rift gate (GitHub #274, step 3) the removal drains the gate first: it closes it, waits for the agent to
+  leave and only then tears the Rift down, so the agent's call completes and the teardown finds no thread inside.
+  The Rift and its room still mark themselves cleaned under their own lock and clean their children after
+  releasing it.
+- An attach that lands inside `remove_rift` keeps no target-frame budget count (R4 residual), driven through the
+  untagged `Rift._create_frame_link`; through the public `create_frame_link` door the removal waits for the attach.
 
 Order between agents comes from nesting or from `threading.Event` handshakes set at fixed points - a lock stand-in's
-first entry by a watched thread, a room action hook, a patched Nexus or engine step - never from sleeps. Every agent
-thread is a daemon joined within `_Handshake.BOUND_SECONDS`, so a deadlock fails its test instead of hanging the
+first entry by a watched thread, a room action hook, a patched Nexus, gate or engine step - never from sleeps. Every
+agent thread is a daemon joined within `_Handshake.BOUND_SECONDS`, so a deadlock fails its test instead of hanging the
 suite.
 """
 import threading
@@ -38021,6 +38041,7 @@ from melder.nexus.rift.command_system.capability_command_system import Capabilit
 from melder.nexus.rift.command_system.codegen_command_system import CodegenCommandSystem
 from melder.nexus.rift.command_system.command_system import CommandSystem
 from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 if TYPE_CHECKING:
@@ -38379,6 +38400,70 @@ class _HandshakeLock:
             _Handshake.wait(self._proceed, "The go-ahead for {0} at the lock".format(self._watched_name))
 
 
+def _announce_the_removal_closing_the_gate(
+        monkeypatch: pytest.MonkeyPatch,
+        remover: _Agent,
+        closed: threading.Event,
+) -> None:
+    """
+    Set `closed` when the removal has closed the Rift's gate - the point from which it waits for the agents inside.
+
+    Contract:
+        - Patches `RiftGate.close_terminally`: on the remover's thread it closes the gate, then sets `closed`. Every
+          other call closes plainly.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close_terminally` for this test only.
+        remover: The agent running `Nexus.remove_rift`.
+        closed: Set once the removal closed the gate.
+
+    Returns:
+        None.
+    """
+    original_close = RiftGate.close_terminally
+
+    def close_then_announce(self: RiftGate) -> None:
+        """Close the gate; on the removal's thread, announce it."""
+        original_close(self)
+        if threading.current_thread() is remover.thread:
+            closed.set()
+
+    monkeypatch.setattr(RiftGate, "close_terminally", close_then_announce)
+
+
+def _count_the_threads_inside_at_teardown(
+        monkeypatch: pytest.MonkeyPatch,
+        remover: _Agent,
+        rift_gate: RiftGate,
+        counts: List[int],
+) -> None:
+    """
+    Record how many threads are inside the Rift when the removal starts tearing it down.
+
+    Contract:
+        - Patches `Rift._clean_owned_state`: on the remover's thread it appends `rift_gate.active_ticket_count()` to
+          `counts` - the gate is still live there, it is cleaned inside the teardown - then tears down.
+
+    Args:
+        monkeypatch: Patches `Rift._clean_owned_state` for this test only.
+        remover: The agent running `Nexus.remove_rift`.
+        rift_gate: The Rift's gate, taken before the removal.
+        counts: Receives the count.
+
+    Returns:
+        None.
+    """
+    original_teardown = Rift._clean_owned_state
+
+    def count_then_tear_down(self: Rift) -> None:
+        """On the removal's thread, count the threads inside; then tear down."""
+        if threading.current_thread() is remover.thread:
+            counts.append(rift_gate.active_ticket_count())
+        original_teardown(self)
+
+    monkeypatch.setattr(Rift, "_clean_owned_state", count_then_tear_down)
+
+
 def _reset_runtime_singletons() -> None:
     """
     Give every test a fresh Melder world.
@@ -38646,18 +38731,26 @@ def test_execute_codegen_runs_the_engine_without_blocking_another_agents_command
     assert payload == {"accepted": True, "frame_name": "default", "result": 1}
 
 
-def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish() -> None:
+def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    `Nexus.remove_rift` and an agent whose `call_target` target is inside a room command both finish.
+    `Nexus.remove_rift` and an agent whose `call_target` target is inside a room command both finish: the removal
+    waits for the agent to leave, then tears the room down.
 
     Purpose:
-        Pin W4. The agent is held inside the command's action-hook scope by a pre-hook until the removal reaches
-        the workstation lock (announced by a lock stand-in) or finishes; then both must end within the bound. The
-        removal must succeed; the agent may fail, since its room went away under it.
+        Pin W4 under the Rift gate (GitHub #274, step 3). The agent is held inside the command's action-hook scope by
+        a pre-hook until the removal has closed the Rift's gate (`RiftGate.close_terminally`, patched to announce it)
+        or finished; then both must end within the bound. The removal drains the gate before its teardown, so the
+        agent's command and `call_target` now return normally, and the teardown - which cleans the workstation and
+        the room - finds no thread inside the Rift.
 
     Symptom (GitHub #274, W4): the agent held the workstation lock across its target (`call_target`) and needed the
     room lock to leave the command, while the removal held the room lock across `RiftSpace.cleanup` and needed the
     workstation lock to clean the workstation: a deadlock.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close_terminally` and `Rift._clean_owned_state` for this test only.
 
     Returns:
         None.
@@ -38668,27 +38761,30 @@ def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish
     workstation = space.workstation
     command_system = space.command_system
     inside_the_command = threading.Event()
-    removal_progressed = threading.Event()
+    removal_closed_the_gate = threading.Event()
+    threads_inside_at_teardown: List[int] = []
 
     def remove_the_rift() -> None:
         """Remove the Rift; announce the end too, so the agent is never left waiting on a removal that is over."""
         try:
             nexus.remove_rift(rift_id)
         finally:
-            removal_progressed.set()
+            removal_closed_the_gate.set()
 
-    def hold_the_command_until_the_removal_progressed() -> None:
-        """Pre-hook: hold the agent inside the command until the removal reached the workstation lock."""
+    def hold_the_command_until_the_removal_closed_the_gate() -> None:
+        """Pre-hook: hold the agent inside the command until the removal closed the Rift's gate."""
         inside_the_command.set()
-        _Handshake.wait(removal_progressed, "The removal reaching the workstation lock")
+        _Handshake.wait(removal_closed_the_gate, "The removal closing the Rift's gate")
 
     agent = _Agent("agent", workstation.call_target)
     remover = _Agent("remover", remove_the_rift)
-    workstation._lock = _HandshakeLock(watched=remover.thread, reached=removal_progressed)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_closed_the_gate)
+    _count_the_threads_inside_at_teardown(monkeypatch, remover, rift.rift_gate, threads_inside_at_teardown)
+    expected_methods = command_system.list_supported_command_methods()
     space.register_action_pre_hook(
         "command",
         "list_supported_command_methods",
-        hold_the_command_until_the_removal_progressed,
+        hold_the_command_until_the_removal_closed_the_gate,
     )
     workstation.bind_method(
         "helper",
@@ -38708,21 +38804,37 @@ def test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish
         )
     )
     agent.reraise_schedule_failure()
+    assert agent.raised is None, "The agent's call_target raised {0!r}: the removal tore its room down under it.".format(
+        agent.raised
+    )
+    assert agent.returned == expected_methods
     assert remover.raised is None
+    assert threads_inside_at_teardown == [0], (
+        "The removal tore the Rift down with {0} thread(s) inside.".format(threads_inside_at_teardown)
+    )
+    assert nexus.has_rift(rift_id) is False
 
 
-def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_both_finish() -> None:
+def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_both_finish(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    `Nexus.remove_rift` and a rebind whose dropped object's weak alias publishes a room event both finish.
+    `Nexus.remove_rift` and a rebind whose dropped object's weak alias publishes a room event both finish: the removal
+    waits for the rebind to leave, then tears the room down.
 
     Purpose:
-        Pin W6. The binder rebinds a name whose old object is also weakly bound, so the old object dies under the
-        workstation lock and its weak binding's collection callback publishes a room event. A stand-in room lock
-        holds that publish at its entry until the removal reaches the workstation lock (or finishes); then both
-        must end within the bound, and the removal and the rebind must succeed.
+        Pin W6 under the Rift gate (GitHub #274, step 3). The binder rebinds a name whose old object is also weakly
+        bound, so the old object dies under the workstation lock and its weak binding's collection callback
+        publishes a room event. A stand-in room lock holds that publish at its entry until the removal has closed the
+        Rift's gate (`RiftGate.close_terminally`, patched to announce it) or finished; then both must end within the
+        bound, and the removal and the rebind must succeed. The rebind holds the gate (`bind_object` is an agent
+        door), so the removal waits for it and its teardown finds no thread inside the Rift.
 
     Symptom (GitHub #274, W6): the callback needed the room lock while its thread held the workstation lock, and
     the removal held the room lock across `RiftSpace.cleanup` while it needed the workstation lock: a deadlock.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close_terminally` and `Rift._clean_owned_state` for this test only.
 
     Returns:
         None.
@@ -38733,6 +38845,7 @@ def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_bo
     workstation = space.workstation
     publish_reached_the_room_lock = threading.Event()
     removal_progressed = threading.Event()
+    threads_inside_at_teardown: List[int] = []
 
     def rebind_a_name_whose_old_object_is_weakly_bound() -> None:
         """Bind a tool strongly and weakly, then rebind its strong name so it dies under the workstation lock."""
@@ -38752,12 +38865,13 @@ def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_bo
 
     binder = _Agent("binder", rebind_a_name_whose_old_object_is_weakly_bound)
     remover = _Agent("remover", remove_the_rift)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_progressed)
+    _count_the_threads_inside_at_teardown(monkeypatch, remover, rift.rift_gate, threads_inside_at_teardown)
     space._lock = _HandshakeLock(
         watched=binder.thread,
         reached=publish_reached_the_room_lock,
         proceed=removal_progressed,
     )
-    workstation._lock = _HandshakeLock(watched=remover.thread, reached=removal_progressed)
 
     binder.start()
     _Handshake.wait(publish_reached_the_room_lock, "The weak binding's collection event reaching the room lock")
@@ -38768,25 +38882,34 @@ def test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_bo
         "{0} still running after {1} s: Nexus.remove_rift and a weak binding's collection event deadlocked "
         "(W6).".format(still_running, _Handshake.BOUND_SECONDS)
     )
+    binder.reraise_schedule_failure()
     assert remover.raised is None
     assert binder.raised is None
+    assert threads_inside_at_teardown == [0], (
+        "The removal tore the Rift down with {0} thread(s) inside.".format(threads_inside_at_teardown)
+    )
+    assert nexus.has_rift(rift_id) is False
 
 
 def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    `Nexus.remove_rift` and a `command_system.link_frame` whose refresh is under way both finish.
+    `Nexus.remove_rift` and a `command_system.link_frame` whose refresh is under way both finish: the removal waits
+    for the link to finish, then tears the Rift down.
 
     Purpose:
-        Pin C3. A patched `Nexus.create_frame_projection_sets_for_rift` holds the link's refresh, with its sets
-        built, until the removal reaches the command lock (announced by a lock stand-in) or finishes; then both must
-        end within the bound. The removal must succeed; the link may fail, since its Rift went away under it.
+        Pin C3 under the Rift gate (GitHub #274, step 3). A patched `Nexus.create_frame_projection_sets_for_rift`
+        holds the link's refresh, with its sets built, until the removal has closed the Rift's gate
+        (`RiftGate.close_terminally`, patched to announce it) or finished; then both must end within the bound. The
+        link is a command and holds the gate, so the removal waits for it: the link now completes, and the
+        teardown - which cleans the command system under the command lock - finds no thread inside the Rift.
 
     Symptom (GitHub #274, C3): `link_frame` held the command lock across the refresh, which needs the Rift lock to
     apply its sets, while the removal held the Rift lock across `Rift.cleanup` and needed the command lock to clean
     the command system: a deadlock.
 
     Args:
-        monkeypatch: Patches `Nexus.create_frame_projection_sets_for_rift` for this test only.
+        monkeypatch: Patches `Nexus.create_frame_projection_sets_for_rift`, `RiftGate.close_terminally` and
+            `Rift._clean_owned_state` for this test only.
 
     Returns:
         None.
@@ -38796,6 +38919,7 @@ def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.M
     command_system = rift.space.command_system
     sets_built = threading.Event()
     removal_progressed = threading.Event()
+    threads_inside_at_teardown: List[int] = []
 
     def remove_the_rift() -> None:
         """Remove the Rift; announce the end too, so the link is never left waiting on a removal that is over."""
@@ -38813,15 +38937,16 @@ def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.M
             *args: object,
             **kwargs: object,
     ) -> Dict[str, FrameProjectionSet]:
-        """Build the link's sets, then hold its refresh until the removal reached the command lock."""
+        """Build the link's sets, then hold its refresh until the removal closed the Rift's gate."""
         projection_sets = original_build(self, *args, **kwargs)
         if threading.current_thread() is linker.thread:
             sets_built.set()
-            _Handshake.wait(removal_progressed, "The removal reaching the command lock")
+            _Handshake.wait(removal_progressed, "The removal closing the Rift's gate")
         return projection_sets
 
     monkeypatch.setattr(Nexus, "create_frame_projection_sets_for_rift", build_then_wait_for_the_removal)
-    command_system._lock = _HandshakeLock(watched=remover.thread, reached=removal_progressed)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_progressed)
+    _count_the_threads_inside_at_teardown(monkeypatch, remover, rift.rift_gate, threads_inside_at_teardown)
 
     linker.start()
     _Handshake.wait(sets_built, "The link's refresh building its projection sets")
@@ -38835,7 +38960,14 @@ def test_rift_removal_and_a_link_frame_refresh_both_finish(monkeypatch: pytest.M
         )
     )
     linker.reraise_schedule_failure()
+    assert linker.raised is None, "The link raised {0!r}: the removal tore its Rift down under it.".format(
+        linker.raised
+    )
     assert remover.raised is None
+    assert threads_inside_at_teardown == [0], (
+        "The removal tore the Rift down with {0} thread(s) inside.".format(threads_inside_at_teardown)
+    )
+    assert nexus.has_rift(rift_id) is False
 
 
 def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -38852,6 +38984,10 @@ def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: 
         phase - until the attach has finished, so the attach publishes in between. The teardown is
         `Rift._clean_owned_state` since the fix; before it, `remove_rift` called `Rift.cleanup` at that point, where
         this test held it when it failed first.
+        The attach runs through the untagged `Rift._create_frame_link`: since the Rift gate (GitHub #274, step 3)
+        the public `create_frame_link` door holds the removal off until the attach finished (pinned by the next
+        test), so only a path without a ticket can still land an attach inside a removal - and the residual guard
+        must keep covering it.
 
     Symptom (GitHub #274, R4 residual): the removal decremented the frames it listed in its registry phase, the
     attach published `ledger` after that list and before the Rift was cleaned, and the `ledger` count was never
@@ -38900,7 +39036,7 @@ def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: 
     monkeypatch.setattr(Rift, "_clean_owned_state", hold_the_teardown_until_the_attach_finished)
 
     try:
-        rift.create_frame_link("ledger")
+        rift._create_frame_link("ledger")
     except AssertionError:
         raise
     except Exception as error:
@@ -38923,6 +39059,104 @@ def test_attach_landing_inside_rift_removal_leaves_no_budget_count(monkeypatch: 
         "The attach that landed inside remove_rift raised {0!r}, not the cleaned RuntimeError.".format(attach_errors)
     )
     assert "Rift has already been cleaned" in str(attach_errors[0])
+
+
+def test_attach_through_create_frame_link_holds_a_removal_started_inside_it_until_it_finished(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    An attach through the public `create_frame_link` door holds off a removal started inside it: the attach
+    publishes, refreshes and returns normally, and only then does the removal tear the Rift down and give the
+    frame's budget count back.
+
+    Purpose:
+        Pin the ordering the Rift gate gives the R4 schedule (GitHub #274, step 3). As in the residual test above,
+        the removal starts on another thread from inside the attach's budget reservation; the attach then waits only
+        until the removal has closed the gate (`RiftGate.close_terminally`, patched to announce it). The door holds
+        the attaching thread's ticket, so the removal must wait for the attach to leave: when the attach refreshes -
+        still inside the door - the removal has not started its teardown, and the removal's registry phase then
+        finds `ledger` attached and decrements it with `default`.
+
+    Args:
+        monkeypatch: Patches `Nexus._reserve_target_frame`, `RiftGate.close_terminally`,
+            `Rift.refresh_runtime_projections` and `Rift._clean_owned_state` for this test only.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(ledger_frame=True)
+    rift_id = rift.id
+    attacher = threading.current_thread()
+    removal_closed_the_gate = threading.Event()
+    teardown_started = threading.Event()
+    reservations: List[str] = []
+    teardown_started_inside_the_attach: List[bool] = []
+    attach_errors: List[Exception] = []
+
+    def remove_the_rift() -> None:
+        """Remove the Rift; announce the end too, so the attach is never left waiting on a removal that is over."""
+        try:
+            nexus.remove_rift(rift_id)
+        finally:
+            removal_closed_the_gate.set()
+
+    remover = _Agent("remover", remove_the_rift)
+    original_reserve = Nexus._reserve_target_frame
+    original_refresh = Rift.refresh_runtime_projections
+    original_teardown = Rift._clean_owned_state
+
+    def reserve_then_start_the_removal(self: Nexus, target_frame_name: str) -> None:
+        """Reserve the slot; on the first reservation, start the removal and wait until it closed the gate."""
+        original_reserve(self, target_frame_name)
+        if not reservations:
+            reservations.append(target_frame_name)
+            remover.start()
+            _Handshake.wait(removal_closed_the_gate, "The removal closing the Rift's gate")
+
+    def note_the_teardown_then_refresh(
+            self: Rift,
+            *,
+            frame_names: Optional[Sequence[str]] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        """On the attaching thread, still inside the door, note whether the removal started its teardown."""
+        if threading.current_thread() is attacher and reservations:
+            teardown_started_inside_the_attach.append(teardown_started.is_set())
+        return original_refresh(self, frame_names=frame_names)
+
+    def announce_then_tear_down(self: Rift) -> None:
+        """On the removal's thread, announce the teardown; then tear down."""
+        if threading.current_thread() is remover.thread:
+            teardown_started.set()
+        original_teardown(self)
+
+    monkeypatch.setattr(Nexus, "_reserve_target_frame", reserve_then_start_the_removal)
+    monkeypatch.setattr(Rift, "refresh_runtime_projections", note_the_teardown_then_refresh)
+    monkeypatch.setattr(Rift, "_clean_owned_state", announce_then_tear_down)
+    _announce_the_removal_closing_the_gate(monkeypatch, remover, removal_closed_the_gate)
+
+    try:
+        rift.create_frame_link("ledger")
+    except AssertionError:
+        raise
+    except Exception as error:
+        attach_errors.append(error)
+    removal_finished = remover.join_within_bound()
+
+    assert reservations == ["ledger"]
+    assert attach_errors == [], "The attach raised {0!r}: the removal did not wait for it.".format(attach_errors)
+    assert teardown_started_inside_the_attach == [False], (
+        "The removal started tearing the Rift down while the attach was still inside create_frame_link."
+    )
+    assert removal_finished, "Nexus.remove_rift did not finish within {0} s.".format(_Handshake.BOUND_SECONDS)
+    remover.reraise_schedule_failure()
+    assert remover.raised is None
+    assert "ledger" not in nexus._target_frame_ref_counts, (
+        "The attach that published before the removal's registry phase kept a budget count: {0}.".format(
+            nexus._target_frame_ref_counts
+        )
+    )
+    assert "default" not in nexus._target_frame_ref_counts
+    assert nexus.has_rift(rift_id) is False
 ================================================================================
 END FILE: tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py
 ================================================================================
@@ -39204,6 +39438,1362 @@ def test_refresh_racing_rift_removal_cleans_its_fresh_projection_sets(
     assert all(projection_set.cleaned for projection_set in built[0].values())
 ================================================================================
 END FILE: tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py
+CONTENT SHA256: e4b57b2171f25f4f5497cf98fb7a20e5d5bfa649f7c6f57a1969545bdd125755
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests for the Rift gate (GitHub #274, step 3): removing a Rift closes its gate, newcomers are refused at
+once, the threads already inside finish and leave, and only then is the Rift cleaned up.
+
+- `Nexus.remove_rift` waits for an agent inside a `Workstation.call_target` target, inside a `FrameViewer` read and
+  inside a room command, and the agent's call returns its value (item 1).
+- A newcomer - a workstation call, a viewer read, a command, a Rift agent method - is refused at once while a removal
+  waits for an agent inside and while it tears the Rift down (item 2).
+- The drain is bounded by `projection_refresh_gate_timeout_seconds`: a removal that runs out of it raises, keeps the
+  Rift registered with its gate closed, and a retry after the agent left succeeds (item 3, design 5a/5b).
+- An agent that removes its own Rift from inside one of that Rift's calls is not waited for, and its call returns
+  normally (item 4, design 5c).
+- `Nexus.cleanup` drains every Rift under one deadline before its teardown and logs a timeout (item 5, design 5d).
+- A thread already inside a Rift passes that Rift's gate while an ACL refresh or a removal drains it (item 6).
+- An ACL refresh does not swap a frame's projections under an in-flight viewer read (item 7, #274 V1).
+
+Order between threads comes from `threading.Event` handshakes set at fixed points - an agent step, a patched Rift
+accessor or teardown, a patched gate close - never from sleeps. The one timed window, `_Handshake.OBSERVATION_SECONDS`,
+gives a call that must wait the chance to return wrongly: a removal or cleanup that returns within it while an agent is
+inside fails its test. Every thread is a daemon joined within `_Handshake.BOUND_SECONDS`, and every held agent is
+released in a `finally`, so a broken run fails instead of hanging the suite.
+"""
+import functools
+import logging
+import threading
+import time
+from typing import TYPE_CHECKING, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.nexus import Nexus
+from melder.nexus.rift.command_system.capability_command_system import CapabilityCommandSystem
+from melder.nexus.rift.command_system.command_system import CommandSystem
+from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+    from melder.nexus.rift.projection.view_projection import ViewProjection
+
+
+class _Pricing:
+    """A spell that gives the `default` frame descriptor truth, so a Rift can attach it."""
+
+    def __init__(self) -> None:
+        """
+        Build the spell's one value.
+
+        Returns:
+            None.
+        """
+        self.rate: int = 100
+
+
+class _Handshake:
+    """
+    The bounds and gate timeouts every wait, join and timed check of this module uses.
+
+    Contract:
+        - Order between threads always comes from events set at the points a schedule names. `BOUND_SECONDS` only
+          turns a broken run - a deadlock, or a point never reached - into a failure.
+        - `OBSERVATION_SECONDS` is the window in which a removal or cleanup that must wait for an agent inside gets the
+          chance to return wrongly. `PROMPT_SECONDS` is how long a refusal, a re-entry or a nested call may take.
+        - The `*_TIMEOUT_SECONDS` values are installed as the Nexus `projection_refresh_gate_timeout_seconds`, the
+          drain bound of a refresh, a removal and a cleanup: `DRAIN_TIMEOUT_SECONDS` where every agent is released
+          well within it, `SHORT_DRAIN_TIMEOUT_SECONDS` and `CLEANUP_TIMEOUT_SECONDS` where an agent outstays it,
+          `REFRESH_TIMEOUT_SECONDS` for the ACL refresh an agent's nested call must not park behind.
+        - A drain that must wait for an agent that stays inside counts as having waited when it took at least
+          `MIN_WAIT_FRACTION` of its timeout.
+    """
+
+    BOUND_SECONDS: float = 5.0
+    OBSERVATION_SECONDS: float = 0.5
+    PROMPT_SECONDS: float = 1.0
+    SELF_REMOVAL_SECONDS: float = 2.0
+    TIMEOUT_MARGIN_SECONDS: float = 1.0
+    DRAIN_TIMEOUT_SECONDS: float = 5.0
+    SHORT_DRAIN_TIMEOUT_SECONDS: float = 0.3
+    CLEANUP_TIMEOUT_SECONDS: float = 0.4
+    REFRESH_TIMEOUT_SECONDS: float = 2.0
+    POLL_INTERVAL_SECONDS: float = 0.01
+    MIN_WAIT_FRACTION: float = 0.8
+
+    @classmethod
+    def wait(cls, event: threading.Event, point: str) -> None:
+        """
+        Wait until `event` is set, failing when it is not set within the bound.
+
+        Args:
+            event: The event that marks `point`.
+            point: What the event marks, for the failure message.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When the event is not set within `BOUND_SECONDS`.
+        """
+        if not event.wait(timeout=cls.BOUND_SECONDS):
+            raise AssertionError("{0} did not happen within {1} s.".format(point, cls.BOUND_SECONDS))
+
+
+class _Agent:
+    """
+    One call - an agent's, a removal's, a cleanup's or a newcomer's - run on its own daemon thread.
+
+    Purpose:
+        Run Rift work concurrently and still fail, not hang, when that work deadlocks or parks.
+
+    Contract:
+        - The thread is created at construction, so a patched step can recognise it before it starts, and is a daemon.
+        - `returned` and `raised` keep what the call returned or raised. Only the agent's thread writes them; read them
+          after a join that found the thread finished.
+    """
+
+    def __init__(self, name: str, call: Callable[[], object]) -> None:
+        """
+        Prepare the agent's thread without starting it.
+
+        Args:
+            name: The thread's name, used in failure messages.
+            call: The work the thread runs.
+
+        Returns:
+            None.
+        """
+        self._call: Callable[[], object] = call
+        self.returned: object = None
+        self.raised: Optional[BaseException] = None
+        self.thread: threading.Thread = threading.Thread(target=self._run, name=name, daemon=True)
+
+    def start(self) -> None:
+        """
+        Start the agent's thread.
+
+        Returns:
+            None.
+        """
+        self.thread.start()
+
+    def finished_within(self, seconds: float) -> bool:
+        """
+        Join the agent's thread for at most `seconds`.
+
+        Args:
+            seconds: How long to wait for the thread to finish.
+
+        Returns:
+            bool: True when the thread finished within `seconds`.
+        """
+        self.thread.join(timeout=seconds)
+        return not self.thread.is_alive()
+
+    def join_within_bound(self) -> bool:
+        """
+        Join the agent's thread within `_Handshake.BOUND_SECONDS`.
+
+        Returns:
+            bool: True when the thread finished within the bound.
+        """
+        return self.finished_within(_Handshake.BOUND_SECONDS)
+
+    def run_and_join_within_bound(self) -> bool:
+        """
+        Start the agent and join it within the bound.
+
+        Returns:
+            bool: True when the agent finished within the bound.
+        """
+        self.start()
+        return self.join_within_bound()
+
+    def describe_outcome(self) -> str:
+        """
+        Describe what the call did, for failure messages.
+
+        Returns:
+            str: "was still running", "raised <error>" or "returned <value>".
+        """
+        if self.thread.is_alive():
+            return "was still running"
+        if self.raised is not None:
+            return "raised {0!r}".format(self.raised)
+        return "returned {0!r}".format(self.returned)
+
+    def reraise_schedule_failure(self) -> None:
+        """
+        Re-raise a handshake failure the agent's call raised, so a broken schedule is reported as one.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: The `_Handshake.wait` failure the call raised, when it raised one.
+        """
+        if isinstance(self.raised, AssertionError):
+            raise self.raised
+
+    @staticmethod
+    def still_running(agents: Sequence[_Agent]) -> List[str]:
+        """
+        Join every agent within one shared bound and name those still running.
+
+        Args:
+            agents: The agents to join, all started.
+
+        Returns:
+            List[str]: The thread names of the agents still running when the bound ran out.
+        """
+        deadline = time.monotonic() + _Handshake.BOUND_SECONDS
+        for agent in agents:
+            agent.thread.join(timeout=max(0.0, deadline - time.monotonic()))
+        return [agent.thread.name for agent in agents if agent.thread.is_alive()]
+
+    def _run(self) -> None:
+        """
+        Run the call on the agent's thread and keep its outcome.
+
+        Returns:
+            None.
+        """
+        try:
+            self.returned = self._call()
+        except BaseException as error:
+            self.raised = error
+
+
+class _AgentTool:
+    """
+    An object an agent keeps on its workstation, with one step of agent code behind it.
+
+    Purpose:
+        Give the workstation and command paths agent code to run: calling the tool (`Workstation.call_target`) and its
+        `run` method (`CommandSystem.execute_target_method("run")`) each run the step once, on the caller's thread.
+
+    Contract:
+        - Holds no lock and no Melder state of its own.
+    """
+
+    def __init__(self, label: str, step: Callable[[], object]) -> None:
+        """
+        Keep the label and the step.
+
+        Args:
+            label: A plain attribute naming the tool.
+            step: The agent code each entry point runs.
+
+        Returns:
+            None.
+        """
+        self.label: str = label
+        self._step: Callable[[], object] = step
+
+    def __call__(self) -> object:
+        """
+        Run the step, as `Workstation.call_target` calls the active target.
+
+        Returns:
+            object: What the step returned.
+        """
+        return self._step()
+
+    def run(self) -> object:
+        """
+        Run the step, as `CommandSystem.execute_target_method("run")` calls it.
+
+        Returns:
+            object: What the step returned.
+        """
+        return self._step()
+
+
+class _Hold:
+    """
+    One point inside a Rift call where an agent stays until the test releases it.
+
+    Contract:
+        - `stay_inside` sets `inside`, then waits for `release` within the bound.
+        - Every test sets `release` in a `finally`, so a held agent always gets out.
+    """
+
+    def __init__(self) -> None:
+        """
+        Prepare the two events, both unset.
+
+        Returns:
+            None.
+        """
+        self.inside: threading.Event = threading.Event()
+        self.release: threading.Event = threading.Event()
+
+    def stay_inside(self) -> None:
+        """
+        Announce the agent is inside and wait for the release.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When the release does not come within the bound.
+        """
+        self.inside.set()
+        _Handshake.wait(self.release, "The test releasing the agent held inside its call")
+
+    def step_returning(self, value: str) -> Callable[[], object]:
+        """
+        Build agent code that stays inside until the release, then returns `value`.
+
+        Args:
+            value: What the step returns once released.
+
+        Returns:
+            Callable[[], object]: The step.
+        """
+
+        def step() -> object:
+            """Stay inside until released, then return the value."""
+            self.stay_inside()
+            return value
+
+        return step
+
+
+class _Newcomer:
+    """
+    The agent doors a newcomer can knock on while a Rift is being removed.
+
+    Contract:
+        - `DOORS` names one door per kind the design gates: a direct Workstation call, a viewer read, a room command
+          and two Rift agent methods.
+        - `resolve_calls` binds every door to one Rift before anything removes it.
+        - `knock` runs a door's call on its own daemon thread and joins it within `_Handshake.PROMPT_SECONDS`.
+    """
+
+    DOORS: Tuple[str, ...] = (
+        "workstation.call_target",
+        "viewer.list_frame_names",
+        "command.list_supported_command_methods",
+        "rift.get_frame_viewer",
+        "rift.list_accessible_nexus_frame_names",
+    )
+
+    @staticmethod
+    def resolve_calls(rift: Rift) -> Dict[str, Callable[[], object]]:
+        """
+        Bind every door of `DOORS` to `rift` and its room.
+
+        Args:
+            rift: The Rift whose doors the newcomer knocks on.
+
+        Returns:
+            Dict[str, Callable[[], object]]: Each door's call, keyed by door.
+        """
+        space = rift.space
+        return {
+            "workstation.call_target": space.workstation.call_target,
+            "viewer.list_frame_names": space.frame_viewer.list_frame_names,
+            "command.list_supported_command_methods": space.command_system.list_supported_command_methods,
+            "rift.get_frame_viewer": rift.get_frame_viewer,
+            "rift.list_accessible_nexus_frame_names": rift.list_accessible_nexus_frame_names,
+        }
+
+    @staticmethod
+    def knock(door: str, call: Callable[[], object]) -> _Agent:
+        """
+        Run one newcomer's call on its own thread, waiting at most `_Handshake.PROMPT_SECONDS` for it.
+
+        Args:
+            door: The door's name, for the thread name.
+            call: The door's call.
+
+        Returns:
+            _Agent: The newcomer, finished or still running.
+        """
+        newcomer = _Agent("newcomer at {0}".format(door), call)
+        newcomer.start()
+        newcomer.finished_within(_Handshake.PROMPT_SECONDS)
+        return newcomer
+
+    @staticmethod
+    def refusal_failure(door: str, newcomer: _Agent) -> Optional[str]:
+        """
+        Describe how a newcomer was not refused at once with RuntimeError.
+
+        Args:
+            door: The door's name.
+            newcomer: The newcomer `knock` returned.
+
+        Returns:
+            Optional[str]: None when the newcomer raised RuntimeError within the prompt bound; otherwise what it did.
+        """
+        if newcomer.thread.is_alive():
+            return "{0} was still running after {1} s (admitted or parked, not refused at once)".format(
+                door,
+                _Handshake.PROMPT_SECONDS,
+            )
+        if isinstance(newcomer.raised, RuntimeError):
+            return None
+        return "{0} {1} instead of raising RuntimeError".format(door, newcomer.describe_outcome())
+
+
+def _reset_runtime_singletons() -> None:
+    """
+    Give every test a fresh Melder world.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    CommandSystem._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def _isolated_runtime() -> Iterator[None]:
+    """
+    Reset the singletons around each test.
+
+    Yields:
+        None.
+    """
+    _reset_runtime_singletons()
+    yield
+    _reset_runtime_singletons()
+
+
+def _conjure_default_frame() -> None:
+    """
+    Conjure the dynamic, Rift-enabled `default` frame, whose one bound spell gives it descriptor truth.
+
+    Returns:
+        None.
+    """
+    configuration = SpellbookConfiguration(aether_frame="default")
+    configuration.load_default_dictionary()
+    configure_frame_posture_for_spellbook_configuration(configuration, dynamic=True, rift_enabled=True)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook = Spellbook(aetheric_frame="default", configuration=configuration)
+    spellbook.bind(spell=_Pricing, existence=Existence.unique, permissions="create", spellframe="pricing")
+    spellbook.conjure(name="pricing_root", dynamic=True)
+
+
+def _create_linked_rift(nexus: Nexus, rift_name: str) -> Rift:
+    """
+    Create one capability Rift attached to `default`.
+
+    Args:
+        nexus: The enabled Nexus.
+        rift_name: The Rift's name.
+
+    Returns:
+        Rift: The Rift.
+    """
+    rift = nexus.create_rift(
+        configuration=nexus.create_rift_configuration().with_space_type(RiftSpaceType.capability),
+        rift_name=rift_name,
+    )
+    rift.create_frame_link("default")
+    return rift
+
+
+def _build_world(*, drain_timeout_seconds: float, logger: Optional[logging.Logger] = None) -> Tuple[Nexus, Rift]:
+    """
+    Build an enabled Nexus whose gate drains are bounded by `drain_timeout_seconds`, and one capability Rift attached to
+    a dynamic `default` frame.
+
+    Args:
+        drain_timeout_seconds: The Nexus `projection_refresh_gate_timeout_seconds`.
+        logger: An explicit stdlib logger for Nexus, or None for the provider default.
+
+    Returns:
+        Tuple[Nexus, Rift]: The Nexus and the Rift.
+    """
+    _conjure_default_frame()
+    nexus = Nexus(logger=logger)
+    nexus_configuration = nexus.create_configuration()
+    nexus_configuration.with_rift_creation_enabled(True)
+    nexus_configuration.with_direct_rift_access(True)
+    nexus_configuration.with_target_frame_override(True)
+    nexus_configuration.with_multiple_target_frames(True)
+    nexus_configuration.with_max_target_frame_count(8)
+    nexus_configuration.with_allowed_target_frame_names(("default",))
+    nexus_configuration.with_nexus_frame_mode("indexed")
+    nexus_configuration.with_max_nexus_frame_count(8)
+    nexus_configuration.with_projection_refresh_gate_timeout_seconds(drain_timeout_seconds)
+    nexus_configuration.with_projection_refresh_gate_poll_interval_seconds(_Handshake.POLL_INTERVAL_SECONDS)
+    nexus.activate(nexus_configuration)
+    return nexus, _create_linked_rift(nexus, "pricing_rift")
+
+
+def _copy_of_the_current_acl(nexus: Nexus, frame_name: str) -> FrameACLConfiguration:
+    """
+    Build a locked copy of a frame's current ACL bundle.
+
+    Purpose:
+        Registering the copy under a new contract name (`Nexus.register_named_frame_acl_configuration`) is a real frame
+        ACL change: the frame's ACL container notifies Nexus, which refreshes the projections of every Rift with the
+        frame attached through `Nexus._refresh_rift_projection_sets_for_frames`, while the selected rules stay as they
+        were.
+
+    Args:
+        nexus: The enabled Nexus.
+        frame_name: The frame whose ACL bundle is copied.
+
+    Returns:
+        FrameACLConfiguration: The locked copy.
+    """
+    current = nexus.get_current_frame_acl_configuration(frame_name)
+    return FrameACLConfiguration.create_from_selected_configurations(
+        frame_name=frame_name,
+        view_configuration=current.view_configuration,
+        command_configuration=current.command_configuration,
+        codegen_configuration=current.codegen_configuration,
+        reason="rift gate drain test: the same rules under a new contract name",
+        locked=True,
+    )
+
+
+def _nested_call(nested_call: str, rift: Rift) -> Callable[[], object]:
+    """
+    Resolve the call an agent nests inside its command.
+
+    Args:
+        nested_call: "command" for `list_conduit_names(frame_name="default")`, "viewer_read" for
+            `FrameViewer.list_frame_names()`.
+        rift: The Rift whose room serves the call.
+
+    Returns:
+        Callable[[], object]: The nested call.
+    """
+    space = rift.space
+    if nested_call == "command":
+        command_system = space.command_system
+        assert isinstance(command_system, CapabilityCommandSystem)
+        return functools.partial(command_system.list_conduit_names, frame_name="default")
+    return space.frame_viewer.list_frame_names
+
+
+def _hold_the_first_view_projection_read(monkeypatch: pytest.MonkeyPatch, reader: _Agent, hold: _Hold) -> None:
+    """
+    Pause the reader's first view-projection read, holding the projection it got, until the test releases it.
+
+    Contract:
+        - Patches `Rift._get_required_view_projection`: on the reader's thread, once, it takes the projection, stays
+          inside `hold`, then returns that projection - a viewer read paused mid-read, holding the projection. Every
+          other call reads through.
+
+    Args:
+        monkeypatch: Patches `Rift._get_required_view_projection` for this test only.
+        reader: The agent whose read is paused.
+        hold: Where the read stays.
+
+    Returns:
+        None.
+    """
+    original_read = Rift._get_required_view_projection
+    paused: List[bool] = []
+
+    def read_then_stay_inside(self: Rift, frame_name: str) -> ViewProjection:
+        """Take the projection; on the reader's first read, stay inside until released; return the projection."""
+        projection = original_read(self, frame_name)
+        if threading.current_thread() is reader.thread and not paused:
+            paused.append(True)
+            hold.stay_inside()
+        return projection
+
+    monkeypatch.setattr(Rift, "_get_required_view_projection", read_then_stay_inside)
+
+
+def _remove_while_an_agent_is_inside(nexus: Nexus, rift_id: str, agent: _Agent, hold: _Hold, place: str) -> _Agent:
+    """
+    Remove the Rift while `agent` is held inside `place`, failing when the removal returns before the agent left.
+
+    Contract:
+        - Starts the agent, waits until it is inside, starts the removal and gives it `_Handshake.OBSERVATION_SECONDS`
+          to return; it must not. The agent is released in every case, then the agent and the removal are joined
+          within one bound.
+
+    Args:
+        nexus: The enabled Nexus.
+        rift_id: The Rift to remove.
+        agent: The agent, not started.
+        hold: Where the agent stays inside its call.
+        place: The call the agent is inside, for failure messages.
+
+    Returns:
+        _Agent: The remover, finished.
+    """
+    remover = _Agent("remover", lambda: nexus.remove_rift(rift_id))
+    try:
+        agent.start()
+        _Handshake.wait(hold.inside, "The agent entering {0}".format(place))
+        remover.start()
+        removal_returned_while_inside = remover.finished_within(_Handshake.OBSERVATION_SECONDS)
+        assert not removal_returned_while_inside, (
+            "Nexus.remove_rift {0} within {1} s while an agent was inside {2}: the removal did not wait for the "
+            "agent to leave before cleaning the Rift up.".format(
+                remover.describe_outcome(),
+                _Handshake.OBSERVATION_SECONDS,
+                place,
+            )
+        )
+    finally:
+        hold.release.set()
+    still_running = _Agent.still_running((agent, remover))
+    assert still_running == [], "{0} still running after the agent was released.".format(still_running)
+    agent.reraise_schedule_failure()
+    return remover
+
+
+def test_rift_removal_waits_for_an_agent_inside_call_target_and_the_call_returns_its_value() -> None:
+    """
+    `Nexus.remove_rift` does not return while an agent is inside a `Workstation.call_target` target; the call then
+    returns its value and the Rift is gone.
+
+    Symptom (GitHub #274, step 3): a direct workstation call takes no gate ticket and the removal never drains its
+    gate, so the removal tore the room down under the running target.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    workstation = rift.space.workstation
+    hold = _Hold()
+    workstation.bind_method("nightly_job", _AgentTool("nightly job", hold.step_returning("nightly prices")))
+    workstation.set_target("nightly_job")
+    agent = _Agent("agent", workstation.call_target)
+
+    remover = _remove_while_an_agent_is_inside(nexus, rift_id, agent, hold, "Workstation.call_target")
+
+    assert agent.raised is None, "The agent's call_target {0} after the removal waited.".format(
+        agent.describe_outcome()
+    )
+    assert agent.returned == "nightly prices"
+    assert remover.raised is None
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_rift_removal_waits_for_an_agent_inside_a_viewer_read_and_the_read_returns_its_value(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    `Nexus.remove_rift` does not return while an agent's `FrameViewer` read is paused mid-read; the read then returns
+    its value and the Rift is gone.
+
+    Symptom (GitHub #274, step 3): a viewer read takes no gate ticket, so the removal cleaned the Rift and its
+    projections under the read.
+
+    Args:
+        monkeypatch: Patches `Rift._get_required_view_projection` for this test only.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    viewer = rift.space.frame_viewer
+    expected_root_conduit_ids = viewer.list_root_conduit_ids(frame_name="default")
+    hold = _Hold()
+    reader = _Agent("reader", lambda: viewer.list_root_conduit_ids(frame_name="default"))
+    _hold_the_first_view_projection_read(monkeypatch, reader, hold)
+
+    remover = _remove_while_an_agent_is_inside(nexus, rift_id, reader, hold, "FrameViewer.list_root_conduit_ids")
+
+    assert reader.raised is None, "The viewer read {0} after the removal waited.".format(reader.describe_outcome())
+    assert reader.returned == expected_root_conduit_ids
+    assert remover.raised is None
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_rift_removal_waits_for_an_agent_inside_a_command_and_the_command_returns_its_value() -> None:
+    """
+    `Nexus.remove_rift` does not return while an agent is inside `CommandSystem.execute_target_method`; the command
+    then returns its value and the Rift is gone.
+
+    Symptom (GitHub #274, step 3): the command holds a gate ticket, but the removal never closes or drains the gate,
+    so it cleaned the room - and the gate the command must release its ticket on - under the running method.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    space = rift.space
+    command_system = space.command_system
+    hold = _Hold()
+    space.workstation.bind_object("nightly_job", _AgentTool("nightly job", hold.step_returning("nightly prices")))
+    space.workstation.set_target("nightly_job")
+    agent = _Agent("agent", lambda: command_system.execute_target_method("run"))
+
+    remover = _remove_while_an_agent_is_inside(nexus, rift_id, agent, hold, "CommandSystem.execute_target_method")
+
+    assert agent.raised is None, "The agent's command {0} after the removal waited.".format(agent.describe_outcome())
+    assert agent.returned == "nightly prices"
+    assert remover.raised is None
+    assert nexus.has_rift(rift_id) is False
+
+
+@pytest.mark.parametrize("door", _Newcomer.DOORS)
+def test_newcomers_are_refused_at_once_while_a_removal_waits_for_an_agent_inside(door: str) -> None:
+    """
+    While `Nexus.remove_rift` waits for an agent inside a `call_target` target, a newcomer at any agent door raises
+    RuntimeError at once, and the removal is still waiting afterwards.
+
+    Purpose:
+        Pin that the removal closes the gate BEFORE it drains: a newcomer is refused during the wait, not parked until
+        the agent leaves and not admitted into a Rift about to be cleaned.
+
+    Symptom (GitHub #274, step 3): the removal neither waits nor closes the gate; it cleans the Rift at once, so there
+    is no waiting removal for a newcomer to be refused by.
+
+    Args:
+        door: The agent door the newcomer knocks on.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    workstation = rift.space.workstation
+    hold = _Hold()
+    workstation.bind_method("nightly_job", _AgentTool("nightly job", hold.step_returning("nightly prices")))
+    workstation.set_target("nightly_job")
+    newcomer_call = _Newcomer.resolve_calls(rift)[door]
+    agent = _Agent("agent", workstation.call_target)
+    remover = _Agent("remover", lambda: nexus.remove_rift(rift_id))
+    try:
+        agent.start()
+        _Handshake.wait(hold.inside, "The agent entering Workstation.call_target")
+        remover.start()
+        removal_returned_while_inside = remover.finished_within(_Handshake.OBSERVATION_SECONDS)
+        assert not removal_returned_while_inside, (
+            "Nexus.remove_rift {0} within {1} s while an agent was inside Workstation.call_target: there was no "
+            "waiting removal for the newcomer at {2} to be refused by.".format(
+                remover.describe_outcome(),
+                _Handshake.OBSERVATION_SECONDS,
+                door,
+            )
+        )
+        failure = _Newcomer.refusal_failure(door, _Newcomer.knock(door, newcomer_call))
+        assert failure is None, "{0} while Nexus.remove_rift waited for an agent inside its Rift.".format(failure)
+        assert remover.thread.is_alive(), (
+            "Nexus.remove_rift {0} before the agent inside was released.".format(remover.describe_outcome())
+        )
+    finally:
+        hold.release.set()
+    still_running = _Agent.still_running((agent, remover))
+
+    assert still_running == [], "{0} still running after the agent was released.".format(still_running)
+    agent.reraise_schedule_failure()
+    assert agent.returned == "nightly prices"
+    assert remover.raised is None
+    assert nexus.has_rift(rift_id) is False
+
+
+@pytest.mark.parametrize("door", _Newcomer.DOORS)
+def test_newcomers_are_refused_at_once_while_a_removal_tears_the_rift_down(
+        monkeypatch: pytest.MonkeyPatch,
+        door: str,
+) -> None:
+    """
+    While `Nexus.remove_rift` is tearing a Rift down, a newcomer at any agent door raises RuntimeError at once.
+
+    Purpose:
+        The removal is held at the Rift's teardown (`Rift._clean_owned_state`, on the removal's thread) until the
+        newcomer has knocked. By then the removal has closed the gate, so every door must refuse - not admit the
+        newcomer into a Rift whose room is about to be cleaned.
+
+    Symptom (GitHub #274, step 3): the removal never closes the gate, and a direct workstation call and a command
+    still reach a room that is being cleaned; the viewer read and the Rift methods are refused only because the Rift
+    is already marked cleaned.
+
+    Args:
+        monkeypatch: Patches `Rift._clean_owned_state` for this test only.
+        door: The agent door the newcomer knocks on.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    workstation = rift.space.workstation
+    workstation.bind_method("quick_job", _AgentTool("quick job", lambda: "quick prices"))
+    workstation.set_target("quick_job")
+    newcomer_call = _Newcomer.resolve_calls(rift)[door]
+    teardown_reached = threading.Event()
+    knocked = threading.Event()
+    remover = _Agent("remover", lambda: nexus.remove_rift(rift_id))
+    original_teardown = Rift._clean_owned_state
+
+    def hold_the_teardown_until_the_newcomer_knocked(self: Rift) -> None:
+        """On the removal's thread, hold the Rift's teardown until the newcomer has knocked; then tear down."""
+        if threading.current_thread() is remover.thread:
+            teardown_reached.set()
+            _Handshake.wait(knocked, "The newcomer knocking at {0}".format(door))
+        original_teardown(self)
+
+    monkeypatch.setattr(Rift, "_clean_owned_state", hold_the_teardown_until_the_newcomer_knocked)
+    failures: List[Optional[str]] = []
+    try:
+        remover.start()
+        _Handshake.wait(teardown_reached, "The removal reaching the Rift's teardown")
+        failures.append(_Newcomer.refusal_failure(door, _Newcomer.knock(door, newcomer_call)))
+    finally:
+        knocked.set()
+    removal_finished = remover.join_within_bound()
+
+    assert failures == [None], "{0} while Nexus.remove_rift was tearing the Rift down.".format(failures[0])
+    assert removal_finished, "Nexus.remove_rift did not finish within {0} s.".format(_Handshake.BOUND_SECONDS)
+    remover.reraise_schedule_failure()
+    assert remover.raised is None
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_rift_removal_times_out_on_an_agent_that_stays_inside_and_keeps_the_rift_with_its_gate_closed() -> None:
+    """
+    A removal whose drain outlasts `projection_refresh_gate_timeout_seconds` raises RuntimeError after about that
+    timeout, keeps the Rift registered with its gate closed to newcomers, and a retry after the agent left succeeds.
+
+    Purpose:
+        Pin the bound and the refusal of the design (5a/5b): the drain waits up to the configured timeout, polling at
+        the configured interval; on timeout the removal is refused rather than tearing down with an agent inside, and
+        the gate it closed stays closed.
+
+    Symptom (GitHub #274, step 3): the removal never waits, so it does not time out: it removes the Rift with the
+    agent still inside.
+
+    Returns:
+        None.
+    """
+    timeout_seconds = _Handshake.SHORT_DRAIN_TIMEOUT_SECONDS
+    nexus, rift = _build_world(drain_timeout_seconds=timeout_seconds)
+    rift_id = rift.id
+    workstation = rift.space.workstation
+    hold = _Hold()
+    workstation.bind_method("nightly_job", _AgentTool("nightly job", hold.step_returning("nightly prices")))
+    workstation.set_target("nightly_job")
+    newcomer_calls = _Newcomer.resolve_calls(rift)
+    agent = _Agent("agent", workstation.call_target)
+    removal_seconds: List[float] = []
+
+    def remove_and_time() -> None:
+        """Remove the Rift, keeping how long the call took whether it returned or raised."""
+        started = time.monotonic()
+        try:
+            nexus.remove_rift(rift_id)
+        finally:
+            removal_seconds.append(time.monotonic() - started)
+
+    remover = _Agent("remover", remove_and_time)
+    newcomer_failures: List[str] = []
+    try:
+        agent.start()
+        _Handshake.wait(hold.inside, "The agent entering Workstation.call_target")
+        removal_finished = remover.run_and_join_within_bound()
+        assert removal_finished, "Nexus.remove_rift did not finish within {0} s.".format(_Handshake.BOUND_SECONDS)
+        assert isinstance(remover.raised, RuntimeError), (
+            "Nexus.remove_rift {0} while an agent stayed inside Workstation.call_target past "
+            "projection_refresh_gate_timeout_seconds={1}: it must raise RuntimeError and keep the Rift.".format(
+                remover.describe_outcome(),
+                timeout_seconds,
+            )
+        )
+        assert removal_seconds[0] >= timeout_seconds * _Handshake.MIN_WAIT_FRACTION, (
+            "Nexus.remove_rift gave up after {0:.3f} s, before its {1} s drain timeout.".format(
+                removal_seconds[0],
+                timeout_seconds,
+            )
+        )
+        assert removal_seconds[0] < timeout_seconds + _Handshake.TIMEOUT_MARGIN_SECONDS, (
+            "Nexus.remove_rift took {0:.3f} s against a {1} s drain timeout.".format(
+                removal_seconds[0],
+                timeout_seconds,
+            )
+        )
+        assert nexus.has_rift(rift_id) is True, "The timed-out removal did not keep the Rift registered."
+        for door in _Newcomer.DOORS:
+            failure = _Newcomer.refusal_failure(door, _Newcomer.knock(door, newcomer_calls[door]))
+            if failure is not None:
+                newcomer_failures.append(failure)
+    finally:
+        hold.release.set()
+    agent_finished = agent.join_within_bound()
+
+    assert newcomer_failures == [], (
+        "The gate of the Rift whose removal timed out did not stay closed: {0}.".format("; ".join(newcomer_failures))
+    )
+    assert agent_finished, "The agent did not finish within {0} s of its release.".format(_Handshake.BOUND_SECONDS)
+    agent.reraise_schedule_failure()
+    assert agent.raised is None
+    assert agent.returned == "nightly prices"
+    retry = _Agent("retry", lambda: nexus.remove_rift(rift_id))
+    assert retry.run_and_join_within_bound(), "The retried removal did not finish within the bound."
+    assert retry.raised is None, "The retried removal {0} after the agent left.".format(retry.describe_outcome())
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_an_agent_removing_its_own_rift_from_inside_call_target_is_not_waited_for() -> None:
+    """
+    An agent inside a `call_target` target of Rift R removes R: the removal returns promptly, well inside a large drain
+    timeout, R is gone, and the outer `call_target` returns normally.
+
+    Purpose:
+        Pin self-removal (design 5c) for the workstation door: the removal must not count the calling thread's own
+        ticket, which would wait out the whole timeout and then refuse.
+
+    Before step 3 a workstation call took no ticket, so this passed then; it guards the door now that it takes one.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    workstation = rift.space.workstation
+
+    def remove_my_own_rift() -> object:
+        """Remove the Rift this call runs in and return how long the removal took."""
+        started = time.monotonic()
+        nexus.remove_rift(rift_id)
+        return time.monotonic() - started
+
+    workstation.bind_method("retire_job", _AgentTool("retire job", remove_my_own_rift))
+    workstation.set_target("retire_job")
+    agent = _Agent("agent", workstation.call_target)
+
+    assert agent.run_and_join_within_bound(), "call_target did not finish within {0} s.".format(
+        _Handshake.BOUND_SECONDS
+    )
+    assert agent.raised is None, "call_target {0} after its target removed its own Rift.".format(
+        agent.describe_outcome()
+    )
+    assert isinstance(agent.returned, float)
+    assert agent.returned < _Handshake.SELF_REMOVAL_SECONDS, (
+        "Removing its own Rift from inside call_target took {0:.2f} s against a {1} s drain timeout: the removal "
+        "waited for the caller's own ticket.".format(agent.returned, _Handshake.DRAIN_TIMEOUT_SECONDS)
+    )
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_an_agent_removing_its_own_rift_from_inside_a_command_is_not_waited_for_and_the_command_returns() -> None:
+    """
+    An agent inside `CommandSystem.execute_target_method` on Rift R removes R: the removal returns promptly, R is gone,
+    and the outer command returns its value with no exception.
+
+    Purpose:
+        Pin self-removal (design 5c) for the command door: the removal does not wait for the caller's own ticket, and
+        the command's exit - its ticket release, its room memory, its post-hooks - is skipped quietly on the cleaned
+        room.
+
+    Symptom (GitHub #274, step 3): the command's exit ran on the room the removal had just cleaned and raised.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    space = rift.space
+    command_system = space.command_system
+
+    def remove_my_own_rift() -> object:
+        """Remove the Rift this command runs in and return how long the removal took."""
+        started = time.monotonic()
+        nexus.remove_rift(rift_id)
+        return time.monotonic() - started
+
+    space.workstation.bind_object("retire_job", _AgentTool("retire job", remove_my_own_rift))
+    space.workstation.set_target("retire_job")
+    agent = _Agent("agent", lambda: command_system.execute_target_method("run"))
+
+    assert agent.run_and_join_within_bound(), "execute_target_method did not finish within {0} s.".format(
+        _Handshake.BOUND_SECONDS
+    )
+    assert agent.raised is None, "execute_target_method {0} after its method removed its own Rift.".format(
+        agent.describe_outcome()
+    )
+    assert isinstance(agent.returned, float)
+    assert agent.returned < _Handshake.SELF_REMOVAL_SECONDS, (
+        "Removing its own Rift from inside a command took {0:.2f} s against a {1} s drain timeout: the removal "
+        "waited for the caller's own ticket.".format(agent.returned, _Handshake.DRAIN_TIMEOUT_SECONDS)
+    )
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_nexus_cleanup_waits_for_an_agent_inside_before_tearing_the_rift_down() -> None:
+    """
+    `Nexus.cleanup` does not finish while an agent is inside a `call_target` target; once released, the agent's call
+    returns its value and the cleanup completes.
+
+    Symptom (GitHub #274, step 3): `Nexus.cleanup` cleaned every Rift at once, with the agent still inside.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    workstation = rift.space.workstation
+    hold = _Hold()
+    workstation.bind_method("nightly_job", _AgentTool("nightly job", hold.step_returning("nightly prices")))
+    workstation.set_target("nightly_job")
+    agent = _Agent("agent", workstation.call_target)
+    cleaner = _Agent("cleaner", nexus.cleanup)
+    try:
+        agent.start()
+        _Handshake.wait(hold.inside, "The agent entering Workstation.call_target")
+        cleaner.start()
+        cleanup_finished_while_inside = cleaner.finished_within(_Handshake.OBSERVATION_SECONDS)
+        assert not cleanup_finished_while_inside, (
+            "Nexus.cleanup {0} within {1} s while an agent was inside Workstation.call_target: it tore the Rift "
+            "down without waiting for the agent to leave.".format(
+                cleaner.describe_outcome(),
+                _Handshake.OBSERVATION_SECONDS,
+            )
+        )
+    finally:
+        hold.release.set()
+    still_running = _Agent.still_running((agent, cleaner))
+
+    assert still_running == [], "{0} still running after the agent was released.".format(still_running)
+    agent.reraise_schedule_failure()
+    assert agent.raised is None
+    assert agent.returned == "nightly prices"
+    assert cleaner.raised is None
+    assert nexus.cleaned is True
+
+
+def test_nexus_cleanup_gives_up_on_agents_that_stay_inside_after_one_shared_timeout_and_logs_it(
+        caplog: pytest.LogCaptureFixture,
+) -> None:
+    """
+    With an agent inside each of three Rifts that never leaves, `Nexus.cleanup` still completes - after about one
+    `projection_refresh_gate_timeout_seconds`, not one per Rift - and logs the timeout.
+
+    Purpose:
+        Pin design 5d's bound: one deadline across all Rifts, then the teardown proceeds anyway and the timeout is
+        logged at WARNING or above on the Nexus logger. The message wording is not pinned.
+
+    Symptom (GitHub #274, step 3): `Nexus.cleanup` does not wait for the agents at all, so it neither waits nor logs.
+
+    Args:
+        caplog: Captures the Nexus logger's records.
+
+    Returns:
+        None.
+    """
+    logger_name = "melder.tests.rift_gate_drains_before_teardown"
+    timeout_seconds = _Handshake.CLEANUP_TIMEOUT_SECONDS
+    nexus, first_rift = _build_world(drain_timeout_seconds=timeout_seconds, logger=logging.getLogger(logger_name))
+    rifts = (first_rift, _create_linked_rift(nexus, "ledger_rift"), _create_linked_rift(nexus, "audit_rift"))
+    holds: List[_Hold] = []
+    agents: List[_Agent] = []
+    for rift in rifts:
+        hold = _Hold()
+        workstation = rift.space.workstation
+        workstation.bind_method("nightly_job", _AgentTool("nightly job", hold.step_returning("nightly prices")))
+        workstation.set_target("nightly_job")
+        holds.append(hold)
+        agents.append(_Agent("agent in {0}".format(rift.rift_name), workstation.call_target))
+    cleanup_seconds: List[float] = []
+
+    def clean_and_time() -> None:
+        """Clean Nexus up, keeping how long the call took whether it returned or raised."""
+        started = time.monotonic()
+        try:
+            nexus.cleanup()
+        finally:
+            cleanup_seconds.append(time.monotonic() - started)
+
+    cleaner = _Agent("cleaner", clean_and_time)
+    cleanup_finished = False
+    try:
+        for agent, hold in zip(agents, holds):
+            agent.start()
+            _Handshake.wait(hold.inside, "{0} entering Workstation.call_target".format(agent.thread.name))
+        with caplog.at_level(logging.DEBUG, logger=logger_name):
+            cleanup_finished = cleaner.run_and_join_within_bound()
+    finally:
+        for hold in holds:
+            hold.release.set()
+    agents_still_running = _Agent.still_running(agents)
+
+    assert cleanup_finished, "Nexus.cleanup did not finish within {0} s.".format(_Handshake.BOUND_SECONDS)
+    assert cleaner.raised is None, "Nexus.cleanup {0}.".format(cleaner.describe_outcome())
+    assert nexus.cleaned is True
+    assert cleanup_seconds[0] >= timeout_seconds * _Handshake.MIN_WAIT_FRACTION, (
+        "Nexus.cleanup returned after {0:.3f} s with an agent inside each of three Rifts: it did not wait for them "
+        "(projection_refresh_gate_timeout_seconds={1}).".format(cleanup_seconds[0], timeout_seconds)
+    )
+    assert cleanup_seconds[0] < timeout_seconds * 2, (
+        "Nexus.cleanup took {0:.3f} s against a {1} s timeout: it waited once per Rift, not under one deadline across "
+        "all Rifts.".format(cleanup_seconds[0], timeout_seconds)
+    )
+    nexus_records = [record for record in caplog.records if record.name == logger_name]
+    assert any(record.levelno >= logging.WARNING for record in nexus_records), (
+        "Nexus.cleanup logged nothing at WARNING or above about its drain timeout; it logged {0}.".format(
+            [(record.levelname, record.getMessage()) for record in nexus_records]
+        )
+    )
+    assert agents_still_running == [], "{0} still running after their release.".format(agents_still_running)
+
+
+@pytest.mark.parametrize("nested_call", ["command", "viewer_read"])
+def test_an_agent_inside_a_command_passes_its_own_gate_while_an_acl_refresh_drains_it(
+        monkeypatch: pytest.MonkeyPatch,
+        nested_call: str,
+) -> None:
+    """
+    A thread inside a Rift command passes that Rift's gate at once - for a nested command or a nested viewer read -
+    while an ACL refresh has disabled the gate and drains it; the refresh completes after the thread leaves.
+
+    Purpose:
+        Pin re-entry (item 6) against the reversible close: the refresh disables the gate (`RiftGate.close`, patched to
+        announce it) and waits for the agent's ticket, so the agent must be let through to finish and leave. The
+        frame ACL change is real: a copy of the current rules registered under a new contract name.
+
+    Symptom (GitHub #274, step 3): the nested command parked in `admit_ticket` behind the disabled gate until the
+    refresh - waiting for this same thread - timed out after `projection_refresh_gate_timeout_seconds`, and the
+    refresh raised. Before step 3 the nested viewer read took no ticket, so that case passed and now guards the door.
+
+    Args:
+        monkeypatch: Patches `RiftGate.close` and `Rift.refresh_runtime_projections` for this test only.
+        nested_call: What the agent does inside its command once the gate is disabled.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.REFRESH_TIMEOUT_SECONDS)
+    space = rift.space
+    command_system = space.command_system
+    nested = _nested_call(nested_call, rift)
+    expected_nested = nested()
+    acl_copy = _copy_of_the_current_acl(nexus, "default")
+    inside = threading.Event()
+    gate_disabled = threading.Event()
+    nested_done = threading.Event()
+    nested_outcomes: List[Tuple[str, object, float]] = []
+
+    def nest_a_call_once_the_gate_is_disabled() -> object:
+        """Inside the command: wait until the refresh disabled the gate, then make the nested call and time it."""
+        inside.set()
+        _Handshake.wait(gate_disabled, "The ACL refresh disabling the agent's gate")
+        started = time.monotonic()
+        try:
+            nested_outcomes.append(("returned", nested(), time.monotonic() - started))
+        except Exception as error:
+            nested_outcomes.append(("raised", error, time.monotonic() - started))
+        nested_done.set()
+        return "nightly prices"
+
+    space.workstation.bind_object("nightly_job", _AgentTool("nightly job", nest_a_call_once_the_gate_is_disabled))
+    space.workstation.set_target("nightly_job")
+    agent = _Agent("agent", lambda: command_system.execute_target_method("run"))
+    refresher = _Agent(
+        "refresher",
+        lambda: nexus.register_named_frame_acl_configuration("default", acl_copy, contract_name="gate_drain_probe"),
+    )
+    original_close = RiftGate.close
+    original_refresh = Rift.refresh_runtime_projections
+    refreshes: List[bool] = []
+
+    def close_then_announce(self: RiftGate) -> None:
+        """Disable the gate; on the refresher's thread, announce it."""
+        original_close(self)
+        if threading.current_thread() is refresher.thread:
+            gate_disabled.set()
+
+    def record_then_refresh(
+            self: Rift,
+            *,
+            frame_names: Optional[Sequence[str]] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        """On the refresher's thread, record whether the agent's nested call was done; then refresh."""
+        if threading.current_thread() is refresher.thread:
+            refreshes.append(nested_done.is_set())
+        return original_refresh(self, frame_names=frame_names)
+
+    monkeypatch.setattr(RiftGate, "close", close_then_announce)
+    monkeypatch.setattr(Rift, "refresh_runtime_projections", record_then_refresh)
+
+    agent.start()
+    _Handshake.wait(inside, "The agent entering its command")
+    refresher.start()
+    still_running = _Agent.still_running((agent, refresher))
+
+    assert still_running == [], "{0} still running: the nested call and the ACL refresh froze.".format(still_running)
+    agent.reraise_schedule_failure()
+    assert len(nested_outcomes) == 1
+    outcome, value, nested_seconds = nested_outcomes[0]
+    assert outcome == "returned" and value == expected_nested, (
+        "The agent's nested {0} {1} {2!r} while an ACL refresh drained its gate.".format(nested_call, outcome, value)
+    )
+    assert nested_seconds < _Handshake.PROMPT_SECONDS, (
+        "The agent's nested {0} took {1:.2f} s while an ACL refresh drained its gate: it parked behind the refresh "
+        "that was waiting for this same thread.".format(nested_call, nested_seconds)
+    )
+    assert agent.raised is None, "The agent's command {0}.".format(agent.describe_outcome())
+    assert agent.returned == "nightly prices"
+    assert refresher.raised is None, "The ACL refresh {0}: it did not complete after the agent left.".format(
+        refresher.describe_outcome()
+    )
+    assert refreshes == [True], "The ACL refresh swapped projections before the agent's nested call was done."
+
+
+@pytest.mark.parametrize("nested_call", ["command", "viewer_read"])
+def test_an_agent_inside_a_command_passes_its_own_gate_while_a_removal_closes_it(nested_call: str) -> None:
+    """
+    A thread inside a Rift command passes that Rift's gate - for a nested command or a nested viewer read - while a
+    removal has closed the gate and waits for it; then the command returns and the removal completes.
+
+    Purpose:
+        Pin re-entry (item 6) against the terminal close: the removal must let the thread it is waiting for finish its
+        work and leave, not refuse it.
+
+    Symptom (GitHub #274, step 3): the removal did not wait; it cleaned the room under the command, so the nested
+    call was refused as cleaned and the command's own exit failed.
+
+    Args:
+        nested_call: What the agent does inside its command once the removal is under way.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    rift_id = rift.id
+    space = rift.space
+    command_system = space.command_system
+    nested = _nested_call(nested_call, rift)
+    expected_nested = nested()
+    inside = threading.Event()
+    go_nested = threading.Event()
+    nested_outcomes: List[Tuple[str, object]] = []
+
+    def nest_a_call_once_the_removal_is_under_way() -> object:
+        """Inside the command: wait for the test's go-ahead, then make the nested call."""
+        inside.set()
+        _Handshake.wait(go_nested, "The test letting the agent make its nested call")
+        try:
+            nested_outcomes.append(("returned", nested()))
+        except Exception as error:
+            nested_outcomes.append(("raised", error))
+        return "nightly prices"
+
+    space.workstation.bind_object("nightly_job", _AgentTool("nightly job", nest_a_call_once_the_removal_is_under_way))
+    space.workstation.set_target("nightly_job")
+    agent = _Agent("agent", lambda: command_system.execute_target_method("run"))
+    remover = _Agent("remover", lambda: nexus.remove_rift(rift_id))
+    try:
+        agent.start()
+        _Handshake.wait(inside, "The agent entering its command")
+        remover.start()
+        # Give the removal its time to close the gate; whether it returned is item 1's concern, not asserted here.
+        remover.finished_within(_Handshake.OBSERVATION_SECONDS)
+    finally:
+        go_nested.set()
+    still_running = _Agent.still_running((agent, remover))
+
+    assert still_running == [], "{0} still running: the nested call and the removal froze.".format(still_running)
+    agent.reraise_schedule_failure()
+    assert nested_outcomes == [("returned", expected_nested)], (
+        "The agent's nested {0} gave {1!r} while a removal closed its gate: a thread already inside must pass "
+        "it.".format(nested_call, nested_outcomes)
+    )
+    assert agent.raised is None, "The agent's command {0}.".format(agent.describe_outcome())
+    assert agent.returned == "nightly prices"
+    assert remover.raised is None
+    assert nexus.has_rift(rift_id) is False
+
+
+def test_an_acl_refresh_waits_for_an_in_flight_viewer_read_before_swapping_its_projection(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    An ACL change on a frame does not swap that frame's projections while a viewer read is paused mid-read holding the
+    old projection; the read completes with its value and the refresh completes after it.
+
+    Purpose:
+        Pin item 7 (GitHub #274, V1). The read is paused right after it took its view projection; the frame ACL change
+        is real: a copy of the current rules registered under a new contract name. The swap
+        (`Rift.refresh_runtime_projections`, patched to record) must not run while the read is paused.
+
+    Symptom (GitHub #274, V1): a viewer read takes no gate ticket, so the refresh's drain did not wait for it and
+    the refresh cleaned the projection under the read, which then raised the cleaned RuntimeError.
+
+    Args:
+        monkeypatch: Patches `Rift._get_required_view_projection` and `Rift.refresh_runtime_projections` for this
+            test only.
+
+    Returns:
+        None.
+    """
+    nexus, rift = _build_world(drain_timeout_seconds=_Handshake.DRAIN_TIMEOUT_SECONDS)
+    viewer = rift.space.frame_viewer
+    expected_root_conduit_ids = viewer.list_root_conduit_ids(frame_name="default")
+    acl_copy = _copy_of_the_current_acl(nexus, "default")
+    hold = _Hold()
+    reader = _Agent("reader", lambda: viewer.list_root_conduit_ids(frame_name="default"))
+    refresher = _Agent(
+        "refresher",
+        lambda: nexus.register_named_frame_acl_configuration("default", acl_copy, contract_name="gate_drain_probe"),
+    )
+    _hold_the_first_view_projection_read(monkeypatch, reader, hold)
+    original_refresh = Rift.refresh_runtime_projections
+    swapped = threading.Event()
+    swaps_while_the_read_was_paused: List[bool] = []
+
+    def record_then_refresh(
+            self: Rift,
+            *,
+            frame_names: Optional[Sequence[str]] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        """On the refresher's thread, record whether the read was still paused; then swap the projections."""
+        if threading.current_thread() is refresher.thread:
+            swaps_while_the_read_was_paused.append(not hold.release.is_set())
+            swapped.set()
+        return original_refresh(self, frame_names=frame_names)
+
+    monkeypatch.setattr(Rift, "refresh_runtime_projections", record_then_refresh)
+    try:
+        reader.start()
+        _Handshake.wait(hold.inside, "The viewer read taking its view projection")
+        refresher.start()
+        # Give a refresh that does not wait for the read its chance to swap under it.
+        swapped.wait(timeout=_Handshake.OBSERVATION_SECONDS)
+    finally:
+        hold.release.set()
+    still_running = _Agent.still_running((reader, refresher))
+
+    assert still_running == [], "{0} still running: the viewer read and the ACL refresh froze.".format(still_running)
+    reader.reraise_schedule_failure()
+    assert swaps_while_the_read_was_paused == [False], (
+        "The ACL refresh swapped the frame's projections while a viewer read was paused holding the old projection "
+        "(GitHub #274, V1): the refresh did not wait for the in-flight read."
+    )
+    assert reader.raised is None, "The viewer read {0}.".format(reader.describe_outcome())
+    assert reader.returned == expected_root_conduit_ids
+    assert refresher.raised is None, "The ACL refresh {0}.".format(refresher.describe_outcome())
+================================================================================
+END FILE: tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/crystallizer/test_crystallizer_cadence_soak_component.py
@@ -65722,7 +67312,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py
-CONTENT SHA256: cbc90cf0c9260a5cb5dde0d9031dee01e64c0bf8f2e8e4aff1bb25eefaab4c70
+CONTENT SHA256: 4f23e5325153d26b16f436ced6f89c0c171253ee4ca693c41709861814b6323e
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -65746,6 +67336,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     OverrideKeyResolver,
 )
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -66357,18 +67948,16 @@ class _SpellSystemStatesStub:
         self.unregistered_lineages.append(spell_index)
 
 
-def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates() -> None:
+def _frame_only_consumer() -> type:
     """
     Purpose:
-        Validate missing SpellMap default candidates raise during Phase 3.
+        Build a fresh consumer class whose one parameter is a frame-only SpellMap default (IService, "primary").
     Contract:
-        - run_phase_local_frame raises when SpellMap defaults resolve to none.
+        - Each call returns a new class, so each test binds its own spell.
     Returns:
-        None.
-    Raises:
-        AssertionError: If missing SpellMap defaults do not raise.
+        type: The consumer class; its `service` parameter defaults to `SpellMap(spellframe=IService,
+        binding_name="primary")`.
     """
-    spellbook = _make_spellbook()
 
     class Consumer:
         """
@@ -66399,8 +67988,26 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
             """
             self.service = service
 
+    return Consumer
+
+
+def test_component_spell_crafter_spellmap_default_waits_when_missing_candidates() -> None:
+    """
+    Purpose:
+        Validate that a SpellMap default matching nothing becomes an unresolved input in Phase 3 (0.2.8303).
+    Contract:
+        - run_phase_local_frame records the socket UNRESOLVED_INPUT with the SpellMap's canonical key as its
+          dependency key, no target and no hidden candidates, and the spell gains no dependency. Before 0.2.8303 it
+          raised RuntimeError ("SpellMap default could not be resolved"), so a consumer bound before its provider
+          was refused (GitHub #329).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the miss raises or is recorded as anything but an unresolved input.
+    """
+    spellbook = _make_spellbook()
     consumer_id = spellbook.bind(
-        spell=Consumer,
+        spell=_frame_only_consumer(),
         existence=Existence.unique,
         permissions="create",
     )
@@ -66410,8 +68017,48 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
         assert spell is not None
         _run_phase_requirements(spell)
         _run_phase_symbolic_graph(spell)
-        with pytest.raises(RuntimeError, match="SpellMap default could not be resolved"):
-            _run_phase_local_frame(spell)
+        _run_phase_local_frame(spell)
+
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        assert topology is not None
+        sockets = topology.get_sockets_for_param("service")
+        expected_key = SpellMap(spell=None, spellframe=IService, binding_name="primary").canonical_key
+        assert [
+            (socket.socket_kind, socket.target_spell_ids, socket.dependency_key, socket.hidden_spell_ids)
+            for socket in sockets
+        ] == [(SocketKind.UNRESOLVED_INPUT, (), expected_key, ())]
+        assert list(spell.dependencies) == []
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_direct_spellmap_lookup_still_raises_on_a_miss() -> None:
+    """
+    Purpose:
+        Validate that a direct `_resolve_spellmap_default` caller keeps the RuntimeError for a miss.
+    Contract:
+        - Without `hidden_out` (not Phase 3's own call) a SpellMap default that matches nothing raises
+          RuntimeError naming the parameter; only Phase 3's own call records the miss as an unresolved input.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the direct call does not raise.
+    """
+    spellbook = _make_spellbook()
+    consumer_id = spellbook.bind(
+        spell=_frame_only_consumer(),
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert spell is not None
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        dependency = next(iter(spell._compiler_artifact._symbolic_graph.dependencies))
+        with pytest.raises(RuntimeError, match="SpellMap default could not be resolved for parameter 'service'"):
+            CompilerPhase3()._resolve_spellmap_default(spell, spellbook, dependency)
     finally:
         spellbook.cleanup()
 
@@ -138427,7 +140074,7 @@ END FILE: tests/integration/melder/crystallizer/test_bind_hook_recording.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_cleaned_record_names_656.py
-CONTENT SHA256: 1d10d95145eddf367991017771b96aa10955e0c067a06057226de5e66fe82505
+CONTENT SHA256: 9a5f72d3b544ae521a741c1a609761bd44f5c60edd84d2a20f4f400c02811c54
 SOURCE ENCODING: utf-8
 ================================================================================
 """Major5 cached records retain terminal intent across CLEANED naming and both restore drivers."""
@@ -138514,7 +140161,7 @@ def _record_world(
 def _terminal_name_fixture(cache_file: Path, state_name: str) -> Dict[str, object]:
     """Keep a real major5 cached item intact apart from its documented legacy terminal-name spelling."""
     item = cast(Dict[str, object], json.loads(cache_file.read_text(encoding="utf-8")))
-    assert item["record_version"] == "5.0.0"
+    assert item["record_version"] == "5.0.1"
     payloads = cast(Dict[str, Dict[str, Dict[str, object]]], item["captured_payloads"])
     journal = cast(List[List[Union[int, str]]], item["journal_segment"])
     for kind in ("nexus_state", "mutation_research_state"):
@@ -144531,7 +146178,7 @@ END FILE: tests/integration/melder/crystallizer/test_named_lesser_persistence.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_nexus_config_enum_persistence_657.py
-CONTENT SHA256: 4ce80b728f2299c8169986e9c85b0df900f47f2a6f88d2c30e484079cf01b2a3
+CONTENT SHA256: 2f4999f889c6ede212666d594fee56905e6072c658a0bf8adb0c02e68b93de9f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Real Nexus configuration checkpoint and cached reload enum contracts."""
@@ -144618,7 +146265,7 @@ def test_nexus_enum_names_remain_plain_through_checkpoint_and_cached_reload(
     profile = str(recorder.describe_checkpoint(checkpoint_id)["profile_name"])
     cache_file = cache_root / profile / f"{checkpoint_id}.json"
     cached = json.loads(cache_file.read_text(encoding="utf-8"))
-    assert cached["record_version"] == "5.0.0"
+    assert cached["record_version"] == "5.0.1"
     saved = cached["captured_payloads"]["nexus"]["root"]["configuration_payload"]
     for key, value in expected.items():
         assert saved[key] == value
@@ -153194,7 +154841,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_schema_version_integrati
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py
-CONTENT SHA256: 824ffe1794d0c3dcf781f736870267e2fbb0b9d2158c57451d2e29b3021f93e3
+CONTENT SHA256: 1d15e16155050880a086cbde8510a151027591515797707cdb0f8ecb73a16059
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -153233,7 +154880,6 @@ import pytest
 from melder import Aether, Conduit, Spellbook, SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnosticSeverity
-from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
@@ -153685,7 +155331,9 @@ def test_class_bound_nowhere_keeps_the_unresolved_input_and_the_earlier_failures
     """
     Control: nothing of English bound. The single consumers conjure and their meld raises UnresolvedInputError saying
     nothing registered provides English (an override supplies it); `list[English]` keeps Phase 6's earlier text
-    byte for byte; `SpellMap(English)` still fails Phase 3 (D4: a SpellMap miss with its class bound nowhere).
+    byte for byte. `SpellMap(English)` - a SpellMap miss with its class bound nowhere - failed Phase 3 under D4; since
+    0.2.8303 (GitHub #329, the owner's rule that bind order must not matter) it is an unresolved input too: it
+    conjures, its meld names the SpellMap, and an override supplies it.
     """
     book = _book("control-none", "automatic")
     for consumer in SINGLE_CONSUMERS.values():
@@ -153702,9 +155350,14 @@ def test_class_bound_nowhere_keeps_the_unresolved_input_and_the_earlier_failures
         "in dynamic mode if members arrive via contracts.", "collection_socket_no_providers")
     mapping = _book("control-none-spellmap", "automatic")
     mapping.bind(spell=SpellMapClass, existence="many", permissions="create")
-    with pytest.raises(PhaseExecutionError, match="SpellMap default could not be resolved for parameter 'greeter' on "
-                                                  "spell 'SpellMapClass'"):
-        mapping.conjure(name="root")
+    mapped = mapping.conjure(name="root")
+    assert _unsupplied(mapped, SpellMapClass) == (
+        "SpellMapClass.greeter asks for the spell its default SpellMap(English) names, but nothing is bound there and "
+        "this meld did not supply it. Supply it with override={'greeter': ...} when melding SpellMapClass, a path key "
+        "ending in '>greeter' (or '**greeter') when SpellMapClass is built as a dependency, or bind a spell at that "
+        "address."
+    )
+    assert type(mapped.meld(SpellMapClass, override={"greeter": English()}).greeter) is English
 
 
 def test_refused_consumer_melds_a_version_of_its_class_bound_bare_after_the_refusal() -> None:
@@ -167064,7 +168717,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py
-CONTENT SHA256: 75aa120d5418c168cc407703869be9d51f45faa6bd5aa08d7670d1b74e8bd92a
+CONTENT SHA256: 5f47f8cbcaa96da3902986747a566606bda560f685dcd58c2a8d7477a507e443
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -167845,8 +169498,12 @@ def test_c1_single_many_existence_member_injects_one_element_list() -> None:
 # =========================================================================== #
 # D1 / D2 - SpellMap capabilities
 # =========================================================================== #
-def test_d2_frame_only_unbound_frame_fails_conjure() -> None:
-    """D2: SpellMap(spell=None, spellframe=<unbound>) must fail to resolve."""
+def test_d2_frame_only_unbound_frame_waits_as_an_unresolved_input() -> None:
+    """
+    D2: SpellMap(spell=None, spellframe=<unbound>) resolves nothing. Since 0.2.8303 (GitHub #329, the owner's rule that
+    bind order must not matter) that is an unresolved input, not a conjure failure: conjure succeeds and the meld
+    raises UnresolvedInputError naming the SpellMap until a spell is bound under the frame or the value is supplied.
+    """
     spellbook = _make_spellbook()
 
     class UsesUnboundFrameMap:
@@ -167855,8 +169512,10 @@ def test_d2_frame_only_unbound_frame_fails_conjure() -> None:
 
     try:
         spellbook.bind(spell=UsesUnboundFrameMap, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        root = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError,
+                           match=r"asks for the spell its default SpellMap\(spellframe='never_bound_frame'\) names"):
+            root.meld(UsesUnboundFrameMap)
     finally:
         spellbook.cleanup()
 
@@ -171381,7 +173040,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py
-CONTENT SHA256: d2c61ac1d32349ba63eb24a7b29f67bb49b51bc9d43a93fc70938825bb6a4d72
+CONTENT SHA256: ccb4001f6abf0061dce160ab08b0a4085dc363363586404d0059fcf71a7c2926
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -171396,6 +173055,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
 
 
@@ -174094,12 +175754,13 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
         conduit.cleanup()
 
 
-def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:
+def test_spellmap_explicit_class_with_wrong_frame_waits_as_an_unresolved_input() -> None:
     """
     Purpose:
-        Validate explicit SpellMap frame mismatches raise during resolution.
+        Validate that an explicit SpellMap whose frame holds no such spell waits (GitHub #329).
     Contract:
-        - SpellMap(explicit class, spellframe=wrong) fails during conjure.
+        - SpellMap(explicit class, spellframe=wrong) conjures (it failed conjure before 0.2.8303); the meld
+          raises UnresolvedInputError naming the SpellMap until a spell is bound there.
     Returns:
         None.
     Raises:
@@ -174172,8 +175833,10 @@ def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError):
-        spellbook.conjure(name="root")
+    root = spellbook.conjure(name="root")
+    with pytest.raises(UnresolvedInputError,
+                       match=r"asks for the spell its default SpellMap\(.*_Cache, spellframe='wrong'\) names"):
+        root.meld(_Service)
 
 
 def test_spellmap_explicit_class_with_wrong_binding_name_raises() -> None:
@@ -174261,12 +175924,13 @@ def test_spellmap_explicit_class_with_wrong_binding_name_raises() -> None:
     )
 
 
-def test_spellmap_explicit_method_with_wrong_frame_raises() -> None:
+def test_spellmap_explicit_method_with_wrong_frame_waits_as_an_unresolved_input() -> None:
     """
     Purpose:
-        Validate explicit method SpellMap frame mismatches raise during resolution.
+        Validate that an explicit method SpellMap whose frame holds no such spell waits (GitHub #329).
     Contract:
-        - SpellMap(explicit method, spellframe=wrong) fails during conjure.
+        - SpellMap(explicit method, spellframe=wrong) conjures (it failed conjure before 0.2.8303); the meld
+          raises UnresolvedInputError naming the SpellMap - the method by its qualified name.
     Returns:
         None.
     Raises:
@@ -174332,8 +175996,11 @@ def test_spellmap_explicit_method_with_wrong_frame_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError):
-        spellbook.conjure(name="root")
+    root = spellbook.conjure(name="root")
+    with pytest.raises(UnresolvedInputError,
+                       match=r"asks for the spell its default SpellMap\(.*_Factory\.build, spellframe='wrong'\) "
+                             r"names"):
+        root.meld(_Service)
 
 
 def test_collection_di_by_list_protocol_reuses_unique_instances() -> None:
@@ -174606,7 +176273,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_error_matrix.py
-CONTENT SHA256: b6732345ec0952ca9aff1430cd4ebc2d39c8c8cd70f1ac0c4650e06feadfa61e
+CONTENT SHA256: 1b63dc3a99fc5c37e84392bb293e528b6db64551de76e412535216250d44846c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -175048,13 +176715,18 @@ def test_conjure_with_ambiguous_frame_di_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unresolvable_spellmap_default_raises() -> None:
-    """A SpellMap default whose target is unbound must fail at Phase-3 resolution."""
+def test_conjure_with_unresolvable_spellmap_default_waits_as_an_unresolved_input() -> None:
+    """
+    A SpellMap default whose target is unbound failed at Phase-3 resolution before 0.2.8303; since then (GitHub #329)
+    it is an unresolved input: conjure succeeds and the meld raises UnresolvedInputError naming the SpellMap.
+    """
     spellbook = _make_spellbook()
     try:
         spellbook.bind(spell=UsesMissingSpellMap, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        root = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError,
+                           match=r"asks for the spell its default SpellMap\(UnboundConfig\) names"):
+            root.meld(UsesMissingSpellMap)
     finally:
         spellbook.cleanup()
 
@@ -179118,6 +180790,205 @@ def test_same_normalized_address_still_refused_at_bind(
         )
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py
+CONTENT SHA256: fd7716f93b6ae8dbc5b5444125092c0eb16b540538fbaee8990d6c1ce64ffbec
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration regressions (STORY-2026-11-16-spellmap_miss_waits, GitHub #329; epic #328): a SpellMap consumer bound
+before its provider waits for it, as a class-annotated consumer does, instead of being refused.
+
+Reported from MelderOps on 0.2.8302: its configure conjures its root, then binds a batch in which `SpectrumBuilders`
+(`SpellMap(spellframe="spectrum", binding_name="ServiceBuilder")`) comes before `ServiceBuilder`, and the bind raised
+"SpellCrafter Phase 3: SpellMap default could not be resolved" from its commit-time compile. The owner's rule
+(2026-11-16): bind order must not matter. A SpellMap default that matches nothing is now an UNRESOLVED_INPUT socket at
+the SpellMap's address - at a late bind and at conjure - so the bind succeeds, the consumer's meld raises
+UnresolvedInputError naming the SpellMap until a provider is bound there (or the value is supplied), and the bind of
+that provider re-gates the consumer. The reproduction before the fix:
+context_compass/artifacts/bind_order_free_20261116/runs/spellmap_bind_order_check_0_2_8302.txt.
+
+Every world is a fresh Aether (autouse fixture) with creation caching off.
+"""
+from collections.abc import Iterator
+from typing import Any
+
+import pytest
+
+from melder import Aether, Conduit, Spellbook, SpellMap
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
+
+class Anchor:
+    """An unrelated spell, so a root has something to conjure before the batch."""
+
+
+class ServiceBuilder:
+    """The provider SpectrumBuilders asks for, filed at ('spectrum', 'ServiceBuilder') or bound bare."""
+
+
+class CommandCenterConfig:
+    """The provider CommandCenter asks for, filed at ('spectrum', 'CommandCenterConfig')."""
+
+
+class SpectrumBuilders:
+    """Asks for its builder by frame address - the spell MelderOps binds before ServiceBuilder."""
+
+    def __init__(
+            self,
+            service_builder: Any = SpellMap(spellframe="spectrum", binding_name="ServiceBuilder"),
+    ) -> None:
+        """Hold the builder."""
+        self.service_builder = service_builder
+
+
+class CommandCenter:
+    """Asks for its configuration by frame address - the second consumer of the reported configure."""
+
+    def __init__(
+            self,
+            config: Any = SpellMap(spellframe="spectrum", binding_name="CommandCenterConfig"),
+    ) -> None:
+        """Hold the configuration."""
+        self.config = config
+
+
+class ByClassMap:
+    """Asks for ServiceBuilder through the class form of a SpellMap: ServiceBuilder bound bare."""
+
+    def __init__(self, service_builder: Any = SpellMap(ServiceBuilder)) -> None:
+        """Hold the builder."""
+        self.service_builder = service_builder
+
+
+def _reset_aether() -> None:
+    """Install a fresh Aether singleton for Spellbook and Conduit."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> Iterator[None]:
+    """Give each test a fresh Aether and reset it again afterwards."""
+    _reset_aether()
+    yield
+    _reset_aether()
+
+
+def _book(frame: str, mode: str = "dynamic") -> Spellbook:
+    """
+    A Book on its own frame, one phase worker, not conjured.
+
+    Args:
+        frame: The frame name; each world uses its own.
+        mode: "dynamic" or "automatic" - the frame's posture.
+
+    Returns:
+        Spellbook: The Book.
+    """
+    book = Spellbook(aetheric_frame=frame)
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book.configure_aether_frame(system_state=mode, system_caching_enabled=False, disposal=None,
+                                disposal_method_names=None)
+    return book
+
+
+def _conjured(frame: str) -> tuple[Spellbook, Conduit]:
+    """A dynamic Book with only Anchor bound, conjured - the state MelderOps' batch of late binds starts from."""
+    book = _book(frame)
+    book.bind(spell=Anchor, existence="many", permissions="create")
+    return book, book.conjure(name="root", dynamic=True)
+
+
+def _unsupplied(root: Conduit, consumer: type, param: str) -> str:
+    """
+    Meld a consumer that must miss `param`; return its UnresolvedInputError's sentence.
+
+    Returns:
+        str: The text after "(parameter '<param>'): "; otherwise "<Type>: <message>" for another RuntimeError, or
+        "no error" when the meld built the consumer.
+    """
+    try:
+        root.meld(consumer)
+    except UnresolvedInputError as error:
+        return str(error).split(f"(parameter '{param}'): ", 1)[-1]
+    except RuntimeError as error:
+        return f"{type(error).__name__}: {error}"
+    return "no error"
+
+
+def _waiting(consumer: str, param: str, spell_map: str) -> str:
+    """The UnresolvedInputError sentence of a SpellMap parameter whose address has nothing bound."""
+    return (
+        f"{consumer}.{param} asks for the spell its default {spell_map} names, but nothing is bound there and this "
+        f"meld did not supply it. Supply it with override={{{param!r}: ...}} when melding {consumer}, a path key "
+        f"ending in '>{param}' (or '**{param}') when {consumer} is built as a dependency, or bind a spell at that "
+        "address."
+    )
+
+
+def test_spellmap_consumer_bound_before_its_provider_binds_and_melds_once_the_provider_is_bound() -> None:
+    """
+    Regression (MelderOps, 0.2.8302): after conjure, SpectrumBuilders is bound before ServiceBuilder. The bind
+    succeeds; the meld raises UnresolvedInputError naming the SpellMap and builds nothing; once ServiceBuilder is
+    bound at ('spectrum', 'ServiceBuilder') the consumer's next meld wires it.
+    """
+    book, root = _conjured("late-frame-named")
+    book.bind(spell=SpectrumBuilders, existence="many", permissions="create")
+    assert _unsupplied(root, SpectrumBuilders, "service_builder") == _waiting(
+        "SpectrumBuilders", "service_builder", "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')")
+    book.bind(spell=ServiceBuilder, existence="many", permissions="create", spellframe="spectrum",
+              binding_name="ServiceBuilder")
+    assert type(root.meld(SpectrumBuilders).service_builder) is ServiceBuilder
+
+
+def test_configure_batch_binds_every_spellmap_consumer_before_its_provider() -> None:
+    """
+    The reported configure shape: one batch bound after conjure, each SpellMap consumer before its provider
+    (SpectrumBuilders before ServiceBuilder, CommandCenter before CommandCenterConfig). Every bind succeeds, and after
+    the batch both consumers meld with their providers.
+    """
+    book, root = _conjured("configure-batch")
+    book.bind(spell=SpectrumBuilders, existence="many", permissions="create")
+    book.bind(spell=CommandCenter, existence="many", permissions="create")
+    book.bind(spell=ServiceBuilder, existence="many", permissions="create", spellframe="spectrum",
+              binding_name="ServiceBuilder")
+    book.bind(spell=CommandCenterConfig, existence="many", permissions="create", spellframe="spectrum",
+              binding_name="CommandCenterConfig")
+    assert type(root.meld(SpectrumBuilders).service_builder) is ServiceBuilder
+    assert type(root.meld(CommandCenter).config) is CommandCenterConfig
+
+
+def test_class_form_spellmap_waits_for_its_class_bound_bare_later() -> None:
+    """
+    `SpellMap(ServiceBuilder)` bound after conjure, with ServiceBuilder bound nowhere: the bind succeeds, the meld
+    names `SpellMap(ServiceBuilder)`, and once ServiceBuilder is bound bare the consumer melds with it.
+    """
+    book, root = _conjured("late-class-form")
+    book.bind(spell=ByClassMap, existence="many", permissions="create")
+    assert _unsupplied(root, ByClassMap, "service_builder") == _waiting(
+        "ByClassMap", "service_builder", "SpellMap(ServiceBuilder)")
+    book.bind(spell=ServiceBuilder, existence="many", permissions="create")
+    assert type(root.meld(ByClassMap).service_builder) is ServiceBuilder
+
+
+def test_conjure_with_nothing_at_the_address_succeeds_and_a_meld_override_supplies_it() -> None:
+    """
+    An automatic Book with SpectrumBuilders alone conjures (before 0.2.8303 it raised PhaseExecutionError for the
+    'local_frame' phase); the meld refuses naming the SpellMap, and an override supplies the value by identity.
+    """
+    book = _book("conjure-empty-address", "automatic")
+    book.bind(spell=SpectrumBuilders, existence="many", permissions="create")
+    root = book.conjure(name="root")
+    assert _unsupplied(root, SpectrumBuilders, "service_builder") == _waiting(
+        "SpectrumBuilders", "service_builder", "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')")
+    builder = ServiceBuilder()
+    assert root.meld(SpectrumBuilders, override={"service_builder": builder}).service_builder is builder
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/mocks/SKILLS.MD
@@ -274091,7 +275962,7 @@ END FILE: tests/unit/melder/aether/test_lookup_container_repoint.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus.py
-CONTENT SHA256: dbac9b4370b93b338c56a755a80bd14ec8ae38199eb1c2a7503618b5d684fb4c
+CONTENT SHA256: bf22b3fea0e4a4085d71209ad2209b6da4bd5adf2f787a3fb78cd6364fa19630
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -274109,6 +275980,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
@@ -274598,6 +276470,12 @@ def _make_detached_rift_projection_owner() -> object:
             self._projection_sets_by_frame_name = {}
             self._id = "detached-rift"
             self._codegen_projections_by_frame_name = {}
+            # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
+            self._rift_gate = RiftGate()
+
+        @property
+        def rift_gate(self) -> RiftGate:
+            return self._rift_gate
 
         def _apply_projection_sets(
                 self,
@@ -283072,7 +284950,7 @@ END FILE: tests/unit/melder/aether/test_nexus_frame_surface_projection.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py
-CONTENT SHA256: 864748ad538706f1f7df7e428f5f9817bc0e035189ceea8d7d056fa055b6c398
+CONTENT SHA256: 14d493c0783167d80d55a303a90bc96abedb3221773d32f297080e5078c4b45a
 SOURCE ENCODING: utf-8
 ================================================================================
 import json
@@ -283388,6 +285266,10 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
             self.rift_name = "alpha"
             self.cleaned = False
 
+        def check_cleaned(self) -> None:
+            # remove_rift refuses a Rift cleaned outside Nexus before it drains or pops anything (GitHub #274).
+            return None
+
         def _mark_cleaned_for_removal(self):
             # remove_rift marks the Rift and takes its attached frames in one step (GitHub #274, the R4 residual).
             cleanup_calls.append("rift_mark")
@@ -283401,7 +285283,18 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
     nexus._rifts_by_id = {rift.id: rift}
     nexus._rift_ids_by_name = {rift.rift_name: rift.id}
     nexus._target_frame_ref_counts = {"ops": 1, "finance": 1}
+
+    class _RemoveGate:
+        cleaned = False
+
+        def close_and_wait_until_free(self, *, timeout: float, interval: float) -> None:
+            # remove_rift drains the Rift's gate before its registry phase (GitHub #274, step 3).
+            cleanup_calls.append("gate_drain")
+
     class _RemoveGateController:
+        def get_rift_gate(self, _rift_id) -> _RemoveGate:
+            return _RemoveGate()
+
         def unregister_rift_gate(self, _rift_id) -> None:
             cleanup_calls.append("unregister")
 
@@ -283426,6 +285319,7 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
     nexus.remove_rift(rift.id)
 
     assert cleanup_calls == [
+        "gate_drain",
         "unregister",
         "rift_mark",
         ("frame_remove", "nexus-frame"),
@@ -286479,7 +288373,7 @@ END FILE: tests/unit/melder/aether/test_rift_event_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_rift_gate.py
-CONTENT SHA256: 25cb7d3e62195b35d64d55f371e42996637fd514afcaad383c65ee70166543d1
+CONTENT SHA256: bcbf1ad19304b19d5f8aa283a5655208e94efdc46873970edce3b5b1c0f5c42d
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -286487,7 +288381,7 @@ import time
 
 import pytest
 
-from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate, RiftGateDrainTimeoutError
 from melder.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
@@ -286504,10 +288398,12 @@ def test_rift_gate_starts_open_and_tracks_tickets() -> None:
     gate.register_ticket()
     gate.register_ticket()
 
+    # One ticket per thread inside (GitHub #274, step 3): the nested registration deepens this thread's ticket.
     assert gate.has_active_tickets() is True
-    assert gate.active_ticket_count() == 2
+    assert gate.active_ticket_count() == 1
 
     gate.unregister_ticket()
+    assert gate.active_ticket_count() == 1
     gate.unregister_ticket()
 
     assert gate.has_active_tickets() is False
@@ -286583,12 +288479,29 @@ def test_rift_gate_close_and_wait_until_free_waits_for_drain() -> None:
 
 def test_rift_gate_close_and_wait_until_free_timeout_raises() -> None:
     gate = RiftGate()
-    gate.register_ticket()
+    registered = threading.Event()
+    release = threading.Event()
 
-    with pytest.raises(RuntimeError, match="Timeout waiting for rift tickets to drain."):
-        gate.close_and_wait_until_free(timeout=0.05, interval=0.01)
+    def _holder() -> None:
+        # The ticket is another thread's: a drain never waits for the caller's own ticket (GitHub #274, step 3).
+        gate.register_ticket()
+        registered.set()
+        release.wait(timeout=5.0)
+        gate.unregister_ticket()
 
-    gate.unregister_ticket()
+    thread = threading.Thread(target=_holder, daemon=True)
+    thread.start()
+    try:
+        assert registered.wait(timeout=5.0)
+        with pytest.raises(RiftGateDrainTimeoutError, match="Timeout waiting for rift tickets to drain.") as raised:
+            gate.close_and_wait_until_free(timeout=0.05, interval=0.01)
+    finally:
+        release.set()
+        thread.join(timeout=5.0)
+
+    assert isinstance(raised.value, RuntimeError)
+    assert raised.value.threads_inside == 1
+    assert gate.active_ticket_count() == 0
 
 
 def test_rift_gate_cleanup_is_idempotent() -> None:
@@ -286629,9 +288542,10 @@ def test_rift_gate_controller_create_register_unregister_and_counts() -> None:
     second_gate.register_ticket()
     second_gate.register_ticket()
 
+    # The counts are of threads inside (GitHub #274, step 3): this one thread is inside each gate once.
     assert controller.count_active_threads_for_rift("rift-1") == 1
-    assert controller.count_active_threads_for_rift("rift-2") == 2
-    assert controller.count_active_threads_total() == 3
+    assert controller.count_active_threads_for_rift("rift-2") == 1
+    assert controller.count_active_threads_total() == 2
 
     first_gate.unregister_ticket()
     second_gate.unregister_ticket()
@@ -286651,14 +288565,19 @@ def test_rift_gate_controller_enable_disable_and_close_and_wait_work() -> None:
     controller.enable_all()
     assert gate.enabled is True
 
-    gate.register_ticket()
+    registered = threading.Event()
 
     def _release() -> None:
+        # The ticket is taken and released on this thread: a ticket belongs to the thread inside, and a drain never
+        # waits for the caller's own ticket (GitHub #274, step 3).
+        gate.register_ticket()
+        registered.set()
         time.sleep(0.1)
         gate.unregister_ticket()
 
     thread = threading.Thread(target=_release)
     thread.start()
+    assert registered.wait(timeout=2.0)
 
     controller.close_and_wait_until_rift_free("rift-1", timeout=2.0, interval=0.01)
     thread.join(timeout=1.0)
@@ -286696,6 +288615,371 @@ def test_rift_gate_controller_rejects_duplicate_ids_and_cleanup_is_idempotent() 
     assert controller.cleaned is True
 ================================================================================
 END FILE: tests/unit/melder/aether/test_rift_gate.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/aether/test_rift_gate_thread_tickets.py
+CONTENT SHA256: c48ffb6999fb51e8e930b4923719f2d2571184e666aa441c79bdc4363c3cc0c3
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for the RiftGate ticket model the Rift gate design needs (GitHub #274, step 3).
+
+- A thread already inside passes the gate again at once while the gate is disabled (`close()`, an ACL refresh's
+  reversible close) or terminally closed by another thread's `close_and_wait_until_free` (a removal), so it can
+  finish and leave; a thread without a ticket is still refused.
+- The gate counts threads, not calls.
+- A drain run by a thread that holds a ticket does not wait for that thread's own ticket.
+- Releasing a ticket after the gate was cleaned is a no-op.
+
+Each re-entry runs on a daemon thread joined within `_Bound.PROMPT_SECONDS`, and a parked thread is released in a
+`finally`, so a gate that parks or refuses a re-entering thread fails its test instead of hanging the suite. Every
+successful `admit_ticket` is paired with one `unregister_ticket`, as `CommandSystem` pairs them.
+"""
+import threading
+import time
+from typing import Callable, List, Optional
+
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+
+
+class _Bound:
+    """
+    The bounds every wait and join of this module uses.
+
+    Contract:
+        - Order between threads comes from events, or from a bounded wait on the gate's own public state;
+          `BOUND_SECONDS` only turns a point never reached into a failure.
+        - `PROMPT_SECONDS` is how long a re-entry or a refusal may take; `SELF_DRAIN_TIMEOUT_SECONDS` is the drain
+          timeout a thread uses on its own gate, which must return within `SELF_DRAIN_PROMPT_SECONDS`.
+    """
+
+    BOUND_SECONDS: float = 5.0
+    PROMPT_SECONDS: float = 1.0
+    POLL_SECONDS: float = 0.001
+    DRAIN_INTERVAL_SECONDS: float = 0.01
+    SELF_DRAIN_TIMEOUT_SECONDS: float = 1.0
+    SELF_DRAIN_PROMPT_SECONDS: float = 0.5
+
+    @classmethod
+    def wait(cls, event: threading.Event, point: str) -> None:
+        """
+        Wait until `event` is set, failing when it is not set within the bound.
+
+        Args:
+            event: The event that marks `point`.
+            point: What the event marks, for the failure message.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When the event is not set within `BOUND_SECONDS`.
+        """
+        if not event.wait(timeout=cls.BOUND_SECONDS):
+            raise AssertionError("{0} did not happen within {1} s.".format(point, cls.BOUND_SECONDS))
+
+    @classmethod
+    def wait_until(cls, condition: Callable[[], bool], point: str) -> None:
+        """
+        Wait until `condition()` holds, re-checking it every `POLL_SECONDS`, failing after the bound.
+
+        Args:
+            condition: A read of the gate's public state.
+            point: What the condition marks, for the failure message.
+
+        Returns:
+            None.
+
+        Raises:
+            AssertionError: When the condition does not hold within `BOUND_SECONDS`.
+        """
+        deadline = time.monotonic() + cls.BOUND_SECONDS
+        pause = threading.Event()
+        while not condition():
+            if time.monotonic() >= deadline:
+                raise AssertionError("{0} did not happen within {1} s.".format(point, cls.BOUND_SECONDS))
+            pause.wait(cls.POLL_SECONDS)
+
+
+class _Worker:
+    """
+    One call run on its own daemon thread, keeping what it returned or raised.
+
+    Contract:
+        - `returned` and `raised` are written only by the worker's thread; read them after a join that found the
+          thread finished.
+    """
+
+    def __init__(self, name: str, call: Callable[[], object]) -> None:
+        """
+        Prepare the worker's thread without starting it.
+
+        Args:
+            name: The thread's name.
+            call: The work the thread runs.
+
+        Returns:
+            None.
+        """
+        self._call: Callable[[], object] = call
+        self.returned: object = None
+        self.raised: Optional[BaseException] = None
+        self.thread: threading.Thread = threading.Thread(target=self._run, name=name, daemon=True)
+
+    def start(self) -> None:
+        """
+        Start the worker's thread.
+
+        Returns:
+            None.
+        """
+        self.thread.start()
+
+    def finished_within(self, seconds: float) -> bool:
+        """
+        Join the worker's thread for at most `seconds`.
+
+        Args:
+            seconds: How long to wait for the thread to finish.
+
+        Returns:
+            bool: True when the thread finished within `seconds`.
+        """
+        self.thread.join(timeout=seconds)
+        return not self.thread.is_alive()
+
+    def _run(self) -> None:
+        """
+        Run the call and keep its outcome.
+
+        Returns:
+            None.
+        """
+        try:
+            self.returned = self._call()
+        except BaseException as error:
+            self.raised = error
+
+
+def test_a_thread_holding_a_ticket_is_admitted_again_at_once_while_the_gate_is_disabled() -> None:
+    """
+    A thread that holds a ticket passes `admit_ticket` again at once while the gate is disabled (`close()`).
+
+    Purpose:
+        An ACL refresh disables the gate and drains it; a thread already inside must be let through so it can finish
+        its nested work and leave, or the drain waits on a thread that waits on the drain.
+
+    Symptom (GitHub #274, step 3): `admit_ticket` parked every caller of a disabled gate, the ticket holder too, until
+    the gate reopened.
+
+    Returns:
+        None.
+    """
+    gate = RiftGate()
+    admitted = threading.Event()
+    gate_disabled = threading.Event()
+    readmissions: List[str] = []
+
+    def hold_then_enter_again() -> None:
+        """Take a ticket, wait until the gate is disabled, take it again, then release both."""
+        gate.admit_ticket()
+        admitted.set()
+        _Bound.wait(gate_disabled, "The test disabling the gate")
+        gate.admit_ticket()
+        readmissions.append("admitted again")
+        gate.unregister_ticket()
+        gate.unregister_ticket()
+
+    holder = _Worker("holder", hold_then_enter_again)
+    holder.start()
+    entered_again_at_once = False
+    try:
+        _Bound.wait(admitted, "The holder taking its ticket")
+        gate.close()
+        gate_disabled.set()
+        entered_again_at_once = holder.finished_within(_Bound.PROMPT_SECONDS)
+    finally:
+        # Reopen so a holder parked in admit_ticket gets out.
+        gate.open()
+        holder.finished_within(_Bound.BOUND_SECONDS)
+
+    assert entered_again_at_once, (
+        "A thread holding a ticket did not pass admit_ticket within {0} s while the gate was disabled: it parked "
+        "behind a close that waits for it to leave.".format(_Bound.PROMPT_SECONDS)
+    )
+    assert holder.raised is None
+    assert readmissions == ["admitted again"]
+    assert gate.active_ticket_count() == 0
+
+
+def test_a_thread_holding_a_ticket_is_admitted_again_while_another_thread_closes_and_drains_the_gate() -> None:
+    """
+    A thread that holds a ticket passes `admit_ticket` again while another thread's `close_and_wait_until_free` has
+    closed the gate terminally; a thread without a ticket is still refused; once the holder released everything, the
+    closer returns.
+
+    Purpose:
+        A removal closes the gate for good and waits for the threads inside; they must be able to finish their nested
+        work and leave, while newcomers are refused.
+
+    Symptom (GitHub #274, step 3): `admit_ticket` raised "RiftGate is closed." for the ticket holder too.
+
+    Returns:
+        None.
+    """
+    gate = RiftGate()
+    admitted = threading.Event()
+    go_again = threading.Event()
+    readmissions: List[str] = []
+
+    def hold_then_enter_again() -> None:
+        """Take a ticket, wait for the go-ahead, try to take it again, then release every ticket taken."""
+        gate.admit_ticket()
+        tickets_taken = 1
+        admitted.set()
+        _Bound.wait(go_again, "The test's go-ahead once the gate is closed")
+        try:
+            gate.admit_ticket()
+            tickets_taken += 1
+            readmissions.append("admitted again")
+        except RuntimeError as error:
+            readmissions.append("raised RuntimeError({0!r})".format(str(error)))
+        for _ in range(tickets_taken):
+            gate.unregister_ticket()
+
+    holder = _Worker("holder", hold_then_enter_again)
+    closer = _Worker(
+        "closer",
+        lambda: gate.close_and_wait_until_free(
+            timeout=_Bound.BOUND_SECONDS,
+            interval=_Bound.DRAIN_INTERVAL_SECONDS,
+        ),
+    )
+    newcomers: List[_Worker] = []
+    try:
+        holder.start()
+        _Bound.wait(admitted, "The holder taking its ticket")
+        closer.start()
+        _Bound.wait_until(gate.is_closed, "The closer closing the gate")
+        newcomer = _Worker("newcomer", gate.admit_ticket)
+        newcomers.append(newcomer)
+        newcomer.start()
+        newcomer.finished_within(_Bound.PROMPT_SECONDS)
+    finally:
+        go_again.set()
+    holder_finished = holder.finished_within(_Bound.BOUND_SECONDS)
+    closer_finished = closer.finished_within(_Bound.BOUND_SECONDS)
+
+    assert not newcomers[0].thread.is_alive() and isinstance(newcomers[0].raised, RuntimeError), (
+        "A thread without a ticket was not refused at once by the closed gate: it {0}.".format(
+            "was still running" if newcomers[0].thread.is_alive() else "raised {0!r}".format(newcomers[0].raised)
+        )
+    )
+    assert holder_finished
+    assert holder.raised is None
+    assert readmissions == ["admitted again"], (
+        "A thread holding a ticket {0} while another thread's close_and_wait_until_free drained the gate: it must "
+        "pass so it can finish and leave.".format(readmissions)
+    )
+    assert closer_finished, "close_and_wait_until_free did not return after the holder released its tickets."
+    assert closer.raised is None
+    assert gate.is_closed() is True
+    assert gate.active_ticket_count() == 0
+
+
+def test_the_gate_counts_a_thread_admitted_twice_as_one_ticket() -> None:
+    """
+    One thread admitted twice counts as one active ticket; the paired releases bring the count back to zero.
+
+    Purpose:
+        The gate counts threads inside, not calls in flight, so a nested call does not look like a second thread to a
+        drain.
+
+    Symptom (GitHub #274, step 3): every `admit_ticket` appended a ticket, so one thread admitted twice counted 2.
+
+    Returns:
+        None.
+    """
+    gate = RiftGate()
+    gate.admit_ticket()
+    gate.admit_ticket()
+    try:
+        count_while_inside = gate.active_ticket_count()
+    finally:
+        gate.unregister_ticket()
+        gate.unregister_ticket()
+
+    assert count_while_inside == 1, (
+        "One thread admitted twice counted {0} active tickets: the gate counted calls, not threads.".format(
+            count_while_inside
+        )
+    )
+    assert gate.active_ticket_count() == 0
+
+
+def test_a_thread_holding_a_ticket_closes_and_drains_the_gate_without_waiting_for_itself() -> None:
+    """
+    A thread holding a ticket calls `close_and_wait_until_free`: it returns promptly, not counting its own ticket, and
+    the gate is closed.
+
+    Purpose:
+        An agent that removes its own Rift from inside one of that Rift's calls drains a gate it is inside; waiting for
+        its own ticket would wait out the whole timeout and then refuse.
+
+    Symptom (GitHub #274, step 3): the drain counted the caller's own ticket and raised the timeout RuntimeError.
+
+    Returns:
+        None.
+    """
+    gate = RiftGate()
+    gate.admit_ticket()
+    drain_errors: List[RuntimeError] = []
+    started = time.monotonic()
+    try:
+        gate.close_and_wait_until_free(
+            timeout=_Bound.SELF_DRAIN_TIMEOUT_SECONDS,
+            interval=_Bound.DRAIN_INTERVAL_SECONDS,
+        )
+    except RuntimeError as error:
+        drain_errors.append(error)
+    drain_seconds = time.monotonic() - started
+    gate.unregister_ticket()
+
+    assert drain_errors == [], (
+        "close_and_wait_until_free raised {0!r} after {1:.2f} s on a thread holding a ticket: it waited for the "
+        "closing thread's own ticket.".format(drain_errors, drain_seconds)
+    )
+    assert drain_seconds < _Bound.SELF_DRAIN_PROMPT_SECONDS
+    assert gate.is_closed() is True
+    assert gate.active_ticket_count() == 0
+
+
+def test_releasing_a_ticket_after_the_gate_was_cleaned_is_a_no_op() -> None:
+    """
+    A ticket released after the gate was cleaned raises nothing.
+
+    Purpose:
+        A thread that was inside when its Rift was torn down - its own removal, or a cleanup that gave up waiting -
+        still releases its ticket on the way out; that release must be quiet.
+
+    Symptom (GitHub #274, step 3): `unregister_ticket` raised the cleaned RuntimeError.
+
+    Returns:
+        None.
+    """
+    gate = RiftGate()
+    gate.admit_ticket()
+    gate.cleanup()
+    release_errors: List[RuntimeError] = []
+    try:
+        gate.unregister_ticket()
+    except RuntimeError as error:
+        release_errors.append(error)
+
+    assert release_errors == [], "Releasing a ticket after cleanup raised {0!r}.".format(release_errors)
+    assert gate.cleaned is True
+================================================================================
+END FILE: tests/unit/melder/aether/test_rift_gate_thread_tickets.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_rift_memory_system.py
@@ -287302,7 +289586,7 @@ END FILE: tests/unit/melder/aether/test_rift_runtime_contracts.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_rift_space.py
-CONTENT SHA256: e989ddd1ac957cf3ca74c46dc3da77e6dadad4acf1964f6922103eea61bccdef
+CONTENT SHA256: 28ad1585206e490f46b1709fb6fd452a2c9db7f88a1e67bcfea99321ff0f8ed1
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -287313,12 +289597,21 @@ from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
 def _make_detached_rift_projection_owner() -> object:
     class _DetachedRiftProjectionOwner:
+        def __init__(self) -> None:
+            # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
+            self._rift_gate = RiftGate()
+
+        @property
+        def rift_gate(self) -> RiftGate:
+            return self._rift_gate
+
         def _get_default_runtime_frame_name(self):
             return None
 
@@ -288659,17 +290952,26 @@ END FILE: tests/unit/melder/aether/test_static_frame_viewer.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_static_rift_space.py
-CONTENT SHA256: 4925732ca25767854f9d1c29539ecf0d575bc8f10be3d9ed941bced5e712dd80
+CONTENT SHA256: 41841abbef988b32e7ba0ad542ba69893403d30c77f725abfe60cec056331c91
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
 def _make_detached_rift_projection_owner() -> object:
     class _DetachedRiftProjectionOwner:
+        def __init__(self) -> None:
+            # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
+            self._rift_gate = RiftGate()
+
+        @property
+        def rift_gate(self) -> RiftGate:
+            return self._rift_gate
+
         def _get_default_runtime_frame_name(self):
             return None
 
@@ -292928,8 +295230,295 @@ def test_descent_on_walks_the_site_package_interior(
 END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py
+CONTENT SHA256: 9d2d0c2a57b2886c1e03cd32022f6f585385f865288fedc49cd1a787bfbb506a
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for one CrystalAnalyzer pass asking each module question once (#327, fix B).
+
+Purpose:
+    Pin that one `analyze_spell_root` pass resolves each distinct module's path once and runs the custody chain
+    once per distinct module, however many modules import it, and that the next pass asks again: the analyzer
+    stays current on every analysis (the owner kept that contract on 2026-11-16). Also pin the environment roots
+    the analyzer hands to user-source custody (fix A).
+
+Runs only on 3.14t (melder package root import chain).
+"""
+import sys
+from collections import Counter
+from pathlib import Path
+from typing import Any, Iterator, Optional, Tuple
+
+import pytest
+
+from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
+    CrystalAnalysisResult,
+)
+from melder.crystallizer.crystal_analysis.crystal_analyzer import CrystalAnalyzer
+from melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy import (
+    SyntheticCustodyStrategy,
+)
+
+
+class FanInNames:
+    """
+    Module names of the fan-in world, unique to this file.
+
+    Contract:
+        - `ROOT` imports every branch and `SHARED`; every branch imports `SHARED`, so `SHARED` has four importers.
+        - All are top-level modules: resolving one never imports a package, so every import edge sees the same
+          module object (None, nothing is imported) for a given name.
+    """
+
+    ROOT: str = "p327_fanin_root"
+    BRANCHES: Tuple[str, ...] = ("p327_fanin_a", "p327_fanin_b", "p327_fanin_c")
+    SHARED: str = "p327_fanin_shared"
+
+    @staticmethod
+    def all_names() -> Tuple[str, ...]:
+        """
+        Return every module name the fan-in world writes.
+
+        Returns:
+            Tuple[str, ...]: Names to evict from `sys.modules` around each test.
+        """
+        return (FanInNames.ROOT, FanInNames.SHARED) + FanInNames.BRANCHES
+
+    @staticmethod
+    def imported_names() -> Tuple[str, ...]:
+        """
+        Return the names some module of the world imports (every name but the root).
+
+        Returns:
+            Tuple[str, ...]: The branches and the shared module.
+        """
+        return FanInNames.BRANCHES + (FanInNames.SHARED,)
+
+
+@pytest.fixture()
+def fan_in_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+    """
+    Write the fan-in world on disk and put it on `sys.path` for the test only.
+
+    Yields:
+        Path: The resolved directory holding the world, used as the user source root.
+    """
+    shared_import = "import {0}\n".format(FanInNames.SHARED)
+    for branch in FanInNames.BRANCHES:
+        (tmp_path / "{0}.py".format(branch)).write_text(shared_import, encoding="utf-8")
+    (tmp_path / "{0}.py".format(FanInNames.SHARED)).write_text("VALUE = 1\n", encoding="utf-8")
+    root_source = "".join("import {0}\n".format(branch) for branch in FanInNames.BRANCHES) + shared_import
+    (tmp_path / "{0}.py".format(FanInNames.ROOT)).write_text(root_source, encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for module_name in FanInNames.all_names():
+        sys.modules.pop(module_name, None)
+    yield tmp_path.resolve()
+    for module_name in FanInNames.all_names():
+        sys.modules.pop(module_name, None)
+
+
+@pytest.fixture()
+def resolve_counts(monkeypatch: pytest.MonkeyPatch) -> Counter:
+    """
+    Count `CrystalAnalyzer.resolve_module_path` calls per module name, delegating to the real resolver.
+
+    Returns:
+        Counter: Calls per module name, filled while the test runs.
+    """
+    counts: Counter = Counter()
+    original = CrystalAnalyzer.resolve_module_path
+
+    def counting_resolve(module_name: str, module_obj: Optional[Any]) -> Optional[Path]:
+        """Record one resolution of `module_name`, then resolve it for real."""
+        counts[module_name] += 1
+        return original(module_name, module_obj)
+
+    monkeypatch.setattr(CrystalAnalyzer, "resolve_module_path", staticmethod(counting_resolve))
+    return counts
+
+
+@pytest.fixture()
+def custody_counts(monkeypatch: pytest.MonkeyPatch) -> Counter:
+    """
+    Count custody-chain runs per module name through the chain's first strategy, which every run consults.
+
+    Returns:
+        Counter: Synthetic-custody `matches` calls per module name, filled while the test runs.
+    """
+    counts: Counter = Counter()
+    original = SyntheticCustodyStrategy.matches
+
+    def counting_matches(
+            self: SyntheticCustodyStrategy,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> bool:
+        """Record one custody question about `module_name`, then answer it for real."""
+        counts[module_name] += 1
+        return original(self, module_name=module_name, module_obj=module_obj, module_path=module_path)
+
+    monkeypatch.setattr(SyntheticCustodyStrategy, "matches", counting_matches)
+    return counts
+
+
+def _new_analyzer(world: Path) -> CrystalAnalyzer:
+    """
+    Build an analyzer whose only user root is the fan-in world.
+
+    Args:
+        world: The resolved world directory.
+
+    Returns:
+        CrystalAnalyzer: A fresh analyzer; the caller cleans it.
+    """
+    return CrystalAnalyzer(user_source_root_paths=(world,), site_package_root_paths=())
+
+
+def _analyze(analyzer: CrystalAnalyzer, world: Path) -> CrystalAnalysisResult:
+    """
+    Run one pass over the fan-in world from its root module, from disk truth.
+
+    Args:
+        analyzer: The analyzer to run.
+        world: The resolved world directory.
+
+    Returns:
+        CrystalAnalysisResult: The pass's result; the caller cleans it.
+    """
+    return analyzer.analyze_spell_root(
+        root_module_name=FanInNames.ROOT,
+        root_module_obj=None,
+        root_module_path=world / "{0}.py".format(FanInNames.ROOT),
+    )
+
+
+def test_one_pass_resolves_each_imported_module_once_however_many_modules_import_it(
+        fan_in_world: Path,
+        resolve_counts: Counter,
+) -> None:
+    """
+    Contract: within one pass the shared module, imported from four places, has its path resolved once, and so
+    does every branch - the per-edge repetition #327 measured is gone.
+    """
+    analyzer = _new_analyzer(fan_in_world)
+    try:
+        result = _analyze(analyzer, fan_in_world)
+    finally:
+        analyzer.cleanup()
+    try:
+        assert dict(resolve_counts) == {name: 1 for name in FanInNames.imported_names()}
+    finally:
+        result.cleanup()
+
+
+def test_one_pass_runs_the_custody_chain_once_per_module(
+        fan_in_world: Path,
+        custody_counts: Counter,
+) -> None:
+    """
+    Contract: within one pass every module is classified once - the root (asked for its kind and again by the
+    walk) and the shared module (asked by four importers and by its own walk step) included.
+    """
+    analyzer = _new_analyzer(fan_in_world)
+    try:
+        result = _analyze(analyzer, fan_in_world)
+    finally:
+        analyzer.cleanup()
+    try:
+        assert dict(custody_counts) == {name: 1 for name in FanInNames.all_names()}
+    finally:
+        result.cleanup()
+
+
+def test_one_pass_still_records_every_import_edge_and_fingerprint(fan_in_world: Path) -> None:
+    """
+    Contract: asking once per module changes nothing in the result - every importer keeps its edge to the shared
+    module in import order, every module is user source, and every module is fingerprinted.
+    """
+    analyzer = _new_analyzer(fan_in_world)
+    try:
+        result = _analyze(analyzer, fan_in_world)
+    finally:
+        analyzer.cleanup()
+    try:
+        dependencies = dict(result.module_to_direct_dependencies)
+        assert dependencies[FanInNames.ROOT] == list(FanInNames.imported_names())
+        for branch in FanInNames.BRANCHES:
+            assert dependencies[branch] == [FanInNames.SHARED]
+        assert dependencies[FanInNames.SHARED] == []
+        assert set(result.module_to_kind.values()) == {"user_source"}
+        assert set(result.physical_module_fingerprints) == set(FanInNames.all_names())
+    finally:
+        result.cleanup()
+
+
+def test_every_new_analysis_resolves_and_classifies_again(
+        fan_in_world: Path,
+        resolve_counts: Counter,
+        custody_counts: Counter,
+) -> None:
+    """
+    Contract: nothing is kept between analyses - a second analyzer over the unchanged world asks every question
+    again, so each answer is current for its own pass.
+    """
+    for _ in range(2):
+        analyzer = _new_analyzer(fan_in_world)
+        try:
+            result = _analyze(analyzer, fan_in_world)
+        finally:
+            analyzer.cleanup()
+        result.cleanup()
+    assert resolve_counts[FanInNames.SHARED] == 2
+    assert custody_counts[FanInNames.SHARED] == 2
+
+
+def test_a_reused_analyzer_starts_every_pass_with_nothing_remembered(
+        fan_in_world: Path,
+        resolve_counts: Counter,
+        custody_counts: Counter,
+) -> None:
+    """
+    Contract: even when one analyzer runs two passes (single use is a convention), the second pass resolves and
+    classifies again rather than reusing the first pass's answers.
+    """
+    analyzer = _new_analyzer(fan_in_world)
+    try:
+        first = _analyze(analyzer, fan_in_world)
+        second = _analyze(analyzer, fan_in_world)
+    finally:
+        analyzer.cleanup()
+    try:
+        assert resolve_counts[FanInNames.SHARED] == 2
+        assert custody_counts[FanInNames.SHARED] == 2
+        assert dict(second.module_to_direct_dependencies) == dict(first.module_to_direct_dependencies)
+    finally:
+        first.cleanup()
+        second.cleanup()
+
+
+def test_environment_roots_are_the_site_roots_then_the_interpreter_prefixes(tmp_path: Path) -> None:
+    """
+    Contract (#327 fix A): the roots that are never user source are the given site roots, in order, followed by
+    the running interpreter's `sys.prefix`, `sys.base_prefix` and `sys.exec_prefix`, resolved and without
+    duplicates.
+    """
+    site_root = (tmp_path / "site").resolve()
+
+    roots = CrystalAnalyzer.resolve_environment_root_paths((site_root, site_root))
+
+    assert roots[0] == site_root
+    for prefix in (sys.prefix, sys.base_prefix, sys.exec_prefix):
+        assert Path(prefix).resolve() in roots
+    assert len(roots) == len(set(roots))
+================================================================================
+END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py
-CONTENT SHA256: 161b05845b368c0fc7d13f92e56bf7f6bc6f6b5bb0d9b145c57f1b14124fd6c1
+CONTENT SHA256: f39c9ec7955ca16d5b4e710acc213d3d5563582fda63eea943dffe2cf4d439c3
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -292937,20 +295526,19 @@ Characterization tests for the Crystallizer's custody boundary (core-protection 
 
 Purpose:
     Pin how the analyzer decides which modules are the user's own source and which are installed
-    packages, and how far it walks into each, so that a change made after the owner's answer to the
-    review's open question on root precedence (is a virtual environment inside the user root meant to
-    count as user source?) has to update these tests on purpose. They describe today's behaviour; they
-    do not claim it is the intended policy.
+    packages, and how far it walks into each. The review left one question open on root precedence (is a
+    virtual environment inside the user root meant to count as user source?); the owner answered it on
+    2026-11-16 (#327): the environment wins. These tests moved to that answer on purpose.
 
 Contract pinned here:
-    - The custody chain tries user roots before site roots, so an environment nested inside a user root
-      classifies as user source, is walked and is fingerprinted, whatever the descent setting says.
-    - With a user root that excludes the environment, an installed package is a site-package leaf:
-      recorded, never fingerprinted, and walked into only when descent is on.
-    - Retained user source text follows the same classification.
+    - An environment nested inside a user root is never user source: its installed package classifies as
+      a site package, is never fingerprinted, and is walked into only when descent is on - the same as
+      when the user root excludes the environment.
+    - Retained user source text follows the classification, so no installed package's text is retained.
     - User roots classify modules; they never make a module importable.
     - `CrystallizerConfiguration.with_defaults()` takes the working directory as the user root and
-      turns descent off.
+      turns descent off; run from a project with a `.venv` inside it, the environment stays a site
+      package.
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -293092,27 +295680,35 @@ def _analyze_app(
 
 
 @pytest.mark.parametrize("descent", [False, True])
-def test_environment_nested_in_the_user_root_is_user_source_whatever_the_descent_setting(
+def test_environment_nested_in_the_user_root_classifies_as_site_packages(
         nested_venv_project: Tuple[Path, Path, Path],
         descent: bool,
 ) -> None:
     """
-    Contract: with the project directory as the user root, the installed package and its own
-    dependency classify as user source, the walk enters the package, and both get physical
-    fingerprints - the descent setting never applies because nothing reaches the site-package rung.
+    Contract: with the project directory as the user root, the project's module is user source and
+    fingerprinted, while the installed package in the project's `.venv` is a site package with no
+    fingerprint - the environment wins over the user root. Descent decides whether the walk enters the
+    package: off, it is a leaf and its dependency is never recorded; on, its dependency records as a
+    site package, also unfingerprinted.
     """
     project_root, source_root, site_root = nested_venv_project
 
     result = _analyze_app(source_root, site_root, (project_root,), descent=descent)
     try:
         kinds = dict(result.module_to_kind)
-        assert kinds[CustodyNames.PACKAGE] == "user_source"
-        assert kinds[CustodyNames.DEPENDENCY] == "user_source"
+        assert kinds[CustodyNames.APP] == "user_source"
+        assert kinds[CustodyNames.PACKAGE] == "site_package"
         dependencies = dict(result.module_to_direct_dependencies)
-        assert CustodyNames.DEPENDENCY in dependencies[CustodyNames.PACKAGE]
+        if descent:
+            assert kinds[CustodyNames.DEPENDENCY] == "site_package"
+            assert CustodyNames.DEPENDENCY in dependencies[CustodyNames.PACKAGE]
+        else:
+            assert dependencies[CustodyNames.PACKAGE] == []
+            assert CustodyNames.DEPENDENCY not in kinds
         fingerprints = dict(result.physical_module_fingerprints)
-        assert CustodyNames.PACKAGE in fingerprints
-        assert CustodyNames.DEPENDENCY in fingerprints
+        assert CustodyNames.APP in fingerprints
+        assert CustodyNames.PACKAGE not in fingerprints
+        assert CustodyNames.DEPENDENCY not in fingerprints
     finally:
         result.cleanup()
 
@@ -293162,22 +295758,15 @@ def test_descent_walks_the_excluded_environment_as_site_packages_without_fingerp
         result.cleanup()
 
 
-@pytest.mark.parametrize(
-    ("root_choice", "package_text_retained"),
-    [
-        ("project", True),
-        ("source", False),
-    ],
-)
+@pytest.mark.parametrize("root_choice", ["project", "source"])
 def test_retained_user_source_follows_the_root_classification(
         nested_venv_project: Tuple[Path, Path, Path],
         root_choice: str,
-        package_text_retained: bool,
 ) -> None:
     """
     Contract: with retention on, the record keeps the text of every module classified as user
-    source - the installed package's text too when the environment is inside the user root, and
-    only the project's own module when it is not.
+    source - the project's own module, and never the installed package, whether or not the
+    environment sits inside the user root.
     """
     project_root, source_root, site_root = nested_venv_project
     user_root = project_root if root_choice == "project" else source_root
@@ -293186,10 +295775,7 @@ def test_retained_user_source_follows_the_root_classification(
     try:
         retained = result.user_module_sources
         assert "class AppService" in str(retained[CustodyNames.APP]["source_text"])
-        assert (CustodyNames.PACKAGE in retained) is package_text_retained
-        if package_text_retained:
-            package_text = str(retained[CustodyNames.PACKAGE]["source_text"])
-            assert "import {0}".format(CustodyNames.DEPENDENCY) in package_text
+        assert CustodyNames.PACKAGE not in retained
     finally:
         result.cleanup()
 
@@ -293239,8 +295825,8 @@ def test_with_defaults_takes_the_working_directory_as_the_user_root_and_turns_de
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Contract: the default configuration's user root is the resolved working directory - so a
-    `.venv` inside it is user source under the defaults - with descent off and no text retained.
+    Contract: the default configuration's user root is the resolved working directory, with descent
+    off and no text retained.
     """
     monkeypatch.chdir(tmp_path)
 
@@ -293253,14 +295839,15 @@ def test_with_defaults_takes_the_working_directory_as_the_user_root_and_turns_de
         configuration.cleanup()
 
 
-def test_default_configuration_classifies_a_working_directory_venv_as_user_source(
+def test_default_configuration_classifies_a_working_directory_venv_as_a_site_package(
         nested_venv_project: Tuple[Path, Path, Path],
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Contract: run from the project directory, the policy `with_defaults()` produces - working
-    directory as user root, descent off - classifies the nested environment's package as user
-    source and fingerprints it, which is the case the review's root-precedence question is about.
+    directory as user root, descent off - records the nested environment's package as an
+    unfingerprinted site-package leaf: the case the review's root-precedence question was about,
+    answered by the owner on 2026-11-16 (#327).
     """
     project_root, source_root, site_root = nested_venv_project
     monkeypatch.chdir(project_root)
@@ -293273,8 +295860,9 @@ def test_default_configuration_classifies_a_working_directory_venv_as_user_sourc
 
     result = _analyze_app(source_root, site_root, user_roots, descent=descent)
     try:
-        assert dict(result.module_to_kind)[CustodyNames.PACKAGE] == "user_source"
-        assert CustodyNames.PACKAGE in dict(result.physical_module_fingerprints)
+        assert dict(result.module_to_kind)[CustodyNames.PACKAGE] == "site_package"
+        assert dict(result.module_to_direct_dependencies)[CustodyNames.PACKAGE] == []
+        assert CustodyNames.PACKAGE not in dict(result.physical_module_fingerprints)
     finally:
         result.cleanup()
 ================================================================================
@@ -293282,7 +295870,7 @@ END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_custody_strategies.py
-CONTENT SHA256: 2a23ac671b6024599dc892457f7556c9db188ac1e64011228e9f16c0376da9df
+CONTENT SHA256: 01583256e0bffe82368538e897b4c82b7c9ae8fe8a3073e5fd92f4365f3e040a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -293292,6 +295880,9 @@ source resolution honesty, fingerprint claims, and descent law.
 Runs only on 3.14t (melder package root import chain).
 """
 import hashlib
+from pathlib import Path
+
+import pytest
 
 from melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy import (
     BinaryUnknownCustodyStrategy,
@@ -293525,6 +296116,72 @@ def test_physical_read_and_fingerprint_claim_contract_mirrors():
         site.cleanup()
         synthetic.cleanup()
         unknown.cleanup()
+
+
+def _write_module(module_file: Path) -> Path:
+    """
+    Write one small importable-looking module file, creating its directories.
+
+    Args:
+        module_file: Where the module goes.
+
+    Returns:
+        Path: The same path, now holding `VALUE = 1`.
+    """
+    module_file.parent.mkdir(parents=True, exist_ok=True)
+    module_file.write_text("VALUE = 1\n", encoding="utf-8")
+    return module_file
+
+
+def test_user_source_never_claims_a_module_under_an_environment_root(tmp_path: Path) -> None:
+    """
+    Contract (the owner's answer to the review's root-precedence question, 2026-11-16, #327): an environment
+    wins over a user root - a module under one of the strategy's environment roots is never user source, even
+    when that root sits inside a user root, while a module elsewhere under the user root still is.
+    """
+    project_root = (tmp_path / "project").resolve()
+    environment_root = project_root / ".venv"
+    installed = _write_module(environment_root / "lib" / "installed_module.py")
+    owned = _write_module(project_root / "src" / "owned_module.py")
+    strategy = UserSourceCustodyStrategy((project_root,), environment_root_paths=(environment_root,))
+    try:
+        assert not strategy.matches(module_name="installed_module", module_obj=None, module_path=installed)
+        assert strategy.matches(module_name="owned_module", module_obj=None, module_path=owned)
+    finally:
+        strategy.cleanup()
+
+
+def test_environment_wins_even_over_a_user_root_configured_inside_it(tmp_path: Path) -> None:
+    """
+    Contract: a user root that lies inside an environment claims nothing there - the environment wins whichever
+    root is more specific.
+    """
+    environment_root = (tmp_path / "env").resolve()
+    package_root = environment_root / "lib" / "mypkg"
+    module_file = _write_module(package_root / "core.py")
+    strategy = UserSourceCustodyStrategy((package_root,), environment_root_paths=(environment_root,))
+    try:
+        assert not strategy.matches(module_name="mypkg.core", module_obj=None, module_path=module_file)
+    finally:
+        strategy.cleanup()
+
+
+@pytest.mark.parametrize("directory_name", ["site-packages", "dist-packages", "Site-Packages"])
+def test_user_source_never_claims_a_module_in_a_site_packages_directory(
+        tmp_path: Path,
+        directory_name: str,
+) -> None:
+    """
+    Contract: a module inside a directory named site-packages or dist-packages, in any letter case, is never user
+    source even with no environment roots given - a second environment inside the project is caught by name.
+    """
+    project_root = (tmp_path / "project").resolve()
+    module_file = _write_module(project_root / ".venv_old" / "lib" / directory_name / "vendored.py")
+    strategy = UserSourceCustodyStrategy((project_root,))
+    try:
+        assert not strategy.matches(module_name="vendored", module_obj=None, module_path=module_file)
+    finally:
+        strategy.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_custody_strategies.py
 ================================================================================
@@ -300866,7 +303523,7 @@ END FILE: tests/unit/melder/crystallizer/persistence/test_persistence_twins.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/persistence/test_record_version_and_json_contract.py
-CONTENT SHA256: 2d2cbe7ac76ecdd3bda1ce4ab1e257259bb8087668488e126aa078be46fcf304
+CONTENT SHA256: 3f7b4507470258838cc68343ed4d7eabe50c1bfaf5e7cb5ed240fd89a6b6f4d8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -300930,12 +303587,13 @@ def test_record_version_parses_and_defaults():
 
 def test_record_version_stamp_and_gate():
     """
-    Contract: stamp writes CURRENT (5.0.0) under the shared key; the read
-    gate passes the current major at any minor and refuses a NEWER major
-    with the upgrade instruction. An older major is refused too (next test).
+    Contract: stamp writes CURRENT (5.0.1 since the custody note of #327)
+    under the shared key; the read gate passes the current major at any
+    minor and refuses a NEWER major with the upgrade instruction. An older
+    major is refused too (next test).
     """
     stamped = RecordVersion.stamp({"anything": 1})
-    assert stamped[RecordVersion.KEY] == RecordVersion.CURRENT == "5.0.0"
+    assert stamped[RecordVersion.KEY] == RecordVersion.CURRENT == "5.0.1"
 
     RecordVersion.check_readable(stamped, "self-stamped artifact")
     RecordVersion.check_readable(
@@ -304607,7 +307265,7 @@ END FILE: tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py
-CONTENT SHA256: 73b81875aa44135d97bc24d87c1c5d43d0af0e1b88c0f5f59d9c4a4793e88d46
+CONTENT SHA256: 01fc5e53a934656c450c4e894b819b674a85627ad40277187303071aba36cb5b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -304757,14 +307415,16 @@ def test_record_version_is_5_0_and_refuses_the_4_x_records_that_carried_the_opti
     """
     4.2.0 added the managed options and 4.3.0 the binding hash (minors). 5.0.0 refuses every 4.x record (the owner's
     call, 2026-10-25: a record made before every version of an index shared its binding cannot promise it), so the
-    options are read from 5.x records only.
+    options are read from 5.x records only. 5.0.1 (a patch, #327) notes the custody change of 2026-11-16 and leaves
+    5.0.0 records readable.
     """
-    assert RecordVersion.CURRENT == "5.0.0"
+    assert RecordVersion.CURRENT == "5.0.1"
     for older in ("4.1.0", "4.2.0", "4.3.0"):
         with pytest.raises(ValueError, match=r"older than the oldest this melder reads \(5\.0\.0\)"):
             RecordVersion.check_readable({RecordVersion.KEY: older}, "older record")
-    RecordVersion.check_readable({RecordVersion.KEY: "5.0.0"}, "current record")
-    with pytest.raises(ValueError, match="newer than this code's 5.0.0"):
+    RecordVersion.check_readable({RecordVersion.KEY: "5.0.0"}, "record from before the custody note")
+    RecordVersion.check_readable({RecordVersion.KEY: "5.0.1"}, "current record")
+    with pytest.raises(ValueError, match="newer than this code's 5.0.1"):
         RecordVersion.check_readable({RecordVersion.KEY: "6.0.0"}, "future record")
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py
@@ -316764,7 +319424,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
-CONTENT SHA256: 0bcfa09c7a320db1b6891608cb01e1478a9499c76999e2ed704ec909af686df3
+CONTENT SHA256: cc9a5f60fcf84b39d23cd896e81cf9424b12622d5b2a26645c0998a8e87dec85
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 3 local DAG build."""
@@ -318233,10 +320893,12 @@ def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an
     assert text.endswith(f" SpellMapTarget is bound only where this class lookup does not reach: {entry}.")
 
 
-def test_resolve_spellmap_default_misses_that_are_not_hidden_providers_raise_as_before() -> None:
+def test_resolve_spellmap_default_plain_misses_wait_in_phase_3_and_raise_for_direct_callers() -> None:
     """
-    Only the class-lookup form with X registered elsewhere is recorded: X bound nowhere, and a frame-named SpellMap
-    that misses, raise the RuntimeError unchanged (the owner's D4) and leave `hidden_out` empty.
+    X bound nowhere, and a frame-named SpellMap that misses, are no hidden providers. Phase 3's own call (with
+    `hidden_out`) returns an empty mapping and leaves `hidden_out` empty, so the socket waits as an unresolved input
+    (2026-11-16, GitHub #329; under the owner's D4 of 2026-11-07 both raised here). A direct caller without
+    `hidden_out` still gets the RuntimeError, unchanged.
     """
     elsewhere = _make_spell_stub("elsewhere", spell_obj=SpellMapTarget, spellframe="tools",
                                  spell_name="SpellMapTarget")
@@ -318248,12 +320910,13 @@ def test_resolve_spellmap_default_misses_that_are_not_hidden_providers_raise_as_
     ):
         dep = _make_dependency(spell_id="root", param_name="provider", position=0,
                                di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=spellmap)
+        spellbook = SimpleNamespace(_spell_id_pool=pool)
         hidden_out: list = []
-        with pytest.raises(RuntimeError) as caught:
-            phase._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool=pool), dep,
-                                            hidden_out=hidden_out)
-        assert str(caught.value).endswith(f"SpellMap={spellmap!r}.")
+        assert phase._resolve_spellmap_default(root_spell, spellbook, dep, hidden_out=hidden_out) == {}
         assert hidden_out == []
+        with pytest.raises(RuntimeError) as caught:
+            phase._resolve_spellmap_default(root_spell, spellbook, dep)
+        assert str(caught.value).endswith(f"SpellMap={spellmap!r}.")
 
 
 def test_resolve_spellmap_default_explicit_spell_with_its_spellframe_is_unchanged() -> None:
@@ -355500,7 +358163,7 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_p
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_required_holes_strategy.py
-CONTENT SHA256: 7b59552b0f6294ae478ad3d97f3551070397dfdb4e47bfccf574262bbcd68073
+CONTENT SHA256: cc9ea5b085a7e7af8d4145a0c0b173bc67c564085e1845e97d6e9b960c68a04d
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Iterable, List, Optional
@@ -355508,6 +358171,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
@@ -356052,13 +358716,51 @@ def test_hidden_provider_socket_is_not_also_reported_as_an_unresolved_input_warn
     spell._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: topology)
     requirements = SimpleNamespace(
         iter_required_holes=lambda: iter(()),
-        parameters=[SimpleNamespace(name="greeter", annotation=object), SimpleNamespace(name="other", annotation=_Missing)],
+        parameters=[
+            SimpleNamespace(name="greeter", annotation=object, spellmap_default=None),
+            SimpleNamespace(name="other", annotation=_Missing, spellmap_default=None),
+        ],
     )
     issues: List[SpellValidationIssue] = []
 
     RequiredHolesStrategy().validate(_make_context(spell=spell, requirements=requirements, issues=issues))
 
     assert [(issue.code, issue.details["parameter_name"]) for issue in issues] == [("UNRESOLVED_INPUT", "other")]
+
+
+def test_unresolved_spellmap_socket_warning_names_its_spellmap() -> None:
+    """
+    An UNRESOLVED_INPUT socket whose parameter defaults to a SpellMap (GitHub #329: a SpellMap that matches nothing
+    waits instead of failing) is reported by that SpellMap as written - the address it asks for - not by an
+    annotation, and the warning asks for a spell at that address.
+    """
+    spell_map = SpellMap(spellframe="spectrum", binding_name="ServiceBuilder")
+    topology = SpellLocalTopology("consumer", [
+        SpellSocketDescriptor(
+            spell_id="consumer", param_name="service_builder", position=0, socket_kind=SocketKind.UNRESOLVED_INPUT,
+            is_collection=False, is_optional=False, target_spell_ids=(), dependency_key=spell_map.canonical_key,
+        ),
+    ])
+    spell = _SpellStub("SpectrumBuilders")
+    spell.spell_id = "consumer"
+    spell._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: topology)
+    requirements = SimpleNamespace(
+        iter_required_holes=lambda: iter(()),
+        parameters=[SimpleNamespace(name="service_builder", annotation=Any, spellmap_default=spell_map)],
+    )
+    issues: List[SpellValidationIssue] = []
+
+    RequiredHolesStrategy().validate(_make_context(spell=spell, requirements=requirements, issues=issues))
+
+    assert [(issue.code, issue.message, issue.details["expected_type"]) for issue in issues] == [(
+        "UNRESOLVED_INPUT",
+        "Parameter 'service_builder' on spell 'SpectrumBuilders' asks for the spell its default "
+        "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder') names, but nothing is bound there. Supply it "
+        "through a meld override (key 'service_builder', or a path key ending in '>service_builder' when this spell is "
+        "built as a dependency) or bind a spell at that address. Constructing this spell without it raises "
+        "UnresolvedInputError.",
+        "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')",
+    )]
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_required_holes_strategy.py
 ================================================================================
@@ -374623,11 +377325,51 @@ END FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook_snapshot.py
-CONTENT SHA256: 803db8a87ad0c7f4139472ba24ed92347d41c63eef5adb5c22db83a0fb2963b9
+CONTENT SHA256: 9771548e9ccf3e0de94cfeca5416dcaf736e337980e67ffa64d7ee25db8eb937
 SOURCE ENCODING: utf-8
 ================================================================================
+from collections.abc import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.spellbook.existence.existence import Existence
+
+
+def _install_fresh_aether() -> None:
+    """
+    Purpose:
+        Install a fresh Aether singleton for Spellbook and Conduit.
+    Contract:
+        - Resets the Aether singleton (which cleans up the previous one and its Nexus), creates a new one - and with
+          it the Nexus that `Spellbook()` reaches through `Nexus()` - and binds Spellbook._aether and
+          Conduit._aether to it.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> Iterator[None]:
+    """
+    Purpose:
+        Isolate each test from the Aether and Nexus singletons an earlier test in the same worker left behind.
+    Contract:
+        - Installs a fresh Aether before the test and again after it. Without this, a preceding teardown that reset
+          the singletons without re-creating them left no initialized Nexus, and `Spellbook()` raised ValueError
+          ("Nexus must be initialized with an Aether instance") in a parallel full run.
+    Returns:
+        Iterator[None]: Yields once, around the test.
+    """
+    _install_fresh_aether()
+    yield
+    _install_fresh_aether()
 
 
 def test_spellbook_snapshot_state_returns_detached_maps() -> None:
@@ -378640,7 +381382,7 @@ END FILE: tests/unit/melder/utilities/custom_exceptions/test_spellbook_validatio
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/custom_exceptions/test_unresolved_input_error.py
-CONTENT SHA256: 89b98c2089766ca229bf26ff247c9e8c8f6c9e5faf8339a0048c56d2edaa9eea
+CONTENT SHA256: d30665a1fec451616344ffebb321b1d9763028ca6d11fedb983f97329f3f629c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -378653,6 +381395,7 @@ from typing import Any, Dict, Optional, Protocol
 
 import pytest
 
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
@@ -378686,6 +381429,25 @@ class ByProtocol:
     """Consumer asking by the Protocol: a contract lookup, never a class lookup."""
 
     def __init__(self, greeter: Greeter) -> None:
+        """Hold it."""
+        self.greeter = greeter
+
+
+class SpectrumBuilders:
+    """Consumer asking for its builder by frame address through a SpellMap default annotated `Any`."""
+
+    def __init__(
+            self,
+            service_builder: Any = SpellMap(spellframe="spectrum", binding_name="ServiceBuilder"),
+    ) -> None:
+        """Hold it."""
+        self.service_builder = service_builder
+
+
+class ByClassMap:
+    """Consumer asking for English through the class form of a SpellMap, annotated with the class."""
+
+    def __init__(self, greeter: English = SpellMap(English)) -> None:
         """Hold it."""
         self.greeter = greeter
 
@@ -378780,6 +381542,36 @@ def test_stale_plan_still_raises_runtime_error() -> None:
     """Asking for a parameter the topology does not mark unresolved is a stale plan, as before."""
     with pytest.raises(RuntimeError, match="its plan is stale"):
         UnresolvedInputError.for_unsupplied(_consumer(Host, {}, "greeter"), ["missing"])
+
+
+def test_spellmap_parameter_names_its_spellmap_instead_of_an_annotation() -> None:
+    """
+    A parameter whose default is a SpellMap (GitHub #329) names that SpellMap as written - the address it asks for -
+    not its annotation (`Any` here) or the frame key, and the text asks for a spell at that address.
+    """
+    error = UnresolvedInputError.for_unsupplied(
+        _consumer(SpectrumBuilders, {}, "service_builder"), ["service_builder"])
+    assert str(error).endswith(
+        "SpectrumBuilders.service_builder asks for the spell its default SpellMap(spellframe='spectrum', "
+        "binding_name='ServiceBuilder') names, but nothing is bound there and this meld did not supply it. Supply it "
+        "with override={'service_builder': ...} when melding SpectrumBuilders, a path key ending in '>service_builder' "
+        "(or '**service_builder') when SpectrumBuilders is built as a dependency, or bind a spell at that address."
+    )
+    assert error.expected_type == "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')"
+    assert error.hidden_spell_ids == ()
+
+
+def test_class_form_spellmap_parameter_runs_no_class_lookup_search() -> None:
+    """
+    `SpellMap(English)` annotated `English`, with English bound only under a frame: the error names the SpellMap and
+    lists no hidden candidates - Phase 3 records the hidden-provider shape of a SpellMap itself, and a framed bind of
+    English re-gates the consumer into it, so the meld-time path does not repeat a class-lookup search.
+    """
+    pool = {"english-sid": _pooled("english-sid", Greeter, None)}
+    error = UnresolvedInputError.for_unsupplied(_consumer(ByClassMap, pool, "greeter"), ["greeter"])
+    assert error.expected_type == "SpellMap(English)"
+    assert "ByClassMap.greeter asks for the spell its default SpellMap(English) names" in str(error)
+    assert error.hidden_spell_ids == ()
 ================================================================================
 END FILE: tests/unit/melder/utilities/custom_exceptions/test_unresolved_input_error.py
 ================================================================================

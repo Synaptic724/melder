@@ -2,7 +2,8 @@
 
 > **Target:** `melder==0.2.50` · Python **3.14+**, preferably free-threaded · Reviewed **2026-09-26**.  
 > **Source pin:** `Synaptic724/melder`, commit `9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9` (`prod`).  
-> **Evidence:** operational sections of `src_architecture.md` and `src_components.md`, checked against public implementation and executable-example source. **Source-reviewed and Python-syntax-checked; not runtime-tested here.** This environment has Python 3.13 and blocked repository/package downloads; source was read through connected GitHub access, not a completed local clone. Matching version labels do not establish wheel/source byte equivalence. [A], [C], [V]
+> **Evidence:** operational sections of `src_architecture.md` and `src_components.md`, checked against public implementation and executable-example source. **Source-reviewed and Python-syntax-checked; not runtime-tested here.** This environment has Python 3.13 and blocked repository/package downloads; source was read through connected GitHub access, not a completed local clone. Matching version labels do not establish wheel/source byte equivalence. [A], [C], [V]  
+> **Updated 2026-11-09** for 0.2.8301 in §3, §4, §5, §13, §14, §15 and §16, checked against the current `src_architecture.md` and the public signatures in source; the §13 recipe was re-run on 3.14t with the GIL off and on. The rest is as reviewed above.
 
 ## 0. Read first — the operating contract
 
@@ -101,11 +102,11 @@ finally:
 | Register existing value | `book.bind(spell=value, existence="unique")`; lookup normally uses its type name, not the Python variable name. |
 | Register function/factory | `book.bind(spell=make_settings, existence="unique")`; meld runs the factory and reuses its product. |
 | Observe definitions | `book.describe_spells_in_spellbook()`; active inventory is not parked-version inventory. |
-| Observe live presence | `root.has_live_creation(spell_id=sid)` / `root.describe_live_creation_status(spell_id=sid)` |
+| Observe live presence | `root.has_live_creation(spell=sid)` / `root.describe_live_creation_status(spell=sid)` |
 
 `spellframe` classifies definitions **inside** a world; `aetheric_frame` selects the world. Binding names normalize case; do not use capitalization as an isolation strategy. Use IDs or complete selectors after discovery. [C: Binding / Meld][C], [E]
 
-**Collision rules:** duplicate binding fingerprints/keys are refused. Runtime spell IDs are process-wide; a different world name alone does not make an identical registration unique. Give separate-world bindings deliberate distinct identities. Within one visible graph, do not assume rebinding the same named class under different binding names/categories will pass validation; the documented working pattern is distinctly named role subclasses, e.g. `PrimaryStore(Store)` and `ArchiveStore(Store)`. Do not alter `__name__` or private registries to evade this. [NAMES]
+**Collision rules:** a spell ID is the SHA256 of the object's code (0.2.8257), and one object is one spell. Binding the same class or object again while it is registered is refused (`Spell ID collision detected`) under any binding name, category or existence, and in another world too while spell IDs are process-wide (the default); to rebind it differently, `cleanup_spell` it first. Duplicate binding keys are refused as well. To give one implementation two roles, use distinctly named role subclasses, e.g. `PrimaryStore(Store)` and `ArchiveStore(Store)`. Do not alter `__name__` or private registries to evade this. [NAMES]
 
 ### Constructor decision table
 
@@ -140,6 +141,7 @@ finally:
 | `unique_per_conduit_lineage` | Shared within the lineage tree | A child is not necessarily isolated from its root's state. |
 | `unique_per_spell_space` | One per SpellSpace | Resolve through the Space, not an ordinary Conduit door. |
 | `unique_per_conduit_cluster` | Shared cluster store | Needs dynamic cluster setup, links, and an elected leader. |
+| `managed_spell_quantity` | Leased from a per-version pool its owning root keeps | Classes only. `root.managed_spell_meld(...)` returns a lease whose `with` block gives the object back; otherwise return it with `md.ReleaseManagedSpell().release(obj)`. Bind options: `managed_spell_mode` (elastic, limited_quantity, queue), `managed_spell_limit`, `managed_spell_timeout_seconds`, `managed_spell_reset_methods`. |
 
 **Scope recipes** — assume `root` already exists and the relevant definitions are registered:
 
@@ -173,7 +175,7 @@ resource_id = book.bind(
 
 Methods are matched once at binding. Missing names are omitted; duplicates run once. Matching uses declared class-profile methods, not an automatic cleanup protocol for inherited-only methods, factory products, or prebuilt values. Explicitly arrange ownership/cleanup for those cases. Book-level method names own overlaps; default order is spell-only block then Book block, reversed by `with_enforce_priority_disposal_methods(True)`. [C: Binding][C]
 
-Cleanup walks retained disposal keys/buckets newest-first, not a promised total chronological order across all scopes. A failing method stops the remaining methods for that object; other objects are attempted and failures can aggregate into `ExceptionGroup`. Dropping your Python variable does not free an object still retained by Melder or a workstation. [C: Creations][C]
+Cleanup walks retained disposal keys/buckets newest-first, not a promised total chronological order across all scopes. Every declared method of every object runs even after one raises (0.2.80); the scope finishes, then raises the failures together as one `ExceptionGroup`, each chained from what its method raised. Dropping your Python variable does not free an object still retained by Melder or a workstation. [C: Creations][C]
 
 ### Retire instances without deleting their definition
 
@@ -449,13 +451,13 @@ Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry 
 
 ## 13. Stage, select, verify, and revert
 
-**Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
+**Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell_id=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
 
 **Exact lookup by spell_id:** `get_spell_by_spell_id()` / `find_spell_by_spell_id()` return the version a spell_id names, active or parked, or nothing - never the **currently selected** member in its place (since 0.2.8253; the former `get_spell_by_id()` / `find_spell_by_id()` answered a parked lineage ID with the selected member and are gone). A lookup by the index's id (`get_spell_by_index_id`) is the one that answers the selected member. `notch_spell` takes the candidate's spell_id (`spell_id=`) or its `Spell` (`spell=`) (since 0.2.8249). Never fabricate a `Spell` or read `_inactive_spells` to obtain one. [NOTCH]
 
-### Host-controlled exact-handle pattern
+### Stage, notch, verify, revert
 
-The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs**, run on 3.14t with the GIL off and on (2026-10-25); validate it in a disposable world before deployment. Both versions are bound under one spellframe category, `"price"`: every version of an index is bound the way its first version was, so a renamed class bound bare would be refused. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
+Notch with the spell_id `bind_inactive` returned (0.2.8249); no captured `Spell` handle or bind hook is needed. The following composes public APIs only and was run on 3.14t with the GIL off and on (2026-11-09, 0.2.8301); validate it in a disposable world before deployment. Both versions are bound under one spellframe category, `"price"`: every version of an index is bound the way its first version was, so a renamed class bound bare would be refused. [C: Spellbook][C], [CONDUIT]
 
 ```python
 import melder as md
@@ -468,51 +470,41 @@ class PriceV2:
     def quote(self) -> int:
         return 125
 
-versions: dict[str, md.Spell] = {}
-
-def capture(spell: md.Spell) -> None:
-    versions[spell.spell_id] = spell
-
 book = md.Spellbook(aetheric_frame="version-lab")
 root = None
 try:
-    book.add_bind_hooks(post=[capture])
     old_id = book.bind(spell=PriceV1, spellframe="price", existence="unique", permissions="create")
     root = book.conjure(dynamic=True, name="version-root")
-    old_spell = versions[old_id]
-    index = old_spell.spell_index
+    index = book.find_spell_by_spell_id(old_id).spell_index
 
     new_id = root.bind_inactive(
         spell=PriceV2, spell_index=index, spellframe="price",
         existence="unique", permissions="create",
     )
-    candidate = versions[new_id]  # exact object from the successful bind's hook
-    assert candidate.spell_id == new_id
     assert index.selected_spell_id == old_id
 
-    root.notch_spell(spell_index=index, spell=candidate)
+    root.notch_spell(spell_index=index, spell_id=new_id)
     try:
         assert index.selected_spell_id == new_id
         assert root.meld(spell_id=new_id).quote() == 125
     except Exception:
-        root.notch_spell(spell_index=index, spell=old_spell)
+        root.notch_spell(spell_index=index, spell_id=old_id)
         raise
 
     # Deliberate revert demonstration, not undo of arbitrary external effects.
-    root.notch_spell(spell_index=index, spell=old_spell)
+    root.notch_spell(spell_index=index, spell_id=old_id)
     assert index.selected_spell_id == old_id
     assert root.meld(spell_id=old_id).quote() == 100
 finally:
     if root is not None:
         root.cleanup()
     book.cleanup()
-    versions.clear()
 ```
 
 **Operational limits:**
 - Selection parks the outgoing version; it is not automatic disposal, resource retirement, or a rewrite of already-held application objects. Retire versions explicitly after consumers no longer need them.
-- The architecture's “owner-side only” warning describes an internal seam, not the whole current public operation. The inspected `Conduit.notch_spell` performs the local transaction, then deactivates stale borrowed copies and emits an index-notch notification for index-linked receivers. **Do not assume all borrowers automatically gain the new version**, or that the post-transaction fan-out is one indivisible action. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
-- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success. A notch refused for its incoming version's structural check (0.2.8262) or for an address another spell holds (2026-10-25) moves nothing; the borrower fan-out after the transaction can still fail part-way.
+- **Borrowers move inside the notch (0.2.8275):** each linked peer parks its copy of the outgoing version and reactivates a parked grant of the incoming one, and index-link receivers move to the new version, all inside the notch's own transaction window; a fan-out error undoes the whole notch. A borrower granted only the outgoing version keeps no active copy afterwards: its contract consumers are refused at their next meld until it is granted the new version or the lender notches back. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
+- **A refused notch moves nothing:** a failed structural check of the incoming version (0.2.8262), an address another spell holds (0.2.8273), a target not parked in this Book or being disposed (0.2.8285), or a borrower fan-out error (0.2.8275) leaves the index, its address and the borrowers as they were. The exception is a RuntimeError ending "This is a Melder bug; please report it with this message.": the reversal itself failed and the refused version can be left active, so inspect the selected ID and consumers before retrying, and report it. Preserve both failure and recovery reports; a recovery failure must not be labeled success.
 - **One index, one binding** (2026-10-25): an index keeps its first version's binding - the spellframe's kind (none, a string category, a Protocol) and the address that gives (the spellframe's name, or a bare class's own name, and the binding name). `bind_inactive` and `add_to_spell_index` refuse a version bound any other way (ValueError, nothing registered or moved), and a notch never moves the address. Stage an edited class under the index's spellframe and binding name; bind versions that carry different class names under one category from the first version on. Crystallizer records older than record version 5.0.0 are refused: record the world again. [CONDUIT]
 - Moving/separating active index members is refused; first select another member. Separating the sole member is not the retirement route. No manual edits of `selected_spell_id`.
 - A spell_id is the SHA256 of the object's code (since 0.2.8257): an edit to a method, the constructor, a class-level value or a base is a new spell_id; a docstring, comment or line move is not. Verify IDs, selected membership, recorded source, and behavior anyway. Use deliberate version identities. [C: Binding][C]
@@ -551,13 +543,13 @@ identity_map = report["identity_map"]
 # Inspect built counts/shortfalls, reacquire handles, then run application tests.
 ```
 
-Fresh structural ULIDs are expected; use the report's old→new map and reacquire all room/conduit handles. Stable spell hashes require equivalent binding inputs/policy; do not assume every old identifier survives. Named lesser topology and required unnamed ancestors can replay; prior application object contents do not. Callback code, external resources, and other unreplayable material must appear as shortfalls or require host participation. An all-or-nothing build rollback is not undo of every possible external effect. [NAMED], [RESTORE], [A]
+Fresh structural ULIDs are expected; use the report's old→new map and reacquire all room/conduit handles. Spell IDs are code hashes (0.2.8257): a spell keeps its ID across a restore when its code and the Python release are unchanged, and a different receiving policy changes only the binding hash, listed in the report's `binding_changes`. Named lesser topology and required unnamed ancestors can replay; prior application object contents do not. Callback code, external resources, and other unreplayable material must appear as shortfalls or require host participation. An all-or-nothing build rollback is not undo of every possible external effect. [NAMED], [RESTORE], [A]
 
 `CrystallizerBootstrap().with_profile("default").bootstrap()` is the one-shot cold-start facade; configure external persistence first when needed, then inspect activation, reloaded material, restored checkpoint, restore report, and shortfalls. Melder does not supply your database/cloud SDK; handler durability, access control, and acknowledgments are your responsibility. Do not disable drift/preflight blockers to force a green status. [A], [RESTORE]
 
 ## 15. Concurrency and advanced change discipline
 
-Use separate Rifts/workstations for independent agents; one room's commands/workstation have their own locks. Distinct rooms do not make shared application objects race-free. Choose per-worker lifetimes or synchronize application state explicitly. Free-threaded Python removes a safety illusion, not the need for locks. [C]
+Agents can share one room: target calls and target commands run outside Melder's locks (0.2.8290), so agents coordinate the shared target and workstation names themselves. A room still runs its codegen scripts one at a time, so give independent agents that each run scripts separate Rifts. Separate rooms do not make shared application objects race-free. Choose per-worker lifetimes or synchronize application state explicitly. Free-threaded Python removes a safety illusion, not the need for locks. [C]
 
 Structural operations are coordinated by scope claims; runtime resolution uses creation/validity machinery rather than entering the structural transaction plane. Leave admission, dirty-root invalidation, recompilation, and gates to the public operations. Disjoint structural changes may proceed concurrently; shared scope changes may wait/refuse. A timeout requires identifying conflicting work/scope, not turning off the gate. [A], [C]
 
@@ -580,8 +572,8 @@ For shutdown, restore, or multi-step governance, quiesce the relevant applicatio
 | Static/capability/codegen method missing | Query supported commands; codegen is not capability parity. Ask host for a justified different room, not a bypass. |
 | Empty/incomplete viewer | Check assigned frame, publication, ACL visibility, live-only filtering, and explicit projection refresh. |
 | Codegen rejected or returned errors | Inspect verdict/payload and allowed namespace. Revise the requested operation; do not relax policy silently. |
-| Parked ID lookup returns old version | That lookup follows active selection. Use a host-provided exact candidate handle, not a private-map workaround. |
-| Notch failed | Re-read selected ID and borrower/index-link state; distinguish local commit from later fan-out and application verification. |
+| spell_id lookup returns a parked version | Expected since 0.2.8253: a spell_id names one version, active or parked. For what an index has active, use `get_spell_by_index_id(index.id)`. |
+| Notch refused | Nothing moved; read the message's remedy (§13). Only the "Melder bug" reversal error can leave a switch behind: re-read the selected ID and borrowers, and report it. |
 | Purge/cleanup `ExceptionGroup` | Entries may already be detached and resources partially closed. Inspect each failure; don't use or blindly re-dispose old handles. |
 | History/source absent | Check recording activation timing, custody policy, profile/set, and drift. “Unavailable” is not “unchanged.” |
 | Flush succeeded but backup missing | Verify local cache retention and remote acknowledgment separately. |
@@ -639,7 +631,7 @@ This is a navigation map, not permission to drive internals. In prose/code confl
 
 Primary source documents are much larger than this guide: their pinned indices report **2,646 architecture lines** and **8,957 component lines**. This guide extracts operational material, not every internal class or historical patch narrative. Document integrity hashes and package archive hashes were **not independently rechecked**; no wheel/sdist was installed here. All Python fences were parsed for syntax on the available Python 3.13 interpreter; that does not check imports, runtime signatures, free-threading, disposal, permissions, or restore behavior. Treat assertions as checks to execute in an authorized disposable Python 3.14+ world.
 
-Most recipes follow upstream example source. The exact parked-handle promotion pattern is explicitly identified as a new composition of public hooks and notching, not an upstream-tested end-to-end example. Before production use, test cold/warm resolution, lifetime reuse, refusal paths, hook publication failures, borrower behavior, cleanup, and complete replay under the installed build. Do not promote historical example headers saying “run green” into evidence that this review ran them.
+Most recipes follow upstream example source. The §13 stage, notch and revert recipe is a composition of public calls, re-run on 3.14t at 0.2.8301 (2026-11-09); it is not an upstream-tested end-to-end example. Before production use, test cold/warm resolution, lifetime reuse, refusal paths, hook publication failures, borrower behavior, cleanup, and complete replay under the installed build. Do not promote historical example headers saying “run green” into evidence that this review ran them.
 
 **Reference key:** `[C: …]` means the named section in the component document; `[A]` is architecture. Section-qualified component links point to `[C]`; use the named heading inside it. All GitHub references are pinned to the reviewed commit; hosted `/latest/` and PyPI are moving publication surfaces.
 

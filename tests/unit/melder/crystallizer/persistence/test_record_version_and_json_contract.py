@@ -59,12 +59,13 @@ def test_record_version_parses_and_defaults():
 
 def test_record_version_stamp_and_gate():
     """
-    Contract: stamp writes CURRENT (5.0.0) under the shared key; the read
-    gate passes the current major at any minor and refuses a NEWER major
-    with the upgrade instruction. An older major is refused too (next test).
+    Contract: stamp writes CURRENT (5.0.1 since the custody note of #327)
+    under the shared key; the read gate passes the current major at any
+    minor and refuses a NEWER major with the upgrade instruction. An older
+    major is refused too (next test).
     """
     stamped = RecordVersion.stamp({"anything": 1})
-    assert stamped[RecordVersion.KEY] == RecordVersion.CURRENT == "5.0.0"
+    assert stamped[RecordVersion.KEY] == RecordVersion.CURRENT == "5.0.1"
 
     RecordVersion.check_readable(stamped, "self-stamped artifact")
     RecordVersion.check_readable(

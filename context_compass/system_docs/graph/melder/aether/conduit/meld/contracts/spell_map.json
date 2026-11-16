@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/contracts/spell_map.py",
- "source_sha256": "ab37cc183273dffdce467c2494100b8cc6406de605a00e951752d8d239e14578",
+ "source_sha256": "1a9976c01eeb51abd34cf6e53b34c0494f400c5389a79dbfa6aef475a5a9364f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.contracts.spell_map": {
@@ -43,13 +43,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "57eee33494e68334010f28300a8af9ba1cfe0de553cd7760318b7573bc989dd0",
+   "span_sha256": "ee4726e7dee82c34a9efb72fce4d7c53e53d502327d6a1f59314f5f2b2f74e65",
    "role": "Declarative local DI descriptor.",
    "responsibilities": [
     "describes normal spellbook-local DI identity and optional override payload",
     "lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking",
     "keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key Phase 3 matches by (0.2.8226)",
-    "SpellMap(spell=X) without a spellframe is a class lookup (0.2.8278): Phase 3 reaches only X bound with no spellframe, under the default binding or under binding_name when one is given, so its canonical_key is the address of the only spell it can reach; a SpellMap naming a spellframe reads the frame as before"
+    "SpellMap(spell=X) without a spellframe is a class lookup (0.2.8278): Phase 3 reaches only X bound with no spellframe, under the default binding or under binding_name when one is given, so its canonical_key is the address of the only spell it can reach; a SpellMap naming a spellframe reads the frame as before",
+    "a SpellMap that matches nothing is an unresolved input at its address (0.2.8303, the owner's rule that bind order must not matter): its consumer binds and conjures, the bind of a spell at that address re-gates it, and meld raises UnresolvedInputError naming the SpellMap until then; several matches still raise at build time"
    ],
    "owns_state": [
     "spell",
@@ -62,7 +63,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "57eee33494e68334010f28300a8af9ba1cfe0de553cd7760318b7573bc989dd0"
+   "semantics_authored_against": "ee4726e7dee82c34a9efb72fce4d7c53e53d502327d6a1f59314f5f2b2f74e65"
   }
  },
  "edges_out": [

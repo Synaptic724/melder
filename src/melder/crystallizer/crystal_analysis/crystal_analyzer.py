@@ -72,6 +72,12 @@ MemoizedModuleFacts = Tuple[
     Tuple[str, ...],
     Tuple[str, ...],
 ]
+# Per-pass answers (#327): keyed by module name and id(module object), with the
+# object kept in the value so an id cannot be reused within one pass.
+PassModulePathKey = Tuple[str, int]
+PassModulePath = Tuple[Optional[Any], Optional[Path]]
+PassCustodyKey = Tuple[str, int, Optional[Path]]
+PassCustody = Tuple[Optional[Any], SourceCustodyStrategy]
 
 
 class CrystalAnalyzer(Cleanable):
@@ -90,7 +96,17 @@ class CrystalAnalyzer(Cleanable):
         - Custody strategies are consulted in priority order and the FIRST
           match classifies the module - the order [synthetic, user_source,
           site_package, fallback] reproduces the historical
-          `_classify_module_target` decision table exactly.
+          `_classify_module_target` decision table, except that the default
+          user_source strategy declines any module inside a Python
+          environment (`resolve_environment_root_paths`, or a
+          `site-packages`/`dist-packages` directory): the environment wins
+          over a user root (owner, 2026-11-16, #327).
+        - Within one `analyze_spell_root` pass each distinct module's path is
+          resolved once (keyed by module name and module object) and its
+          custody matched once (keyed by name, object and path), however many
+          modules import it. Those answers live only while the pass runs and
+          are emptied when it ends, so nothing carries into the next pass
+          (#327).
         - On a memo miss or custom-strategy path, each parsed module AST is
           walked ONCE and nodes dispatch in strategy registration order,
           preserving historical manifest ordering. Memo hits skip AST work.
@@ -184,6 +200,8 @@ class CrystalAnalyzer(Cleanable):
     __slots__ = (
         "_custody_strategies",
         "_fact_strategies",
+        "_pass_custody",
+        "_pass_module_paths",
         "_retain_user_sources",
         "_site_package_dependency_descent",
         "_uses_default_fact_strategies",
@@ -215,8 +233,14 @@ class CrystalAnalyzer(Cleanable):
             - Supplying any fact-strategy sequence, including an empty one,
               disables memoization rather than assuming custom behavior is
               source-pure.
+            - The default custody chain gives its user_source strategy the
+              environment roots from `resolve_environment_root_paths` (the
+              site roots plus the interpreter prefixes), so a module inside an
+              environment is never user source. A supplied chain is used as
+              given.
             - Construction does not read modules, parse source, or populate
-              the shared memo; work begins at an analysis entry point.
+              the shared memo; work begins at an analysis entry point. The
+              per-pass answer dictionaries start empty.
 
         Args:
             user_source_root_paths:
@@ -224,7 +248,9 @@ class CrystalAnalyzer(Cleanable):
                 input; resolve via `resolve_user_root_paths`).
             site_package_root_paths:
                 Resolved interpreter site roots (resolve via
-                `resolve_site_package_root_paths`).
+                `resolve_site_package_root_paths`). They classify site
+                packages and, with the interpreter prefixes, bound what user
+                source may claim.
             custody_strategies:
                 Optional override of the custody priority chain. When
                 omitted, the default four-strategy chain is built. The
@@ -272,12 +298,23 @@ class CrystalAnalyzer(Cleanable):
         if custody_strategies is None:
             self._custody_strategies: List[SourceCustodyStrategy] = [
                 SyntheticCustodyStrategy(),
-                UserSourceCustodyStrategy(user_source_root_paths),
+                UserSourceCustodyStrategy(
+                    user_source_root_paths,
+                    environment_root_paths=(
+                        self.resolve_environment_root_paths(
+                            site_package_root_paths
+                        )
+                    ),
+                ),
                 SitePackageCustodyStrategy(site_package_root_paths),
                 BinaryUnknownCustodyStrategy(),
             ]
         else:
             self._custody_strategies = list(custody_strategies)
+        # Per-pass answers (#327): filled by one analyze_spell_root pass and
+        # emptied when it ends, so no answer outlives its pass.
+        self._pass_module_paths: Dict[PassModulePathKey, PassModulePath] = {}
+        self._pass_custody: Dict[PassCustodyKey, PassCustody] = {}
         if fact_strategies is None:
             self._fact_strategies: List[CrystalFactStrategy] = [
                 ImportStatementStrategy(),
@@ -295,7 +332,8 @@ class CrystalAnalyzer(Cleanable):
         Contract:
             - Repeated calls return without touching deleted fields.
             - Cleans every owned custody and fact strategy before deleting the
-              owned strategy lists and memo-eligibility flag.
+              owned strategy lists, the per-pass answer dictionaries and the
+              memo-eligibility flag.
             - Does not clear, mutate, or otherwise own the shared memoized
               syntax facts; they remain available to later analyzer instances.
             - After cleanup, live analysis methods are invalid through the
@@ -322,6 +360,8 @@ class CrystalAnalyzer(Cleanable):
             fact_strategy.cleanup()
         del self._custody_strategies
         del self._fact_strategies
+        del self._pass_module_paths
+        del self._pass_custody
         del self._uses_default_fact_strategies
 
     @classmethod
@@ -569,6 +609,46 @@ class CrystalAnalyzer(Cleanable):
             unique_paths.append(path)
         return tuple(unique_paths)
 
+    @staticmethod
+    def resolve_environment_root_paths(
+            site_package_root_paths: Sequence[Path],
+    ) -> Tuple[Path, ...]:
+        """
+        Resolve the roots under which a module is never user source.
+
+        Purpose:
+            Give the default user_source strategy the owner's environment rule
+            (2026-11-16, #327): a module inside the running interpreter's
+            environment is an installed module, never the user's own source,
+            even when the environment sits inside a user root.
+
+        Contract:
+            - Returns the given site roots, in order, followed by
+              `sys.prefix`, `sys.base_prefix` and `sys.exec_prefix`, each
+              prefix resolved; duplicates are dropped keeping the first.
+            - Site roots are expected already resolved (as
+              `resolve_site_package_root_paths` returns them) and are not
+              resolved again.
+
+        Args:
+            site_package_root_paths:
+                Resolved interpreter site roots.
+
+        Returns:
+            Tuple[Path, ...]: Environment roots, deduplicated.
+        """
+        candidate_paths: List[Path] = list(site_package_root_paths)
+        for prefix in (sys.prefix, sys.base_prefix, sys.exec_prefix):
+            candidate_paths.append(Path(prefix).resolve())
+        unique_paths: List[Path] = []
+        seen_paths: Set[Path] = set()
+        for path in candidate_paths:
+            if path in seen_paths:
+                continue
+            seen_paths.add(path)
+            unique_paths.append(path)
+        return tuple(unique_paths)
+
     # ------------------------------------------------------------------
     # Entry points
     # ------------------------------------------------------------------
@@ -582,6 +662,12 @@ class CrystalAnalyzer(Cleanable):
     ) -> CrystalAnalysisResult:
         """
         Analyze the live module world rooted at one spell's module.
+
+        Contract:
+            - One pass: each distinct module's path is resolved once and its
+              custody matched once, and those answers are emptied when the
+              pass ends - normally or by exception - so a later pass, on this
+              or any analyzer, asks every question again.
 
         Args:
             root_module_name:
@@ -601,18 +687,22 @@ class CrystalAnalyzer(Cleanable):
         """
         self.check_cleaned()
         result = CrystalAnalysisResult()
-        root_kind = self._match_custody(
-            module_name=root_module_name,
-            module_obj=root_module_obj,
-            module_path=root_module_path,
-        ).kind
-        result.set_root_module_kind(root_kind)
-        self._walk_module_dependencies(
-            result=result,
-            module_name=root_module_name,
-            module_obj=root_module_obj,
-            module_path=root_module_path,
-        )
+        try:
+            root_kind = self._match_custody(
+                module_name=root_module_name,
+                module_obj=root_module_obj,
+                module_path=root_module_path,
+            ).kind
+            result.set_root_module_kind(root_kind)
+            self._walk_module_dependencies(
+                result=result,
+                module_name=root_module_name,
+                module_obj=root_module_obj,
+                module_path=root_module_path,
+            )
+        finally:
+            self._pass_module_paths.clear()
+            self._pass_custody.clear()
         for fact_strategy in self._fact_strategies:
             fact_strategy.finalize(result)
         return result
@@ -784,6 +874,10 @@ class CrystalAnalyzer(Cleanable):
               object traversal.
             - Non-descending custody (unknown fallback) records honest
               leaves without enqueueing them.
+            - Each import edge reads its target's live module object from
+              `sys.modules`, then takes the target's path and custody from
+              the pass's answers (`_resolve_pass_module_path`,
+              `_match_custody`), computing them on first sight only.
 
         Args:
             result:
@@ -831,7 +925,7 @@ class CrystalAnalyzer(Cleanable):
             tracked_dependencies: List[str] = []
             for dependency_name in flat_targets:
                 dependency_obj = sys.modules.get(dependency_name)
-                dependency_path = self.resolve_module_path(
+                dependency_path = self._resolve_pass_module_path(
                     dependency_name,
                     dependency_obj,
                 )
@@ -1280,6 +1374,45 @@ class CrystalAnalyzer(Cleanable):
     # Shared resolution helpers (ported from SpellCrystal)
     # ------------------------------------------------------------------
 
+    def _resolve_pass_module_path(
+            self,
+            module_name: str,
+            module_obj: Optional[Any],
+    ) -> Optional[Path]:
+        """
+        Return one module's path, resolving it once per analysis pass.
+
+        Purpose:
+            Stop a module imported from many places from paying
+            `resolve_module_path` (a `Path.resolve`) once per import edge
+            (#327); the first edge of a pass resolves it, later edges reuse it.
+
+        Contract:
+            - Keyed by module name and module object: the two inputs
+              `resolve_module_path` depends on. The object is kept with the
+              answer and must be the same object (`is`) on reuse, so a
+              recycled id can never return another module's path.
+            - The answers belong to the running pass; `analyze_spell_root`
+              empties them when the pass ends.
+
+        Args:
+            module_name:
+                Canonical module name to resolve.
+            module_obj:
+                Live module object from `sys.modules`, or None.
+
+        Returns:
+            Optional[Path]: What `resolve_module_path` returned for this
+            name and object in this pass.
+        """
+        key = (module_name, id(module_obj))
+        remembered = self._pass_module_paths.get(key)
+        if remembered is not None and remembered[0] is module_obj:
+            return remembered[1]
+        module_path = self.resolve_module_path(module_name, module_obj)
+        self._pass_module_paths[key] = (module_obj, module_path)
+        return module_path
+
     def _match_custody(
             self,
             *,
@@ -1289,6 +1422,16 @@ class CrystalAnalyzer(Cleanable):
     ) -> SourceCustodyStrategy:
         """
         Return the first custody strategy claiming one module.
+
+        Contract:
+            - Runs the custody chain once per distinct (module name, module
+              object, module path) in a pass and reuses that match for the
+              rest of the pass (#327). Strategies must answer `matches`
+              deterministically for one input triple, so a reused match is
+              the one a fresh run would return. The object is kept with the
+              match and must be the same object on reuse.
+            - The matches belong to the running pass; `analyze_spell_root`
+              empties them when the pass ends.
 
         Args:
             module_name:
@@ -1306,12 +1449,17 @@ class CrystalAnalyzer(Cleanable):
                 If no strategy matched - a misconfigured chain whose
                 terminal fallback is missing.
         """
+        key = (module_name, id(module_obj), module_path)
+        remembered = self._pass_custody.get(key)
+        if remembered is not None and remembered[0] is module_obj:
+            return remembered[1]
         for custody_strategy in self._custody_strategies:
             if custody_strategy.matches(
                     module_name=module_name,
                     module_obj=module_obj,
                     module_path=module_path,
             ):
+                self._pass_custody[key] = (module_obj, custody_strategy)
                 return custody_strategy
         raise RuntimeError(
             "No custody strategy matched module '{0}'. The custody chain "

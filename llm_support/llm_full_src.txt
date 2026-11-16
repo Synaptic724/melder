@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 5ca2cbcb5c3a3ae6f0667d88ad1a64cbd05697a56e947c07cf3f337424569eaa
+SOURCE FINGERPRINT: 3879565420046865049c1fced6b8be144827acf566a73a8e1af3abddbea7e3b7
 FILE COUNT: 586
 
 ================================================================================
@@ -614,7 +614,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 7796a7012de3a08a70117d3d12e61eafdb8fae5a522e560eb568232b39134dde
+CONTENT SHA256: 971b51cd89f5a2c323ff063df6cef0db105cdcc7b01c3d3ca772414949191d0c
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -628,7 +628,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8300"
+__version__ = "0.2.8303"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -32962,7 +32962,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: 885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8
+CONTENT SHA256: ceb93228b567a76dcb6966a2a2be2296038bb47035e61d11adee1a7a69497094
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -34872,6 +34872,8 @@ class SpellSystemStates(Cleanable):
             - An UNRESOLVED_INPUT socket is watched under its expected type's frame
               key, so binding a matching provider later marks this consumer
               dependency-changed and its next meld re-resolves it into a NORMAL edge.
+              A SpellMap socket (2026-11-16, GitHub #329) is watched under its
+              SpellMap's frame key, so a spell bound under that frame re-gates it.
             - An AMBIGUOUS_INPUT socket is watched the same way (2026-10-04), so
               removing one of the competing providers re-gates the consumer.
             - An UNRESOLVED_INPUT socket is also watched under its
@@ -68031,7 +68033,7 @@ END FILE: src/melder/aether/conduit/meld/contracts/spell_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/contracts/spell_map.py
-CONTENT SHA256: 6dc958da786551f0884944c5929ae7d484d2c389a2f58bc7925a85a6cdf6c6d8
+CONTENT SHA256: a5383a395a66ed52134372d15eb207f8692b7e5b2d49cbcae41b57d660dcea64
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Optional, Union, Tuple, ClassVar
@@ -68072,11 +68074,11 @@ class SpellMap(Cleanable):
       Matches by identity, as every `spell` does: it reaches only a spell whose
       bound object is ILogic itself - the Protocol's own definition, bound
       `resolvable=False`, whose value the meld supplies by override - and never
-      an implementation, so with only implementations bound it fails at
-      conjure. To inject an implementation filed under the Protocol, name the
-      frame: `SpellMap(spellframe=ILogic, binding_name=...)`. (Corrected
-      2026-11-07: this shape was described as frame-based DI, which Phase 3
-      never did.)
+      an implementation, so with only implementations bound it waits as an
+      unresolved input (it failed at conjure before 2026-11-16). To inject an
+      implementation filed under the Protocol, name the frame:
+      `SpellMap(spellframe=ILogic, binding_name=...)`. (Corrected 2026-11-07:
+      this shape was described as frame-based DI, which Phase 3 never did.)
     - `SpellMap(MyService, spellframe=ILogic, binding_name="primary")`
       Fully explicit spell + frame + binding declaration.
     - `SpellMap(spell=None, spellframe=ILogic, binding_name="primary")`
@@ -68150,10 +68152,15 @@ class SpellMap(Cleanable):
         deliberately knows NOTHING but the contract and the binding name, and
         is how an implementation filed under a Protocol is injected.
         Ambiguity is a build-time failure, not a runtime one: a SpellMap
-        default that resolves to zero or to multiple candidates raises rather
-        than silently picking. That is the whole reason the explicit
-        `binding_name` form exists - it is the documented way to disambiguate
-        when several spells legitimately satisfy the same frame.
+        default that resolves to several candidates raises rather than silently
+        picking. That is the whole reason the explicit `binding_name` form
+        exists - it is the documented way to disambiguate when several spells
+        legitimately satisfy the same frame. A SpellMap that resolves to none
+        waits instead (2026-11-16, GitHub #329: the owner's rule that bind order
+        must not matter; it raised before): Phase 3 records an unresolved input
+        at its address, so a consumer bound before its provider binds, its meld
+        raises UnresolvedInputError until a spell is bound there or the value is
+        supplied, and the bind of that spell re-gates it.
 
     AGENT_ACCESS: public
 
@@ -68162,7 +68169,8 @@ class SpellMap(Cleanable):
         constructor default: SpellMap(MyRepo) for MyRepo bound bare, SpellMap(MyRepo,
         binding_name='primary') for MyRepo bound bare under that name, or
         SpellMap(spellframe=ILogic, binding_name='primary') for a spell filed under a frame.
-        Zero or multiple matches raise at build time.
+        Several matches raise at build time; no match waits as an unresolved input until a
+        spell is bound at the address or the meld supplies the value.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -109066,7 +109074,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
-CONTENT SHA256: 7c8ea89ad312d696c7e0018bd8e4d8d0f50937c74de2c912c663785a328321bf
+CONTENT SHA256: c69b385d753a1725d95d77df8ad78415491150addb11aef8f0eda22f7a999e35
 SOURCE ENCODING: utf-8
 ================================================================================
 from enum import StrEnum
@@ -109093,8 +109101,10 @@ class SocketKind(StrEnum):
         A required input whose selected registration is non-resolvable. Its
         target is descriptive; a caller supplies the value during construction.
     - UNRESOLVED_INPUT:
-        A single typed dependency that no registered spell provides. Resolution
-        records it instead of failing: it has no target and no DAG edge, the
+        A single typed dependency that no registered spell provides, or a
+        SpellMap default whose address has nothing bound (2026-11-16, GitHub
+        #329). Resolution records it instead of failing: it has no target and no
+        DAG edge, the
         constructing call must supply the value through its override payload,
         and a missing value raises `UnresolvedInputError` when that object is
         built. Registering a matching provider later re-resolves the consumer
@@ -109128,7 +109138,7 @@ class SocketKind(StrEnum):
     AGENT_PURPOSE:
         access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
         SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input),
-        UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported),
+        UNRESOLVED_INPUT (typed or SpellMap dependency with no provider; supplied by the call or reported),
         AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).
     """
 
@@ -110415,7 +110425,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: eef37bac2fde1782545773baba59b6e16c515627d30a6ba17f297c0e7d56c46b
+CONTENT SHA256: 4594bf92c3a743ccd6d725f91e4172b0a362cb3bdf12262870fedb76d1ca7b99
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -110523,6 +110533,12 @@ class CompilerPhase3:
           Phase 4 refuses a single or SpellMap socket that carries them with
           HIDDEN_PROVIDER, and Phase 6 names them for an empty required
           `list[Class]`. Recording them changes nothing that resolves.
+        - A dependency that matches nothing is recorded, never refused here: a
+          single typed parameter and a SpellMap default (2026-11-16, GitHub
+          #329: the owner's rule that bind order must not matter) become
+          UNRESOLVED_INPUT sockets watched under their dependency key, so the
+          bind of a provider re-gates the consumer and meld refuses it until
+          then. Only several SpellMap candidates raise.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -111514,9 +111530,21 @@ class CompilerPhase3:
             candidates and Phase 4 refuses the spell through the readable
             report. Without `hidden_out` (a direct caller) the RuntimeError
             below is raised with one sentence appended naming where X is bound
-            (`HiddenProviderReport.spellmap_runtime_suffix`). A miss with X
-            registered nowhere, a frame-named miss and several candidates raise
-            exactly as before.
+            (`HiddenProviderReport.spellmap_runtime_suffix`). Several candidates
+            raise in every caller.
+
+        Miss (2026-11-16, GitHub #329, the owner's rule that bind order must
+        not matter):
+            With `hidden_out` (Phase 3's own call) no miss raises. A SpellMap
+            that matches nothing - frame-named, or a class lookup of an X
+            registered nowhere - returns an empty mapping, and Phase 3 records
+            its socket UNRESOLVED_INPUT at the SpellMap's canonical key: the
+            conjure or the late bind succeeds, a bind under that frame re-gates
+            the consumer, and meld raises UnresolvedInputError until a provider
+            is there or the value is supplied. Before, both misses raised here,
+            so a consumer bound into a conjured book before its provider was
+            refused. A direct caller without `hidden_out` still gets the
+            RuntimeError for every miss.
 
         Args:
             spell:
@@ -111526,19 +111554,22 @@ class CompilerPhase3:
             dep:
                 Dependency metadata containing spellmap defaults.
             hidden_out:
-                Optional list that receives the `(spell_index, spell)`
-                registrations of X when the HIDDEN_PROVIDER shape misses; None
-                keeps the raising behaviour for direct callers.
+                Optional list given by Phase 3's own call. It receives the
+                `(spell_index, spell)` registrations of X when the
+                HIDDEN_PROVIDER shape misses, and its presence makes every miss
+                return an empty mapping; None keeps the raising behaviour for
+                direct callers.
 
         Returns:
             Dict[Any, Spell]:
                 Mapping with exactly one resolved spell for the default; empty
-                only when `hidden_out` received the hidden registrations.
+                when nothing matched and `hidden_out` was given (it then holds
+                X's hidden registrations, or nothing for a plain miss).
 
         Raises:
-            RuntimeError: If no candidate can be resolved (outside the recorded
-                HIDDEN_PROVIDER shape) or multiple candidates satisfy the
-                explicit default selection constraints.
+            RuntimeError: If multiple candidates satisfy the default's
+                selection constraints, or - without `hidden_out` only - if no
+                candidate matches.
         """
         spellmap = dep.spellmap_default
         if spellmap is None:
@@ -111587,18 +111618,23 @@ class CompilerPhase3:
                     candidates[index] = spell_obj
 
         if not candidates:
+            # The class-lookup form missed an X registered elsewhere: the
+            # HIDDEN_PROVIDER shape (2026-11-07), which Phase 3 records for the
+            # readable report and a direct caller reads in its error.
+            hidden_shape = frame is None and bool(registrations)
+            if hidden_out is not None:
+                # Phase 3's own call records every miss (2026-11-16): the empty
+                # mapping becomes an UNRESOLVED_INPUT socket at the SpellMap's
+                # key, re-gated by a provider bound there later.
+                if hidden_shape:
+                    hidden_out.extend(registrations)
+                return {}
             message = (
                 "SpellCrafter Phase 3: SpellMap default could not be resolved for "
                 f"parameter {dep.param_name!r} on spell {spell.spell_name!r}. "
                 f"SpellMap={spellmap!r}."
             )
-            if frame is None and registrations:
-                # The class-lookup form missed an X registered elsewhere: the
-                # HIDDEN_PROVIDER shape (2026-11-07). Phase 3 records it for the
-                # readable report; a direct caller gets where X is bound.
-                if hidden_out is not None:
-                    hidden_out.extend(registrations)
-                    return {}
+            if hidden_shape:
                 message += " " + self._spellmap_hidden_sentence(explicit_spell, registrations)
             raise RuntimeError(message)
 
@@ -111708,7 +111744,9 @@ class CompilerPhase3:
             UNRESOLVED_INPUT as before, and a class lookup that missed a class
             bound only under a spellframe or a binding name also records those
             spells, so Phase 4 (single, SpellMap) or Phase 6 (an empty required
-            collection) can name where the class is bound.
+            collection) can name where the class is bound. Since 2026-11-16
+            (GitHub #329) a SpellMap that matches nothing is an UNRESOLVED_INPUT
+            as well, so its consumer waits for a provider at its address.
 
         Contract:
             - SINGLE_BY_ANNOTATION: always added to `socket_unresolved`; its
@@ -111719,10 +111757,12 @@ class CompilerPhase3:
               may legitimately wire nothing); a required one records its hidden
               ids only (no frame keys: the socket stays NORMAL and the consumer
               is not refused, so no watch is needed).
-            - SPELLMAP_DEFAULT: reached empty only when
-              `_resolve_spellmap_default` recorded `spellmap_hidden` instead of
-              raising; the socket becomes UNRESOLVED_INPUT with the hidden ids
-              and frame keys of those registrations.
+            - SPELLMAP_DEFAULT: Phase 3's call returns empty for every miss
+              (2026-11-16, GitHub #329), so a dependency carrying a SpellMap is
+              always added to `socket_unresolved`: it waits at the SpellMap's
+              canonical key. Hidden ids and frame keys are recorded only when
+              `_resolve_spellmap_default` filled `spellmap_hidden` (the
+              HIDDEN_PROVIDER shape); a plain miss records none.
             - Any other shape: nothing (metadata-only sockets).
             - Mutates only the two collections passed in; reads the pool or the
               pass-scoped index; takes no lock.
@@ -111758,8 +111798,11 @@ class CompilerPhase3:
                 collection=True,
             )
             hidden = (hidden_ids, ())
-        elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT and spellmap_hidden:
+        elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT and dep.spellmap_default is not None:
             socket_unresolved.add(key)
+            if not spellmap_hidden:
+                # A plain miss: nothing of the SpellMap's target is registered.
+                return
             hidden = self._hidden_ids_and_frames(spellmap_hidden)
         else:
             return
@@ -111790,9 +111833,11 @@ class CompilerPhase3:
             For each: class:`SpellSymbolicDependency`:
                 * Determine declaration kind, then mark selected descriptive targets
                   OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
-                * Mark single typed sockets listed in "socket_unresolved" (no
-                  registered provider at all) UNRESOLVED_INPUT. They keep their
-                  dependency_key so a later matching bind re-resolves this spell.
+                * Mark single typed and SpellMap sockets listed in
+                  "socket_unresolved" (no registered provider at all)
+                  UNRESOLVED_INPUT. They keep their dependency_key - a SpellMap
+                  socket its SpellMap's canonical key (2026-11-16) - so a later
+                  matching bind re-resolves this spell.
                 * Mark single typed sockets listed in "socket_ambiguous" (two or
                   more resolvable providers) AMBIGUOUS_INPUT, with the candidate
                   ids as descriptive `referenced_spell_ids` and no target; they
@@ -111935,7 +111980,10 @@ class CompilerPhase3:
                   declarations/topology without resolving constructor requirements.
                 * A single typed dependency that no registered spell provides
                   produces an UNRESOLVED_INPUT socket (no dependency id) instead of
-                  failing: the constructing meld supplies it.
+                  failing: the constructing meld supplies it. A SpellMap default
+                  that matches nothing does the same since 2026-11-16 (GitHub
+                  #329; it raised RuntimeError here before), so a consumer bound
+                  before its provider waits for it in any bind order.
                 * A class lookup that misses a class bound only under a
                   spellframe or a binding name records those spells as the
                   socket's hidden candidates (2026-11-07,
@@ -111986,7 +112034,8 @@ class CompilerPhase3:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
         socket_references: Dict[tuple[str, int], List[str]] = {}
-        # Single typed sockets with no registered provider: recorded, not refused.
+        # Single typed and SpellMap sockets with no registered provider:
+        # recorded, not refused.
         socket_unresolved: Set[tuple[str, int]] = set()
         # Single typed sockets with several resolvable providers: recorded for
         # Phase 4 with their candidate ids, never resolved.
@@ -112000,7 +112049,8 @@ class CompilerPhase3:
 
             di_shape = dep.di_shape
             # The registrations a `SpellMap(spell=X)` class lookup missed (filled
-            # only when `_resolve_spellmap_default` records instead of raising).
+            # only in the HIDDEN_PROVIDER shape; passing it also makes every
+            # SpellMap miss return empty instead of raising, 2026-11-16).
             spellmap_hidden: List[Tuple[SpellIndex, Spell]] = []
 
             # Only "normal" DI shapes produce concrete dependency ids for now.
@@ -112027,9 +112077,9 @@ class CompilerPhase3:
 
             key = (dep.param_name, dep.position)
             if not resolved:
-                # Nothing answers this lookup: keep a single socket as an
-                # unresolved input instead of failing resolution, and record the
-                # class's hidden candidates where a class lookup missed them.
+                # Nothing answers this lookup: keep a single or SpellMap socket as
+                # an unresolved input instead of failing resolution, and record
+                # the class's hidden candidates where a class lookup missed them.
                 self._record_unresolved_miss(
                     spellbook,
                     dep,
@@ -136339,11 +136389,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/param
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
-CONTENT SHA256: aeb86bcde9f45024b891403a1936b380fbb9edb78a4aca1b1abe3534d8e86539
+CONTENT SHA256: 3ad8c6f8fa1144dbed0f52cbd6923fdb6ac982954c18cfef4541c9d9733586c7
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
-from typing import TYPE_CHECKING, Any, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Optional, get_args, get_origin
 
 
 
@@ -136352,7 +136402,10 @@ from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 if TYPE_CHECKING:
+    from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellSocketDescriptor
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 
@@ -136378,9 +136431,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
       Non-resolvable roots have no construction-input obligations.
     - Also reports UNRESOLVED_INPUT sockets (a typed parameter no registered
-      spell provides) with the expected type, so a forgotten binding is visible
-      at conjure even though constructing the spell without the value only fails
-      at meld.
+      spell provides, or a SpellMap default whose address has nothing bound -
+      2026-11-16, GitHub #329) with the expected type - for a SpellMap, the
+      SpellMap as written - so a forgotten binding is visible at conjure even
+      though constructing the spell without the value only fails at meld.
     - Skips an UNRESOLVED_INPUT socket that carries hidden candidates
       (`hidden_spell_ids`, 2026-11-07): its class IS registered, under a
       spellframe or a binding name, and `HiddenProviderStrategy` refuses the
@@ -136436,9 +136490,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
           or convert the hole into a DI target.
         - Reads reference-only required inputs from SpellSystemStates without
           taking ownership of their topology or changing declaration facts.
-        - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket,
-          naming the expected type from the Phase-1 annotation - except a socket
-          with hidden candidates, which HIDDEN_PROVIDER reports as an error.
+        - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket
+          (`_unresolved_input_issue`), naming the expected type from the Phase-1
+          annotation, or the SpellMap a SpellMap parameter defaults to - except a
+          socket with hidden candidates, which HIDDEN_PROVIDER reports as an error.
 
         Raises:
             RuntimeError: If an UNRESOLVED_INPUT socket has no matching Phase-1
@@ -136487,29 +136542,7 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     # The class is bound under a spellframe or a binding name:
                     # HiddenProviderStrategy refuses the spell naming where.
                     continue
-                expected_type = self._expected_type_for(requirements, socket.param_name)
-                context.issues.append(
-                    SpellValidationIssue(
-                        severity="warning",
-                        code="UNRESOLVED_INPUT",
-                        message=(
-                            f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
-                            f"{expected_type}, but no registered spell provides it. Supply it through a "
-                            f"meld override (key {socket.param_name!r}, or a path key ending in "
-                            f"'>{socket.param_name}' when this spell is built as a dependency) or bind "
-                            f"a provider for {expected_type}. Constructing this spell without it raises "
-                            "UnresolvedInputError."
-                        ),
-                        details={
-                            "spell_id": spell.spell_id,
-                            "parameter_name": socket.param_name,
-                            "position": socket.position,
-                            "parameter_kind": socket.parameter_kind,
-                            "expected_type": expected_type,
-                            "dependency_key": socket.dependency_key,
-                        },
-                    )
-                )
+                context.issues.append(self._unresolved_input_issue(spell, requirements, socket))
                 continue
             if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
                 continue
@@ -136531,6 +136564,96 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     },
                 )
             )
+
+    def _unresolved_input_issue(
+            self,
+            spell: Spell,
+            requirements: SpellRequirements,
+            socket: SpellSocketDescriptor,
+    ) -> SpellValidationIssue:
+        """
+        Build the UNRESOLVED_INPUT warning for one unresolved-input socket without hidden candidates.
+
+        Contract:
+            - A parameter whose default is a SpellMap (2026-11-16, GitHub #329: a
+              SpellMap that matches nothing waits as an unresolved input) is named
+              by that SpellMap as written (`UnresolvedInputError._spellmap_address_name`)
+              and the text asks for a spell at that address; `details["expected_type"]`
+              is that rendering.
+            - Any other parameter keeps the typed text: the expected type from its
+              Phase-1 annotation (`_expected_type_for`), unchanged.
+            - The details always carry spell_id, parameter_name, position,
+              parameter_kind, expected_type and dependency_key.
+
+        Args:
+            spell: The spell under validation.
+            requirements: Its Phase-1 requirements.
+            socket: The UNRESOLVED_INPUT socket.
+
+        Returns:
+            SpellValidationIssue: The warning.
+
+        Raises:
+            RuntimeError: If the socket has no matching Phase-1 parameter
+                (topology and requirements out of step).
+        """
+        spell_map = self._spell_map_for(requirements, socket.param_name)
+        if spell_map is not None:
+            expected_type = UnresolvedInputError._spellmap_address_name(spell_map)
+            message = (
+                f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} asks for the spell its default "
+                f"{expected_type} names, but nothing is bound there. Supply it through a meld override (key "
+                f"{socket.param_name!r}, or a path key ending in '>{socket.param_name}' when this spell is built as "
+                "a dependency) or bind a spell at that address. Constructing this spell without it raises "
+                "UnresolvedInputError."
+            )
+        else:
+            expected_type = self._expected_type_for(requirements, socket.param_name)
+            message = (
+                f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
+                f"{expected_type}, but no registered spell provides it. Supply it through a "
+                f"meld override (key {socket.param_name!r}, or a path key ending in "
+                f"'>{socket.param_name}' when this spell is built as a dependency) or bind "
+                f"a provider for {expected_type}. Constructing this spell without it raises "
+                "UnresolvedInputError."
+            )
+        return SpellValidationIssue(
+            severity="warning",
+            code="UNRESOLVED_INPUT",
+            message=message,
+            details={
+                "spell_id": spell.spell_id,
+                "parameter_name": socket.param_name,
+                "position": socket.position,
+                "parameter_kind": socket.parameter_kind,
+                "expected_type": expected_type,
+                "dependency_key": socket.dependency_key,
+            },
+        )
+
+    @staticmethod
+    def _spell_map_for(requirements: SpellRequirements, param_name: str) -> Optional[SpellMap]:
+        """
+        Return the SpellMap one unresolved-input parameter defaults to, or None.
+
+        Contract:
+            - Reads the Phase-1 `spellmap_default` of `param_name`: set only for a
+              SPELLMAP_DEFAULT parameter. None for any other parameter, and for a
+              name with no Phase-1 parameter (`_expected_type_for` then raises).
+            - Pure; reads only the requirements.
+
+        Args:
+            requirements: Phase-1 requirements of the spell under validation.
+            param_name: Parameter carried by the UNRESOLVED_INPUT socket.
+
+        Returns:
+            Optional[SpellMap]: The parameter's SpellMap default, or None.
+        """
+        for param in requirements.parameters:
+            if param.name == param_name:
+                spell_map: Optional[SpellMap] = param.spellmap_default
+                return spell_map
+        return None
 
     @staticmethod
     def _container_hint(annotation: Any) -> str:
@@ -138557,7 +138680,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: fc0492af077ba5c129120442dcb435def2b502129c42afd9a14905e77130176c
+CONTENT SHA256: 4865c723f6da4d002486a1d392177075cabce50dff6e86950116842674c8242c
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -146663,8 +146786,9 @@ class Spellbook(Cleanable):
                 If True, log this Spellbook's validation warnings once, grouped by
                 warning code, at WARNING level through the Spellbook logger. Warnings
                 never stop conjure; they flag things that may fail later, such as a
-                typed parameter no registered spell provides (UNRESOLVED_INPUT, which
-                the meld that constructs that spell must supply). Useful while
+                typed parameter no registered spell provides or a SpellMap default
+                whose address has nothing bound (UNRESOLVED_INPUT, which the meld that
+                constructs that spell must supply). Useful while
                 learning or debugging a new graph. Defaults to False, which logs
                 nothing.
 
@@ -157380,7 +157504,7 @@ END FILE: src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_analysis/crystal_analyzer.py
-CONTENT SHA256: e51f367644defe0d8e9d0845d508af6093752a9f31fa857b05a9d9d140eaa9e5
+CONTENT SHA256: 98f2473a7d695b3008e9f2796a98071364055256a2dbc9d13bfbb20cc00d5237
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -157457,6 +157581,12 @@ MemoizedModuleFacts = Tuple[
     Tuple[str, ...],
     Tuple[str, ...],
 ]
+# Per-pass answers (#327): keyed by module name and id(module object), with the
+# object kept in the value so an id cannot be reused within one pass.
+PassModulePathKey = Tuple[str, int]
+PassModulePath = Tuple[Optional[Any], Optional[Path]]
+PassCustodyKey = Tuple[str, int, Optional[Path]]
+PassCustody = Tuple[Optional[Any], SourceCustodyStrategy]
 
 
 class CrystalAnalyzer(Cleanable):
@@ -157475,7 +157605,17 @@ class CrystalAnalyzer(Cleanable):
         - Custody strategies are consulted in priority order and the FIRST
           match classifies the module - the order [synthetic, user_source,
           site_package, fallback] reproduces the historical
-          `_classify_module_target` decision table exactly.
+          `_classify_module_target` decision table, except that the default
+          user_source strategy declines any module inside a Python
+          environment (`resolve_environment_root_paths`, or a
+          `site-packages`/`dist-packages` directory): the environment wins
+          over a user root (owner, 2026-11-16, #327).
+        - Within one `analyze_spell_root` pass each distinct module's path is
+          resolved once (keyed by module name and module object) and its
+          custody matched once (keyed by name, object and path), however many
+          modules import it. Those answers live only while the pass runs and
+          are emptied when it ends, so nothing carries into the next pass
+          (#327).
         - On a memo miss or custom-strategy path, each parsed module AST is
           walked ONCE and nodes dispatch in strategy registration order,
           preserving historical manifest ordering. Memo hits skip AST work.
@@ -157569,6 +157709,8 @@ class CrystalAnalyzer(Cleanable):
     __slots__ = (
         "_custody_strategies",
         "_fact_strategies",
+        "_pass_custody",
+        "_pass_module_paths",
         "_retain_user_sources",
         "_site_package_dependency_descent",
         "_uses_default_fact_strategies",
@@ -157600,8 +157742,14 @@ class CrystalAnalyzer(Cleanable):
             - Supplying any fact-strategy sequence, including an empty one,
               disables memoization rather than assuming custom behavior is
               source-pure.
+            - The default custody chain gives its user_source strategy the
+              environment roots from `resolve_environment_root_paths` (the
+              site roots plus the interpreter prefixes), so a module inside an
+              environment is never user source. A supplied chain is used as
+              given.
             - Construction does not read modules, parse source, or populate
-              the shared memo; work begins at an analysis entry point.
+              the shared memo; work begins at an analysis entry point. The
+              per-pass answer dictionaries start empty.
 
         Args:
             user_source_root_paths:
@@ -157609,7 +157757,9 @@ class CrystalAnalyzer(Cleanable):
                 input; resolve via `resolve_user_root_paths`).
             site_package_root_paths:
                 Resolved interpreter site roots (resolve via
-                `resolve_site_package_root_paths`).
+                `resolve_site_package_root_paths`). They classify site
+                packages and, with the interpreter prefixes, bound what user
+                source may claim.
             custody_strategies:
                 Optional override of the custody priority chain. When
                 omitted, the default four-strategy chain is built. The
@@ -157657,12 +157807,23 @@ class CrystalAnalyzer(Cleanable):
         if custody_strategies is None:
             self._custody_strategies: List[SourceCustodyStrategy] = [
                 SyntheticCustodyStrategy(),
-                UserSourceCustodyStrategy(user_source_root_paths),
+                UserSourceCustodyStrategy(
+                    user_source_root_paths,
+                    environment_root_paths=(
+                        self.resolve_environment_root_paths(
+                            site_package_root_paths
+                        )
+                    ),
+                ),
                 SitePackageCustodyStrategy(site_package_root_paths),
                 BinaryUnknownCustodyStrategy(),
             ]
         else:
             self._custody_strategies = list(custody_strategies)
+        # Per-pass answers (#327): filled by one analyze_spell_root pass and
+        # emptied when it ends, so no answer outlives its pass.
+        self._pass_module_paths: Dict[PassModulePathKey, PassModulePath] = {}
+        self._pass_custody: Dict[PassCustodyKey, PassCustody] = {}
         if fact_strategies is None:
             self._fact_strategies: List[CrystalFactStrategy] = [
                 ImportStatementStrategy(),
@@ -157680,7 +157841,8 @@ class CrystalAnalyzer(Cleanable):
         Contract:
             - Repeated calls return without touching deleted fields.
             - Cleans every owned custody and fact strategy before deleting the
-              owned strategy lists and memo-eligibility flag.
+              owned strategy lists, the per-pass answer dictionaries and the
+              memo-eligibility flag.
             - Does not clear, mutate, or otherwise own the shared memoized
               syntax facts; they remain available to later analyzer instances.
             - After cleanup, live analysis methods are invalid through the
@@ -157707,6 +157869,8 @@ class CrystalAnalyzer(Cleanable):
             fact_strategy.cleanup()
         del self._custody_strategies
         del self._fact_strategies
+        del self._pass_module_paths
+        del self._pass_custody
         del self._uses_default_fact_strategies
 
     @classmethod
@@ -157954,6 +158118,46 @@ class CrystalAnalyzer(Cleanable):
             unique_paths.append(path)
         return tuple(unique_paths)
 
+    @staticmethod
+    def resolve_environment_root_paths(
+            site_package_root_paths: Sequence[Path],
+    ) -> Tuple[Path, ...]:
+        """
+        Resolve the roots under which a module is never user source.
+
+        Purpose:
+            Give the default user_source strategy the owner's environment rule
+            (2026-11-16, #327): a module inside the running interpreter's
+            environment is an installed module, never the user's own source,
+            even when the environment sits inside a user root.
+
+        Contract:
+            - Returns the given site roots, in order, followed by
+              `sys.prefix`, `sys.base_prefix` and `sys.exec_prefix`, each
+              prefix resolved; duplicates are dropped keeping the first.
+            - Site roots are expected already resolved (as
+              `resolve_site_package_root_paths` returns them) and are not
+              resolved again.
+
+        Args:
+            site_package_root_paths:
+                Resolved interpreter site roots.
+
+        Returns:
+            Tuple[Path, ...]: Environment roots, deduplicated.
+        """
+        candidate_paths: List[Path] = list(site_package_root_paths)
+        for prefix in (sys.prefix, sys.base_prefix, sys.exec_prefix):
+            candidate_paths.append(Path(prefix).resolve())
+        unique_paths: List[Path] = []
+        seen_paths: Set[Path] = set()
+        for path in candidate_paths:
+            if path in seen_paths:
+                continue
+            seen_paths.add(path)
+            unique_paths.append(path)
+        return tuple(unique_paths)
+
     # ------------------------------------------------------------------
     # Entry points
     # ------------------------------------------------------------------
@@ -157967,6 +158171,12 @@ class CrystalAnalyzer(Cleanable):
     ) -> CrystalAnalysisResult:
         """
         Analyze the live module world rooted at one spell's module.
+
+        Contract:
+            - One pass: each distinct module's path is resolved once and its
+              custody matched once, and those answers are emptied when the
+              pass ends - normally or by exception - so a later pass, on this
+              or any analyzer, asks every question again.
 
         Args:
             root_module_name:
@@ -157986,18 +158196,22 @@ class CrystalAnalyzer(Cleanable):
         """
         self.check_cleaned()
         result = CrystalAnalysisResult()
-        root_kind = self._match_custody(
-            module_name=root_module_name,
-            module_obj=root_module_obj,
-            module_path=root_module_path,
-        ).kind
-        result.set_root_module_kind(root_kind)
-        self._walk_module_dependencies(
-            result=result,
-            module_name=root_module_name,
-            module_obj=root_module_obj,
-            module_path=root_module_path,
-        )
+        try:
+            root_kind = self._match_custody(
+                module_name=root_module_name,
+                module_obj=root_module_obj,
+                module_path=root_module_path,
+            ).kind
+            result.set_root_module_kind(root_kind)
+            self._walk_module_dependencies(
+                result=result,
+                module_name=root_module_name,
+                module_obj=root_module_obj,
+                module_path=root_module_path,
+            )
+        finally:
+            self._pass_module_paths.clear()
+            self._pass_custody.clear()
         for fact_strategy in self._fact_strategies:
             fact_strategy.finalize(result)
         return result
@@ -158169,6 +158383,10 @@ class CrystalAnalyzer(Cleanable):
               object traversal.
             - Non-descending custody (unknown fallback) records honest
               leaves without enqueueing them.
+            - Each import edge reads its target's live module object from
+              `sys.modules`, then takes the target's path and custody from
+              the pass's answers (`_resolve_pass_module_path`,
+              `_match_custody`), computing them on first sight only.
 
         Args:
             result:
@@ -158216,7 +158434,7 @@ class CrystalAnalyzer(Cleanable):
             tracked_dependencies: List[str] = []
             for dependency_name in flat_targets:
                 dependency_obj = sys.modules.get(dependency_name)
-                dependency_path = self.resolve_module_path(
+                dependency_path = self._resolve_pass_module_path(
                     dependency_name,
                     dependency_obj,
                 )
@@ -158665,6 +158883,45 @@ class CrystalAnalyzer(Cleanable):
     # Shared resolution helpers (ported from SpellCrystal)
     # ------------------------------------------------------------------
 
+    def _resolve_pass_module_path(
+            self,
+            module_name: str,
+            module_obj: Optional[Any],
+    ) -> Optional[Path]:
+        """
+        Return one module's path, resolving it once per analysis pass.
+
+        Purpose:
+            Stop a module imported from many places from paying
+            `resolve_module_path` (a `Path.resolve`) once per import edge
+            (#327); the first edge of a pass resolves it, later edges reuse it.
+
+        Contract:
+            - Keyed by module name and module object: the two inputs
+              `resolve_module_path` depends on. The object is kept with the
+              answer and must be the same object (`is`) on reuse, so a
+              recycled id can never return another module's path.
+            - The answers belong to the running pass; `analyze_spell_root`
+              empties them when the pass ends.
+
+        Args:
+            module_name:
+                Canonical module name to resolve.
+            module_obj:
+                Live module object from `sys.modules`, or None.
+
+        Returns:
+            Optional[Path]: What `resolve_module_path` returned for this
+            name and object in this pass.
+        """
+        key = (module_name, id(module_obj))
+        remembered = self._pass_module_paths.get(key)
+        if remembered is not None and remembered[0] is module_obj:
+            return remembered[1]
+        module_path = self.resolve_module_path(module_name, module_obj)
+        self._pass_module_paths[key] = (module_obj, module_path)
+        return module_path
+
     def _match_custody(
             self,
             *,
@@ -158674,6 +158931,16 @@ class CrystalAnalyzer(Cleanable):
     ) -> SourceCustodyStrategy:
         """
         Return the first custody strategy claiming one module.
+
+        Contract:
+            - Runs the custody chain once per distinct (module name, module
+              object, module path) in a pass and reuses that match for the
+              rest of the pass (#327). Strategies must answer `matches`
+              deterministically for one input triple, so a reused match is
+              the one a fresh run would return. The object is kept with the
+              match and must be the same object on reuse.
+            - The matches belong to the running pass; `analyze_spell_root`
+              empties them when the pass ends.
 
         Args:
             module_name:
@@ -158691,12 +158958,17 @@ class CrystalAnalyzer(Cleanable):
                 If no strategy matched - a misconfigured chain whose
                 terminal fallback is missing.
         """
+        key = (module_name, id(module_obj), module_path)
+        remembered = self._pass_custody.get(key)
+        if remembered is not None and remembered[0] is module_obj:
+            return remembered[1]
         for custody_strategy in self._custody_strategies:
             if custody_strategy.matches(
                     module_name=module_name,
                     module_obj=module_obj,
                     module_path=module_path,
             ):
+                self._pass_custody[key] = (module_obj, custody_strategy)
                 return custody_strategy
         raise RuntimeError(
             "No custody strategy matched module '{0}'. The custody chain "
@@ -159919,17 +160191,18 @@ END FILE: src/melder/crystallizer/crystal_analysis/custody/synthetic_custody_str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py
-CONTENT SHA256: 790097ffd3444f4a51d81711dd542aa8e1ce41afc746754d275bca2cb9346bf0
+CONTENT SHA256: dc9eac2275b0ba0ce3c940cd5373bc40a5b4e5245eed206dd61a1e738b1cae5c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 Custody strategy for user-source (file-backed, policy-rooted) modules.
 
 User-source classification is policy-driven: a module belongs here when its
-resolved path sits under one of the configured user source roots. This is
-also where physical custody gains its S1 upgrade - a bind-time module-text
-SHA256 fingerprint, making on-disk drift detectable at load time instead of
-silently restoring against changed code.
+resolved path sits under one of the configured user source roots and outside
+every Python environment (the owner's root-precedence answer, 2026-11-16,
+#327: the environment wins). This is also where physical custody gains its S1
+upgrade - a bind-time module-text SHA256 fingerprint, making on-disk drift
+detectable at load time instead of silently restoring against changed code.
 
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
@@ -159954,12 +160227,21 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
 
     Contract:
         - Path-driven: a module with no path can never match.
-        - The root set is fixed at construction (analysis policy input)
+        - The environment wins (owner, 2026-11-16, #327): a path under one
+          of the environment roots, or inside a directory named
+          `site-packages` or `dist-packages` (any letter case), is never
+          user source - even when it also sits under a user root, and even
+          when that user root lies inside the environment. Such a module
+          falls to the next strategy in the chain (site package or the
+          unknown fallback). The checks are pure path comparisons; they
+          read nothing from disk.
+        - Both root sets are fixed at construction (analysis policy input)
           and never mutated.
         - Fingerprints are hex SHA256 over the UTF-8 source (ABC default).
 
     Lifecycle / Cleanup:
-        Owns the user-root tuple; cleanup deletes it (del posture).
+        Owns the user-root and environment-root tuples; cleanup deletes both
+        (del posture).
 
     Registration:
         MELDER KERNEL - guarded. A per-analysis strategy in the analyzer's custody
@@ -159968,10 +160250,10 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
     Subsystem Context:
         The user-source member of the `crystal_analysis` custody family (see
         `SourceCustodyStrategy`). Policy-driven: it claims modules whose resolved
-        path sits under the configured user source roots, exposes their .py/.pyi
-        text for fact analysis, and stamps the bind-time SHA256 fingerprint over
-        that source. Its optional retention lane (harvest_payload) is the S2
-        physical-custody seam for user modules.
+        path sits under the configured user source roots and outside every
+        environment, exposes their .py/.pyi text for fact analysis, and stamps
+        the bind-time SHA256 fingerprint over that source. Its optional retention
+        lane (harvest_payload) is the S2 physical-custody seam for user modules.
 
     System Context:
         This is the authority the crystallizer takes real custody of, and the
@@ -159981,7 +160263,9 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
         restoring against changed code. Keeping fingerprint custody to user source
         (not site packages, not binaries) is the trust boundary that makes drift
         detection meaningful: it is Melder's answer for the code its user owns and
-        can change under it.
+        can change under it. That boundary must hold when a project keeps its
+        virtual environment inside its own directory - the default user root is the
+        working directory - which is why an environment always wins over a user root.
 
     AGENT_ACCESS: internal
 
@@ -159991,9 +160275,21 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
     """
 
 
-    __slots__ = ("_user_root_paths",)
+    # Directory names that mark an installed-package tree wherever it sits,
+    # so a second environment inside a project is caught by name alone.
+    ENVIRONMENT_DIRECTORY_NAMES: ClassVar[Tuple[str, ...]] = (
+        "site-packages",
+        "dist-packages",
+    )
 
-    def __init__(self, user_root_paths: Tuple[Path, ...]) -> None:
+    __slots__ = ("_user_root_paths", "_environment_root_paths")
+
+    def __init__(
+            self,
+            user_root_paths: Tuple[Path, ...],
+            *,
+            environment_root_paths: Tuple[Path, ...] = (),
+    ) -> None:
         """
         Initialize the strategy with the classification policy roots.
 
@@ -160001,12 +160297,21 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
             user_root_paths:
                 Resolved root paths that define `user_source` authority.
                 An empty tuple is legal and simply never matches.
+            environment_root_paths:
+                Resolved roots that are never user source: the interpreter's
+                site roots and prefixes (the analyzer supplies
+                `CrystalAnalyzer.resolve_environment_root_paths`). An empty
+                tuple leaves only the `site-packages`/`dist-packages`
+                directory-name rule.
 
         Returns:
             None.
         """
         super().__init__()
         self._user_root_paths: Tuple[Path, ...] = tuple(user_root_paths)
+        self._environment_root_paths: Tuple[Path, ...] = tuple(
+            environment_root_paths
+        )
 
     def cleanup(self) -> None:
         """
@@ -160019,6 +160324,7 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
             return
         self._cleaned = True
         del self._user_root_paths
+        del self._environment_root_paths
 
     @property
     def kind(self) -> str:
@@ -160048,7 +160354,7 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
             module_path: Optional[Path],
     ) -> bool:
         """
-        Claim modules whose resolved path sits under a user source root.
+        Claim modules under a user source root and outside every environment.
 
         Args:
             module_name:
@@ -160061,14 +160367,46 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
         Returns:
             bool:
                 True when the resolved path is relative to any configured
-                user root; False for pathless modules.
+                user root and not inside an environment (see
+                `_is_inside_environment`); False for pathless modules.
         """
         if module_path is None:
             return False
         resolved_path = self._normalize_path(module_path)
+        if not any(
+                resolved_path.is_relative_to(root_path)
+                for root_path in self._user_root_paths
+        ):
+            return False
+        return not self._is_inside_environment(resolved_path)
+
+    def _is_inside_environment(self, resolved_path: Path) -> bool:
+        """
+        Return whether one resolved module path lies inside a Python environment.
+
+        Contract:
+            - True when the path is relative to any environment root, or when
+              one of its directories is named `site-packages` or
+              `dist-packages` in any letter case; the file name itself is not
+              considered.
+            - Pure path comparison: no filesystem access, no exception for
+              any input path.
+
+        Args:
+            resolved_path:
+                The module path after `_normalize_path`.
+
+        Returns:
+            bool: True when the environment wins over any user root.
+        """
+        if any(
+                resolved_path.is_relative_to(root_path)
+                for root_path in self._environment_root_paths
+        ):
+            return True
         return any(
-            resolved_path.is_relative_to(root_path)
-            for root_path in self._user_root_paths
+            directory_name.lower() in self.ENVIRONMENT_DIRECTORY_NAMES
+            for directory_name in resolved_path.parent.parts
         )
 
     def resolve_source(
@@ -180480,7 +180818,7 @@ END FILE: src/melder/crystallizer/persistence/persistence_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/persistence/record_version.py
-CONTENT SHA256: 3d643ccc28d23db98afb93e89f16fcb92917a64938b2a0e0153dc05ceb63024e
+CONTENT SHA256: 2945373e3fa30939aab63463dae5df5e1414ac70c69052db7f597c7769c918bb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -180580,7 +180918,12 @@ class RecordVersion:
     # index whose versions are bound at different addresses, which bind_inactive now refuses, so it is not read
     # (the owner's call, 2026-10-25: "notch the cache version and invalidate all the records"). The shape did
     # not change; OLDEST_READABLE_MAJOR is the gate.
-    CURRENT: ClassVar[str] = "5.0.0"
+    # Patch 5.0.1 (2026-11-16, #327) notes a custody change: a module inside a Python environment - under an
+    # interpreter site root or prefix, or in a site-packages or dist-packages directory - is never user source,
+    # even under a user source root, so it records as a site package (or unknown) with no fingerprint and no
+    # retained text. A 5.0.0 record may still list such modules as user source with fingerprints. No key or
+    # shape changed; 5.0.0 and 5.0.1 records read alike.
+    CURRENT: ClassVar[str] = "5.0.1"
     OLDEST_READABLE_MAJOR: ClassVar[int] = 5
     KEY: ClassVar[str] = "record_version"
 
@@ -221207,7 +221550,7 @@ END FILE: src/melder/nexus/frame_descriptor_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/nexus.py
-CONTENT SHA256: 4f55ee64b571ab53b7d922638e53890de218a88241a9396374429916de94248b
+CONTENT SHA256: 9ec146d51b26b0a6aa0d99fb7acdf7489dcda2c32e62958c6670d1484c08af50
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -221267,7 +221610,7 @@ from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
-from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate, RiftGateDrainTimeoutError
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -221525,6 +221868,13 @@ class Nexus(Cleanable):
 
         Contract:
             - Safe to call more than once.
+            - Drains every registered Rift's gate before the teardown (GitHub
+              #274, design 5d): every gate is closed, so newcomers are refused
+              everywhere at once, and the cleanup waits for the threads inside
+              to leave under ONE deadline shared by all Rifts
+              (`projection_refresh_gate_timeout_seconds`). Threads that outstay
+              it are logged at WARNING and their Rift is cleaned up anyway; a
+              caller inside one of the Rifts is not waited for.
             - Cleans registered Rifts, profile templates, installed
               configuration, ACL manager, and descriptor manager before
               dropping references.
@@ -221532,7 +221882,9 @@ class Nexus(Cleanable):
               completes.
 
         Threading:
-            Takes `Nexus._lock`, the one class-level lock, for the teardown and
+            Takes `Nexus._lock`, the one class-level lock, briefly to snapshot
+            the gates for the drain, waits for the drain without it (an agent
+            inside may need it to leave), then takes it for the teardown and
             again to reset the singleton bookkeeping.
 
         Returns:
@@ -221540,6 +221892,7 @@ class Nexus(Cleanable):
         """
         if self._cleaned:
             return
+        self._drain_rift_gates_before_cleanup()
         with self._lock:
             if self._cleaned:
                 return
@@ -221591,6 +221944,88 @@ class Nexus(Cleanable):
         with Nexus._lock:
             Nexus._instance = None
             Nexus._initialized = False
+
+    def _drain_rift_gates_before_cleanup(self) -> None:
+        """
+        Internal
+
+        Close every registered Rift's gate and wait, under one shared deadline,
+        for the threads inside to leave.
+
+        Purpose:
+            The drain step of `cleanup` (GitHub #274, design 5d): the teardown
+            does not run under an agent that is still inside one of its Rift's
+            calls and can finish, and it does not hang on one that cannot.
+
+        Contract:
+            - Snapshots (name, id, gate) of every registered Rift and the drain
+              bounds under the Nexus lock, then releases it. Nothing to drain
+              when Nexus was cleaned, is not configured, or holds no Rift.
+            - Closes every gate first (`RiftGate.close_terminally`), so
+              newcomers are refused everywhere at once, then waits for each gate
+              with what remains of ONE deadline - now plus
+              `projection_refresh_gate_timeout_seconds` - shared by all Rifts.
+            - A gate whose threads outstay the deadline is logged at WARNING
+              (Rift name and id, threads still inside, cleaned up anyway) and the
+              drain moves on; the teardown that follows cleans that Rift with
+              them inside. A gate cleaned before or during the drain - a
+              concurrent `remove_rift` tore its Rift down - has nobody left to
+              wait for and is skipped; this best-effort step never aborts the
+              cleanup for it.
+            - The caller's own ticket is never waited for.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: If the configured drain bounds are no longer numeric.
+
+        Threading:
+            Takes the Nexus lock only for the snapshot; the waits run without
+            it, because an agent inside may need it to leave.
+        """
+        with self._lock:
+            if self._cleaned or not self._configured or not self._rifts_by_id:
+                return
+            rift_names_by_id = {
+                rift_id: rift_name
+                for rift_name, rift_id in self._rift_ids_by_name.items()
+            }
+            rift_gates: List[Tuple[Optional[str], str, RiftGate]] = []
+            for rift_id in self._rifts_by_id:
+                rift_gate = self._rift_gate_controller.get_rift_gate(rift_id)
+                if rift_gate is not None:
+                    rift_gates.append((rift_names_by_id.get(rift_id), rift_id, rift_gate))
+            timeout, interval = self._get_rift_gate_drain_bounds()
+        for _, _, rift_gate in rift_gates:
+            try:
+                rift_gate.close_terminally()
+            except RuntimeError:
+                # A concurrent removal tore this Rift down after the snapshot: its gate is cleaned, nothing to drain.
+                if not rift_gate.cleaned:
+                    raise
+        deadline = time.monotonic() + timeout
+        for rift_name, rift_id, rift_gate in rift_gates:
+            try:
+                rift_gate.wait_until_free(
+                    timeout=max(0.0, deadline - time.monotonic()),
+                    interval=interval,
+                )
+            except RiftGateDrainTimeoutError as exc:
+                self._logger.warning(
+                    "Rift '{0}' (id={1}) still had {2} thread(s) inside after the {3} s drain timeout "
+                    "(projection_refresh_gate_timeout_seconds); cleaning it up anyway.".format(
+                        rift_name,
+                        rift_id,
+                        exc.threads_inside,
+                        timeout,
+                    ),
+                    "cleanup",
+                )
+            except RuntimeError:
+                # Cleaned by a concurrent removal while this waited: nobody is left in it to wait for.
+                if not rift_gate.cleaned:
+                    raise
 
     def _initialize_logging(self, logger: Optional[Any]) -> None:
         """
@@ -222482,6 +222917,21 @@ class Nexus(Cleanable):
         Remove one Rift from Nexus and update frame lifecycle state.
 
         Contract:
+            - Drains the Rift's gate first (GitHub #274, step 3): it closes the
+              gate, so a newcomer at any agent door - a workstation call, a
+              viewer read, a command, a Rift door - is refused at once, and it
+              waits for the threads already inside to finish their calls and
+              leave (they pass the closed gate by re-entry). Only then is the
+              Rift taken out of the registries and cleaned up. The wait is
+              bounded by the configured `projection_refresh_gate_timeout_seconds`
+              and polls at `projection_refresh_gate_poll_interval_seconds`.
+            - A caller removing the Rift it is itself inside - an agent calling
+              this from one of that Rift's calls - is not waited for (its own
+              ticket is not counted); its call then returns normally on the
+              cleaned room (design 5c).
+            - When the drain times out nothing is removed: the Rift stays
+              registered with its gate closed to new work, and the removal can
+              be retried once the threads inside have left (design 5b).
             - Removes the Rift from Nexus registries under the Nexus lock.
             - Marks the Rift cleaned there and decrements the target-frame ref
               counts for exactly the frames attached at that moment, so an
@@ -222501,20 +222951,44 @@ class Nexus(Cleanable):
             None.
 
         Raises:
-            ValueError: If no Rift with that id is registered.
-            RuntimeError: If the Rift was already cleaned outside Nexus; only its
-                id-registry entry is gone by then (its name, gate, counts stay).
+            ValueError: If no Rift with that id is registered - also when
+                another removal of the same Rift won while this one drained.
+            RuntimeError: If threads other than the caller are still inside
+                when the drain times out; the message names the Rift, how many
+                threads are still inside, and that it stays registered with its
+                gate closed until a retry. Also if the Rift was already cleaned
+                outside Nexus: that is now refused before anything is drained
+                or popped, so the Rift, its name, gate and counts all stay.
 
         Threading:
-            The registry phase holds the Nexus lock and takes the Rift lock
-            inside it, briefly, to mark the Rift (Nexus, then Rift - the order
-            `Nexus.cleanup` takes). The Rift's teardown runs after the Nexus
-            lock is released: it cleans the room, whose command lock an
-            attaching agent holds while it reserves under the Nexus lock.
+            Resolves the Rift, its gate and the drain bounds under the Nexus
+            lock, then drains with the lock released: an agent inside may need
+            it to leave. The registry phase holds the Nexus lock and takes the
+            Rift lock inside it, briefly, to mark the Rift (Nexus, then Rift -
+            the order `Nexus.cleanup` takes). The Rift's teardown runs after
+            the Nexus lock is released: it cleans the room, whose command lock
+            an attaching agent holds while it reserves under the Nexus lock.
         """
         self._require_activated()
+        with self._lock:
+            try:
+                rift_to_drain = self._rifts_by_id[rift_id]
+            except KeyError as exc:
+                raise ValueError("Rift with id '{0}' was not found.".format(rift_id)) from exc
+            # A Rift cleaned outside Nexus took its gate with it: refuse before draining or popping anything.
+            rift_to_drain.check_cleaned()
+            rift_name: Optional[str] = rift_to_drain.rift_name
+            rift_gate = self._rift_gate_controller.get_rift_gate(rift_id)
+            timeout, interval = self._get_rift_gate_drain_bounds()
+        if rift_gate is not None:
+            self._drain_rift_gate_for_removal(
+                rift_gate,
+                rift_name=rift_name,
+                rift_id=rift_id,
+                timeout=timeout,
+                interval=interval,
+            )
         frame_names_to_cleanup: List[str] = []
-        rift_name: Optional[str] = None
         with self._lock:
             try:
                 rift = self._rifts_by_id.pop(rift_id)
@@ -222544,6 +223018,71 @@ class Nexus(Cleanable):
             "Removed Rift '{0}' (id={1}).".format(rift_name, rift_id),
             "remove_rift",
         )
+
+    def _drain_rift_gate_for_removal(
+            self,
+            rift_gate: RiftGate,
+            *,
+            rift_name: Optional[str],
+            rift_id: str,
+            timeout: float,
+            interval: float,
+    ) -> None:
+        """
+        Internal
+
+        Close one Rift's gate for its removal and wait for the threads inside to
+        leave.
+
+        Contract:
+            - `RiftGate.close_and_wait_until_free(timeout, interval)`: newcomers
+              are refused from here on, the threads inside pass by re-entry until
+              they leave, and the caller's own ticket is not waited for.
+            - A gate already cleaned, or cleaned while this drains, has nothing
+              to drain: another removal of this Rift won meanwhile, and the
+              registry phase that follows answers with the not-found ValueError.
+            - On a drain timeout the gate stays closed and nothing else changes.
+
+        Args:
+            rift_gate:
+                The Rift's registered gate.
+            rift_name:
+                The Rift's name, for the messages.
+            rift_id:
+                The Rift's id, for the messages.
+            timeout:
+                The configured drain timeout, in seconds.
+            interval:
+                The configured poll interval, in seconds.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If threads other than the caller are still inside when
+                the timeout runs out (raised from the gate's
+                `RiftGateDrainTimeoutError`, after a WARNING log).
+
+        Threading:
+            Runs without the Nexus lock; an agent inside may need it to leave.
+        """
+        if rift_gate.cleaned:
+            return
+        try:
+            rift_gate.close_and_wait_until_free(timeout=timeout, interval=interval)
+        except RiftGateDrainTimeoutError as exc:
+            message = (
+                "Rift '{0}' (id={1}) was not removed: {2} thread(s) were still inside it after the {3} s drain "
+                "timeout (projection_refresh_gate_timeout_seconds). It stays registered with its gate closed to "
+                "new work; call remove_rift again once they have left."
+            ).format(rift_name, rift_id, exc.threads_inside, timeout)
+            self._logger.warning(message, "remove_rift")
+            raise RuntimeError(message) from exc
+        except RuntimeError:
+            # Another removal of this Rift tore it down while this one drained: the registry phase that follows
+            # answers with the not-found ValueError. Any other RuntimeError is the gate's own and propagates.
+            if not rift_gate.cleaned:
+                raise
 
     def _publish_frame_record(self, spellbook: Spellbook) -> bool:
         """
@@ -222817,11 +223356,16 @@ class Nexus(Cleanable):
                 Poll interval in seconds while draining.
 
         Contract:
-            - BLOCKS. It closes the gate and then waits until no threads remain inside
-              the rift, polling at the given interval up to the timeout - this is the
+            - BLOCKS. It closes the gate terminally - newcomers are refused at once -
+              and then waits until no thread other than the caller remains inside
+              the rift, polling at the given interval up to the timeout. This is the
               quiescence primitive that plain `disable_rift_gate` is not.
-            - The timeout bounds the wait, so a return does not by itself prove the
-              rift is empty; check the active-thread count if that matters.
+            - The threads already inside pass the closed gate by re-entry, so they can
+              finish and leave; the caller's own ticket is never waited for.
+            - A return means the drain completed; running out of time raises instead,
+              and the gate stays closed. An unknown rift id is a silent no-op.
+            - It only drains: it does not remove the rift. `remove_rift` drains the same
+              way before it tears a rift down.
 
         Threading:
             Delegated to the rift-gate controller, which owns the gate locking.
@@ -222830,7 +223374,9 @@ class Nexus(Cleanable):
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If Nexus has been cleaned.
+            RuntimeError: If Nexus has been cleaned, or the gate was cleaned.
+            RiftGateDrainTimeoutError: A RuntimeError, if threads other than the
+                caller are still inside when the timeout runs out.
 
         Returns:
             None.
@@ -222844,18 +223390,23 @@ class Nexus(Cleanable):
 
     def count_active_rift_threads(self, rift_id: str) -> int:
         """
-        Return active ticket count for one Rift gate.
+        Return how many threads are inside one Rift.
 
         Args:
             rift_id:
                 Canonical Rift id.
 
         Contract:
+            - Counts THREADS inside the rift's gate, not calls: a thread inside a
+              command that makes nested viewer reads or commands counts once (GitHub
+              #274, step 3). Every agent door - workstation calls, viewer reads,
+              commands, the Rift's own doors - holds the thread's ticket while it runs.
             - A point-in-time count for ONE rift; it can change the instant it returns.
             - A DIAGNOSTIC, not a synchronization primitive - do not spin on it to decide
               a rift is quiescent; use `close_and_wait_rift` for that.
             - A point-in-time count for ONE rift; it can change the instant it
               returns, so it is a diagnostic rather than a synchronization primitive.
+            - An unknown rift id counts 0.
 
         Threading:
             Delegated to the rift-gate controller, which owns the gate locking.
@@ -222867,16 +223418,19 @@ class Nexus(Cleanable):
             RuntimeError: If Nexus has been cleaned.
 
         Returns:
-            int: Active ticket count.
+            int: Threads inside the rift (its active ticket count).
         """
         self.check_cleaned()
         return self._rift_gate_controller.count_active_threads_for_rift(rift_id)
 
     def count_active_rift_threads_total(self) -> int:
         """
-        Return active ticket count summed across all Rift gates.
+        Return the threads inside each Rift, summed across all Rift gates.
 
         Contract:
+            - Counts THREADS inside each rift's gate, not calls (GitHub #274, step 3).
+              A thread inside two rifts at once - one rift's agent code calling into
+              another - counts once per rift.
             - A point-in-time count ACROSS ALL rifts.
             - The per-rift counts are NOT sampled atomically together, so this total need
               not equal the sum of individually queried rifts.
@@ -222894,7 +223448,8 @@ class Nexus(Cleanable):
             RuntimeError: If Nexus has been cleaned.
 
         Returns:
-            int: Total active ticket count.
+            int: Total threads inside, summed per rift (the total active ticket
+            count).
         """
         self.check_cleaned()
         return self._rift_gate_controller.count_active_threads_total()
@@ -223857,6 +224412,52 @@ class Nexus(Cleanable):
                 )
         return normalized_selection
 
+    def _get_rift_gate_drain_bounds(self) -> Tuple[float, float]:
+        """
+        Read the configured Rift-gate drain bounds: the timeout and the poll interval.
+
+        Purpose:
+            One reading of `projection_refresh_gate_timeout_seconds` and
+            `projection_refresh_gate_poll_interval_seconds`, with the same type
+            checks, for every drain Nexus runs: an ACL refresh
+            (`_refresh_rift_projection_sets_for_frames`), a removal
+            (`remove_rift`) and a shutdown (`cleanup`).
+
+        Contract:
+            - Reads the installed configuration as it stands; it does not cache.
+            - Returns both values as floats.
+
+        Returns:
+            Tuple[float, float]: The drain timeout and the poll interval, in
+            seconds.
+
+        Raises:
+            RuntimeError: If Nexus has no installed configuration.
+            TypeError: If either property is no longer numeric.
+
+        Threading:
+            Callers read it under the Nexus lock, with the rest of the snapshot
+            the drain works from.
+        """
+        configuration = self._configuration
+        if configuration is None:
+            raise RuntimeError("Nexus is not configured.")
+        timeout = configuration.get_property(
+            "projection_refresh_gate_timeout_seconds"
+        )
+        interval = configuration.get_property(
+            "projection_refresh_gate_poll_interval_seconds"
+        )
+        if not isinstance(timeout, (int, float)):
+            raise TypeError(
+                "projection_refresh_gate_timeout_seconds must remain numeric."
+            )
+        if not isinstance(interval, (int, float)):
+            raise TypeError(
+                "projection_refresh_gate_poll_interval_seconds must remain numeric."
+            )
+        return float(timeout), float(interval)
+
     def _wait_until_rift_gate_is_idle(
             self,
             rift_id: str,
@@ -223916,24 +224517,11 @@ class Nexus(Cleanable):
             projection_refresh_gate_enabled = self._configuration.get_property(
                 "projection_refresh_gate_enabled"
             )
-            timeout = self._configuration.get_property(
-                "projection_refresh_gate_timeout_seconds"
-            )
-            interval = self._configuration.get_property(
-                "projection_refresh_gate_poll_interval_seconds"
-            )
-        if not isinstance(projection_refresh_gate_enabled, bool):
-            raise TypeError(
-                "projection_refresh_gate_enabled must remain a bool."
-            )
-        if not isinstance(timeout, (int, float)):
-            raise TypeError(
-                "projection_refresh_gate_timeout_seconds must remain numeric."
-            )
-        if not isinstance(interval, (int, float)):
-            raise TypeError(
-                "projection_refresh_gate_poll_interval_seconds must remain numeric."
-            )
+            if not isinstance(projection_refresh_gate_enabled, bool):
+                raise TypeError(
+                    "projection_refresh_gate_enabled must remain a bool."
+                )
+            timeout, interval = self._get_rift_gate_drain_bounds()
         impacted_rifts = []
         frame_names_by_rift_id: Dict[str, Tuple[str, ...]] = {}
         for rift in rifts:
@@ -234420,7 +235008,7 @@ END FILE: src/melder/nexus/rift/command_system/capability_command_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/command_system/codegen_command_system.py
-CONTENT SHA256: 79fcd97dbd7995a1e3b9457d950b8ee6cb334cf777c5d45c9b193c3b856a2428
+CONTENT SHA256: 44c437eeba1e491657a15e31e50c2279bb2b07d3a1b96f365f10787e46bd0b79
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -235063,35 +235651,42 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        with self._entered_action_hook_scope_if_available(
-                category="codegen",
-                action_name="validate_codegen",
-        ):
-            rift_gate = self._begin_command_action()
-            transaction_context: Optional[CodegenTransactionContext] = None
-            validation_result: Optional[CodegenValidationResult] = None
-            try:
-                with self._lock:
-                    codegen_system = self._require_codegen_system()
-                    transaction_context, validation_result = (
-                        codegen_system.validate_codegen_request(
-                            code,
-                            frame_name=frame_name,
+        # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
+        # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        validation_result: Optional[CodegenValidationResult] = None
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category="codegen",
+                    action_name="validate_codegen",
+            ):
+                try:
+                    with self._lock:
+                        codegen_system = self._require_codegen_system()
+                        transaction_context, validation_result = (
+                            codegen_system.validate_codegen_request(
+                                code,
+                                frame_name=frame_name,
+                            )
                         )
-                    )
-                    return codegen_system.report_validation_result(validation_result)
-            finally:
-                if rift_gate is not None:
-                    rift_gate.unregister_ticket()
-                if (
-                        transaction_context is not None
-                        and validation_result is not None
-                ):
-                    self._emit_codegen_memory_if_enabled(
-                        action_name="validate_codegen",
-                        transaction_context=transaction_context,
-                        validation_result=validation_result,
-                    )
+                        return codegen_system.report_validation_result(validation_result)
+                finally:
+                    # Memory before the post-hooks, as codegen commands always had it. None once this command system
+                    # was cleaned meanwhile: the same thread removed its own Rift, or a teardown did not wait for it.
+                    if (
+                            transaction_context is not None
+                            and validation_result is not None
+                            and not self._cleaned
+                    ):
+                        self._emit_codegen_memory_if_enabled(
+                            action_name="validate_codegen",
+                            transaction_context=transaction_context,
+                            validation_result=validation_result,
+                        )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     def execute_codegen(
             self,
@@ -235141,36 +235736,43 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        with self._entered_action_hook_scope_if_available(
-                category="codegen",
-                action_name="execute_codegen",
-        ):
-            rift_gate = self._begin_command_action()
-            transaction_context: Optional[CodegenTransactionContext] = None
-            execution_result: Optional[CodegenExecutionResult] = None
-            try:
-                with self._lock:
-                    codegen_system = self._require_codegen_system()
-                # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
-                transaction_context, execution_result = (
-                    codegen_system.execute_codegen_request(
-                        code,
-                        frame_name=frame_name,
+        # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
+        # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        execution_result: Optional[CodegenExecutionResult] = None
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category="codegen",
+                    action_name="execute_codegen",
+            ):
+                try:
+                    with self._lock:
+                        codegen_system = self._require_codegen_system()
+                    # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
+                    transaction_context, execution_result = (
+                        codegen_system.execute_codegen_request(
+                            code,
+                            frame_name=frame_name,
+                        )
                     )
-                )
-                return execution_result.to_payload()
-            finally:
-                if rift_gate is not None:
-                    rift_gate.unregister_ticket()
-                if (
-                        transaction_context is not None
-                        and execution_result is not None
-                ):
-                    self._emit_codegen_memory_if_enabled(
-                        action_name="execute_codegen",
-                        transaction_context=transaction_context,
-                        execution_result=execution_result,
-                    )
+                    return execution_result.to_payload()
+                finally:
+                    # Memory before the post-hooks, as codegen commands always had it. None once this command system
+                    # was cleaned meanwhile: the same thread removed its own Rift, or a teardown did not wait for it.
+                    if (
+                            transaction_context is not None
+                            and execution_result is not None
+                            and not self._cleaned
+                    ):
+                        self._emit_codegen_memory_if_enabled(
+                            action_name="execute_codegen",
+                            transaction_context=transaction_context,
+                            execution_result=execution_result,
+                        )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     def materialize_codegen(
             self,
@@ -235255,118 +235857,125 @@ class CodegenCommandSystem(CommandSystem):
         # Method-local import (Aether `_get_mutation_research` precedent):
         # keeps the crystallizer import chain off nexus module import time.
         from melder.crystallizer.synthetic_module import SyntheticModule
-        with self._entered_action_hook_scope_if_available(
-                category="codegen",
-                action_name="materialize_codegen",
-        ):
-            rift_gate = self._begin_command_action()
-            transaction_context: Optional[CodegenTransactionContext] = None
-            validation_result: Optional[CodegenValidationResult] = None
-            try:
-                with self._lock:
-                    codegen_system = self._require_codegen_system()
-                    transaction_context, validation_result = (
-                        codegen_system.validate_codegen_request(
-                            code,
-                            frame_name=frame_name,
+        # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
+        # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        validation_result: Optional[CodegenValidationResult] = None
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category="codegen",
+                    action_name="materialize_codegen",
+            ):
+                try:
+                    with self._lock:
+                        codegen_system = self._require_codegen_system()
+                        transaction_context, validation_result = (
+                            codegen_system.validate_codegen_request(
+                                code,
+                                frame_name=frame_name,
+                            )
                         )
-                    )
-                    validation_payload = codegen_system.report_validation_result(
-                        validation_result,
-                    )
-                    if not validation_result.accepted:
-                        # Refusal lane: the validator's own verdict answers;
-                        # no registry or sys.modules mutation happened.
-                        return {
-                            "materialized": False,
-                            "module_name": module_name,
-                            "validation": validation_payload,
-                        }
-                    # D-20 name gate: refuse live, core, stdlib, installed and
-                    # out-of-namespace names before anything is registered or
-                    # published.
-                    refusal = self._refuse_materialize_name(
-                        module_name,
-                        transaction_context,
-                    )
-                    if refusal is not None:
-                        return {
-                            "materialized": False,
-                            "module_name": module_name,
-                            "validation": validation_payload,
-                            "refusal": refusal,
-                        }
-                    # D-20: materialized code runs with the room's filtered
-                    # builtins, the mapping execute_codegen gives room code.
-                    room_builtins = codegen_system.build_materialize_builtins(
-                        transaction_context,
-                    )
-                    source_sha256 = hashlib.sha256(
-                        code.encode("utf-8"),
-                    ).hexdigest()
-                    module = SyntheticModule(
-                        module_name=module_name,
-                        spell_crystal_id="unbound_codegen",
-                        source_text=code,
-                        source_sha256=source_sha256,
-                        binding_signature="codegen_materialized",
-                        parent_name=(
-                            module_name.rsplit(".", 1)[0]
-                            if "." in module_name
-                            else None
-                        ),
-                        is_package=False,
-                    )
-                    module.merge_namespace({"__builtins__": room_builtins})
-                    created_parent_names = self._absent_parent_module_names(
-                        module_name,
-                        SyntheticModule,
-                    )
-                    try:
-                        module.materialize(install_import_hook=True)
-                    except BaseException:
-                        # R8 + D-20 (R6): never leave a half-published module
-                        # or a parent shell this call created behind.
+                        validation_payload = codegen_system.report_validation_result(
+                            validation_result,
+                        )
+                        if not validation_result.accepted:
+                            # Refusal lane: the validator's own verdict answers;
+                            # no registry or sys.modules mutation happened.
+                            return {
+                                "materialized": False,
+                                "module_name": module_name,
+                                "validation": validation_payload,
+                            }
+                        # D-20 name gate: refuse live, core, stdlib, installed and
+                        # out-of-namespace names before anything is registered or
+                        # published.
+                        refusal = self._refuse_materialize_name(
+                            module_name,
+                            transaction_context,
+                        )
+                        if refusal is not None:
+                            return {
+                                "materialized": False,
+                                "module_name": module_name,
+                                "validation": validation_payload,
+                                "refusal": refusal,
+                            }
+                        # D-20: materialized code runs with the room's filtered
+                        # builtins, the mapping execute_codegen gives room code.
+                        room_builtins = codegen_system.build_materialize_builtins(
+                            transaction_context,
+                        )
+                        source_sha256 = hashlib.sha256(
+                            code.encode("utf-8"),
+                        ).hexdigest()
+                        module = SyntheticModule(
+                            module_name=module_name,
+                            spell_crystal_id="unbound_codegen",
+                            source_text=code,
+                            source_sha256=source_sha256,
+                            binding_signature="codegen_materialized",
+                            parent_name=(
+                                module_name.rsplit(".", 1)[0]
+                                if "." in module_name
+                                else None
+                            ),
+                            is_package=False,
+                        )
+                        module.merge_namespace({"__builtins__": room_builtins})
+                        created_parent_names = self._absent_parent_module_names(
+                            module_name,
+                            SyntheticModule,
+                        )
                         try:
-                            module.cleanup()
-                        except Exception:
-                            pass
-                        for parent_name in created_parent_names:
-                            with SyntheticModule._registry_lock:
-                                shell = SyntheticModule._registered_modules_by_name.get(
-                                    parent_name,
-                                )
-                            if shell is not None and not shell.cleaned:
-                                try:
-                                    shell.cleanup()
-                                except Exception:
-                                    pass
-                        raise
-                    export_names = sorted(
-                        name
-                        for name in module.__dict__
-                        if not name.startswith("_")
-                    )
-                    return {
-                        "materialized": True,
-                        "module_name": module_name,
-                        "source_sha256": source_sha256,
-                        "module_file": module.__file__,
-                        "export_names": export_names,
-                        "validation": validation_payload,
-                    }
-            finally:
-                if rift_gate is not None:
-                    rift_gate.unregister_ticket()
-                if (
-                        transaction_context is not None
-                        and validation_result is not None
-                ):
-                    self._emit_codegen_memory_if_enabled(
-                        action_name="materialize_codegen",
-                        transaction_context=transaction_context,
-                        validation_result=validation_result,
-                    )
+                            module.materialize(install_import_hook=True)
+                        except BaseException:
+                            # R8 + D-20 (R6): never leave a half-published module
+                            # or a parent shell this call created behind.
+                            try:
+                                module.cleanup()
+                            except Exception:
+                                pass
+                            for parent_name in created_parent_names:
+                                with SyntheticModule._registry_lock:
+                                    shell = SyntheticModule._registered_modules_by_name.get(
+                                        parent_name,
+                                    )
+                                if shell is not None and not shell.cleaned:
+                                    try:
+                                        shell.cleanup()
+                                    except Exception:
+                                        pass
+                            raise
+                        export_names = sorted(
+                            name
+                            for name in module.__dict__
+                            if not name.startswith("_")
+                        )
+                        return {
+                            "materialized": True,
+                            "module_name": module_name,
+                            "source_sha256": source_sha256,
+                            "module_file": module.__file__,
+                            "export_names": export_names,
+                            "validation": validation_payload,
+                        }
+                finally:
+                    # Memory before the post-hooks, as codegen commands always had it. None once this command system
+                    # was cleaned meanwhile: the same thread removed its own Rift, or a teardown did not wait for it.
+                    if (
+                            transaction_context is not None
+                            and validation_result is not None
+                            and not self._cleaned
+                    ):
+                        self._emit_codegen_memory_if_enabled(
+                            action_name="materialize_codegen",
+                            transaction_context=transaction_context,
+                            validation_result=validation_result,
+                        )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     # ------------------------------------------------------------------
     # Research surface (MutationResearch) - full: reads + organization
@@ -236548,7 +237157,7 @@ END FILE: src/melder/nexus/rift/command_system/codegen_command_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/command_system/command_system.py
-CONTENT SHA256: 5e9fd4f918491e717d16a29a14d3b692445bda27590ae55c2b6afb8815d20b25
+CONTENT SHA256: 886a4facc2e213d05c2e6de1195e69d7835086cbe056a219d513f6095428044c
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -236600,9 +237209,14 @@ class CommandSystem(Cleanable):
     Threading:
         Room-confined: it holds no cross-room state, and the ACL projections it
         enforces against are refreshed by the owning Rift. Every public command
-        enters the room's action-hook scope and holds a `RiftGate` ticket while
-        it runs; most also do their work under the command lock (`self._lock`),
-        so those commands take turns within one room. The target commands -
+        holds a `RiftGate` ticket for its whole run: it is admitted before it
+        enters the room's action-hook scope and releases the ticket only after
+        its post-hooks and its memory record, so a removal or an ACL refresh
+        waiting on the room never tears down or swaps under a command's own
+        exit (GitHub #274, step 3); a command nested in another call of the same
+        Rift passes by re-entry. Most commands also do their work under the
+        command lock (`self._lock`), so those commands take turns within one
+        room. The target commands -
         `get_target_attribute`, `get_target_method` and `execute_target_method` -
         take no command lock: reading an attribute or calling a method of the
         target runs agent code, the workstation's own lock covers the target
@@ -237765,32 +238379,58 @@ class CommandSystem(Cleanable):
         """
         Enter one explicit top-level public command action.
 
+        Contract:
+            - TICKET FIRST, RELEASED LAST (GitHub #274, step 3): the command is
+              admitted at the room's `RiftGate` before it enters the action-hook
+              scope. On the way out the memory record is emitted inside the hook
+              scope - before the post-hooks, the order commands always had - then
+              the hook scope exits (post-hooks), then the ticket is released. The
+              ticket spans the hooks and the memory record so a removal cannot
+              tear the room down under the command's own exit; a hook or memory
+              callback that re-enters its own Rift passes by re-entry.
+            - A refused admission (closed gate, or "raise" entry mode on a
+              disabled gate) raises before any hook runs.
+            - Memory is emitted only for a command whose body succeeded, and not
+              when this command system was cleaned during the call (the thread
+              removed its own Rift, design 5c, or a teardown did not wait).
+            - The ticket is released even when the memory record or a post-hook
+              raises; its release after a cleaned gate is a quiet no-op.
+
         Args:
             action_name:
                 Stable public command method name that completed successfully.
             frame_name:
                 Optional caller-supplied frame name associated with the action.
+            category:
+                Action-hook category the command runs under.
 
         Returns:
             Any: Context manager that guarantees symmetric RiftGate release and
             successful top-level memory emission.
+
+        Raises:
+            RuntimeError: If the room's gate refuses the command.
         """
-        with self._entered_action_hook_scope_if_available(
-                category=category,
-                action_name=action_name,
-        ):
-            rift_gate = self._begin_command_action()
-            command_succeeded = False
-            try:
-                yield
-                command_succeeded = True
-            finally:
-                self._finish_command_action(
-                    rift_gate=rift_gate,
+        rift_gate = self._begin_command_action()
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category=category,
                     action_name=action_name,
-                    frame_name=frame_name,
-                    emit_memory=command_succeeded,
-                )
+            ):
+                command_succeeded = False
+                try:
+                    yield
+                    command_succeeded = True
+                finally:
+                    # Memory before the post-hooks, as commands always had it; the ticket outlives both (below).
+                    self._finish_command_action(
+                        action_name=action_name,
+                        frame_name=frame_name,
+                        emit_memory=command_succeeded,
+                    )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     def _begin_command_action(self) -> Optional[Any]:
         """
@@ -237799,13 +238439,19 @@ class CommandSystem(Cleanable):
         Contract:
             - Verifies that the command system is still live.
             - Resolves the owning room Rift gate when one is available.
-            - Calls `admit()` before registering one active ticket.
+            - Admits the command with `admit_ticket()` - ticket-first, and a
+              thread already inside the Rift passes by re-entry - BEFORE the
+              caller enters the action-hook scope.
             - Returns the gate object so the caller can guarantee symmetric
-              release in a `finally` block.
+              release in a `finally` block, after its memory record and hooks.
 
         Returns:
             Optional[Any]: Owning room Rift gate, or None when no gate is bound
             to the room.
+
+        Raises:
+            RuntimeError: If the gate refuses the command (terminally closed, or
+                disabled in "raise" entry mode).
         """
         self.check_cleaned()
         rift_gate = self._get_rift_gate_if_available()
@@ -237821,7 +238467,6 @@ class CommandSystem(Cleanable):
     def _finish_command_action(
             self,
             *,
-            rift_gate: Optional[Any],
             action_name: str,
             frame_name: Optional[str],
             emit_memory: bool,
@@ -237830,15 +238475,18 @@ class CommandSystem(Cleanable):
         Exit one top-level command action and optionally emit command memory.
 
         Contract:
-            - Releases the RiftGate ticket before emitting memory so the gate
-              never stays held across memory callbacks.
+            - Runs inside the action-hook scope, before the post-hooks, while the
+              command still holds its RiftGate ticket: the ticket spans the
+              memory record and the hooks, and `_entered_command_action`
+              releases it after both, so a removal waiting on this command cannot
+              tear the room down under its exit (GitHub #274, step 3). A memory
+              callback that re-enters its own Rift passes the gate by re-entry.
             - Emits command memory only when the caller marks the command as a
-              successful top-level action.
-            - Never suppresses gate-release failures.
+              successful top-level action, and skips it when this command system
+              was cleaned during the call - the thread removed its own Rift
+              (design 5c), or a teardown did not wait for it.
 
         Args:
-            rift_gate:
-                Rift gate returned by `_begin_command_action(...)`.
             action_name:
                 Stable public command method name.
             frame_name:
@@ -237850,9 +238498,7 @@ class CommandSystem(Cleanable):
         Returns:
             None.
         """
-        if rift_gate is not None:
-            rift_gate.unregister_ticket()
-        if emit_memory:
+        if emit_memory and not self._cleaned:
             self._emit_command_memory_if_enabled(
                 action_name=action_name,
                 frame_name=frame_name,
@@ -239777,7 +240423,7 @@ END FILE: src/melder/nexus/rift/frame_link/frame_link_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/frame_viewer.py
-CONTENT SHA256: d7a851af1b78cef9b2e5a4bb4aa22ebb08d18d220664a2fbd24ea4c798a192d1
+CONTENT SHA256: eb524919b83be689179fd1dd337eb011501c4408713235eff093cfa75b8a7eee
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -239855,13 +240501,24 @@ class FrameViewer(Cleanable):
     Threading:
         Uses one instance `threading.RLock` to serialize cleanup and
         multi-step viewer-state mutation and teardown.
-        A read that overlaps a frame link or an ACL refresh of its frame can
-        meet the projection set that refresh replaces: the Rift cleans the old
-        set when it installs the new one, and the read raises the cleaned
+        A read holds the owning Rift's gate for its whole run: every public
+        viewer method, and every helper the viewer builds, takes the calling
+        thread's ticket in `_entered_view_action` (GitHub #274, step 3). So an
+        ACL refresh of the read's frame with `projection_refresh_gate_enabled`
+        on (the default) waits for in-flight reads before it replaces any
+        projection, and parks new reads - or refuses them, in the gate's
+        "raise" entry mode - until it has reopened the gate; a removal of the
+        Rift likewise waits for them and refuses new ones.
+        Two paths can still replace a projection under a read (GitHub #274,
+        V1): an ACL refresh with `projection_refresh_gate_enabled` off, which
+        swaps without draining, and a frame link - `Rift.create_frame_link` or
+        `CommandSystem.link_frame` - whose refresh replaces every projection set
+        of the Rift from inside the gate without waiting for other threads'
+        reads. A read that meets a replaced projection raises the cleaned
         RuntimeError of the projection object it was reading (for example
         "CompiledFrameACLAccessSurface has already been cleaned. "). The read
-        changed nothing; retry it and it reads the new projection (GitHub #274,
-        V1; the owner, 2026-11-08).
+        changed nothing; retry it and it reads the new projection (the owner,
+        2026-11-08).
 
     Lifecycle:
         Cleanup clears only viewer-owned references. It does not cleanup the
@@ -246440,7 +247097,22 @@ class FrameViewer(Cleanable):
     @contextmanager
     def _entered_view_action(self, *, action_name: str) -> Any:
         """
-        Enter one viewer action hook scope through the owning room.
+        Enter one viewer action: the Rift gate first, then the room's hook
+        scope.
+
+        Contract:
+            - Every public viewer method runs through here (the class is
+              decorated with `decorate_public_view_actions`), and so does every
+              helper the viewer builds - `ViewFrame` through its scope factory,
+              `ViewMultiFrame` through this viewer, `ViewConduit` and `ViewSpell`
+              through their frame view - so a viewer read is an agent door.
+            - Takes the calling thread's ticket on the owning Rift's gate after
+              the cleaned check and before the hook scope, and releases it last,
+              after the hook scope exits (GitHub #274, step 3). Nested viewer
+              actions, and reads nested in another call of the same Rift, pass by
+              re-entry.
+            - The gate is held in a local, so its release after a teardown -
+              the same thread's removal of its own Rift - is a quiet no-op.
 
         Args:
             action_name:
@@ -246448,17 +247120,28 @@ class FrameViewer(Cleanable):
 
         Returns:
             Any: Viewer hook scope context manager.
+
+        Raises:
+            RuntimeError: If the viewer or its Rift was cleaned, or the Rift's
+                gate refuses the read (terminally closed for a removal, or
+                disabled in "raise" entry mode for an ACL refresh). In "wait"
+                entry mode a read parks while an ACL refresh holds the gate.
         """
         self.check_cleaned()
-        if self._action_hook_scope_factory is None:
-            action_scope = noop_action_scope()
-        else:
-            action_scope = self._action_hook_scope_factory(
-                category="viewer",
-                action_name=action_name,
-            )
-        with action_scope:
-            yield
+        rift_gate = self._rift.rift_gate
+        rift_gate.admit_ticket()
+        try:
+            if self._action_hook_scope_factory is None:
+                action_scope = noop_action_scope()
+            else:
+                action_scope = self._action_hook_scope_factory(
+                    category="viewer",
+                    action_name=action_name,
+                )
+            with action_scope:
+                yield
+        finally:
+            rift_gate.unregister_ticket()
 
 ================================================================================
 END FILE: src/melder/nexus/rift/frame_viewer/frame_viewer.py
@@ -258465,11 +259148,12 @@ END FILE: src/melder/nexus/rift/projection/view_projection.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift.py
-CONTENT SHA256: 5f6c6a0b5aebda472361a8d679559e52a2b36226f6fea9f93e302c0e9d2996cb
+CONTENT SHA256: a56cde2b19d409b41b72b10c63dd48a14f17c2878cc730a3edcb4ba7751a832e
 SOURCE ENCODING: utf-8
 ================================================================================
+from contextlib import contextmanager
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, TYPE_CHECKING
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
@@ -258552,13 +259236,31 @@ class Rift(Cleanable):
         (`projection_refresh_gate_enabled` and its timeout/poll settings) blocks
         new entrants at the Rift gate, drains in-flight tickets, refreshes once,
         then reopens.
+        Agent doors hold the calling thread's ticket on this Rift's gate while
+        they run (GitHub #274, step 3), so a removal waits for them and refuses
+        new ones and an ACL refresh drains them. The Rift's own doors are the
+        methods an agent calls: `get_frame_link_contract`, `create_frame_link`,
+        `get_frame_viewer`, `get_nexus_frame`, `create_nexus_frame`,
+        `list_accessible_nexus_frame_names` and
+        `list_accessible_non_nexus_frame_names` (the room's workstation, viewer
+        and commands are doors through their own objects). A call nested in
+        another call of the same Rift passes by re-entry.
+        The rest take no ticket because Nexus calls them while it refreshes,
+        registers or removes this Rift - with the gate disabled or closed, where
+        a ticket would park or be refused: `list_assigned_frame_names`,
+        `get_selected_contract_names` (Nexus builds the Rift's projection sets
+        with it during a refresh), `refresh_runtime_projections`,
+        `mark_registered` / `mark_active` / `mark_inactive`,
+        `on_nexus_frame_disposed`, and every property. No untagged path calls a
+        door of its own Rift: they go through the untagged private
+        implementations (`_get_frame_link_contract`, `_create_frame_link`).
         The Rift keeps `_lock` after cleanup, the documented exception to
         `Cleanable`'s lock rule: `create_frame_link` publishes its contract and
         `_apply_projection_sets` installs a refresh under it, each checking
         `_cleaned` there. A removal landing after an attach reserved its
         budget slot, or after a refresh's sets were built, makes it give the
         slot back or clean those sets and raise the cleaned error (GitHub
-        #274); one landing earlier can still hit the unlocked reads.
+        #274); one landing earlier on an untagged path can hit the unlocked reads.
         Cleanup marks the Rift cleaned under the lock and cleans the room after
         releasing it, so an agent attaching through the room's command system,
         which holds the command lock while it takes the Rift lock, cannot freeze
@@ -258972,6 +259674,9 @@ class Rift(Cleanable):
         """
         Return the per-frame contract for one engaged frame.
 
+        Contract:
+            - Returns the live contract object, not a copy.
+
         Args:
             frame_name:
                 Engaged target frame name.
@@ -258982,6 +259687,40 @@ class Rift(Cleanable):
         Raises:
             ValueError:
                 If `frame_name` is empty or not engaged on this Rift.
+            RuntimeError:
+                If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3). Paths Nexus drives use the
+            untagged `_get_frame_link_contract`.
+        """
+        self.check_cleaned()
+        with self._entered_door():
+            return self._get_frame_link_contract(frame_name)
+
+    def _get_frame_link_contract(self, frame_name: str) -> FrameLinkContract:
+        """
+        Return the per-frame contract for one engaged frame, without the gate.
+
+        Purpose:
+            The untagged implementation of `get_frame_link_contract`, for the
+            paths that must not take a ticket on their own Rift - the refresh
+            Nexus drives through `get_selected_contract_names`, the viewer
+            metadata snapshot.
+
+        Args:
+            frame_name:
+                Engaged target frame name.
+
+        Returns:
+            FrameLinkContract: Per-frame contract object.
+
+        Raises:
+            ValueError:
+                If `frame_name` is empty or not engaged on this Rift.
+            RuntimeError:
+                If the Rift is cleaned.
         """
         self.check_cleaned()
         if not frame_name:
@@ -259012,7 +259751,9 @@ class Rift(Cleanable):
               raises rather than returning an empty tuple.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Unsynchronized read; a snapshot only. Takes no gate ticket: Nexus
+            calls it while it builds this Rift's projection sets during a
+            refresh, with the gate disabled (GitHub #274, step 3).
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
@@ -259024,7 +259765,7 @@ class Rift(Cleanable):
             Dict[str, str]: Selected view/command/codegen contract names.
         """
         self.check_cleaned()
-        return self.get_frame_link_contract(frame_name).get_selected_contract_names()
+        return self._get_frame_link_contract(frame_name).get_selected_contract_names()
 
     def create_frame_link(self, frame_name: str) -> None:
         """
@@ -259066,11 +259807,51 @@ class Rift(Cleanable):
                 given back first.
 
         Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the whole attach (GitHub #274, step 3), so a removal started
+            meanwhile waits until the attach has published its contract and
+            refreshed - it then gives the frame's budget count back with the
+            others - and a removal already closing the gate refuses the attach
+            at once. `CommandSystem.link_frame` reaches it by re-entry.
             Validation and the budget reservation run without the Rift lock,
             which Nexus forbids holding across the reservation. The contract is
             published under the Rift lock with a re-check, so concurrent
             attaches of one frame publish one contract and keep one budget
             count (GitHub #274, R4).
+        """
+        self.check_cleaned()
+        with self._entered_door():
+            self._create_frame_link(frame_name)
+
+    def _create_frame_link(self, frame_name: str) -> None:
+        """
+        Validate and engage one target frame, without the gate.
+
+        Purpose:
+            The untagged implementation of `create_frame_link`. Only the public
+            door holds a ticket; this body keeps the attach's own guards - the
+            budget reservation given back when a removal overtakes the attach
+            (GitHub #274, the R4 residual) - for any path that runs it without
+            one.
+
+        Args:
+            frame_name:
+                Target frame name to engage.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If `frame_name` is empty, the frame has no descriptor,
+                or it fails Nexus's target-frame policy or budget.
+            RuntimeError: If the Rift is cleaned - also when a removal
+                overtakes the attach after its budget reservation, which is
+                given back first.
+
+        Threading:
+            As `create_frame_link`, minus the gate: validation and the
+            reservation run without the Rift lock, the contract is published
+            under it with a re-check.
         """
         self.check_cleaned()
         if not frame_name:
@@ -259376,7 +260157,8 @@ class Rift(Cleanable):
             "available_view_count": len(refreshed_assigned_frame_names),
             "rift_id": self._id,
             "frame_link_contract_ids_by_frame_name": {
-                current_frame_name: self.get_frame_link_contract(
+                # The untagged lookup: this snapshot is internal and must not take a ticket on its own Rift.
+                current_frame_name: self._get_frame_link_contract(
                     current_frame_name
                 ).contract_id
                 for current_frame_name in refreshed_assigned_frame_names
@@ -259490,19 +260272,24 @@ class Rift(Cleanable):
               viewer's own `get_view_*` accessors, which build fresh helpers per call.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3), so it is refused at once while a
+            removal closes the gate. Otherwise an unsynchronized read; a snapshot
+            only.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or its gate refuses
+                the call.
 
         Returns:
             FrameViewer: Attached frame viewer for the owned space.
         """
         self.check_cleaned()
-        return self.space.frame_viewer
+        with self._entered_door():
+            return self.space.frame_viewer
 
     @property
     def space(self) -> RiftSpace:
@@ -259689,9 +260476,20 @@ class Rift(Cleanable):
 
         Returns:
             Conduit: Root conduit for the resolved Nexus-managed frame.
+
+        Raises:
+            ValueError: If the requested frame is not available to this Rift
+                under the current frame policy.
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3); `CommandSystem.get_nexus_frame`
+            reaches it by re-entry.
         """
         self.check_cleaned()
-        return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
+        with self._entered_door():
+            return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
 
     def create_nexus_frame(
             self,
@@ -259722,14 +260520,20 @@ class Rift(Cleanable):
         Raises:
             ValueError: If the target Nexus-managed frame already exists or
                 creation is invalid under the current topology rules.
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3).
         """
         self.check_cleaned()
-        return self._nexus.create_nexus_frame_for_rift(
-            self._id,
-            frame_name=frame_name,
-            root_conduit_name=root_conduit_name,
-            immutable=immutable,
-        )
+        with self._entered_door():
+            return self._nexus.create_nexus_frame_for_rift(
+                self._id,
+                frame_name=frame_name,
+                root_conduit_name=root_conduit_name,
+                immutable=immutable,
+            )
 
     def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
         """
@@ -259743,9 +260547,18 @@ class Rift(Cleanable):
 
         Returns:
             Tuple[str, ...]: Accessible Nexus frame names.
+
+        Raises:
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3); the viewer's multi-frame reads
+            reach it by re-entry.
         """
         self.check_cleaned()
-        return self._nexus.list_accessible_nexus_frame_names(self._id)
+        with self._entered_door():
+            return self._nexus.list_accessible_nexus_frame_names(self._id)
 
     def list_accessible_non_nexus_frame_names(self) -> Tuple[str, ...]:
         """
@@ -259760,9 +260573,46 @@ class Rift(Cleanable):
 
         Returns:
             Tuple[str, ...]: Accessible published non-Nexus frame names.
+
+        Raises:
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3); the viewer's multi-frame reads
+            reach it by re-entry.
         """
         self.check_cleaned()
-        return self._nexus.list_accessible_non_nexus_frame_names(self._id)
+        with self._entered_door():
+            return self._nexus.list_accessible_non_nexus_frame_names(self._id)
+
+    @contextmanager
+    def _entered_door(self) -> Iterator[None]:
+        """
+        Hold this Rift's gate for one call through an agent door.
+
+        Contract:
+            - Admits the calling thread at the gate - a thread already inside
+              the Rift passes by re-entry - and releases the admission when the
+              call returns or raises (GitHub #274, step 3).
+            - The gate is held in a local: a removal during the call - the same
+              thread's removal of its own Rift - deletes `_rift_gate`, and the
+              release after a cleaned gate is a quiet no-op.
+            - Callers check `_cleaned` first; a cleaned Rift has no gate field.
+
+        Yields:
+            None.
+
+        Raises:
+            RuntimeError: If the gate refuses the call (terminally closed for a
+                removal, or disabled in "raise" entry mode).
+        """
+        rift_gate = self._rift_gate
+        rift_gate.admit_ticket()
+        try:
+            yield
+        finally:
+            rift_gate.unregister_ticket()
 
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
         """
@@ -259797,15 +260647,74 @@ END FILE: src/melder/nexus/rift/rift.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift_gate/rift_gate.py
-CONTENT SHA256: ee200691686d6831782531294688c7661088a150b6fa5d452713f8c01408afe7
+CONTENT SHA256: 4372ffed9f5b21cea7d208673bb40e873935d36ea0114bc34007942169dd0ef6
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
 import time
 from collections import deque
-from typing import Deque, Optional
+from typing import Deque
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+
+class RiftGateDrainTimeoutError(RuntimeError):
+    """
+    A RiftGate drain ran out of time with threads still inside.
+
+    Purpose:
+        Let a caller that drains a gate - `Nexus.remove_rift`, `Nexus.cleanup` - tell a drain timeout apart from every
+        other RuntimeError the gate raises (a cleaned gate, a refused admission) and decide what to do about the
+        threads still inside: refuse the removal, or clean up anyway and log it.
+
+    Contract:
+        - Subclasses RuntimeError, so code that caught the timeout as a RuntimeError keeps working.
+        - Its message is the one the drain has always raised: "Timeout waiting for rift tickets to drain."
+        - `threads_inside` is how many threads other than the draining caller were still inside when the drain gave
+          up; the caller's own ticket is never waited for, so it is never counted.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. The drain-timeout error of the Rift gate. Melder kernel machinery: read it to understand
+        the runtime, do not drive it directly.
+    """
+
+    def __init__(self, threads_inside: int) -> None:
+        """
+        Build the timeout error for one drain.
+
+        Args:
+            threads_inside:
+                Threads other than the draining caller still inside when the drain gave up.
+
+        Returns:
+            None.
+        """
+        super().__init__("Timeout waiting for rift tickets to drain.")
+        self.threads_inside: int = threads_inside
+
+
+class _RiftGateHolder(threading.local):
+    """
+    The calling thread's ticket depth on one RiftGate.
+
+    Contract:
+        - `depth` starts at 0 on every thread. It counts the thread's unreleased `admit_ticket` and
+          `register_ticket` calls on the gate that owns this holder; while it is above 0 the gate's ticket deque
+          holds exactly one ticket for the thread.
+        - Only the owning thread reads or writes its own `depth`, so it needs no lock.
+    """
+
+    def __init__(self) -> None:
+        """
+        Start the calling thread at depth 0 (`threading.local` runs this once per thread, on first access).
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self.depth: int = 0
 
 
 class RiftGate(Cleanable):
@@ -259822,14 +260731,29 @@ class RiftGate(Cleanable):
            - When enabled is False, callers may block in wait().
            - open() re-enables access and releases waiters.
         2. Terminal close mode (`_closed` flag):
-           - close_and_wait_until_free() marks the gate terminally closed
-             to new work and waits for active tickets to drain.
+           - close_terminally() marks the gate terminally closed to new work;
+             wait_until_free() then waits for the threads inside to leave;
+             close_and_wait_until_free() does both.
            - cleanup() also marks terminal close and releases waiters.
 
-    Ticket model:
-        - Callers register a ticket when entering guarded work and unregister
-          on exit.
-        - Drain operations wait for ticket count to reach zero.
+    Ticket model (GitHub #274, step 3):
+        - One ticket per THREAD inside, not per call. A thread takes its
+          ticket with its first `admit_ticket` (or `register_ticket`); every
+          nested admission on the same thread only deepens a thread-local
+          depth, and the thread's one ticket goes when its last paired
+          `unregister_ticket` brings the depth back to 0. Counts and drains
+          therefore count threads inside.
+        - Re-entry passes whatever the gate's state: a thread that already
+          holds a ticket is admitted again at once even while the gate is
+          disabled (an ACL refresh's reversible close) or terminally closed
+          (a removal). The close is waiting for that thread to leave, so
+          refusing or parking it would wait on itself.
+        - Drains never wait for the caller's own ticket: a thread that drains
+          a gate it is inside - an agent removing its own Rift - waits only
+          for the other threads.
+        - Releasing a ticket after the gate was cleaned is a no-op: cleanup
+          dropped every ticket, and a thread that was inside when its Rift was
+          torn down still releases on its way out.
         - Ticket bookkeeping uses deque[None] for low overhead and
           allocation-friendly append/pop behavior.
 
@@ -259837,6 +260761,9 @@ class RiftGate(Cleanable):
         - State transitions for enabled / _closed and the event are
           protected by an internal RLock.
         - enabled is intentionally readable without lock on hot paths.
+        - Re-entry is one thread-local read and one write, with no lock; a
+          first admission is the lock-free ticket-first loop of
+          `admit_ticket`.
 
     Registration:
         MELDER KERNEL - guarded. One gate per Rift, owned by that Rift and
@@ -259871,7 +260798,7 @@ class RiftGate(Cleanable):
 
     ENTRY_MODE_WAIT = "wait"
     ENTRY_MODE_RAISE = "raise"
-    __slots__ = ("_lock", "enabled", "_entry_mode", "_event", "_tickets", "_closed")
+    __slots__ = ("_lock", "enabled", "_entry_mode", "_event", "_tickets", "_closed", "_holder")
 
     def __init__(self, enabled: bool = True, entry_mode: str = "wait") -> None:
         """
@@ -259886,7 +260813,8 @@ class RiftGate(Cleanable):
             - enabled reflects constructor input.
             - _event state mirrors enabled:
               set when enabled, cleared when disabled.
-            - Ticket queue starts empty.
+            - Ticket queue starts empty, and every thread starts at ticket
+              depth 0 in the per-thread holder.
 
         Args:
             enabled:
@@ -259906,6 +260834,7 @@ class RiftGate(Cleanable):
         self._event: threading.Event = threading.Event()
         self._tickets: Deque[None] = deque()
         self._closed: bool = False
+        self._holder: _RiftGateHolder = _RiftGateHolder()
 
         if enabled:
             self._event.set()
@@ -259923,12 +260852,21 @@ class RiftGate(Cleanable):
         Contract:
             - Marks gate terminally closed.
             - Forces enabled=True and signals the event to unblock waiters.
-            - Clears outstanding tickets as teardown intent.
-            - Marks this instance cleaned and nulls owned references.
+            - Clears outstanding tickets as teardown intent, so a drain still
+              waiting on this gate returns, and a thread that was inside
+              releases its ticket quietly afterwards (`unregister_ticket`).
+            - Marks this instance cleaned and deletes owned references,
+              including the per-thread holder.
             - Leaves the object unusable for all guarded operations.
 
         Returns:
             None.
+
+        Threading:
+            Runs under the gate lock. A release racing this cleanup itself -
+            possible only when a teardown proceeds with threads still inside,
+            after a drain gave up on them - can find the bookkeeping already
+            deleted and raise AttributeError.
         """
         if self._cleaned:
             return
@@ -259945,6 +260883,7 @@ class RiftGate(Cleanable):
             del self._entry_mode
             del self._event
             del self._tickets
+            del self._holder
         del self._lock
 
     @property
@@ -260044,28 +260983,40 @@ class RiftGate(Cleanable):
             freeze and backs out.
 
         Contract:
-            - LOOP: append ticket -> terminally closed: pop + raise ->
-              enabled: return (ADMITTED, ticket held) -> disabled +
-              entry_mode "raise": pop + raise -> disabled + "wait": pop +
-              park + retry on wake.
-            - On return the caller HOLDS one ticket and must pair it with
-              `unregister_ticket()`; on raise no ticket is held.
+            - RE-ENTRY: a thread that already holds a ticket on this gate is
+              admitted at once - its depth deepens, the deque is untouched -
+              whatever `_closed` and `enabled` say. A disabled or closed gate
+              is waiting for that thread to leave (GitHub #274, step 3).
+            - FIRST ADMISSION LOOP: append ticket -> terminally closed: pop +
+              raise -> enabled: return (ADMITTED, ticket held, depth 1) ->
+              disabled + entry_mode "raise": pop + raise -> disabled +
+              "wait": pop + park + retry on wake.
+            - On return the caller holds an admission and must pair it with
+              one `unregister_ticket()`; on raise it holds none. The deque
+              holds exactly one ticket per thread inside.
             - Parked callers hold NO steady ticket (drains never wait on
               waiters).
 
         Threading:
-            Lock-free by append-before-read ordering (deque ops are
-            thread-safe primitives); cleaned-state guard at entry only.
+            Re-entry is one thread-local read and one write, with no lock. A
+            first admission is lock-free by append-before-read ordering (deque
+            ops are thread-safe primitives); cleaned-state guard at entry only.
 
         Returns:
-            None. (The caller holds one admitted ticket.)
+            None. (The caller holds one admission.)
 
         Raises:
             RuntimeError:
                 If the gate is terminally closed, entry is disabled in
-                "raise" mode, or the gate was cleaned.
+                "raise" mode, or the gate was cleaned - never for a thread
+                that already holds a ticket on a live gate.
         """
         self.check_cleaned()
+        holder = self._holder
+        depth = holder.depth
+        if depth:
+            holder.depth = depth + 1
+            return
         tickets = self._tickets
         while True:
             # Visibility FIRST: from this append until the pop below, any
@@ -260075,6 +261026,7 @@ class RiftGate(Cleanable):
                 tickets.pop()
                 raise RuntimeError("RiftGate is closed.")
             if self.enabled:
+                holder.depth = 1
                 return
             tickets.pop()
             if self._entry_mode == self.ENTRY_MODE_RAISE:
@@ -260099,27 +261051,77 @@ class RiftGate(Cleanable):
 
     def register_ticket(self) -> None:
         """
-        Register an active in-flight operation.
+        Register the calling thread as inside, without checking the gate state.
+
+        Contract:
+            - Same per-thread bookkeeping as `admit_ticket`: the thread's first
+              registration appends its one ticket, a nested one only deepens
+              its depth.
+            - Checks neither `_closed` nor `enabled`; it is the unconditional
+              half of the old two-step admission. Pair it with one
+              `unregister_ticket()`.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the gate was cleaned.
+
+        Threading:
+            Lock-free: one thread-local read and write, plus one deque append
+            on the thread's first registration.
         """
         self.check_cleaned()
+        holder = self._holder
+        depth = holder.depth
+        if depth:
+            holder.depth = depth + 1
+            return
         self._tickets.append(None)
+        holder.depth = 1
 
     def unregister_ticket(self) -> None:
         """
-        Unregister a previously registered in-flight operation.
+        Release one admission of the calling thread.
+
+        Contract:
+            - A no-op once the gate was cleaned: cleanup dropped every ticket,
+              and a thread that was inside when its Rift was torn down - its own
+              removal, or a cleanup that gave up waiting for it - releases
+              quietly on its way out (GitHub #274, step 3).
+            - Otherwise the thread's depth drops by one; the thread's one
+              ticket leaves the deque when the depth reaches 0.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the calling thread holds no ticket on this live
+                gate - an unpaired release, or a release from a thread other
+                than the one that was admitted.
+
+        Threading:
+            Lock-free: one thread-local read and write, plus one deque pop on
+            the thread's last release.
         """
-        self.check_cleaned()
-        self._tickets.pop()
+        if self._cleaned:
+            return
+        holder = self._holder
+        depth = holder.depth
+        if not depth:
+            raise RuntimeError(
+                "RiftGate ticket released by a thread that holds none: every "
+                "unregister_ticket must pair with an admit_ticket or "
+                "register_ticket on the same thread."
+            )
+        depth -= 1
+        holder.depth = depth
+        if not depth:
+            self._tickets.pop()
 
     def has_active_tickets(self) -> bool:
         """
-        Return True when at least one active ticket is present.
+        Return True when at least one thread is inside the gate.
 
         Returns:
             bool: True when at least one ticket is registered.
@@ -260129,10 +261131,16 @@ class RiftGate(Cleanable):
 
     def active_ticket_count(self) -> int:
         """
-        Return active ticket count.
+        Return how many threads are inside the gate.
+
+        Contract:
+            - Counts threads, not calls: a thread admitted several times holds
+              one ticket.
+            - A point-in-time read; a first admission that is refused shows for
+              an instant (ticket-first) before it backs out.
 
         Returns:
-            int: Number of currently registered tickets.
+            int: Number of currently registered tickets, one per thread inside.
         """
         self.check_cleaned()
         return len(self._tickets)
@@ -260147,13 +261155,106 @@ class RiftGate(Cleanable):
         self.check_cleaned()
         return self._closed
 
+    def close_terminally(self) -> None:
+        """
+        Close the gate to new work for good, without waiting for anyone.
+
+        Purpose:
+            The first half of a removal's or a shutdown's drain: from here on
+            every thread without a ticket is refused at once ("RiftGate is
+            closed."), while the threads already inside keep passing by
+            re-entry so they can finish and leave. `Nexus.cleanup` closes every
+            Rift's gate first and waits for them afterwards, under one deadline.
+
+        Contract:
+            - Sets the terminal flag and disables the gate under the gate lock,
+              and wakes parked first-time callers so they see the close and
+              raise.
+            - Idempotent; there is no way back short of a new gate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the gate was cleaned.
+
+        Threading:
+            Takes the gate lock briefly.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._closed = True
+            self.enabled = False
+            self._event.set()
+
+    def wait_until_free(
+        self,
+        timeout: float = 30.0,
+        interval: float = 0.1,
+    ) -> None:
+        """
+        Wait until no thread other than the caller is inside the gate.
+
+        Purpose:
+            The second half of a drain. It does not close the gate itself; call
+            it after `close_terminally()` (or use `close_and_wait_until_free`),
+            or new threads can keep arriving while it waits.
+
+        Contract:
+            - Never waits for the caller's own ticket: it waits while the gate
+              holds more tickets than the caller's own (1 when the calling
+              thread is inside, else 0), so an agent removing its own Rift is
+              not waited for (GitHub #274, 5c).
+            - A gate cleaned while this waits has no tickets left, so the wait
+              returns.
+
+        Args:
+            timeout:
+                Maximum seconds to wait for the other threads to leave.
+            interval:
+                Poll interval in seconds for checking drain progress.
+
+        Returns:
+            None.
+
+        Raises:
+            RiftGateDrainTimeoutError:
+                If other threads are still inside when the timeout runs out;
+                its `threads_inside` says how many.
+            RuntimeError:
+                If the gate was cleaned before the wait started.
+
+        Threading:
+            Polls without the gate lock. The ticket deque and the per-thread
+            holder are held in locals on purpose: a cleanup during the wait
+            deletes the fields, and the cleared deque is what tells the wait
+            that nobody is left (GitHub #274).
+        """
+        self.check_cleaned()
+        tickets = self._tickets
+        holder = self._holder
+        deadline = time.monotonic() + timeout
+        while True:
+            threads_inside = len(tickets) - (1 if holder.depth else 0)
+            if threads_inside <= 0:
+                return
+            if time.monotonic() >= deadline:
+                raise RiftGateDrainTimeoutError(threads_inside)
+            time.sleep(interval)
+
     def close_and_wait_until_free(
         self,
         timeout: float = 30.0,
         interval: float = 0.1,
     ) -> None:
         """
-        Terminally close the gate and wait for all tickets to drain.
+        Terminally close the gate and wait for the other threads inside to leave.
+
+        Contract:
+            - `close_terminally()` then `wait_until_free(timeout, interval)`:
+              newcomers are refused from the start of the call, the threads
+              already inside pass by re-entry until they leave, and the
+              caller's own ticket is not waited for.
 
         Args:
             timeout:
@@ -260165,21 +261266,18 @@ class RiftGate(Cleanable):
             None.
 
         Raises:
+            RiftGateDrainTimeoutError:
+                If other threads are still inside when the timeout runs out
+                (a RuntimeError, message "Timeout waiting for rift tickets to
+                drain."). The gate stays closed.
             RuntimeError:
-                If ticket drain does not complete before timeout.
+                If the gate was cleaned.
+
+        Threading:
+            Takes the gate lock only to close; the wait polls without it.
         """
-        self.check_cleaned()
-
-        with self._lock:
-            self._closed = True
-            self.enabled = False
-            self._event.set()
-
-        deadline = time.monotonic() + timeout
-        while self.has_active_tickets():
-            if time.monotonic() >= deadline:
-                raise RuntimeError("Timeout waiting for rift tickets to drain.")
-            time.sleep(interval)
+        self.close_terminally()
+        self.wait_until_free(timeout=timeout, interval=interval)
 
     @classmethod
     def _normalize_entry_mode(cls, entry_mode: str) -> str:
@@ -260216,7 +261314,7 @@ END FILE: src/melder/nexus/rift/rift_gate/rift_gate.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py
-CONTENT SHA256: dbce0214162d8e086791b195efb353d05b09f2a69a130c8f509aec7c0c866318
+CONTENT SHA256: 7acf92dca917ae4a76f9998125c39ef4d125a988c9b5157d6ba146c04f2fcefa
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -260415,14 +261513,20 @@ class RiftGateController(Cleanable):
 
     def count_active_threads_for_rift(self, rift_id: str) -> int:
         """
-        Return active ticket count for one Rift gate.
+        Return how many threads are inside one Rift gate.
+
+        Contract:
+            - A gate holds one ticket per thread inside, however many nested
+              calls that thread is making (GitHub #274, step 3), so this counts
+              threads, not calls.
 
         Args:
             rift_id:
                 Rift id to resolve.
 
         Returns:
-            int: Active ticket count for the Rift gate, or 0 when missing.
+            int: Threads inside the Rift gate (its ticket count), or 0 when
+            missing.
         """
         self.check_cleaned()
         with self._lock:
@@ -260433,10 +261537,14 @@ class RiftGateController(Cleanable):
 
     def count_active_threads_total(self) -> int:
         """
-        Return active ticket count summed across all registered Rift gates.
+        Return the threads inside each registered Rift gate, summed.
+
+        Contract:
+            - Counts threads, not calls, per gate (GitHub #274, step 3); a thread
+              inside two Rifts at once counts once per Rift.
 
         Returns:
-            int: Sum of active tickets across the Rift registry.
+            int: Sum of the per-gate thread counts across the Rift registry.
         """
         self.check_cleaned()
         with self._lock:
@@ -260454,6 +261562,12 @@ class RiftGateController(Cleanable):
         """
         Terminally close and drain one Rift gate.
 
+        Contract:
+            - `RiftGate.close_and_wait_until_free`: newcomers are refused at once,
+              the threads already inside pass by re-entry until they leave, and
+              the caller's own ticket is not waited for (GitHub #274, step 3).
+            - A missing Rift id is a no-op.
+
         Args:
             rift_id:
                 Rift id to resolve.
@@ -260464,6 +261578,11 @@ class RiftGateController(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RiftGateDrainTimeoutError: A RuntimeError, if threads other than the
+                caller are still inside when the timeout runs out; the gate stays
+                closed.
         """
         self.check_cleaned()
         with self._lock:
@@ -261955,12 +263074,12 @@ END FILE: src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift_space/rift_space.py
-CONTENT SHA256: 2f8a2b389caf76b92dd4e457e0f615a2972c5b15bac0242caec55601ee232e0e
+CONTENT SHA256: 1813b0042ddeaa3fca140b830dc3a2cd183c08d3e957acc0faa0a50c20370469
 SOURCE ENCODING: utf-8
 ================================================================================
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Callable, Dict, Iterator, Optional, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift
@@ -262042,6 +263161,14 @@ class RiftSpace(Cleanable):
         Room-local state is confined to the room; the viewer reads current
         projection truth from the owning Rift on demand rather than holding a
         second registry that could drift.
+        Every agent door of the room holds the room's `RiftGate` ticket while
+        it runs (GitHub #274, step 3): workstation calls, viewer reads and
+        commands through their own objects, and the hook registration methods
+        here. A removal therefore waits for them; a teardown can still run while
+        a thread is inside an action - the thread's own removal of its Rift, a
+        Nexus cleanup past its drain deadline, a direct `Rift.cleanup` - so the
+        action-hook scope's exit skips its bookkeeping on a room cleaned
+        meanwhile. The properties and internal callbacks take no ticket.
 
     Lifecycle / Cleanup:
         Created during Rift creation from `space_type` and cleaned with its
@@ -262183,6 +263310,7 @@ class RiftSpace(Cleanable):
                 space_kind == RiftSpaceType.static.value
             ),
             event_publisher=self._publish_runtime_event,
+            rift_gate=self._rift_gate,
         )
         self._command_system: CommandSystem = self._create_command_system(rift)
         self._pre_category_hooks_by_name: Dict[
@@ -262316,23 +263444,27 @@ class RiftSpace(Cleanable):
               those present at registration time.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); the registry write itself takes the
+            room lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
         self.check_cleaned()
-        return self._register_category_hook(
-            phase="pre",
-            category=category,
-            callback=callback,
-        )
+        with self._entered_door():
+            return self._register_category_hook(
+                phase="pre",
+                category=category,
+                callback=callback,
+            )
 
     def register_category_post_hook(
             self,
@@ -262356,23 +263488,27 @@ class RiftSpace(Cleanable):
             - Category-wide, including actions added later.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); the registry write itself takes the
+            room lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
         self.check_cleaned()
-        return self._register_category_hook(
-            phase="post",
-            category=category,
-            callback=callback,
-        )
+        with self._entered_door():
+            return self._register_category_hook(
+                phase="post",
+                category=category,
+                callback=callback,
+            )
 
     @property
     def space_id(self) -> str:
@@ -262583,24 +263719,33 @@ class RiftSpace(Cleanable):
         Contract:
             - Fires BEFORE one NAMED action only, narrower than the category hook.
             - Returns a SUBSCRIPTION ID; keep it for unregistration.
-            - NOTE: unlike its `post` counterpart and the category hooks, this method
-              does NOT perform its own cleaned-state check before delegating.
+            - Checks the cleaned state itself, like its `post` counterpart and the
+              category hooks. (Corrected 2026-11-09: it used to leave that check to
+              the delegate; the check must now come before the gate is read.)
 
         Threading:
-            Registration is serialized by the underlying hook registry.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); registration is serialized by the
+            underlying hook registry.
 
         Lifecycle / Cleanup:
-            Not directly guarded; the delegate performs registration.
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
-        return self._register_action_hook(
-            phase="pre",
-            category=category,
-            action_name=action_name,
-            callback=callback,
-        )
+        self.check_cleaned()
+        with self._entered_door():
+            return self._register_action_hook(
+                phase="pre",
+                category=category,
+                action_name=action_name,
+                callback=callback,
+            )
 
     def register_action_post_hook(
             self,
@@ -262624,24 +263769,28 @@ class RiftSpace(Cleanable):
             - Returns a SUBSCRIPTION ID; keep it for unregistration.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Holds the room's `RiftGate` ticket while it registers, when the room
+            has a gate (GitHub #274, step 3); the registry write itself takes the
+            room lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             str: Stable subscription id for later unregistration.
         """
         self.check_cleaned()
-        return self._register_action_hook(
-            phase="post",
-            category=category,
-            action_name=action_name,
-            callback=callback,
-        )
+        with self._entered_door():
+            return self._register_action_hook(
+                phase="post",
+                category=category,
+                action_name=action_name,
+                callback=callback,
+            )
 
     def unregister_action_hook(self, subscription_id: str) -> None:
         """
@@ -262659,13 +263808,16 @@ class RiftSpace(Cleanable):
               error, so success does not prove the hook existed.
 
         Threading:
-            Reads under `self._lock`, so the result is a coherent snapshot.
+            Holds the room's `RiftGate` ticket while it unregisters, when the
+            room has a gate (GitHub #274, step 3), and mutates the registries
+            under `self._lock`.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's gate
+                refuses the call.
 
         Returns:
             None.
@@ -262673,7 +263825,7 @@ class RiftSpace(Cleanable):
         self.check_cleaned()
         if not subscription_id:
             raise ValueError("subscription_id cannot be empty.")
-        with self._lock:
+        with self._entered_door(), self._lock:
             hook_key = self._action_hook_keys_by_subscription_id.pop(
                 subscription_id,
                 None,
@@ -262699,6 +263851,38 @@ class RiftSpace(Cleanable):
                 action_registry.pop((category, action_name), None)
 
     @contextmanager
+    def _entered_door(self) -> Iterator[None]:
+        """
+        Hold the room's Rift gate for one agent call into the room, when the
+        room has a gate.
+
+        Contract:
+            - Admits the calling thread at the gate - a thread already inside
+              the Rift passes by re-entry - and releases the admission when the
+              call returns or raises. A room without a gate runs the call as is.
+            - The gate is held in a local: a teardown during the call - the same
+              thread's removal of its own Rift, or one that did not wait for it -
+              deletes the room's field, and the release after a cleaned gate is a
+              quiet no-op.
+
+        Yields:
+            None.
+
+        Raises:
+            RuntimeError: If the gate refuses the call (terminally closed, or
+                disabled in "raise" entry mode).
+        """
+        rift_gate = self._rift_gate
+        if rift_gate is None:
+            yield
+            return
+        rift_gate.admit_ticket()
+        try:
+            yield
+        finally:
+            rift_gate.unregister_ticket()
+
+    @contextmanager
     def _entered_action_hook_scope(
             self,
             *,
@@ -262714,6 +263898,11 @@ class RiftSpace(Cleanable):
               viewer/helper calls do not double-fire hooks.
             - Fires post hooks only when the matching top-level entry exits
               after pre hooks completed successfully.
+            - On a room cleaned while the action ran, the exit skips the depth
+              bookkeeping and the post hooks: the cleanup took the hook state
+              with it. Under the Rift gate that cleanup is the thread's own
+              removal of its Rift (GitHub #274, design 5c); only a teardown that
+              did not wait for the thread (past a drain deadline) races this exit.
         """
         self.check_cleaned()
         self._validate_action_hook_category(category)
@@ -262749,30 +263938,33 @@ class RiftSpace(Cleanable):
                 pre_completed = True
             yield
         finally:
-            post_action_callbacks: Tuple[Callable[[], None], ...] = tuple()
-            post_category_callbacks: Tuple[Callable[[], None], ...] = tuple()
-            with self._lock:
-                current_depth = self._action_hook_depth_by_category[category]
-                next_depth = current_depth - 1
-                self._action_hook_depth_by_category[category] = next_depth
-                if top_level and pre_completed and next_depth == 0:
-                    post_action_callbacks = tuple(
-                        self._post_action_hooks_by_key.get(
-                            (category, action_name),
-                            {},
-                        ).values()
-                    )
-                    post_category_callbacks = tuple(
-                        self._post_category_hooks_by_name.get(
-                            category,
-                            {},
-                        ).values()
-                    )
-            if top_level and pre_completed:
-                for callback in post_action_callbacks:
-                    callback()
-                for callback in post_category_callbacks:
-                    callback()
+            # A room cleaned during the action took its hook state with it: no depth to restore, no post hook to run.
+            # Under the Rift gate: this thread removed its own Rift (GitHub #274, 5c), or a teardown did not wait.
+            if not self._cleaned:
+                post_action_callbacks: Tuple[Callable[[], None], ...] = tuple()
+                post_category_callbacks: Tuple[Callable[[], None], ...] = tuple()
+                with self._lock:
+                    current_depth = self._action_hook_depth_by_category[category]
+                    next_depth = current_depth - 1
+                    self._action_hook_depth_by_category[category] = next_depth
+                    if top_level and pre_completed and next_depth == 0:
+                        post_action_callbacks = tuple(
+                            self._post_action_hooks_by_key.get(
+                                (category, action_name),
+                                {},
+                            ).values()
+                        )
+                        post_category_callbacks = tuple(
+                            self._post_category_hooks_by_name.get(
+                                category,
+                                {},
+                            ).values()
+                        )
+                if top_level and pre_completed:
+                    for callback in post_action_callbacks:
+                        callback()
+                    for callback in post_category_callbacks:
+                        callback()
 
     def _publish_runtime_event(self, event_payload: Dict[str, object]) -> None:
         """
@@ -263113,17 +264305,21 @@ END FILE: src/melder/nexus/rift/rift_space/static_rift_space.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/rift_space/workstation.py
-CONTENT SHA256: f671edf2b7a9a778e7f072402de86bdbd87eec231b5df13a34f0838730c62ec5
+CONTENT SHA256: 80f2310a557293f0ae030165f51192f1eaaa8660f14373401c953a5cf5fa0f46
 SOURCE ENCODING: utf-8
 ================================================================================
+from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict import (
     WeakConcurrentDict,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 
 
 class Workstation(Cleanable):
@@ -263201,6 +264397,15 @@ class Workstation(Cleanable):
         it (GitHub #274, W5), so agents' calls run concurrently. Whether the
         target's own methods are safe to call from several threads at once is
         the target's business, not Melder's (the owner, 2026-11-08).
+        Every public method below - the binds, `get`, `release`,
+        `describe_bindings` and the target methods - is an agent door: when the
+        room hands the workstation its Rift gate, the method holds the calling
+        thread's gate ticket for its whole run, `call_target` and
+        `cleanup_target` across the agent code too (GitHub #274, step 3). A
+        removal of the Rift therefore waits for them and refuses new ones, and an
+        ACL refresh drains them; a call nested in another call of the same Rift
+        passes by re-entry. The weak-binding collection callback and the
+        identity properties take no ticket.
 
     AGENT_ACCESS: public
 
@@ -263224,6 +264429,7 @@ class Workstation(Cleanable):
         "_weak_methods_by_name",
         "_target_name",
         "_target_store",
+        "_rift_gate",
     ]
     _VALID_STORES: Tuple[str, ...] = ("objects", "attributes", "methods")
     _DEFAULT_CLEANUP_METHODS: Tuple[str, ...] = ("cleanup", "close", "dispose")
@@ -263234,6 +264440,7 @@ class Workstation(Cleanable):
             *,
             default_weak_ref_bindings: bool = False,
             event_publisher: Optional[Callable[[Dict[str, object]], None]] = None,
+            rift_gate: Optional[RiftGate] = None,
     ) -> None:
         """
         Internal
@@ -263249,6 +264456,12 @@ class Workstation(Cleanable):
             event_publisher:
                 Optional best-effort room-local event publisher used for weak
                 binding collection signals.
+            rift_gate:
+                Optional Rift gate of the owning room, BORROWED: every public
+                method holds the calling thread's ticket on it while it runs
+                (GitHub #274, step 3). The workstation never closes or cleans
+                it. None - a standalone workstation - runs its methods
+                ungated.
 
         Returns:
             None.
@@ -263281,6 +264494,7 @@ class Workstation(Cleanable):
         )
         self._target_name: Optional[str] = None
         self._target_store: Optional[str] = None
+        self._rift_gate: Optional[RiftGate] = rift_gate
 
     def cleanup(self) -> None:
         """
@@ -263294,6 +264508,8 @@ class Workstation(Cleanable):
             - Clears active-target state.
             - Does not attempt to cleanup every stored binding automatically;
               explicit target cleanup is a separate operation.
+            - Drops the borrowed Rift gate reference without cleaning the gate,
+              which the owning Rift owns.
 
         Returns:
             None.
@@ -263323,6 +264539,7 @@ class Workstation(Cleanable):
             del self._event_publisher
             del self._target_name
             del self._target_store
+            del self._rift_gate
             del self._owner_space_id
             del self._id
         del self._lock
@@ -263410,9 +264627,17 @@ class Workstation(Cleanable):
             TypeError:
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        self._bind("objects", name, value, weak_ref=weak_ref)
+        with self._entered_door():
+            self._bind("objects", name, value, weak_ref=weak_ref)
 
     def bind_attribute(
             self,
@@ -263447,9 +264672,17 @@ class Workstation(Cleanable):
             TypeError:
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        self._bind("attributes", name, value, weak_ref=weak_ref)
+        with self._entered_door():
+            self._bind("attributes", name, value, weak_ref=weak_ref)
 
     def bind_method(
             self,
@@ -263484,9 +264717,17 @@ class Workstation(Cleanable):
             TypeError:
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        self._bind("methods", name, value, weak_ref=weak_ref)
+        with self._entered_door():
+            self._bind("methods", name, value, weak_ref=weak_ref)
 
     def get(self, name: str, *, store: Optional[str] = None) -> object:
         """
@@ -263507,9 +264748,16 @@ class Workstation(Cleanable):
             ValueError:
                 If `name` is empty, the binding is missing, or the name is
                 ambiguous across the logical stores.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and reads under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             _, _, value = self._resolve_binding(name, store=store)
             return value
 
@@ -263530,9 +264778,16 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If the binding cannot be resolved.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             resolved_store, resolved_weak_ref, value = self._resolve_binding(
                 name,
                 store=store,
@@ -263563,19 +264818,22 @@ class Workstation(Cleanable):
               bindings currently hold.
 
         Threading:
-            Reads under `self._lock`, so the result is a coherent snapshot.
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3). Reads under `self._lock`, so the result is a
+            coherent snapshot.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's Rift
+                gate refuses the call.
 
         Returns:
             Dict[str, List[str]]: Binding names grouped by logical store.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             return {
                 "objects": self._describe_store_names("objects"),
                 "attributes": self._describe_store_names("attributes"),
@@ -263601,9 +264859,16 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If the binding cannot be resolved.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and selects under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             resolved_store, _, _ = self._resolve_binding(name, store=store)
             self._target_name = name
             self._target_store = resolved_store
@@ -263618,9 +264883,17 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If no target is selected.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and reads under the workstation lock;
+            `call_target` reaches it by re-entry.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             if self._target_name is None or self._target_store is None:
                 raise ValueError("Workstation has no active target.")
             _, _, value = self._resolve_binding(
@@ -263639,9 +264912,18 @@ class Workstation(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and clears under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             self._clear_target_locked()
 
     def cleanup_target(self, *method_names: str) -> None:
@@ -263655,7 +264937,10 @@ class Workstation(Cleanable):
               binding just cleaned (by name and store): a target another agent
               selected while the cleanup methods ran stays selected.
             - Returns without clearing when a teardown cleaned the workstation
-              meanwhile; one landing just before the lock raises AttributeError.
+              meanwhile: the calling thread's own removal of its Rift, or one
+              that did not wait for it (a Nexus cleanup past its drain deadline,
+              a direct `Rift.cleanup`); one of the latter landing just before the
+              lock raises AttributeError.
 
         Args:
             *method_names:
@@ -263671,49 +264956,52 @@ class Workstation(Cleanable):
                 If no target is selected, a method name is empty, or no cleanup
                 method can be resolved on the current target.
             RuntimeError:
-                If the workstation is cleaned, or one resolved cleanup method is
-                not callable.
+                If the workstation is cleaned, one resolved cleanup method is
+                not callable, or the room's Rift gate refuses the call.
 
         Threading:
-            Resolves the target under the workstation lock and runs its cleanup
-            methods - agent code - after releasing it, so another agent's use
-            of this workstation does not wait on them and a cleanup method that
-            uses this room cannot freeze against it (GitHub #274, W5). The
-            selection is cleared under the lock again.
+            An agent door: holds the room's Rift gate ticket for its whole run,
+            the cleanup methods included (GitHub #274, step 3), so a removal of
+            the Rift waits for them. Resolves the target under the workstation
+            lock and runs its cleanup methods - agent code - after releasing it,
+            so another agent's use of this workstation does not wait on them and
+            a cleanup method that uses this room cannot freeze against it
+            (GitHub #274, W5). The selection is cleared under the lock again.
         """
         self.check_cleaned()
-        with self._lock:
-            if self._target_name is None or self._target_store is None:
-                raise ValueError("Workstation has no active target.")
-            target_name = self._target_name
-            target_store = self._target_store
-            _, _, target = self._resolve_binding(target_name, store=target_store)
-        cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
-        resolved_any = False
-        for method_name in cleanup_names:
-            if not method_name:
-                raise ValueError("cleanup method names cannot be empty.")
-            method = getattr(target, method_name, None)
-            if method is None:
-                continue
-            if not callable(method):
-                raise RuntimeError(
-                    "Target cleanup attribute '{0}' is not callable.".format(
-                        method_name
+        with self._entered_door():
+            with self._lock:
+                if self._target_name is None or self._target_store is None:
+                    raise ValueError("Workstation has no active target.")
+                target_name = self._target_name
+                target_store = self._target_store
+                _, _, target = self._resolve_binding(target_name, store=target_store)
+            cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
+            resolved_any = False
+            for method_name in cleanup_names:
+                if not method_name:
+                    raise ValueError("cleanup method names cannot be empty.")
+                method = getattr(target, method_name, None)
+                if method is None:
+                    continue
+                if not callable(method):
+                    raise RuntimeError(
+                        "Target cleanup attribute '{0}' is not callable.".format(
+                            method_name
+                        )
                     )
-                )
-            method()
-            resolved_any = True
-        if not resolved_any:
-            raise ValueError("No cleanup method was found on the active target.")
-        if self._cleaned:
-            # A teardown cleaned this workstation while the cleanup methods ran; its selection went with it.
-            return
-        with self._lock:
-            # Clear the selection only while it still names the binding just cleaned: another agent may have
-            # selected a different target while the cleanup methods ran outside the lock (GitHub #274, W5).
-            if self._target_name == target_name and self._target_store == target_store:
-                self._clear_target_locked()
+                method()
+                resolved_any = True
+            if not resolved_any:
+                raise ValueError("No cleanup method was found on the active target.")
+            if self._cleaned:
+                # A teardown cleaned this workstation while the cleanup methods ran; its selection went with it.
+                return
+            with self._lock:
+                # Clear the selection only while it still names the binding just cleaned: another agent may have
+                # selected a different target while the cleanup methods ran outside the lock (GitHub #274, W5).
+                if self._target_name == target_name and self._target_store == target_store:
+                    self._clear_target_locked()
 
     def call_target(
             self,
@@ -263751,30 +265039,68 @@ class Workstation(Cleanable):
             ValueError:
                 If no target is selected or `bind_as_store` is invalid.
             RuntimeError:
-                If the target is not callable, or the workstation is cleaned -
-                also when a teardown cleaned it while the target ran and
-                `bind_as_name` asks to bind the result.
+                If the target is not callable, the room's Rift gate refuses the
+                call, or the workstation is cleaned - also when the target
+                removed its own Rift and `bind_as_name` asks to bind the result.
 
         Threading:
-            Resolves the target under the workstation lock and calls it - agent
-            code - after releasing it, so agents sharing this workstation run
-            their calls concurrently and a target that uses this room through a
-            command cannot freeze against another command reading the target
+            An agent door: holds the room's Rift gate ticket for its whole run,
+            the target included (GitHub #274, step 3), so a removal of the Rift
+            waits for the target to return and an ACL refresh drains it; a
+            target that calls back into its own Rift passes by re-entry, and one
+            that removes its own Rift is not waited for. Resolves the target
+            under the workstation lock and calls it - agent code - after
+            releasing it, so agents sharing this workstation run their calls
+            concurrently and a target that uses this room through a command
+            cannot freeze against another command reading the target
             (GitHub #274, W5).
         """
         self.check_cleaned()
-        target = self.get_target()
-        if not callable(target):
-            raise RuntimeError("Active target is not callable.")
-        result = target(*args, **kwargs)
-        if bind_as_name is not None:
-            self._bind(
-                bind_as_store,
-                bind_as_name,
-                result,
-                weak_ref=None,
-            )
-        return result
+        with self._entered_door():
+            target = self.get_target()
+            if not callable(target):
+                raise RuntimeError("Active target is not callable.")
+            result = target(*args, **kwargs)
+            if bind_as_name is not None:
+                self._bind(
+                    bind_as_store,
+                    bind_as_name,
+                    result,
+                    weak_ref=None,
+                )
+            return result
+
+    @contextmanager
+    def _entered_door(self) -> Iterator[None]:
+        """
+        Hold the room's Rift gate for one public workstation call, when the
+        workstation was given one.
+
+        Contract:
+            - Admits the calling thread at the gate - a thread already inside
+              the Rift passes by re-entry - and releases the admission when the
+              call returns or raises. A workstation without a gate runs the
+              call as is.
+            - The gate is held in a local: a teardown during the call - the same
+              thread's removal of its own Rift - deletes the workstation's field,
+              and the release after a cleaned gate is a quiet no-op.
+
+        Yields:
+            None.
+
+        Raises:
+            RuntimeError: If the gate refuses the call (terminally closed, or
+                disabled in "raise" entry mode).
+        """
+        rift_gate = self._rift_gate
+        if rift_gate is None:
+            yield
+            return
+        rift_gate.admit_ticket()
+        try:
+            yield
+        finally:
+            rift_gate.unregister_ticket()
 
     def _bind(
             self,
@@ -272939,7 +274265,7 @@ END FILE: src/melder/utilities/custom_exceptions/spellbook_validation_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py
-CONTENT SHA256: e6920b7bd3b6bf95b56f8fd4a66ebbe0c22def45b1c08d4eacb4eb81fef83de6
+CONTENT SHA256: 4c0043c8455230ad18fcd728a1747e0a24c61bb1374b775a03157c87ec6459c4
 SOURCE ENCODING: utf-8
 ================================================================================
 import annotationlib
@@ -272948,6 +274274,7 @@ import types
 import typing
 from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Tuple
 
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import HiddenProviderReport
@@ -272970,8 +274297,10 @@ class UnresolvedInputError(MeldExecutionError):
 
     Raised When:
         Constructing an object whose Phase-3 topology carries an UNRESOLVED_INPUT
-        socket (a single typed dependency no registered spell provides), and the
-        constructing call's overrides did not supply that parameter. It fires only
+        socket (a single typed dependency no registered spell provides, or - since
+        2026-11-16, GitHub #329 - a SpellMap default whose address has nothing
+        bound), and the constructing call's overrides did not supply that
+        parameter. It fires only
         when that object is actually built: a stored (reused) object never demands
         its unresolved inputs, and conjure succeeds regardless. It is decided before
         construction: the many_only and generalized plans raise it before building
@@ -272986,7 +274315,9 @@ class UnresolvedInputError(MeldExecutionError):
         on its next meld. When the expected class is registered, but only under a
         spellframe or a binding name - where a class lookup does not reach it -
         the message names each such address and the lookup that reaches it, and
-        `hidden_spell_ids` lists those spells (2026-11-07).
+        `hidden_spell_ids` lists those spells (2026-11-07). For a SpellMap
+        parameter the message names the SpellMap as written and asks for a spell
+        at that address; binding one there re-gates the consumer.
 
     Contract:
         - A `MeldExecutionError`: code that catches `MeldExecutionError` keeps
@@ -272995,6 +274326,8 @@ class UnresolvedInputError(MeldExecutionError):
         - `expected_type` is the parameter annotation's display name, read from the
           constructor signature on the failure path (Optional and forward references
           unwrapped); the lowercased frame key is used only if that is unreadable.
+          For a parameter whose default is a SpellMap it is that SpellMap rendered
+          as written (`_spellmap_address_name`), whatever the annotation.
         - `unresolved_params` lists every missing unresolved parameter of the
           consumer, in signature order.
         - `inner` is None: nothing has been called when it is raised.
@@ -273032,9 +274365,10 @@ class UnresolvedInputError(MeldExecutionError):
 
     AGENT_PURPOSE:
         access: public. Raised at meld when an object whose typed parameter has no
-        registered provider is built without that value; supply it by override
-        (root key, `>param` path key or `**param`) or bind a provider for
-        expected_type.
+        registered provider, or whose SpellMap default's address has nothing bound,
+        is built without that value; supply it by override (root key, `>param` path
+        key or `**param`), or bind a provider for expected_type (for a SpellMap, a
+        spell at its address).
     """
 
     __slots__ = (
@@ -273145,6 +274479,52 @@ class UnresolvedInputError(MeldExecutionError):
             return annotation.__qualname__
         return repr(annotation)
 
+    @staticmethod
+    def _spellmap_address_name(spell_map: SpellMap) -> str:
+        """
+        Render a SpellMap default as written: the expected-type text of a SpellMap socket.
+
+        Purpose:
+            One naming rule for a SpellMap parameter in the Phase-4
+            UNRESOLVED_INPUT warning and in this error (2026-11-16, GitHub #329: a
+            SpellMap that matches nothing waits as an unresolved input), so both
+            name the address the consumer asks for rather than its annotation.
+
+        Contract:
+            - `SpellMap(<spell>, spellframe=<frame>, binding_name=<name>)` with the
+              fields the descriptor carries, in that order; a field that is None is
+              left out, and the override payload is never shown.
+            - A string (a category frame) renders with quotes; a function or
+              method spell by its `__qualname__`; any other object as
+              `expected_type_name` renders it (a class or Protocol by its
+              `__qualname__`).
+            - Pure: no lookups, no side effects.
+
+        Args:
+            spell_map:
+                The parameter's SpellMap default.
+
+        Returns:
+            str: For example `SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')`
+            or `SpellMap(ServiceBuilder)`.
+        """
+        def render(value: object) -> str:
+            """Quote a string; name a function or method by its qualified name, any other object as an annotation."""
+            if isinstance(value, str):
+                return repr(value)
+            if isinstance(value, (types.FunctionType, types.MethodType, types.BuiltinFunctionType)):
+                return value.__qualname__
+            return UnresolvedInputError.expected_type_name(value)
+
+        parts: List[str] = []
+        if spell_map.spell is not None:
+            parts.append(render(spell_map.spell))
+        if spell_map.spellframe is not None:
+            parts.append(f"spellframe={render(spell_map.spellframe)}")
+        if spell_map.binding_name is not None:
+            parts.append(f"binding_name={spell_map.binding_name!r}")
+        return f"SpellMap({', '.join(parts)})"
+
     @classmethod
     def for_unsupplied(cls, spell: Spell, param_names: Collection[str]) -> UnresolvedInputError:
         """
@@ -273199,9 +274579,15 @@ class UnresolvedInputError(MeldExecutionError):
         Contract:
             - The first missing socket (lowest position) names the type; the
               others are listed as "Also not supplied".
-            - When the first socket's class lookup finds its class bound only
-              under a spellframe or a binding name (`_hidden_candidates`, a live
-              read of the consumer's pool), the text is
+            - When the first socket's parameter defaults to a SpellMap
+              (`_constructor_spell_map`; 2026-11-16, GitHub #329), the text names
+              that SpellMap (`_spellmap_address_name`) and asks for a spell at its
+              address. No class-lookup search runs for it: Phase 3 records a
+              SpellMap's HIDDEN_PROVIDER shape itself, and a framed bind of its
+              class re-gates the consumer into that refusal.
+            - Otherwise, when the first socket's class lookup finds its class bound
+              only under a spellframe or a binding name (`_hidden_candidates`, a
+              live read of the consumer's pool), the text is
               `HiddenProviderReport.unresolved_input_message` and
               `hidden_spell_ids` carries the candidates; otherwise the text says
               nothing registered provides it, unchanged since 2026-09-26.
@@ -273217,22 +274603,20 @@ class UnresolvedInputError(MeldExecutionError):
         first = missing[0]
         consumer = spell.spell_name
         param_name = first.param_name
-        expected_type = cls._constructor_expected_type(spell, first)
-        candidates = cls._hidden_candidates(spell, cls._constructor_annotation(spell, first))
-        if candidates:
-            message = HiddenProviderReport.unresolved_input_message(
-                consumer_name=consumer,
-                param_name=param_name,
-                expected_type=expected_type,
-                candidates=candidates,
+        spell_map = cls._constructor_spell_map(spell, first)
+        candidates: List[Dict[str, Optional[str]]] = []
+        if spell_map is not None:
+            expected_type = cls._spellmap_address_name(spell_map)
+            message = (
+                f"{consumer}.{param_name} asks for the spell its default {expected_type} names, but nothing is bound "
+                f"there and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+                f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when {consumer} is "
+                "built as a dependency, or bind a spell at that address."
             )
         else:
-            message = (
-                f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
-                f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
-                f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
-                f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
-            )
+            expected_type = cls._constructor_expected_type(spell, first)
+            candidates = cls._hidden_candidates(spell, cls._constructor_annotation(spell, first))
+            message = cls._class_lookup_message(consumer, param_name, expected_type, candidates)
         if len(missing) > 1:
             others = ", ".join(repr(socket.param_name) for socket in missing[1:])
             message += f" Also not supplied: {others}."
@@ -273250,6 +274634,79 @@ class UnresolvedInputError(MeldExecutionError):
                 candidate["spell_id"] for candidate in candidates if candidate["spell_id"] is not None
             )),
         )
+
+    @staticmethod
+    def _class_lookup_message(
+            consumer: str,
+            param_name: str,
+            expected_type: str,
+            candidates: List[Dict[str, Optional[str]]],
+    ) -> str:
+        """
+        Word the error for a typed parameter: where its class is bound, or that nothing provides it.
+
+        Contract:
+            - With candidates (the class bound only under a spellframe or a
+              binding name) the text is `HiddenProviderReport.unresolved_input_message`;
+              otherwise it says nothing registered provides the expected type,
+              unchanged since 2026-09-26.
+            - Pure; reads only the arguments.
+
+        Args:
+            consumer: The consumer's spell name.
+            param_name: The first missing parameter.
+            expected_type: Display name of its expected type.
+            candidates: The described hidden candidates, possibly empty.
+
+        Returns:
+            str: The message, without the "Also not supplied" tail.
+        """
+        if candidates:
+            return HiddenProviderReport.unresolved_input_message(
+                consumer_name=consumer,
+                param_name=param_name,
+                expected_type=expected_type,
+                candidates=candidates,
+            )
+        return (
+            f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
+            f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+            f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
+            f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
+        )
+
+    @staticmethod
+    def _constructor_spell_map(spell: Spell, socket: SpellSocketDescriptor) -> Optional[SpellMap]:
+        """
+        Read the SpellMap one unresolved parameter defaults to, from the consumer's constructor signature.
+
+        Contract:
+            - Returns the parameter's default when it is a `SpellMap` (2026-11-16,
+              GitHub #329: a SpellMap that matches nothing is an UNRESOLVED_INPUT
+              socket), otherwise None - including when the signature cannot be
+              read (TypeError, ValueError) or has no such parameter.
+            - Reads the default by identity; it is never called or copied.
+            - Failure path only.
+
+        Args:
+            spell: The consumer whose construction failed.
+            socket: One of its missing UNRESOLVED_INPUT sockets.
+
+        Returns:
+            Optional[SpellMap]: The SpellMap default, or None.
+        """
+        try:
+            signature = inspect.signature(
+                spell.spell,
+                annotation_format=annotationlib.Format.FORWARDREF,
+            )
+        except (TypeError, ValueError):
+            return None
+        parameter = signature.parameters.get(socket.param_name)
+        if parameter is None or not isinstance(parameter.default, SpellMap):
+            return None
+        spell_map: SpellMap = parameter.default
+        return spell_map
 
     @staticmethod
     def _constructor_annotation(spell: Spell, socket: SpellSocketDescriptor) -> object:

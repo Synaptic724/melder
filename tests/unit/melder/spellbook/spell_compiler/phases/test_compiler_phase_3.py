@@ -1464,10 +1464,12 @@ def test_resolve_spellmap_default_explicit_spell_without_a_spellframe_refuses_an
     assert text.endswith(f" SpellMapTarget is bound only where this class lookup does not reach: {entry}.")
 
 
-def test_resolve_spellmap_default_misses_that_are_not_hidden_providers_raise_as_before() -> None:
+def test_resolve_spellmap_default_plain_misses_wait_in_phase_3_and_raise_for_direct_callers() -> None:
     """
-    Only the class-lookup form with X registered elsewhere is recorded: X bound nowhere, and a frame-named SpellMap
-    that misses, raise the RuntimeError unchanged (the owner's D4) and leave `hidden_out` empty.
+    X bound nowhere, and a frame-named SpellMap that misses, are no hidden providers. Phase 3's own call (with
+    `hidden_out`) returns an empty mapping and leaves `hidden_out` empty, so the socket waits as an unresolved input
+    (2026-11-16, GitHub #329; under the owner's D4 of 2026-11-07 both raised here). A direct caller without
+    `hidden_out` still gets the RuntimeError, unchanged.
     """
     elsewhere = _make_spell_stub("elsewhere", spell_obj=SpellMapTarget, spellframe="tools",
                                  spell_name="SpellMapTarget")
@@ -1479,12 +1481,13 @@ def test_resolve_spellmap_default_misses_that_are_not_hidden_providers_raise_as_
     ):
         dep = _make_dependency(spell_id="root", param_name="provider", position=0,
                                di_shape=ParameterDIShape.SPELLMAP_DEFAULT, spellmap_default=spellmap)
+        spellbook = SimpleNamespace(_spell_id_pool=pool)
         hidden_out: list = []
-        with pytest.raises(RuntimeError) as caught:
-            phase._resolve_spellmap_default(root_spell, SimpleNamespace(_spell_id_pool=pool), dep,
-                                            hidden_out=hidden_out)
-        assert str(caught.value).endswith(f"SpellMap={spellmap!r}.")
+        assert phase._resolve_spellmap_default(root_spell, spellbook, dep, hidden_out=hidden_out) == {}
         assert hidden_out == []
+        with pytest.raises(RuntimeError) as caught:
+            phase._resolve_spellmap_default(root_spell, spellbook, dep)
+        assert str(caught.value).endswith(f"SpellMap={spellmap!r}.")
 
 
 def test_resolve_spellmap_default_explicit_spell_with_its_spellframe_is_unchanged() -> None:

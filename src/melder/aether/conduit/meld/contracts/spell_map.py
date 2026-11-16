@@ -36,11 +36,11 @@ class SpellMap(Cleanable):
       Matches by identity, as every `spell` does: it reaches only a spell whose
       bound object is ILogic itself - the Protocol's own definition, bound
       `resolvable=False`, whose value the meld supplies by override - and never
-      an implementation, so with only implementations bound it fails at
-      conjure. To inject an implementation filed under the Protocol, name the
-      frame: `SpellMap(spellframe=ILogic, binding_name=...)`. (Corrected
-      2026-11-07: this shape was described as frame-based DI, which Phase 3
-      never did.)
+      an implementation, so with only implementations bound it waits as an
+      unresolved input (it failed at conjure before 2026-11-16). To inject an
+      implementation filed under the Protocol, name the frame:
+      `SpellMap(spellframe=ILogic, binding_name=...)`. (Corrected 2026-11-07:
+      this shape was described as frame-based DI, which Phase 3 never did.)
     - `SpellMap(MyService, spellframe=ILogic, binding_name="primary")`
       Fully explicit spell + frame + binding declaration.
     - `SpellMap(spell=None, spellframe=ILogic, binding_name="primary")`
@@ -114,10 +114,15 @@ class SpellMap(Cleanable):
         deliberately knows NOTHING but the contract and the binding name, and
         is how an implementation filed under a Protocol is injected.
         Ambiguity is a build-time failure, not a runtime one: a SpellMap
-        default that resolves to zero or to multiple candidates raises rather
-        than silently picking. That is the whole reason the explicit
-        `binding_name` form exists - it is the documented way to disambiguate
-        when several spells legitimately satisfy the same frame.
+        default that resolves to several candidates raises rather than silently
+        picking. That is the whole reason the explicit `binding_name` form
+        exists - it is the documented way to disambiguate when several spells
+        legitimately satisfy the same frame. A SpellMap that resolves to none
+        waits instead (2026-11-16, GitHub #329: the owner's rule that bind order
+        must not matter; it raised before): Phase 3 records an unresolved input
+        at its address, so a consumer bound before its provider binds, its meld
+        raises UnresolvedInputError until a spell is bound there or the value is
+        supplied, and the bind of that spell re-gates it.
 
     AGENT_ACCESS: public
 
@@ -126,7 +131,8 @@ class SpellMap(Cleanable):
         constructor default: SpellMap(MyRepo) for MyRepo bound bare, SpellMap(MyRepo,
         binding_name='primary') for MyRepo bound bare under that name, or
         SpellMap(spellframe=ILogic, binding_name='primary') for a spell filed under a frame.
-        Zero or multiple matches raise at build time.
+        Several matches raise at build time; no match waits as an unresolved input until a
+        spell is bound at the address or the meld supplies the value.
     """
 
     __slots__ = Cleanable.__slots__ + [

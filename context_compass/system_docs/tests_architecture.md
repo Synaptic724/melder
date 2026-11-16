@@ -431,6 +431,8 @@ The most important recent integration addition is the dedicated
    compiled ACL surfaces, and `FrameViewer` instances.
 2. unit/component/integration viewer tests reuse those fixtures to avoid
    re-encoding descriptor and ACL setup inline.
+3. the viewer's Rift double owns one open `RiftGate` (`rift_gate`), because every viewer read takes the calling
+   thread's ticket on its Rift's gate (0.2.8301, GitHub #274, step 3).
 
 ### Flow: Static/Capability Rift Bench Path
 1. harness support module constructs real runtime objects:
@@ -558,12 +560,30 @@ The most important recent integration addition is the dedicated
   step. Every thread is joined within `_Handshake.BOUND_SECONDS` (5 s), so a deadlock or a point never reached fails
   its test instead of hanging the suite, and a test asserts that agent code waiting on another agent finished
   within that bound. Like `CleanupRecheckHandshake` it orders real threads with events; unlike it, it lives in its
-  one module.
+  one module. Since the Rift gate (0.2.8301) the module's removal tests also patch the removal's gate close and its
+  teardown (`_announce_the_removal_closing_the_gate`, `_count_the_threads_inside_at_teardown`) to assert that the
+  removal waited for the agent and that the teardown found no thread inside.
+  EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read 1-17, 78-206, 277-393 and 663-852):
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:1-21
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:83-211
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:282-462
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:732-968
+- That a call WAITS is proven by one bounded observation window, the only timed check of the Rift gate modules
+  (GitHub #274, step 3, 0.2.8301): the gate-drain component module holds an agent inside a Rift call at a named
+  point (`_Hold`), starts the removal or the cleanup, and gives it `_Handshake.OBSERVATION_SECONDS` (0.5 s) to
+  return wrongly - one that returns while the agent is inside fails its test - then releases the agent in a
+  `finally` and joins every daemon thread within `_Handshake.BOUND_SECONDS` (5 s). Order still comes from events
+  (`_Hold`, patched Rift accessors, teardown and gate close), never from sleeps; a drain that must time out counts as
+  having waited once it took `MIN_WAIT_FRACTION` (0.8) of the timeout the test installs as
+  `projection_refresh_gate_timeout_seconds`. The thread-tickets unit module joins each re-entry and refusal within
+  `_Bound.PROMPT_SECONDS` (1 s) on its own daemon thread and releases a parked thread in a `finally`, so a gate that
+  parks or refuses a re-entering thread fails instead of hanging the suite.
   EVIDENCE:
-  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:1-17
-  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:78-206
-  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:277-393
-  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:663-852
+  - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:1-22
+  - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:64-234
+  - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:282-330
+  - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:583-621
+  - tests/unit/melder/aether/test_rift_gate_thread_tickets.py:1-138
 - A creation-cache save's failure is injected at the operating-system boundary, never by stubbing the save
   (0.2.8266): the refused-save component and unit tests wrap `os.replace` (which `Path.replace` calls),
   `Path.write_bytes`, `Path.mkdir` or `Path.unlink` through `monkeypatch` for paths under the test's own cache
@@ -652,15 +672,19 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 557 `.py` files, 554 of them `test_*.py` (465 on 2026-09-26, 334 on 2026-06-13)
-- `component/`: 181 `.py` files, 179 of them `test_*.py` (178 and 177 earlier on 2026-11-08, 143, 81)
+- `unit/`: 558 `.py` files, 555 of them `test_*.py` (557 and 554 on 2026-11-08, 465 on 2026-09-26, 334 on
+  2026-06-13)
+- `component/`: 182 `.py` files, 180 of them `test_*.py` (181 and 179 on 2026-11-08 at 0.2.8292, 178 and 177
+  earlier that day, 143, 81)
 - `integration/`: 196 `.py` files, 189 of them `test_*.py` (149, 88)
 - `mocks/`: 44 `.py` files (44, 42)
 - `experimentation/`: 204 `.py` files, 33 of them `test_*.py` (196 on 2026-09-26)
 Recounted 2026-11-08 with `find tests/<tier> -name '*.py'` (pycache excluded), every module on disk counted,
-the day's three untracked test modules among them, then again at 0.2.8289 with the untracked Rift race module and
-at 0.2.8292 with the untracked Rift agents-and-teardown module; the three tiers' 922 `test_*.py` modules (921
-before that module, 920 before the race module, 880 on 2026-11-01) are the count `tests_components` states.
+the day's three untracked test modules among them, then again at 0.2.8289 with the untracked Rift race module,
+at 0.2.8292 with the untracked Rift agents-and-teardown module, and on 2026-11-09 at 0.2.8301 with the two untracked
+Rift gate modules (one unit, one component; mocks 44 and experimentation 204 unchanged); the three tiers' 924
+`test_*.py` modules (922 before those two, 921 before the agents-and-teardown module, 920 before the race module,
+880 on 2026-11-01) are the count `tests_components` states.
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -1047,9 +1071,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/_nexus_viewer_matrix_support.py`
   start_line: 1
-  end_line: 638
-  loc: 638
-  verified_at: 2026-09-26T21:51:55Z
+  end_line: 654
+  loc: 654
+  verified_at: 2026-11-09T11:20:47Z
 - path: `tests/_spell_identity_test_support.py`
   start_line: 1
   end_line: 46
@@ -1112,9 +1136,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6374
-  loc: 6374
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 6381
+  loc: 6381
+  verified_at: 2026-11-09T11:20:47Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
   end_line: 458
@@ -1397,8 +1421,29 @@ graph TD
   and removal paths it pins read in src, and every tier recounted from disk (2026-11-08, GitHub #274,
   0.2.8290-0.2.8292)
 - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
+- the two Rift gate modules' docstrings, bounds and helpers read, their tests collected (13 functions, 23 cases;
+  5), the changed agents-and-teardown module's diff read, the gate, door, removal and cleanup paths they pin read
+  in src, and every tier recounted from disk (2026-11-09, GitHub #274 step 3, 0.2.8301)
+- `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`
+- `tests/unit/melder/aether/test_rift_gate_thread_tickets.py`
+- `src/melder/nexus/rift/rift_gate/rift_gate.py`
 
 ## Context / Handoff Summary
+2026-11-09 the Rift gate (no notch from this pass; documentation only; GitHub #274 step 3, 0.2.8301): one invariant
+joins the operational invariants - that a call WAITS is proven by one bounded observation window, the only timed
+check of the Rift gate modules: the gate-drain component module holds an agent inside a Rift call at a named point,
+gives the removal or cleanup 0.5 s to return wrongly, then releases the agent in a `finally` and joins every daemon
+thread within 5 s, and the thread-tickets unit module bounds each re-entry and refusal by 1 s - with five citations
+of the two modules. The deadlock invariant notes that the agents-and-teardown module's removals now assert the wait
+and a teardown with 0 threads inside, and its four citations of that module are remapped (1-21, 83-211, 282-462,
+732-968; they read 1-17, 78-206, 277-393 and 663-852). The inventory follows the two new files (unit 558 `.py`, 555
+of them `test_*.py`; component 182, 180; 924 test modules in the three tiers, the count `tests_components` states),
+and the two modules and rift_gate.py join the sources. No tier, conftest, marker or shared support module changes
+(`_nexus_viewer_matrix_support.py`'s viewer double gained a `RiftGate`; this map gains no record - the new modules
+are in `tests_components`' core set, 362 paths - and remeasures that file, 654 lines, and `test_nexus.py`, 6381,
+whose detached Rift double gained the same gate). The twelve Rift gate and room modules ran with the GIL off (275
+passed); nothing else was run.
+
 2026-11-08 Rift agents and teardown (no notch from this pass; documentation only; GitHub #274, 0.2.8290-0.2.8292):
 one invariant joins the operational invariants - a deadlock is proven by real agent threads that a bound joins,
 never by sleeps: the new component module runs each other agent on a daemon thread ordered by `threading.Event`

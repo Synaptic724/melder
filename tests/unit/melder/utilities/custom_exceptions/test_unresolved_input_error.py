@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Protocol
 
 import pytest
 
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
@@ -41,6 +42,25 @@ class ByProtocol:
     """Consumer asking by the Protocol: a contract lookup, never a class lookup."""
 
     def __init__(self, greeter: Greeter) -> None:
+        """Hold it."""
+        self.greeter = greeter
+
+
+class SpectrumBuilders:
+    """Consumer asking for its builder by frame address through a SpellMap default annotated `Any`."""
+
+    def __init__(
+            self,
+            service_builder: Any = SpellMap(spellframe="spectrum", binding_name="ServiceBuilder"),
+    ) -> None:
+        """Hold it."""
+        self.service_builder = service_builder
+
+
+class ByClassMap:
+    """Consumer asking for English through the class form of a SpellMap, annotated with the class."""
+
+    def __init__(self, greeter: English = SpellMap(English)) -> None:
         """Hold it."""
         self.greeter = greeter
 
@@ -135,3 +155,33 @@ def test_stale_plan_still_raises_runtime_error() -> None:
     """Asking for a parameter the topology does not mark unresolved is a stale plan, as before."""
     with pytest.raises(RuntimeError, match="its plan is stale"):
         UnresolvedInputError.for_unsupplied(_consumer(Host, {}, "greeter"), ["missing"])
+
+
+def test_spellmap_parameter_names_its_spellmap_instead_of_an_annotation() -> None:
+    """
+    A parameter whose default is a SpellMap (GitHub #329) names that SpellMap as written - the address it asks for -
+    not its annotation (`Any` here) or the frame key, and the text asks for a spell at that address.
+    """
+    error = UnresolvedInputError.for_unsupplied(
+        _consumer(SpectrumBuilders, {}, "service_builder"), ["service_builder"])
+    assert str(error).endswith(
+        "SpectrumBuilders.service_builder asks for the spell its default SpellMap(spellframe='spectrum', "
+        "binding_name='ServiceBuilder') names, but nothing is bound there and this meld did not supply it. Supply it "
+        "with override={'service_builder': ...} when melding SpectrumBuilders, a path key ending in '>service_builder' "
+        "(or '**service_builder') when SpectrumBuilders is built as a dependency, or bind a spell at that address."
+    )
+    assert error.expected_type == "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')"
+    assert error.hidden_spell_ids == ()
+
+
+def test_class_form_spellmap_parameter_runs_no_class_lookup_search() -> None:
+    """
+    `SpellMap(English)` annotated `English`, with English bound only under a frame: the error names the SpellMap and
+    lists no hidden candidates - Phase 3 records the hidden-provider shape of a SpellMap itself, and a framed bind of
+    English re-gates the consumer into it, so the meld-time path does not repeat a class-lookup search.
+    """
+    pool = {"english-sid": _pooled("english-sid", Greeter, None)}
+    error = UnresolvedInputError.for_unsupplied(_consumer(ByClassMap, pool, "greeter"), ["greeter"])
+    assert error.expected_type == "SpellMap(English)"
+    assert "ByClassMap.greeter asks for the spell its default SpellMap(English) names" in str(error)
+    assert error.hidden_spell_ids == ()

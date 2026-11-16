@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `76dceadfe3a0104d18f4554a3a9ef97a24b853cb3b7daf561ef5b5b45ee71248`
+- source_sha256: `8131fbf3e42fb69535c7c8414cc626c463e727abc7cab735ed59adc53d429974`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `96800932d59232bf96dd0a727a1833ce0d23d81d081ce6e5e3760fd93a565723`
+- source_sha256: `bd06021fb7f244bfc4673c810ced7b0cc3e6b07b3b8006afce691afb56254c58`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `2a8cb3e7dcff548b99a3932c52102be49d185977ce30eb8484e2befabefeb7b9`
+- source_sha256: `ef2459abebedf9fd579ac8838812405041b54cf38e452c6d7e0bdebb00671dbc`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `5fba52517201d0cc19fbd1fc8aef95650d9714a6b10a4b14f5753668a8f91b29`
+- source_sha256: `8d26fdc89ebb84e7e6cf682a90afe436d8a3b4a7872fa4661a5aa3497c2601de`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `8757a9b3ec11773a6cd440e0a7af89f4bd8f33853c2d947c30d3e84dd0fe9b35`
+- source_sha256: `8fe68d58c20f4627667dde6cded336e828928ecc76c90caa76bd3104caa9c321`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `cf57ab34ec1c1ca387e731547a2affc3df96391423715f710102af75c167f806`
+- source_sha256: `7989207447fb27fc85717aad91e2bd1db44308a850e3583843daeec2807c0606`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `95a2407c6d14436e52881cd66335cc3c0776e55a0f52eb163cce1e8c1264a9a2`
+- source_sha256: `104f23010a1abe57a333f6fa871bf5e6e4b620ea87ea3e30d04a4666a2a9f68b`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `4e585268b669db4a3f09c4e648cd77bda5a935c42a407ccdf83d77a11d037992`
+- source_sha256: `a14a61510b5066e762d3ada38188ee11778f332f49cb9b451d60bd70f4b7e006`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `b87e49a275dc61fb85b7a24f7b27057204b58f9a0f51c4acee6c2581adc94051`
+- source_sha256: `41c5ed29d72d55534f5a9ac4dcb3fd95f600ef43a1d56b2f49a2df95a4ffc71a`
 - nodes: 1
 
 ### Nodes
@@ -3204,7 +3204,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8`
+- source_sha256: `ceb93228b567a76dcb6966a2a2be2296038bb47035e61d11adee1a7a69497094`
 - nodes: 2
 
 ### Nodes
@@ -3227,7 +3227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns per-conduit resolution state buckets
   - provides targeted dependency and contract invalidation
   - indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges
-  - watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them
+  - watches UNRESOLVED_INPUT consumers under their dependency key's frame - the expected type's for a typed socket, the SpellMap's frame for a SpellMap socket (0.2.8303) - so a later matching bind re-resolves them
   - retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)
   - watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)
   - records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)
@@ -5567,7 +5567,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_map.py
 
-- source_sha256: `ab37cc183273dffdce467c2494100b8cc6406de605a00e951752d8d239e14578`
+- source_sha256: `1a9976c01eeb51abd34cf6e53b34c0494f400c5389a79dbfa6aef475a5a9364f`
 - nodes: 2
 
 ### Nodes
@@ -5593,6 +5593,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking
   - keeps binding_name exactly as written, as Bind does; canonical_key carries the normalized key Phase 3 matches by (0.2.8226)
   - SpellMap(spell=X) without a spellframe is a class lookup (0.2.8278): Phase 3 reaches only X bound with no spellframe, under the default binding or under binding_name when one is given, so its canonical_key is the address of the only spell it can reach; a SpellMap naming a spellframe reads the frame as before
+  - a SpellMap that matches nothing is an unresolved input at its address (0.2.8303, the owner's rule that bind order must not matter): its consumer binds and conjures, the bind of a spell at that address re-gates it, and meld raises UnresolvedInputError naming the SpellMap until then; several matches still raise at build time
 - owns_state: `spell`, `spellframe`, `binding_name`, `override`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `canonical_key`, `cleanup`, `lookup_triplet`, `spell_key`
@@ -11151,7 +11152,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 
-- source_sha256: `7c8ea89ad312d696c7e0018bd8e4d8d0f50937c74de2c912c663785a328321bf`
+- source_sha256: `c69b385d753a1725d95d77df8ad78415491150addb11aef8f0eda22f7a999e35`
 - nodes: 2
 
 ### Nodes
@@ -11170,7 +11171,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Enum classifying the kind of socket represented by a DAG edge.
 - responsibilities:
   - labels the NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED, UNRESOLVED_INPUT and AMBIGUOUS_INPUT categories as a StrEnum whose values are the member names; the historical integers 1-5 stay readable (_missing_) and are projected for numeric compiler rows (_legacy_code)
-  - UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call; when its class is registered only under a spellframe or a binding name the socket carries those spells (hidden_spell_ids) and Phase 4 refuses the spell with HIDDEN_PROVIDER, so it never reaches planning (0.2.8281)
+  - UNRESOLVED_INPUT marks a single typed dependency no registered spell provides, or a SpellMap default whose address has nothing bound (0.2.8303): no target, no DAG edge, supplied by the constructing call; when its class is registered only under a spellframe or a binding name the socket carries those spells (hidden_spell_ids) and Phase 4 refuses the spell with HIDDEN_PROVIDER, so it never reaches planning (0.2.8281)
   - AMBIGUOUS_INPUT (0.2.8224): a single typed dependency with several resolvable providers - no target, candidates as references, frame key kept; refused by Phase 4 with the remedies a SpellMap default or one provider (no meld override since 0.2.8281)
 - owns_state: `NORMAL`, `SPELL_CONTRACT`, `OVERRIDE_REQUIRED`, `UNRESOLVED_INPUT`, `AMBIGUOUS_INPUT`
 - phases: `validation`, `runtime`
@@ -11482,7 +11483,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `646c9eb0f995ddb7f8b68d7280e70ebcffe6a96e76099c6cf4d42d27db7ba8b0`
+- source_sha256: `8ac6c08e594bfb314e2fa7dfb5cc0c691b8b2e92924a6c48a753e54b43448205`
 - nodes: 2
 
 ### Nodes
@@ -11506,13 +11507,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
   - selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology
   - republishes enabled late-compiled Nexus records after local topology is available
-  - records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter has no candidate; when its class lookup misses a class bound only under a spellframe or a binding name the socket also carries those spells (hidden_spell_ids, sorted, one per SpellIndex, and their address frame keys, hidden_frame_keys; method and lambda spells dropped) and Phase 4 refuses the consumer with HIDDEN_PROVIDER (0.2.8281)
+  - records an UNRESOLVED_INPUT socket, keeping its dependency key, when a single typed parameter or (0.2.8303, the owner's rule that bind order must not matter) a SpellMap default has no candidate - a SpellMap socket keyed by its SpellMap's canonical key, so a bind at that address re-gates the consumer; when its class lookup misses a class bound only under a spellframe or a binding name the socket also carries those spells (hidden_spell_ids, sorted, one per SpellIndex, and their address frame keys, hidden_frame_keys; method and lambda spells dropped) and Phase 4 refuses the consumer with HIDDEN_PROVIDER (0.2.8281)
   - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
   - matches an annotation to candidates by KIND (0.2.8222): _annotation_kind classifies it as a Protocol contract, a class type or a string name; _spell_keys_for gives the keys a spell answers under for that kind - its type key for a class, its implemented_protocols (plus its own definition key when it is a Protocol bound resolvable=False) for a Protocol, type key, contract keys and definition key for a single string and the frame key for a string collection - so a string category never provides for a same-named class
   - answers a class lookup - a class annotation, list[Class], a single string's type part, SpellMap(spell=X) without a spellframe - only with a spell bound with no spellframe and the default binding (_answers_class_lookup, 0.2.8278): a spellframe or a binding name hides the spell's own type, as a declared service hides the component's type in Autofac, so only such a spell offers its type key and enters by_type, while contract, definition and label matching are unchanged
   - indexes candidates once per resolution pass into five buckets (by_type, by_label, by_contract, by_definition and, since 0.2.8281, by_hidden_type) read through _index_buckets_for (a single-socket name reads by_type, by_contract and by_definition); the scan (_matches_annotation over _spell_keys_for) and the index read one table and one class-lookup predicate, so their membership is equal; _eq_safe_object is kept only as the structural snapshot's replayability rule
   - records a single annotation with several resolvable candidates as an AMBIGUOUS_INPUT socket (candidate ids as references, no dependency id) instead of raising, so Phase 4 reports AMBIGUOUS_PROVIDER through the readable report (0.2.8224)
-  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another; a miss whose spell is registered elsewhere returns empty into hidden_out on Phase 3's own call, so the socket becomes UNRESOLVED_INPUT with those registrations (0.2.8281), while a direct caller gets the RuntimeError with a sentence naming where the spell is bound (_spellmap_hidden_sentence)
+  - resolves a SpellMap default by normalized binding names and string-frame keys (_spellmap_frame_matches; class and Protocol frames by identity), the address rule bind and meld use (0.2.8226); an explicit spell with no spellframe is a class lookup (0.2.8278) - only that object bound with no spellframe, under the default binding unless a binding_name names another; on Phase 3's own call (hidden_out given) every miss returns empty and the socket becomes UNRESOLVED_INPUT - carrying the registrations of a spell registered elsewhere as hidden candidates (0.2.8281), none for a plain miss (0.2.8303); several candidates raise RuntimeError, and a direct caller gets the RuntimeError for every miss, with a sentence naming where the spell is bound in the hidden shape (_spellmap_hidden_sentence)
   - names a class lookup's hidden candidates with one predicate, _hidden_type_key - the type key of a spell bound under a spellframe or a binding name, None for one bound bare under the default binding and for a Protocol's own definition - read from the by_hidden_type bucket or the pool scan (_hidden_class_candidates); _record_unresolved_miss records them per shape: a single or SpellMap socket gets ids and frame keys, a required list[Class] resolvable ids only (it stays NORMAL for Phase 6's report), an optional collection nothing (0.2.8281)
 - phases: `validation`, `runtime`
 - public methods: `run`
@@ -15570,7 +15571,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 
-- source_sha256: `9699c305d3d70b42a92cdfc2cfe01c889f62805394e76166537474b9d5a3eb13`
+- source_sha256: `10bcb724d2ff21d4ba8bdfa1f01825e93b53f2dafd4bc77c47f0f8347fdd5b22`
 - nodes: 2
 
 ### Nodes
@@ -15587,7 +15588,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RequiredHolesStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:15`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:18`
 - extends: `SpellValidationStrategy`
 - role: Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.
 - responsibilities:
@@ -15595,7 +15596,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emit warnings rather than hard errors
   - adds the list-only collection hint to REQUIRED_HOLE only when a set, frozenset, dict or tuple annotation holds a user class; plain data containers get no hint
   - reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations
-  - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key - except a socket carrying hidden_spell_ids, which HiddenProviderStrategy reports as the HIDDEN_PROVIDER error (0.2.8281)
+  - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type - for a SpellMap parameter the SpellMap as written, asking for a spell at its address (_unresolved_input_issue, 0.2.8303) - and dependency key - except a socket carrying hidden_spell_ids, which HiddenProviderStrategy reports as the HIDDEN_PROVIDER error (0.2.8281)
 - phases: `compile`
 - public methods: `validate`
 
@@ -15609,8 +15610,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
-- `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy` creates `RuntimeError`
 - `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy` creates `SpellValidationIssue`
+- `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy` creates `RuntimeError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py -->
 
@@ -15943,7 +15944,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `fc0492af077ba5c129120442dcb435def2b502129c42afd9a14905e77130176c`
+- source_sha256: `4865c723f6da4d002486a1d392177075cabce50dff6e86950116842674c8242c`
 - nodes: 2
 
 ### Nodes
@@ -16653,7 +16654,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/crystal_analyzer.py
 
-- source_sha256: `414aba835762cd4f121d7145254fe852fd3f0974fa547981d9f7a0adb746e23c`
+- source_sha256: `75b5ed4b85aef2d6b263d2ebc96d25fda72eea5edb4b0045d6229dcb5c84cc25`
 - nodes: 2
 
 ### Nodes
@@ -16664,27 +16665,28 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:1`
 - role: Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).
 - responsibilities:
-  - walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)
-  - classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)
+  - walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves), resolving and classifying each distinct module once per pass (0.2.8302)
+  - classifies via the first-match custody chain (synthetic/user_source/site_package/fallback); user_source never claims a module inside a Python environment (0.2.8302)
   - runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)
   - analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)
-  - public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths
-- owns_state: `custody strategy chain`, `fact strategy list`
+  - public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths/resolve_environment_root_paths
+- owns_state: `custody strategy chain`, `fact strategy list`, `per-pass module paths and custody matches`
 - phases: `runtime`
 
 #### `CrystalAnalyzer` (class)
 
 - id: `melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer`
-- defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:77`
+- defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:83`
 - extends: `Cleanable`
 - role: Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.
 - responsibilities:
-  - consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies
+  - consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies, and the default user_source strategy is given the environment roots (resolve_environment_root_paths: site roots plus the interpreter prefixes) so it never claims a module inside a Python environment (0.2.8302)
+  - resolve each distinct module's path and run the custody chain once per analyze_spell_root pass, keyed by module name and module object, and empty those answers when the pass ends (0.2.8302)
   - drive ONE ast.walk per module and dispatch every node to the fact strategies
   - own its strategy instances and clean them children-first; the shared syntax memo survives instance cleanup
-- owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`
+- owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`, `_pass_module_paths`, `_pass_custody`
 - phases: `bind`, `runtime`, `cleanup`
-- public methods: `analyze_payload`, `analyze_spell_root`, `cleanup`, `resolve_file_extension`, `resolve_module_path`, `resolve_site_package_root_paths`, `resolve_user_root_paths`
+- public methods: `analyze_payload`, `analyze_spell_root`, `cleanup`, `resolve_environment_root_paths`, `resolve_file_extension`, `resolve_module_path`, `resolve_site_package_root_paths`, `resolve_user_root_paths`
 
 ### Edges out
 
@@ -16872,7 +16874,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py
 
-- source_sha256: `c6003d5490d75ec76016dee354e0ab5cb5e50c65a9187de46a2fcdb54baafc29`
+- source_sha256: `b61e0a55d977f5f42debc7e3b5a955909a8110648021630cd19f5a1b08d0d1f8`
 - nodes: 2
 
 ### Nodes
@@ -16886,14 +16888,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `UserSourceCustodyStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy.UserSourceCustodyStrategy`
-- defined at: `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:21`
+- defined at: `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:22`
 - extends: `SourceCustodyStrategy`
-- role: Custody for policy-rooted user source modules; stamps the fingerprint that makes on-disk drift detectable.
+- role: Custody for policy-rooted user source modules outside every Python environment; stamps the fingerprint that makes on-disk drift detectable.
 - responsibilities:
-  - claim modules whose backing file lives under a configured user root; pathless modules never match
+  - claim modules whose backing file lives under a configured user root and outside every environment - under no environment root and in no site-packages or dist-packages directory (0.2.8302); pathless modules never match
   - expose .py/.pyi text for fact analysis
-  - hold the root tuple fixed at construction and delete it on cleanup
-- owns_state: `_user_root_paths`
+  - hold the user-root and environment-root tuples fixed at construction and delete both on cleanup
+- owns_state: `_user_root_paths`, `_environment_root_paths`
 - phases: `bind`, `cleanup`
 - public methods: `cleanup`, `descends`, `harvest_payload`, `kind`, `matches`, `resolve_source`
 
@@ -18842,7 +18844,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `3d643ccc28d23db98afb93e89f16fcb92917a64938b2a0e0153dc05ceb63024e`
+- source_sha256: `2945373e3fa30939aab63463dae5df5e1414ac70c69052db7f597c7769c918bb`
 - nodes: 2
 
 ### Nodes
@@ -18862,7 +18864,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:18`
-- role: Static record-schema version authority (stamp 5.0.0; readers gate on MAJOR, from OLDEST_READABLE_MAJOR 5 to the current; absent stamps read 0.0.0).
+- role: Static record-schema version authority (stamp 5.0.1; readers gate on MAJOR, from OLDEST_READABLE_MAJOR 5 to the current; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads, and payloads below OLDEST_READABLE_MAJOR, at the read gates
@@ -18873,6 +18875,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - uses minor 4.2.0 for a managed spell's recorded options on its spell crystal (0.2.8242); 4.1 readers ignore them and a 4.1 record holds none
   - uses minor 4.3.0 for the spell crystal's binding_hash, written for every spell (0.2.8258); 4.2 readers ignore it and a 4.2 record compares no binding
   - uses major 5.0.0 with OLDEST_READABLE_MAJOR 5 (2026-10-25): a record written before every version of a SpellIndex shared its first version's binding cannot promise it, so check_readable refuses every major below 5, pre-versioning stamps included, naming the record, the reason and the remedy (record the world again) - the owner's call to invalidate all the records
+  - uses patch 5.0.1 (0.2.8302, #327) to note that a module inside a Python environment records as a site package or unknown, never user source; no key or shape changed and 5.0.0 records read alike
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -22957,7 +22960,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus.py
 
-- source_sha256: `3bf099c0ff5443511cf3ba5782030ef25e495061c223b0546be64c7e71a144ca`
+- source_sha256: `affd0f5bf8d67194ea424e83df7dbd629fc7a5e9ea75628def9d5ddb22824288`
 - nodes: 2
 
 ### Nodes
@@ -22988,7 +22991,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - facades existing-ID pooled publication without refreshing admitted Rift commands
   - keeps its installed policy while active: configure, and activate with another configuration, refuse until deactivate
   - reserves and gives back target-frame budget slots for Rift attaches under its class-level lock
-  - removes a Rift by marking it cleaned and taking its attached frames in one step inside its locked registry phase, decrementing exactly those frames, and tearing it down after releasing its lock
+  - removes a Rift by first draining its gate with its lock released - newcomers refused, the threads inside waited for up to projection_refresh_gate_timeout_seconds, the caller's own ticket not counted, a timeout raising and leaving the Rift registered with its gate closed - then marking it cleaned and taking its attached frames in one step inside its locked registry phase, decrementing exactly those frames, and tearing it down after releasing its lock
+  - drains every Rift's gate under one shared deadline before its own cleanup, logging a WARNING and cleaning up anyway for threads that outstay it
 - owns_state: `_rifts_by_id`, `_frame_descriptor_manager`, `_frame_acl_manager`, `_frame_manager`, `_rift_gate_controller`, `_configuration`, `_target_frame_ref_counts`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `activate`, `activated`, `add_rift`, `authorize_frame_link_for_rift`, `check_for_aetheric_frame`, `cleanup`, `close_and_wait_rift`, `configuration`, `configure`, `configured`, `count_active_rift_threads`, `count_active_rift_threads_total` (+43 more)
@@ -23006,6 +23010,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.nexus.Nexus` | creates | `melder.nexus.rift.rift.Rift` | one_to_many | init,runtime | authored |
 | `melder.nexus.nexus.Nexus` | owns_lifecycle_of | `melder.nexus.rift.rift.Rift` | one_to_many | runtime,cleanup | authored |
 | `melder.nexus.nexus.Nexus` | owns_lifecycle_of | `melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController` | one_to_one | init,runtime,refresh,cleanup | authored |
+| `melder.nexus.nexus.Nexus` | borrows | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | one_to_many | refresh,cleanup | authored |
 
 - `melder.nexus.nexus.Nexus` -> `melder.aether.aether.Aether`: Nexus holds a hidden Aether reference for frame realization, disposal, and other substrate-facing AR operations.
 - `melder.nexus.nexus.Nexus` -> `melder.nexus.configuration.nexus_configuration.NexusConfiguration`: Nexus uses NexusConfiguration as its process-wide governance source.
@@ -23015,6 +23020,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.nexus.Nexus` -> `melder.nexus.rift.rift.Rift`: Nexus is responsible for constructing and registering live Rift instances.
 - `melder.nexus.nexus.Nexus` -> `melder.nexus.rift.rift.Rift`: Nexus is the top-level owner of the live Rift registry and cleans registered Rifts on teardown.
 - `melder.nexus.nexus.Nexus` -> `melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController`: Nexus owns the central Rift gate control plane for live AR sessions.
+- `melder.nexus.nexus.Nexus` -> `melder.nexus.rift.rift_gate.rift_gate.RiftGate`: Nexus drives each Rift's gate without owning it: close_and_wait_until_free before a removal, close_terminally and wait_until_free under one deadline before its cleanup, disable, an idle wait and reopen around an ACL refresh; the Rift and the controller clean the gates.
 
 ### Edge candidates (18, unconfirmed)
 
@@ -24572,7 +24578,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `afe598fe112022b7c7e4bed60d58fb9794b859e07a8890b60866aef2b5002bbf`
+- source_sha256: `44c437eeba1e491657a15e31e50c2279bb2b07d3a1b96f365f10787e46bd0b79`
 - nodes: 2
 
 ### Nodes
@@ -24597,6 +24603,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - uses lesser-aware authorized named lookup without expanding room capabilities
   - refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)
   - runs execute_codegen's engine request after releasing the command lock, its RiftGate ticket held; materialize_codegen still runs its module under that lock
+  - takes the RiftGate ticket of validate_codegen, execute_codegen and materialize_codegen before their action-hook scope and releases it after the codegen memory record and the post-hooks, skipping the record on a command system cleaned meanwhile
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)
@@ -24631,7 +24638,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `2f783f3eab5b6c935a82b623ab1cc7c641ef6cb08a2d711d7c8072954fb48951`
+- source_sha256: `7883cebe3d9809fff76b5437113ed9d70c8c02a855292932bbc4d278b76d5926`
 - nodes: 2
 
 ### Nodes
@@ -24657,6 +24664,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors
   - answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused
   - runs get_target_attribute, get_target_method and execute_target_method with no command lock, so agent code there never runs under it
+  - admits every command at the room's RiftGate before its action-hook scope and releases the ticket last, after the memory record and the post-hooks, skipping the memory record on a command system cleaned during the call
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id` (+7 more)
@@ -24668,9 +24676,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.command_system.command_system.CommandSystem` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.nexus.rift.command_system.command_system.CommandSystem` | borrows | `melder.nexus.rift.rift_space.rift_space.RiftSpace` | one_to_one | runtime | authored |
 | `melder.nexus.rift.command_system.command_system.CommandSystem` | borrows | `melder.nexus.rift.rift_space.workstation.Workstation` | one_to_one | runtime | authored |
+| `melder.nexus.rift.command_system.command_system.CommandSystem` | borrows | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.rift_space.rift_space.RiftSpace`: CommandSystem is room-local and depends on the owning RiftSpace for room posture and supporting systems.
 - `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.rift_space.workstation.Workstation`: CommandSystem uses the workstation for bindings and result storage but does not own its lifecycle.
+- `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.rift_gate.rift_gate.RiftGate`: Every command takes and releases a ticket on the room's Rift gate (space.rift_gate), which the Rift owns; the command never closes or cleans it.
 
 ### Edge candidates (5, unconfirmed)
 
@@ -24826,7 +24836,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/frame_viewer.py
 
-- source_sha256: `46f8b3751c93011630f79345d0e2a6206eae8463765f859a2b6c3bc11b2d2b41`
+- source_sha256: `8399fee037b41f479b5b26ffa935970f48d091454304b2aa742d6e21ab87980e`
 - nodes: 2
 
 ### Nodes
@@ -24850,7 +24860,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds the view, frame, conduit and spell helper surfaces per call, owned by the call
   - provides the visible frame-local query surface
   - delegates registered relationship navigation to the current ACL-filtered spell viewer
-  - a read overlapping a frame link or an ACL refresh can raise the cleaned RuntimeError of the projection it read; a retry reads the new projection
+  - holds the owning Rift's gate ticket for every read (_entered_view_action, which every helper it builds reaches), so a removal and an ACL refresh with the refresh gate on wait for in-flight reads
+  - a read overlapping a frame link's refresh, or an ACL refresh with the refresh gate off, can raise the cleaned RuntimeError of the projection it read; a retry reads the new projection
 - owns_state: `_id`, `_lock`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `compare_conduit_records`, `compare_conduits`, `compare_frame_conduits`, `compare_frame_spells`, `compare_frames`, `compare_frames_brief`, `compare_spell_records`, `compare_spells`, `count_conduit_records`, `count_frames` (+141 more)
@@ -24866,6 +24877,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` | owns_lifecycle_of | `melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` | owns_lifecycle_of | `melder.nexus.rift.frame_viewer.view_spell.ViewSpell` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` | borrows | `melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet` | one_to_many | refresh,runtime | authored |
+| `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` | borrows | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | many_to_one | runtime,refresh | authored |
 
 - `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` -> `melder.nexus.rift.frame_viewer.view_action_hooks`: FrameViewer uses the shared view-action hook wrapper module for public viewer actions and the no-op action scope fallback.
 - `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` -> `melder.nexus.rift.frame_viewer.view_conduit.ViewConduit`: FrameViewer owns the conduit-scoped helper surface built over the selected frame helper.
@@ -24873,6 +24885,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` -> `melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame`: FrameViewer owns the cross-frame helper surface for descriptor inventory and comparisons.
 - `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` -> `melder.nexus.rift.frame_viewer.view_spell.ViewSpell`: FrameViewer owns the spell-scoped helper surface built over the selected frame helper.
 - `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` -> `melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet`: FrameViewer holds borrowed projection-set references from the owning Rift instead of owning projection lifecycle itself.
+- `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer` -> `melder.nexus.rift.rift_gate.rift_gate.RiftGate`: Every viewer read takes and releases the calling thread's ticket on the owning Rift's gate, reached through the borrowed Rift (rift.rift_gate) and held in a local for the read.
 
 ### Edge candidates (8, unconfirmed)
 
@@ -25352,7 +25365,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift.py
 
-- source_sha256: `cb62caff825712a23704f4587dd6880fb7ceda4bf477ab257030e9d07287e9a3`
+- source_sha256: `efd5ef2e4c6c482d44c9ae70db882d6f7e5726113dad3fdd005590c57a8153ba`
 - nodes: 2
 
 ### Nodes
@@ -25366,7 +25379,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Rift` (class)
 
 - id: `melder.nexus.rift.rift.Rift`
-- defined at: `src/melder/nexus/rift/rift.py:26`
+- defined at: `src/melder/nexus/rift/rift.py:27`
 - extends: `Cleanable`
 - role: Live AR session object.
 - responsibilities:
@@ -25377,6 +25390,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - attaches each frame once, giving back a target-frame budget reservation that published nothing
   - keeps its lock after cleanup: an attach overtaken by removal after its reservation, or a refresh after its sets were built, meets the cleaned state under it
   - cleans up in two steps - marks itself cleaned under its lock, then tears the room and the rest down with no lock held, the caller that marked running the teardown; Nexus.remove_rift marks it through _mark_cleaned_for_removal, which returns the frames attached at the mark
+  - holds the calling thread's gate ticket in its seven agent doors (get_frame_link_contract, create_frame_link, get_frame_viewer, get_nexus_frame, create_nexus_frame and the two accessible-frame listings); the methods Nexus calls while it refreshes, registers or removes the Rift stay untagged and reach the untagged _get_frame_link_contract and _create_frame_link
 - owns_state: `_space`, `_frame_link_contracts_by_frame_name`, `_rift_gate`, `_configuration`, `_projection_sets_by_frame_name`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `configuration`, `create_frame_link`, `create_nexus_frame`, `get_frame_link_contract`, `get_frame_viewer`, `get_nexus_frame`, `get_selected_contract_names`, `id`, `is_active`, `is_registered`, `list_accessible_nexus_frame_names` (+11 more)
@@ -25420,8 +25434,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_gate/rift_gate.py
 
-- source_sha256: `3dbbf33b87b40c5ff9e2d5a5fb14bcd60e378347b55fdbf96964322a6cf486d1`
-- nodes: 2
+- source_sha256: `61e97739cef5c95850284e9d1fdd1f337a598f19ebeb1dcd572ec9786a38a306`
+- nodes: 4
 
 ### Nodes
 
@@ -25429,29 +25443,60 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_gate.rift_gate`
 - defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:1`
-- role: The admission and drain gate of the AR layer, sibling to CreationGate for conduits and LoadGate for crystallizer loads; reversible blocking for refresh, one-way close for shutdown.
+- role: The admission and drain gate of the AR layer, sibling to CreationGate for conduits and LoadGate for crystallizer loads; reversible blocking for refresh, one-way close for removal and shutdown, one ticket per thread inside.
+
+#### `RiftGateDrainTimeoutError` (class)
+
+- id: `melder.nexus.rift.rift_gate.rift_gate.RiftGateDrainTimeoutError`
+- defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:9`
+- markers: `RuntimeError`
+- role: The Rift gate's drain-timeout error: a RuntimeError carrying how many threads other than the draining caller were still inside.
+- responsibilities:
+  - lets Nexus.remove_rift and Nexus.cleanup tell a drain timeout apart from the gate's other RuntimeErrors
+  - keeps the drain's message, Timeout waiting for rift tickets to drain., so callers catching RuntimeError keep working
+  - carries threads_inside, never counting the draining caller
+- owns_state: `threads_inside`
+- phases: `runtime`, `cleanup`
+
+#### `_RiftGateHolder` (class)
+
+- id: `melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder`
+- defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:46`
+- extends: `local`
+- role: One thread's ticket depth on one RiftGate: a threading.local the gate owns.
+- responsibilities:
+  - counts the calling thread's unreleased admit_ticket and register_ticket calls on its gate, read and written by that thread only
+  - marks the thread as inside: a non-zero depth lets re-entry pass a disabled or closed gate and lets a drain skip the caller's own ticket
+- owns_state: `depth`
+- phases: `runtime`
 
 #### `RiftGate` (class)
 
 - id: `melder.nexus.rift.rift_gate.rift_gate.RiftGate`
-- defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:9`
+- defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:68`
 - extends: `Cleanable`
-- role: Rift-scoped admission and drain gate.
+- role: Rift-scoped admission and drain gate holding one ticket per thread inside.
 - responsibilities:
-  - blocks or admits Rift-scoped work
-  - tracks in-flight tickets
-  - supports terminal close-and-drain behavior
-- owns_state: `_event`, `_tickets`, `_closed`, `enabled`
+  - blocks or admits Rift-scoped work: parks a newcomer while disabled in wait mode, refuses it in raise mode or once terminally closed
+  - holds one ticket per thread inside, a thread-local depth (_RiftGateHolder) counting that thread's nested admissions
+  - admits a thread that already holds a ticket again at once whatever its state, so an ACL refresh or a removal waiting for that thread lets it finish and leave
+  - closes terminally (close_terminally) and drains (wait_until_free, close_and_wait_until_free) without waiting for the caller's own ticket, raising RiftGateDrainTimeoutError when other threads outstay the timeout
+  - treats a ticket released after cleanup as a no-op, its cleanup having cleared every ticket
+- owns_state: `_event`, `_tickets`, `_closed`, `enabled`, `_entry_mode`, `_holder`
 - phases: `runtime`, `refresh`, `cleanup`
-- public methods: `active_ticket_count`, `admit`, `admit_ticket`, `cleanup`, `close`, `close_and_wait_until_free`, `entry_mode`, `has_active_tickets`, `is_closed`, `open`, `register_ticket`, `set_entry_mode` (+2 more)
+- public methods: `active_ticket_count`, `admit`, `admit_ticket`, `cleanup`, `close`, `close_and_wait_until_free`, `close_terminally`, `entry_mode`, `has_active_tickets`, `is_closed`, `open`, `register_ticket` (+4 more)
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
+| `melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder` | specializes | `threading.local` | - | - | derived |
 | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | owns_lifecycle_of | `melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder` | one_to_one | init,runtime,cleanup | authored |
 
-### Edge candidates (4, unconfirmed)
+- `melder.nexus.rift.rift_gate.rift_gate.RiftGate` -> `melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder`: The gate creates its per-thread holder at construction and deletes it at cleanup; a thread's depth there is how the gate knows the thread is already inside.
+
+### Edge candidates (5, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -25459,6 +25504,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.rift.rift_gate.rift_gate.RiftGate` creates `Event`
 - `melder.nexus.rift.rift_gate.rift_gate.RiftGate` creates `RuntimeError`
 - `melder.nexus.rift.rift_gate.rift_gate.RiftGate` creates `ValueError`
+- `melder.nexus.rift.rift_gate.rift_gate.RiftGate` creates `RiftGateDrainTimeoutError`
 
 <!-- END FILE: src/melder/nexus/rift/rift_gate/rift_gate.py -->
 
@@ -25466,7 +25512,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py
 
-- source_sha256: `40b07667a04a35c69d63544a2a66d6abb62a55924a8b99429533616ed2d32752`
+- source_sha256: `a8d2d8183c602a322ad25947a407ffae41ac0430d1e6432fc8ddada3bd012dd5`
 - nodes: 2
 
 ### Nodes
@@ -25486,7 +25532,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - registers RiftGate instances by Rift id
   - fans out enable and disable operations across Rift gates
-  - provides drain and admission-mode control for one or many Rift gates
+  - provides drain and admission-mode control for one or many Rift gates; its drain (close_and_wait_until_rift_free) never waits for the caller's own ticket and raises RiftGateDrainTimeoutError on timeout
+  - counts the threads inside one gate or all of them, one ticket per thread however deep its nested calls
 - owns_state: `_rift_gates_by_rift_id`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `close_and_wait_until_rift_free`, `count_active_threads_for_rift`, `count_active_threads_total`, `create_rift_gate`, `disable_all`, `disable_all_rift_gates`, `enable_all`, `enable_all_rift_gates`, `get_rift_gate`, `register_rift_gate`, `set_all_rift_gate_entry_mode` (+2 more)
@@ -25774,7 +25821,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/rift_space.py
 
-- source_sha256: `65db8b70ba36674bbbb5e6dbd09c3eafd2356faeb92f481df62c537bf261374a`
+- source_sha256: `9deb25469b108907cc1918225bf0be8e00ec833abd56d10683dc58841d1c2855`
 - nodes: 2
 
 ### Nodes
@@ -25797,6 +25844,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns the room-local command system
   - owns room-local event and memory systems
   - cleans up by marking itself cleaned under its lock and cleaning its children after releasing it
+  - holds the Rift gate's ticket in its hook registration methods and hands the gate it borrows to its workstation
+  - skips the action-hook scope's depth bookkeeping and post hooks on a room cleaned while the action ran
 - owns_state: `_frame_viewer`, `_workstation`, `_command_system`, `_event_system`, `_memory_system`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system`, `event_system`, `frame_viewer`, `memory_system`, `metadata`, `owner_rift_id`, `register_action_post_hook`, `register_action_pre_hook`, `register_category_post_hook`, `register_category_pre_hook`, `rift_gate` (+5 more)
@@ -25811,12 +25860,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.rift_space.rift_space.RiftSpace` | owns_lifecycle_of | `melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.rift_space.rift_space.RiftSpace` | owns_lifecycle_of | `melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.rift_space.rift_space.RiftSpace` | owns_lifecycle_of | `melder.nexus.rift.rift_space.workstation.Workstation` | one_to_one | init,runtime,cleanup | authored |
+| `melder.nexus.rift.rift_space.rift_space.RiftSpace` | borrows | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | one_to_one | init,runtime | authored |
 
 - `melder.nexus.rift.rift_space.rift_space.RiftSpace` -> `melder.nexus.rift.command_system.command_system.CommandSystem`: RiftSpace constructs and owns the room-local command layer.
 - `melder.nexus.rift.rift_space.rift_space.RiftSpace` -> `melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer`: RiftSpace owns the durable viewer asset used for room-local visible state.
 - `melder.nexus.rift.rift_space.rift_space.RiftSpace` -> `melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem`: RiftSpace owns the room-local callback-driven event system.
 - `melder.nexus.rift.rift_space.rift_space.RiftSpace` -> `melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem`: RiftSpace owns the room-local memory sequencing and snapshot system.
 - `melder.nexus.rift.rift_space.rift_space.RiftSpace` -> `melder.nexus.rift.rift_space.workstation.Workstation`: RiftSpace constructs and owns the room-local workstation.
+- `melder.nexus.rift.rift_space.rift_space.RiftSpace` -> `melder.nexus.rift.rift_gate.rift_gate.RiftGate`: The room holds its Rift's gate, which the Rift owns and cleans: its hook registration doors take tickets on it, it hands it to the workstation, and its commands reach it as space.rift_gate.
 
 ### Edge candidates (9, unconfirmed)
 
@@ -25883,7 +25934,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/workstation.py
 
-- source_sha256: `e7f53ab635ed11b5ec8abf36f9edb0733fa4d198cf44e352738a4b56d42189e3`
+- source_sha256: `14d3a486f74ad7982b73d740592896faedac895589cf1b254c3b7b550bb1dd86`
 - nodes: 2
 
 ### Nodes
@@ -25897,7 +25948,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Workstation` (class)
 
 - id: `melder.nexus.rift.rift_space.workstation.Workstation`
-- defined at: `src/melder/nexus/rift/rift_space/workstation.py:11`
+- defined at: `src/melder/nexus/rift/rift_space/workstation.py:15`
 - extends: `Cleanable`
 - role: Room-local binding canvas.
 - responsibilities:
@@ -25905,6 +25956,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - tracks one active target
   - supports result rebinding for later room work
   - is shared by every agent in its room and never holds its lock while a target or its cleanup methods run
+  - holds the borrowed Rift gate's ticket in every public method for its whole run, call_target and cleanup_target across the agent code they run; a workstation built without a gate runs ungated
 - owns_state: `_strong_objects_by_name`, `_strong_attributes_by_name`, `_strong_methods_by_name`, `_weak_objects_by_name`, `_weak_attributes_by_name`, `_weak_methods_by_name`, `_target_name`, `_target_store`
 - phases: `runtime`, `cleanup`
 - public methods: `bind_attribute`, `bind_method`, `bind_object`, `call_target`, `cleanup`, `cleanup_target`, `clear_target`, `describe_bindings`, `get`, `get_target`, `owner_space_id`, `release` (+2 more)
@@ -25914,6 +25966,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.nexus.rift.rift_space.workstation.Workstation` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.nexus.rift.rift_space.workstation.Workstation` | borrows | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | many_to_one | runtime,cleanup | authored |
+
+- `melder.nexus.rift.rift_space.workstation.Workstation` -> `melder.nexus.rift.rift_gate.rift_gate.RiftGate`: The room hands the workstation its Rift's gate (rift_gate=); every public method holds the calling thread's ticket on it, and cleanup drops the reference without cleaning the gate.
 
 ### Edge candidates (4, unconfirmed)
 
@@ -26740,7 +26795,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/custom_exceptions/unresolved_input_error.py
 
-- source_sha256: `76454d5c6e79c8146f5973bbef1cd26957f9dadd254767dba90fa5bc2aa5b9f4`
+- source_sha256: `446f96f696f530037d850161656232a28c1b06685e7b2ba2a6598c98801af274`
 - nodes: 2
 
 ### Nodes
@@ -26758,7 +26813,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `UnresolvedInputError` (class)
 
 - id: `melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError`
-- defined at: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:18`
+- defined at: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:19`
 - extends: `MeldExecutionError`
 - role: MeldExecutionError subclass for an UNRESOLVED_INPUT socket the constructing call did not supply.
 - responsibilities:
@@ -26767,6 +26822,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - expected_type_name renders Optional, ForwardRef, quoted-string and class annotations as one display name shared with the Phase-4 warning
   - reads the expected type from the constructor signature when the error is built, because Phase 1-4 artifacts are released after resolution
   - on the failure path looks up, live, the spells of the first missing parameter's class that a class lookup cannot reach (_hidden_candidates: Phase 3's annotation helpers and CompilerPhase3._hidden_type_key over a copy of the consumer's Book pool, method and lambda spells excluded) and, with any, renders HiddenProviderReport.unresolved_input_message and carries their ids in hidden_spell_ids (0.2.8281)
+  - names a parameter whose default is a SpellMap by that SpellMap as written (_spellmap_address_name, shared with the Phase-4 warning; the default read by identity from the constructor signature by _constructor_spell_map) and asks for a spell at that address, running no class-lookup search for it (0.2.8303)
 - owns_state: `expected_type`, `unresolved_params`, `hidden_spell_ids`
 - phases: `runtime`
 - public methods: `expected_type_name`, `for_unsupplied`

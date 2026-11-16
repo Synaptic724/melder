@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: c09aaf8513266235ea486e1f35c1b4b194ec304d778c71967752ec0c4b883d3e
+SOURCE FINGERPRINT: dbdc6f489f5630832b177cc32707a8f491c3e9926f3558570a8076b8ce7b7187
 FILE COUNT: 420
 
 ================================================================================
@@ -855,7 +855,7 @@ END FILE: .github/ci_cd/extending.md
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/ci_cd/python_versions.md
-CONTENT SHA256: f73739ea60048c9216f22b78f1359237c497fe8e8a99eda462b72c7bc8c48396
+CONTENT SHA256: 3f9bb70ca358b8c7e79524378086d0b649a0c000dd9b2e780de0bf27526b2da2
 SOURCE ENCODING: utf-8
 ================================================================================
 # Python versions and the manifests
@@ -882,7 +882,7 @@ python = "3.14.0"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2200,7 +2200,7 @@ END FILE: .github/provenance/verify_attestations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/speed/3.14.7.toml
-CONTENT SHA256: 8e71a2964ca0c98368fe4e50874fa561282907fd02fa0dc7ee4d8a8a17d75c86
+CONTENT SHA256: de6bd7d555e357f7674bceba377fd9ad98cdb77a335e9b348ab681c30aa374c0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Speed tests (real-world gauntlet, persistent runtime series, shallow thread scaling): one exact Python.
@@ -2210,7 +2210,7 @@ python = "3.14.7"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is what the benchmarks run.
-    "pip==26.2.2",
+    "pip==26.3",
     "dependency-injector==4.49.1",
     "dishka==1.10.1",
     "pytest==9.1.1",
@@ -2227,7 +2227,7 @@ END FILE: .github/python/speed/3.14.7.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.0.toml
-CONTENT SHA256: 8582fff7ef6938199fb722e3e33615c6aed06fd215c5a8e71e5af64f45cef5c6
+CONTENT SHA256: cd21e91b554d0a95bcbcdfb9296347fc62fa0f2f3c97a1f7d0313fb047e491e8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.0 free-threaded on Linux, Windows and macOS.
@@ -2237,7 +2237,7 @@ python = "3.14.0"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2253,7 +2253,7 @@ END FILE: .github/python/tests/3.14.0.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.1.toml
-CONTENT SHA256: c869c6ef555b26c5ab120341eb3195b9ed0f279b48cd76af226bde1d84dd416e
+CONTENT SHA256: d8f59c5c40a8c731b11f17ec7bfc102730c3042cbae6933cf0b42f30cbbb4ac0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.1 free-threaded on Linux, Windows and macOS.
@@ -2263,7 +2263,7 @@ python = "3.14.1"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2279,7 +2279,7 @@ END FILE: .github/python/tests/3.14.1.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.2.toml
-CONTENT SHA256: 930ca8409fa0606b514b9553b4d667b4d2823c621e89288044383ca4be4ff6be
+CONTENT SHA256: 89e15dc21d43f4205c504bdf1181469ad1f4eb05bd49f120809fbc9286838c22
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.2 free-threaded on Linux, Windows and macOS.
@@ -2289,7 +2289,7 @@ python = "3.14.2"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2305,7 +2305,7 @@ END FILE: .github/python/tests/3.14.2.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.3.toml
-CONTENT SHA256: 6e798919466e6273c44155d5a1e11765d26a9a45f3ed964178ebc20fe4087ef7
+CONTENT SHA256: 2cde1425840902d65fdd0bbc727954d2b888442be41e6b6b15798900706ccc13
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.3 free-threaded on Linux, Windows and macOS.
@@ -2315,7 +2315,7 @@ python = "3.14.3"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2331,7 +2331,7 @@ END FILE: .github/python/tests/3.14.3.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.4.toml
-CONTENT SHA256: 4b59c196e244d929d8f44999276d24048f20c16a8b7befc548c12cf4e49ab393
+CONTENT SHA256: 0edc6f7a713c3024aca265411874ce35533e979e2078b156295a201ba339d05e
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.4 free-threaded on Linux, Windows and macOS.
@@ -2341,7 +2341,7 @@ python = "3.14.4"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2357,7 +2357,7 @@ END FILE: .github/python/tests/3.14.4.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.5.toml
-CONTENT SHA256: 934a7f5a2e59c7d1957d4885f35aaff4dc9b3b6300789558cfc1ebb0bb59d3cd
+CONTENT SHA256: 4ada78eeea446f4b9d6c24163c0d22fdcc407414a25a78575f0cebeb3be77069
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.5 free-threaded on Linux, Windows and macOS.
@@ -2367,7 +2367,7 @@ python = "3.14.5"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2383,7 +2383,7 @@ END FILE: .github/python/tests/3.14.5.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.6.toml
-CONTENT SHA256: 22ee4c0532072e887f2f703a415931097a39949e4bb0700aa360201867242e82
+CONTENT SHA256: 2c1d81e049693c1ce58241af0f374a8257409d1a3bea17e50cc24dce8d6bed77
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.6 free-threaded on Linux, Windows and macOS.
@@ -2393,7 +2393,7 @@ python = "3.14.6"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2409,7 +2409,7 @@ END FILE: .github/python/tests/3.14.6.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.7.toml
-CONTENT SHA256: 65a20311d9dbca9f442c10983bbfd85e9821430a2f61a6a21f9951146d2880d3
+CONTENT SHA256: 707b48d678a3e31463aca4d37a3ac7a40428fa97a76123937daa32f8fb9933d0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.7 free-threaded on Linux, Windows and macOS.
@@ -2419,7 +2419,7 @@ python = "3.14.7"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2435,7 +2435,7 @@ END FILE: .github/python/tests/3.14.7.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.8.toml
-CONTENT SHA256: d33d832f9589438b674c447c907f07d03f8ad87ce55b04e9e3f52c0f035af757
+CONTENT SHA256: 2796a5a123907b13f651e86f450d89704114c3e0d66241042fd23d3278465945
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.8 free-threaded on Linux, Windows and macOS.
@@ -2445,7 +2445,7 @@ python = "3.14.8"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2461,7 +2461,7 @@ END FILE: .github/python/tests/3.14.8.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.14.9.toml
-CONTENT SHA256: e55b5e50200e601114185f661a77d1329153895c2a13b6f7224ef489f4bfa21f
+CONTENT SHA256: cbd329e4a597dc68b3deb1adcf8a3ba2c1db207592e45f4bb916e93bffe28d9f
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.14.9 free-threaded on Linux, Windows and macOS.
@@ -2471,7 +2471,7 @@ python = "3.14.9"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2487,7 +2487,7 @@ END FILE: .github/python/tests/3.14.9.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.15.0.toml
-CONTENT SHA256: 2623c7f633e3bab86a3bec172ecc8ee622b6653c0a096559cefcc9d878ee8b82
+CONTENT SHA256: a43f421d69fa00892f95f265fdc51cbab8d0ed433533eb9eb07ae195b53259ed
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.15.0 free-threaded on Linux, Windows and macOS.
@@ -2498,7 +2498,7 @@ python = "3.15.0"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -2515,7 +2515,7 @@ END FILE: .github/python/tests/3.15.0.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/python/tests/3.15.1.toml
-CONTENT SHA256: 1362554f2155731da5ace268b2218bed323590c964931a17c460327158dce363
+CONTENT SHA256: 6be4a1dc7303d4fdab159c4fed131d7c587733b7fd0fd88df8e65bf718fb83e7
 SOURCE ENCODING: utf-8
 ================================================================================
 # Runtime test cell: Python 3.15.1 free-threaded on Linux, Windows and macOS.
@@ -2526,7 +2526,7 @@ python = "3.15.1"
 freethreaded = true
 dependencies = [
     # Melder's runtime dependency ([project.dependencies] in pyproject.toml); the rest is the test group.
-    "pip==26.2.2",
+    "pip==26.3",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "coverage==7.16.1",
@@ -33678,14 +33678,15 @@ END FILE: agents.md
 ================================================================================
 ================================================================================
 BEGIN FILE: agents/MELDER_AGENT_OPERATIONS.md
-CONTENT SHA256: a61b7a29ef2413c2fb727706364b05a5ac5116989eb8ff4c9f70f931f40fb44d
+CONTENT SHA256: a5746c513c75f28755d06353c2603fe408517afc7f5a33769332a67395e63ae2
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder — Agent Operating Cheat Sheet
 
 > **Target:** `melder==0.2.50` · Python **3.14+**, preferably free-threaded · Reviewed **2026-09-26**.  
 > **Source pin:** `Synaptic724/melder`, commit `9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9` (`prod`).  
-> **Evidence:** operational sections of `src_architecture.md` and `src_components.md`, checked against public implementation and executable-example source. **Source-reviewed and Python-syntax-checked; not runtime-tested here.** This environment has Python 3.13 and blocked repository/package downloads; source was read through connected GitHub access, not a completed local clone. Matching version labels do not establish wheel/source byte equivalence. [A], [C], [V]
+> **Evidence:** operational sections of `src_architecture.md` and `src_components.md`, checked against public implementation and executable-example source. **Source-reviewed and Python-syntax-checked; not runtime-tested here.** This environment has Python 3.13 and blocked repository/package downloads; source was read through connected GitHub access, not a completed local clone. Matching version labels do not establish wheel/source byte equivalence. [A], [C], [V]  
+> **Updated 2026-11-09** for 0.2.8301 in §3, §4, §5, §13, §14, §15 and §16, checked against the current `src_architecture.md` and the public signatures in source; the §13 recipe was re-run on 3.14t with the GIL off and on. The rest is as reviewed above.
 
 ## 0. Read first — the operating contract
 
@@ -33784,11 +33785,11 @@ finally:
 | Register existing value | `book.bind(spell=value, existence="unique")`; lookup normally uses its type name, not the Python variable name. |
 | Register function/factory | `book.bind(spell=make_settings, existence="unique")`; meld runs the factory and reuses its product. |
 | Observe definitions | `book.describe_spells_in_spellbook()`; active inventory is not parked-version inventory. |
-| Observe live presence | `root.has_live_creation(spell_id=sid)` / `root.describe_live_creation_status(spell_id=sid)` |
+| Observe live presence | `root.has_live_creation(spell=sid)` / `root.describe_live_creation_status(spell=sid)` |
 
 `spellframe` classifies definitions **inside** a world; `aetheric_frame` selects the world. Binding names normalize case; do not use capitalization as an isolation strategy. Use IDs or complete selectors after discovery. [C: Binding / Meld][C], [E]
 
-**Collision rules:** duplicate binding fingerprints/keys are refused. Runtime spell IDs are process-wide; a different world name alone does not make an identical registration unique. Give separate-world bindings deliberate distinct identities. Within one visible graph, do not assume rebinding the same named class under different binding names/categories will pass validation; the documented working pattern is distinctly named role subclasses, e.g. `PrimaryStore(Store)` and `ArchiveStore(Store)`. Do not alter `__name__` or private registries to evade this. [NAMES]
+**Collision rules:** a spell ID is the SHA256 of the object's code (0.2.8257), and one object is one spell. Binding the same class or object again while it is registered is refused (`Spell ID collision detected`) under any binding name, category or existence, and in another world too while spell IDs are process-wide (the default); to rebind it differently, `cleanup_spell` it first. Duplicate binding keys are refused as well. To give one implementation two roles, use distinctly named role subclasses, e.g. `PrimaryStore(Store)` and `ArchiveStore(Store)`. Do not alter `__name__` or private registries to evade this. [NAMES]
 
 ### Constructor decision table
 
@@ -33823,6 +33824,7 @@ finally:
 | `unique_per_conduit_lineage` | Shared within the lineage tree | A child is not necessarily isolated from its root's state. |
 | `unique_per_spell_space` | One per SpellSpace | Resolve through the Space, not an ordinary Conduit door. |
 | `unique_per_conduit_cluster` | Shared cluster store | Needs dynamic cluster setup, links, and an elected leader. |
+| `managed_spell_quantity` | Leased from a per-version pool its owning root keeps | Classes only. `root.managed_spell_meld(...)` returns a lease whose `with` block gives the object back; otherwise return it with `md.ReleaseManagedSpell().release(obj)`. Bind options: `managed_spell_mode` (elastic, limited_quantity, queue), `managed_spell_limit`, `managed_spell_timeout_seconds`, `managed_spell_reset_methods`. |
 
 **Scope recipes** — assume `root` already exists and the relevant definitions are registered:
 
@@ -33856,7 +33858,7 @@ resource_id = book.bind(
 
 Methods are matched once at binding. Missing names are omitted; duplicates run once. Matching uses declared class-profile methods, not an automatic cleanup protocol for inherited-only methods, factory products, or prebuilt values. Explicitly arrange ownership/cleanup for those cases. Book-level method names own overlaps; default order is spell-only block then Book block, reversed by `with_enforce_priority_disposal_methods(True)`. [C: Binding][C]
 
-Cleanup walks retained disposal keys/buckets newest-first, not a promised total chronological order across all scopes. A failing method stops the remaining methods for that object; other objects are attempted and failures can aggregate into `ExceptionGroup`. Dropping your Python variable does not free an object still retained by Melder or a workstation. [C: Creations][C]
+Cleanup walks retained disposal keys/buckets newest-first, not a promised total chronological order across all scopes. Every declared method of every object runs even after one raises (0.2.80); the scope finishes, then raises the failures together as one `ExceptionGroup`, each chained from what its method raised. Dropping your Python variable does not free an object still retained by Melder or a workstation. [C: Creations][C]
 
 ### Retire instances without deleting their definition
 
@@ -34132,13 +34134,13 @@ Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry 
 
 ## 13. Stage, select, verify, and revert
 
-**Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
+**Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell_id=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
 
 **Exact lookup by spell_id:** `get_spell_by_spell_id()` / `find_spell_by_spell_id()` return the version a spell_id names, active or parked, or nothing - never the **currently selected** member in its place (since 0.2.8253; the former `get_spell_by_id()` / `find_spell_by_id()` answered a parked lineage ID with the selected member and are gone). A lookup by the index's id (`get_spell_by_index_id`) is the one that answers the selected member. `notch_spell` takes the candidate's spell_id (`spell_id=`) or its `Spell` (`spell=`) (since 0.2.8249). Never fabricate a `Spell` or read `_inactive_spells` to obtain one. [NOTCH]
 
-### Host-controlled exact-handle pattern
+### Stage, notch, verify, revert
 
-The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs**, run on 3.14t with the GIL off and on (2026-10-25); validate it in a disposable world before deployment. Both versions are bound under one spellframe category, `"price"`: every version of an index is bound the way its first version was, so a renamed class bound bare would be refused. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
+Notch with the spell_id `bind_inactive` returned (0.2.8249); no captured `Spell` handle or bind hook is needed. The following composes public APIs only and was run on 3.14t with the GIL off and on (2026-11-09, 0.2.8301); validate it in a disposable world before deployment. Both versions are bound under one spellframe category, `"price"`: every version of an index is bound the way its first version was, so a renamed class bound bare would be refused. [C: Spellbook][C], [CONDUIT]
 
 ```python
 import melder as md
@@ -34151,51 +34153,41 @@ class PriceV2:
     def quote(self) -> int:
         return 125
 
-versions: dict[str, md.Spell] = {}
-
-def capture(spell: md.Spell) -> None:
-    versions[spell.spell_id] = spell
-
 book = md.Spellbook(aetheric_frame="version-lab")
 root = None
 try:
-    book.add_bind_hooks(post=[capture])
     old_id = book.bind(spell=PriceV1, spellframe="price", existence="unique", permissions="create")
     root = book.conjure(dynamic=True, name="version-root")
-    old_spell = versions[old_id]
-    index = old_spell.spell_index
+    index = book.find_spell_by_spell_id(old_id).spell_index
 
     new_id = root.bind_inactive(
         spell=PriceV2, spell_index=index, spellframe="price",
         existence="unique", permissions="create",
     )
-    candidate = versions[new_id]  # exact object from the successful bind's hook
-    assert candidate.spell_id == new_id
     assert index.selected_spell_id == old_id
 
-    root.notch_spell(spell_index=index, spell=candidate)
+    root.notch_spell(spell_index=index, spell_id=new_id)
     try:
         assert index.selected_spell_id == new_id
         assert root.meld(spell_id=new_id).quote() == 125
     except Exception:
-        root.notch_spell(spell_index=index, spell=old_spell)
+        root.notch_spell(spell_index=index, spell_id=old_id)
         raise
 
     # Deliberate revert demonstration, not undo of arbitrary external effects.
-    root.notch_spell(spell_index=index, spell=old_spell)
+    root.notch_spell(spell_index=index, spell_id=old_id)
     assert index.selected_spell_id == old_id
     assert root.meld(spell_id=old_id).quote() == 100
 finally:
     if root is not None:
         root.cleanup()
     book.cleanup()
-    versions.clear()
 ```
 
 **Operational limits:**
 - Selection parks the outgoing version; it is not automatic disposal, resource retirement, or a rewrite of already-held application objects. Retire versions explicitly after consumers no longer need them.
-- The architecture's “owner-side only” warning describes an internal seam, not the whole current public operation. The inspected `Conduit.notch_spell` performs the local transaction, then deactivates stale borrowed copies and emits an index-notch notification for index-linked receivers. **Do not assume all borrowers automatically gain the new version**, or that the post-transaction fan-out is one indivisible action. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
-- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success. A notch refused for its incoming version's structural check (0.2.8262) or for an address another spell holds (2026-10-25) moves nothing; the borrower fan-out after the transaction can still fail part-way.
+- **Borrowers move inside the notch (0.2.8275):** each linked peer parks its copy of the outgoing version and reactivates a parked grant of the incoming one, and index-link receivers move to the new version, all inside the notch's own transaction window; a fan-out error undoes the whole notch. A borrower granted only the outgoing version keeps no active copy afterwards: its contract consumers are refused at their next meld until it is granted the new version or the lender notches back. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
+- **A refused notch moves nothing:** a failed structural check of the incoming version (0.2.8262), an address another spell holds (0.2.8273), a target not parked in this Book or being disposed (0.2.8285), or a borrower fan-out error (0.2.8275) leaves the index, its address and the borrowers as they were. The exception is a RuntimeError ending "This is a Melder bug; please report it with this message.": the reversal itself failed and the refused version can be left active, so inspect the selected ID and consumers before retrying, and report it. Preserve both failure and recovery reports; a recovery failure must not be labeled success.
 - **One index, one binding** (2026-10-25): an index keeps its first version's binding - the spellframe's kind (none, a string category, a Protocol) and the address that gives (the spellframe's name, or a bare class's own name, and the binding name). `bind_inactive` and `add_to_spell_index` refuse a version bound any other way (ValueError, nothing registered or moved), and a notch never moves the address. Stage an edited class under the index's spellframe and binding name; bind versions that carry different class names under one category from the first version on. Crystallizer records older than record version 5.0.0 are refused: record the world again. [CONDUIT]
 - Moving/separating active index members is refused; first select another member. Separating the sole member is not the retirement route. No manual edits of `selected_spell_id`.
 - A spell_id is the SHA256 of the object's code (since 0.2.8257): an edit to a method, the constructor, a class-level value or a base is a new spell_id; a docstring, comment or line move is not. Verify IDs, selected membership, recorded source, and behavior anyway. Use deliberate version identities. [C: Binding][C]
@@ -34234,13 +34226,13 @@ identity_map = report["identity_map"]
 # Inspect built counts/shortfalls, reacquire handles, then run application tests.
 ```
 
-Fresh structural ULIDs are expected; use the report's old→new map and reacquire all room/conduit handles. Stable spell hashes require equivalent binding inputs/policy; do not assume every old identifier survives. Named lesser topology and required unnamed ancestors can replay; prior application object contents do not. Callback code, external resources, and other unreplayable material must appear as shortfalls or require host participation. An all-or-nothing build rollback is not undo of every possible external effect. [NAMED], [RESTORE], [A]
+Fresh structural ULIDs are expected; use the report's old→new map and reacquire all room/conduit handles. Spell IDs are code hashes (0.2.8257): a spell keeps its ID across a restore when its code and the Python release are unchanged, and a different receiving policy changes only the binding hash, listed in the report's `binding_changes`. Named lesser topology and required unnamed ancestors can replay; prior application object contents do not. Callback code, external resources, and other unreplayable material must appear as shortfalls or require host participation. An all-or-nothing build rollback is not undo of every possible external effect. [NAMED], [RESTORE], [A]
 
 `CrystallizerBootstrap().with_profile("default").bootstrap()` is the one-shot cold-start facade; configure external persistence first when needed, then inspect activation, reloaded material, restored checkpoint, restore report, and shortfalls. Melder does not supply your database/cloud SDK; handler durability, access control, and acknowledgments are your responsibility. Do not disable drift/preflight blockers to force a green status. [A], [RESTORE]
 
 ## 15. Concurrency and advanced change discipline
 
-Use separate Rifts/workstations for independent agents; one room's commands/workstation have their own locks. Distinct rooms do not make shared application objects race-free. Choose per-worker lifetimes or synchronize application state explicitly. Free-threaded Python removes a safety illusion, not the need for locks. [C]
+Agents can share one room: target calls and target commands run outside Melder's locks (0.2.8290), so agents coordinate the shared target and workstation names themselves. A room still runs its codegen scripts one at a time, so give independent agents that each run scripts separate Rifts. Separate rooms do not make shared application objects race-free. Choose per-worker lifetimes or synchronize application state explicitly. Free-threaded Python removes a safety illusion, not the need for locks. [C]
 
 Structural operations are coordinated by scope claims; runtime resolution uses creation/validity machinery rather than entering the structural transaction plane. Leave admission, dirty-root invalidation, recompilation, and gates to the public operations. Disjoint structural changes may proceed concurrently; shared scope changes may wait/refuse. A timeout requires identifying conflicting work/scope, not turning off the gate. [A], [C]
 
@@ -34263,8 +34255,8 @@ For shutdown, restore, or multi-step governance, quiesce the relevant applicatio
 | Static/capability/codegen method missing | Query supported commands; codegen is not capability parity. Ask host for a justified different room, not a bypass. |
 | Empty/incomplete viewer | Check assigned frame, publication, ACL visibility, live-only filtering, and explicit projection refresh. |
 | Codegen rejected or returned errors | Inspect verdict/payload and allowed namespace. Revise the requested operation; do not relax policy silently. |
-| Parked ID lookup returns old version | That lookup follows active selection. Use a host-provided exact candidate handle, not a private-map workaround. |
-| Notch failed | Re-read selected ID and borrower/index-link state; distinguish local commit from later fan-out and application verification. |
+| spell_id lookup returns a parked version | Expected since 0.2.8253: a spell_id names one version, active or parked. For what an index has active, use `get_spell_by_index_id(index.id)`. |
+| Notch refused | Nothing moved; read the message's remedy (§13). Only the "Melder bug" reversal error can leave a switch behind: re-read the selected ID and borrowers, and report it. |
 | Purge/cleanup `ExceptionGroup` | Entries may already be detached and resources partially closed. Inspect each failure; don't use or blindly re-dispose old handles. |
 | History/source absent | Check recording activation timing, custody policy, profile/set, and drift. “Unavailable” is not “unchanged.” |
 | Flush succeeded but backup missing | Verify local cache retention and remote acknowledgment separately. |
@@ -34322,7 +34314,7 @@ This is a navigation map, not permission to drive internals. In prose/code confl
 
 Primary source documents are much larger than this guide: their pinned indices report **2,646 architecture lines** and **8,957 component lines**. This guide extracts operational material, not every internal class or historical patch narrative. Document integrity hashes and package archive hashes were **not independently rechecked**; no wheel/sdist was installed here. All Python fences were parsed for syntax on the available Python 3.13 interpreter; that does not check imports, runtime signatures, free-threading, disposal, permissions, or restore behavior. Treat assertions as checks to execute in an authorized disposable Python 3.14+ world.
 
-Most recipes follow upstream example source. The exact parked-handle promotion pattern is explicitly identified as a new composition of public hooks and notching, not an upstream-tested end-to-end example. Before production use, test cold/warm resolution, lifetime reuse, refusal paths, hook publication failures, borrower behavior, cleanup, and complete replay under the installed build. Do not promote historical example headers saying “run green” into evidence that this review ran them.
+Most recipes follow upstream example source. The §13 stage, notch and revert recipe is a composition of public calls, re-run on 3.14t at 0.2.8301 (2026-11-09); it is not an upstream-tested end-to-end example. Before production use, test cold/warm resolution, lifetime reuse, refusal paths, hook publication failures, borrower behavior, cleanup, and complete replay under the installed build. Do not promote historical example headers saying “run green” into evidence that this review ran them.
 
 **Reference key:** `[C: …]` means the named section in the component document; `[A]` is architecture. Section-qualified component links point to `[C]`; use the named heading inside it. All GitHub references are pinned to the reviewed commit; hosted `/latest/` and PyPI are moving publication surfaces.
 
@@ -78267,7 +78259,7 @@ END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: e2e8c3e12599ecdeacc039ecf85149703a1866c07efe5fe36c5180a671068a44
+CONTENT SHA256: dde43b263b3d565e641eb47b2fa31d02d358a5646b4af3b80ed0de5275bc4b08
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -78341,7 +78333,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "pip==26.2.2",
+    "pip>=26.3",
 ]
 
 [project.urls]
@@ -81382,25 +81374,159 @@ END FILE: release_docs/0.2.8300.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+CONTENT SHA256: 99b8380971ac9e6b5ca28216c1cbd1f95403aad61746e3e5fcf6cf8d6497b006
 SOURCE ENCODING: utf-8
 ================================================================================
+# Melder 0.2.8303
+
+**Unreleased**
+
+## Removing a Rift waits for the agents inside it
+
+**Breaking change:** `Nexus.remove_rift` can now wait, and can refuse. It closes the Rift's gate first: from that
+moment a newcomer at any of the Rift's doors - a workstation call, a viewer read, a room command, or one of the Rift's
+own methods such as `get_frame_viewer` - is refused at once with RuntimeError ("RiftGate is closed."). The agents
+already inside finish their calls, and their calls into the same Rift on the way pass the closed gate; once the last
+of them has left, the Rift is removed and cleaned up. Until now the removal tore the Rift down under those agents,
+which met an AttributeError or a "has already been cleaned" RuntimeError partway through their work (GitHub issue
+#274).
+
+The wait is bounded by the Nexus setting `projection_refresh_gate_timeout_seconds` (polled every
+`projection_refresh_gate_poll_interval_seconds`), the bound an ACL refresh already used. If agents are still inside
+when it runs out, `remove_rift` logs a warning and raises RuntimeError naming the Rift and how many threads are still
+inside; the Rift stays registered with its gate closed to newcomers, and calling `remove_rift` again once they have
+left removes it. Code that removed a busy Rift and expected the call to return at once should allow for that wait,
+or retry on the RuntimeError.
+
+An agent that removes its own Rift from inside one of that Rift's calls is not waited for - it is the one inside -
+and its call returns normally once the removal is done. `Nexus.cleanup` drains every Rift the same way before it tears
+anything down: it closes every gate, waits under one shared timeout, logs a warning for each Rift whose agents
+outstay it, and cleans up anyway.
+
+`Nexus.close_and_wait_rift` no longer waits for the calling thread's own place in the Rift, and
+`Nexus.count_active_rift_threads` and `count_active_rift_threads_total` now count threads inside a Rift, not calls -
+a thread making nested calls counts once. Removing an idle Rift is unchanged.
+
+## A Rift's ACL refresh no longer stalls agents inside it or swaps projections under their reads
+
+A call nested in another call of the same Rift - a codegen script that runs a room command, a command that reads the
+viewer - stalled behind an ACL refresh of that Rift until the refresh timed out, and the frame's ACL change then
+failed. A thread already inside a Rift now passes its gate while a refresh drains it, so the nested call returns at
+once and the refresh completes after the agent leaves.
+
+Viewer reads and direct workstation calls now hold the Rift's gate while they run, as room commands already did. An
+ACL refresh of a frame (with `projection_refresh_gate_enabled`, the default) therefore waits for the reads in flight
+before it replaces that frame's projections, and holds new reads until it is done, so a read no longer fails with the
+cleaned error of the projection it was reading during an ACL change. A frame link - `Rift.create_frame_link` or the
+room's `link_frame` - still replaces projections without waiting for other agents' reads, and so does a refresh with
+`projection_refresh_gate_enabled` turned off; a read that meets one of those still raises the cleaned RuntimeError,
+and a retry reads the new projection. A workstation `call_target` that runs longer than
+`projection_refresh_gate_timeout_seconds` now makes an ACL refresh of its Rift time out, as a long room command
+already did. Each viewer read costs about 1.3 to 2.8 microseconds more (7 to 21% on reads of 6 to 22 microseconds,
+measured with the GIL off).
+
+## Spell crystals no longer walk a project's virtual environment, and one analysis asks each question once
+
+With the Crystallizer active, every bind builds a spell crystal, and its analysis walks the modules the spell's module
+imports. `CrystallizerConfiguration.with_defaults()` makes the working directory the user source root, so a virtual
+environment kept inside the project (`.venv`) counted as the user's own source: each bind's analysis walked every
+installed package the project imports - Melder itself included - fingerprinted them, and with `retain_user_sources`
+on kept their source text in the record. A module inside a Python environment - under one of the interpreter's site
+roots, under `sys.prefix`, `sys.base_prefix` or `sys.exec_prefix`, or in a `site-packages` or `dist-packages`
+directory - is now never user source, even under a user source root. It records as a site package (or an unknown
+leaf) with no fingerprint and no retained text, and the walk goes into it only when `site_package_dependency_descent`
+is on (GitHub issue #327).
+
+One analysis also resolves and classifies each module once, instead of once for every module that imports it. In a
+measured project with about 400 modules of its own and a `.venv` inside it, analyzing a spell rooted in one of 50 of
+those modules took 0.15 s on average instead of 3.9 s, the module worlds walked falling from 789 to 173 modules on
+average (Windows, GIL off).
+
+Records written from now on list such modules as site packages; a record written before keeps what it listed. The
+record version moves to 5.0.1 to say so; the shape is unchanged and 5.0.0 records read as before. Source kept inside a
+Python environment - for instance in a virtual environment created in the project directory itself - is no longer user
+source; keep it outside the environment, or point `user_source_root_paths` at a directory outside it. Every analysis
+is still made fresh against the live environment: nothing is kept from one bind to the next.
+
+## A SpellMap consumer bound before its provider waits for it
+
+A spell whose constructor asks for its dependency through a SpellMap - `SpellMap(spellframe="spectrum",
+binding_name="ServiceBuilder")`, `SpellMap(ServiceBuilder)` - was refused when nothing was bound at that address yet:
+conjure failed with PhaseExecutionError, and in a conjured book the spell's own bind raised "SpellCrafter Phase 3:
+SpellMap default could not be resolved", so its provider had to be bound first (GitHub #329). A constructor asking by
+class annotation already waited. A SpellMap now waits the same way: the bind and the conjure succeed, the spell's meld
+raises UnresolvedInputError naming the SpellMap until a spell is bound at that address (or the meld supplies the value
+through `override`), and binding that spell re-gates the consumer, whose next meld wires it. Bind order no longer
+matters:
+
+```python
+class SpectrumBuilders:
+    def __init__(self, service_builder=SpellMap(spellframe="spectrum", binding_name="ServiceBuilder")):
+        self.service_builder = service_builder
+
+world = book.conjure(name="world", dynamic=True)
+book.bind(spell=SpectrumBuilders, existence="many", permissions="create")  # refused here before
+book.bind(spell=ServiceBuilder, existence="many", permissions="create",
+          spellframe="spectrum", binding_name="ServiceBuilder")
+world.meld(SpectrumBuilders).service_builder  # the ServiceBuilder
+```
+
+**Breaking change:** a SpellMap whose address has nothing bound is reported when its spell is melded -
+UnresolvedInputError naming the SpellMap - instead of failing conjure or the bind, so a mistyped address surfaces at
+meld; `conjure(validation_warnings=True)` lists it as a warning first. Code that relied on conjure refusing such a
+SpellMap should meld the spell or read the warnings. Unchanged: a SpellMap that matches several spells still fails at
+conjure or bind, a `SpellMap(Class)` whose class is bound only where a class lookup does not reach is still refused
+with HIDDEN_PROVIDER, and a SpellMap without a spellframe still reaches only a spell bound with no spellframe.
+
+The warning and the error name a SpellMap parameter by its SpellMap as written - "SpectrumBuilders.service_builder
+asks for the spell its default SpellMap(spellframe='spectrum', binding_name='ServiceBuilder') names, but nothing is
+bound there ..." - where they named the parameter's annotation, or the frame, before.
+
+## Packaging and documentation
+
+`RiftGate` holds one ticket per thread inside, lets a thread already inside through whatever the gate's state, never
+makes a drain wait for its caller's own ticket, and treats a release after cleanup as a no-op; it gains
+`close_terminally()`, `wait_until_free()` and `RiftGateDrainTimeoutError`, a RuntimeError carrying `threads_inside`.
+The docstrings of `RiftGate`, `RiftGateController`, `Nexus`, `Rift`, `RiftSpace`, `Workstation`, `FrameViewer`,
+`CommandSystem` and `CodegenCommandSystem` say which methods hold a Rift's gate and why the rest do not.
+`RiftSpace.register_action_pre_hook` checks that its room is live itself, like the other hook methods. The source
+and test maps, their indexes and the source graph describe the Rift gate.
+
+`UserSourceCustodyStrategy` takes the roots that are never user source as `environment_root_paths`, and the new
+`CrystalAnalyzer.resolve_environment_root_paths` computes them from the site roots and the interpreter's prefixes. The
+docstrings of `CrystalAnalyzer` and `UserSourceCustodyStrategy`, the source and test maps, their indexes and the
+source graph describe the environment rule and the once-per-pass answers.
+
+Melder's one runtime dependency, pip, now needs 26.3 or later (it was pinned at exactly 26.2.2): installing Melder
+upgrades an older pip and leaves a newer one alone. CI, the documentation build's lock and `uv.lock` install 26.3, and
+`requirements.txt` names pip as that one dependency (it said there was none) (GitHub issue #286).
+
+The internal-bind guard manifest holds 633 entries at 0.2.8301 (631 at 0.2.8300): `RiftGateDrainTimeoutError` and
+the gate's per-thread ticket holder are kernel classes and cannot be bound.
+
+The docstrings of `SpellMap`, `CompilerPhase3`, `RequiredHolesStrategy`, `UnresolvedInputError`, `SocketKind` and
+`SpellSystemStates` say that a SpellMap matching nothing waits as an unresolved input; the source and test maps, their
+indexes and the source graph describe it.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8303.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt
-CONTENT SHA256: e3af53c142f9acdb9c2d2b4134c3695df75ec22b33d819d3af47334ff58681f4
+CONTENT SHA256: fa1313e7bdf5593ff76e92896118e61d7d4d35b22d93df32e741ee187e16c558
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder has ZERO third-party RUNTIME dependencies.
+# Melder has ONE third-party RUNTIME dependency: pip, at 26.3 or later
+# (`[project] dependencies = ["pip>=26.3"]` in pyproject.toml), so
+# `pip install melder` pulls pip and nothing else. The requirement is the
+# owner's choice (2026-11-09); Melder's code does not use pip.
 #
 # Verified: no import of any third-party package exists anywhere in
-# `src/melder`, including dynamic paths (every `importlib.import_module`
-# call takes a USER module name for hydration, never a package). ULIDs come
-# from the in-house `melder.utilities.helpers.ulid_factory` (stdlib `os` +
-# `time` only). `[project] dependencies = []` in pyproject.toml is correct
-# and load-bearing: `pip install melder` pulls nothing.
+# `src/melder`, pip included, and that covers dynamic paths (every
+# `importlib.import_module` call takes a USER module name for hydration,
+# never a package). ULIDs come from the in-house
+# `melder.utilities.helpers.ulid_factory` (stdlib `os` + `time` only).
 #
 # Everything below is DEVELOPMENT tooling. The canonical declaration lives in
 # pyproject.toml under PEP 735 `[dependency-groups]`; this file is a

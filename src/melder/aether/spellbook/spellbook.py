@@ -8101,8 +8101,9 @@ class Spellbook(Cleanable):
                 If True, log this Spellbook's validation warnings once, grouped by
                 warning code, at WARNING level through the Spellbook logger. Warnings
                 never stop conjure; they flag things that may fail later, such as a
-                typed parameter no registered spell provides (UNRESOLVED_INPUT, which
-                the meld that constructs that spell must supply). Useful while
+                typed parameter no registered spell provides or a SpellMap default
+                whose address has nothing bound (UNRESOLVED_INPUT, which the meld that
+                constructs that spell must supply). Useful while
                 learning or debugging a new graph. Defaults to False, which logs
                 nothing.
 

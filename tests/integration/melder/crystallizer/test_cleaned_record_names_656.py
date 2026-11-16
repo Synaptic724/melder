@@ -82,7 +82,7 @@ def _record_world(
 def _terminal_name_fixture(cache_file: Path, state_name: str) -> Dict[str, object]:
     """Keep a real major5 cached item intact apart from its documented legacy terminal-name spelling."""
     item = cast(Dict[str, object], json.loads(cache_file.read_text(encoding="utf-8")))
-    assert item["record_version"] == "5.0.0"
+    assert item["record_version"] == "5.0.1"
     payloads = cast(Dict[str, Dict[str, Dict[str, object]]], item["captured_payloads"])
     journal = cast(List[List[Union[int, str]]], item["journal_segment"])
     for kind in ("nexus_state", "mutation_research_state"):

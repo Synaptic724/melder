@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/rift_space.py",
- "source_sha256": "65db8b70ba36674bbbb5e6dbd09c3eafd2356faeb92f481df62c537bf261374a",
+ "source_sha256": "9deb25469b108907cc1918225bf0be8e00ec833abd56d10683dc58841d1c2855",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.rift_space": {
@@ -44,18 +44,20 @@
     "workstation"
    ],
    "shape": {
-    "method_count": 25,
+    "method_count": 26,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5dd34d0a3516b8b4e0952ef45d294a9e03e761f7305d58b04af71f50223460f2",
+   "span_sha256": "4981f716dcc811292c9d72f4e3c0dc1796353cdf691a13921d8879d4e7fd8645",
    "role": "Room-local workspace object.",
    "responsibilities": [
     "owns the room-local viewer asset",
     "owns the workstation",
     "owns the room-local command system",
     "owns room-local event and memory systems",
-    "cleans up by marking itself cleaned under its lock and cleaning its children after releasing it"
+    "cleans up by marking itself cleaned under its lock and cleaning its children after releasing it",
+    "holds the Rift gate's ticket in its hook registration methods and hands the gate it borrows to its workstation",
+    "skips the action-hook scope's depth bookkeeping and post hooks on a room cleaned while the action ran"
    ],
    "owns_state": [
     "_frame_viewer",
@@ -69,7 +71,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5dd34d0a3516b8b4e0952ef45d294a9e03e761f7305d58b04af71f50223460f2"
+   "semantics_authored_against": "4981f716dcc811292c9d72f4e3c0dc1796353cdf691a13921d8879d4e7fd8645"
   }
  },
  "edges_out": [
@@ -143,6 +145,7 @@
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",
+  "Iterator": "typing.Iterator",
   "Optional": "typing.Optional",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Tuple": "typing.Tuple",
@@ -226,6 +229,18 @@
     "cleanup"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+   "to": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+   "relation": "borrows",
+   "why": "The room holds its Rift's gate, which the Rift owns and cleans: its hook registration doors take tickets on it, it hands it to the workstation, and its commands reach it as space.rift_gate.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

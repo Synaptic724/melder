@@ -69,7 +69,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "pip==26.2.2",
+    "pip>=26.3",
 ]
 
 [project.urls]

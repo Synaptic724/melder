@@ -82,7 +82,7 @@ def test_nexus_enum_names_remain_plain_through_checkpoint_and_cached_reload(
     profile = str(recorder.describe_checkpoint(checkpoint_id)["profile_name"])
     cache_file = cache_root / profile / f"{checkpoint_id}.json"
     cached = json.loads(cache_file.read_text(encoding="utf-8"))
-    assert cached["record_version"] == "5.0.0"
+    assert cached["record_version"] == "5.0.1"
     saved = cached["captured_payloads"]["nexus"]["root"]["configuration_payload"]
     for key, value in expected.items():
         assert saved[key] == value
