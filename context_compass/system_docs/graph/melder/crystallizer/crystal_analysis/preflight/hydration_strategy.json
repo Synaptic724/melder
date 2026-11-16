@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/hydration_strategy.py",
- "source_sha256": "5f3f754b8dfcea1ac0a94e7a0357d158f928dd0f47ffe10aa8e1d35dfd220227",
+ "source_sha256": "59f5d6f7c31f9b0f79dd3e04f683e76ac75beb3c1887fdd67f85b01456b6e789",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.hydration_strategy": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/asset_cache.py",
- "source_sha256": "242507c9cd25371a22c44efe612c6a661eab7b1c9c49f43651ab828299dd8631",
+ "source_sha256": "4859dc3d861eb917ccb5e009dff380700a1d50ec9c6f93c71f62731026dbf04d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.asset_cache": {

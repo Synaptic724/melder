@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements.py",
- "source_sha256": "b436f7ec8994f40c56f875901bb854cf7e7d777e43cf8752dff464caa6ea87b9",
+ "source_sha256": "791efbf87f775d70648054ec8bd8d82eb13414671ee9e0997ce7820c42e8337b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements": {

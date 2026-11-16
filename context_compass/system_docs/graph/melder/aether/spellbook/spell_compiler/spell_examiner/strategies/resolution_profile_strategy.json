@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/resolution_profile_strategy.py",
- "source_sha256": "37b71e37bd21a4a5c49d6125f5a16de5b06b31643918960da25e88c586b45e05",
+ "source_sha256": "4d242c36b62eb2e13e35c6cedb46dfa4477329fdf6e33de0af074e54c98ce5ba",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy": {

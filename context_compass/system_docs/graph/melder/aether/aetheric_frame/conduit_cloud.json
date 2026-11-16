@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
- "source_sha256": "39343d50e25d250f11bd9f8a22407bbb1177dbfbe9491e4076acd3bce24a0009",
+ "source_sha256": "def9b0ded939188d2f40c2eff541fd8f7d0c04ada795aa72ac9064a3368501ba",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.conduit_cloud": {

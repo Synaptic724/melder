@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus_frame_builder.py",
- "source_sha256": "38d807840b1159d5b98243a903a208cc4a4618577842ceb357c60eefe0bfb9c0",
+ "source_sha256": "6481fff174b4c8ce46b7b9d77a06f92a331cf90bbe7cbf0708d354a5a38acd9d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus_frame_builder": {

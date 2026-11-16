@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.py",
- "source_sha256": "3904099b36302d3c2163bf6ad6894ed4eb241723abf6bdb1a57d4841d9dd1b04",
+ "source_sha256": "352cbef2e4ae38eedaec0766e205cd97da6b48751ce6a4a8e372cc49c70e47de",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library": {

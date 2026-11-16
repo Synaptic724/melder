@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
- "source_sha256": "ec7bf496fb23832e6f9b6b61174811e7001f86507270d4e7f87df0eb82086711",
+ "source_sha256": "b0cff30073e030bc251c80c88c1040ed1bca627fb326612e3ccaf566e5782cb1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy": {

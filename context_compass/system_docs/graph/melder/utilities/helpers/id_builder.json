@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/id_builder.py",
- "source_sha256": "4ceb295a3bac44b090130b74e854f226767a89a1aa13d4654c83e54dbe63cb5c",
+ "source_sha256": "6331c8c40c19233ede718c1c34f730163a55df3b1c0fdc5cb9e3af00e229f31b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.id_builder": {

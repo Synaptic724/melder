@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/profiles/command/safe_strategy.py",
- "source_sha256": "38c216735600f6425ca2909e42ba87990f02c671fdfda68ccb7024ee3939c0c6",
+ "source_sha256": "65ac58ac309b9c79ea62b9e892d14cfe4197abe097f5fed17f4ead70b9252fe0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.profiles.command.safe_strategy": {

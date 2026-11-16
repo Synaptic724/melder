@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
- "source_sha256": "ccacce3bdba95a9e7e46f4e4c99df7709c108dc4d8615fbcda92b060450f73a3",
+ "source_sha256": "8f57fba75a7c37d2917ddd46965fdf2be8a6348242105a4413db2d80e79be312",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy": {

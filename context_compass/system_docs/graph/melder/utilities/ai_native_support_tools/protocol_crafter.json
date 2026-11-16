@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/ai_native_support_tools/protocol_crafter.py",
- "source_sha256": "2cdca61115df03ff05076af78318268e60bb781a13fcd776cb5543d0b9740166",
+ "source_sha256": "6f7f348d6359501bf8512a6b135435cbb02da838dde72b0939767c546fc8f988",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.ai_native_support_tools.protocol_crafter": {

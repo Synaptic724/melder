@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py",
- "source_sha256": "647949e8cb938b4bbc296904a4b3d42bc9d076ed194eb62a7bbae5e314a40450",
+ "source_sha256": "c638401dfb5ac1d8c92448279399da4c34566a0b3a7014608fb40be6becded3b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest": {

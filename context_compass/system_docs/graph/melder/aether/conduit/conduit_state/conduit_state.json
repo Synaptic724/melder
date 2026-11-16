@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_state/conduit_state.py",
- "source_sha256": "65a253cb2648c012aa151e9d5d33323a55b08996484ee373e965f7e235d1b53d",
+ "source_sha256": "b0ca8b4c5cdc5bed9ea9141f70a61d8b0eba7ee7ed2c0fb509c76a839344f6a7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_state.conduit_state": {

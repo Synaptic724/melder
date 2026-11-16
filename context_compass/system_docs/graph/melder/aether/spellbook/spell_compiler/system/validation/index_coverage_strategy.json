@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py",
- "source_sha256": "7eadb97914a27cf2a260e8c64cbc123b78bb9eb8a4b25f2df7dc2a9f0885ccaf",
+ "source_sha256": "5035efc5083eaf470c203d61ac2d704cc198dd805378b5c8a4812455d03736ac",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy": {

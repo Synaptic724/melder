@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/mutation_research_crystal.py",
- "source_sha256": "256607ebe06fbd5c66b07647db8dfe8a69448ea28f58fdb6f0464ae7e7922824",
+ "source_sha256": "3a48a28cb5ec90228f20ba9c150e15878a5106df202ec7a4b9de64e9967fa34d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.mutation_research_crystal": {

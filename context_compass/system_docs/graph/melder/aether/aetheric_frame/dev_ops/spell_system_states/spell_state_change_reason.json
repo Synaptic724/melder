@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
- "source_sha256": "ed907efac8109f1c06f40cfef2baa0d7fa642227e8d5ffde77d311a270970273",
+ "source_sha256": "6a1f53eb0f3b9c7a4716d3521122a4e43342e5234eda20389369b11de49b0702",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason": {

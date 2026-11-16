@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py",
- "source_sha256": "6779446f63705529a59e621cfab5a63637d6e263cd9beacee81b77ea7ad3639e",
+ "source_sha256": "fce64bc0e4a3a7300148a07877243f31fb69d555ca2c4f670deb31420accdc27",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.system_diagnostic": {

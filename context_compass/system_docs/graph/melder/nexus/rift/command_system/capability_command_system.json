@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/capability_command_system.py",
- "source_sha256": "ff44f3312d1aa7ceabb12826ee71567b966955c6b77ea534d1089904c9bb7b7a",
+ "source_sha256": "6335c971077c93f3f09a699d03772ff0792375e36594ca406360997880a79a7c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.capability_command_system": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
- "source_sha256": "75b5ed4b85aef2d6b263d2ebc96d25fda72eea5edb4b0045d6229dcb5c84cc25",
+ "source_sha256": "98f2473a7d695b3008e9f2796a98071364055256a2dbc9d13bfbb20cc00d5237",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.crystal_analyzer": {

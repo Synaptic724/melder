@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py",
- "source_sha256": "1f6841c214b0daa62f8f8f66e5c0868c6886d1836e95487277ef7760aa990f6e",
+ "source_sha256": "bb2c7ba9fd67129bc51d9b25acf7ee07c90cd28230034408a1b7641631b55803",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py",
- "source_sha256": "0f221fc54f33c06f41c332a96bc56cfbb0ebc4d13b9957344f66e5992746e19a",
+ "source_sha256": "34b49b9a714cc872f7b23e2ce99372d06466b59ceb1b3ba1490eb21248eaba8a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration": {

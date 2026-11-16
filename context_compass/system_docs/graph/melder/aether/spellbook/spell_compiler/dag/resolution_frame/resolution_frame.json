@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolution_frame.py",
- "source_sha256": "5a3e3f19c37f3789244815b5806d3fc8b5fb75c32bee1b0903b747f48725b023",
+ "source_sha256": "7e20a7d4ea11c36b9fe14e4b94715098e43c7ee929dd4176deff1e36c78adeae",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.resolution_frame.resolution_frame": {

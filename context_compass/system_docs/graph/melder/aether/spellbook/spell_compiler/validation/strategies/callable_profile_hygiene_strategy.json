@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
- "source_sha256": "faad942a2f20755dee81138878e65d5a60451beece198e55755ff3152102644e",
+ "source_sha256": "f5351a15eaaa775d369c653f5fd21bc675850090d54e91a7cc3bc50cc46ca2ee",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy": {

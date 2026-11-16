@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/unresolved_input_error.py",
- "source_sha256": "446f96f696f530037d850161656232a28c1b06685e7b2ba2a6598c98801af274",
+ "source_sha256": "4c0043c8455230ad18fcd728a1747e0a24c61bb1374b775a03157c87ec6459c4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.unresolved_input_error": {

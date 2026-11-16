@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
- "source_sha256": "85751f862e49b4bf3825d4ff0a9384b8a11a917cafa297d15274769068bff001",
+ "source_sha256": "d2a16f213cd9b601dfd8e9c5ae100d56263bab558afc5cbef39237db5fe118ce",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.view.precision": {

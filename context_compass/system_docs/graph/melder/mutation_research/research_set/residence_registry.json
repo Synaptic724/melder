@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/residence_registry.py",
- "source_sha256": "f5d28bbb184336763a5da0c4ec1240d0b5cc833d11463894403318b9a625f96e",
+ "source_sha256": "178b31d03112e0b00f35b6e6103051f56d9474611e8b08f1a2dc922cfa41688a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.residence_registry": {

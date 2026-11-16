@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
- "source_sha256": "5c95e0bd1e2e2f6a6a5957301b6836d755e2226b858705e91e5fb427f1931167",
+ "source_sha256": "c4d17e09b748536e5e3ad821eaa54a6dd7b62d44b7d9333f1793397a759b5921",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.spellbook_validation_error": {

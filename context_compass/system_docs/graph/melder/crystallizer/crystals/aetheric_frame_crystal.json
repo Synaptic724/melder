@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/aetheric_frame_crystal.py",
- "source_sha256": "b92a8f75ff89c845065d7d3d0edc9af5802dfa9d0a1d4ff1fab2056308032568",
+ "source_sha256": "b7786622d046505bc14084b658e38a0520217a03b3f985320143316f42fba302",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.aetheric_frame_crystal": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/frame_acl_compiled_access_surface.py",
- "source_sha256": "3fbe17c7ea9d64a13f5719a79cc8ced5982dfc688258d891f9522493094d0c96",
+ "source_sha256": "46874febd00ee67a45f1ac482ba72e7ea324caffded66035b122460a74484f57",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.frame_acl_compiled_access_surface": {

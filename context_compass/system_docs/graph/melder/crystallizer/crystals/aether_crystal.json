@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/aether_crystal.py",
- "source_sha256": "d2fed3eea70f3bbe5aaeaeb1f9e2c077cab0d3eb1b239334be57e6a9ef887bb2",
+ "source_sha256": "929144a005138474567b9cedbac6efb6cd047f3fbca9e4d5b224de22faa2095f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.aether_crystal": {

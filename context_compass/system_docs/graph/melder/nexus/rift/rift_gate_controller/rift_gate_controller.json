@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
- "source_sha256": "a8d2d8183c602a322ad25947a407ffae41ac0430d1e6432fc8ddada3bd012dd5",
+ "source_sha256": "7acf92dca917ae4a76f9998125c39ef4d125a988c9b5157d6ba146c04f2fcefa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_gate_controller.rift_gate_controller": {

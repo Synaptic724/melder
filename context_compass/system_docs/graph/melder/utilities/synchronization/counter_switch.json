@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/counter_switch.py",
- "source_sha256": "3d46514189476cf60ca3e3c4013fbdef2e75a5a3218424180c236cc4a631c9e2",
+ "source_sha256": "e8b29d3f5b602cf297e60a24a81e32a3cf092b572433f91b66e21df4bef43df4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.counter_switch": {

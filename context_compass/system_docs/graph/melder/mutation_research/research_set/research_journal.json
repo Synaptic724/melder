@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/research_journal.py",
- "source_sha256": "4f8394fd4e434a2efec4a819a655a9606e8f74137226c03e636843c3c4dbcc93",
+ "source_sha256": "f7bacc73b391e5db1d35ed0fe2df6d1c6edd94c43cef2f47a2b4b63b9d6e0492",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.research_journal": {

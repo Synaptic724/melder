@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py",
- "source_sha256": "d6e5c64ad712cfebe590ca556a4ae6a2eda60f552695889835ef2d75942e97e3",
+ "source_sha256": "4add7585b8d2ab653122e300a5faa1f9d3c2c43ebd92e8cf66e0ff8f468132cf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy": {

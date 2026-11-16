@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
- "source_sha256": "a16c85a63ba0fd1f0a374cd5705ef7a014e656084527394a6316940fc3381902",
+ "source_sha256": "39e60004918ae276aaa2db004bec33bb3166269c4e79fcb28404f7969d460e04",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.permissions.permissions": {

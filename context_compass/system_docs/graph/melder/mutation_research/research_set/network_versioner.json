@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/network_versioner.py",
- "source_sha256": "ece3a220c115418d0d04f777f6688c2029bcdd4de2f216e70105fda7e2f917c0",
+ "source_sha256": "c5b8bb8c70da276c2c38fa133fb1e960dd91585ea481da98be8c7df83a14047e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.network_versioner": {

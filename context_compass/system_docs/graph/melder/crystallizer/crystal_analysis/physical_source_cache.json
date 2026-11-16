@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/physical_source_cache.py",
- "source_sha256": "dcc0efbcde459a0b8f2284833dfdfb0243db2bbb7a2b2e95ff3be5110b88c7bb",
+ "source_sha256": "bfcbb98c3e95df56ad55aaae89284faa6f0e743a01d564e15a6f48fc670606ff",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.physical_source_cache": {

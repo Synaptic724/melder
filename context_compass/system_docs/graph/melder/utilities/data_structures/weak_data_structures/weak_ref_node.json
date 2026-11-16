@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py",
- "source_sha256": "192360631a5c635ddb216e10db505043f121446dd8f2d268d344f6636e6cab2a",
+ "source_sha256": "f2c9ff454e5a2598567f168b490541c5587d6fe26414b239c97f670ed3060f18",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.data_structures.weak_data_structures.weak_ref_node": {

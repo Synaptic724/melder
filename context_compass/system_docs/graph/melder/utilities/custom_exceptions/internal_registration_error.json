@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
- "source_sha256": "a6c04c1543d917d23618649f59e2c0e97f8c6b9b911177aea09289ec05b3f9f2",
+ "source_sha256": "ad0986df8fba6b145d3f90e6126cd63081e4373b7e2836d08922d78cf706c04e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.internal_registration_error": {

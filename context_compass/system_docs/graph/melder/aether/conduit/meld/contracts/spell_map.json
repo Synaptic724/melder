@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/contracts/spell_map.py",
- "source_sha256": "1a9976c01eeb51abd34cf6e53b34c0494f400c5389a79dbfa6aef475a5a9364f",
+ "source_sha256": "a5383a395a66ed52134372d15eb207f8692b7e5b2d49cbcae41b57d660dcea64",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.contracts.spell_map": {

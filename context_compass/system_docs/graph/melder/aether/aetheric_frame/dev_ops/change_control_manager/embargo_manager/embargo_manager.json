@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
- "source_sha256": "455082e9cafff2b18c78559a0fda4eb3fa2f565d93ce0a7d7bbaf85e5905b017",
+ "source_sha256": "dd9a0691f96f868c9edc5e5cc392823031985889c5b788329f7315b2d0b91a31",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager": {
