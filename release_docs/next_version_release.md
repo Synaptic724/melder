@@ -1,4 +1,4 @@
-# Melder 0.2.8304
+# Melder 0.2.8305
 
 **Unreleased**
 
@@ -111,20 +111,26 @@ import world. Nothing one analysis learned was kept for the next: each bind reso
 `from x import name` with `importlib.util.find_spec`, and resolved the source roots again, so a configure binding
 hundreds of spells over a few hundred modules took minutes (GitHub #331).
 
-Those answers are now kept for the process and reused while what they came from is unchanged: a module's path and
-its import facts while the same module object is loaded and its file keeps the same modification time and size, a
-module's classification while the source and package roots are the same, and an installed package's distribution
-and version while the site-packages directories are unchanged. A bind over an unchanged world does lookups and one
-file stat per module of your own source. In a measured project of 150 modules, binding 600 spells took about 2 s
-instead of 14.2 s (3.0 to 3.3 ms a bind over two runs, instead of 23.6 ms; 480 path resolutions instead of 58,915;
+Those answers are now kept for the process and reused. A spell from a module whose world was analysed before gets a
+copy of that finished analysis without walking it again; a spell from a new module walks its world with the answers
+already known for the modules it shares. A loaded module is checked in memory - the same module object with the same
+import spec - so later binds neither read nor stat its file. A module that is not imported (one imported only under
+`TYPE_CHECKING`, say) is checked by its file's modification time and size and by `sys.path`. A module's
+classification is reused while the source and package roots are the same, and an installed package's distribution
+and version while the site-packages directories are unchanged. In a measured project of 150 modules, binding 600
+spells took 1.15 s instead of 14.2 s (1.9 ms a bind instead of 23.6 ms; 480 path resolutions instead of 58,915;
 Windows, GIL off).
 
-A crystal records exactly what it recorded before: a reused analysis and a fresh one give the same record. Editing a
-module's file, or importing it again so `sys.modules` holds a new module object, makes the next bind analyse that
-module again. One thing is noticed later than before: in `from package import name`, a `name` that becomes a
-submodule file after the importing module was analysed is picked up once the importing module's file changes.
-Synthetic modules are never cached, with or without a file on disk. The cache holds plain values and weak
-references - never a module, source text or result - and keeps at most 8,192 entries of each kind.
+**Breaking change:** editing a loaded module's file without reloading it no longer reaches later crystals: they keep
+the analysis of the module as it was loaded, which is the code that is running. Reload the module
+(`importlib.reload`) or import it afresh, and the next bind analyses it again; a restore's source-drift check still
+reports the edited file. In the same way, in `from package import name`, a `name` that becomes a submodule file after
+the importing module was analysed is picked up once the importing module is reloaded.
+
+A crystal built from reused answers records exactly what a fresh analysis records. Synthetic modules are never
+cached, with or without a file on disk, and an analysis retaining user-source text always reads it. The cache holds
+plain values and weak references - never a module, source text or result - and keeps at most 8,192 entries of each
+kind and 128 analysed worlds.
 
 ## Packaging and documentation
 
@@ -154,9 +160,11 @@ The docstrings of `SpellMap`, `CompilerPhase3`, `RequiredHolesStrategy`, `Unreso
 indexes and the source graph describe it.
 
 The new kernel class `ModuleAnswerCache` (`melder.crystallizer.crystal_analysis.module_answer_cache`) holds the
-reused analysis answers. The docstrings of `CrystalAnalyzer` and `SitePackageCustodyStrategy` say what each answer is
-kept by and when it is derived again; the source and test maps, their indexes and the source graph describe it. The
-assembled source graph also carries the line-ending-neutral source hashes its descriptors gained in the 2.23.3
-re-extraction.
+reused analysis answers and analysed worlds. `CrystalAnalysisResult` gains `load_described_payload`, which copies a
+`describe()` payload into a fresh result, and membership sets beside its ordered target lists;
+`SitePackageCustodyStrategy.site_root_signature` names the site-root state provenance is kept under. The docstrings
+of `CrystalAnalyzer`, `CrystalAnalysisResult` and `SitePackageCustodyStrategy` say what each answer is kept by and
+when it is derived again; the source and test maps, their indexes and the source graph describe it. The assembled
+source graph also carries the line-ending-neutral source hashes its descriptors gained in the 2.23.3 re-extraction.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8304.
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8305.

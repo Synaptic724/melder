@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-11-17T10:41:58Z |
-| line_count | 13985 |
+| generated_at | 2026-11-17T11:13:10Z |
+| line_count | 13993 |
 | line_ending | lf |
-| content_sha256 | `dddc47a9a096be5d17b6898bd77cb2e691dc3ebeca6014871a834214d2aa144b` |
+| content_sha256 | `9698c996342943f114d03b749252cd4ac0242f0ff28318ae34bd91273eb99ab9` |
 | sections | 158 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -168,20 +168,20 @@ which you did.
 | 10096-10105 | 3 | Method-Level Call Flows (C1) > Flow: SpellExaminer.create_profile -> General/Detailed Profile |
 | 10106-12506 | 2 | C1 Code Map (Core) |
 | 11423-12506 | 3 | C1 Code Map (Core) > Full Package Inventory (exhaustive, retained) |
-| 12507-12881 | 2 | Promoted Patch Detail (re-absorbed 2026-08-02) |
+| 12507-12889 | 2 | Promoted Patch Detail (re-absorbed 2026-08-02) |
 | 12513-12613 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Crystallizer Persistence & Restore (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
-| 12614-12689 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Subsystem Decomposition (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
-| 12690-12823 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs: aether_lazy_frames_and_load_gate_2026_07_11, crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11, crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11) |
-| 12824-12881 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11 from patch dirs public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12, spell_index_graft_2026_07_12; owner-directed finish) |
-| 12882-13062 | 2 | Diagrams |
-| 12883-12901 | 3 | Diagrams > Direct Resolution Admission |
-| 12902-12924 | 3 | Diagrams > Required-Input Compiler Flow |
-| 12925-12956 | 3 | Diagrams > Unresolved Input Flow |
-| 12957-12977 | 3 | Diagrams > Override Key-Set Plan Flow |
-| 12978-12996 | 3 | Diagrams > Mermaid: Conduit Upgrade |
-| 12997-13012 | 3 | Diagrams > Mermaid: Conjure Pipeline |
-| 13013-13030 | 3 | Diagrams > Mermaid: Meld Runtime |
-| 13031-13045 | 3 | Diagrams > Mermaid: Managed Pools |
-| 13046-13062 | 3 | Diagrams > Mermaid: Ownership Transfer |
-| 13063-13396 | 2 | Information Sources |
-| 13397-13985 | 2 | Context / Handoff Summary |
+| 12614-12697 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Subsystem Decomposition (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
+| 12698-12831 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs: aether_lazy_frames_and_load_gate_2026_07_11, crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11, crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11) |
+| 12832-12889 | 3 | Promoted Patch Detail (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11 from patch dirs public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12, spell_index_graft_2026_07_12; owner-directed finish) |
+| 12890-13070 | 2 | Diagrams |
+| 12891-12909 | 3 | Diagrams > Direct Resolution Admission |
+| 12910-12932 | 3 | Diagrams > Required-Input Compiler Flow |
+| 12933-12964 | 3 | Diagrams > Unresolved Input Flow |
+| 12965-12985 | 3 | Diagrams > Override Key-Set Plan Flow |
+| 12986-13004 | 3 | Diagrams > Mermaid: Conduit Upgrade |
+| 13005-13020 | 3 | Diagrams > Mermaid: Conjure Pipeline |
+| 13021-13038 | 3 | Diagrams > Mermaid: Meld Runtime |
+| 13039-13053 | 3 | Diagrams > Mermaid: Managed Pools |
+| 13054-13070 | 3 | Diagrams > Mermaid: Ownership Transfer |
+| 13071-13404 | 2 | Information Sources |
+| 13405-13993 | 2 | Context / Handoff Summary |

@@ -32,6 +32,9 @@ from melder.crystallizer.crystal_analysis.module_answer_cache import (
     ModuleAnswerCache,
     ModuleWalkFacts,
     ResolvedRootsKey,
+    SiteRootSignature,
+    WorldEntry,
+    WorldKey,
 )
 from melder.crystallizer.crystal_analysis.physical_source_cache import (
     PhysicalSourceCache,
@@ -91,6 +94,16 @@ DerivedFactValues = Tuple[
     Optional[str],
     Optional[Tuple[Tuple[str, ...], Tuple[str, ...]]],
 ]
+# A leaf's record values (#331): (path text or None, custody kind, extension).
+LeafRecord = Tuple[Optional[str], str, Optional[str]]
+# One import edge's answers within a pass (#331): (name, module object, path,
+# custody, leaf record - None when the target descends). Keyed by name and
+# id(object), with the object kept so an id cannot be reused within the pass.
+PassEdge = Tuple[str, Optional[Any], Optional[Path], SourceCustodyStrategy, Optional[LeafRecord]]
+# A node waiting to be walked: (name, module object, path, custody when known).
+PendingNode = Tuple[str, Optional[Any], Optional[Path], Optional[SourceCustodyStrategy]]
+# A kept world's root entry and the entries of every other touched module.
+CollectedWorld = Tuple[WorldEntry, Tuple[WorldEntry, ...]]
 
 
 class CrystalAnalyzer(Cleanable):
@@ -119,15 +132,21 @@ class CrystalAnalyzer(Cleanable):
           custody matched once (keyed by name, object and path), however many
           modules import it (#327). Those per-pass answers are emptied when the
           pass ends.
-        - Across analyses (owner decision 2026-11-17, #331) the process-wide
+        - Across analyses (owner decisions 2026-11-17, #331) the process-wide
           `ModuleAnswerCache` keeps what a pass derived: a module's resolved
           path (same module object, same `__file__`), a path's custody kind
           (same user, environment and site roots), a physical module's facts
-          (same object, resolved path and file mtime_ns/size) and the resolved
-          policy roots. A later analysis reuses them, so it is current as of
-          each module object and its file's stat rather than recomputed every
-          time. Synthetic modules are never kept, and an analyzer built with
-          its own custody or fact strategies keys no custody or facts there.
+          (a loaded module: same object, import spec and path, no stat; a
+          module not imported: same path and file mtime_ns/size), the resolved
+          policy roots, and whole analysed worlds per root module. A later
+          analysis reuses them, so it is current as of each loaded module object
+          and its spec - a reload or re-import is analysed again; a file edited
+          without one keeps its earlier analysis - rather than recomputed every
+          time. Synthetic modules are never kept, and an analyzer built with its
+          own custody or fact strategies keys no custody, facts or worlds there.
+        - A world is kept only after a clean walk and reused only when every
+          module it touched passes the checks above; the reused result is a copy
+          of the kept one, exactly what the walk recorded.
         - On a memo miss or custom-strategy path, each parsed module AST is
           walked ONCE and nodes dispatch in strategy registration order,
           preserving historical manifest ordering. Memo hits skip AST work.
@@ -230,7 +249,10 @@ class CrystalAnalyzer(Cleanable):
         "_custody_strategies",
         "_fact_strategies",
         "_pass_custody",
+        "_pass_edges",
+        "_pass_file_guards",
         "_pass_module_paths",
+        "_pass_world_keepable",
         "_retain_user_sources",
         "_site_package_dependency_descent",
         "_uses_default_fact_strategies",
@@ -364,6 +386,12 @@ class CrystalAnalyzer(Cleanable):
         # emptied when it ends, so no answer outlives its pass.
         self._pass_module_paths: Dict[PassModulePathKey, PassModulePath] = {}
         self._pass_custody: Dict[PassCustodyKey, PassCustody] = {}
+        # Per-pass world collection (#331): each import edge's answers, the
+        # stat of every file read with no module object, and whether anything
+        # seen in the pass forbids keeping its world.
+        self._pass_edges: Dict[PassModulePathKey, PassEdge] = {}
+        self._pass_file_guards: Dict[str, Tuple[str, int, int]] = {}
+        self._pass_world_keepable: bool = True
         if fact_strategies is None:
             self._fact_strategies: List[CrystalFactStrategy] = [
                 ImportStatementStrategy(),
@@ -414,6 +442,9 @@ class CrystalAnalyzer(Cleanable):
         del self._fact_strategies
         del self._pass_module_paths
         del self._pass_custody
+        del self._pass_edges
+        del self._pass_file_guards
+        del self._pass_world_keepable
         del self._answer_policy_key
         del self._uses_default_fact_strategies
 
@@ -764,13 +795,22 @@ class CrystalAnalyzer(Cleanable):
         Analyze the live module world rooted at one spell's module.
 
         Contract:
-            - One pass: each distinct module's path is resolved once and its
-              custody matched once, and those per-pass answers are emptied when
-              the pass ends - normally or by exception.
-            - A later pass, on this or any analyzer, takes a module's path,
-              custody kind and facts from `ModuleAnswerCache` while the module
-              object and its file are unchanged (#331), and derives them again
-              otherwise; the result is the one a fresh derivation records.
+            - A whole world first (#331): an analyzer keying answers and not
+              retaining sources looks up the world kept for this root (same
+              policy, descent setting, root name and root path). When every
+              module that world touched is unchanged in memory - loaded modules
+              by object and spec, modules not imported by `sys.path` and their
+              files' stat - the kept result is copied into a new one and returned:
+              no walk, no finalize.
+            - Otherwise one pass: each distinct module's path is resolved once and
+              its custody matched once, and those per-pass answers are emptied
+              when the pass ends - normally or by exception. A module's path,
+              custody kind and facts come from `ModuleAnswerCache` where they
+              still apply; the result is the one a fresh derivation records.
+            - After a pass that recorded no walk error before finalize, touched no
+              synthetic module, saw no module object change and is rooted at a
+              user-source or site-package module, the finished result is kept as
+              the root's world.
 
         Args:
             root_module_name:
@@ -789,26 +829,164 @@ class CrystalAnalyzer(Cleanable):
             RuntimeError: If the analyzer was cleaned.
         """
         self.check_cleaned()
+        world_key = self._world_key(root_module_name, root_module_path)
+        if world_key is not None:
+            kept_payload = ModuleAnswerCache.lookup_world(world_key, root_module_obj)
+            if kept_payload is not None:
+                reused = CrystalAnalysisResult()
+                reused.load_described_payload(kept_payload)
+                return reused
         result = CrystalAnalysisResult()
+        collected: Optional[CollectedWorld] = None
+        site_signature: Optional[SiteRootSignature] = None
+        self._pass_world_keepable = True
         try:
-            root_kind = self._match_custody(
+            root_custody = self._match_custody(
                 module_name=root_module_name,
                 module_obj=root_module_obj,
                 module_path=root_module_path,
-            ).kind
-            result.set_root_module_kind(root_kind)
+            )
+            result.set_root_module_kind(root_custody.kind)
+            if world_key is not None:
+                site_signature = self._site_signature_for(root_custody)
             self._walk_module_dependencies(
                 result=result,
                 module_name=root_module_name,
                 module_obj=root_module_obj,
                 module_path=root_module_path,
             )
+            if world_key is not None:
+                collected = self._collect_world(root_module_name, root_module_obj, root_custody.kind)
         finally:
             self._pass_module_paths.clear()
             self._pass_custody.clear()
+            self._pass_edges.clear()
+            self._pass_file_guards.clear()
+        walk_errors_before_finalize = len(result.walk_errors)
         for fact_strategy in self._fact_strategies:
             fact_strategy.finalize(result)
+        if world_key is not None and collected is not None and walk_errors_before_finalize == 0:
+            payload = result.describe()
+            ModuleAnswerCache.store_world(
+                world_key,
+                collected[0],
+                collected[1],
+                site_signature if payload["distribution_provenance"] else None,
+                payload,
+            )
         return result
+
+    def _world_key(self, root_module_name: str, root_module_path: Optional[Path]) -> Optional[WorldKey]:
+        """
+        Return the key a whole analysed world is kept under, or None when this analyzer keeps none.
+
+        Contract:
+            Worlds are kept only by an analyzer keying answers (default custody
+            chain and fact strategies) that does not retain user sources: retained
+            text is read on every analysis by contract, so such a world cannot be
+            copied (#331).
+
+        Args:
+            root_module_name:
+                Canonical root module name.
+            root_module_path:
+                Physical root module path, or None.
+
+        Returns:
+            Optional[WorldKey]: (policy key, descent flag, root name, root path
+            text), or None.
+        """
+        if self._answer_policy_key is None or self._retain_user_sources:
+            return None
+        return (
+            self._answer_policy_key,
+            self._site_package_dependency_descent,
+            root_module_name,
+            str(root_module_path) if root_module_path is not None else None,
+        )
+
+    def _site_signature_for(self, root_custody: SourceCustodyStrategy) -> Optional[SiteRootSignature]:
+        """
+        Return the site-root signature taken before a walk that may harvest provenance.
+
+        Contract:
+            Provenance is harvested only for a walked site-package node: the root
+            when it is a site package, or any site package with descent on. The
+            signature is taken before the walk, so a site root changing mid-walk
+            makes the kept world miss rather than vouch for older metadata.
+
+        Args:
+            root_custody:
+                The root module's custody.
+
+        Returns:
+            Optional[SiteRootSignature]: The signature, or None when no
+            provenance can be harvested.
+        """
+        if root_custody.kind != "site_package" and not self._site_package_dependency_descent:
+            return None
+        site_strategy = self._custody_by_kind.get("site_package")
+        if isinstance(site_strategy, SitePackageCustodyStrategy):
+            return site_strategy.site_root_signature()
+        return None
+
+    def _collect_world(
+            self,
+            root_module_name: str,
+            root_module_obj: Optional[Any],
+            root_kind: str,
+    ) -> Optional[CollectedWorld]:
+        """
+        Build the entries that let a finished walk's world be reused, or None when it must not be kept.
+
+        Contract:
+            - Runs before the per-pass answers are emptied: one entry per import
+              edge target the pass resolved, plus the root.
+            - Returns None when the pass forbade keeping (a file it read with no
+              module object could not be stat'ed), when the root is synthetic or
+              unknown (their custody reads in-memory source or compiled bytes),
+              when any touched object is a synthetic module (its source changes in
+              memory - and many have no physical copy), when a name met two module
+              objects in the pass (`sys.modules` changed mid-walk), or when an
+              object or spec cannot be weakly referenced.
+
+        Args:
+            root_module_name:
+                Canonical root module name.
+            root_module_obj:
+                The root module object the walk used, or None.
+            root_kind:
+                The root module's custody kind.
+
+        Returns:
+            Optional[CollectedWorld]: (root entry, other entries), or None.
+        """
+        if not self._pass_world_keepable or root_kind in ("synthetic_module", "unknown"):
+            return None
+        if isinstance(root_module_obj, SyntheticModule):
+            return None
+        root_entry = ModuleAnswerCache.make_world_entry(
+            root_module_name,
+            root_module_obj,
+            self._pass_file_guards.get(root_module_name),
+        )
+        if root_entry is None:
+            return None
+        entries: List[WorldEntry] = []
+        seen_names: Set[str] = set()
+        for edge_name, edge_obj, _path, _custody, _leaf in self._pass_edges.values():
+            if edge_name in seen_names or isinstance(edge_obj, SyntheticModule):
+                return None
+            seen_names.add(edge_name)
+            entry = ModuleAnswerCache.make_world_entry(
+                edge_name,
+                edge_obj,
+                self._pass_file_guards.get(edge_name),
+            )
+            if entry is None:
+                return None
+            entries.append(entry)
+        return root_entry, tuple(entries)
 
     def analyze_payload(
             self,
@@ -978,9 +1156,16 @@ class CrystalAnalyzer(Cleanable):
             - Non-descending custody (unknown fallback) records honest
               leaves without enqueueing them.
             - Each import edge reads its target's live module object from
-              `sys.modules`, then takes the target's path and custody from
-              the pass's answers (`_resolve_pass_module_path`,
-              `_match_custody`), computing them on first sight only.
+              `sys.modules`, then takes the target's path, custody and leaf
+              record from the pass's edge answers (`_resolve_pass_edge`),
+              computing them on first sight only; a walked node reuses the
+              custody its edge found.
+            - A leaf is recorded once per pass rather than once per import edge
+              (#331): a repeat is skipped only when the same edge's leaf record
+              was the last record made under that name, and recording the same
+              leaf again would only rewrite the same values. A walked node's
+              record clears that marker, so a later leaf record still lands, as it
+              did before.
 
         Args:
             result:
@@ -995,22 +1180,23 @@ class CrystalAnalyzer(Cleanable):
         Returns:
             None.
         """
-        pending: List[Tuple[str, Optional[Any], Optional[Path]]] = [
-            (module_name, module_obj, module_path),
-        ]
+        pending: List[PendingNode] = [(module_name, module_obj, module_path, None)]
         visited_module_names: Set[str] = set()
+        last_leaf_records: Dict[str, Optional[PassEdge]] = {}
 
         while pending:
-            current_name, current_obj, current_path = pending.pop()
+            current_name, current_obj, current_path, carried_custody = pending.pop()
             if current_name in visited_module_names:
                 continue
             visited_module_names.add(current_name)
 
-            custody = self._match_custody(
-                module_name=current_name,
-                module_obj=current_obj,
-                module_path=current_path,
-            )
+            custody = carried_custody
+            if custody is None:
+                custody = self._match_custody(
+                    module_name=current_name,
+                    module_obj=current_obj,
+                    module_path=current_path,
+                )
             if self._custody_descends(custody):
                 flat_targets, from_targets = self._extract_module_facts(
                     result=result,
@@ -1025,92 +1211,20 @@ class CrystalAnalyzer(Cleanable):
                 # below and the node still records.
                 flat_targets, from_targets = [], {}
 
-            tracked_dependencies: List[str] = []
-            for dependency_name in flat_targets:
-                dependency_obj = sys.modules.get(dependency_name)
-                dependency_path = self._resolve_pass_module_path(
-                    dependency_name,
-                    dependency_obj,
-                )
-                dependency_custody = self._match_custody(
-                    module_name=dependency_name,
-                    module_obj=dependency_obj,
-                    module_path=dependency_path,
-                )
-                tracked_dependencies.append(dependency_name)
-                if not self._custody_descends(dependency_custody):
-                    # Honest leaf (historical unknown-target law).
-                    result.record_module_target(
-                        module_name=dependency_name,
-                        module_path=(
-                            str(dependency_path)
-                            if dependency_path is not None
-                            else None
-                        ),
-                        module_kind=dependency_custody.kind,
-                        module_extension=self.resolve_file_extension(
-                            dependency_path
-                        ),
-                        direct_dependencies=[],
-                        ast_import_targets=[],
-                        ast_from_import_targets={},
-                    )
-                    continue
-                if dependency_name not in visited_module_names:
-                    pending.append(
-                        (dependency_name, dependency_obj, dependency_path)
-                    )
-
-            synthetic_payload = SyntheticCustodyStrategy.harvest_payload(
-                current_obj
+            tracked_dependencies = self._follow_import_edges(
+                result=result,
+                flat_targets=flat_targets,
+                visited_module_names=visited_module_names,
+                pending=pending,
+                last_leaf_records=last_leaf_records,
             )
-            if synthetic_payload is not None:
-                result.record_synthetic_module_source(
-                    current_name,
-                    synthetic_payload,
-                )
-            # S2 physical custody (opt-in mirror of the M3 synthetic
-            # harvest above): retain the TEXT of every walked user_source
-            # module so absent files can rebuild on fresh pods. `custody`
-            # is the matched strategy; the base default returns None, so
-            # only the user-source class ever yields a payload here.
-            if self._retain_user_sources and custody.kind == "user_source":
-                user_payload = custody.harvest_payload(
-                    module_name=current_name,
-                    module_path=current_path,
-                )
-                if user_payload is not None:
-                    result.record_user_module_source(
-                        current_name,
-                        user_payload,
-                    )
-            # Finishing slice 1 (2026-07-11): ALWAYS-ON distribution
-            # provenance for site-package modules - identity capture,
-            # never retention, no config knob (a sealed world must know
-            # which dependency versions it was built against).
-            if custody.kind == "site_package":
-                provenance_payload = custody.harvest_provenance(
-                    module_name=current_name,
-                    module_path=current_path,
-                )
-                if provenance_payload is not None:
-                    result.record_distribution_provenance(
-                        current_name,
-                        provenance_payload,
-                    )
-            # Finishing slice 2 (2026-07-11): compiled-extension leaves
-            # land their FILE identity (path + bytes sha) in the same
-            # provenance channel - consumers distinguish by keys.
-            elif custody.kind == "unknown":
-                binary_payload = custody.harvest_binary_identity(
-                    module_name=current_name,
-                    module_path=current_path,
-                )
-                if binary_payload is not None:
-                    result.record_distribution_provenance(
-                        current_name,
-                        binary_payload,
-                    )
+            self._harvest_walked_node(
+                result=result,
+                custody=custody,
+                module_name=current_name,
+                module_obj=current_obj,
+                module_path=current_path,
+            )
             result.record_module_target(
                 module_name=current_name,
                 module_path=(
@@ -1122,6 +1236,196 @@ class CrystalAnalyzer(Cleanable):
                 ast_import_targets=flat_targets,
                 ast_from_import_targets=from_targets,
             )
+            last_leaf_records[current_name] = None
+
+    def _follow_import_edges(
+            self,
+            *,
+            result: CrystalAnalysisResult,
+            flat_targets: Sequence[str],
+            visited_module_names: Set[str],
+            pending: List[PendingNode],
+            last_leaf_records: Dict[str, Optional[PassEdge]],
+    ) -> List[str]:
+        """
+        Follow one walked node's import edges: record its leaves, queue its descending targets.
+
+        Contract:
+            - Every candidate becomes a tracked dependency, in order.
+            - A non-descending target is an honest leaf (historical
+              unknown-target law), recorded unless the same edge's leaf record is
+              already the last record under that name in this pass.
+            - A descending target not yet walked is queued with the object, path
+              and custody its edge found.
+
+        Args:
+            result:
+                Result receiving leaf records.
+            flat_targets:
+                The node's dependency candidates.
+            visited_module_names:
+                Names already walked in this pass.
+            pending:
+                The walk's queue.
+            last_leaf_records:
+                Per name, the edge whose leaf record was the last record made, or
+                None after a walked-node record.
+
+        Returns:
+            List[str]: The node's tracked dependencies.
+        """
+        tracked_dependencies: List[str] = []
+        modules = sys.modules
+        for dependency_name in flat_targets:
+            dependency_obj = modules.get(dependency_name)
+            edge = self._resolve_pass_edge(dependency_name, dependency_obj)
+            tracked_dependencies.append(dependency_name)
+            leaf = edge[4]
+            if leaf is not None:
+                if last_leaf_records.get(dependency_name) is not edge:
+                    result.record_module_target(
+                        module_name=dependency_name,
+                        module_path=leaf[0],
+                        module_kind=leaf[1],
+                        module_extension=leaf[2],
+                        direct_dependencies=[],
+                        ast_import_targets=[],
+                        ast_from_import_targets={},
+                    )
+                    last_leaf_records[dependency_name] = edge
+                continue
+            if dependency_name not in visited_module_names:
+                pending.append((dependency_name, dependency_obj, edge[2], edge[3]))
+        return tracked_dependencies
+
+    def _resolve_pass_edge(self, dependency_name: str, dependency_obj: Optional[Any]) -> PassEdge:
+        """
+        Return one import edge's answers, computing them once per pass per module object.
+
+        Purpose:
+            An import edge needs its target's path, custody and - for a leaf - the
+            record values. A world imports the same modules from many places
+            (about 1,700 edges for 300 modules per MelderOps bind), so each target
+            is answered once per pass and later edges take the kept tuple (#331).
+
+        Contract:
+            - Keyed by name and module object: the object is kept with the answer
+              and must be the same object (`is`) on reuse.
+            - The path and custody come from `_resolve_pass_module_path` and
+              `_match_custody`, so the answers are those the edge always received.
+
+        Args:
+            dependency_name:
+                The import target's canonical name.
+            dependency_obj:
+                Its live module object from `sys.modules`, or None.
+
+        Returns:
+            PassEdge: (name, object, path, custody, leaf record or None).
+        """
+        key = (dependency_name, id(dependency_obj))
+        edge = self._pass_edges.get(key)
+        if edge is not None and edge[1] is dependency_obj:
+            return edge
+        dependency_path = self._resolve_pass_module_path(dependency_name, dependency_obj)
+        dependency_custody = self._match_custody(
+            module_name=dependency_name,
+            module_obj=dependency_obj,
+            module_path=dependency_path,
+        )
+        leaf: Optional[LeafRecord] = None
+        if not self._custody_descends(dependency_custody):
+            leaf = (
+                str(dependency_path) if dependency_path is not None else None,
+                dependency_custody.kind,
+                self.resolve_file_extension(dependency_path),
+            )
+        edge = (dependency_name, dependency_obj, dependency_path, dependency_custody, leaf)
+        self._pass_edges[key] = edge
+        return edge
+
+    def _harvest_walked_node(
+            self,
+            *,
+            result: CrystalAnalysisResult,
+            custody: SourceCustodyStrategy,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> None:
+        """
+        Record what one walked node carries besides its edges: synthetic and retained source, provenance.
+
+        Contract:
+            Unchanged harvest law: a synthetic object's source payload; with
+            retention on, a user-source module's text; always, a site-package
+            node's distribution provenance, or an unknown node's binary identity.
+
+        Args:
+            result:
+                Result receiving the payloads.
+            custody:
+                The node's matched custody strategy.
+            module_name:
+                The node's canonical name.
+            module_obj:
+                Its live module object, if available.
+            module_path:
+                Its physical path, if available.
+
+        Returns:
+            None.
+        """
+        synthetic_payload = SyntheticCustodyStrategy.harvest_payload(
+            module_obj
+        )
+        if synthetic_payload is not None:
+            result.record_synthetic_module_source(
+                module_name,
+                synthetic_payload,
+            )
+        # S2 physical custody (opt-in mirror of the M3 synthetic
+        # harvest above): retain the TEXT of every walked user_source
+        # module so absent files can rebuild on fresh pods. `custody`
+        # is the matched strategy; the base default returns None, so
+        # only the user-source class ever yields a payload here.
+        if self._retain_user_sources and custody.kind == "user_source":
+            user_payload = custody.harvest_payload(
+                module_name=module_name,
+                module_path=module_path,
+            )
+            if user_payload is not None:
+                result.record_user_module_source(
+                    module_name,
+                    user_payload,
+                )
+        # Finishing slice 1 (2026-07-11): ALWAYS-ON distribution
+        # provenance for site-package modules - identity capture,
+        # never retention, no config knob (a sealed world must know
+        # which dependency versions it was built against).
+        if custody.kind == "site_package":
+            provenance_payload = custody.harvest_provenance(
+                module_name=module_name,
+                module_path=module_path,
+            )
+            if provenance_payload is not None:
+                result.record_distribution_provenance(
+                    module_name,
+                    provenance_payload,
+                )
+        # Finishing slice 2 (2026-07-11): compiled-extension leaves
+        # land their FILE identity (path + bytes sha) in the same
+        # provenance channel - consumers distinguish by keys.
+        elif custody.kind == "unknown":
+            binary_payload = custody.harvest_binary_identity(
+                module_name=module_name,
+                module_path=module_path,
+            )
+            if binary_payload is not None:
+                result.record_distribution_provenance(
+                    module_name,
+                    binary_payload,
+                )
 
     def _extract_module_facts(
             self,
@@ -1204,13 +1508,19 @@ class CrystalAnalyzer(Cleanable):
         Serve a physical module's facts from `ModuleAnswerCache`, or derive and keep them.
 
         Contract:
-            - Stats the file first. A hit needs the same module object (or
-              none), resolved path and (mtime_ns, size); it records the
-              fingerprint when the custody claims one and the export surface,
-              and returns detached copies - no read, no parse, no probe.
+            - A loaded module (an object) is answered from memory: a hit needs
+              the same object, import spec and resolved path, and its file is not
+              stat'ed (owner direction 2026-11-17; a reload installs a new spec).
+            - A module with no object stats its file first: a hit also needs the
+              file's (mtime_ns, size), and the stat is noted as the file guard a
+              kept world re-checks. A file that cannot be stat'ed is derived and
+              forbids keeping this pass's world.
+            - A hit records the fingerprint when the custody claims one and the
+              export surface, and returns detached copies - no read, no parse, no
+              probe.
             - A miss derives through `_derive_module_facts` and keeps the facts
-              with the stat taken before the read, unless the derivation
-              recorded a walk error or the file could not be stat'ed.
+              (with the stat taken before the read, for a module with no object),
+              unless the derivation recorded a walk error.
 
         Args:
             result:
@@ -1234,25 +1544,35 @@ class CrystalAnalyzer(Cleanable):
             its own maps.
         """
         path_text = str(module_path)
-        try:
-            stat_result = module_path.stat()
-        except OSError:
-            stat_result = None
-        if stat_result is not None:
-            remembered = ModuleAnswerCache.lookup_module_facts(
-                module_name,
-                module_obj,
-                path_text,
-                stat_result.st_mtime_ns,
-                stat_result.st_size,
-            )
-            if remembered is not None:
-                return self._replay_remembered_module_facts(
+        file_stat: Optional[Tuple[int, int]] = None
+        if module_obj is None:
+            try:
+                stat_result = module_path.stat()
+            except OSError:
+                self._pass_world_keepable = False
+                return self._derive_module_facts(
                     result=result,
                     custody=custody,
                     module_name=module_name,
-                    facts=remembered,
+                    module_obj=module_obj,
+                    module_path=module_path,
+                    derived_out=None,
                 )
+            file_stat = (stat_result.st_mtime_ns, stat_result.st_size)
+            self._pass_file_guards[module_name] = (path_text, file_stat[0], file_stat[1])
+        remembered = ModuleAnswerCache.lookup_module_facts(
+            module_name,
+            module_obj,
+            path_text,
+            file_stat,
+        )
+        if remembered is not None:
+            return self._replay_remembered_module_facts(
+                result=result,
+                custody=custody,
+                module_name=module_name,
+                facts=remembered,
+            )
         derived: List[DerivedFactValues] = []
         flat_targets, from_targets = self._derive_module_facts(
             result=result,
@@ -1262,14 +1582,13 @@ class CrystalAnalyzer(Cleanable):
             module_path=module_path,
             derived_out=derived,
         )
-        if stat_result is not None and derived:
+        if derived:
             source_sha, export_surface = derived[0]
             ModuleAnswerCache.store_module_facts(
                 module_name,
                 module_obj,
                 path_text,
-                stat_result.st_mtime_ns,
-                stat_result.st_size,
+                file_stat,
                 (
                     tuple(flat_targets),
                     tuple(

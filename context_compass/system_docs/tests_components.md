@@ -1453,18 +1453,23 @@ Protects:
   environment, and `site-packages`/`dist-packages` directories in any letter case
 - one analysis pass asking each module question once (0.2.8302, #327; `test_crystal_analyzer_pass_dedup.py`,
   6 tests): a module imported from four places has its path resolved once and its custody matched once in a
-  pass, every edge and fingerprint still recorded; since 0.2.8304 a new analyzer, or a second pass on the
-  same one, reuses those answers and classifies nothing again; the environment roots are the site roots then
-  `sys.prefix`, `sys.base_prefix` and `sys.exec_prefix`
-- analyses reusing module answers (0.2.8304, #331; `test_module_answer_cache.py`, 12 tests): a second
-  analysis of an unchanged world resolves, matches and probes nothing and records what a fresh analysis
-  records; an edited file or a re-imported module object is derived again; a member submodule created later
-  is seen once its importer's file changes; a synthetic module with no physical copy is read on every
-  analysis; supplied fact strategies derive every module; a cached path keeps no module alive; each map is
-  LRU-bounded; site-package provenance reads installed metadata once until a site root changes; the policy
-  roots resolve once per input and working directory; eight concurrent analyses (the GIL off) record the
-  same result. The syntax-memo pins of `test_crystal_analyzer.py` clear the module answers before their
-  second analysis, so they still reach the memo beneath them
+  pass, every edge and fingerprint still recorded; since 0.2.8304 a second pass on the same analyzer reuses
+  those answers and classifies nothing again, and since 0.2.8305 a new analyzer over the unchanged world
+  copies the kept world and asks nothing; the environment roots are the site roots then `sys.prefix`,
+  `sys.base_prefix` and `sys.exec_prefix`
+- analyses reusing module answers (0.2.8304-0.2.8305, #331; `test_module_answer_cache.py`, 19 tests): a
+  second analysis of an unchanged world resolves, matches and probes nothing and records what a fresh
+  analysis records; a second spell from the same module copies the kept world without a walk, while another
+  root walks; a reloaded or re-imported module is derived again, and a loaded module's file edited without a
+  reload keeps its analysis with no stat; a module not imported is re-checked by its file and `sys.path`; a
+  member submodule created later is seen once its importer is reloaded; a shared leaf is recorded once per
+  walk; a described payload loads as an exact, independent copy, only into a fresh result; an analyzer
+  retaining sources walks every time; a synthetic module with no physical copy is read on every analysis;
+  supplied fact strategies derive every module; a cached path keeps no module alive; each map, worlds
+  included, is LRU-bounded; site-package provenance reads installed metadata once until a site root
+  changes; the policy roots resolve once per input and working directory; eight concurrent analyses (the
+  GIL off) record the same result. The syntax-memo pins of `test_crystal_analyzer.py` clear the module
+  answers before their second analysis, so they still reach the memo beneath them
 - managed options in the record (0.2.8242): a managed crystal records the mode's name, the limit, the timeout
   and the reset names in order; other crystals carry none of the four keys; a payload's options replay as bind
   keywords (none from a 4.1 record or another existence); RecordVersion 4.2.0 still read 4.1 records,
@@ -3793,15 +3798,15 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 285
   loc: 285
   verified_at: 2026-11-17T10:34:56Z
-  note: one analysis pass resolves and classifies each module once (#327); the next pass reuses the answers
-    (#331).
+  note: one analysis pass resolves and classifies each module once (#327); the next pass reuses the answers,
+    and a new analysis of the unchanged world copies the kept world (#331).
 - path: `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py`
   start_line: 1
-  end_line: 618
-  loc: 618
-  verified_at: 2026-11-17T10:34:56Z
-  note: analyses reuse module paths, custody kinds, facts, roots and provenance across binds; guards and
-    residual (#331).
+  end_line: 830
+  loc: 830
+  verified_at: 2026-11-17T11:13:10Z
+  note: analyses reuse module paths, custody kinds, facts, roots, provenance and whole worlds across
+    binds; in-memory guards, reloads and residuals (#331).
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
   end_line: 994

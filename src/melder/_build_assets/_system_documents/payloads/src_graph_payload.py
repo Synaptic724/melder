@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28484
-CONTENT_SHA256 = '0a053e53c54604299eb02e0591d1cf8075ac15061709424c75b2e558e46c0711'
+LINE_COUNT = 28490
+CONTENT_SHA256 = 'b6a138bd43c7c8fa1ed556b55722e063a4c32fd20c1d193df33bcc387eecc3dc'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `971b51cd89f5a2c323ff063df6cef0db105cdcc7b01c3d3ca772414949191d0c`
+- source_sha256: `d5de5746377dbb4730296ddb41d61496fa40385125e9b58e931eaa7fcb203afc`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `ed0e805734ceef9e9a0dfa464b79b0a7551eb395dd257312df53b527e3129483`
+- source_sha256: `b7224b5e8f8b6503d1232c0790d168539eb86320323d7c1618c83b6b9d8eb462`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `e1b86eed7607d9ea26b846c3c383a26a2480bdce76e0f533c2aa4604825e80f5`
+- source_sha256: `178203b907f065ce3db4c828c05e2a2dfa53a381c949a828a21f3b56d7140dac`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `e6dafdb60de1661871b4da762284198a6affccecdd7d6bb6839921a34b495597`
+- source_sha256: `0e4a5afb357a96e10b4e4a69d3e2214cde4c516c422a2a397ea32e4a3c30f325`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `2598eea7028fb941ebdce041784f56e3717fb386980843b8fc4ae9295dc2c53f`
+- source_sha256: `65e57dfd70a155f483a2adf2db138775c67452123195b4ed6da1c3cead5f10ba`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `46b61dbcb459566901378637b981023e544408fd6c1919d25477699a01989c42`
+- source_sha256: `3ad70ff8f9d9b820f5a266acb06ac1600af52513129d450e1d64fe13eb3ce8af`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `e3723a5aa9b618e1149684d8347429ade4ebc0564dd11fad3295116e87597233`
+- source_sha256: `29e469e835a1c65e49eb4093af880cfbe51698b26ff97f9347c2ab003585e74e`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `17f5be530e851f317876aef2ddea8e251eadab4cf177c8708687f8dfa415fd9b`
+- source_sha256: `2dc83a7525224795b175e93c4b09942108a4463ff498b1eb200ce86889fd3960`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `62d41e08542ac9c497c2eeb12097a259e65a17ada63a1aef062571a93be38368`
+- source_sha256: `005c2076510dbf76fa58dc80e4094265d41a98481e74758924445693ff6a085e`
 - nodes: 1
 
 ### Nodes
@@ -16625,7 +16625,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py
 
-- source_sha256: `0570f372ec1d2736c42a4a56eb4fef2d343d6992ac92a67d9610a6f89b3f82e4`
+- source_sha256: `e59fc076e52b81acb37d4092a521a90d01f7a754270b321ef05b3ef96638fe4e`
 - nodes: 2
 
 ### Nodes
@@ -16650,10 +16650,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - hold every analysis-derived fact as plain str/list/dict/bool - never a live module, spell, or strategy
   - accept record_*/set_* writes from the analyzer during the write phase, then serve detached reads
+  - keep a membership set beside each ordered target list so a record is O(1) (0.2.8305)
+  - load a describe() payload into a fresh result as an exact, independent copy - how a reused world reaches a new crystal (0.2.8305)
   - guard every mutation and detached read with the instance RLock
-- owns_state: `_lock`, `_root_module_kind`, `_module_targets`, `_path_targets`, `_synthetic_module_targets`, `_synthetic_module_sources`, `_user_module_sources`
+- owns_state: `_lock`, `_root_module_kind`, `_module_targets`, `_path_targets`, `_synthetic_module_targets`, `_synthetic_module_sources`, `_user_module_sources`, `_module_target_set`, `_path_target_set`, `_kind_target_sets`
 - phases: `bind`, `runtime`, `cleanup`
-- public methods: `ast_from_import_targets_by_module`, `ast_import_targets_by_module`, `cleanup`, `describe`, `distribution_provenance`, `export_surfaces`, `module_load_order`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind`, `module_to_path` (+19 more)
+- public methods: `ast_from_import_targets_by_module`, `ast_import_targets_by_module`, `cleanup`, `describe`, `distribution_provenance`, `export_surfaces`, `load_described_payload`, `module_load_order`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind` (+20 more)
 
 ### Edges out
 
@@ -16661,11 +16663,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (1, unconfirmed)
+### Edge candidates (2, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult` creates `RLock`
+- `melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult` creates `RuntimeError`
 
 <!-- END FILE: src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py -->
 
@@ -16673,7 +16676,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/crystal_analyzer.py
 
-- source_sha256: `d2460e651a1da74421064c8cdee15ec832a31577d4ad6f90106e68cac0f69a0f`
+- source_sha256: `f2b035845d8eed92fa3bff8e0c08fff82d6e95e2be62758ac2b67a851a17054b`
 - nodes: 2
 
 ### Nodes
@@ -16685,27 +16688,29 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).
 - responsibilities:
   - walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves), resolving and classifying each distinct module once per pass (0.2.8302)
-  - reuses each module's path, custody kind and physical facts across analyses through ModuleAnswerCache while the module object and its file (mtime_ns, size) are unchanged; synthetic modules always derive (0.2.8304)
+  - reuses each module's path, custody kind and physical facts across analyses through ModuleAnswerCache - a loaded module checked by object and import spec, a module not imported by file stat - and whole analysed worlds per root module; synthetic modules always derive (0.2.8304-0.2.8305)
   - classifies via the first-match custody chain (synthetic/user_source/site_package/fallback); user_source never claims a module inside a Python environment (0.2.8302)
   - runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)
   - analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)
   - public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths/resolve_environment_root_paths, each answer kept in ModuleAnswerCache (0.2.8304)
-- owns_state: `custody strategy chain`, `fact strategy list`, `per-pass module paths and custody matches`, `answer policy key and kind-to-strategy map`
+- owns_state: `custody strategy chain`, `fact strategy list`, `per-pass module paths, custody matches and import-edge answers`, `per-pass file guards and world keepability`, `answer policy key and kind-to-strategy map`
 - phases: `runtime`
 
 #### `CrystalAnalyzer` (class)
 
 - id: `melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer`
-- defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:96`
+- defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:109`
 - extends: `Cleanable`
 - role: Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.
 - responsibilities:
   - consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies, and the default user_source strategy is given the environment roots (resolve_environment_root_paths: site roots plus the interpreter prefixes) so it never claims a module inside a Python environment (0.2.8302)
   - resolve each distinct module's path and run the custody chain once per analyze_spell_root pass, keyed by module name and module object, emptying those per-pass answers when the pass ends (0.2.8302)
-  - with the default custody chain and fact strategies, take a non-synthetic module's custody kind (by resolved path and roots) and a physical module's facts (dependency candidates after the member probes, fingerprint, export surface) from ModuleAnswerCache while its module object and file (mtime_ns, size) are unchanged, and keep what a miss derives unless it recorded a walk error (0.2.8304)
+  - with the default custody chain and fact strategies, take a non-synthetic module's custody kind (by resolved path and roots) and a physical module's facts (dependency candidates after the member probes, fingerprint, export surface) from ModuleAnswerCache - a loaded module while its object and import spec are unchanged, with no stat; a module not imported while its file (mtime_ns, size) is - and keep what a miss derives unless it recorded a walk error (0.2.8304-0.2.8305)
+  - before walking, copy the world kept for the root when every module it touched is unchanged in memory; after a walk with no read or parse error that touched no synthetic module and saw no object change, keep the finished result as the root's world (0.2.8305)
+  - answer each import target once per pass (_resolve_pass_edge) and record each shared leaf once (0.2.8305)
   - drive ONE ast.walk per module and dispatch every node to the fact strategies
   - own its strategy instances and clean them children-first; the shared syntax memo and ModuleAnswerCache survive instance cleanup
-- owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`, `_pass_module_paths`, `_pass_custody`, `_answer_policy_key`, `_custody_by_kind`
+- owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`, `_pass_module_paths`, `_pass_custody`, `_answer_policy_key`, `_custody_by_kind`, `_pass_edges`, `_pass_file_guards`, `_pass_world_keepable`
 - phases: `bind`, `runtime`, `cleanup`
 - public methods: `analyze_payload`, `analyze_spell_root`, `cleanup`, `resolve_environment_root_paths`, `resolve_file_extension`, `resolve_module_path`, `resolve_site_package_root_paths`, `resolve_user_root_paths`
 
@@ -16787,7 +16792,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py
 
-- source_sha256: `436fc0b11133b9177af512e3d436356de4ee01bdbc3da46b95d8ca0aa1cacf8b`
+- source_sha256: `23a7621da6f73b5a169b50e0afa5ee9435be1d20e62e76389aa1e8e93f9d1293`
 - nodes: 2
 
 ### Nodes
@@ -16807,11 +16812,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - claim modules under interpreter site roots or the historical path-text fallback
   - expose source for fact analysis while returning None from fingerprint (no custody claim)
-  - harvest distribution provenance through ModuleAnswerCache: installed metadata is read once per site-root state (each root's directory mtime_ns) and every call returns a fresh payload (0.2.8304)
+  - harvest distribution provenance through ModuleAnswerCache: installed metadata is read once per site-root state (each root's directory mtime_ns, from site_root_signature, which a reused world carrying provenance also re-checks) and every call returns a fresh payload (0.2.8304-0.2.8305)
   - hold the site-root tuple fixed at construction and delete it on cleanup
 - owns_state: `_site_package_root_paths`
 - phases: `bind`, `cleanup`
-- public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_provenance`, `kind`, `matches`, `resolve_source`
+- public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_provenance`, `kind`, `matches`, `resolve_source`, `site_root_signature`
 
 ### Edges out
 
@@ -16982,7 +16987,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/module_answer_cache.py
 
-- source_sha256: `9f21081bbf9dab2646bb52ddb9b65c6a8ea72da97a70e3e2bb849ec4d0a892c6`
+- source_sha256: `6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7`
 - nodes: 2
 
 ### Nodes
@@ -16993,24 +16998,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:1`
 - role: Process-wide, guarded, value-only answers about modules that crystal analyses reuse across binds (#331).
 - responsibilities:
-  - declare the value shapes kept per module: path, custody kind, walk facts, resolved roots, provenance
-  - keep answers reusable only while their inputs are unchanged, so a warm analysis is lookups plus one stat per physical module
+  - declare the value shapes kept per module and per world: path, custody kind, walk facts, resolved roots, provenance, world entries
+  - keep answers reusable only while their inputs are unchanged, so a repeat bind copies a kept world after in-memory checks and a new world's walk does lookups
 - phases: `bind`, `runtime`
 
 #### `ModuleAnswerCache` (class)
 
 - id: `melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache`
-- defined at: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:81`
+- defined at: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:101`
 - role: Class-hosted cache of the answers a CrystalAnalyzer would otherwise recompute for every bind: module paths, custody kinds, physical facts, policy roots and distribution provenance.
 - responsibilities:
   - serve a module's resolved path only for the same module object (weak reference) and __file__, or, with no module object, the same sys.path
   - serve a path's custody kind under the same user, environment and site roots
-  - serve a physical module's facts only for the same module object, resolved path and file (mtime_ns, size)
+  - serve a loaded module's facts only for the same object, import spec (reload replaces it) and path, with no stat; a module not imported's facts only for the same path and file (mtime_ns, size)
+  - keep whole analysed worlds per root (policy, descent, root name and path) and serve one only when its root and every touched module pass those checks and recorded provenance's site roots are unchanged (0.2.8305)
   - serve resolved policy roots per raw input and interpreter state, and distribution maps and provenance per site-root signature
-  - bound each map LRU at _MAX_ENTRIES under one class RLock; never hold a module, source text, AST or result
-- owns_state: `_module_paths`, `_custody_kinds`, `_module_facts`, `_resolved_roots`, `_distribution_maps`, `_provenance`, `_hits`, `_misses`
+  - bound each map LRU (_MAX_ENTRIES; worlds _MAX_WORLDS) under one class RLock; never hold a module, source text, AST or result
+- owns_state: `_module_paths`, `_custody_kinds`, `_module_facts`, `_resolved_roots`, `_distribution_maps`, `_provenance`, `_hits`, `_misses`, `_worlds`
 - phases: `bind`, `runtime`
-- public methods: `lookup_custody_kind`, `lookup_distribution_map`, `lookup_module_facts`, `lookup_module_path`, `lookup_provenance`, `lookup_resolved_roots`, `store_custody_kind`, `store_distribution_map`, `store_module_facts`, `store_module_path`, `store_provenance`, `store_resolved_roots`
+- public methods: `lookup_custody_kind`, `lookup_distribution_map`, `lookup_module_facts`, `lookup_module_path`, `lookup_provenance`, `lookup_resolved_roots`, `lookup_world`, `make_world_entry`, `store_custody_kind`, `store_distribution_map`, `store_module_facts`, `store_module_path` (+3 more)
 
 ### Edge candidates (3, unconfirmed)
 

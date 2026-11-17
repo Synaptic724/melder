@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
- "source_sha256": "d2460e651a1da74421064c8cdee15ec832a31577d4ad6f90106e68cac0f69a0f",
+ "source_sha256": "f2b035845d8eed92fa3bff8e0c08fff82d6e95e2be62758ac2b67a851a17054b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.crystal_analyzer": {
@@ -13,7 +13,7 @@
    "role": "Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).",
    "responsibilities": [
     "walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves), resolving and classifying each distinct module once per pass (0.2.8302)",
-    "reuses each module's path, custody kind and physical facts across analyses through ModuleAnswerCache while the module object and its file (mtime_ns, size) are unchanged; synthetic modules always derive (0.2.8304)",
+    "reuses each module's path, custody kind and physical facts across analyses through ModuleAnswerCache - a loaded module checked by object and import spec, a module not imported by file stat - and whole analysed worlds per root module; synthetic modules always derive (0.2.8304-0.2.8305)",
     "classifies via the first-match custody chain (synthetic/user_source/site_package/fallback); user_source never claims a module inside a Python environment (0.2.8302)",
     "runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)",
     "analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)",
@@ -22,7 +22,8 @@
    "owns_state": [
     "custody strategy chain",
     "fact strategy list",
-    "per-pass module paths and custody matches",
+    "per-pass module paths, custody matches and import-edge answers",
+    "per-pass file guards and world keepability",
     "answer policy key and kind-to-strategy map"
    ],
    "phases": [
@@ -35,7 +36,7 @@
    "label": "CrystalAnalyzer",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
-   "lineno": 96,
+   "lineno": 109,
    "bases": [
     "Cleanable"
    ],
@@ -51,17 +52,19 @@
     "resolve_user_root_paths"
    ],
    "shape": {
-    "method_count": 26,
+    "method_count": 32,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ada7275b5c777095da077a4123580dc13717bd6bb60294a8df0703780a81d08d",
+   "span_sha256": "0aaa622f9b96952d70de2ba9eebfaa65bdaca8e2eaa49f3aa6341529bd4b26a6",
    "include": true,
    "role": "Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.",
    "responsibilities": [
     "consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies, and the default user_source strategy is given the environment roots (resolve_environment_root_paths: site roots plus the interpreter prefixes) so it never claims a module inside a Python environment (0.2.8302)",
     "resolve each distinct module's path and run the custody chain once per analyze_spell_root pass, keyed by module name and module object, emptying those per-pass answers when the pass ends (0.2.8302)",
-    "with the default custody chain and fact strategies, take a non-synthetic module's custody kind (by resolved path and roots) and a physical module's facts (dependency candidates after the member probes, fingerprint, export surface) from ModuleAnswerCache while its module object and file (mtime_ns, size) are unchanged, and keep what a miss derives unless it recorded a walk error (0.2.8304)",
+    "with the default custody chain and fact strategies, take a non-synthetic module's custody kind (by resolved path and roots) and a physical module's facts (dependency candidates after the member probes, fingerprint, export surface) from ModuleAnswerCache - a loaded module while its object and import spec are unchanged, with no stat; a module not imported while its file (mtime_ns, size) is - and keep what a miss derives unless it recorded a walk error (0.2.8304-0.2.8305)",
+    "before walking, copy the world kept for the root when every module it touched is unchanged in memory; after a walk with no read or parse error that touched no synthetic module and saw no object change, keep the finished result as the root's world (0.2.8305)",
+    "answer each import target once per pass (_resolve_pass_edge) and record each shared leaf once (0.2.8305)",
     "drive ONE ast.walk per module and dispatch every node to the fact strategies",
     "own its strategy instances and clean them children-first; the shared syntax memo and ModuleAnswerCache survive instance cleanup"
    ],
@@ -74,14 +77,17 @@
     "_pass_module_paths",
     "_pass_custody",
     "_answer_policy_key",
-    "_custody_by_kind"
+    "_custody_by_kind",
+    "_pass_edges",
+    "_pass_file_guards",
+    "_pass_world_keepable"
    ],
    "phases": [
     "bind",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "ada7275b5c777095da077a4123580dc13717bd6bb60294a8df0703780a81d08d"
+   "semantics_authored_against": "0aaa622f9b96952d70de2ba9eebfaa65bdaca8e2eaa49f3aa6341529bd4b26a6"
   }
  },
  "edges_out": [
@@ -216,6 +222,9 @@
   "ModuleAnswerCache": "melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache",
   "ModuleWalkFacts": "melder.crystallizer.crystal_analysis.module_answer_cache.ModuleWalkFacts",
   "ResolvedRootsKey": "melder.crystallizer.crystal_analysis.module_answer_cache.ResolvedRootsKey",
+  "SiteRootSignature": "melder.crystallizer.crystal_analysis.module_answer_cache.SiteRootSignature",
+  "WorldEntry": "melder.crystallizer.crystal_analysis.module_answer_cache.WorldEntry",
+  "WorldKey": "melder.crystallizer.crystal_analysis.module_answer_cache.WorldKey",
   "PhysicalSourceCache": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
   "CrystalAnalysisResult": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",
   "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy",

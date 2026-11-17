@@ -261,7 +261,7 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
         """
         self.check_cleaned()
         top_level = module_name.split(".", 1)[0]
-        signature = self._site_root_signature()
+        signature = self.site_root_signature()
         found, kept_values = ModuleAnswerCache.lookup_provenance(signature, top_level)
         if found:
             return self._provenance_payload(kept_values)
@@ -297,7 +297,7 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
         ModuleAnswerCache.store_provenance(signature, top_level, values)
         return self._provenance_payload(values)
 
-    def _site_root_signature(self) -> SiteRootSignature:
+    def site_root_signature(self) -> SiteRootSignature:
         """
         Return the state of this strategy's site roots that installed metadata depends on.
 
@@ -306,12 +306,18 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
             a root that cannot be stat'ed records -1. Adding, replacing or
             removing a distribution in a site root changes its directory's
             modification time, so the signature names one state of what is
-            installed there.
+            installed there. `CrystalAnalyzer` keeps it with a reused world that
+            carries provenance, so that world is walked again when a site root
+            changes (#331).
+
+        Raises:
+            RuntimeError: If the strategy has been cleaned.
 
         Returns:
             SiteRootSignature: The signature `ModuleAnswerCache` keys
             provenance by.
         """
+        self.check_cleaned()
         signature: List[Tuple[str, int]] = []
         for root_path in self._site_package_root_paths:
             try:

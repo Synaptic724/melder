@@ -3954,9 +3954,10 @@ re-runnable over RETAINED payloads (the MutationResearch seam). Since
 environment (an interpreter site root or prefix, or a site-packages or
 dist-packages directory), whatever the user roots say, and one analysis
 pass asks each module question once. Since 0.2.8304 (#331) those answers
-are kept between passes in a process-wide cache guarded by each module
-object and its file's stat, so a bind re-checks an unchanged module world
-instead of re-deriving it; synthetic modules are never kept.
+are kept between passes in a process-wide cache; since 0.2.8305 a loaded
+module is checked by its module object and import spec, never its file,
+and a spell whose root module's world is unchanged receives a copy of the
+kept result instead of a walk; synthetic modules are never kept.
 
 Laws: EDGE (acyclic - the record calls nobody; borrowers clean before
 the record), LOCK (one-way facade -> subsystem -> record -> profile),

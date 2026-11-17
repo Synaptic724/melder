@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
- "source_sha256": "436fc0b11133b9177af512e3d436356de4ee01bdbc3da46b95d8ca0aa1cacf8b",
+ "source_sha256": "23a7621da6f73b5a169b50e0afa5ee9435be1d20e62e76389aa1e8e93f9d1293",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy": {
@@ -32,20 +32,21 @@
     "harvest_provenance",
     "kind",
     "matches",
-    "resolve_source"
+    "resolve_source",
+    "site_root_signature"
    ],
    "shape": {
     "method_count": 10,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "52a0383b4f49e92f5bb52c4029c8a7fb02c4e62fb5d22581d9559fbde9dd0b3a",
+   "span_sha256": "afc868d3936dab61b05212907d42fcc0a24184b80c8823c27e59f1beedca7dcd",
    "include": true,
    "role": "Custody for installed site-package modules; reads their source but asserts no fingerprint over third-party code.",
    "responsibilities": [
     "claim modules under interpreter site roots or the historical path-text fallback",
     "expose source for fact analysis while returning None from fingerprint (no custody claim)",
-    "harvest distribution provenance through ModuleAnswerCache: installed metadata is read once per site-root state (each root's directory mtime_ns) and every call returns a fresh payload (0.2.8304)",
+    "harvest distribution provenance through ModuleAnswerCache: installed metadata is read once per site-root state (each root's directory mtime_ns, from site_root_signature, which a reused world carrying provenance also re-checks) and every call returns a fresh payload (0.2.8304-0.2.8305)",
     "hold the site-root tuple fixed at construction and delete it on cleanup"
    ],
    "owns_state": [
@@ -55,7 +56,7 @@
     "bind",
     "cleanup"
    ],
-   "semantics_authored_against": "52a0383b4f49e92f5bb52c4029c8a7fb02c4e62fb5d22581d9559fbde9dd0b3a"
+   "semantics_authored_against": "afc868d3936dab61b05212907d42fcc0a24184b80c8823c27e59f1beedca7dcd"
   }
  },
  "edges_out": [

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 13985
-CONTENT_SHA256 = 'dddc47a9a096be5d17b6898bd77cb2e691dc3ebeca6014871a834214d2aa144b'
+LINE_COUNT = 13993
+CONTENT_SHA256 = '9698c996342943f114d03b749252cd4ac0242f0ff28318ae34bd91273eb99ab9'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -11070,8 +11070,8 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
-  end_line: 2018
-  loc: 2018
+  end_line: 2337
+  loc: 2337
   verified_at: 2026-11-17T10:34:56Z
 - path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
   start_line: 1
@@ -11266,8 +11266,8 @@ Modules of `src/melder/nexus/acl/`:
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
   start_line: 1
-  end_line: 867
-  loc: 867
+  end_line: 995
+  loc: 995
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/impact_engine.py`
   start_line: 1
@@ -11276,8 +11276,8 @@ Modules of `src/melder/nexus/acl/`:
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
   start_line: 1
-  end_line: 669
-  loc: 669
+  end_line: 973
+  loc: 973
   verified_at: 2026-11-17T10:34:56Z
 - path: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   start_line: 1
@@ -12651,20 +12651,28 @@ facades only.
   (`CrystalAnalyzer.resolve_environment_root_paths`) or in a `site-packages`/`dist-packages` directory, even under
   a user root, so such a module falls to site_package or unknown. One `analyze_spell_root` pass resolves each
   distinct module's path and runs the custody chain once (keyed by name and module object). Since 0.2.8304
-  (#331, the owner's decision of 2026-11-17) what a pass derives is kept between analyses in the process-wide
-  `ModuleAnswerCache`, guarded like `PhysicalSourceCache`: each module's resolved path (same module object
-  and `__file__`; for a module not imported, the same `sys.path`), each path's custody kind under the same
-  user, environment and site roots, each physical module's facts - dependency candidates after the member
-  probes, fingerprint, export surface - while its module object and file (mtime_ns, size) are unchanged, the
-  resolved policy roots, and site-package provenance while the site roots' directories keep their
-  modification times. Synthetic modules, many with no physical copy, are never kept. A later analysis of an
-  unchanged world resolves, classifies and probes nothing (600 binds over 150 modules: 14.2 s to about 2 s); a
-  member submodule created later is seen once its importer's file changes.
+  (#331, the owner's decisions of 2026-11-17) what a pass derives is kept between analyses in the
+  process-wide `ModuleAnswerCache`: each module's resolved path (same module object and `__file__`; for a
+  module not imported, the same `sys.path`), each path's custody kind under the same user, environment and
+  site roots, each physical module's facts - dependency candidates after the member probes, fingerprint,
+  export surface - the resolved policy roots, and site-package provenance while the site roots' directories
+  keep their modification times. Since 0.2.8305 a loaded module's answers are checked in memory - the same
+  module object and import spec, which `importlib.reload` replaces - and its file is not stat'ed again; a
+  module not imported keeps the file (mtime_ns, size) check. A whole analysed world is kept per root module
+  after a walk with no read or parse error, and a later spell from that module, every touched module
+  unchanged, receives a copy (`CrystalAnalysisResult.load_described_payload`) instead of a walk. A walk that
+  still runs answers each import target once per pass and records each shared leaf once. Synthetic modules,
+  many with no physical copy, are never kept. Measured, 600 binds over 150 modules (Windows, GIL off): 14.2 s
+  at 0.2.8303, about 2 s at 0.2.8304, 1.15 s at 0.2.8305. Accepted residuals: a loaded module's file edited
+  without a reload keeps its earlier analysis until a reload or re-import; a member submodule created later
+  is seen once its importer is reloaded.
   EVIDENCE:
   `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:UserSourceCustodyStrategy.matches`,
   `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._match_custody`,
   `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._extract_remembered_module_facts`,
-  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache`.
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer.analyze_spell_root`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py:CrystalAnalysisResult.load_described_payload`,
+  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache.lookup_world`.
 - `crystallizer/persistence/` - the RECORD, ledger only:
   persistence_system.py + persistence_profile.py + persistence_crystal.py.
   Verbs: profiles, twins/journal, checkpoint minting, retention, chain

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 8bd6b9048d59f5dd7ef8cd3c4d0b9950983e042f1e70af128ab4a3b3dc50f3a3
+SOURCE FINGERPRINT: e488112a124d37abc4668b2fb4cd0b78435b2596a09435567628d5eb2c508865
 FILE COUNT: 1211
 
 ================================================================================
@@ -295248,7 +295248,7 @@ END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer.
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py
-CONTENT SHA256: 3327bb18ff54b57758bce91084c76be44acdc4295d7488b9b23584c8116784f7
+CONTENT SHA256: 217482e5cdf7899f21431f69fe6edaed8956b3d10c76a6a191174a921226be9c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -295475,15 +295475,15 @@ def test_one_pass_still_records_every_import_edge_and_fingerprint(fan_in_world: 
         result.cleanup()
 
 
-def test_a_new_analysis_of_an_unchanged_world_reuses_each_custody_answer(
+def test_a_new_analysis_of_an_unchanged_world_reuses_the_whole_world(
         fan_in_world: Path,
         resolve_counts: Counter,
         custody_counts: Counter,
 ) -> None:
     """
-    Contract (owner decision 2026-11-17, #331; it replaces "nothing is kept between analyses"): a second analyzer
-    over the unchanged world still asks for each module's path once in its pass, but the answer is reused, and it
-    runs no custody chain - every module's kind comes from the first analysis.
+    Contract (owner decisions 2026-11-17, #331; they replace "nothing is kept between analyses"): a second analyzer
+    over the unchanged world copies the first analysis's result - its modules are not imported, so their files'
+    stats and `sys.path` are re-checked - and asks no module question at all: no path and no custody chain.
     """
     payloads = []
     for _ in range(2):
@@ -295494,7 +295494,7 @@ def test_a_new_analysis_of_an_unchanged_world_reuses_each_custody_answer(
             analyzer.cleanup()
         payloads.append(result.describe())
         result.cleanup()
-    assert resolve_counts[FanInNames.SHARED] == 2
+    assert resolve_counts[FanInNames.SHARED] == 1
     assert dict(custody_counts) == {name: 1 for name in FanInNames.all_names()}
     assert payloads[1] == payloads[0]
 
@@ -297003,7 +297003,7 @@ END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_impact_engine.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py
-CONTENT SHA256: 58e2e6d3a1b1325025a7847b36bf50a2f6ee462e639913e5fd8299012baeb5ae
+CONTENT SHA256: 5a478777d8cf620b04e377c24bb073b096931fa9f3cf982c38dca10c6e823b53
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -297071,8 +297071,9 @@ class AnswerWorld:
 
     Contract:
         - `ROOT` imports the package's `core` member and `json`; `core` imports a function from `helpers`, the
-          `helpers` module relatively and `os`; `helpers` imports nothing. So the world has plain imports, a member
-          that is a submodule, a member that is not, a relative import and two standard-library leaves.
+          `helpers` module relatively, `os` and `json`; `helpers` imports nothing. So the world has plain
+          imports, a member that is a submodule, a member that is not, a relative import and two
+          standard-library leaves, one of them (`json`) imported from two places.
         - `EXTRA` is written but imported only after an edit of `helpers`.
     """
 
@@ -297084,7 +297085,9 @@ class AnswerWorld:
     SOURCES: Dict[str, str] = {
         "p331_root.py": "from p331pkg import core\nimport json\n\n\nclass RootSpell:\n    pass\n",
         "p331pkg/__init__.py": "",
-        "p331pkg/core.py": "from p331pkg.helpers import tool\nfrom . import helpers\nimport os\nVALUE = 1\n",
+        "p331pkg/core.py": (
+            "from p331pkg.helpers import tool\nfrom . import helpers\nimport os\nimport json\nVALUE = 1\n"
+        ),
         "p331pkg/helpers.py": "def tool() -> int:\n    return 1\n",
         "p331_extra.py": "EXTRA = 1\n",
     }
@@ -297141,41 +297144,51 @@ def answer_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Pa
     _reset_analysis_caches()
 
 
-def _analyze(world: Path, analyzer: Optional[CrystalAnalyzer] = None) -> CrystalAnalysisResult:
+def _analyze(
+        world: Path,
+        analyzer: Optional[CrystalAnalyzer] = None,
+        root_name: str = AnswerWorld.ROOT,
+) -> CrystalAnalysisResult:
     """
-    Run one analysis of the world from its live root module, as a spell crystal does.
+    Run one analysis of the world from a live root module, as a spell crystal does.
 
     Args:
         world: The resolved world directory, the only user root.
         analyzer: An analyzer to use instead of a default one; it is cleaned here either way.
+        root_name: The imported module the analysis is rooted at; the world's root by default.
 
     Returns:
         CrystalAnalysisResult: The analysis result; the caller cleans it.
     """
     worker = analyzer or CrystalAnalyzer(user_source_root_paths=(world,), site_package_root_paths=())
-    root_module = sys.modules[AnswerWorld.ROOT]
+    root_module = sys.modules[root_name]
     try:
         return worker.analyze_spell_root(
-            root_module_name=AnswerWorld.ROOT,
+            root_module_name=root_name,
             root_module_obj=root_module,
-            root_module_path=CrystalAnalyzer.resolve_module_path(AnswerWorld.ROOT, root_module),
+            root_module_path=CrystalAnalyzer.resolve_module_path(root_name, root_module),
         )
     finally:
         worker.cleanup()
 
 
-def _described(world: Path, analyzer: Optional[CrystalAnalyzer] = None) -> Dict[str, Any]:
+def _described(
+        world: Path,
+        analyzer: Optional[CrystalAnalyzer] = None,
+        root_name: str = AnswerWorld.ROOT,
+) -> Dict[str, Any]:
     """
     Run one analysis and return its describe() payload, cleaning the result.
 
     Args:
         world: The resolved world directory.
         analyzer: Optional analyzer, as in `_analyze`.
+        root_name: The root module, as in `_analyze`.
 
     Returns:
         Dict[str, Any]: The detached payload.
     """
-    result = _analyze(world, analyzer)
+    result = _analyze(world, analyzer, root_name)
     try:
         return result.describe()
     finally:
@@ -297282,22 +297295,39 @@ def test_a_reused_analysis_records_what_a_fresh_analysis_records(answer_world: P
 
     assert reused == fresh
     assert fresh_again == fresh
-    assert fresh["module_to_direct_dependencies"][AnswerWorld.CORE] == [AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os"]
+    assert fresh["module_to_direct_dependencies"][AnswerWorld.CORE] == [
+        AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os", "json",
+    ]
     assert set(fresh["physical_module_fingerprints"]) == {
         AnswerWorld.ROOT, AnswerWorld.CORE, AnswerWorld.HELPERS,
     }
 
 
-def test_editing_a_module_file_derives_that_module_again(answer_world: Path) -> None:
+def _edit_helpers_to_import_extra(world: Path) -> None:
     """
-    Contract: a file whose size and modification time change is derived again on the next analysis - its new
-    import shows up - while the result still equals a fresh analysis of the edited world.
+    Rewrite the world's `helpers` module so it imports `EXTRA`, moving its modification time a second forward.
+
+    Args:
+        world: The resolved world directory.
+
+    Returns:
+        None.
     """
-    _described(answer_world)
-    helpers_file = answer_world / "p331pkg" / "helpers.py"
+    helpers_file = world / "p331pkg" / "helpers.py"
     previous = helpers_file.stat()
     helpers_file.write_text("import p331_extra\n\n\ndef tool() -> int:\n    return 2\n", encoding="utf-8")
     os.utime(helpers_file, ns=(previous.st_atime_ns, previous.st_mtime_ns + 1_000_000_000))
+
+
+def test_reloading_an_edited_module_derives_it_again(answer_world: Path) -> None:
+    """
+    Contract (owner direction 2026-11-17): a loaded module's answers belong to its module object and import spec;
+    `importlib.reload` installs a new spec, so the next analysis derives the edited module again - its new import
+    shows up - and the result equals a fresh analysis of the edited world.
+    """
+    _described(answer_world)
+    _edit_helpers_to_import_extra(answer_world)
+    importlib.reload(sys.modules[AnswerWorld.HELPERS])
 
     edited = _described(answer_world)
     _reset_analysis_caches()
@@ -297307,14 +297337,198 @@ def test_editing_a_module_file_derives_that_module_again(answer_world: Path) -> 
     assert edited == fresh
 
 
-def test_a_member_submodule_created_later_is_seen_once_its_importer_changes(
+def test_an_edit_without_a_reload_keeps_the_loaded_modules_analysis(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract (the accepted residual, owner direction 2026-11-17): repeat binds work from memory, so editing a loaded
+    module's file without reloading it changes nothing for later analyses - no file is read or stat'ed - until the
+    module is reloaded; the running module is still the code the earlier analysis described.
+    """
+    before = _described(answer_world)
+    _edit_helpers_to_import_extra(answer_world)
+    calls = CallCounts(monkeypatch)
+    calls.watch(pathlib.Path, "stat")
+
+    kept = _described(answer_world)
+    stats_while_kept = calls.counts["stat"]
+    importlib.reload(sys.modules[AnswerWorld.HELPERS])
+    reloaded = _described(answer_world)
+
+    assert kept == before
+    assert stats_while_kept == 0
+    assert reloaded["module_to_direct_dependencies"][AnswerWorld.HELPERS] == [AnswerWorld.EXTRA]
+
+
+def test_a_second_spell_from_the_same_module_reuses_its_whole_world(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: once a root module's world has been walked, a later analysis rooted at the same unchanged module
+    copies that result instead of walking - the payload is identical - while a different root walks its own world.
+    """
+    calls = CallCounts(monkeypatch)
+    calls.watch(CrystalAnalyzer, "_walk_module_dependencies")
+
+    first = _described(answer_world)
+    second = _described(answer_world)
+    walks_for_one_root = calls.counts["_walk_module_dependencies"]
+    _described(answer_world, root_name=AnswerWorld.CORE)
+
+    assert second == first
+    assert walks_for_one_root == 1
+    assert calls.counts["_walk_module_dependencies"] == 2
+
+
+def test_each_shared_leaf_is_recorded_once_per_analysis(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: a leaf imported from several modules (`json`, imported by the root and by `core`) is recorded once in
+    a walk, not once per import edge; skipping the identical repeat leaves the result exactly as before.
+    """
+    recorded: List[str] = []
+    original = CrystalAnalysisResult.record_module_target
+
+    def recording(self: CrystalAnalysisResult, **kwargs: Any) -> None:
+        """Note which module is recorded, then record it."""
+        recorded.append(kwargs["module_name"])
+        original(self, **kwargs)
+
+    monkeypatch.setattr(CrystalAnalysisResult, "record_module_target", recording)
+
+    described = _described(answer_world)
+
+    assert recorded.count("json") == 1
+    assert described["module_to_kind"]["json"] == "unknown"
+    assert described["module_to_direct_dependencies"]["json"] == []
+
+
+def test_loading_a_described_payload_reproduces_the_result_once(answer_world: Path) -> None:
+    """
+    Contract: `load_described_payload` installs an exact, independent copy of a `describe()` payload into a fresh
+    result - mutating the payload afterwards changes nothing - and refuses a result that already holds records.
+    """
+    payload = _described(answer_world)
+    loaded = CrystalAnalysisResult()
+    try:
+        loaded.load_described_payload(payload)
+        payload["module_targets"].append("p331_not_walked")
+        payload["module_to_direct_dependencies"][AnswerWorld.CORE].append("p331_not_walked")
+        described = loaded.describe()
+        with pytest.raises(RuntimeError):
+            loaded.load_described_payload(described)
+    finally:
+        loaded.cleanup()
+
+    assert "p331_not_walked" not in described["module_targets"]
+    assert described["module_to_direct_dependencies"][AnswerWorld.CORE] == [
+        AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os", "json",
+    ]
+    assert described["module_load_order"] and described["physical_module_fingerprints"]
+
+
+def test_a_world_is_walked_again_when_a_module_not_imported_changes_or_sys_path_moves(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: a module reached only by its file (here one imported under TYPE_CHECKING, never loaded) has no module
+    object to answer for it, so a reused world re-checks that file's stat and `sys.path`; an edit of it, or a new
+    `sys.path` entry, makes the next analysis walk again and record what the file says now.
+    """
+    _reset_analysis_caches()
+    (tmp_path / "p331_lazyroot.py").write_text(
+        "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    import p331_lazy\n\n\nclass LazySpell:\n    pass\n",
+        encoding="utf-8",
+    )
+    lazy_file = tmp_path / "p331_lazy.py"
+    lazy_file.write_text("VALUE = 1\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for module_name in ("p331_lazyroot", "p331_lazy"):
+        sys.modules.pop(module_name, None)
+    importlib.invalidate_caches()
+    importlib.import_module("p331_lazyroot")
+    calls = CallCounts(monkeypatch)
+    calls.watch(CrystalAnalyzer, "_walk_module_dependencies")
+    try:
+        first = _described(tmp_path.resolve(), root_name="p331_lazyroot")
+        _described(tmp_path.resolve(), root_name="p331_lazyroot")
+        walks_unchanged = calls.counts["_walk_module_dependencies"]
+        previous = lazy_file.stat()
+        lazy_file.write_text("import json\nVALUE = 2\n", encoding="utf-8")
+        os.utime(lazy_file, ns=(previous.st_atime_ns, previous.st_mtime_ns + 1_000_000_000))
+        edited = _described(tmp_path.resolve(), root_name="p331_lazyroot")
+        walks_after_edit = calls.counts["_walk_module_dependencies"]
+        elsewhere = tmp_path / "elsewhere"
+        elsewhere.mkdir()
+        monkeypatch.syspath_prepend(str(elsewhere))
+        _described(tmp_path.resolve(), root_name="p331_lazyroot")
+        walks_after_path_move = calls.counts["_walk_module_dependencies"]
+    finally:
+        for module_name in ("p331_lazyroot", "p331_lazy"):
+            sys.modules.pop(module_name, None)
+        _reset_analysis_caches()
+
+    assert first["module_to_direct_dependencies"]["p331_lazy"] == []
+    assert walks_unchanged == 1
+    assert edited["module_to_direct_dependencies"]["p331_lazy"] == ["json"]
+    assert walks_after_edit == 2
+    assert walks_after_path_move == 3
+
+
+def test_an_analyzer_retaining_sources_walks_every_analysis(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: retained user-source text is read on every analysis and never cached, so an analyzer retaining
+    sources never reuses a world - each analysis walks and harvests the text again.
+    """
+    calls = CallCounts(monkeypatch)
+    calls.watch(CrystalAnalyzer, "_walk_module_dependencies")
+    payloads = []
+    for _ in range(2):
+        retaining = CrystalAnalyzer(
+            user_source_root_paths=(answer_world,),
+            site_package_root_paths=(),
+            retain_user_sources=True,
+        )
+        payloads.append(_described(answer_world, retaining))
+
+    assert calls.counts["_walk_module_dependencies"] == 2
+    assert set(payloads[1]["user_module_sources"]) == {
+        AnswerWorld.ROOT, AnswerWorld.PACKAGE, AnswerWorld.CORE, AnswerWorld.HELPERS,
+    }
+    assert payloads[1] == payloads[0]
+
+
+def test_the_world_map_keeps_at_most_its_bound(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: kept worlds are LRU-bounded by `_MAX_WORLDS`; a world past the bound evicts the oldest.
+    """
+    monkeypatch.setattr(ModuleAnswerCache, "_MAX_WORLDS", 1)
+
+    _described(answer_world)
+    _described(answer_world, root_name=AnswerWorld.CORE)
+
+    assert ModuleAnswerCache._stats_for_tests()["worlds"] == 1
+
+
+def test_a_member_submodule_created_later_is_seen_once_its_importer_is_reloaded(
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Contract (the accepted residual of #331): a `from pkg import name` probe is kept with the importing module's
-    facts, so a submodule file created later under that name is not seen while the importer and its file are
-    unchanged; once the importer's file changes, the next analysis probes again and records the new submodule.
+    facts, so a submodule file created later under that name is not seen while the importer is unchanged in
+    memory; once the importer is reloaded, the next analysis probes again and records the new submodule.
     """
     _reset_analysis_caches()
     package = tmp_path / "p331late"
@@ -297350,10 +297564,8 @@ def test_a_member_submodule_created_later_is_seen_once_its_importer_changes(
         (package / "member.py").write_text("VALUE = 1\n", encoding="utf-8")
         importlib.invalidate_caches()
         kept = importer_dependencies()
-        previous = importer.stat()
-        importer.write_text("from p331late import member  # touched\n", encoding="utf-8")
-        os.utime(importer, ns=(previous.st_atime_ns, previous.st_mtime_ns + 1_000_000_000))
-        after_edit = importer_dependencies()
+        importlib.reload(importer_module)
+        after_reload = importer_dependencies()
     finally:
         for module_name in module_names:
             sys.modules.pop(module_name, None)
@@ -297361,7 +297573,7 @@ def test_a_member_submodule_created_later_is_seen_once_its_importer_changes(
 
     assert before == ["p331late"]
     assert kept == ["p331late"]
-    assert after_edit == ["p331late.member", "p331late"]
+    assert after_reload == ["p331late.member", "p331late"]
 
 
 def test_a_reimported_module_object_has_its_path_and_facts_derived_again(
@@ -297457,7 +297669,7 @@ def test_an_analyzer_with_its_own_fact_strategies_derives_every_module_again(
 
     assert calls.counts["find_spec"] > 0
     assert described["module_to_direct_dependencies"][AnswerWorld.CORE] == [
-        AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os",
+        AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os", "json",
     ]
 
 

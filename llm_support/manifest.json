@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3638993,
-        "lines": 82629,
+        "bytes": 3639782,
+        "lines": 82637,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "f8c406c53385477a00267ea11c39e6bdec486d85f1dbc4db98e50e755d71f23e"
+        "sha256": "96bf9532e0dc0d02a475533194af8724b0d75c3164d9a0e3230fedc0df906026"
       },
-      "content_bytes": 3405798,
-      "content_lines": 79263,
+      "content_bytes": 3406587,
+      "content_lines": 79271,
       "file_count": 420,
       "files": {
         ".gitattributes": {
@@ -2502,9 +2502,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 12593,
-          "content_lines": 162,
-          "content_sha256": "42247f83e3ffa52da44edb24ecc4d2bf2ca568fb98530d01525e95de7c18d9f7",
+          "content_bytes": 13382,
+          "content_lines": 170,
+          "content_sha256": "c56e94cdda4baf167020a7cc3e8c73526b782083fa11347a3006ada899d6994e",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2536,19 +2536,19 @@
         "bytes": 70332,
         "lines": 442,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "9feb62f6979fcd5de93aa9ed67835b51e48a459f27af1732886aef06afec9019"
+        "sha256": "9ca5c27194013b45022e03b5b5255dbf0543d63a2b57a99a960da44ce6352432"
       },
-      "source_fingerprint": "d66760670d9241e5262c6dd6784233a854d806c2b5b24583f0bf0e972da498ed"
+      "source_fingerprint": "3fb0d6842a3ec67cf4f9b1424f2e46ba49134b4904ef35a0dea91c667733b13c"
     },
     "src": {
       "bundle": {
-        "bytes": 11820855,
-        "lines": 293550,
+        "bytes": 11854179,
+        "lines": 294307,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "55900bc57a0d069a871e7d4cc67cd3a9efe00faaa57b2fb13ae029f9c6d07df4"
+        "sha256": "aea2932e5d436f7e59b97d9c2f92eb106205400a8b536d672c603e0a0430b719"
       },
-      "content_bytes": 11465354,
-      "content_lines": 288848,
+      "content_bytes": 11498678,
+      "content_lines": 289605,
       "file_count": 587,
       "files": {
         "src/melder/__architecture__.py": {
@@ -2608,7 +2608,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "d5de5746377dbb4730296ddb41d61496fa40385125e9b58e931eaa7fcb203afc",
+          "content_sha256": "47ee471ddd0aa46084f606b583f091dcecefb17e561b402ea0174807075bca5b",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -4604,15 +4604,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py": {
-          "content_bytes": 32183,
-          "content_lines": 867,
-          "content_sha256": "0570f372ec1d2736c42a4a56eb4fef2d343d6992ac92a67d9610a6f89b3f82e4",
+          "content_bytes": 38308,
+          "content_lines": 995,
+          "content_sha256": "e59fc076e52b81acb37d4092a521a90d01f7a754270b321ef05b3ef96638fe4e",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py": {
-          "content_bytes": 84657,
-          "content_lines": 2018,
-          "content_sha256": "d2460e651a1da74421064c8cdee15ec832a31577d4ad6f90106e68cac0f69a0f",
+          "content_bytes": 98907,
+          "content_lines": 2337,
+          "content_sha256": "f2b035845d8eed92fa3bff8e0c08fff82d6e95e2be62758ac2b67a851a17054b",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py": {
@@ -4622,9 +4622,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py": {
-          "content_bytes": 13115,
-          "content_lines": 351,
-          "content_sha256": "436fc0b11133b9177af512e3d436356de4ee01bdbc3da46b95d8ca0aa1cacf8b",
+          "content_bytes": 13378,
+          "content_lines": 357,
+          "content_sha256": "23a7621da6f73b5a169b50e0afa5ee9435be1d20e62e76389aa1e8e93f9d1293",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/source_custody_strategy.py": {
@@ -4652,9 +4652,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/module_answer_cache.py": {
-          "content_bytes": 24908,
-          "content_lines": 669,
-          "content_sha256": "9f21081bbf9dab2646bb52ddb9b65c6a8ea72da97a70e3e2bb849ec4d0a892c6",
+          "content_bytes": 37594,
+          "content_lines": 973,
+          "content_sha256": "6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/physical_source_cache.py": {
@@ -6078,19 +6078,19 @@
         "bytes": 114883,
         "lines": 609,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "508ae10773c1cdd1588969f706917f108ebb91e3cc1387c89f2015551cad0aed"
+        "sha256": "41b80eea707f51f8a11fabd89fe24ed36c644e1ed9f4aba093122fbdf8d78f00"
       },
-      "source_fingerprint": "94718efa873ca372479d86da924b14b1833cf45d4e92bc3ff4823672ee2ae168"
+      "source_fingerprint": "21f1819021eaf70556bfc5fd0d2ba9ecd7ef1608c12d503bcddc74922aa41320"
     },
     "tests": {
       "bundle": {
-        "bytes": 14698418,
-        "lines": 394184,
+        "bytes": 14706801,
+        "lines": 394396,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "5b213d715b051d862d1f4d003adc28448cb39bc2aec1679b991e9ad48eca07d6"
+        "sha256": "34ed3896b790ac1d8fabcbbed0fb0c43cd36bcfe18fe8c82a8166366550b51e4"
       },
-      "content_bytes": 13959402,
-      "content_lines": 384490,
+      "content_bytes": 13967785,
+      "content_lines": 384702,
       "file_count": 1211,
       "files": {
         "tests/_annotation_audit_support.py": {
@@ -11440,9 +11440,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py": {
-          "content_bytes": 10637,
+          "content_bytes": 10662,
           "content_lines": 285,
-          "content_sha256": "3327bb18ff54b57758bce91084c76be44acdc4295d7488b9b23584c8116784f7",
+          "content_sha256": "217482e5cdf7899f21431f69fe6edaed8956b3d10c76a6a191174a921226be9c",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py": {
@@ -11476,9 +11476,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py": {
-          "content_bytes": 24059,
-          "content_lines": 618,
-          "content_sha256": "58e2e6d3a1b1325025a7847b36bf50a2f6ee462e639913e5fd8299012baeb5ae",
+          "content_bytes": 32417,
+          "content_lines": 830,
+          "content_sha256": "5a478777d8cf620b04e377c24bb073b096931fa9f3cf982c38dca10c6e823b53",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_mutation_research_composition_strategy.py": {
@@ -13364,9 +13364,9 @@
         "bytes": 238452,
         "lines": 1233,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "4e80decc10ff183b4c11cfd2d744dc59e1e4c559a44b45153fb1b769e1f403b0"
+        "sha256": "855e091993960922682ccc98d465d884454b43356aa011de287ea373ca3f8313"
       },
-      "source_fingerprint": "8bd6b9048d59f5dd7ef8cd3c4d0b9950983e042f1e70af128ab4a3b3dc50f3a3"
+      "source_fingerprint": "e488112a124d37abc4668b2fb4cd0b78435b2596a09435567628d5eb2c508865"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

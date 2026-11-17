@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8304"
+BUILT_FOR_VERSION = "0.2.8305"
 NODE_COUNT = 1237
 EDGE_COUNT = 1442
 WHY_COUNT = 980
@@ -752,7 +752,7 @@ NODES = {
     'melder.crystallizer.crystal_analysis.crystal_analysis_result': ('src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py', 'crystal_analysis_result', 'module', 1, False),
     'melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult': ('src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py', 'CrystalAnalysisResult', 'class', 21, False),
     'melder.crystallizer.crystal_analysis.crystal_analyzer': ('src/melder/crystallizer/crystal_analysis/crystal_analyzer.py', 'crystal_analyzer', 'module', 1, False),
-    'melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer': ('src/melder/crystallizer/crystal_analysis/crystal_analyzer.py', 'CrystalAnalyzer', 'class', 96, False),
+    'melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer': ('src/melder/crystallizer/crystal_analysis/crystal_analyzer.py', 'CrystalAnalyzer', 'class', 109, False),
     'melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy': ('src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py', 'binary_unknown_custody_strategy', 'module', 1, False),
     'melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy.BinaryUnknownCustodyStrategy': ('src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py', 'BinaryUnknownCustodyStrategy', 'class', 21, False),
     'melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy': ('src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py', 'site_package_custody_strategy', 'module', 1, False),
@@ -766,7 +766,7 @@ NODES = {
     'melder.crystallizer.crystal_analysis.impact_engine': ('src/melder/crystallizer/crystal_analysis/impact_engine.py', 'impact_engine', 'module', 1, False),
     'melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine': ('src/melder/crystallizer/crystal_analysis/impact_engine.py', 'ImpactEngine', 'class', 24, False),
     'melder.crystallizer.crystal_analysis.module_answer_cache': ('src/melder/crystallizer/crystal_analysis/module_answer_cache.py', 'module_answer_cache', 'module', 1, False),
-    'melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache': ('src/melder/crystallizer/crystal_analysis/module_answer_cache.py', 'ModuleAnswerCache', 'class', 81, False),
+    'melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache': ('src/melder/crystallizer/crystal_analysis/module_answer_cache.py', 'ModuleAnswerCache', 'class', 101, False),
     'melder.crystallizer.crystal_analysis.physical_source_cache': ('src/melder/crystallizer/crystal_analysis/physical_source_cache.py', 'physical_source_cache', 'module', 1, False),
     'melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache': ('src/melder/crystallizer/crystal_analysis/physical_source_cache.py', 'PhysicalSourceCache', 'class', 36, False),
     'melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy': ('src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py', 'cluster_membership_strategy', 'module', 1, False),

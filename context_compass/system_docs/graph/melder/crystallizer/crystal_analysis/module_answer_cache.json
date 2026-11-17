@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/module_answer_cache.py",
- "source_sha256": "9f21081bbf9dab2646bb52ddb9b65c6a8ea72da97a70e3e2bb849ec4d0a892c6",
+ "source_sha256": "6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.module_answer_cache": {
@@ -10,16 +10,16 @@
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/module_answer_cache.py",
    "lineno": 1,
+   "include": true,
    "role": "Process-wide, guarded, value-only answers about modules that crystal analyses reuse across binds (#331).",
    "responsibilities": [
-    "declare the value shapes kept per module: path, custody kind, walk facts, resolved roots, provenance",
-    "keep answers reusable only while their inputs are unchanged, so a warm analysis is lookups plus one stat per physical module"
+    "declare the value shapes kept per module and per world: path, custody kind, walk facts, resolved roots, provenance, world entries",
+    "keep answers reusable only while their inputs are unchanged, so a repeat bind copies a kept world after in-memory checks and a new world's walk does lookups"
    ],
    "phases": [
     "bind",
     "runtime"
    ],
-   "include": true,
    "semantics_authored_against": ""
   },
   "melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache": {
@@ -27,7 +27,7 @@
    "label": "ModuleAnswerCache",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/module_answer_cache.py",
-   "lineno": 81,
+   "lineno": 101,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -37,26 +37,31 @@
     "lookup_module_path",
     "lookup_provenance",
     "lookup_resolved_roots",
+    "lookup_world",
+    "make_world_entry",
     "store_custody_kind",
     "store_distribution_map",
     "store_module_facts",
     "store_module_path",
     "store_provenance",
-    "store_resolved_roots"
+    "store_resolved_roots",
+    "store_world"
    ],
    "shape": {
-    "method_count": 18,
+    "method_count": 27,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "85a805ad9a20b724de64122af04bc959900364a34da5519120ca5d8f832d608b",
+   "span_sha256": "27ab82c7f9c2127e8a9cd39f6af9fbc6608fc9c1b30b373243acb352bbcbdb67",
+   "include": true,
    "role": "Class-hosted cache of the answers a CrystalAnalyzer would otherwise recompute for every bind: module paths, custody kinds, physical facts, policy roots and distribution provenance.",
    "responsibilities": [
     "serve a module's resolved path only for the same module object (weak reference) and __file__, or, with no module object, the same sys.path",
     "serve a path's custody kind under the same user, environment and site roots",
-    "serve a physical module's facts only for the same module object, resolved path and file (mtime_ns, size)",
+    "serve a loaded module's facts only for the same object, import spec (reload replaces it) and path, with no stat; a module not imported's facts only for the same path and file (mtime_ns, size)",
+    "keep whole analysed worlds per root (policy, descent, root name and path) and serve one only when its root and every touched module pass those checks and recorded provenance's site roots are unchanged (0.2.8305)",
     "serve resolved policy roots per raw input and interpreter state, and distribution maps and provenance per site-root signature",
-    "bound each map LRU at _MAX_ENTRIES under one class RLock; never hold a module, source text, AST or result"
+    "bound each map LRU (_MAX_ENTRIES; worlds _MAX_WORLDS) under one class RLock; never hold a module, source text, AST or result"
    ],
    "owns_state": [
     "_module_paths",
@@ -66,14 +71,14 @@
     "_distribution_maps",
     "_provenance",
     "_hits",
-    "_misses"
+    "_misses",
+    "_worlds"
    ],
    "phases": [
     "bind",
     "runtime"
    ],
-   "include": true,
-   "semantics_authored_against": "85a805ad9a20b724de64122af04bc959900364a34da5519120ca5d8f832d608b"
+   "semantics_authored_against": "27ab82c7f9c2127e8a9cd39f6af9fbc6608fc9c1b30b373243acb352bbcbdb67"
   }
  },
  "edges_out": [],
@@ -99,6 +104,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "os": "os",
   "sys": "sys",
   "threading": "threading",
   "types": "types",

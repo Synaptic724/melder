@@ -222,15 +222,15 @@ def test_one_pass_still_records_every_import_edge_and_fingerprint(fan_in_world: 
         result.cleanup()
 
 
-def test_a_new_analysis_of_an_unchanged_world_reuses_each_custody_answer(
+def test_a_new_analysis_of_an_unchanged_world_reuses_the_whole_world(
         fan_in_world: Path,
         resolve_counts: Counter,
         custody_counts: Counter,
 ) -> None:
     """
-    Contract (owner decision 2026-11-17, #331; it replaces "nothing is kept between analyses"): a second analyzer
-    over the unchanged world still asks for each module's path once in its pass, but the answer is reused, and it
-    runs no custody chain - every module's kind comes from the first analysis.
+    Contract (owner decisions 2026-11-17, #331; they replace "nothing is kept between analyses"): a second analyzer
+    over the unchanged world copies the first analysis's result - its modules are not imported, so their files'
+    stats and `sys.path` are re-checked - and asks no module question at all: no path and no custody chain.
     """
     payloads = []
     for _ in range(2):
@@ -241,7 +241,7 @@ def test_a_new_analysis_of_an_unchanged_world_reuses_each_custody_answer(
             analyzer.cleanup()
         payloads.append(result.describe())
         result.cleanup()
-    assert resolve_counts[FanInNames.SHARED] == 2
+    assert resolve_counts[FanInNames.SHARED] == 1
     assert dict(custody_counts) == {name: 1 for name in FanInNames.all_names()}
     assert payloads[1] == payloads[0]
 
