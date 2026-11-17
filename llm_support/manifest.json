@@ -2,14 +2,14 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3642674,
-        "lines": 82669,
+        "bytes": 3643772,
+        "lines": 82681,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "a2bc32424cbefc17061b69cb37b4b6dc26f6e8c8d20b9eb2d76ed869508a9645"
+        "sha256": "8c6de358a7c7a46318e856f3d165d43c76d81a76a9e2db089c831ea137220e2b"
       },
-      "content_bytes": 3409479,
-      "content_lines": 79303,
-      "file_count": 420,
+      "content_bytes": 3410077,
+      "content_lines": 79307,
+      "file_count": 421,
       "files": {
         ".gitattributes": {
           "content_bytes": 2948,
@@ -2501,10 +2501,16 @@
           "content_sha256": "d4d2094cfda18c5e30c0069e012bfcb79f0ee7627c2517afdfc95d36a9dbcaf7",
           "source_encoding": "utf-8"
         },
+        "release_docs/0.2.8310.md": {
+          "content_bytes": 16872,
+          "content_lines": 206,
+          "content_sha256": "6893a75eed5a1276c7e846e3345d96f35377df628bcee1c25ac7c29b7f8de541",
+          "source_encoding": "utf-8"
+        },
         "release_docs/next_version_release.md": {
-          "content_bytes": 16274,
-          "content_lines": 202,
-          "content_sha256": "0c02138317c11576a1597503493d5f06c54fe7a7996c0d871a2cddfc0eb46a75",
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2533,19 +2539,19 @@
         }
       },
       "index": {
-        "bytes": 70332,
-        "lines": 442,
+        "bytes": 70458,
+        "lines": 443,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "21f76993412fbaf3d22c054ac8c85051ef021ae7bd1acca41879962eca66c475"
+        "sha256": "ce711ce2793b7c5323d352b037eebfac4e6e3861ad4bb6c549b6622163a0240f"
       },
-      "source_fingerprint": "ebc6a42fbdbb6d6562c387c7d769dbae67e566e565b194cdaf872dbfb4e76eb5"
+      "source_fingerprint": "7a28d116602264b2860f9806fde287b1c6d5f2a15d62240c23003e172b29c3a0"
     },
     "src": {
       "bundle": {
         "bytes": 11900920,
         "lines": 295301,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "00e7f1c9e9518b733aa6587da4a73dad765e06b2fc7e02181063f3d7b76f2d6e"
+        "sha256": "acc42ea9ab9d547d8216939c51e7547b81a39ac9b4ddb7a0b70802215381c901"
       },
       "content_bytes": 11544827,
       "content_lines": 290591,
@@ -2608,7 +2614,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "c7427faf6b6aa914a09d946d16c19103d583e52f86aa6dbd56793fb330276b4b",
+          "content_sha256": "14a3bce9abd0b2621c1ada189724a92b5d882eac8e4f9455a78f33e21adb0a84",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -6084,9 +6090,9 @@
         "bytes": 115073,
         "lines": 610,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "9920782caef723c2ad59d6860e98498055e39e872bb30c3b49b337172e310b36"
+        "sha256": "e8b3bdd14c94a625fff54277807fda1b10f07ebeb851f33c4d74d06302d33b9d"
       },
-      "source_fingerprint": "8be1d3e1b6642b31231cbdf2ee7353770c0a77206a6fd58f8ed4042f036cbd44"
+      "source_fingerprint": "ec13ba03b6e37a287ef1be8fc64cbd7fbd159db211d39b0bbfb8157fb1948e68"
     },
     "tests": {
       "bundle": {
