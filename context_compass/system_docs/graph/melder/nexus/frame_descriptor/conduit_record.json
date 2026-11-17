@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor/conduit_record.py",
- "source_sha256": "9c7a2d43c30f6ccb5663b574531dcc5544df080c6ca58a6db8985bf016a8063b",
+ "source_sha256": "5c674dee90f912a020162a66c42a1924b7e28029687f94a7ba7c8668ae4b8a16",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor.conduit_record": {

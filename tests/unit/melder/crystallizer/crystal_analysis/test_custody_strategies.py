@@ -5,6 +5,9 @@ source resolution honesty, fingerprint claims, and descent law.
 Runs only on 3.14t (melder package root import chain).
 """
 import hashlib
+from pathlib import Path
+
+import pytest
 
 from melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy import (
     BinaryUnknownCustodyStrategy,
@@ -238,3 +241,69 @@ def test_physical_read_and_fingerprint_claim_contract_mirrors():
         site.cleanup()
         synthetic.cleanup()
         unknown.cleanup()
+
+
+def _write_module(module_file: Path) -> Path:
+    """
+    Write one small importable-looking module file, creating its directories.
+
+    Args:
+        module_file: Where the module goes.
+
+    Returns:
+        Path: The same path, now holding `VALUE = 1`.
+    """
+    module_file.parent.mkdir(parents=True, exist_ok=True)
+    module_file.write_text("VALUE = 1\n", encoding="utf-8")
+    return module_file
+
+
+def test_user_source_never_claims_a_module_under_an_environment_root(tmp_path: Path) -> None:
+    """
+    Contract (the owner's answer to the review's root-precedence question, 2026-11-16, #327): an environment
+    wins over a user root - a module under one of the strategy's environment roots is never user source, even
+    when that root sits inside a user root, while a module elsewhere under the user root still is.
+    """
+    project_root = (tmp_path / "project").resolve()
+    environment_root = project_root / ".venv"
+    installed = _write_module(environment_root / "lib" / "installed_module.py")
+    owned = _write_module(project_root / "src" / "owned_module.py")
+    strategy = UserSourceCustodyStrategy((project_root,), environment_root_paths=(environment_root,))
+    try:
+        assert not strategy.matches(module_name="installed_module", module_obj=None, module_path=installed)
+        assert strategy.matches(module_name="owned_module", module_obj=None, module_path=owned)
+    finally:
+        strategy.cleanup()
+
+
+def test_environment_wins_even_over_a_user_root_configured_inside_it(tmp_path: Path) -> None:
+    """
+    Contract: a user root that lies inside an environment claims nothing there - the environment wins whichever
+    root is more specific.
+    """
+    environment_root = (tmp_path / "env").resolve()
+    package_root = environment_root / "lib" / "mypkg"
+    module_file = _write_module(package_root / "core.py")
+    strategy = UserSourceCustodyStrategy((package_root,), environment_root_paths=(environment_root,))
+    try:
+        assert not strategy.matches(module_name="mypkg.core", module_obj=None, module_path=module_file)
+    finally:
+        strategy.cleanup()
+
+
+@pytest.mark.parametrize("directory_name", ["site-packages", "dist-packages", "Site-Packages"])
+def test_user_source_never_claims_a_module_in_a_site_packages_directory(
+        tmp_path: Path,
+        directory_name: str,
+) -> None:
+    """
+    Contract: a module inside a directory named site-packages or dist-packages, in any letter case, is never user
+    source even with no environment roots given - a second environment inside the project is caught by name.
+    """
+    project_root = (tmp_path / "project").resolve()
+    module_file = _write_module(project_root / ".venv_old" / "lib" / directory_name / "vendored.py")
+    strategy = UserSourceCustodyStrategy((project_root,))
+    try:
+        assert not strategy.matches(module_name="vendored", module_obj=None, module_path=module_file)
+    finally:
+        strategy.cleanup()

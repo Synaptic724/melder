@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/cancellation_event_signal.py",
- "source_sha256": "01d39811c4a7d05d53dde2502499c1c5a5aee0177587f8c06c31b731f7664dea",
+ "source_sha256": "174cf2e85e38822e9d4a1b63ac91f709c14b2fa52716d79fddc838f604181500",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.cancellation_event_signal": {

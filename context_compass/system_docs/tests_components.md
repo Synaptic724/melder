@@ -481,7 +481,8 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - unit tests stay close to class/method behavior
-- the densest tier: 554 `test_*.py` modules among 557 `.py` files (recounted 2026-11-08)
+- the densest tier: 555 `test_*.py` modules among 558 `.py` files (recounted 2026-11-09 at 0.2.8301 with the Rift
+  gate thread-tickets module; it read 554 among 557 on 2026-11-08)
 - CI-script tests never import `melder`; each script is loaded as a standalone module
 
 Failure Modes:
@@ -498,7 +499,8 @@ Extension Points:
 
 Key Files (C1):
 - `tests/unit/melder/aether/conduit/conftest.py`
-- The aether tree carries 224 `test_*.py` modules beneath these; they are the
+- The aether tree carries 225 `test_*.py` modules beneath these (224 before the Rift gate thread-tickets module,
+  2026-11-09); they are the
   CONTENT of this component rather than its key surfaces, and are counted here
   rather than cited so the core set stays a set an agent can verify.
 - No harness or support module of its own; the 49 test_*.py modules in
@@ -599,13 +601,17 @@ Concurrency/Threading:
   (`tests/component/melder/utilities/synchronization/test_creation_gate_component.py`), and the Rift
   agents-and-teardown module starts one daemon thread per agent, ordered by `threading.Event` handshakes set at
   fixed points and joined within 5 s, so a deadlock fails its test instead of hanging the suite
-  (`tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`, 0.2.8290-0.2.8291)
+  (`tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`, 0.2.8290-0.2.8291);
+  the Rift gate-drain module does the same and adds one bounded observation window (0.5 s) in which a removal or
+  a cleanup that must wait for an agent inside gets the chance to return wrongly
+  (`tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`, 0.2.8301)
 
 Invariants/Guarantees:
 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
   objects, stubbed external boundaries, deterministic, contract-level assertions
-- 179 `test_*.py` modules among 181 `.py` files (recounted 2026-11-08 at 0.2.8292 with the Rift agents-and-teardown
-  module; it read 178 among 180, and 177 among 179 before the Rift race module of 0.2.8289)
+- 180 `test_*.py` modules among 182 `.py` files (recounted 2026-11-09 at 0.2.8301 with the Rift gate-drain module;
+  it read 179 among 181 at 0.2.8292, 178 among 180 before, and 177 among 179 before the Rift race module of
+  0.2.8289)
 
 Failure Modes:
 - component tests drift into unit-style internals or full integration sprawl
@@ -618,10 +624,11 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- No harness or support module of its own; the 85 test_*.py modules in
-  tests/component/melder/aether/ (84 before the Rift agents-and-teardown module, 2026-11-08) depend only on the
-  shared surfaces at tests/ and the scoped conftests named in `tests_architecture.md`; the module-local thread
-  and lock stand-ins of the two Rift race modules are not shared. Paths in this bullet are written
+- No harness or support module of its own; the 86 test_*.py modules in
+  tests/component/melder/aether/ (85 before the Rift gate-drain module, 2026-11-09; 84 before the Rift
+  agents-and-teardown module, 2026-11-08) depend only on the shared surfaces at tests/ and the scoped conftests
+  named in `tests_architecture.md`; the module-local thread and lock stand-ins of the three Rift race modules are
+  not shared. Paths in this bullet are written
   WITHOUT backticks because they are directories - descriptive, never citations.
 - No harness or support module of its own; the 7 test_*.py modules in
   tests/component/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
@@ -1062,6 +1069,9 @@ Purpose:
 Contract/Interface:
 - `build_descriptor`, `build_surface`, `build_viewer`,
   `build_multi_frame_viewer`
+- `ViewerProjectionRiftDouble` owns one open `RiftGate` and exposes it as `rift_gate`, as a live Rift does, because
+  every viewer read takes the calling thread's ticket on it (0.2.8301, GitHub #274, step 3); the detached Rift
+  doubles of `test_nexus.py`, `test_rift_space.py` and `test_static_rift_space.py` gained the same gate
 Key Files (C1):
 - `tests/_nexus_viewer_matrix_support.py`
 
@@ -1267,7 +1277,21 @@ Protects:
   holding one count each, the gate is unregistered, the Rift marked, the orphaned Nexus-managed frame removed with
   both counts already gone and the Rift not yet torn down, and `_clean_owned_state` runs last; the Rift leaves both
   registries. The fake had `list_assigned_frame_names` and `cleanup` before GitHub #274's R4 residual fix, and the
-  expected order gained the mark
+  expected order gained the mark. Since 0.2.8301 the fake answers `check_cleaned` (`remove_rift` refuses a Rift
+  cleaned outside Nexus before it drains or pops anything) and the fake gate controller hands back a gate whose
+  `close_and_wait_until_free` records the drain, which the expected order now starts with
+- the Rift gate's ticket model (GitHub #274, step 3, 0.2.8301; `test_rift_gate_thread_tickets.py`, 5 tests): a
+  thread holding a ticket passes `admit_ticket` again at once while the gate is disabled (`close()`) and while
+  another thread's `close_and_wait_until_free` has closed it, where a thread without a ticket is refused; a thread
+  admitted twice counts as one ticket; a thread holding a ticket drains the gate without waiting for itself; a
+  release after cleanup is a no-op. Each re-entry runs on a daemon thread joined within `_Bound.PROMPT_SECONDS`
+  (`_Worker`), and every admission is paired with one release, as `CommandSystem` pairs them
+- `RiftGate` and `RiftGateController` (`test_rift_gate.py`, 12 tests, catalogued 2026-11-09): the gate's open,
+  wait, admit and entry-mode contracts, idempotent cleanup, and the controller's registry, counts, fan-out and
+  entry modes. Changed for 0.2.8301: the counts are of threads inside (a nested registration on one thread counts
+  once, so the controller totals 2 where they read 3), and the drain tests hold their ticket on another thread,
+  since a drain never waits for the caller's own - the timeout test expects `RiftGateDrainTimeoutError`, still a
+  RuntimeError with the old message, with `threads_inside` 1
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
@@ -1283,6 +1307,8 @@ Key Files (C1):
 - `tests/unit/melder/aether/test_frame_link_contract_profiles.py` (#271's races, catalogued 2026-11-08)
 - `tests/unit/melder/aether/test_frame_link_runtime_contracts.py` (#271's races, catalogued 2026-11-08)
 - `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py` (`remove_rift`'s order, catalogued 2026-11-08)
+- `tests/unit/melder/aether/test_rift_gate.py` (the gate and its controller, catalogued 2026-11-09)
+- `tests/unit/melder/aether/test_rift_gate_thread_tickets.py` (the gate's ticket model, 2026-11-09)
 
 ### Subcomponent: Aetheric Mediator Lifecycle Unit Cluster
 Parent Component: Unit Test Suite
@@ -1418,20 +1444,47 @@ Protects:
   the record, with lookups, activity, removal, segment payloads and index grafts addressing one copy; the facade
   verbs needing the frame under per-frame ids and ignoring it otherwise; the retarget re-key; the impact read by
   payload id; restore stage 1 (install, both shortfalls, the missing key, the refusal) and per-Book translation
-- the custody boundary as it stands (2026-10-10; pins today's behaviour while root precedence awaits an owner
-  decision): a virtual environment nested in the user root classifies as user source, is walked, fingerprinted
-  and has its text retained, whatever the descent setting; a root that excludes it makes its packages
-  site-package leaves, walked only with descent on and never fingerprinted; user roots never make a module
-  importable; `with_defaults()` takes the working directory as the user root, with descent off
+- the custody boundary (2026-10-10; moved to the owner's root-precedence answer on 2026-11-16, 0.2.8302, #327):
+  the environment wins - a virtual environment nested in the user root, like one the root excludes, makes its
+  packages site packages, never fingerprinted, their text never retained, walked only with descent on; user
+  roots never make a module importable; `with_defaults()` takes the working directory as the user root, with
+  descent off, and still leaves a project's `.venv` to site-package custody. `test_custody_strategies.py` pins
+  the rule on `UserSourceCustodyStrategy` itself: an environment root, a user root configured inside an
+  environment, and `site-packages`/`dist-packages` directories in any letter case
+- one analysis pass asking each module question once (0.2.8302, #327; `test_crystal_analyzer_pass_dedup.py`,
+  6 tests): a module imported from four places has its path resolved once and its custody matched once in a
+  pass, every edge and fingerprint still recorded; since 0.2.8304 a second pass on the same analyzer reuses
+  those answers and classifies nothing again, and since 0.2.8305 a new analyzer over the unchanged world
+  copies the kept world and asks nothing; the environment roots are the site roots then `sys.prefix`,
+  `sys.base_prefix` and `sys.exec_prefix`
+- analyses reusing module answers (0.2.8304-0.2.8306, #331; `test_module_answer_cache.py`, 26 tests): a
+  second analysis of an unchanged world resolves, matches and probes nothing and records what a fresh
+  analysis records; a second spell from the same module copies the kept world without a walk, while another
+  root walks; a reloaded or re-imported module is derived again, and a loaded module's file edited without a
+  reload keeps its analysis with no stat; a module not imported is re-checked by its file and `sys.path`; a
+  member submodule created later is seen once its importer is reloaded; a shared leaf is recorded once per
+  walk; a described payload loads as an exact, independent copy, only into a fresh result; an analyzer
+  retaining sources walks every time; a synthetic module with no physical copy is read on every analysis;
+  supplied fact strategies derive every module; a cached path keeps no module alive; each map, worlds
+  included, is LRU-bounded; site-package provenance reads installed metadata once until a site root
+  changes; the policy roots resolve once per input and working directory; eight concurrent analyses (the
+  GIL off) record the same result. Since 0.2.8306 a walk from a new root that shares modules with an earlier
+  walk asks no module path and no custody kind for them and records what a fresh analysis records; an edge
+  answer serves only the same module object, `__file__` and custody policy (with no object, the same
+  `sys.path`); a synthetic import target is matched live on every walk; an edge answer keeps no module alive
+  and its map is LRU-bounded; the heap-ordered load order and cycle error equal the sorted-list ones on
+  acyclic, diamond and cyclic graphs. The syntax-memo pins of `test_crystal_analyzer.py` clear the module
+  answers before their second analysis, so they still reach the memo beneath them
 - managed options in the record (0.2.8242): a managed crystal records the mode's name, the limit, the timeout
   and the reset names in order; other crystals carry none of the four keys; a payload's options replay as bind
   keywords (none from a 4.1 record or another existence); RecordVersion 4.2.0 still read 4.1 records,
   and 5.0.0 refuses every 4.x record (0.2.8273)
 - the binding hash in the record (0.2.8258; `test_spell_crystal_binding_hash.py`, 3 tests): a crystal
   records its spell's `binding_hash`, two bindings of one spell_id record two binding hashes, and a cleaned
-  crystal refuses the read; RecordVersion was 4.3.0 then (5.0.0 since 0.2.8273)
+  crystal refuses the read; RecordVersion was 4.3.0 then (5.0.0 since 0.2.8273, 5.0.1 since 0.2.8302)
 - every record older than 5.0.0 refused (0.2.8273; `test_record_version_and_json_contract.py`, 11 tests, 13
-  cases): `RecordVersion.stamp` writes 5.0.0 and the read gate passes the current major at any minor, refuses a
+  cases): `RecordVersion.stamp` writes the current version (5.0.1 since 0.2.8302, a patch noting the custody
+  change of #327) and the read gate passes the current major at any minor, refuses a
   newer major with the upgrade instruction and refuses a pre-versioning record, 0.9.0 and 4.3.0 - a record of an
   older major cannot promise that every version of an index is bound the way its first version was - naming the
   record, the reason and the remedy, to record the world again; `test_spell_crystal_managed_options.py` refuses
@@ -1449,6 +1502,8 @@ Key Files (C1):
 - `tests/unit/melder/crystallizer/test_synthetic_module.py`
 - `tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py` (2026-09-30)
 - `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py` (2026-10-10)
+- `tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py` (#327, 2026-11-16)
+- `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py` (#331, 2026-11-17)
 - `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py` (record 4.2.0, 2026-10-15)
 - `tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py` (record 4.3.0, 2026-10-18)
 - `tests/unit/melder/crystallizer/persistence/test_record_version_and_json_contract.py` (record 5.0.0, 2026-10-25)
@@ -1464,9 +1519,17 @@ Protects:
   set and unique set names; composition emission only while active
 - activation that hydrates an untouched registry from the record and never
   clobbers live research; idempotent world-entry recording
+- appends at constant cost (0.2.8306, #331): an append mints no undo-ring snapshot until the ring is
+  read, `join` and `archive` mint the organization they start from (a restore brings it back), describing
+  and reading the set mint nothing, and an append describes only its own node; the twin emitted from views
+  equals a twin built from a fresh description, describes one node per append, still describes its
+  composition after a restore and after the root's cleanup, keeps a refused add in step, and a caller
+  mutating a twin read never reaches the live research
 Key Files (C1):
 - `tests/unit/melder/mutation_research/test_mutation_research_root.py`
 - `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
+- `tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py`
+- `tests/unit/melder/mutation_research/test_mutation_research_twin_views.py`
 
 ### Subcomponent: Spellbook Runtime And Binding Unit Cluster
 Parent Component: Unit Test Suite
@@ -1810,12 +1873,13 @@ Protects:
   refused save of a bundle logs one WARNING naming it and `with_system_caching_enabled(False)`; each writer
   saves through its own temp file (`<bundle>.<pid>.<thread id>.tmp`); a refused temp write leaves the bundle as
   it was and a refused folder creates nothing; a temp file that cannot be removed is logged, not raised
-- UnresolvedInputError's text (0.2.8281; `test_unresolved_input_error.py`, 5 tests, over stub pools):
+- UnresolvedInputError's text (0.2.8281; `test_unresolved_input_error.py`, 7 tests, over stub pools):
   `for_unsupplied` keeps "nothing registered provides it" when nothing does; when the expected class is pooled
   only under a spellframe or a binding name it names each address and the SpellMap that reaches it, keeps the
   override paths and records `hidden_spell_ids`; a method spell of the class's name and a Protocol parameter (a
   contract lookup) give no hidden candidate; a second missing input is still listed; a stale plan still raises
-  RuntimeError
+  RuntimeError; a parameter whose default is a SpellMap is named by that SpellMap as written, with no class-lookup
+  search (0.2.8303, #329)
 Key Files (C1):
 - `tests/unit/melder/utilities/synchronization/test_creation_gate.py`
 - `tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py`
@@ -2051,7 +2115,26 @@ Protects:
   to fail with its room gone. R4's residual: an attach that reserves `ledger` and publishes while `remove_rift`
   is held between its registry phase and its teardown raises "Rift has already been cleaned" and leaves no count.
   Each test's docstring names the symptom of the code before its fix - agent code under a lock that never
-  returned, a deadlock, a count left (see `### Flow: Rift Agents And Teardown Handshakes`)
+  returned, a deadlock, a count left (see `### Flow: Rift Agents And Teardown Handshakes`). Changed for the Rift
+  gate (0.2.8301; 9 tests): W4, W6 and C3 now assert that the removal waits - it closes the gate, then stays
+  waiting while the agent is inside - and that its teardown finds 0 threads inside, the agent's call completing;
+  R4's residual drives the attach through the untagged `Rift._create_frame_link`, since a removal now waits for
+  the public door; and a new test pins the public door: an attach through `create_frame_link` holds off a removal
+  started inside it, publishes, refreshes and returns, and only then is the Rift torn down and the frame's budget
+  count given back
+- the Rift gate (0.2.8301, GitHub #274, step 3; `test_rift_component_gate_drains_before_teardown.py`, 13 tests, 23
+  cases; `_build_world` builds an enabled Nexus whose drains are bounded by the timeout a test installs, and one
+  capability Rift attached to a dynamic `default` frame): `Nexus.remove_rift` waits for an agent inside a
+  `call_target` target, a paused `FrameViewer` read and `execute_target_method`, and the call returns its value;
+  a newcomer at each of five doors (`_Newcomer.DOORS`: a workstation call, a viewer read, a command, two Rift
+  methods) raises RuntimeError at once while a removal waits for an agent inside and while it tears the Rift down;
+  a removal that outlasts its drain timeout raises, keeps the Rift registered with its gate closed, and a retry
+  after the agent left succeeds; an agent removing its own Rift from inside `call_target` or a command is not
+  waited for and its call returns normally; `Nexus.cleanup` waits for an agent inside, and with an agent stuck in
+  each of three Rifts it completes after about one shared timeout and logs it at WARNING; a thread inside a
+  command passes its own gate - for a nested command or viewer read - while an ACL refresh drains it and while a
+  removal closes it; and an ACL refresh does not swap a projection under a paused viewer read (V1). Docstrings
+  name each symptom of the code before the gate (see `### Flow: Rift Gate Drain Handshakes`)
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
@@ -2080,6 +2163,7 @@ Key Files (C1):
   (catalogued 2026-11-08)
 - `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py` (GitHub #274, 2026-11-08)
 - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py` (GitHub #274, 2026-11-08)
+- `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py` (GitHub #274 step 3, 2026-11-09)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -2500,11 +2584,18 @@ Protects:
   carries that name) refuse conjure in automatic and dynamic worlds, and a late bind and every meld, with an
   override as without; `list[English]` refuses an automatic conjure and is injected [] with Phase 6's WARNING
   in a dynamic world; controls: English bound bare, alone or beside a framed version, a named SpellMap reaching
-  English bare under that name, nothing bound; re-gate paths 6a, 6b and 6c with its ORDER control;
+  English bare under that name, nothing bound (where, since 0.2.8303, the `SpellMap(English)` consumer conjures and
+  waits as an unresolved input, #329); re-gate paths 6a, 6b and 6c with its ORDER control;
   UnresolvedInputError naming the address on a stale plan and in the root a transfer leaves ungated;
   `cleanup_spell` of the only hidden provider leaves the refusal, by the owner's ruling. Five cases are strict
   xfails on GitHub #210: the transfer that brings the class in framed, a dependent melded during a refusal, and
   three contract and link departures
+- a SpellMap consumer bound before its provider waits for it (0.2.8303, #329;
+  `test_spellmap_consumer_waits_for_its_provider_integration.py`, 4 tests, whole meld texts): after conjure a
+  frame-addressed SpellMap consumer binds before its provider, its meld raises UnresolvedInputError naming the
+  SpellMap, and it melds with the provider once that is bound; the reported configure batch with two consumers
+  ahead of their providers; the class form `SpellMap(Class)` with its class bound bare later; conjure with the
+  address empty, then a meld override
 Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
@@ -2527,6 +2618,7 @@ Key Files (C1):
 - `tests/integration/melder/aether/conduit/test_notch_refused_at_commit_integration.py` (2026-10-19)
 - `tests/integration/melder/aether/conduit/test_one_active_spell_per_address_integration.py` (2026-11-07)
 - `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py` (2026-11-08)
+- `tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py` (#329, 2026-11-16)
 
 ### Subcomponent: Conduit Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -2741,7 +2833,8 @@ Key Files (C1):
 ### Flow: Viewer Matrix Fixture Build
 1. helper builds one `FrameDescriptor`.
 2. helper builds one compiled ACL surface.
-3. helper creates one `FrameViewer` around those fixtures.
+3. helper creates one `FrameViewer` around those fixtures, over a `ViewerProjectionRiftDouble` that owns one open
+   `RiftGate`: every viewer read takes the calling thread's ticket on it (0.2.8301, GitHub #274, step 3).
 4. unit/component/integration tests drive viewer methods over the same shared
    support shape.
 
@@ -2898,14 +2991,17 @@ Key Files (C1):
    tests' `_CleanupBeforeAcquireLock` (`### Flow: FrameLink Lifecycle Race Stand-Ins`).
 5. no thread runs and nothing waits: the order comes from the nesting, never from timing. The tests assert the
    corrected outcome - one contract and a count of 1 that the removal takes to 0, no count left by the removed
-   attach, every built set cleaned - and the cleaned RuntimeError where one is due.
+   attach, every built set cleaned - and the cleaned RuntimeError where one is due. Since the Rift gate (0.2.8301)
+   the nested removal runs on the attaching thread, inside the `create_frame_link` door, so its drain does not wait
+   for that thread's own ticket and the schedules are unchanged (the module itself did not change).
    EVIDENCE:
    - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:42-98
    - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:101-164
    - tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py:167-271
-   - src/melder/nexus/rift/rift.py:559-678 (remapped 2026-11-08 at 0.2.8292; it read 456-572)
-   - src/melder/nexus/rift/rift.py:786-854 (it read 680-748)
-   - src/melder/nexus/nexus.py:3499-3557 (it read 3477-3535)
+   - src/melder/nexus/rift/rift.py:617-776 (remapped 2026-11-09 at 0.2.8301, the door and its untagged body
+     `_create_frame_link`; it read 559-678, and 456-572 before 0.2.8292)
+   - src/melder/nexus/rift/rift.py:884-952 (it read 786-854, and 680-748 before 0.2.8292)
+   - src/melder/nexus/nexus.py:3744-3802 (it read 3499-3557, and 3477-3535 before 0.2.8292)
 
 ### Flow: Rift Agents And Teardown Handshakes
 1. the autouse `_isolated_runtime` fixture resets the utility system, Nexus and Aether and binds a fresh Aether to
@@ -2927,28 +3023,74 @@ Key Files (C1):
    holds the agent inside its command with a room pre-hook; W6 holds the binder's room event at the room lock's
    first entry until the removal progressed; C3 holds the link's refresh in a patched
    `Nexus.create_frame_projection_sets_for_rift` after the sets are built. `_Agent.still_running` joins both within
-   one shared bound and names any thread still alive.
+   one shared bound and names any thread still alive. Since the Rift gate (0.2.8301) the point each agent waits for
+   is the removal closing the gate: `_announce_the_removal_closing_the_gate` patches `RiftGate.close_terminally` to
+   set an event on the remover's thread, and `_count_the_threads_inside_at_teardown` patches
+   `Rift._clean_owned_state` to record the gate's ticket count there; the agent's call must now return normally
+   and the count must be 0 - the removal waited for the agent.
 5. R4's residual, on the test thread: a patched `Nexus._reserve_target_frame` reserves `ledger`, starts the removal
    and waits until a patched `Rift._clean_owned_state` holds it on the removal's thread - past its registry phase -
-   so the attach publishes onto the marked Rift; the teardown proceeds once the attach finished.
+   so the attach publishes onto the marked Rift; the teardown proceeds once the attach finished. Since 0.2.8301 the
+   attach runs through the untagged `Rift._create_frame_link`, which holds no ticket; the new public-door test runs
+   the same schedule through `create_frame_link` and waits only until the removal closed the gate, then asserts
+   that the attach refreshed before any teardown began and that the removal gave `ledger`'s count back with
+   `default`'s.
 6. order comes from nesting or from events set at those points, never from sleeps; `_Handshake.BOUND_SECONDS`
    (5 s) only turns a deadlock, or a point never reached, into a failure, and `reraise_schedule_failure` reports a
    broken schedule as one.
-   EVIDENCE:
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:78-206 (`_Handshake`,
+   EVIDENCE (remapped 2026-11-09 at 0.2.8301; the test ranges read 78-206, 209-393, 396-498, 501-660, 663-852 and
+   855-939, and the src ranges workstation.py 529-659, rift_space.py 268-333, rift.py 278-424 and nexus.py
+   1266-1334):
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:83-211 (`_Handshake`,
      `_Agent`)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:209-393
-     (`_AgentTool`, `_HandshakeLock`)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:396-498 (the
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:214-462
+     (`_AgentTool`, `_HandshakeLock`, the gate-close and teardown-count patches)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:465-567 (the
      fixture and `_build_world`)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:501-660 (W5)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:663-852 (W4, W6, C3)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:855-939 (R4's
-     residual)
-   - src/melder/nexus/rift/rift_space/workstation.py:529-659
-   - src/melder/nexus/rift/rift_space/rift_space.py:268-333
-   - src/melder/nexus/rift/rift.py:278-424
-   - src/melder/nexus/nexus.py:1266-1334
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:570-729 (W5)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:732-968 (W4, W6, C3)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:971-1157 (R4's
+     residual, the public-door ordering)
+   - src/melder/nexus/rift/rift_space/workstation.py:619-761
+   - src/melder/nexus/rift/rift_space/rift_space.py:277-342
+   - src/melder/nexus/rift/rift.py:297-443
+   - src/melder/nexus/nexus.py:1358-1530
+
+### Flow: Rift Gate Drain Handshakes
+1. the autouse `_isolated_runtime` fixture resets the singletons around each test; `_build_world` conjures the
+   dynamic, Rift-enabled `default` frame with one `_Pricing` spell, activates Nexus with
+   `projection_refresh_gate_timeout_seconds` set to the test's drain timeout (`_Handshake.*_TIMEOUT_SECONDS`), and
+   creates one capability Rift attached to `default`.
+2. an agent is an `_Agent` - a daemon thread built at construction that keeps what its call returned or raised -
+   and stays inside its Rift call at a `_Hold`: `stay_inside` sets `inside` and waits for `release`, which every test
+   sets in a `finally`. The holds sit in agent code (`_AgentTool`, run by `call_target` or
+   `execute_target_method("run")`) or in a patched `Rift._get_required_view_projection`, which pauses the reader's
+   first projection read while it holds the projection.
+3. waiting is proven by one bounded window: `_remove_while_an_agent_is_inside` starts the agent, waits until it is
+   inside, starts the removal and gives it `_Handshake.OBSERVATION_SECONDS` (0.5 s) to return - it must not - then
+   releases the agent and joins both within `_Handshake.BOUND_SECONDS` (5 s). A drain that must time out counts as
+   having waited once it took `MIN_WAIT_FRACTION` (0.8) of the installed timeout.
+4. refusal: `_Newcomer.resolve_calls` binds each of the five `DOORS` to the Rift before anything removes it, and
+   `knock` runs one on its own daemon thread, joined within `_Handshake.PROMPT_SECONDS` (1 s), expecting
+   RuntimeError - while the removal waits for a held agent, or while a patched `Rift._clean_owned_state` holds the
+   removal at its teardown.
+5. re-entry and V1: a patched `RiftGate.close` announces an ACL refresh disabling the gate - the frame ACL change is
+   real, a copy of the current rules registered under a new contract name (`_copy_of_the_current_acl`) - and the
+   agent inside its command then makes its nested call (`_nested_call`: a command or a viewer read), which must
+   return within the prompt bound; a patched `Rift.refresh_runtime_projections` records when the swap runs, which
+   must be after the paused read finished.
+6. `Nexus.cleanup` with three held agents installs `CLEANUP_TIMEOUT_SECONDS` (0.4 s) and asserts one shared
+   deadline - about one timeout, not three - and a WARNING on the Nexus logger (`caplog`); the message wording is
+   not pinned.
+   EVIDENCE:
+   - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:1-22 (the module contract)
+   - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:64-408 (`_Handshake`,
+     `_Agent`, `_AgentTool`, `_Hold`, `_Newcomer`)
+   - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:411-621 (the fixture,
+     `_build_world`, `_copy_of_the_current_acl`, `_nested_call`, the read pause, `_remove_while_an_agent_is_inside`)
+   - tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py:624-1348 (the 13 tests)
+   - src/melder/nexus/nexus.py:306-473, :1358-1530
+   - src/melder/nexus/rift/rift_gate/rift_gate.py:316-628
 
 ### Flow: Cleanup Recheck Handshake
 1. a two-caller `*_cleanup_rechecks_cleaned_inside_lock` test builds its object, creates
@@ -3227,10 +3369,10 @@ Key Files (C1):
   note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
 
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above: 359 paths, recounted from the catalogs on 2026-11-08 and equal to the records below (it read 324
-before the follow-up pass of that day added 30, 354 before the two FrameLink unit files of GitHub #271, 356
-before the Rift race module of GitHub #274, and 357 before #274's agents-and-teardown module and the Nexus
-orchestration unit file joined at 0.2.8292). The
+above: 362 paths, recounted on 2026-11-09 at 0.2.8301 and equal to the records below (it read 359 before the
+two Rift gate modules and `test_rift_gate.py` joined then; 324 before the follow-up pass of 2026-11-08 added 30,
+354 before the two FrameLink unit files of GitHub #271, 356 before the Rift race module of GitHub #274, and 357
+before #274's agents-and-teardown module and the Nexus orchestration unit file joined at 0.2.8292). The
 0.2.8276 baseline recorded 300 explicitly mapped paths, including three native enum/cache contract
 surfaces; the compatibility-test paths added after it, without a recount, made 317 before the
 2026-11-08 pass added seven. Change a component's key files and this set follows; if the two ever disagree,
@@ -3238,9 +3380,9 @@ this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
-builders - not every `test_*.py` module beneath it. The 922 test modules of the
-three CI tiers (recounted 2026-11-08 at 0.2.8292; 921 before the Rift agents-and-teardown module, 920 before the Rift
-race module; 880 on 2026-11-01) and the 33
+builders - not every `test_*.py` module beneath it. The 924 test modules of the
+three CI tiers (recounted 2026-11-09 at 0.2.8301; 922 before the two Rift gate modules, 921 before the Rift
+agents-and-teardown module, 920 before the Rift race module; 880 on 2026-11-01) and the 33
 experimentation modules are
 the component's CONTENT;
 they are counted in each entry rather than cited, because a
@@ -3276,9 +3418,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: remeasured 2026-11-08 (it read 248): its builders take `static_only_denied_builtin_names` (2026-10-25).
 - path: `tests/_nexus_viewer_matrix_support.py`
   start_line: 1
-  end_line: 638
-  loc: 638
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 654
+  loc: 654
+  verified_at: 2026-11-09T11:20:47Z
 - path: `tests/_annotation_audit_support.py`
   start_line: 1
   end_line: 628
@@ -3603,9 +3745,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6374
-  loc: 6374
-  verified_at: 2026-10-15T22:33:31Z
+  end_line: 6381
+  loc: 6381
+  verified_at: 2026-11-09T11:20:47Z
 - path: `tests/unit/melder/aether/test_root_configuration_value_snapshots.py`
   start_line: 1
   end_line: 197
@@ -3659,10 +3801,39 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-30T18:35:14Z
 - path: `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py`
   start_line: 1
-  end_line: 345
-  loc: 345
-  verified_at: 2026-10-10T11:47:06Z
-  note: custody classification, descent and retention around a nested virtual environment; roots never grant import.
+  end_line: 344
+  loc: 344
+  verified_at: 2026-11-16T12:26:27Z
+  note: custody classification, descent and retention around a nested virtual environment, which the environment
+    wins since 0.2.8302; roots never grant import.
+- path: `tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py`
+  start_line: 1
+  end_line: 285
+  loc: 285
+  verified_at: 2026-11-17T10:34:56Z
+  note: one analysis pass resolves and classifies each module once (#327); the next pass reuses the answers,
+    and a new analysis of the unchanged world copies the kept world (#331).
+- path: `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py`
+  start_line: 1
+  end_line: 1153
+  loc: 1153
+  verified_at: 2026-11-17T12:31:06Z
+  note: analyses reuse module paths, custody kinds, facts, roots, provenance, whole worlds and import-edge
+    answers across binds; in-memory guards, reloads, residuals and the heap load order (#331).
+- path: `tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py`
+  start_line: 1
+  end_line: 191
+  loc: 191
+  verified_at: 2026-11-17T12:31:06Z
+  note: appends mark the undo ring stale; organizing verbs and ring reads mint first; an append describes
+    only its own node (#331, 0.2.8306).
+- path: `tests/unit/melder/mutation_research/test_mutation_research_twin_views.py`
+  start_line: 1
+  end_line: 203
+  loc: 203
+  verified_at: 2026-11-17T12:31:06Z
+  note: the twin emitted from composition views equals a fresh description and outlives restore and
+    cleanup (#331, 0.2.8306).
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
   end_line: 994
@@ -4961,11 +5132,12 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     kept byte for byte when nothing is (0.2.8281).
 - path: `tests/unit/melder/utilities/custom_exceptions/test_unresolved_input_error.py`
   start_line: 1
-  end_line: 137
-  loc: 137
-  verified_at: 2026-11-08T14:40:42Z
+  end_line: 187
+  loc: 187
+  verified_at: 2026-11-16T20:46:17Z
   note: UnresolvedInputError names where a class bound only under a frame or a name is, found live in the pool;
-    "nothing registered provides it" only when nothing does (0.2.8281).
+    "nothing registered provides it" only when nothing does (0.2.8281); a SpellMap parameter is named by its
+    SpellMap (0.2.8303).
 - path: `tests/unit/melder/crystallizer/test_crystallizer_gates.py`
   start_line: 1
   end_line: 143
@@ -5038,11 +5210,18 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     and links across frames are refused (0.2.8279-0.2.8280).
 - path: `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`
   start_line: 1
-  end_line: 835
-  loc: 835
-  verified_at: 2026-11-08T14:40:42Z
+  end_line: 841
+  loc: 841
+  verified_at: 2026-11-16T20:46:17Z
   note: the hidden-provider probe matrix as whole-text regressions, its controls and re-gate paths, and five
     strict xfails on GitHub #210 (0.2.8281).
+- path: `tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py`
+  start_line: 1
+  end_line: 191
+  loc: 191
+  verified_at: 2026-11-16T20:46:17Z
+  note: a SpellMap consumer bound before its provider waits as an unresolved input and melds once the provider
+    is bound; conjure with the address empty (0.2.8303, #329).
 - path: `tests/unit/melder/aether/test_frame_link_contract_profiles.py`
   start_line: 1
   end_line: 470
@@ -5067,19 +5246,43 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     attach's reservation given back, a refresh's fresh sets cleaned (0.2.8289; untracked when catalogued).
 - path: `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
   start_line: 1
-  end_line: 939
-  loc: 939
-  verified_at: 2026-11-08T23:10:09Z
+  end_line: 1157
+  loc: 1157
+  verified_at: 2026-11-09T11:20:47Z
   note: GitHub #274's W5, W4, W6, C3 and R4's residual with daemon agent threads joined within 5 s: agent code
     runs outside Melder's locks, removals finish beside agents, no budget count left (0.2.8290-0.2.8291;
-    untracked when catalogued).
+    untracked when catalogued); remeasured at 0.2.8301 (it read 939) after the removals waited at the Rift gate,
+    the teardown counted 0 threads inside, and the public-door ordering test joined (9 tests).
 - path: `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py`
   start_line: 1
-  end_line: 728
-  loc: 728
-  verified_at: 2026-11-08T23:10:09Z
+  end_line: 744
+  loc: 744
+  verified_at: 2026-11-09T11:20:47Z
   note: Nexus orchestration over fakes; catalogued for `remove_rift`'s order - gate, mark, frame removal,
-    unlocked teardown - after 0.2.8291 (18 tests, the other 17 not read by that pass).
+    unlocked teardown - after 0.2.8291 (18 tests, the other 17 not read by that pass); remeasured at 0.2.8301 (it
+    read 728) after the gate drain joined the head of that order.
+- path: `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`
+  start_line: 1
+  end_line: 1348
+  loc: 1348
+  verified_at: 2026-11-09T11:20:47Z
+  note: GitHub #274 step 3, the Rift gate: a removal and a Nexus cleanup wait for the agents inside, newcomers are
+    refused at once, a drain timeout keeps the Rift, a self-removal is not waited for, a thread inside passes its
+    own gate, and an ACL refresh waits for a viewer read (0.2.8301; 13 tests, 23 cases; untracked when catalogued).
+- path: `tests/unit/melder/aether/test_rift_gate_thread_tickets.py`
+  start_line: 1
+  end_line: 357
+  loc: 357
+  verified_at: 2026-11-09T11:20:47Z
+  note: the RiftGate ticket model: re-entry while disabled or closed, one ticket per thread, a drain that skips the
+    caller's own ticket, a quiet release after cleanup (0.2.8301; 5 tests; untracked when catalogued).
+- path: `tests/unit/melder/aether/test_rift_gate.py`
+  start_line: 1
+  end_line: 237
+  loc: 237
+  verified_at: 2026-11-09T11:20:47Z
+  note: RiftGate and RiftGateController contracts, catalogued at 0.2.8301 when its counts became threads inside and
+    its drain tests moved their ticket to another thread (12 tests).
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -5177,6 +5380,8 @@ graph TD
 - `tests/component/melder/spellbook/test_scan_bind_parity_component.py`
 - `tests/integration/melder/multithreading/test_contract_mutation_during_meld_resolution_integration.py`
 - `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py`
+- `tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py`
+- `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py`
 - `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py`
 - `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py`
 - `tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py`
@@ -5204,6 +5409,8 @@ graph TD
 - `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
 - `tests/unit/melder/crystallizer/test_crystallizer.py`
 - `tests/unit/melder/mutation_research/test_mutation_research_root.py`
+- `tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py`
+- `tests/unit/melder/mutation_research/test_mutation_research_twin_views.py`
 - `tests/component/melder/crystallizer/test_spell_crystal_component.py`
 - `tests/component/melder/mutation_research/test_mutation_research_root_component.py`
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
@@ -5358,6 +5565,7 @@ graph TD
 - `tests/integration/melder/aether/conduit/test_one_active_spell_per_address_integration.py`
 - `tests/integration/melder/crystallizer/test_graft_refuses_an_address_the_host_frame_serves_integration.py`
 - `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`
+- `tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py`
 - `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py`
 - `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py`
@@ -5396,6 +5604,17 @@ graph TD
 - `src/melder/nexus/rift/rift_space/rift_space.py`
 - `src/melder/nexus/rift/command_system/command_system.py`
 - `src/melder/nexus/rift/command_system/codegen_command_system.py`
+- the two Rift gate modules' docstrings, bounds and helpers read and their tests collected, the diffs of the
+  agents-and-teardown module, `test_rift_gate.py`, the Nexus orchestration file and the four Rift doubles read,
+  and the gate, its doors, `Nexus.remove_rift` and `Nexus.cleanup` read in src; the twelve Rift gate and room
+  modules run with the GIL off (275 passed); the three tiers recounted from disk (2026-11-09, GitHub #274 step 3,
+  0.2.8301)
+- `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`
+- `tests/unit/melder/aether/test_rift_gate_thread_tickets.py`
+- `tests/unit/melder/aether/test_rift_gate.py`
+- `tests/_nexus_viewer_matrix_support.py`
+- `src/melder/nexus/rift/rift_gate/rift_gate.py`
+- `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
 
 ## Open Questions
 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a
@@ -5408,6 +5627,32 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+2026-11-09 the Rift gate (no notch from this pass; documentation only; GitHub #274 step 3, 0.2.8301): two new
+modules are catalogued and recorded in the core map. The component module
+`test_rift_component_gate_drains_before_teardown.py` (1348 lines; 13 tests, 23 cases) joins the Aether Component
+Cluster: a removal waits for an agent inside a workstation target, a viewer read and a command, newcomers at five
+doors are refused at once, a drain timeout keeps the Rift with its gate closed and a retry succeeds, a self-removal
+is not waited for, `Nexus.cleanup` waits under one shared deadline and logs a timeout, a thread inside passes its
+own gate under an ACL refresh and a removal, and an ACL refresh waits for a paused viewer read (V1); a new call
+flow, Rift Gate Drain Handshakes, names its `_Hold` points, `_Newcomer` doors and its one bounded observation window.
+The unit module `test_rift_gate_thread_tickets.py` (357 lines; 5 tests) joins the Aether/Nexus/Rift Unit Cluster
+with the gate's ticket model, and `test_rift_gate.py` (12 tests), uncatalogued until now, joins it for its changed
+counts and drains. The agents-and-teardown module (1157 lines; 9 tests; it read 939 and 8) now asserts that W4, W6
+and C3's removals wait and find 0 threads inside, drives R4's residual through the untagged `_create_frame_link`
+and pins the public door's ordering; its flow, cluster entry and record follow, its test and src citations
+remapped, as are the 0.2.8289 flow's src citations, which also note that the race module's nested removals pass as
+self-removals. The Nexus orchestration file's `remove_rift` order starts with the drain, the viewer matrix double
+and three detached Rift doubles own a `RiftGate`, and the component suite's threading names the observation
+window. Counts follow the two new files: 180 `test_*.py` among 182 `.py` in the component tier, 86 in its aether
+tree; 555 among 558 in the unit tier, 225 in its aether tree; 924 in the three tiers; the core set is 362 paths,
+equal to the map. The twelve Rift gate and room modules ran with the GIL off (275 passed); nothing else was run.
+Two test docstrings this pass found still saying a door "takes no ticket" today, written before the doors landed -
+`test_an_agent_removing_its_own_rift_from_inside_call_target_is_not_waited_for` ("Today: a workstation call takes no
+ticket, so this passes") and `test_an_agent_inside_a_command_passes_its_own_gate_while_an_acl_refresh_drains_it`
+("Today the nested viewer read takes no ticket") - were fixed by melder_0 on 2026-11-09, in the past tense and line
+for line ("Before step 3 ..."), so no line moved. Still unknown: the Unknowns section, unchanged. Map next: the
+other 17 tests of the Nexus orchestration file.
+
 2026-11-08 Rift agents and teardown (no notch from this pass; documentation only; GitHub #274, 0.2.8290-0.2.8292):
 the new component module `test_rift_component_agents_and_teardown_do_not_deadlock.py` (939 lines; 8 tests) is
 catalogued in the Aether Component Cluster and the component suite's protects list, and recorded in the core map:

@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8300"
-SOURCE_SHA256 = "7f7f63fa906022710be3d4630e6320c83da7af85d926783bdc8df29bb0e5668a"
-ENTRY_COUNT = 631
+BUILT_FOR_VERSION = "0.2.8310"
+SOURCE_SHA256 = "6896b5b2ed8146f6cea4f50b01c59071e447ff7dd3c7cd6779cfe086a3499ca8"
+ENTRY_COUNT = 635
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -397,6 +397,7 @@ ENTRIES = (
     ('melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy', 'SyntheticCustodyStrategy'),
     ('melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy', 'UserSourceCustodyStrategy'),
     ('melder.crystallizer.crystal_analysis.impact_engine', 'ImpactEngine'),
+    ('melder.crystallizer.crystal_analysis.module_answer_cache', 'ModuleAnswerCache'),
     ('melder.crystallizer.crystal_analysis.physical_source_cache', 'PhysicalSourceCache'),
     ('melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy', 'ClusterMembershipStrategy'),
     ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
@@ -457,6 +458,7 @@ ENTRIES = (
     ('melder.mutation_research.mutation_research', 'MutationResearch'),
     ('melder.mutation_research.research_set.grouped_research_node', 'GroupedResearchNode'),
     ('melder.mutation_research.research_set.network_versioner', 'NetworkVersioner'),
+    ('melder.mutation_research.research_set.research_composition_view', 'ResearchCompositionView'),
     ('melder.mutation_research.research_set.research_journal', 'ResearchJournal'),
     ('melder.mutation_research.research_set.research_lane', 'LaneState'),
     ('melder.mutation_research.research_set.research_lane', 'LaneType'),
@@ -572,6 +574,8 @@ ENTRIES = (
     ('melder.nexus.rift.projection.view_projection', 'ViewProjection'),
     ('melder.nexus.rift.rift', 'Rift'),
     ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGate'),
+    ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGateDrainTimeoutError'),
+    ('melder.nexus.rift.rift_gate.rift_gate', '_RiftGateHolder'),
     ('melder.nexus.rift.rift_gate_controller.rift_gate_controller', 'RiftGateController'),
     ('melder.nexus.rift.rift_space.capability_rift_space', 'CapabilityRiftSpace'),
     ('melder.nexus.rift.rift_space.codegen_rift_space', 'CodegenRiftSpace'),

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
- "source_sha256": "e0af7c1792b2bd2b668e34b7cafcc78d139b9c811f73095c5374c87690f8e623",
+ "source_sha256": "a92242d283747964f64a90c53990faf734b9777dd46737f099db5d9fc532497b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.policies.policies": {

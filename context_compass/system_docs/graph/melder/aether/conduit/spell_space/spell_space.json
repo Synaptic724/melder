@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "9e3c23f3d44f6474422d77f3c44e6063372e86a2bed723fb26f34c1da8cbd98b",
+ "source_sha256": "c0f1f5864a1e9d142acc4582955dccb348c83ce9771d3067060ec9e08499979a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {

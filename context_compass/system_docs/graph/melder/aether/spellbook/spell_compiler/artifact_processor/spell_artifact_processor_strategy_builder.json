@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py",
- "source_sha256": "6b9ac3831d1fac24d4fdf9aa9e2f176b0189071be512a73e947f1a542aca1305",
+ "source_sha256": "46d414cb1181593c6b332ed1c71c1bd7575aaaeefe22352c8d3f2565d2da30ef",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/source_drift_strategy.py",
- "source_sha256": "edd7ecbd3c1214c8e88baa1753ce9f1c55d99139fdc8b2d5622b7b4f9e8f2ec8",
+ "source_sha256": "39f95053b7f31b2b31e8b7d48d3a0d674770faa152e4d079e89285b1b647df64",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.source_drift_strategy": {

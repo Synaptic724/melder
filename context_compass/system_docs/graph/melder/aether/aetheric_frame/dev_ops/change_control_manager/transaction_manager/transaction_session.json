@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py",
- "source_sha256": "42baf8f867c0a3db78a74b90b6794df75747e68c0aa4ac82a3d92941ec77b260",
+ "source_sha256": "216e361858b3e25f4509ff9db88c479af7ac40412b502d6a907811cd79f418bc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_session": {

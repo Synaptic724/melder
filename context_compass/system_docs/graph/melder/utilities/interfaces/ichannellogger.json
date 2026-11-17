@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/interfaces/ichannellogger.py",
- "source_sha256": "880e897b813de05a290df04fe85e39df8576102cd89169a90405dbbfec6a76c6",
+ "source_sha256": "f54a961e84fc17f0ab9868f211d9f74e4b93a63fad93e33dc86b665720b6e056",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.interfaces.ichannellogger": {

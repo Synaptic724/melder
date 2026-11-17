@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/grouped_research_node.py",
- "source_sha256": "714c246c1385edcc973474ee1dad632c0ec239f0db8f0e1bb5b49d79e4285afa",
+ "source_sha256": "c21b5eb58d5470d73cb33af27f067289e57e96a31e57547704c68c1f19b02ecc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.grouped_research_node": {

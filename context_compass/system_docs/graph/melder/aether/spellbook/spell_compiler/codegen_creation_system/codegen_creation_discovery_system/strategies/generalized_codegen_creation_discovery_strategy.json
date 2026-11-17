@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_codegen_creation_discovery_strategy.py",
- "source_sha256": "42512be1b81bb7dd8a30c7b4640abda70d205fdf5e142c3e38c772c7600594ee",
+ "source_sha256": "0709bb18b861e286bb672a0ecc2352fad31b903cba72dbb79b4d8d75e60631ed",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy": {

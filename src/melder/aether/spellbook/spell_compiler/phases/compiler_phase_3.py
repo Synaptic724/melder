@@ -103,6 +103,12 @@ class CompilerPhase3:
           Phase 4 refuses a single or SpellMap socket that carries them with
           HIDDEN_PROVIDER, and Phase 6 names them for an empty required
           `list[Class]`. Recording them changes nothing that resolves.
+        - A dependency that matches nothing is recorded, never refused here: a
+          single typed parameter and a SpellMap default (2026-11-16, GitHub
+          #329: the owner's rule that bind order must not matter) become
+          UNRESOLVED_INPUT sockets watched under their dependency key, so the
+          bind of a provider re-gates the consumer and meld refuses it until
+          then. Only several SpellMap candidates raise.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
     """
@@ -1094,9 +1100,21 @@ class CompilerPhase3:
             candidates and Phase 4 refuses the spell through the readable
             report. Without `hidden_out` (a direct caller) the RuntimeError
             below is raised with one sentence appended naming where X is bound
-            (`HiddenProviderReport.spellmap_runtime_suffix`). A miss with X
-            registered nowhere, a frame-named miss and several candidates raise
-            exactly as before.
+            (`HiddenProviderReport.spellmap_runtime_suffix`). Several candidates
+            raise in every caller.
+
+        Miss (2026-11-16, GitHub #329, the owner's rule that bind order must
+        not matter):
+            With `hidden_out` (Phase 3's own call) no miss raises. A SpellMap
+            that matches nothing - frame-named, or a class lookup of an X
+            registered nowhere - returns an empty mapping, and Phase 3 records
+            its socket UNRESOLVED_INPUT at the SpellMap's canonical key: the
+            conjure or the late bind succeeds, a bind under that frame re-gates
+            the consumer, and meld raises UnresolvedInputError until a provider
+            is there or the value is supplied. Before, both misses raised here,
+            so a consumer bound into a conjured book before its provider was
+            refused. A direct caller without `hidden_out` still gets the
+            RuntimeError for every miss.
 
         Args:
             spell:
@@ -1106,19 +1124,22 @@ class CompilerPhase3:
             dep:
                 Dependency metadata containing spellmap defaults.
             hidden_out:
-                Optional list that receives the `(spell_index, spell)`
-                registrations of X when the HIDDEN_PROVIDER shape misses; None
-                keeps the raising behaviour for direct callers.
+                Optional list given by Phase 3's own call. It receives the
+                `(spell_index, spell)` registrations of X when the
+                HIDDEN_PROVIDER shape misses, and its presence makes every miss
+                return an empty mapping; None keeps the raising behaviour for
+                direct callers.
 
         Returns:
             Dict[Any, Spell]:
                 Mapping with exactly one resolved spell for the default; empty
-                only when `hidden_out` received the hidden registrations.
+                when nothing matched and `hidden_out` was given (it then holds
+                X's hidden registrations, or nothing for a plain miss).
 
         Raises:
-            RuntimeError: If no candidate can be resolved (outside the recorded
-                HIDDEN_PROVIDER shape) or multiple candidates satisfy the
-                explicit default selection constraints.
+            RuntimeError: If multiple candidates satisfy the default's
+                selection constraints, or - without `hidden_out` only - if no
+                candidate matches.
         """
         spellmap = dep.spellmap_default
         if spellmap is None:
@@ -1167,18 +1188,23 @@ class CompilerPhase3:
                     candidates[index] = spell_obj
 
         if not candidates:
+            # The class-lookup form missed an X registered elsewhere: the
+            # HIDDEN_PROVIDER shape (2026-11-07), which Phase 3 records for the
+            # readable report and a direct caller reads in its error.
+            hidden_shape = frame is None and bool(registrations)
+            if hidden_out is not None:
+                # Phase 3's own call records every miss (2026-11-16): the empty
+                # mapping becomes an UNRESOLVED_INPUT socket at the SpellMap's
+                # key, re-gated by a provider bound there later.
+                if hidden_shape:
+                    hidden_out.extend(registrations)
+                return {}
             message = (
                 "SpellCrafter Phase 3: SpellMap default could not be resolved for "
                 f"parameter {dep.param_name!r} on spell {spell.spell_name!r}. "
                 f"SpellMap={spellmap!r}."
             )
-            if frame is None and registrations:
-                # The class-lookup form missed an X registered elsewhere: the
-                # HIDDEN_PROVIDER shape (2026-11-07). Phase 3 records it for the
-                # readable report; a direct caller gets where X is bound.
-                if hidden_out is not None:
-                    hidden_out.extend(registrations)
-                    return {}
+            if hidden_shape:
                 message += " " + self._spellmap_hidden_sentence(explicit_spell, registrations)
             raise RuntimeError(message)
 
@@ -1288,7 +1314,9 @@ class CompilerPhase3:
             UNRESOLVED_INPUT as before, and a class lookup that missed a class
             bound only under a spellframe or a binding name also records those
             spells, so Phase 4 (single, SpellMap) or Phase 6 (an empty required
-            collection) can name where the class is bound.
+            collection) can name where the class is bound. Since 2026-11-16
+            (GitHub #329) a SpellMap that matches nothing is an UNRESOLVED_INPUT
+            as well, so its consumer waits for a provider at its address.
 
         Contract:
             - SINGLE_BY_ANNOTATION: always added to `socket_unresolved`; its
@@ -1299,10 +1327,12 @@ class CompilerPhase3:
               may legitimately wire nothing); a required one records its hidden
               ids only (no frame keys: the socket stays NORMAL and the consumer
               is not refused, so no watch is needed).
-            - SPELLMAP_DEFAULT: reached empty only when
-              `_resolve_spellmap_default` recorded `spellmap_hidden` instead of
-              raising; the socket becomes UNRESOLVED_INPUT with the hidden ids
-              and frame keys of those registrations.
+            - SPELLMAP_DEFAULT: Phase 3's call returns empty for every miss
+              (2026-11-16, GitHub #329), so a dependency carrying a SpellMap is
+              always added to `socket_unresolved`: it waits at the SpellMap's
+              canonical key. Hidden ids and frame keys are recorded only when
+              `_resolve_spellmap_default` filled `spellmap_hidden` (the
+              HIDDEN_PROVIDER shape); a plain miss records none.
             - Any other shape: nothing (metadata-only sockets).
             - Mutates only the two collections passed in; reads the pool or the
               pass-scoped index; takes no lock.
@@ -1338,8 +1368,11 @@ class CompilerPhase3:
                 collection=True,
             )
             hidden = (hidden_ids, ())
-        elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT and spellmap_hidden:
+        elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT and dep.spellmap_default is not None:
             socket_unresolved.add(key)
+            if not spellmap_hidden:
+                # A plain miss: nothing of the SpellMap's target is registered.
+                return
             hidden = self._hidden_ids_and_frames(spellmap_hidden)
         else:
             return
@@ -1370,9 +1403,11 @@ class CompilerPhase3:
             For each: class:`SpellSymbolicDependency`:
                 * Determine declaration kind, then mark selected descriptive targets
                   OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
-                * Mark single typed sockets listed in "socket_unresolved" (no
-                  registered provider at all) UNRESOLVED_INPUT. They keep their
-                  dependency_key so a later matching bind re-resolves this spell.
+                * Mark single typed and SpellMap sockets listed in
+                  "socket_unresolved" (no registered provider at all)
+                  UNRESOLVED_INPUT. They keep their dependency_key - a SpellMap
+                  socket its SpellMap's canonical key (2026-11-16) - so a later
+                  matching bind re-resolves this spell.
                 * Mark single typed sockets listed in "socket_ambiguous" (two or
                   more resolvable providers) AMBIGUOUS_INPUT, with the candidate
                   ids as descriptive `referenced_spell_ids` and no target; they
@@ -1515,7 +1550,10 @@ class CompilerPhase3:
                   declarations/topology without resolving constructor requirements.
                 * A single typed dependency that no registered spell provides
                   produces an UNRESOLVED_INPUT socket (no dependency id) instead of
-                  failing: the constructing meld supplies it.
+                  failing: the constructing meld supplies it. A SpellMap default
+                  that matches nothing does the same since 2026-11-16 (GitHub
+                  #329; it raised RuntimeError here before), so a consumer bound
+                  before its provider waits for it in any bind order.
                 * A class lookup that misses a class bound only under a
                   spellframe or a binding name records those spells as the
                   socket's hidden candidates (2026-11-07,
@@ -1566,7 +1604,8 @@ class CompilerPhase3:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
         socket_references: Dict[tuple[str, int], List[str]] = {}
-        # Single typed sockets with no registered provider: recorded, not refused.
+        # Single typed and SpellMap sockets with no registered provider:
+        # recorded, not refused.
         socket_unresolved: Set[tuple[str, int]] = set()
         # Single typed sockets with several resolvable providers: recorded for
         # Phase 4 with their candidate ids, never resolved.
@@ -1580,7 +1619,8 @@ class CompilerPhase3:
 
             di_shape = dep.di_shape
             # The registrations a `SpellMap(spell=X)` class lookup missed (filled
-            # only when `_resolve_spellmap_default` records instead of raising).
+            # only in the HIDDEN_PROVIDER shape; passing it also makes every
+            # SpellMap miss return empty instead of raising, 2026-11-16).
             spellmap_hidden: List[Tuple[SpellIndex, Spell]] = []
 
             # Only "normal" DI shapes produce concrete dependency ids for now.
@@ -1607,9 +1647,9 @@ class CompilerPhase3:
 
             key = (dep.param_name, dep.position)
             if not resolved:
-                # Nothing answers this lookup: keep a single socket as an
-                # unresolved input instead of failing resolution, and record the
-                # class's hidden candidates where a class lookup missed them.
+                # Nothing answers this lookup: keep a single or SpellMap socket as
+                # an unresolved input instead of failing resolution, and record
+                # the class's hidden candidates where a class lookup missed them.
                 self._record_unresolved_miss(
                     spellbook,
                     dep,

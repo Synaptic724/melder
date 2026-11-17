@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/load_plan.py",
- "source_sha256": "50c9d32c61f22c65d2ee997496d456efd77a4e1a6e426a0c404d62e407464b5e",
+ "source_sha256": "9a9f54576cfefb2ddf144e415102cb1a6cd85ae027cc91a29ec1a942dc6acb8e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.load_plan": {

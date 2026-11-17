@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/projection/command_projection.py",
- "source_sha256": "30b2a65d5606119f7d16b132deab8d401eadbd988f5d2e73ca1fe7aba6e8a908",
+ "source_sha256": "4e0ed5c086be1b06473a2739455743aaa66ce3076a4a7b54d8abcdd905fa23fd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.projection.command_projection": {

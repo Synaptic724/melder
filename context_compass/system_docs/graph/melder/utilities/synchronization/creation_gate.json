@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/creation_gate.py",
- "source_sha256": "2d1bb729fdca99e613104bb0663ebc5070ad77d75c340eb883c9ec40e38556a0",
+ "source_sha256": "13ff35d36ae3df3aa0a296a4c052f3ac868d50cc4338c3acf6e59290a3512b12",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.creation_gate": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/logger/safe_logger.py",
- "source_sha256": "33348991344b0112a54c4220213fc43aa632db11ea827c615ea38a8c1064d737",
+ "source_sha256": "777bb328d07c9965a2f47b4c31e8e9e4779c650e4e7bcb2a2e8797fcd31ea5d0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.logger.safe_logger": {

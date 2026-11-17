@@ -437,13 +437,18 @@ def test_conjure_with_ambiguous_frame_di_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unresolvable_spellmap_default_raises() -> None:
-    """A SpellMap default whose target is unbound must fail at Phase-3 resolution."""
+def test_conjure_with_unresolvable_spellmap_default_waits_as_an_unresolved_input() -> None:
+    """
+    A SpellMap default whose target is unbound failed at Phase-3 resolution before 0.2.8303; since then (GitHub #329)
+    it is an unresolved input: conjure succeeds and the meld raises UnresolvedInputError naming the SpellMap.
+    """
     spellbook = _make_spellbook()
     try:
         spellbook.bind(spell=UsesMissingSpellMap, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        root = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError,
+                           match=r"asks for the spell its default SpellMap\(UnboundConfig\) names"):
+            root.meld(UsesMissingSpellMap)
     finally:
         spellbook.cleanup()
 

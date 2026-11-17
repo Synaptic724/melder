@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/link_integrity_strategy.py",
- "source_sha256": "2745328b9de8e89be15405b227c20e4428f4483a24a7aaf0cd2435bae49eaad4",
+ "source_sha256": "d7c38ad5f59b215fc60ac5462636636278d6e4ace095b98d09a806db29becc05",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy": {

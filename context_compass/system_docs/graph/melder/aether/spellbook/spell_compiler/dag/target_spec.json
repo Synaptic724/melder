@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/target_spec.py",
- "source_sha256": "c335532ed2e343cd4be2b83352dbef429ea64bd7ccdc8cd5c4320953fcf2d945",
+ "source_sha256": "fd96b7fe0613421ae8c5ed025dd73428b381b92b7849f6f040324d1692e141bd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.target_spec": {

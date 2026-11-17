@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py",
- "source_sha256": "6d586ae37e4972c8f3fb5a1268fad664e3258c894e1212a621ed87d4b2fdab3b",
+ "source_sha256": "74519f8f5a7ac17e66c53d98e3d1f9a6a251482c0dc99ed829e5c0b7c5b96470",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer": {

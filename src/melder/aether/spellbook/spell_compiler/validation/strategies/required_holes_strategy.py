@@ -1,5 +1,5 @@
 import inspect
-from typing import TYPE_CHECKING, Any, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Optional, get_args, get_origin
 
 
 
@@ -8,7 +8,10 @@ from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 if TYPE_CHECKING:
+    from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellSocketDescriptor
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 
@@ -34,9 +37,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
       Non-resolvable roots have no construction-input obligations.
     - Also reports UNRESOLVED_INPUT sockets (a typed parameter no registered
-      spell provides) with the expected type, so a forgotten binding is visible
-      at conjure even though constructing the spell without the value only fails
-      at meld.
+      spell provides, or a SpellMap default whose address has nothing bound -
+      2026-11-16, GitHub #329) with the expected type - for a SpellMap, the
+      SpellMap as written - so a forgotten binding is visible at conjure even
+      though constructing the spell without the value only fails at meld.
     - Skips an UNRESOLVED_INPUT socket that carries hidden candidates
       (`hidden_spell_ids`, 2026-11-07): its class IS registered, under a
       spellframe or a binding name, and `HiddenProviderStrategy` refuses the
@@ -92,9 +96,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
           or convert the hole into a DI target.
         - Reads reference-only required inputs from SpellSystemStates without
           taking ownership of their topology or changing declaration facts.
-        - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket,
-          naming the expected type from the Phase-1 annotation - except a socket
-          with hidden candidates, which HIDDEN_PROVIDER reports as an error.
+        - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket
+          (`_unresolved_input_issue`), naming the expected type from the Phase-1
+          annotation, or the SpellMap a SpellMap parameter defaults to - except a
+          socket with hidden candidates, which HIDDEN_PROVIDER reports as an error.
 
         Raises:
             RuntimeError: If an UNRESOLVED_INPUT socket has no matching Phase-1
@@ -143,29 +148,7 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     # The class is bound under a spellframe or a binding name:
                     # HiddenProviderStrategy refuses the spell naming where.
                     continue
-                expected_type = self._expected_type_for(requirements, socket.param_name)
-                context.issues.append(
-                    SpellValidationIssue(
-                        severity="warning",
-                        code="UNRESOLVED_INPUT",
-                        message=(
-                            f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
-                            f"{expected_type}, but no registered spell provides it. Supply it through a "
-                            f"meld override (key {socket.param_name!r}, or a path key ending in "
-                            f"'>{socket.param_name}' when this spell is built as a dependency) or bind "
-                            f"a provider for {expected_type}. Constructing this spell without it raises "
-                            "UnresolvedInputError."
-                        ),
-                        details={
-                            "spell_id": spell.spell_id,
-                            "parameter_name": socket.param_name,
-                            "position": socket.position,
-                            "parameter_kind": socket.parameter_kind,
-                            "expected_type": expected_type,
-                            "dependency_key": socket.dependency_key,
-                        },
-                    )
-                )
+                context.issues.append(self._unresolved_input_issue(spell, requirements, socket))
                 continue
             if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
                 continue
@@ -187,6 +170,96 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     },
                 )
             )
+
+    def _unresolved_input_issue(
+            self,
+            spell: Spell,
+            requirements: SpellRequirements,
+            socket: SpellSocketDescriptor,
+    ) -> SpellValidationIssue:
+        """
+        Build the UNRESOLVED_INPUT warning for one unresolved-input socket without hidden candidates.
+
+        Contract:
+            - A parameter whose default is a SpellMap (2026-11-16, GitHub #329: a
+              SpellMap that matches nothing waits as an unresolved input) is named
+              by that SpellMap as written (`UnresolvedInputError._spellmap_address_name`)
+              and the text asks for a spell at that address; `details["expected_type"]`
+              is that rendering.
+            - Any other parameter keeps the typed text: the expected type from its
+              Phase-1 annotation (`_expected_type_for`), unchanged.
+            - The details always carry spell_id, parameter_name, position,
+              parameter_kind, expected_type and dependency_key.
+
+        Args:
+            spell: The spell under validation.
+            requirements: Its Phase-1 requirements.
+            socket: The UNRESOLVED_INPUT socket.
+
+        Returns:
+            SpellValidationIssue: The warning.
+
+        Raises:
+            RuntimeError: If the socket has no matching Phase-1 parameter
+                (topology and requirements out of step).
+        """
+        spell_map = self._spell_map_for(requirements, socket.param_name)
+        if spell_map is not None:
+            expected_type = UnresolvedInputError._spellmap_address_name(spell_map)
+            message = (
+                f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} asks for the spell its default "
+                f"{expected_type} names, but nothing is bound there. Supply it through a meld override (key "
+                f"{socket.param_name!r}, or a path key ending in '>{socket.param_name}' when this spell is built as "
+                "a dependency) or bind a spell at that address. Constructing this spell without it raises "
+                "UnresolvedInputError."
+            )
+        else:
+            expected_type = self._expected_type_for(requirements, socket.param_name)
+            message = (
+                f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
+                f"{expected_type}, but no registered spell provides it. Supply it through a "
+                f"meld override (key {socket.param_name!r}, or a path key ending in "
+                f"'>{socket.param_name}' when this spell is built as a dependency) or bind "
+                f"a provider for {expected_type}. Constructing this spell without it raises "
+                "UnresolvedInputError."
+            )
+        return SpellValidationIssue(
+            severity="warning",
+            code="UNRESOLVED_INPUT",
+            message=message,
+            details={
+                "spell_id": spell.spell_id,
+                "parameter_name": socket.param_name,
+                "position": socket.position,
+                "parameter_kind": socket.parameter_kind,
+                "expected_type": expected_type,
+                "dependency_key": socket.dependency_key,
+            },
+        )
+
+    @staticmethod
+    def _spell_map_for(requirements: SpellRequirements, param_name: str) -> Optional[SpellMap]:
+        """
+        Return the SpellMap one unresolved-input parameter defaults to, or None.
+
+        Contract:
+            - Reads the Phase-1 `spellmap_default` of `param_name`: set only for a
+              SPELLMAP_DEFAULT parameter. None for any other parameter, and for a
+              name with no Phase-1 parameter (`_expected_type_for` then raises).
+            - Pure; reads only the requirements.
+
+        Args:
+            requirements: Phase-1 requirements of the spell under validation.
+            param_name: Parameter carried by the UNRESOLVED_INPUT socket.
+
+        Returns:
+            Optional[SpellMap]: The parameter's SpellMap default, or None.
+        """
+        for param in requirements.parameters:
+            if param.name == param_name:
+                spell_map: Optional[SpellMap] = param.spellmap_default
+                return spell_map
+        return None
 
     @staticmethod
     def _container_hint(annotation: Any) -> str:

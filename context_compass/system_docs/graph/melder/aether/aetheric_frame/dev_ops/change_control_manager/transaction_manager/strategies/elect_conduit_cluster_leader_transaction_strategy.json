@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py",
- "source_sha256": "a68d60158087efb5f204d55985d267259b90a4b14ce0ba6031b779a288701eb3",
+ "source_sha256": "6d34d74c3b2482bebbe928295aa0095f8440b7d16677d6c11cf670a39dc122d2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy": {

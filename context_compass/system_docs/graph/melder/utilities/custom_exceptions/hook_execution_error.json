@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
- "source_sha256": "0cb048b2f2b13be085f98f5bd6bb24f16f1e116541517206e85501a8b371aec2",
+ "source_sha256": "616586ee4261abeb4a2b5a90b40d64c2c75af3a5785858a6279677f9ef3e2e87",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.hook_execution_error": {

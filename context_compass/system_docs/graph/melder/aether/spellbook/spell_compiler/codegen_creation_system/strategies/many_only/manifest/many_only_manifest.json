@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py",
- "source_sha256": "0a401c44fd90f07b16cc65865fd31debdc2438202341ad652e4653736bbc579c",
+ "source_sha256": "3797ccce67626ef849fa807dd4002fd128f1655e287ea83aa7bae3592933b07c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest": {

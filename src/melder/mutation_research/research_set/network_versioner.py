@@ -1,9 +1,13 @@
 import hashlib
 import json
 import threading
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+# The undo ring's part of a composition view (#331): the retained addresses, oldest first, and the `describe()`
+# payload, both as of the last mint and never edited afterwards.
+RingPayloadView = Tuple[List[str], Dict[str, object]]
 
 
 class NetworkVersioner(Cleanable):
@@ -31,6 +35,13 @@ class NetworkVersioner(Cleanable):
 
     Threading:
         Instance `RLock` serializes snapshot minting, retention, and reads.
+
+    Composition parts (#331, 0.2.8306):
+        Every mint (and hydration) rebuilds `_ring_payload`, the address list
+        and the `describe()` payload as of that mint - at most 64 entries, so
+        constant work. Nothing edits it afterwards and cleanup drops it, so
+        `_payload_view()` hands it out as is: a persistence twin carries the
+        ring as of its last mint without copying it per emission.
 
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` deletes owned fields;
@@ -74,6 +85,7 @@ class NetworkVersioner(Cleanable):
         "_canonical_by_sha",
         "_order",
         "_max_snapshots",
+        "_ring_payload",
         "_lock",
     ]
 
@@ -110,6 +122,8 @@ class NetworkVersioner(Cleanable):
         self._canonical_by_sha: Dict[str, str] = {}
         self._order: List[str] = []
         self._max_snapshots: int = max_snapshots
+        # The ring as of the last mint, rebuilt by every mint and never edited (composition views hold it).
+        self._ring_payload: RingPayloadView = self._build_ring_payload()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -121,7 +135,8 @@ class NetworkVersioner(Cleanable):
             - DELETE-NOT-NULL, no tombstones; the lock is deleted last, outside
               the guarded block.
             - Holds only canonical text and address strings, no owned objects, so
-              there is no child cascade.
+              there is no child cascade. The ring payload is dropped, not
+              cleared: a composition view taken earlier still holds it (#331).
 
         Returns:
             None.
@@ -137,6 +152,7 @@ class NetworkVersioner(Cleanable):
             del self._canonical_by_sha
             del self._order
             del self._max_snapshots
+            del self._ring_payload
         del self._lock
 
     def snapshot(self, payload: Dict[str, object]) -> str:
@@ -158,6 +174,7 @@ class NetworkVersioner(Cleanable):
               snapshot just added is never the one evicted by its own insert.
             - Payload must be JSON-serializable; canonicalization goes through
               `json.dumps`, so a non-serializable value raises there.
+            - Rebuilds the ring payload `_payload_view()` hands out (#331).
 
         Threading:
             The dedup/insert/evict sequence runs under `self._lock`.
@@ -190,13 +207,56 @@ class NetworkVersioner(Cleanable):
                 # mutation's immediate predecessor - the undo ring holds.
                 self._order.remove(snapshot_sha)
                 self._order.append(snapshot_sha)
+                self._ring_payload = self._build_ring_payload()
                 return snapshot_sha
             self._canonical_by_sha[snapshot_sha] = canonical
             self._order.append(snapshot_sha)
             while len(self._order) > self._max_snapshots:
                 oldest = self._order.pop(0)
                 del self._canonical_by_sha[oldest]
+            self._ring_payload = self._build_ring_payload()
             return snapshot_sha
+
+    def _build_ring_payload(self) -> RingPayloadView:
+        """
+        Build the ring payload a composition view carries: the addresses and the `describe()` payload, copied.
+
+        Contract:
+            - Fresh lists and dict (the canonical strings are shared; they are
+              immutable), so later mints never change a payload already handed
+              out. At most `max_snapshots` entries: constant work per mint.
+            - Callers hold `self._lock`, or the versioner is not yet shared.
+
+        Returns:
+            RingPayloadView: (addresses oldest first, describe() payload).
+        """
+        return list(self._order), {
+            "canonical_by_sha": dict(self._canonical_by_sha),
+            "order": list(self._order),
+            "max_snapshots": self._max_snapshots,
+        }
+
+    def _payload_view(self) -> RingPayloadView:
+        """
+        Return the ring's part of a composition view, as of the last mint (#331).
+
+        Contract:
+            - The returned list equals `snapshot_shas()` and the dict equals
+              `describe()` as of the last mint; neither is edited afterwards (each
+              mint installs new ones). A reader must copy what it hands on.
+
+        Threading:
+            Read under `self._lock`.
+
+        Returns:
+            RingPayloadView: (addresses oldest first, describe() payload).
+
+        Raises:
+            RuntimeError: If the versioner has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._ring_payload
 
     def get(self, snapshot_sha: str) -> Dict[str, object]:
         """
@@ -455,4 +515,5 @@ class NetworkVersioner(Cleanable):
                         )
                     versioner._canonical_by_sha[str(snapshot_sha)] = canonical
                     versioner._order.append(str(snapshot_sha))
+            versioner._ring_payload = versioner._build_ring_payload()
         return versioner

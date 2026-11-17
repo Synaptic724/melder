@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py",
- "source_sha256": "5fee387949a937b1bbc855ac9010e97a903a0f6439a824075b72d40b23eaa3de",
+ "source_sha256": "0733ab22fe4a1713ddd8be5471388d79001022432bd36fffca43688b721bca55",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile": {

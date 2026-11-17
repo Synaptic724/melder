@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
- "source_sha256": "6c0f342a553b2ef2c8221dc2062513660336e41b8dcf875ee73b444f82c33a65",
+ "source_sha256": "71bcf70a5e3faf2d37f3b3783e5965eddba55a254c9c1838631a4d775aaa81a7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": {

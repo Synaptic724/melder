@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/safeguard.py",
- "source_sha256": "c816d4b0a319b32196b5ee02ced29826b67714edf085bbb535b4f9e77097c6a5",
+ "source_sha256": "a8ea86038548446bee8f8a25042f8aeb54e0253e6bdbe4cf9e2c1ca688f70c55",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.safeguard": {

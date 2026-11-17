@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py",
- "source_sha256": "d366c9979055e2dbb632a4697a941437c484692e3ddbb3d6e11be2757b037577",
+ "source_sha256": "78bdf9dd8481f22b3eccb903a1392f62570f47ebcd7675a6d6be41bc2316b71e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot": {

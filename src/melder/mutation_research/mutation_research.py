@@ -27,6 +27,9 @@ from melder.mutation_research.mutation_configuration_builder import (
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
 )
+from melder.mutation_research.research_set.research_composition_view import (
+    ResearchCompositionView,
+)
 from melder.mutation_research.research_set.research_set import ResearchSet
 from melder.mutation_research.synthesis.structural_synthesizer import (
     StructuralSynthesizer,
@@ -3954,10 +3957,16 @@ class MutationResearch(Cleanable):
             - NO-OP while the root is inactive or the crystallizer is not
               recording (cleanup sets `_activated` False, so late teardown
               callbacks fall out here too - no cleaned-probing needed).
+            - CONSTANT COST PER EMISSION (#331, 0.2.8306): the twin receives a
+              `ResearchCompositionView` - references to each set's append-only
+              payload parts with their lengths - instead of a full
+              `describe_research_composition()`, so an append's emission describes
+              no node; the twin materializes the payload (equal to that
+              description) when it is first read.
 
         Threading:
             The whole verb runs under the reentrant emission lock: the
-            composition snapshot is built and published by the same holder,
+            composition view is taken and published by the same holder,
             so replace-on-emit publication can never move the durable
             composition backwards relative to committed live mutations (a
             later-arriving emitter always reads the newer live state before
@@ -3983,8 +3992,34 @@ class MutationResearch(Cleanable):
                 MutationResearchCrystal(
                     activated=self._activated,
                     configuration_payload=configuration_payload,
-                    composition_payload=self.describe_research_composition(),
+                    composition_view=self._research_composition_view(),
                 )
+            )
+
+    def _research_composition_view(self) -> ResearchCompositionView:
+        """
+        Take the composition view the twin is emitted with (#331).
+
+        Contract:
+            - One `ResearchSet._composition_view()` per registered set, with the
+              twin's journal window (`ResearchSet.TWIN_JOURNAL_WINDOW`);
+              materialized, it equals `describe_research_composition()` taken at
+              the same moment. Mints nothing and describes no node.
+
+        Threading:
+            Reads the registry under `self._lock` (each set's view under the
+            set's lock inside): emission -> root -> set, the existing order.
+
+        Returns:
+            ResearchCompositionView: The view, owned by the twin it is handed to.
+        """
+        with self._lock:
+            return ResearchCompositionView(
+                {
+                    name: research_set._composition_view()
+                    for name, research_set in self._research_sets_by_name.items()
+                },
+                ResearchSet.TWIN_JOURNAL_WINDOW,
             )
 
     def _require_configured(self) -> None:
