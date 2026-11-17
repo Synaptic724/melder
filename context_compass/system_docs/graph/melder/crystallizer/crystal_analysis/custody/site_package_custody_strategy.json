@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
- "source_sha256": "b0cff30073e030bc251c80c88c1040ed1bca627fb326612e3ccaf566e5782cb1",
+ "source_sha256": "436fc0b11133b9177af512e3d436356de4ee01bdbc3da46b95d8ca0aa1cacf8b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy": {
@@ -19,7 +19,7 @@
    "label": "SitePackageCustodyStrategy",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
-   "lineno": 24,
+   "lineno": 29,
    "bases": [
     "SourceCustodyStrategy"
    ],
@@ -35,16 +35,17 @@
     "resolve_source"
    ],
    "shape": {
-    "method_count": 8,
+    "method_count": 10,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9da3e0690ba91b877015d88ae69f6d8a9698a00939bcc005a6ca4524c2586aac",
+   "span_sha256": "52a0383b4f49e92f5bb52c4029c8a7fb02c4e62fb5d22581d9559fbde9dd0b3a",
    "include": true,
    "role": "Custody for installed site-package modules; reads their source but asserts no fingerprint over third-party code.",
    "responsibilities": [
     "claim modules under interpreter site roots or the historical path-text fallback",
     "expose source for fact analysis while returning None from fingerprint (no custody claim)",
+    "harvest distribution provenance through ModuleAnswerCache: installed metadata is read once per site-root state (each root's directory mtime_ns) and every call returns a fresh payload (0.2.8304)",
     "hold the site-root tuple fixed at construction and delete it on cleanup"
    ],
    "owns_state": [
@@ -54,7 +55,7 @@
     "bind",
     "cleanup"
    ],
-   "semantics_authored_against": "9da3e0690ba91b877015d88ae69f6d8a9698a00939bcc005a6ca4524c2586aac"
+   "semantics_authored_against": "52a0383b4f49e92f5bb52c4029c8a7fb02c4e62fb5d22581d9559fbde9dd0b3a"
   }
  },
  "edges_out": [
@@ -71,15 +72,30 @@
   "Path": "pathlib.Path",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
+  "List": "typing.List",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "ClassVar": "typing.ClassVar",
   "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy",
+  "ModuleAnswerCache": "melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache",
+  "ProvenanceValues": "melder.crystallizer.crystal_analysis.module_answer_cache.ProvenanceValues",
+  "SiteRootSignature": "melder.crystallizer.crystal_analysis.module_answer_cache.SiteRootSignature",
   "importlib_metadata": "importlib.metadata"
  },
  "collapse_candidate": {
   "module": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy",
   "class": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy",
   "label": "SitePackageCustodyStrategy"
- }
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy",
+   "to": "melder.crystallizer.crystal_analysis.module_answer_cache",
+   "relation": "uses",
+   "why": "Provenance harvests read the distribution map and per-package answers from the process-wide cache.",
+   "cardinality": "N",
+   "phase": "runtime",
+   "strength": "borrowed"
+  }
+ ]
 }

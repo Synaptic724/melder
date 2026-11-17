@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8303"
-SOURCE_SHA256 = "b50bf873228857cb75dcadb7eaebdc0714dca8dc3a096174cde09266a49efbb9"
-MARKED_COUNT = 472
+BUILT_FOR_VERSION = "0.2.8304"
+SOURCE_SHA256 = "bd819b333ae697484285d2fdc76f998c50d28acb41b7b044edbc9fea672d2bb5"
+MARKED_COUNT = 473
 EXEMPT_COUNT = 142
 PENDING_COUNT = 19
 
@@ -259,6 +259,7 @@ AGENT_METADATA = {
     ('melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy', 'SyntheticCustodyStrategy'): ('internal', 'access: internal. Authority-class custody for `SyntheticModule` objects. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy', 'UserSourceCustodyStrategy'): ('internal', 'access: internal. Authority-class custody for policy-rooted user source modules. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.impact_engine', 'ImpactEngine'): ('internal', 'access: internal. Index custody manifests and answer blast-radius questions. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.crystallizer.crystal_analysis.module_answer_cache', 'ModuleAnswerCache'): ('internal', 'access: internal. Process-wide guarded answers about modules for crystal analyses. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.physical_source_cache', 'PhysicalSourceCache'): ('internal', 'access: internal. Shared stat-guarded fingerprint cache over physical source files. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy', 'ClusterMembershipStrategy'): ('internal', 'access: internal. Detect cluster members missing from the bundle. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy', 'ConfigurationLossStrategy'): ('internal', 'access: internal. Surface configuration facts a record can never fully rebuild. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),

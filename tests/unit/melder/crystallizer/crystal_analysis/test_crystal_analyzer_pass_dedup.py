@@ -3,9 +3,9 @@ Unit tests for one CrystalAnalyzer pass asking each module question once (#327, 
 
 Purpose:
     Pin that one `analyze_spell_root` pass resolves each distinct module's path once and runs the custody chain
-    once per distinct module, however many modules import it, and that the next pass asks again: the analyzer
-    stays current on every analysis (the owner kept that contract on 2026-11-16). Also pin the environment roots
-    the analyzer hands to user-source custody (fix A).
+    once per distinct module, however many modules import it, and - since the owner's decision of 2026-11-17
+    (#331) - that a later pass over the unchanged world reuses those answers instead of asking again. Also pin the
+    environment roots the analyzer hands to user-source custody (fix A).
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -23,6 +23,7 @@ from melder.crystallizer.crystal_analysis.crystal_analyzer import CrystalAnalyze
 from melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy import (
     SyntheticCustodyStrategy,
 )
+from melder.crystallizer.crystal_analysis.module_answer_cache import ModuleAnswerCache
 
 
 class FanInNames:
@@ -77,9 +78,11 @@ def fan_in_world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Pa
     monkeypatch.syspath_prepend(str(tmp_path))
     for module_name in FanInNames.all_names():
         sys.modules.pop(module_name, None)
+    ModuleAnswerCache._clear_for_tests()
     yield tmp_path.resolve()
     for module_name in FanInNames.all_names():
         sys.modules.pop(module_name, None)
+    ModuleAnswerCache._clear_for_tests()
 
 
 @pytest.fixture()
@@ -219,34 +222,38 @@ def test_one_pass_still_records_every_import_edge_and_fingerprint(fan_in_world: 
         result.cleanup()
 
 
-def test_every_new_analysis_resolves_and_classifies_again(
+def test_a_new_analysis_of_an_unchanged_world_reuses_each_custody_answer(
         fan_in_world: Path,
         resolve_counts: Counter,
         custody_counts: Counter,
 ) -> None:
     """
-    Contract: nothing is kept between analyses - a second analyzer over the unchanged world asks every question
-    again, so each answer is current for its own pass.
+    Contract (owner decision 2026-11-17, #331; it replaces "nothing is kept between analyses"): a second analyzer
+    over the unchanged world still asks for each module's path once in its pass, but the answer is reused, and it
+    runs no custody chain - every module's kind comes from the first analysis.
     """
+    payloads = []
     for _ in range(2):
         analyzer = _new_analyzer(fan_in_world)
         try:
             result = _analyze(analyzer, fan_in_world)
         finally:
             analyzer.cleanup()
+        payloads.append(result.describe())
         result.cleanup()
     assert resolve_counts[FanInNames.SHARED] == 2
-    assert custody_counts[FanInNames.SHARED] == 2
+    assert dict(custody_counts) == {name: 1 for name in FanInNames.all_names()}
+    assert payloads[1] == payloads[0]
 
 
-def test_a_reused_analyzer_starts_every_pass_with_nothing_remembered(
+def test_a_reused_analyzer_reuses_its_earlier_answers_on_the_next_pass(
         fan_in_world: Path,
-        resolve_counts: Counter,
         custody_counts: Counter,
 ) -> None:
     """
-    Contract: even when one analyzer runs two passes (single use is a convention), the second pass resolves and
-    classifies again rather than reusing the first pass's answers.
+    Contract (#331): when one analyzer runs two passes (single use is a convention), the second pass empties its
+    per-pass answers as before yet classifies nothing again - the kinds come from the first pass - and records the
+    same edges.
     """
     analyzer = _new_analyzer(fan_in_world)
     try:
@@ -255,8 +262,7 @@ def test_a_reused_analyzer_starts_every_pass_with_nothing_remembered(
     finally:
         analyzer.cleanup()
     try:
-        assert resolve_counts[FanInNames.SHARED] == 2
-        assert custody_counts[FanInNames.SHARED] == 2
+        assert custody_counts[FanInNames.SHARED] == 1
         assert dict(second.module_to_direct_dependencies) == dict(first.module_to_direct_dependencies)
     finally:
         first.cleanup()

@@ -1,4 +1,4 @@
-# Melder 0.2.8303
+# Melder 0.2.8304
 
 **Unreleased**
 
@@ -103,6 +103,29 @@ The warning and the error name a SpellMap parameter by its SpellMap as written -
 asks for the spell its default SpellMap(spellframe='spectrum', binding_name='ServiceBuilder') names, but nothing is
 bound there ..." - where they named the parameter's annotation, or the frame, before.
 
+## Binding with the Crystallizer recording reuses what earlier binds learned about each module
+
+With the Crystallizer recording, every bind builds a spell crystal, and its analysis walks the spell module's whole
+import world. Nothing one analysis learned was kept for the next: each bind resolved every module's path again
+(`Path.resolve`, about 0.1 to 0.2 ms a call on Windows), classified every module again, re-checked every
+`from x import name` with `importlib.util.find_spec`, and resolved the source roots again, so a configure binding
+hundreds of spells over a few hundred modules took minutes (GitHub #331).
+
+Those answers are now kept for the process and reused while what they came from is unchanged: a module's path and
+its import facts while the same module object is loaded and its file keeps the same modification time and size, a
+module's classification while the source and package roots are the same, and an installed package's distribution
+and version while the site-packages directories are unchanged. A bind over an unchanged world does lookups and one
+file stat per module of your own source. In a measured project of 150 modules, binding 600 spells took about 2 s
+instead of 14.2 s (3.0 to 3.3 ms a bind over two runs, instead of 23.6 ms; 480 path resolutions instead of 58,915;
+Windows, GIL off).
+
+A crystal records exactly what it recorded before: a reused analysis and a fresh one give the same record. Editing a
+module's file, or importing it again so `sys.modules` holds a new module object, makes the next bind analyse that
+module again. One thing is noticed later than before: in `from package import name`, a `name` that becomes a
+submodule file after the importing module was analysed is picked up once the importing module's file changes.
+Synthetic modules are never cached, with or without a file on disk. The cache holds plain values and weak
+references - never a module, source text or result - and keeps at most 8,192 entries of each kind.
+
 ## Packaging and documentation
 
 `RiftGate` holds one ticket per thread inside, lets a thread already inside through whatever the gate's state, never
@@ -122,11 +145,18 @@ Melder's one runtime dependency, pip, now needs 26.3 or later (it was pinned at 
 upgrades an older pip and leaves a newer one alone. CI, the documentation build's lock and `uv.lock` install 26.3, and
 `requirements.txt` names pip as that one dependency (it said there was none) (GitHub issue #286).
 
-The internal-bind guard manifest holds 633 entries at 0.2.8301 (631 at 0.2.8300): `RiftGateDrainTimeoutError` and
-the gate's per-thread ticket holder are kernel classes and cannot be bound.
+The internal-bind guard manifest holds 634 entries at 0.2.8304 (633 at 0.2.8301, 631 at 0.2.8300):
+`RiftGateDrainTimeoutError` and the gate's per-thread ticket holder, then `ModuleAnswerCache`, are kernel classes and
+cannot be bound.
 
 The docstrings of `SpellMap`, `CompilerPhase3`, `RequiredHolesStrategy`, `UnresolvedInputError`, `SocketKind` and
 `SpellSystemStates` say that a SpellMap matching nothing waits as an unresolved input; the source and test maps, their
 indexes and the source graph describe it.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8303.
+The new kernel class `ModuleAnswerCache` (`melder.crystallizer.crystal_analysis.module_answer_cache`) holds the
+reused analysis answers. The docstrings of `CrystalAnalyzer` and `SitePackageCustodyStrategy` say what each answer is
+kept by and when it is derived again; the source and test maps, their indexes and the source graph describe it. The
+assembled source graph also carries the line-ending-neutral source hashes its descriptors gained in the 2.23.3
+re-extraction.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8304.

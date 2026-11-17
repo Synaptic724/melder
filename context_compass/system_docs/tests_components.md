@@ -1453,8 +1453,18 @@ Protects:
   environment, and `site-packages`/`dist-packages` directories in any letter case
 - one analysis pass asking each module question once (0.2.8302, #327; `test_crystal_analyzer_pass_dedup.py`,
   6 tests): a module imported from four places has its path resolved once and its custody matched once in a
-  pass, every edge and fingerprint still recorded; a new analyzer, or a second pass on the same one, asks
-  again; the environment roots are the site roots then `sys.prefix`, `sys.base_prefix` and `sys.exec_prefix`
+  pass, every edge and fingerprint still recorded; since 0.2.8304 a new analyzer, or a second pass on the
+  same one, reuses those answers and classifies nothing again; the environment roots are the site roots then
+  `sys.prefix`, `sys.base_prefix` and `sys.exec_prefix`
+- analyses reusing module answers (0.2.8304, #331; `test_module_answer_cache.py`, 12 tests): a second
+  analysis of an unchanged world resolves, matches and probes nothing and records what a fresh analysis
+  records; an edited file or a re-imported module object is derived again; a member submodule created later
+  is seen once its importer's file changes; a synthetic module with no physical copy is read on every
+  analysis; supplied fact strategies derive every module; a cached path keeps no module alive; each map is
+  LRU-bounded; site-package provenance reads installed metadata once until a site root changes; the policy
+  roots resolve once per input and working directory; eight concurrent analyses (the GIL off) record the
+  same result. The syntax-memo pins of `test_crystal_analyzer.py` clear the module answers before their
+  second analysis, so they still reach the memo beneath them
 - managed options in the record (0.2.8242): a managed crystal records the mode's name, the limit, the timeout
   and the reset names in order; other crystals carry none of the four keys; a payload's options replay as bind
   keywords (none from a 4.1 record or another existence); RecordVersion 4.2.0 still read 4.1 records,
@@ -1483,6 +1493,7 @@ Key Files (C1):
 - `tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py` (2026-09-30)
 - `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py` (2026-10-10)
 - `tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py` (#327, 2026-11-16)
+- `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py` (#331, 2026-11-17)
 - `tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py` (record 4.2.0, 2026-10-15)
 - `tests/unit/melder/crystallizer/test_spell_crystal_binding_hash.py` (record 4.3.0, 2026-10-18)
 - `tests/unit/melder/crystallizer/persistence/test_record_version_and_json_contract.py` (record 5.0.0, 2026-10-25)
@@ -3779,10 +3790,18 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     wins since 0.2.8302; roots never grant import.
 - path: `tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py`
   start_line: 1
-  end_line: 279
-  loc: 279
-  verified_at: 2026-11-16T12:26:27Z
-  note: one analysis pass resolves and classifies each module once; the next pass asks again (#327).
+  end_line: 285
+  loc: 285
+  verified_at: 2026-11-17T10:34:56Z
+  note: one analysis pass resolves and classifies each module once (#327); the next pass reuses the answers
+    (#331).
+- path: `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py`
+  start_line: 1
+  end_line: 618
+  loc: 618
+  verified_at: 2026-11-17T10:34:56Z
+  note: analyses reuse module paths, custody kinds, facts, roots and provenance across binds; guards and
+    residual (#331).
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
   end_line: 994
@@ -5330,6 +5349,7 @@ graph TD
 - `tests/integration/melder/multithreading/test_contract_mutation_during_meld_resolution_integration.py`
 - `tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py`
 - `tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py`
+- `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py`
 - `tests/unit/melder/spellbook/bind/test_internal_registration_identity.py`
 - `tests/integration/melder/crystallizer/test_recorded_leaf_source_read_integration.py`
 - `tests/integration/melder/mutation_research/test_research_lane_runtime_isolation_integration.py`

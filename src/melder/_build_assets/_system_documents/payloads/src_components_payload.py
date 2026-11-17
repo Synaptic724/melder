@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 13966
-CONTENT_SHA256 = 'b4ada222177b098e9d5aa1d52a49e867bfdee46b5910bb941c2d7d038c78d9e8'
+LINE_COUNT = 13985
+CONTENT_SHA256 = 'dddc47a9a096be5d17b6898bd77cb2e691dc3ebeca6014871a834214d2aa144b'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2624,6 +2624,7 @@ Key Files (C1):
 - `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
 - `src/melder/crystallizer/crystal_analysis/impact_engine.py`
 - `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
+- `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
 - The crystal_analysis package carries custody (5 modules), strategies (5)
   and preflight (12) beneath these four - 22 further modules that are not
   key files of this component.
@@ -11069,9 +11070,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
-  end_line: 1445
-  loc: 1445
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 2018
+  loc: 2018
+  verified_at: 2026-11-17T10:34:56Z
 - path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
   start_line: 1
   end_line: 264
@@ -11273,6 +11274,11 @@ Modules of `src/melder/nexus/acl/`:
   end_line: 421
   loc: 421
   verified_at: 2026-10-25T01:07:42Z
+- path: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
+  start_line: 1
+  end_line: 669
+  loc: 669
+  verified_at: 2026-11-17T10:34:56Z
 - path: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   start_line: 1
   end_line: 231
@@ -12315,6 +12321,8 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   Custody strategy for user-source (file-backed, policy-rooted) modules
 - `src/melder/crystallizer/crystal_analysis/impact_engine.py`
   Blast-radius view over the custody manifests (S3 impact engine)
+- `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
+  Process-wide guarded answers about modules, reused across crystal analyses (#331)
 - `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   Process-wide stat-guarded physical-source fingerprint cache
 - `src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py`
@@ -12642,11 +12650,21 @@ facades only.
   claims a module under an interpreter site root, under `sys.prefix`/`sys.base_prefix`/`sys.exec_prefix`
   (`CrystalAnalyzer.resolve_environment_root_paths`) or in a `site-packages`/`dist-packages` directory, even under
   a user root, so such a module falls to site_package or unknown. One `analyze_spell_root` pass resolves each
-  distinct module's path and runs the custody chain once (keyed by name and module object), and empties those
-  answers when it ends - nothing is kept between analyses.
+  distinct module's path and runs the custody chain once (keyed by name and module object). Since 0.2.8304
+  (#331, the owner's decision of 2026-11-17) what a pass derives is kept between analyses in the process-wide
+  `ModuleAnswerCache`, guarded like `PhysicalSourceCache`: each module's resolved path (same module object
+  and `__file__`; for a module not imported, the same `sys.path`), each path's custody kind under the same
+  user, environment and site roots, each physical module's facts - dependency candidates after the member
+  probes, fingerprint, export surface - while its module object and file (mtime_ns, size) are unchanged, the
+  resolved policy roots, and site-package provenance while the site roots' directories keep their
+  modification times. Synthetic modules, many with no physical copy, are never kept. A later analysis of an
+  unchanged world resolves, classifies and probes nothing (600 binds over 150 modules: 14.2 s to about 2 s); a
+  member submodule created later is seen once its importer's file changes.
   EVIDENCE:
   `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:UserSourceCustodyStrategy.matches`,
-  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._match_custody`.
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._match_custody`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._extract_remembered_module_facts`,
+  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache`.
 - `crystallizer/persistence/` - the RECORD, ledger only:
   persistence_system.py + persistence_profile.py + persistence_crystal.py.
   Verbs: profiles, twins/journal, checkpoint minting, retention, chain
@@ -13254,6 +13272,7 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
 - `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
 - `src/melder/crystallizer/crystal_analysis/impact_engine.py`
+- `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
 - `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
 - `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
 - `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py`

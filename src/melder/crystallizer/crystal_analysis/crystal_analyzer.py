@@ -17,6 +17,7 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 import ast
 import hashlib
 import importlib.util
+import os
 import site
 import sys
 import threading
@@ -26,6 +27,12 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Uni
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.synthetic_module import SyntheticModule
+from melder.crystallizer.crystal_analysis.module_answer_cache import (
+    CustodyPolicyKey,
+    ModuleAnswerCache,
+    ModuleWalkFacts,
+    ResolvedRootsKey,
+)
 from melder.crystallizer.crystal_analysis.physical_source_cache import (
     PhysicalSourceCache,
 )
@@ -78,6 +85,12 @@ PassModulePathKey = Tuple[str, int]
 PassModulePath = Tuple[Optional[Any], Optional[Path]]
 PassCustodyKey = Tuple[str, int, Optional[Path]]
 PassCustody = Tuple[Optional[Any], SourceCustodyStrategy]
+# What one fact derivation recorded beside its returned facts (#331): the source
+# sha256 (None for an empty source) and the export surface (None when none).
+DerivedFactValues = Tuple[
+    Optional[str],
+    Optional[Tuple[Tuple[str, ...], Tuple[str, ...]]],
+]
 
 
 class CrystalAnalyzer(Cleanable):
@@ -104,9 +117,17 @@ class CrystalAnalyzer(Cleanable):
         - Within one `analyze_spell_root` pass each distinct module's path is
           resolved once (keyed by module name and module object) and its
           custody matched once (keyed by name, object and path), however many
-          modules import it. Those answers live only while the pass runs and
-          are emptied when it ends, so nothing carries into the next pass
-          (#327).
+          modules import it (#327). Those per-pass answers are emptied when the
+          pass ends.
+        - Across analyses (owner decision 2026-11-17, #331) the process-wide
+          `ModuleAnswerCache` keeps what a pass derived: a module's resolved
+          path (same module object, same `__file__`), a path's custody kind
+          (same user, environment and site roots), a physical module's facts
+          (same object, resolved path and file mtime_ns/size) and the resolved
+          policy roots. A later analysis reuses them, so it is current as of
+          each module object and its file's stat rather than recomputed every
+          time. Synthetic modules are never kept, and an analyzer built with
+          its own custody or fact strategies keys no custody or facts there.
         - On a memo miss or custom-strategy path, each parsed module AST is
           walked ONCE and nodes dispatch in strategy registration order,
           preserving historical manifest ordering. Memo hits skip AST work.
@@ -121,11 +142,14 @@ class CrystalAnalyzer(Cleanable):
           modules, paths, functions, classes, crystals, analysis results, or
           strategy instances, so the memo cannot extend those objects'
           lifetimes or interfere with module garbage collection.
-        - A cache hit replays plain imports but resolves relative imports and
-          probes member submodules against the live package environment.
-          Custody classification, source resolution, source fingerprinting,
-          dependency traversal, provenance capture, and result construction
-          therefore remain current on every analysis.
+        - A syntax-memo hit replays plain imports but resolves relative imports
+          and probes member submodules against the live package environment.
+          Those resolved facts are then kept in `ModuleAnswerCache` with the
+          module's identity and file stat, so a probe re-runs only when the
+          module object or its file changes (a submodule file created later is
+          not seen until then - the accepted residual of #331). Dependency
+          traversal, synthetic and user-source harvests and result construction
+          run on every analysis.
         - Source edits invalidate entries naturally because the digest changes;
           fact-schema changes invalidate them by incrementing
           '_MEMOIZED_MODULE_FACT_SCHEMA_VERSION'.
@@ -165,11 +189,14 @@ class CrystalAnalyzer(Cleanable):
         analyzers/strategies/ASTs across a boot. Its process-local, value-only
         syntax memo (keyed by fact-schema version + source SHA-256) is the
         IO-economy win: an unchanged module's AST facts are replayed from tuples
-        rather than re-parsed, so warm bind/load cost is O(changed files) - yet a
-        hit still re-resolves relative imports and re-captures custody/provenance
-        against the LIVE environment, so the memo never lets analysis go stale. It
-        retains no source, nodes, modules, or results, so it can never extend an
-        object's lifetime or interfere with module GC.
+        rather than re-parsed, so warm bind/load cost is O(changed files). Since
+        #331 the answers derived on top of it - paths, custody kinds, probed
+        dependency candidates, fingerprints, export surfaces, policy roots - are
+        kept in `ModuleAnswerCache`, guarded by each module object and its file's
+        (mtime_ns, size), so a warm analysis is lookups plus one stat per
+        physical module instead of path resolution and probing per bind. Neither
+        cache retains source, nodes, modules, or results, so neither can extend
+        an object's lifetime or interfere with module GC.
 
     AGENT_ACCESS: internal
 
@@ -198,6 +225,8 @@ class CrystalAnalyzer(Cleanable):
     _memoized_module_fact_misses = 0
 
     __slots__ = (
+        "_answer_policy_key",
+        "_custody_by_kind",
         "_custody_strategies",
         "_fact_strategies",
         "_pass_custody",
@@ -241,6 +270,11 @@ class CrystalAnalyzer(Cleanable):
             - Construction does not read modules, parse source, or populate
               the shared memo; work begins at an analysis entry point. The
               per-pass answer dictionaries start empty.
+            - With both the default custody chain and the default fact
+              strategies, the analyzer keys custody kinds and module facts in
+              `ModuleAnswerCache` by its roots (#331); supplying either family
+              keeps it out of those two maps (paths and roots are still shared:
+              they do not depend on strategies).
 
         Args:
             user_source_root_paths:
@@ -295,20 +329,35 @@ class CrystalAnalyzer(Cleanable):
             site_package_dependency_descent
         )
         self._uses_default_fact_strategies: bool = fact_strategies is None
+        # Cross-analysis reuse (#331): the default chain's custody is a pure
+        # function of the resolved path and these roots, so its kinds and the
+        # default strategies' facts are keyed by them; any supplied family
+        # leaves this None and the analyzer derives custody and facts itself.
+        self._answer_policy_key: Optional[CustodyPolicyKey] = None
+        self._custody_by_kind: Dict[str, SourceCustodyStrategy] = {}
         if custody_strategies is None:
+            environment_root_paths = self.resolve_environment_root_paths(
+                site_package_root_paths
+            )
             self._custody_strategies: List[SourceCustodyStrategy] = [
                 SyntheticCustodyStrategy(),
                 UserSourceCustodyStrategy(
                     user_source_root_paths,
-                    environment_root_paths=(
-                        self.resolve_environment_root_paths(
-                            site_package_root_paths
-                        )
-                    ),
+                    environment_root_paths=environment_root_paths,
                 ),
                 SitePackageCustodyStrategy(site_package_root_paths),
                 BinaryUnknownCustodyStrategy(),
             ]
+            if fact_strategies is None:
+                self._answer_policy_key = (
+                    tuple(str(path) for path in user_source_root_paths),
+                    tuple(str(path) for path in environment_root_paths),
+                    tuple(str(path) for path in site_package_root_paths),
+                )
+                self._custody_by_kind = {
+                    custody_strategy.kind: custody_strategy
+                    for custody_strategy in self._custody_strategies
+                }
         else:
             self._custody_strategies = list(custody_strategies)
         # Per-pass answers (#327): filled by one analyze_spell_root pass and
@@ -332,10 +381,12 @@ class CrystalAnalyzer(Cleanable):
         Contract:
             - Repeated calls return without touching deleted fields.
             - Cleans every owned custody and fact strategy before deleting the
-              owned strategy lists, the per-pass answer dictionaries and the
+              owned strategy lists, the per-pass answer dictionaries, the
+              kind-to-strategy map, the answer policy key and the
               memo-eligibility flag.
             - Does not clear, mutate, or otherwise own the shared memoized
-              syntax facts; they remain available to later analyzer instances.
+              syntax facts or `ModuleAnswerCache`; they remain available to
+              later analyzer instances.
             - After cleanup, live analysis methods are invalid through the
               inherited Cleanable contract.
 
@@ -358,10 +409,12 @@ class CrystalAnalyzer(Cleanable):
             custody_strategy.cleanup()
         for fact_strategy in self._fact_strategies:
             fact_strategy.cleanup()
+        del self._custody_by_kind
         del self._custody_strategies
         del self._fact_strategies
         del self._pass_module_paths
         del self._pass_custody
+        del self._answer_policy_key
         del self._uses_default_fact_strategies
 
     @classmethod
@@ -546,10 +599,14 @@ class CrystalAnalyzer(Cleanable):
             - Falls back to the current working directory when omitted
               (first-slice fallback, unchanged from the historical
               resolver).
-            - Entries must be str or Path.
+            - Entries must be str or Path; a bad entry raises before anything
+              is looked up.
             - Resolves every value to an absolute path and deduplicates
               while preserving first-seen order (exact parity with the
               historical SpellCrystal resolver).
+            - The answer is kept in `ModuleAnswerCache` for the same entries
+              and working directory (#331): every crystal asks this, and the
+              answer changes only with them.
 
         Args:
             user_source_root_paths:
@@ -561,20 +618,32 @@ class CrystalAnalyzer(Cleanable):
         Raises:
             TypeError: If an entry is not a str or Path value.
         """
-        if not user_source_root_paths:
-            return (Path.cwd().resolve(),)
-        normalized_paths: List[Path] = []
-        seen_paths: Set[Path] = set()
-        for candidate in user_source_root_paths:
+        raw_paths: List[str] = []
+        for candidate in user_source_root_paths or ():
             if not isinstance(candidate, (str, Path)):
                 raise TypeError(
                     "user_source_root_paths entries must be str or Path values."
                 )
-            root_path = Path(candidate).resolve()
-            if root_path in seen_paths:
-                continue
-            seen_paths.add(root_path)
-            normalized_paths.append(root_path)
+            raw_paths.append(str(candidate))
+        key: ResolvedRootsKey = ("user", tuple(raw_paths), (os.getcwd(),))
+        remembered = ModuleAnswerCache.lookup_resolved_roots(key)
+        if remembered is not None:
+            return tuple(Path(root_text) for root_text in remembered)
+        if not raw_paths:
+            normalized_paths: List[Path] = [Path.cwd().resolve()]
+        else:
+            normalized_paths = []
+            seen_paths: Set[Path] = set()
+            for raw_path in raw_paths:
+                root_path = Path(raw_path).resolve()
+                if root_path in seen_paths:
+                    continue
+                seen_paths.add(root_path)
+                normalized_paths.append(root_path)
+        ModuleAnswerCache.store_resolved_roots(
+            key,
+            tuple(str(root_path) for root_path in normalized_paths),
+        )
         return tuple(normalized_paths)
 
     @staticmethod
@@ -586,20 +655,32 @@ class CrystalAnalyzer(Cleanable):
             - Best-effort only; site/user-site lookup failures never abort
               analysis.
             - Deduplicates resolved roots preserving first-seen order.
+            - The answer is kept in `ModuleAnswerCache` for the same raw site
+              lists and working directory (#331); only the cheap `site` lists
+              are read on a hit, never a `Path.resolve`.
 
         Returns:
             Tuple[Path, ...]: Normalized site-package roots.
         """
+        raw_paths: List[str] = []
+        try:
+            raw_paths.extend(str(candidate) for candidate in site.getsitepackages())
+        except Exception:
+            pass
+        try:
+            raw_paths.append(str(site.getusersitepackages()))
+        except Exception:
+            pass
+        key: ResolvedRootsKey = ("site", tuple(raw_paths), (os.getcwd(),))
+        remembered = ModuleAnswerCache.lookup_resolved_roots(key)
+        if remembered is not None:
+            return tuple(Path(root_text) for root_text in remembered)
         resolved_paths: List[Path] = []
-        try:
-            for candidate in site.getsitepackages():
-                resolved_paths.append(Path(candidate).resolve())
-        except Exception:
-            pass
-        try:
-            resolved_paths.append(Path(site.getusersitepackages()).resolve())
-        except Exception:
-            pass
+        for raw_path in raw_paths:
+            try:
+                resolved_paths.append(Path(raw_path).resolve())
+            except (OSError, ValueError):
+                continue
         unique_paths: List[Path] = []
         seen_paths: Set[Path] = set()
         for path in resolved_paths:
@@ -607,6 +688,10 @@ class CrystalAnalyzer(Cleanable):
                 continue
             seen_paths.add(path)
             unique_paths.append(path)
+        ModuleAnswerCache.store_resolved_roots(
+            key,
+            tuple(str(path) for path in unique_paths),
+        )
         return tuple(unique_paths)
 
     @staticmethod
@@ -629,6 +714,8 @@ class CrystalAnalyzer(Cleanable):
             - Site roots are expected already resolved (as
               `resolve_site_package_root_paths` returns them) and are not
               resolved again.
+            - The answer is kept in `ModuleAnswerCache` for the same site roots
+              and interpreter prefixes (#331).
 
         Args:
             site_package_root_paths:
@@ -637,8 +724,17 @@ class CrystalAnalyzer(Cleanable):
         Returns:
             Tuple[Path, ...]: Environment roots, deduplicated.
         """
+        prefixes = (sys.prefix, sys.base_prefix, sys.exec_prefix)
+        key: ResolvedRootsKey = (
+            "environment",
+            tuple(str(path) for path in site_package_root_paths),
+            prefixes,
+        )
+        remembered = ModuleAnswerCache.lookup_resolved_roots(key)
+        if remembered is not None:
+            return tuple(Path(root_text) for root_text in remembered)
         candidate_paths: List[Path] = list(site_package_root_paths)
-        for prefix in (sys.prefix, sys.base_prefix, sys.exec_prefix):
+        for prefix in prefixes:
             candidate_paths.append(Path(prefix).resolve())
         unique_paths: List[Path] = []
         seen_paths: Set[Path] = set()
@@ -647,6 +743,10 @@ class CrystalAnalyzer(Cleanable):
                 continue
             seen_paths.add(path)
             unique_paths.append(path)
+        ModuleAnswerCache.store_resolved_roots(
+            key,
+            tuple(str(path) for path in unique_paths),
+        )
         return tuple(unique_paths)
 
     # ------------------------------------------------------------------
@@ -665,9 +765,12 @@ class CrystalAnalyzer(Cleanable):
 
         Contract:
             - One pass: each distinct module's path is resolved once and its
-              custody matched once, and those answers are emptied when the
-              pass ends - normally or by exception - so a later pass, on this
-              or any analyzer, asks every question again.
+              custody matched once, and those per-pass answers are emptied when
+              the pass ends - normally or by exception.
+            - A later pass, on this or any analyzer, takes a module's path,
+              custody kind and facts from `ModuleAnswerCache` while the module
+              object and its file are unchanged (#331), and derives them again
+              otherwise; the result is the one a fresh derivation records.
 
         Args:
             root_module_name:
@@ -1030,6 +1133,235 @@ class CrystalAnalyzer(Cleanable):
             module_path: Optional[Path],
     ) -> Tuple[List[str], Dict[str, List[str]]]:
         """
+        Return one descended module's facts, reused across analyses where they still apply.
+
+        Purpose:
+            The walk's single question about a module's imports (#331): a
+            physical module under the default strategies takes its facts from
+            `ModuleAnswerCache`; every other module derives them.
+
+        Contract:
+            - Reuse applies only when this analyzer keys answers (default custody
+              chain and default fact strategies), the custody reads a physical
+              file, and the module has a path. Synthetic modules - many of which
+              have no physical copy - and binary leaves always derive.
+            - The result receives exactly what `_derive_module_facts` would
+              record: the fingerprint when the custody claims one, the export
+              surface, and the returned candidates and diagnostics.
+
+        Args:
+            result:
+                Result receiving fingerprints, export surfaces and walk errors.
+            custody:
+                Matched custody strategy for the module.
+            module_name:
+                Module being analyzed.
+            module_obj:
+                Live module object when available.
+            module_path:
+                Physical module path when available.
+
+        Returns:
+            Tuple[List[str], Dict[str, List[str]]]:
+                Deduplicated flat dependency candidates (first-seen order) and
+                the `from ... import ...` diagnostics map, newly allocated.
+
+        Raises:
+            RuntimeError:
+                If a syntax-memo entry contains an unknown internal event kind.
+        """
+        if (
+                self._answer_policy_key is None
+                or not custody.reads_physical_source
+                or module_path is None
+        ):
+            return self._derive_module_facts(
+                result=result,
+                custody=custody,
+                module_name=module_name,
+                module_obj=module_obj,
+                module_path=module_path,
+                derived_out=None,
+            )
+        return self._extract_remembered_module_facts(
+            result=result,
+            custody=custody,
+            module_name=module_name,
+            module_obj=module_obj,
+            module_path=module_path,
+        )
+
+    def _extract_remembered_module_facts(
+            self,
+            *,
+            result: CrystalAnalysisResult,
+            custody: SourceCustodyStrategy,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Path,
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
+        Serve a physical module's facts from `ModuleAnswerCache`, or derive and keep them.
+
+        Contract:
+            - Stats the file first. A hit needs the same module object (or
+              none), resolved path and (mtime_ns, size); it records the
+              fingerprint when the custody claims one and the export surface,
+              and returns detached copies - no read, no parse, no probe.
+            - A miss derives through `_derive_module_facts` and keeps the facts
+              with the stat taken before the read, unless the derivation
+              recorded a walk error or the file could not be stat'ed.
+
+        Args:
+            result:
+                Result receiving fingerprints, export surfaces and walk errors.
+            custody:
+                Matched physical-source custody strategy.
+            module_name:
+                Module being analyzed.
+            module_obj:
+                Live module object when available.
+            module_path:
+                Resolved physical module path.
+
+        Returns:
+            Tuple[List[str], Dict[str, List[str]]]:
+                Dependency candidates and from-import diagnostics, newly
+                allocated.
+
+        Threading:
+            The analyzer and result are thread-confined; the cache serializes
+            its own maps.
+        """
+        path_text = str(module_path)
+        try:
+            stat_result = module_path.stat()
+        except OSError:
+            stat_result = None
+        if stat_result is not None:
+            remembered = ModuleAnswerCache.lookup_module_facts(
+                module_name,
+                module_obj,
+                path_text,
+                stat_result.st_mtime_ns,
+                stat_result.st_size,
+            )
+            if remembered is not None:
+                return self._replay_remembered_module_facts(
+                    result=result,
+                    custody=custody,
+                    module_name=module_name,
+                    facts=remembered,
+                )
+        derived: List[DerivedFactValues] = []
+        flat_targets, from_targets = self._derive_module_facts(
+            result=result,
+            custody=custody,
+            module_name=module_name,
+            module_obj=module_obj,
+            module_path=module_path,
+            derived_out=derived,
+        )
+        if stat_result is not None and derived:
+            source_sha, export_surface = derived[0]
+            ModuleAnswerCache.store_module_facts(
+                module_name,
+                module_obj,
+                path_text,
+                stat_result.st_mtime_ns,
+                stat_result.st_size,
+                (
+                    tuple(flat_targets),
+                    tuple(
+                        (base_name, tuple(member_names))
+                        for base_name, member_names in from_targets.items()
+                    ),
+                    source_sha,
+                    export_surface,
+                ),
+            )
+        return flat_targets, from_targets
+
+    @staticmethod
+    def _replay_remembered_module_facts(
+            *,
+            result: CrystalAnalysisResult,
+            custody: SourceCustodyStrategy,
+            module_name: str,
+            facts: ModuleWalkFacts,
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
+        Record kept facts into a fresh result exactly as their derivation did.
+
+        Contract:
+            - Records the source sha256 as the fingerprint only when the custody
+              claims the sha256 law (user source), as both derivation lanes do.
+            - Records the export surface when one was recorded at derivation; an
+              empty source recorded none.
+            - Returns new containers; the kept tuples are never exposed.
+
+        Args:
+            result:
+                Fresh per-crystal result.
+            custody:
+                Matched custody strategy for the module.
+            module_name:
+                Module the facts belong to.
+            facts:
+                Kept facts from `ModuleAnswerCache`.
+
+        Returns:
+            Tuple[List[str], Dict[str, List[str]]]:
+                Dependency candidates and from-import diagnostics.
+        """
+        flat_targets, from_targets, source_sha, export_surface = facts
+        if source_sha is not None and custody.claims_sha256_source_fingerprint:
+            result.record_physical_fingerprint(module_name, source_sha)
+        if export_surface is not None:
+            result.record_export_surface(
+                module_name,
+                list(export_surface[0]),
+                list(export_surface[1]),
+            )
+        return (
+            list(flat_targets),
+            {base_name: list(member_names) for base_name, member_names in from_targets},
+        )
+
+    @staticmethod
+    def _note_derived_facts(
+            derived_out: Optional[List[DerivedFactValues]],
+            source_sha: Optional[str],
+            export_surface: Optional[Tuple[Tuple[str, ...], Tuple[str, ...]]],
+    ) -> None:
+        """
+        Tell the caller what one successful derivation recorded beside its facts.
+
+        Args:
+            derived_out:
+                The caller's collector, or None when nothing is kept.
+            source_sha:
+                The source sha256, or None for an empty source.
+            export_surface:
+                (all_declared, public_names) as recorded, or None.
+
+        Returns:
+            None.
+        """
+        if derived_out is not None:
+            derived_out.append((source_sha, export_surface))
+
+    def _derive_module_facts(
+            self,
+            *,
+            result: CrystalAnalysisResult,
+            custody: SourceCustodyStrategy,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+            derived_out: Optional[List[DerivedFactValues]],
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
         Resolve current source, reuse or derive syntax facts, and collect
         module output.
 
@@ -1069,6 +1401,12 @@ class CrystalAnalyzer(Cleanable):
                 Live module object when available.
             module_path:
                 Physical module path when available.
+            derived_out:
+                Collector for `_extract_remembered_module_facts` (#331), or
+                None. On each successful default-strategy return it receives
+                one (source sha256, export surface) pair - (None, None) for an
+                empty or unreadable-without-error source; nothing when a walk
+                error was recorded, so those outcomes are never kept.
 
         Returns:
             Tuple[List[str], Dict[str, List[str]]]:
@@ -1112,6 +1450,7 @@ class CrystalAnalyzer(Cleanable):
                     # Cold-path parity for empty sources: no facts, no
                     # fingerprint, no memo participation - and now also
                     # no read.
+                    self._note_derived_facts(derived_out, None, None)
                     return [], {}
                 memoized_facts = self._lookup_memoized_module_facts(
                     cached_sha
@@ -1122,6 +1461,11 @@ class CrystalAnalyzer(Cleanable):
                             module_name,
                             cached_sha,
                         )
+                    self._note_derived_facts(
+                        derived_out,
+                        cached_sha,
+                        (memoized_facts[1], memoized_facts[2]),
+                    )
                     return self._replay_memoized_module_facts(
                         result=result,
                         module_name=module_name,
@@ -1145,6 +1489,8 @@ class CrystalAnalyzer(Cleanable):
         if error_text:
             result.record_walk_error(error_text)
         if not source_text:
+            if not error_text:
+                self._note_derived_facts(derived_out, None, None)
             return [], {}
 
         source_digest = (
@@ -1165,6 +1511,11 @@ class CrystalAnalyzer(Cleanable):
                         module_name,
                         fingerprint,
                     )
+                self._note_derived_facts(
+                    derived_out,
+                    source_digest,
+                    (memoized_facts[1], memoized_facts[2]),
+                )
                 return self._replay_memoized_module_facts(
                     result=result,
                     module_name=module_name,
@@ -1207,6 +1558,7 @@ class CrystalAnalyzer(Cleanable):
                     tuple(context.export_public_names),
                 )
                 self._store_memoized_module_facts(source_digest, facts)
+                self._note_derived_facts(derived_out, source_digest, (facts[1], facts[2]))
             return self._deduplicate_import_facts(
                 context.flat_import_targets,
                 context.from_import_targets,
@@ -1432,6 +1784,13 @@ class CrystalAnalyzer(Cleanable):
               match and must be the same object on reuse.
             - The matches belong to the running pass; `analyze_spell_root`
               empties them when the pass ends.
+            - Across analyses (#331), an analyzer keying answers takes a
+              non-synthetic module's kind from `ModuleAnswerCache` by its
+              resolved path and this analyzer's roots - the default chain's
+              user-source, site-package and fallback answers depend on nothing
+              else - and returns its own strategy of that kind. A synthetic
+              object is matched live and never kept: its custody follows the
+              object, and many synthetic modules have no path at all.
 
         Args:
             module_name:
@@ -1453,6 +1812,15 @@ class CrystalAnalyzer(Cleanable):
         remembered = self._pass_custody.get(key)
         if remembered is not None and remembered[0] is module_obj:
             return remembered[1]
+        policy_key = self._answer_policy_key
+        if module_path is None or isinstance(module_obj, SyntheticModule):
+            policy_key = None
+        if policy_key is not None:
+            kept_kind = ModuleAnswerCache.lookup_custody_kind(policy_key, str(module_path))
+            if kept_kind is not None:
+                kept_strategy = self._custody_by_kind[kept_kind]
+                self._pass_custody[key] = (module_obj, kept_strategy)
+                return kept_strategy
         for custody_strategy in self._custody_strategies:
             if custody_strategy.matches(
                     module_name=module_name,
@@ -1460,6 +1828,12 @@ class CrystalAnalyzer(Cleanable):
                     module_path=module_path,
             ):
                 self._pass_custody[key] = (module_obj, custody_strategy)
+                if policy_key is not None and custody_strategy.kind != "synthetic_module":
+                    ModuleAnswerCache.store_custody_kind(
+                        policy_key,
+                        str(module_path),
+                        custody_strategy.kind,
+                    )
                 return custody_strategy
         raise RuntimeError(
             "No custody strategy matched module '{0}'. The custody chain "
@@ -1518,10 +1892,61 @@ class CrystalAnalyzer(Cleanable):
             - PUBLIC static: crystals use this to resolve their root
               module path before delegating analysis.
             - Synthetic modules use their crystallizer-managed physical
-              path when one exists.
+              path when one exists (many have none) and are resolved on
+              every call: nothing about them is kept.
             - Non-synthetic modules prefer `__file__` on the live object.
             - Falls back to `importlib.util.find_spec(...)`.
             - Returns None for built-in/frozen/pathless modules.
+            - A non-synthetic answer is kept in `ModuleAnswerCache` (#331)
+              and reused for the same name, the same module object (or none)
+              and the same `__file__` text; a relative `__file__` is never
+              kept, since it resolves against the working directory.
+
+        Args:
+            module_name:
+                Canonical module name to resolve.
+            module_obj:
+                Live module object when one is already available.
+
+        Returns:
+            Optional[Path]: Best-effort resolved path, or None.
+        """
+        if isinstance(module_obj, SyntheticModule):
+            return CrystalAnalyzer._resolve_module_path_uncached(module_name, module_obj)
+        module_file: Optional[Any] = None
+        if module_obj is not None:
+            try:
+                module_file = module_obj.__file__
+            except AttributeError:
+                module_file = None
+        file_text = str(module_file) if module_file else None
+        found, kept_path = ModuleAnswerCache.lookup_module_path(module_name, module_obj, file_text)
+        if found:
+            return Path(kept_path) if kept_path is not None else None
+        module_path = CrystalAnalyzer._resolve_module_path_uncached(module_name, module_obj)
+        if file_text is None or Path(file_text).is_absolute():
+            ModuleAnswerCache.store_module_path(
+                module_name,
+                module_obj,
+                file_text,
+                str(module_path) if module_path is not None else None,
+            )
+        return module_path
+
+    @staticmethod
+    def _resolve_module_path_uncached(
+            module_name: str,
+            module_obj: Optional[Any],
+    ) -> Optional[Path]:
+        """
+        Compute the physical path backing one module, asking nothing kept.
+
+        Contract:
+            The historical resolver, unchanged: a synthetic module's
+            crystallizer-managed physical path (None when it has no physical
+            copy), else the live object's `__file__` resolved, else the
+            `find_spec(...)` origin resolved, else None for built-in, frozen
+            and pathless modules. Every call resolves (`Path.resolve`).
 
         Args:
             module_name:

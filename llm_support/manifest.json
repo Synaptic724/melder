@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3636499,
-        "lines": 82599,
+        "bytes": 3638993,
+        "lines": 82629,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "24878b295a66e6c2d5668417b73e1b59c504a4def46002aa275e639b5baf0b93"
+        "sha256": "f8c406c53385477a00267ea11c39e6bdec486d85f1dbc4db98e50e755d71f23e"
       },
-      "content_bytes": 3403304,
-      "content_lines": 79233,
+      "content_bytes": 3405798,
+      "content_lines": 79263,
       "file_count": 420,
       "files": {
         ".gitattributes": {
@@ -2502,9 +2502,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 10099,
-          "content_lines": 132,
-          "content_sha256": "99b8380971ac9e6b5ca28216c1cbd1f95403aad61746e3e5fcf6cf8d6497b006",
+          "content_bytes": 12593,
+          "content_lines": 162,
+          "content_sha256": "42247f83e3ffa52da44edb24ecc4d2bf2ca568fb98530d01525e95de7c18d9f7",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2536,20 +2536,20 @@
         "bytes": 70332,
         "lines": 442,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "a093c2e2d919c350c84e39ff6a0f7d02dbf1c7001133616ca2d082004e3fae5c"
+        "sha256": "9feb62f6979fcd5de93aa9ed67835b51e48a459f27af1732886aef06afec9019"
       },
-      "source_fingerprint": "dbdc6f489f5630832b177cc32707a8f491c3e9926f3558570a8076b8ce7b7187"
+      "source_fingerprint": "d66760670d9241e5262c6dd6784233a854d806c2b5b24583f0bf0e972da498ed"
     },
     "src": {
       "bundle": {
-        "bytes": 11773235,
-        "lines": 292371,
+        "bytes": 11820855,
+        "lines": 293550,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "be8c417ad598ee4691ba19016b91553e40e9d80c1e454c6e5744292b9f76b7b0"
+        "sha256": "55900bc57a0d069a871e7d4cc67cd3a9efe00faaa57b2fb13ae029f9c6d07df4"
       },
-      "content_bytes": 11418312,
-      "content_lines": 287677,
-      "file_count": 586,
+      "content_bytes": 11465354,
+      "content_lines": 288848,
+      "file_count": 587,
       "files": {
         "src/melder/__architecture__.py": {
           "content_bytes": 1904,
@@ -2608,7 +2608,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "971b51cd89f5a2c323ff063df6cef0db105cdcc7b01c3d3ca772414949191d0c",
+          "content_sha256": "d5de5746377dbb4730296ddb41d61496fa40385125e9b58e931eaa7fcb203afc",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -4610,9 +4610,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py": {
-          "content_bytes": 65917,
-          "content_lines": 1593,
-          "content_sha256": "98f2473a7d695b3008e9f2796a98071364055256a2dbc9d13bfbb20cc00d5237",
+          "content_bytes": 84657,
+          "content_lines": 2018,
+          "content_sha256": "d2460e651a1da74421064c8cdee15ec832a31577d4ad6f90106e68cac0f69a0f",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py": {
@@ -4622,9 +4622,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py": {
-          "content_bytes": 9721,
-          "content_lines": 274,
-          "content_sha256": "b0cff30073e030bc251c80c88c1040ed1bca627fb326612e3ccaf566e5782cb1",
+          "content_bytes": 13115,
+          "content_lines": 351,
+          "content_sha256": "436fc0b11133b9177af512e3d436356de4ee01bdbc3da46b95d8ca0aa1cacf8b",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/source_custody_strategy.py": {
@@ -4649,6 +4649,12 @@
           "content_bytes": 16762,
           "content_lines": 421,
           "content_sha256": "220021911255c3c0594ec52635429c7f20e58c9278f5097b90a156c925e0509d",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/crystallizer/crystal_analysis/module_answer_cache.py": {
+          "content_bytes": 24908,
+          "content_lines": 669,
+          "content_sha256": "9f21081bbf9dab2646bb52ddb9b65c6a8ea72da97a70e3e2bb849ec4d0a892c6",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/physical_source_cache.py": {
@@ -6069,23 +6075,23 @@
         }
       },
       "index": {
-        "bytes": 114699,
-        "lines": 608,
+        "bytes": 114883,
+        "lines": 609,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "a92951767ea4cf05bb9d30ea26a962cf884419b2f9cbbf71443596ca551e0714"
+        "sha256": "508ae10773c1cdd1588969f706917f108ebb91e3cc1387c89f2015551cad0aed"
       },
-      "source_fingerprint": "3879565420046865049c1fced6b8be144827acf566a73a8e1af3abddbea7e3b7"
+      "source_fingerprint": "94718efa873ca372479d86da924b14b1833cf45d4e92bc3ff4823672ee2ae168"
     },
     "tests": {
       "bundle": {
-        "bytes": 14672325,
-        "lines": 393535,
+        "bytes": 14698418,
+        "lines": 394184,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "a930e2dbc69d1ee6744073da8dba7478bc6007ea3dc1cc60fe42b1a19c0eaf05"
+        "sha256": "5b213d715b051d862d1f4d003adc28448cb39bc2aec1679b991e9ad48eca07d6"
       },
-      "content_bytes": 13933911,
-      "content_lines": 383849,
-      "file_count": 1210,
+      "content_bytes": 13959402,
+      "content_lines": 384490,
+      "file_count": 1211,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -11428,15 +11434,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer.py": {
-          "content_bytes": 23802,
-          "content_lines": 702,
-          "content_sha256": "1105a45fc0b3cfac28a9bf7fc2f912ce6a43d8b8fc80f5f4dd786d3e1960f6a6",
+          "content_bytes": 24782,
+          "content_lines": 719,
+          "content_sha256": "541757c20f66c70b7216d5fc3cd07e5a7f132ee8b7b4ee676bcc86872eddee06",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py": {
-          "content_bytes": 10185,
-          "content_lines": 279,
-          "content_sha256": "9d2d0c2a57b2886c1e03cd32022f6f585385f865288fedc49cd1a787bfbb506a",
+          "content_bytes": 10637,
+          "content_lines": 285,
+          "content_sha256": "3327bb18ff54b57758bce91084c76be44acdc4295d7488b9b23584c8116784f7",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py": {
@@ -11467,6 +11473,12 @@
           "content_bytes": 10265,
           "content_lines": 293,
           "content_sha256": "ba9e42eb0f4b5efa1704ffe4d52c7c4d2a3f02a3c0473881e16dd6e8a0eabae9",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py": {
+          "content_bytes": 24059,
+          "content_lines": 618,
+          "content_sha256": "58e2e6d3a1b1325025a7847b36bf50a2f6ee462e639913e5fd8299012baeb5ae",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_mutation_research_composition_strategy.py": {
@@ -13349,12 +13361,12 @@
         }
       },
       "index": {
-        "bytes": 238257,
-        "lines": 1232,
+        "bytes": 238452,
+        "lines": 1233,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "8e2de8f2ae764e543d6c049ccf34ea4b62ea8c2fb8efc88c894fa3635a9b1769"
+        "sha256": "4e80decc10ff183b4c11cfd2d744dc59e1e4c559a44b45153fb1b769e1f403b0"
       },
-      "source_fingerprint": "535d7b4a94fe1bc4acddf4de4f5f4130bc462b42d8ab57995c32c54adab5cb8d"
+      "source_fingerprint": "8bd6b9048d59f5dd7ef8cd3c4d0b9950983e042f1e70af128ab4a3b3dc50f3a3"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 6330
-CONTENT_SHA256 = '908f7155c3d75a101a078c0933310b6740fc5e1634a1a63400f196f269a91368'
+LINE_COUNT = 6333
+CONTENT_SHA256 = '320721b3cc7b630d3def2d6577c5a21a4c6899ad40546d98313c82a87212f59d'
 
 TEXT = """# Src Architecture (C4)
 
@@ -3972,7 +3972,10 @@ re-runnable over RETAINED payloads (the MutationResearch seam). Since
 0.2.8302 (#327) user-source custody never claims a module inside a Python
 environment (an interpreter site root or prefix, or a site-packages or
 dist-packages directory), whatever the user roots say, and one analysis
-pass asks each module question once; nothing is kept between passes.
+pass asks each module question once. Since 0.2.8304 (#331) those answers
+are kept between passes in a process-wide cache guarded by each module
+object and its file's stat, so a bind re-checks an unchanged module world
+instead of re-deriving it; synthetic modules are never kept.
 
 Laws: EDGE (acyclic - the record calls nobody; borrowers clean before
 the record), LOCK (one-way facade -> subsystem -> record -> profile),

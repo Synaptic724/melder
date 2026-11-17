@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8303"
-SOURCE_SHA256 = "b50bf873228857cb75dcadb7eaebdc0714dca8dc3a096174cde09266a49efbb9"
-ENTRY_COUNT = 633
+BUILT_FOR_VERSION = "0.2.8304"
+SOURCE_SHA256 = "bd819b333ae697484285d2fdc76f998c50d28acb41b7b044edbc9fea672d2bb5"
+ENTRY_COUNT = 634
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -397,6 +397,7 @@ ENTRIES = (
     ('melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy', 'SyntheticCustodyStrategy'),
     ('melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy', 'UserSourceCustodyStrategy'),
     ('melder.crystallizer.crystal_analysis.impact_engine', 'ImpactEngine'),
+    ('melder.crystallizer.crystal_analysis.module_answer_cache', 'ModuleAnswerCache'),
     ('melder.crystallizer.crystal_analysis.physical_source_cache', 'PhysicalSourceCache'),
     ('melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy', 'ClusterMembershipStrategy'),
     ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
