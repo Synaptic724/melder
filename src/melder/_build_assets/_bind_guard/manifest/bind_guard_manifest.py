@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8305"
-SOURCE_SHA256 = "ed79cc1d0738ddc66982ca7d596c73b5c94486ce8ffc2a7fceae60fde7856c02"
-ENTRY_COUNT = 634
+BUILT_FOR_VERSION = "0.2.8306"
+SOURCE_SHA256 = "1bab1b29264bbf6be0824d8bf2e33d067a6cf0d5b2859861300b0ce459718a3f"
+ENTRY_COUNT = 635
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -458,6 +458,7 @@ ENTRIES = (
     ('melder.mutation_research.mutation_research', 'MutationResearch'),
     ('melder.mutation_research.research_set.grouped_research_node', 'GroupedResearchNode'),
     ('melder.mutation_research.research_set.network_versioner', 'NetworkVersioner'),
+    ('melder.mutation_research.research_set.research_composition_view', 'ResearchCompositionView'),
     ('melder.mutation_research.research_set.research_journal', 'ResearchJournal'),
     ('melder.mutation_research.research_set.research_lane', 'LaneState'),
     ('melder.mutation_research.research_set.research_lane', 'LaneType'),

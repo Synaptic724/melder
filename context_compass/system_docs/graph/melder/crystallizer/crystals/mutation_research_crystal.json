@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/mutation_research_crystal.py",
- "source_sha256": "3a48a28cb5ec90228f20ba9c150e15878a5106df202ec7a4b9de64e9967fa34d",
+ "source_sha256": "ab60b9cfd9fe89261711d6166cd55d9086736cf14b050fa2ca4cb2a9a1e36d96",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.mutation_research_crystal": {
@@ -13,19 +13,20 @@
    "include": true,
    "role": "Twin carrying the MutationResearch root plus DB-storable node rows.",
    "responsibilities": [
-    "persist research composition and derive flat storable rows at construction"
+    "persist the research composition; derive flat storable rows at construction or, from a view, at first read",
+    "declare MaterializedComposition: (composition payload, research node rows, grouped node rows) (0.2.8306)"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "256607ebe06fbd5c66b07647db8dfe8a69448ea28f58fdb6f0464ae7e7922824"
+   "semantics_authored_against": ""
   },
   "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal": {
    "id": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
    "label": "MutationResearchCrystal",
    "kind": "class",
    "file": "src/melder/crystallizer/crystals/mutation_research_crystal.py",
-   "lineno": 8,
+   "lineno": 18,
    "bases": [
     "Cleanable"
    ],
@@ -40,29 +41,34 @@
     "research_nodes"
    ],
    "shape": {
-    "method_count": 8,
+    "method_count": 10,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e83d795016c5369e8ad637b69620445573547f2611a2f112a6d62c3376d9d67b",
+   "span_sha256": "e9412320431f8be5d2c383ff63234511764e9b8430e7701090428dc8bf4e8900",
    "include": true,
-   "role": "Pure-data twin of the MR root that derives explicit node rows for both node families at construction.",
+   "role": "Pure-data twin of the MR root; derives node rows for both families at construction or at first read.",
    "responsibilities": [
     "carry configuration and composition payloads",
-    "derive research_nodes and grouped_research_node rows so blob and objects cannot disagree"
+    "derive research_nodes and grouped_research_nodes rows so blob and objects cannot disagree",
+    "take a composition_payload (copied, rows derived now) or a keyword composition_view, never both (ValueError)",
+    "materialize a view once, under _materialize_lock, at the first composition read; then clean and drop it",
+    "composition_payload, research_nodes, grouped_research_nodes and describe() materialize; other reads do not",
+    "cleanup cleans a view never read, never the research parts it references (0.2.8306)"
    ],
    "owns_state": [
     "_activated",
     "_configuration_payload",
-    "_composition_payload",
-    "_research_node_rows",
-    "_grouped_research_node_rows"
+    "_composition",
+    "_composition_view",
+    "_materialize_lock"
    ],
    "phases": [
     "init",
-    "runtime"
+    "runtime",
+    "cleanup"
    ],
-   "semantics_authored_against": "e83d795016c5369e8ad637b69620445573547f2611a2f112a6d62c3376d9d67b"
+   "semantics_authored_against": "e9412320431f8be5d2c383ff63234511764e9b8430e7701090428dc8bf4e8900"
   }
  },
  "edges_out": [
@@ -73,17 +79,54 @@
    "to": "melder.utilities.general_base.cleanable.Cleanable"
   }
  ],
- "edge_candidates": [],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
  "published_aliases": [],
  "imports": {
+  "threading": "threading",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  "Tuple": "typing.Tuple",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "ResearchCompositionView": "melder.mutation_research.research_set.research_composition_view.ResearchCompositionView"
  },
  "collapse_candidate": {
   "module": "melder.crystallizer.crystals.mutation_research_crystal",
   "class": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
   "label": "MutationResearchCrystal"
- }
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
+   "to": "melder.mutation_research.research_set.research_composition_view.ResearchCompositionView",
+   "relation": "owns_lifecycle_of",
+   "why": "The twin owns the emitted view: it cleans it after the first materialization or at its own cleanup.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

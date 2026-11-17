@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `d5de5746377dbb4730296ddb41d61496fa40385125e9b58e931eaa7fcb203afc`
+- source_sha256: `c7427faf6b6aa914a09d946d16c19103d583e52f86aa6dbd56793fb330276b4b`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `b7224b5e8f8b6503d1232c0790d168539eb86320323d7c1618c83b6b9d8eb462`
+- source_sha256: `abfe8e5c6eefc56bce28b98f58c8ffcefaa60e5deec5936b2eac0d36ca5327a5`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `178203b907f065ce3db4c828c05e2a2dfa53a381c949a828a21f3b56d7140dac`
+- source_sha256: `d1c58ad37dbe12506c8d988f5843214ccf01baf4a8ac12523e9975c57800f420`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `0e4a5afb357a96e10b4e4a69d3e2214cde4c516c422a2a397ea32e4a3c30f325`
+- source_sha256: `c9e11ea7fe202827eeab5f4debc766950819c9ee06b6f947e81ead4ef4666863`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `65e57dfd70a155f483a2adf2db138775c67452123195b4ed6da1c3cead5f10ba`
+- source_sha256: `2035325d4f23769304eb90f83ab05c4d896f77727c69151bf38f2be4c34f93ae`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `3ad70ff8f9d9b820f5a266acb06ac1600af52513129d450e1d64fe13eb3ce8af`
+- source_sha256: `a5cc6fcfab01bcae90111718c70e108e635ac4008344d1da64d4ebdedc4cc177`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `29e469e835a1c65e49eb4093af880cfbe51698b26ff97f9347c2ab003585e74e`
+- source_sha256: `0328db8efc9da9ac337a296084021fc13373c992efdc147b0d6f717f9a6debf2`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `2dc83a7525224795b175e93c4b09942108a4463ff498b1eb200ce86889fd3960`
+- source_sha256: `d8616ec3a04e9e20126b3e7c666a2130465d6802f263949e52b63d0f5e868e5b`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `005c2076510dbf76fa58dc80e4094265d41a98481e74758924445693ff6a085e`
+- source_sha256: `4853d82c8f1b2243ea2c3e9c3f880ce9da6aad8fc70ae71755c24038949fe813`
 - nodes: 1
 
 ### Nodes
@@ -16657,7 +16657,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/crystal_analyzer.py
 
-- source_sha256: `f2b035845d8eed92fa3bff8e0c08fff82d6e95e2be62758ac2b67a851a17054b`
+- source_sha256: `fb510b4d6a76df3b2b2e67a4f88e9008330b0e966b42ddc36b173057c9fbc034`
 - nodes: 2
 
 ### Nodes
@@ -16670,6 +16670,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves), resolving and classifying each distinct module once per pass (0.2.8302)
   - reuses each module's path, custody kind and physical facts across analyses through ModuleAnswerCache - a loaded module checked by object and import spec, a module not imported by file stat - and whole analysed worlds per root module; synthetic modules always derive (0.2.8304-0.2.8305)
+  - keeps each import target's edge answer (path, custody kind, leaf) in ModuleAnswerCache across walks (0.2.8306)
   - classifies via the first-match custody chain (synthetic/user_source/site_package/fallback); user_source never claims a module inside a Python environment (0.2.8302)
   - runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)
   - analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)
@@ -16689,6 +16690,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - with the default custody chain and fact strategies, take a non-synthetic module's custody kind (by resolved path and roots) and a physical module's facts (dependency candidates after the member probes, fingerprint, export surface) from ModuleAnswerCache - a loaded module while its object and import spec are unchanged, with no stat; a module not imported while its file (mtime_ns, size) is - and keep what a miss derives unless it recorded a walk error (0.2.8304-0.2.8305)
   - before walking, copy the world kept for the root when every module it touched is unchanged in memory; after a walk with no read or parse error that touched no synthetic module and saw no object change, keep the finished result as the root's world (0.2.8305)
   - answer each import target once per pass (_resolve_pass_edge) and record each shared leaf once (0.2.8305)
+  - on a pass miss (default chains, non-synthetic target) ask ModuleAnswerCache.lookup_edge_answer first (0.2.8306)
+  - a hit builds the edge from the kept Path, leaf record and _custody_by_kind strategy: no path or custody lookup
+  - a miss computes path, custody and leaf, then store_edge_answer unless synthetic or __file__ is relative
+  - _module_file_text reads __file__ as text for that guard (None for no object, no attribute or an empty value)
   - drive ONE ast.walk per module and dispatch every node to the fact strategies
   - own its strategy instances and clean them children-first; the shared syntax memo and ModuleAnswerCache survive instance cleanup
 - owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`, `_pass_module_paths`, `_pass_custody`, `_answer_policy_key`, `_custody_by_kind`, `_pass_edges`, `_pass_file_guards`, `_pass_world_keepable`
@@ -16968,7 +16973,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/module_answer_cache.py
 
-- source_sha256: `6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7`
+- source_sha256: `0151e92b30d387fdbc67d80133d3a5842dbb10ac78b88082eb0ea3f78a08280e`
 - nodes: 2
 
 ### Nodes
@@ -16980,24 +16985,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Process-wide, guarded, value-only answers about modules that crystal analyses reuse across binds (#331).
 - responsibilities:
   - declare the value shapes kept per module and per world: path, custody kind, walk facts, resolved roots, provenance, world entries
+  - declare the edge-answer shapes EdgeLeafRecord, EdgeAnswer and RememberedEdgeAnswer (0.2.8306)
   - keep answers reusable only while their inputs are unchanged, so a repeat bind copies a kept world after in-memory checks and a new world's walk does lookups
 - phases: `bind`, `runtime`
 
 #### `ModuleAnswerCache` (class)
 
 - id: `melder.crystallizer.crystal_analysis.module_answer_cache.ModuleAnswerCache`
-- defined at: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:101`
+- defined at: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:111`
 - role: Class-hosted cache of the answers a CrystalAnalyzer would otherwise recompute for every bind: module paths, custody kinds, physical facts, policy roots and distribution provenance.
 - responsibilities:
   - serve a module's resolved path only for the same module object (weak reference) and __file__, or, with no module object, the same sys.path
   - serve a path's custody kind under the same user, environment and site roots
   - serve a loaded module's facts only for the same object, import spec (reload replaces it) and path, with no stat; a module not imported's facts only for the same path and file (mtime_ns, size)
   - keep whole analysed worlds per root (policy, descent, root name and path) and serve one only when its root and every touched module pass those checks and recorded provenance's site roots are unchanged (0.2.8305)
+  - serve an import target's edge answer (Path, custody kind, leaf record) per policy key and module name (0.2.8306)
+  - guard it as the path entry: same module object (weak reference) and __file__ text, or no object and same sys.path
   - serve resolved policy roots per raw input and interpreter state, and distribution maps and provenance per site-root signature
   - bound each map LRU (_MAX_ENTRIES; worlds _MAX_WORLDS) under one class RLock; never hold a module, source text, AST or result
-- owns_state: `_module_paths`, `_custody_kinds`, `_module_facts`, `_resolved_roots`, `_distribution_maps`, `_provenance`, `_hits`, `_misses`, `_worlds`
+- owns_state: `_module_paths`, `_custody_kinds`, `_module_facts`, `_resolved_roots`, `_distribution_maps`, `_provenance`, `_hits`, `_misses`, `_worlds`, `_edge_answers`
 - phases: `bind`, `runtime`
-- public methods: `lookup_custody_kind`, `lookup_distribution_map`, `lookup_module_facts`, `lookup_module_path`, `lookup_provenance`, `lookup_resolved_roots`, `lookup_world`, `make_world_entry`, `store_custody_kind`, `store_distribution_map`, `store_module_facts`, `store_module_path` (+3 more)
+- public methods: `lookup_custody_kind`, `lookup_distribution_map`, `lookup_edge_answer`, `lookup_module_facts`, `lookup_module_path`, `lookup_provenance`, `lookup_resolved_roots`, `lookup_world`, `make_world_entry`, `store_custody_kind`, `store_distribution_map`, `store_edge_answer` (+5 more)
 
 ### Edge candidates (3, unconfirmed)
 
@@ -17590,7 +17598,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py
 
-- source_sha256: `8f57fba75a7c37d2917ddd46965fdf2be8a6348242105a4413db2d80e79be312`
+- source_sha256: `16e1a9ff5ecbf06d958febf78521af98b6aefa8205f265ef62f8661e91ea5005`
 - nodes: 2
 
 ### Nodes
@@ -17601,18 +17609,19 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:1`
 - role: Deterministic topological module load order over walked edges; cycle-tolerant with an honesty walk error.
 - responsibilities:
-  - implemented S1 (decomposition epic); see crystal_analysis component docs
+  - hold DependencyViewStrategy, the finalize-time pass that records module_load_order (decomposition story S1)
+  - pick ready modules from a min-heap of names: the sorted-list order at O(log V) per pick (0.2.8306)
 - phases: `runtime`
 
 #### `DependencyViewStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy`
-- defined at: `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:22`
+- defined at: `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:23`
 - extends: `CrystalFactStrategy`
 - role: Fact pass computing the topological dependencies-first unfold order, making load order recorded truth instead of restore-time guessing.
 - responsibilities:
   - order every walked module over dependency->dependent edges restricted to walked modules
-  - stay deterministic by processing ready nodes in sorted name order
+  - stay deterministic: each pick takes the smallest ready name from a min-heap, the sorted-list order (0.2.8306)
   - stay cycle-tolerant: append the blocked remainder in sorted order and name them in one walk error
 - phases: `runtime`
 - public methods: `finalize`, `name`
@@ -18479,7 +18488,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/mutation_research_crystal.py
 
-- source_sha256: `3a48a28cb5ec90228f20ba9c150e15878a5106df202ec7a4b9de64e9967fa34d`
+- source_sha256: `ab60b9cfd9fe89261711d6166cd55d9086736cf14b050fa2ca4cb2a9a1e36d96`
 - nodes: 2
 
 ### Nodes
@@ -18490,20 +18499,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:1`
 - role: Twin carrying the MutationResearch root plus DB-storable node rows.
 - responsibilities:
-  - persist research composition and derive flat storable rows at construction
+  - persist the research composition; derive flat storable rows at construction or, from a view, at first read
+  - declare MaterializedComposition: (composition payload, research node rows, grouped node rows) (0.2.8306)
 - phases: `runtime`
 
 #### `MutationResearchCrystal` (class)
 
 - id: `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal`
-- defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:8`
+- defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:18`
 - extends: `Cleanable`
-- role: Pure-data twin of the MR root that derives explicit node rows for both node families at construction.
+- role: Pure-data twin of the MR root; derives node rows for both families at construction or at first read.
 - responsibilities:
   - carry configuration and composition payloads
-  - derive research_nodes and grouped_research_node rows so blob and objects cannot disagree
-- owns_state: `_activated`, `_configuration_payload`, `_composition_payload`, `_research_node_rows`, `_grouped_research_node_rows`
-- phases: `init`, `runtime`
+  - derive research_nodes and grouped_research_nodes rows so blob and objects cannot disagree
+  - take a composition_payload (copied, rows derived now) or a keyword composition_view, never both (ValueError)
+  - materialize a view once, under _materialize_lock, at the first composition read; then clean and drop it
+  - composition_payload, research_nodes, grouped_research_nodes and describe() materialize; other reads do not
+  - cleanup cleans a view never read, never the research parts it references (0.2.8306)
+- owns_state: `_activated`, `_configuration_payload`, `_composition`, `_composition_view`, `_materialize_lock`
+- phases: `init`, `runtime`, `cleanup`
 - public methods: `activated`, `cleanup`, `composition_payload`, `configuration_payload`, `describe`, `grouped_research_nodes`, `research_nodes`
 
 ### Edges out
@@ -18511,6 +18525,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal` | owns_lifecycle_of | `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView` | one_to_one | runtime,cleanup | authored |
+
+- `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal` -> `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView`: The twin owns the emitted view: it cleans it after the first materialization or at its own cleanup.
+
+### Edge candidates (3, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal` creates `Lock`
+- `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal` creates `ValueError`
+- `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal` creates `RuntimeError`
 
 <!-- END FILE: src/melder/crystallizer/crystals/mutation_research_crystal.py -->
 
@@ -19505,7 +19530,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/mutation_research.py
 
-- source_sha256: `b1754ff4ffd3c3370d045bd2ffb8ae9309275d5a3c8a9be0bd0e0d9a6ffe7c32`
+- source_sha256: `a2437bdceffe5cb9fbeccb2be726b10bb1478c260fad77f68fa0ff6c982e9d4d`
 - nodes: 2
 
 ### Nodes
@@ -19523,17 +19548,22 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `MutationResearch` (class)
 
 - id: `melder.mutation_research.mutation_research.MutationResearch`
-- defined at: `src/melder/mutation_research/mutation_research.py:38`
+- defined at: `src/melder/mutation_research/mutation_research.py:41`
 - extends: `Cleanable`
 - role: Aether-hosted singleton mutation-research root: the formal declaration record over the live spell world, plus the agent foresight surface (source_view / impact_view with residency join / module_graph_view / source_drift_view / preview_candidate - all read-only over crystallizer custody).
 - responsibilities:
   - owns the ResearchSet registry with one guaranteed default set
   - carries the mutation-research configuration lifecycle
-  - is the package's ONLY crystallizer touchpoint: re-emits the MutationResearchCrystal composition twin after every set mutation and flips RecordedUnitState
+  - is the package's ONLY crystallizer touchpoint: re-emits the MutationResearchCrystal twin after every set mutation
+  - flips RecordedUnitState at activate, deactivate and cleanup (the cleanup flip is best-effort)
+  - emits the twin from a ResearchCompositionView: one _composition_view per set, TWIN_JOURNAL_WINDOW (0.2.8306)
+  - the view is taken under the emission lock then the root lock, so an emission describes no node
   - rebuilds the registry from recorded compositions (load_recorded_composition hydration seam)
   - residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read); a version is active only when its index selects it and the frame's lineage registry tracks it as that index's current version, so a version moved into an index of its own reads parked until a notch (0.2.8259)
   - ambient campaign context (set/clear/active_campaign) stamps every runtime auto-record
-  - diff_research/create_diff_engine = derived diff reads over custody material through the owned strategy-dispatched DiffEngine (source + structural defaults)
+  - diff_research/create_diff_engine = derived diff reads over custody material through a DiffEngine
+  - diff_research uses the lazily owned engine (default strategy source); create_diff_engine mints caller-owned ones
+  - DiffEngine registers source, structural and parts strategies by default
   - foresight reads = source_view (recorded-first module text, live-disk fallback w/ drift marker), impact_view (blast radius JOINED with research residency), module_graph_view (walkable module world), source_drift_view (full drift report), preview_candidate (read-only candidate mock: AST analysis + would-be diff + would-be radius)
   - surgical synthesis = synthesize_candidate (donor parts spliced into the base root module via StructuralSynthesizer + full preview) with the staged-ancestry mint seam (stage/clear/staged_ancestry, campaign-pattern one-shot: the next fresh world entry mints the multi-parent node)
   - lane-type policy propagation = configuration lane_type_enforcement pushed to every set at activation/hydration/creation (type-mixing joins then require force=True)
@@ -19541,9 +19571,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - composition reads (GroupedResearchNode ruling) = group_view (roster + behind drift vs member lane tips), group_diff_research (mirrored GroupDiffEngine), group_impact_view (union member radii + internal/outbound split + CLOSURE + adjacency lift); residency_view kind-aware (compositions = informational, no probes)
   - composition shadow + story reads = group_footprint_view (union member module worlds + shared-module coupling; honest custody-less members), group_drift_view (full custody drift narrowed to the footprint, counts recomputed), group_history_view (journal events touching the subsystem lane / pinned members / member lanes), compositions_of (reverse lift; pinned_by_compositions on every spell residency row)
   - recent_activity_view (cold-landing newest-window journal read) + group_history campaign= narrowing (the WHERE x WHEN join) + impact_view composition lift (every radius names the current subsystems it touches)
-  - POLYMORPHIC VERBS (2026-07-12): spell-grain reads dispatch on node kind - source/parts/module_graph/module fan out per member, part_view roster-searches naming the carrying member, impact_view on a composition answers the group radius, diff_research routes two compositions through the members engine; code-grain verbs (preview-against/synthesize) refuse compositions teach-grade
+  - POLYMORPHIC VERBS (2026-07-12): spell-grain reads dispatch on node kind
+  - source_view, parts_view, module_graph_view and module_view fan out per member
+  - part_view searches the roster naming the carrying member; impact_view on a composition answers the group radius
+  - diff_research sends two compositions to group_diff_research and refuses a mixed pair
+  - code-grain verbs (preview_candidate against, synthesize_candidate) refuse compositions teach-grade
   - parity laws: root register_group/recompose_group apply the ambient campaign stamp; composition-grade rediscovery teaches roster cycles (identical member set = same content-addressed identity)
-- owns_state: `_research_sets_by_name`, `_configuration`, `_configured`, `_activated`, `_crystallizer`, `_aether`
+- owns_state: `_research_sets_by_name`, `_configuration`, `_configured`, `_activated`, `_diff_engine`, `_group_diff_engine`, `_synthesizer`, `_active_campaign`, `_staged_ancestry`, `_emission_lock`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `active_campaign`, `cleanup`, `clear_active_campaign`, `clear_staged_ancestry`, `compositions_of`, `configuration`, `configure`, `configured`, `create_configuration`, `create_configuration_builder` (+37 more)
 
@@ -19561,18 +19595,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.mutation_research.mutation_research.MutationResearch` | creates | `melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer` | one_to_one | runtime | authored |
 | `melder.mutation_research.mutation_research.MutationResearch` | owns_lifecycle_of | `melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine` | one_to_one | runtime,cleanup | authored |
 | `melder.mutation_research.mutation_research.MutationResearch` | creates | `melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine` | one_to_one | runtime | authored |
+| `melder.mutation_research.mutation_research.MutationResearch` | creates | `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView` | one_to_many | runtime | authored |
 
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.mutation_configuration.MutationResearchConfiguration`: MutationResearch installs and cleans one active root configuration instance.
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.research_set.research_set.ResearchSet`: MutationResearch owns the research-set registry (guaranteed default set) and cascades cleanup into every set.
-- `melder.mutation_research.mutation_research.MutationResearch` -> `melder.crystallizer.crystallizer.Crystallizer`: MutationResearch is the package's only crystallizer touchpoint: it emits MutationResearchCrystal composition twins and RecordedUnitState flips into the passive sink, and its foresight reads consume get_spell_crystal / analyze_impact as read-only custody facades. The emitted MutationResearchCrystal derives EXPLICIT DB-storable node rows for BOTH families (research_nodes / grouped_research_nodes) from the composition at construction - blob and objects cannot disagree.
+- `melder.mutation_research.mutation_research.MutationResearch` -> `melder.crystallizer.crystallizer.Crystallizer`: Sole crystallizer touchpoint: emits twins and state flips; reads get_spell_crystal and analyze_impact.
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.diff.diff_engine.DiffEngine`: MutationResearch lazily owns one DiffEngine behind diff_research and cascades cleanup into it.
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.diff.diff_engine.DiffEngine`: create_diff_engine mints detached caller-owned engines over the same custody-backed material resolver.
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer`: The root lazily constructs and owns one synthesizer for synthesize_candidate; cleanup cascades.
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer`: synthesize_candidate births the synthesizer on first use (DiffEngine precedent).
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine`: The root lazily owns one grouped engine for group_diff_research; cleanup cascades.
 - `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine`: group_diff_research births the engine on first use over _resolve_group_material (roster + lane joins).
+- `melder.mutation_research.mutation_research.MutationResearch` -> `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView`: Each emission builds one view over every set's _composition_view() and hands it to the twin.
 
-### Edge candidates (13, unconfirmed)
+### Edge candidates (14, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -19585,6 +19621,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.mutation_research.mutation_research.MutationResearch` creates `TypeError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `RuntimeError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `Path`
+- `melder.mutation_research.mutation_research.MutationResearch` creates `ResearchCompositionView`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `KeyError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `StructuralSynthesizer`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `GroupDiffEngine`
@@ -19641,7 +19678,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/research_set/network_versioner.py
 
-- source_sha256: `c5b8bb8c70da276c2c38fa133fb1e960dd91585ea481da98be8c7df83a14047e`
+- source_sha256: `0d40b6288e52852604b91a81e4b6088f19fe8a447bf61693f462f3004f97cc8d`
 - nodes: 2
 
 ### Nodes
@@ -19654,18 +19691,21 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - snapshot organization, never the journal
   - dedupe by canonical-JSON sha so identical states cost nothing
+  - declare RingPayloadView: retained addresses and the describe() payload as of the last mint (0.2.8306)
 - phases: `runtime`
 
 #### `NetworkVersioner` (class)
 
 - id: `melder.mutation_research.research_set.network_versioner.NetworkVersioner`
-- defined at: `src/melder/mutation_research/research_set/network_versioner.py:9`
+- defined at: `src/melder/mutation_research/research_set/network_versioner.py:13`
 - extends: `Cleanable`
 - role: Content-addressed version control of the graph ORGANIZATION itself (objects are indestructible; arrangement is what restore recovers).
 - responsibilities:
   - canonical-JSON SHA256 addressing with dedupe; bounded FIFO retention ring
   - get() returns detached value copies; journal excluded from snapshots by design
-- owns_state: `_canonical_by_sha`, `_order`, `_max_snapshots`
+  - each snapshot and from_payload install a fresh _ring_payload, never edited, dropped not cleared (0.2.8306)
+  - _payload_view() returns that (addresses, describe() payload) under the lock: the ring as of its last mint
+- owns_state: `_canonical_by_sha`, `_order`, `_max_snapshots`, `_ring_payload`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `from_payload`, `get`, `has`, `latest_sha`, `max_snapshots`, `snapshot`, `snapshot_count`, `snapshot_shas`
 
@@ -19688,11 +19728,60 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/mutation_research/research_set/network_versioner.py -->
 
+<!-- BEGIN FILE: src/melder/mutation_research/research_set/research_composition_view.py -->
+
+## src/melder/mutation_research/research_set/research_composition_view.py
+
+- source_sha256: `c2f32e60a71102439b26ae1e3326e8b45aef5c624e1bae28d0aa52ca0a7b9396`
+- nodes: 2
+
+### Nodes
+
+#### `research_composition_view` (module)
+
+- id: `melder.mutation_research.research_set.research_composition_view`
+- defined at: `src/melder/mutation_research/research_set/research_composition_view.py:1`
+- role: Kernel-internal research composition view for the persistence twin (0.2.8306).
+- responsibilities:
+  - hold ResearchCompositionView: per-set references to append-only parts, materialized at the twin's first read
+- phases: `runtime`
+
+#### `ResearchCompositionView` (class)
+
+- id: `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView`
+- defined at: `src/melder/mutation_research/research_set/research_composition_view.py:10`
+- extends: `Cleanable`
+- role: The research composition as references, materialized into a detached payload when first read.
+- responsibilities:
+  - keep a shallow copy of set name -> ResearchSet._composition_view() and a journal window (int >= 0, ValueError)
+  - materialize(): set name -> payload equal to describe_composition(recent_transitions=window) at view time
+  - copy node and journal payloads, lane metadata, lists and the ring payload, so a result shares nothing mutable
+  - read part prefixes (parts[:length]) only, so a concurrent append cannot change or break a materialization
+  - hold no research object, lock or callback; the owning twin serializes reads and cleans it
+  - cleanup deletes its fields (idempotent) and never clears the parts it referenced
+- owns_state: `_set_views`, `_journal_window`
+- phases: `init`, `runtime`, `cleanup`
+- public methods: `cleanup`, `materialize`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.mutation_research.research_set.research_composition_view.ResearchCompositionView` creates `ValueError`
+
+<!-- END FILE: src/melder/mutation_research/research_set/research_composition_view.py -->
+
 <!-- BEGIN FILE: src/melder/mutation_research/research_set/research_journal.py -->
 
 ## src/melder/mutation_research/research_set/research_journal.py
 
-- source_sha256: `f7bacc73b391e5db1d35ed0fe2df6d1c6edd94c43cef2f47a2b4b63b9d6e0492`
+- source_sha256: `0d5ec0b4092038bf6bb2f1413da65ac69b6485a5fb6871d0d10708c5e5b80c91`
 - nodes: 2
 
 ### Nodes
@@ -19705,18 +19794,21 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - own one forward-only event stream per set
   - mint sequence numbers without reuse across hydration
+  - declare JournalPayloadView: entry payloads, the length a view covers, next sequence (0.2.8306)
 - phases: `runtime`
 
 #### `ResearchJournal` (class)
 
 - id: `melder.mutation_research.research_set.research_journal.ResearchJournal`
-- defined at: `src/melder/mutation_research/research_set/research_journal.py:11`
+- defined at: `src/melder/mutation_research/research_set/research_journal.py:15`
 - extends: `Cleanable`
 - role: Set-level monotonic append-only event log; SURVIVES network restore by design.
 - responsibilities:
   - mints gapless sequences; lane/identity filtered reads
-  - bounded describe window feeds the persistence twin; from_payload continues minting without reuse
-- owns_state: `_entries`, `_next_sequence`
+  - bounded describe window feeds describe_composition; from_payload continues minting without reuse
+  - keeps _entry_payloads: each entry's describe() built once in record and by from_payload, append-only (0.2.8306)
+  - _payload_view() returns (list, length, next_sequence) under the lock; cleanup drops the list without clearing
+- owns_state: `_entries`, `_entry_payloads`, `_next_sequence`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `entries`, `entries_for_lane`, `entries_for_spell_id`, `entry_count`, `from_payload`, `latest_sequence`, `record`
 
@@ -19745,7 +19837,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/research_set/research_lane.py
 
-- source_sha256: `a9a45fc4c48f50db4af6c1a94494d2feefdc1901e8341957898a59c44e3ed6fb`
+- source_sha256: `e74b31ab0b5748cab6ece0b7b7d9c380bab2634f13eaa53c1f37b4b6fca3036f`
 - nodes: 4
 
 ### Nodes
@@ -19757,40 +19849,46 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: One lane of a research network, plus its lifecycle and policy vocabularies.
 - responsibilities:
   - hold an ordered node sequence with an anchor and a tip
-  - keep every mutator set-internal so residence cannot be bypassed
+  - keep its mutators set-internal (underscore-prefixed) so residence cannot be bypassed; clear_anchor is public
+  - declare LanePayloadView, one lane's part of a composition view (0.2.8306)
 - phases: `runtime`
 
 #### `LaneState` (enum)
 
 - id: `melder.mutation_research.research_set.research_lane.LaneState`
-- defined at: `src/melder/mutation_research/research_set/research_lane.py:49`
+- defined at: `src/melder/mutation_research/research_set/research_lane.py:54`
 - markers: `StrEnum`
 - role: Lifecycle vocabulary for a lane: open, joined or archived.
 - responsibilities:
-  - name the terminal states a lane can reach
+  - name a lane's states: open takes work; joined and archived are terminal, never reopened in place
+  - StrEnum: names equal values and members compare as strings
 - phases: `runtime`
 
 #### `LaneType` (enum)
 
 - id: `melder.mutation_research.research_set.research_lane.LaneType`
-- defined at: `src/melder/mutation_research/research_set/research_lane.py:101`
+- defined at: `src/melder/mutation_research/research_set/research_lane.py:106`
 - markers: `StrEnum`
 - role: Policy vocabulary classifying a lane as development, experiment, production or test.
 - responsibilities:
   - carry the type the join gate enforces when armed
+  - StrEnum: names equal values and members compare as strings
 - phases: `runtime`
 
 #### `ResearchLane` (class)
 
 - id: `melder.mutation_research.research_set.research_lane.ResearchLane`
-- defined at: `src/melder/mutation_research/research_set/research_lane.py:154`
+- defined at: `src/melder/mutation_research/research_set/research_lane.py:159`
 - extends: `Cleanable`
 - role: One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).
 - responsibilities:
-  - holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)
+  - holds ordered records of either node family keyed via node_identity (spell_id or group_id), dedup per lane
   - carries the ancestry anchor (organization only, never content)
-  - detach_nodes powers the join transfer; terminal states refuse further work
-- owns_state: `_nodes_by_spell_id`, `_node_order`, `_tip_spell_id`, `_state`, `_anchor_lane_id`, `_anchor_spell_id`
+  - _detach_nodes powers the join transfer; terminal states refuse further work
+  - keeps _node_payloads aligned with _node_order: _add_node builds each describe() payload once (0.2.8306)
+  - from_payload fills the payloads too; a detach installs new lists; cleanup drops the list without clearing it
+  - _payload_view() returns a fresh header, the payload list and its length under the lane lock
+- owns_state: `_nodes_by_spell_id`, `_node_order`, `_node_payloads`, `_tip_spell_id`, `_state`, `_anchor_lane_id`, `_anchor_spell_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `anchor_lane_id`, `anchor_spell_id`, `cleanup`, `clear_anchor`, `created_at`, `describe`, `from_payload`, `get_node`, `has_node`, `joined_into_lane_id`, `lane_id`, `lane_type` (+6 more)
 
@@ -19873,7 +19971,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/research_set/research_set.py
 
-- source_sha256: `7d87154c81b070f12b6e88f656cc9266938dbcda747373b8beac42f3edf47b07`
+- source_sha256: `67ab6d446279bba14c5f223bd185c29b391938a30c677d206490008d09ab220a`
 - nodes: 2
 
 ### Nodes
@@ -19887,12 +19985,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - own lanes and the single forward-only journal
   - enforce single residence through the registry
   - notify on mutation so the composition twin stays current
+  - declare SetCompositionView: identity fields plus lane, residence, journal and ring views (0.2.8306)
 - phases: `init`, `runtime`, `cleanup`
 
 #### `ResearchSet` (class)
 
 - id: `melder.mutation_research.research_set.research_set.ResearchSet`
-- defined at: `src/melder/mutation_research/research_set/research_set.py:32`
+- defined at: `src/melder/mutation_research/research_set/research_set.py:48`
 - extends: `Cleanable`
 - role: The overarching research network: every lane, one journal, one residence partition; the single agent-facing MR surface.
 - responsibilities:
@@ -19901,7 +20000,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - guarantees the default lane; enforces single residence via the owned registry
   - fires the injected on_mutation callback after every mutating verb (persistence emission seam; set stays crystallizer-free)
   - group_history(group_id) = the subsystem-area journal gather (own lane + member ids + member lanes, journal order)
-- owns_state: `_lanes_by_id`, `_lane_id_by_name`, `_journal`, `_residence`, `_versioner`, `_on_mutation`
+  - appends (record_world_entry, register_spell, register_group, recompose_group) set _ring_stale and mint nothing
+  - organizing verbs (create_lane, attach, detach, join, archive, restore_network) mint the pending snapshot first
+  - snapshot_network, network_snapshot_shas and latest_network_snapshot mint first; describe_composition never
+  - _composition_view(): references to append-only parts with lengths, lanes in lane_id order, under the set lock
+  - TWIN_JOURNAL_WINDOW (200) is describe_composition's default window and the twin's (0.2.8306)
+- owns_state: `_lanes_by_id`, `_lane_id_by_name`, `_journal`, `_residence`, `_versioner`, `_ring_stale`, `_on_mutation`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `archive`, `attach`, `campaign_view`, `cleanup`, `create_lane`, `default_lane`, `describe`, `describe_composition`, `detach`, `from_payload`, `get_lane`, `group_history` (+20 more)
 
@@ -19947,7 +20051,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/research_set/residence_registry.py
 
-- source_sha256: `178b31d03112e0b00f35b6e6103051f56d9474611e8b08f1a2dc922cfa41688a`
+- source_sha256: `267bc667192374f6c3b58b129d45e71d8764cb6f6337760da58ea1b4e3712e3f`
 - nodes: 2
 
 ### Nodes
@@ -19960,18 +20064,22 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - raise the rediscovery signal on a claim collision, naming the holding lane
   - offer no release verb - residence is permanent by design
+  - declare ResidencePayloadView: the claim log and how many leading pairs a view covers (0.2.8306)
 - phases: `runtime`
 
 #### `ResidenceRegistry` (class)
 
 - id: `melder.mutation_research.research_set.residence_registry.ResidenceRegistry`
-- defined at: `src/melder/mutation_research/research_set/residence_registry.py:7`
+- defined at: `src/melder/mutation_research/research_set/residence_registry.py:11`
 - extends: `Cleanable`
 - role: Single-residence partition: one binding-signature SHA256 lives in exactly ONE lane network-wide, permanently.
 - responsibilities:
   - claim raises the rediscovery signal naming the holding lane (identical content rebinds to the same SHA)
   - all-or-nothing transfer powers join; NO release verb exists (residence permanent through archive)
-- owns_state: `_lane_id_by_spell_id`
+  - keeps _claim_log, the map's (identity, lane_id) pairs in map order: claim appends, _rollback_claim removes
+  - transfer and from_payload install a log rebuilt from the map; cleanup drops it without clearing (0.2.8306)
+  - _payload_view() returns (claim log, length) under the lock
+- owns_state: `_lane_id_by_spell_id`, `_claim_log`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `claim`, `cleanup`, `describe`, `from_payload`, `is_resident`, `residence_of`, `resident_count`, `transfer`
 

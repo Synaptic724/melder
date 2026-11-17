@@ -22,8 +22,10 @@ Contract:
       direction 2026-11-17: repeat work works off in-memory data); resolved roots
       for the same raw input and interpreter state; distribution provenance while
       the site roots' directories keep their modification times; a whole analysed
-      world while every module it touched passes those same checks. A mismatch is
-      a miss, and the caller's fresh answer replaces the entry.
+      world while every module it touched passes those same checks; an import
+      target's edge answer (path, custody kind, leaf record) under the path's own
+      guard and the same policy roots (0.2.8306). A mismatch is a miss, and the
+      caller's fresh answer replaces the entry.
     - Value-only: entries hold strings, ints, tuples and weak references. They
       never hold a module object (a weak reference does not keep a module alive),
       source text, AST nodes, crystals, analysis results or strategy instances.
@@ -54,6 +56,7 @@ import threading
 import types
 import weakref
 from collections import OrderedDict
+from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 
@@ -96,6 +99,13 @@ WorldEntry = Tuple[str, ModuleReference, SpecReference, Optional[Tuple[str, ...]
 # (root entry, every other touched module, the site-root signature when the world
 # carries distribution provenance, the finished result's describe() payload)
 RememberedWorld = Tuple[WorldEntry, Tuple[WorldEntry, ...], Optional[SiteRootSignature], Dict[str, Any]]
+# A leaf's record values: (path text or None, custody kind, file extension or None).
+EdgeLeafRecord = Tuple[Optional[str], str, Optional[str]]
+# An import target's edge answer: (resolved path or None, custody kind, leaf record when it does not descend).
+EdgeAnswer = Tuple[Optional[Path], str, Optional[EdgeLeafRecord]]
+# (module reference, the object's `__file__` text or None, the `sys.path` it was found on - kept only with no
+# module object - and the answer)
+RememberedEdgeAnswer = Tuple[ModuleReference, Optional[str], Optional[Tuple[str, ...]], EdgeAnswer]
 
 
 class ModuleAnswerCache:
@@ -140,7 +150,10 @@ class ModuleAnswerCache:
         keeps the answers derived from them - path, custody kind, dependency
         candidates after the member probes, fingerprint and export surface - and
         whole analysed worlds, so a repeat bind copies a finished result after
-        checking its modules in memory, and a new world's walk does lookups.
+        checking its modules in memory, and a new world's walk does lookups:
+        since 0.2.8306 one edge-answer lookup per import target it meets first in
+        that walk, instead of a path and a custody lookup and a `Path` built
+        from text.
 
     System Context:
         Each bind with the Crystallizer recording builds a spell crystal whose
@@ -170,6 +183,7 @@ class ModuleAnswerCache:
     _distribution_maps: OrderedDict[SiteRootSignature, Dict[str, Tuple[str, ...]]] = OrderedDict()
     _provenance: OrderedDict[Tuple[SiteRootSignature, str], Tuple[Optional[ProvenanceValues]]] = OrderedDict()
     _worlds: OrderedDict[WorldKey, RememberedWorld] = OrderedDict()
+    _edge_answers: OrderedDict[Tuple[CustodyPolicyKey, str], RememberedEdgeAnswer] = OrderedDict()
     _hits = 0
     _misses = 0
 
@@ -923,6 +937,115 @@ class ModuleAnswerCache:
             cls._bound(cls._provenance)
 
     # ------------------------------------------------------------------
+    # Import-edge answers
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def lookup_edge_answer(
+            cls,
+            policy_key: CustodyPolicyKey,
+            module_name: str,
+            module_obj: Optional[Any],
+            file_text: Optional[str],
+    ) -> Optional[EdgeAnswer]:
+        """
+        Return the edge answer kept for one import target under one custody policy, when it still applies.
+
+        Purpose:
+            A walk meeting an import target for the first time in its pass needs
+            the target's path, custody kind and - for a target that does not
+            descend - its leaf record. Every walk for a new root module met the
+            same shared targets again and asked the path and custody maps for
+            each, building a `Path` from text every time (#331: MelderOps' 298
+            walks answered 464,900 import edges). One fused answer per target
+            replaces those lookups (0.2.8306).
+
+        Contract:
+            - The guard is the path entry's: the same module object (or none)
+              and the same `__file__` text as when the answer was kept, and with
+              no module object the same `sys.path`. The custody kind depends only
+              on the path and the policy, which keys the entry.
+            - Callers never keep a synthetic module's answer, nor one derived from
+              a relative `__file__`.
+
+        Args:
+            policy_key:
+                The analyzer's default custody chain roots.
+            module_name:
+                The import target's canonical name.
+            module_obj:
+                Its live module object from `sys.modules`, or None.
+            file_text:
+                The object's `__file__` text now, or None.
+
+        Returns:
+            Optional[EdgeAnswer]: (path, custody kind, leaf record) or None on a miss.
+        """
+        key = (policy_key, module_name)
+        search_path = tuple(sys.path) if module_obj is None else None
+        with cls._lock:
+            entry = cls._edge_answers.get(key)
+            if (
+                    entry is None
+                    or entry[1] != file_text
+                    or entry[2] != search_path
+                    or not cls._same_module(entry[0], module_obj)
+            ):
+                cls._count(False)
+                return None
+            cls._edge_answers.move_to_end(key)
+            cls._count(True)
+            return entry[3]
+
+    @classmethod
+    def store_edge_answer(
+            cls,
+            policy_key: CustodyPolicyKey,
+            module_name: str,
+            module_obj: Optional[Any],
+            file_text: Optional[str],
+            module_path: Optional[Path],
+            kind: str,
+            leaf: Optional[EdgeLeafRecord],
+    ) -> None:
+        """
+        Keep one import target's edge answer for later walks.
+
+        Contract:
+            - Values only: the path is an immutable `Path`, the kind a string, the
+              leaf a tuple; the module object is held weakly, and an object that
+              cannot be weakly referenced is not kept.
+
+        Args:
+            policy_key:
+                The analyzer's default custody chain roots.
+            module_name:
+                The import target's canonical name.
+            module_obj:
+                The module object the answer was derived from, or None.
+            file_text:
+                The object's `__file__` text used, or None.
+            module_path:
+                The resolved path, or None for a pathless module.
+            kind:
+                The matched custody strategy's kind (never `synthetic_module`).
+            leaf:
+                The leaf record, or None when the target descends.
+
+        Returns:
+            None.
+        """
+        keepable, reference = cls._reference_for(module_obj)
+        if not keepable:
+            return
+        key = (policy_key, module_name)
+        search_path = tuple(sys.path) if module_obj is None else None
+        with cls._lock:
+            cls._edge_answers[key] = (reference, file_text, search_path, (module_path, kind, leaf))
+            cls._edge_answers.move_to_end(key)
+            cls._bound(cls._edge_answers)
+
+    # ------------------------------------------------------------------
     # Test hooks
     # ------------------------------------------------------------------
 
@@ -946,6 +1069,7 @@ class ModuleAnswerCache:
             cls._distribution_maps.clear()
             cls._provenance.clear()
             cls._worlds.clear()
+            cls._edge_answers.clear()
             cls._hits = 0
             cls._misses = 0
 
@@ -966,6 +1090,7 @@ class ModuleAnswerCache:
                 "distribution_maps": len(cls._distribution_maps),
                 "provenance": len(cls._provenance),
                 "worlds": len(cls._worlds),
+                "edge_answers": len(cls._edge_answers),
                 "capacity": cls._MAX_ENTRIES,
                 "world_capacity": cls._MAX_WORLDS,
                 "hits": cls._hits,

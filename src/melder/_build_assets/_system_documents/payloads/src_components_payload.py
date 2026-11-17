@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 13993
-CONTENT_SHA256 = '9698c996342943f114d03b749252cd4ac0242f0ff28318ae34bd91273eb99ab9'
+LINE_COUNT = 14042
+CONTENT_SHA256 = 'e048d9f8a1b97dfb61d3cb03751acb0556915d83cd3c21b1672d7731f8d350ad'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2047,6 +2047,7 @@ Key Files (C1):
 - `src/melder/mutation_research/mutation_configuration.py`
 - `src/melder/mutation_research/mutation_configuration_builder.py`
 - `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 - `src/melder/mutation_research/research_set/research_journal.py`
 - `src/melder/mutation_research/research_set/research_lane.py`
 - `src/melder/mutation_research/research_set/research_node.py`
@@ -8534,6 +8535,15 @@ Contract/Interface:
   touchpoint: sets call it through their injected `on_mutation` callback
   after every mutating verb (replace-on-emit; NO-OP while the root is
   inactive or the crystallizer records nothing).
+- Constant-cost emission (0.2.8306, #331): the twin is emitted with a `ResearchCompositionView` - each set's
+  `_composition_view()`, references to its append-only payload parts with their lengths, taken under the set
+  lock - instead of a full `describe_research_composition()`. `MutationResearchCrystal` materializes it once,
+  on its first read (a seal, a flush, a record description, the emission tap), equal to that description, so
+  an append's emission describes no node.
+  EVIDENCE:
+  - `src/melder/mutation_research/mutation_research.py:MutationResearch._emit_research_composition`
+  - `src/melder/mutation_research/mutation_research.py:MutationResearch._research_composition_view`
+  - `src/melder/crystallizer/crystals/mutation_research_crystal.py:MutationResearchCrystal._materialized`
 - Research record (2026-07-11): `record_world_entry(...)`, `record_promotion(...)`, `residency_view(...)` (the
   query-time active/parked/stored join), the ambient campaign stamp `set_active_campaign(...)` /
   `clear_active_campaign()` / `active_campaign` (carried by every runtime auto-record), `diff_research(...)` and
@@ -8743,7 +8753,28 @@ Contract/Interface:
   ONE lane network-wide, permanently; claim collisions raise the rediscovery
   signal naming the holding lane; no release verb exists.
 - `NetworkVersioner`: content-addressed (canonical-JSON SHA256) organization
-  snapshots with dedupe and a FIFO retention ring.
+  snapshots with dedupe and a FIFO retention ring (64 slots).
+- Constant-cost appends (0.2.8306, #331, owner decisions 2026-11-17): `record_world_entry`, `register_spell` and
+  `register_group` (`recompose_group` through it) build their node's payload and their journal entry's payload
+  once and mark the undo ring stale instead of minting a snapshot of the whole organization. `create_lane`,
+  `attach`, `detach`, `join`, `archive` and `restore_network` mint the pending snapshot before they change
+  anything, so the organization they start from stays restorable; `snapshot_network`, `network_snapshot_shas`
+  and `latest_network_snapshot` mint it first too (the two reads now take the set lock). `describe_composition`
+  mints nothing and reports the ring as of its last mint; hydration mints at load.
+- Composition parts and views (0.2.8306): the lane's `_node_payloads` (aligned with `_node_order`), the
+  journal's `_entry_payloads`, the residence's `_claim_log` and the versioner's `_ring_payload` are only
+  appended to or replaced - a detach, a transfer, a restore install new ones; a rollback removes only the claim
+  it undoes - and are dropped, never cleared, at cleanup. Each structure's `_payload_view()` hands its part out
+  with its length, `ResearchSet._composition_view()` gathers them under the set lock, and
+  `ResearchCompositionView.materialize()` rebuilds the `describe_composition()` payload, detached, so a twin
+  emitted before a restore or a cleanup still describes what it was emitted for.
+  EVIDENCE:
+  - `src/melder/mutation_research/research_set/research_set.py:ResearchSet._mint_pending_snapshot_locked`
+  - `src/melder/mutation_research/research_set/research_set.py:ResearchSet._composition_view`
+  - `src/melder/mutation_research/research_set/research_lane.py:ResearchLane._add_node`
+  - `src/melder/mutation_research/research_set/research_lane.py:ResearchLane._detach_nodes`
+  - `src/melder/mutation_research/research_set/residence_registry.py:ResidenceRegistry._rollback_claim`
+  - `src/melder/mutation_research/research_set/research_composition_view.py:ResearchCompositionView.materialize`
 Data Structures:
 - Per set: lanes by id + name index, one journal, one residence partition,
   one snapshot ring, one optional `on_mutation` callback.
@@ -8757,6 +8788,7 @@ Key Files (C1):
 - `src/melder/mutation_research/research_set/research_journal.py`
 - `src/melder/mutation_research/research_set/residence_registry.py`
 - `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 
 ### Subcomponent: MutationResearch Configuration
 Parent Component: Aether Singleton (Global Runtime)
@@ -10368,9 +10400,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 4005
-  loc: 4005
-  verified_at: 2026-11-01T13:44:23Z
+  end_line: 4040
+  loc: 4040
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
   end_line: 1338
@@ -11070,9 +11102,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
-  end_line: 2337
-  loc: 2337
-  verified_at: 2026-11-17T10:34:56Z
+  end_line: 2403
+  loc: 2403
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
   start_line: 1
   end_line: 264
@@ -11110,14 +11142,14 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/mutation_research/research_set/research_set.py`
   start_line: 1
-  end_line: 2645
-  loc: 2645
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 2808
+  loc: 2808
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/research_lane.py`
   start_line: 1
-  end_line: 1016
-  loc: 1016
-  verified_at: 2026-11-01T23:24:09Z
+  end_line: 1103
+  loc: 1103
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/research_node.py`
   start_line: 1
   end_line: 412
@@ -11130,19 +11162,24 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-11-01T23:24:09Z
 - path: `src/melder/mutation_research/research_set/research_journal.py`
   start_line: 1
-  end_line: 430
-  loc: 430
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 479
+  loc: 479
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/residence_registry.py`
   start_line: 1
-  end_line: 407
-  loc: 407
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 466
+  loc: 466
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/network_versioner.py`
   start_line: 1
-  end_line: 458
-  loc: 458
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 519
+  loc: 519
+  verified_at: 2026-11-17T12:29:52Z
+- path: `src/melder/mutation_research/research_set/research_composition_view.py`
+  start_line: 1
+  end_line: 235
+  loc: 235
+  verified_at: 2026-11-17T12:29:52Z
 
 Modules of `src/melder/crystallizer/crystal_loader_system/`:
 
@@ -11276,9 +11313,9 @@ Modules of `src/melder/nexus/acl/`:
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
   start_line: 1
-  end_line: 973
-  loc: 973
-  verified_at: 2026-11-17T10:34:56Z
+  end_line: 1098
+  loc: 1098
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   start_line: 1
   end_line: 231
@@ -11316,9 +11353,9 @@ Modules of `src/melder/nexus/acl/`:
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystals/mutation_research_crystal.py`
   start_line: 1
-  end_line: 350
-  loc: 350
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 452
+  loc: 452
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/crystallizer/crystals/nexus_crystal.py`
   start_line: 1
   end_line: 188
@@ -12430,6 +12467,8 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   One immutable COMPOSITION record inside a research lane
 - `src/melder/mutation_research/research_set/network_versioner.py`
   Content-addressed version control for the graph network itself
+- `src/melder/mutation_research/research_set/research_composition_view.py`
+  The research composition as references, materialized for the persistence twin when read (#331)
 - `src/melder/mutation_research/research_set/research_journal.py`
   Set-level monotonic append-only log of world-entry events
 - `src/melder/mutation_research/research_set/research_lane.py` - Lifecycle states for one research lane
@@ -12661,9 +12700,15 @@ facades only.
   module not imported keeps the file (mtime_ns, size) check. A whole analysed world is kept per root module
   after a walk with no read or parse error, and a later spell from that module, every touched module
   unchanged, receives a copy (`CrystalAnalysisResult.load_described_payload`) instead of a walk. A walk that
-  still runs answers each import target once per pass and records each shared leaf once. Synthetic modules,
+  still runs answers each import target once per pass and records each shared leaf once. Since 0.2.8306 the
+  first answer to an import target in a pass comes from an edge answer kept across walks
+  (`ModuleAnswerCache.lookup_edge_answer`: the resolved path, the custody kind and the leaf record, under the
+  path entry's guard and the custody policy roots), so a new root module's walk makes one lookup per target
+  instead of a path lookup, a custody lookup and a `Path` built from text; the dependency order is picked from a
+  heap, the same order at O(log n) per pick. Synthetic modules,
   many with no physical copy, are never kept. Measured, 600 binds over 150 modules (Windows, GIL off): 14.2 s
-  at 0.2.8303, about 2 s at 0.2.8304, 1.15 s at 0.2.8305. Accepted residuals: a loaded module's file edited
+  at 0.2.8303, about 2 s at 0.2.8304, 1.15 s at 0.2.8305, about 1.0 s at 0.2.8306 (2.77 s at 0.2.8305 with
+  MutationResearch recording, 1.02-1.07 s at 0.2.8306). Accepted residuals: a loaded module's file edited
   without a reload keeps its earlier analysis until a reload or re-import; a member submodule created later
   is seen once its importer is reloaded.
   EVIDENCE:
@@ -12672,7 +12717,10 @@ facades only.
   `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._extract_remembered_module_facts`,
   `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer.analyze_spell_root`,
   `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py:CrystalAnalysisResult.load_described_payload`,
-  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache.lookup_world`.
+  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache.lookup_world`,
+  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache.lookup_edge_answer`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._resolve_pass_edge`,
+  `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:DependencyViewStrategy.finalize`.
 - `crystallizer/persistence/` - the RECORD, ledger only:
   persistence_system.py + persistence_profile.py + persistence_crystal.py.
   Verbs: profiles, twins/journal, checkpoint minting, retention, chain
@@ -13312,6 +13360,7 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/mutation_research/mutation_configuration_builder.py`
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 - `src/melder/mutation_research/research_set/research_journal.py`
 - `src/melder/mutation_research/research_set/research_lane.py`
 - `src/melder/mutation_research/research_set/research_node.py`

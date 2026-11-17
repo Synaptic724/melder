@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 3fb0d6842a3ec67cf4f9b1424f2e46ba49134b4904ef35a0dea91c667733b13c
+SOURCE FINGERPRINT: ebc6a42fbdbb6d6562c387c7d769dbae67e566e565b194cdaf872dbfb4e76eb5
 FILE COUNT: 420
 
 ================================================================================
@@ -81374,10 +81374,10 @@ END FILE: release_docs/0.2.8300.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: c56e94cdda4baf167020a7cc3e8c73526b782083fa11347a3006ada899d6994e
+CONTENT SHA256: 0c02138317c11576a1597503493d5f06c54fe7a7996c0d871a2cddfc0eb46a75
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8305
+# Melder 0.2.8306
 
 **Unreleased**
 
@@ -81445,8 +81445,8 @@ average (Windows, GIL off).
 Records written from now on list such modules as site packages; a record written before keeps what it listed. The
 record version moves to 5.0.1 to say so; the shape is unchanged and 5.0.0 records read as before. Source kept inside a
 Python environment - for instance in a virtual environment created in the project directory itself - is no longer user
-source; keep it outside the environment, or point `user_source_root_paths` at a directory outside it. Every analysis
-is still made fresh against the live environment: nothing is kept from one bind to the next.
+source; keep it outside the environment, or point `user_source_root_paths` at a directory outside it. An analysis also
+reuses what earlier binds learned about each module, as the next section describes.
 
 ## A SpellMap consumer bound before its provider waits for it
 
@@ -81498,7 +81498,9 @@ import spec - so later binds neither read nor stat its file. A module that is no
 classification is reused while the source and package roots are the same, and an installed package's distribution
 and version while the site-packages directories are unchanged. In a measured project of 150 modules, binding 600
 spells took 1.15 s instead of 14.2 s (1.9 ms a bind instead of 23.6 ms; 480 path resolutions instead of 58,915;
-Windows, GIL off).
+Windows, GIL off). A spell from a new module also takes each import it shares with modules analysed before from a
+kept answer - one lookup instead of a path lookup and a classification - and the analysis orders the world's modules
+with a heap, in the same order as before; the same 600 binds took about 1.0 s.
 
 **Breaking change:** editing a loaded module's file without reloading it no longer reaches later crystals: they keep
 the analysis of the module as it was loaded, which is the code that is running. Reload the module
@@ -81510,6 +81512,28 @@ A crystal built from reused answers records exactly what a fresh analysis record
 cached, with or without a file on disk, and an analysis retaining user-source text always reads it. The cache holds
 plain values and weak references - never a module, source text or result - and keeps at most 8,192 entries of each
 kind and 128 analysed worlds.
+
+## A MutationResearch world entry costs the same however large the research set is
+
+With MutationResearch active, every bind records a world entry. Each entry described the whole research set twice -
+once to add a snapshot of its organization to the undo ring, once to re-record the research for the Crystallizer - so a
+configure binding hundreds of spells spent most of its research time describing the same versions again (600 binds:
+360,600 version descriptions). A world entry now describes only its own version, and the research record is re-emitted
+from what is already described and built in full only when the Crystallizer reads it. Binding 600 spells with
+MutationResearch recording took about 1.05 s instead of 2.77 s, the research share 0.03 s instead of 1.37 s (Windows,
+GIL off).
+
+**Breaking change:** recording a version (`record_world_entry`, `register_spell`, `register_group`, `recompose_group`)
+no longer adds an undo-ring snapshot of its own. The ring takes one snapshot of the organization before the next
+organizing operation (`create_lane`, `attach`, `detach`, `join`, `archive`, `restore_network`) and when it is read
+(`snapshot_network`, `network_snapshot_shas`, `latest_network_snapshot`), so the organization an operation starts from
+stays restorable however many versions were recorded first, and the ring's 64 slots hold those states rather than one
+per bind. A restore can no longer return to the moment after one particular version among several recorded in a row;
+call `snapshot_network()` where such a point matters. `describe_composition()` and the recorded research carry the
+ring as of its last snapshot. `network_snapshot_shas` and `latest_network_snapshot` now take the research set's lock.
+
+What the research record holds, how a restore rebuilds the organization, and the ring's size and content addressing are
+unchanged.
 
 ## Packaging and documentation
 
@@ -81530,9 +81554,9 @@ Melder's one runtime dependency, pip, now needs 26.3 or later (it was pinned at 
 upgrades an older pip and leaves a newer one alone. CI, the documentation build's lock and `uv.lock` install 26.3, and
 `requirements.txt` names pip as that one dependency (it said there was none) (GitHub issue #286).
 
-The internal-bind guard manifest holds 634 entries at 0.2.8304 (633 at 0.2.8301, 631 at 0.2.8300):
-`RiftGateDrainTimeoutError` and the gate's per-thread ticket holder, then `ModuleAnswerCache`, are kernel classes and
-cannot be bound.
+The internal-bind guard manifest holds 635 entries at 0.2.8306 (634 at 0.2.8304, 633 at 0.2.8301, 631 at 0.2.8300):
+`RiftGateDrainTimeoutError` and the gate's per-thread ticket holder, then `ModuleAnswerCache`, then
+`ResearchCompositionView`, are kernel classes and cannot be bound.
 
 The docstrings of `SpellMap`, `CompilerPhase3`, `RequiredHolesStrategy`, `UnresolvedInputError`, `SocketKind` and
 `SpellSystemStates` say that a SpellMap matching nothing waits as an unresolved input; the source and test maps, their
@@ -81546,7 +81570,15 @@ of `CrystalAnalyzer`, `CrystalAnalysisResult` and `SitePackageCustodyStrategy` s
 when it is derived again; the source and test maps, their indexes and the source graph describe it. The assembled
 source graph also carries the line-ending-neutral source hashes its descriptors gained in the 2.23.3 re-extraction.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8305.
+The new kernel class `ResearchCompositionView` (`melder.mutation_research.research_set.research_composition_view`)
+carries the research composition to `MutationResearchCrystal`, which now also accepts it (`composition_view`) and
+builds the composition when first read. `ModuleAnswerCache` keeps import-edge answers. The docstrings of
+`ResearchSet`, `ResearchLane`, `ResearchJournal`, `ResidenceRegistry`, `NetworkVersioner`, `MutationResearch`,
+`MutationResearchCrystal`, `ModuleAnswerCache`, `CrystalAnalyzer` and `DependencyViewStrategy` say which verbs
+snapshot the undo ring, what each emission costs and what is kept; the source and test maps, their indexes and the
+source graph describe it.
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8306.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

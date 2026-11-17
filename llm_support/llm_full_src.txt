@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 21f1819021eaf70556bfc5fd0d2ba9ecd7ef1608c12d503bcddc74922aa41320
-FILE COUNT: 587
+SOURCE FINGERPRINT: 8be1d3e1b6642b31231cbdf2ee7353770c0a77206a6fd58f8ed4042f036cbd44
+FILE COUNT: 588
 
 ================================================================================
 BEGIN FILE: src/melder/__architecture__.py
@@ -614,7 +614,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 47ee471ddd0aa46084f606b583f091dcecefb17e561b402ea0174807075bca5b
+CONTENT SHA256: c7427faf6b6aa914a09d946d16c19103d583e52f86aa6dbd56793fb330276b4b
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -628,7 +628,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8305"
+__version__ = "0.2.8306"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -157632,7 +157632,7 @@ END FILE: src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_analysis/crystal_analyzer.py
-CONTENT SHA256: f2b035845d8eed92fa3bff8e0c08fff82d6e95e2be62758ac2b67a851a17054b
+CONTENT SHA256: fb510b4d6a76df3b2b2e67a4f88e9008330b0e966b42ddc36b173057c9fbc034
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -158950,6 +158950,15 @@ class CrystalAnalyzer(Cleanable):
               and must be the same object (`is`) on reuse.
             - The path and custody come from `_resolve_pass_module_path` and
               `_match_custody`, so the answers are those the edge always received.
+            - ACROSS PASSES (#331, 0.2.8306): an analyzer keying answers (default
+              chains) first asks `ModuleAnswerCache.lookup_edge_answer` for a
+              non-synthetic target it meets first in this pass, and on a hit
+              builds the edge from the kept path, its own strategy of the kept
+              kind and the kept leaf record - no path lookup, no custody lookup, no
+              `Path` built. A computed answer is kept for later walks unless its
+              target is synthetic or its `__file__` is relative. The guard is the
+              path's own (same object and `__file__`, or no object and the same
+              `sys.path`); the kind depends only on that path and the policy.
 
         Args:
             dependency_name:
@@ -158964,6 +158973,25 @@ class CrystalAnalyzer(Cleanable):
         edge = self._pass_edges.get(key)
         if edge is not None and edge[1] is dependency_obj:
             return edge
+        policy_key = self._answer_policy_key
+        if isinstance(dependency_obj, SyntheticModule):
+            policy_key = None
+        file_text: Optional[str] = None
+        if policy_key is not None:
+            file_text = CrystalAnalyzer._module_file_text(dependency_obj)
+            kept_answer = ModuleAnswerCache.lookup_edge_answer(
+                policy_key, dependency_name, dependency_obj, file_text,
+            )
+            if kept_answer is not None:
+                edge = (
+                    dependency_name,
+                    dependency_obj,
+                    kept_answer[0],
+                    self._custody_by_kind[kept_answer[1]],
+                    kept_answer[2],
+                )
+                self._pass_edges[key] = edge
+                return edge
         dependency_path = self._resolve_pass_module_path(dependency_name, dependency_obj)
         dependency_custody = self._match_custody(
             module_name=dependency_name,
@@ -158979,7 +159007,45 @@ class CrystalAnalyzer(Cleanable):
             )
         edge = (dependency_name, dependency_obj, dependency_path, dependency_custody, leaf)
         self._pass_edges[key] = edge
+        if (
+                policy_key is not None
+                and dependency_custody.kind != "synthetic_module"
+                and (file_text is None or os.path.isabs(file_text))
+        ):
+            ModuleAnswerCache.store_edge_answer(
+                policy_key,
+                dependency_name,
+                dependency_obj,
+                file_text,
+                dependency_path,
+                dependency_custody.kind,
+                leaf,
+            )
         return edge
+
+    @staticmethod
+    def _module_file_text(module_obj: Optional[Any]) -> Optional[str]:
+        """
+        Return a module object's `__file__` as text, the way `resolve_module_path` reads it.
+
+        Contract:
+            None for no object, an object without `__file__` (a non-module in
+            `sys.modules`) or an empty one; otherwise `str(__file__)`.
+
+        Args:
+            module_obj:
+                A live module object, or None.
+
+        Returns:
+            Optional[str]: The `__file__` text, or None.
+        """
+        if module_obj is None:
+            return None
+        try:
+            module_file = module_obj.__file__
+        except AttributeError:
+            return None
+        return str(module_file) if module_file else None
 
     def _harvest_walked_node(
             self,
@@ -161865,7 +161931,7 @@ END FILE: src/melder/crystallizer/crystal_analysis/impact_engine.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_analysis/module_answer_cache.py
-CONTENT SHA256: 6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7
+CONTENT SHA256: 0151e92b30d387fdbc67d80133d3a5842dbb10ac78b88082eb0ea3f78a08280e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -161892,8 +161958,10 @@ Contract:
       direction 2026-11-17: repeat work works off in-memory data); resolved roots
       for the same raw input and interpreter state; distribution provenance while
       the site roots' directories keep their modification times; a whole analysed
-      world while every module it touched passes those same checks. A mismatch is
-      a miss, and the caller's fresh answer replaces the entry.
+      world while every module it touched passes those same checks; an import
+      target's edge answer (path, custody kind, leaf record) under the path's own
+      guard and the same policy roots (0.2.8306). A mismatch is a miss, and the
+      caller's fresh answer replaces the entry.
     - Value-only: entries hold strings, ints, tuples and weak references. They
       never hold a module object (a weak reference does not keep a module alive),
       source text, AST nodes, crystals, analysis results or strategy instances.
@@ -161924,6 +161992,7 @@ import threading
 import types
 import weakref
 from collections import OrderedDict
+from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 
@@ -161966,6 +162035,13 @@ WorldEntry = Tuple[str, ModuleReference, SpecReference, Optional[Tuple[str, ...]
 # (root entry, every other touched module, the site-root signature when the world
 # carries distribution provenance, the finished result's describe() payload)
 RememberedWorld = Tuple[WorldEntry, Tuple[WorldEntry, ...], Optional[SiteRootSignature], Dict[str, Any]]
+# A leaf's record values: (path text or None, custody kind, file extension or None).
+EdgeLeafRecord = Tuple[Optional[str], str, Optional[str]]
+# An import target's edge answer: (resolved path or None, custody kind, leaf record when it does not descend).
+EdgeAnswer = Tuple[Optional[Path], str, Optional[EdgeLeafRecord]]
+# (module reference, the object's `__file__` text or None, the `sys.path` it was found on - kept only with no
+# module object - and the answer)
+RememberedEdgeAnswer = Tuple[ModuleReference, Optional[str], Optional[Tuple[str, ...]], EdgeAnswer]
 
 
 class ModuleAnswerCache:
@@ -162010,7 +162086,10 @@ class ModuleAnswerCache:
         keeps the answers derived from them - path, custody kind, dependency
         candidates after the member probes, fingerprint and export surface - and
         whole analysed worlds, so a repeat bind copies a finished result after
-        checking its modules in memory, and a new world's walk does lookups.
+        checking its modules in memory, and a new world's walk does lookups:
+        since 0.2.8306 one edge-answer lookup per import target it meets first in
+        that walk, instead of a path and a custody lookup and a `Path` built
+        from text.
 
     System Context:
         Each bind with the Crystallizer recording builds a spell crystal whose
@@ -162040,6 +162119,7 @@ class ModuleAnswerCache:
     _distribution_maps: OrderedDict[SiteRootSignature, Dict[str, Tuple[str, ...]]] = OrderedDict()
     _provenance: OrderedDict[Tuple[SiteRootSignature, str], Tuple[Optional[ProvenanceValues]]] = OrderedDict()
     _worlds: OrderedDict[WorldKey, RememberedWorld] = OrderedDict()
+    _edge_answers: OrderedDict[Tuple[CustodyPolicyKey, str], RememberedEdgeAnswer] = OrderedDict()
     _hits = 0
     _misses = 0
 
@@ -162793,6 +162873,115 @@ class ModuleAnswerCache:
             cls._bound(cls._provenance)
 
     # ------------------------------------------------------------------
+    # Import-edge answers
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def lookup_edge_answer(
+            cls,
+            policy_key: CustodyPolicyKey,
+            module_name: str,
+            module_obj: Optional[Any],
+            file_text: Optional[str],
+    ) -> Optional[EdgeAnswer]:
+        """
+        Return the edge answer kept for one import target under one custody policy, when it still applies.
+
+        Purpose:
+            A walk meeting an import target for the first time in its pass needs
+            the target's path, custody kind and - for a target that does not
+            descend - its leaf record. Every walk for a new root module met the
+            same shared targets again and asked the path and custody maps for
+            each, building a `Path` from text every time (#331: MelderOps' 298
+            walks answered 464,900 import edges). One fused answer per target
+            replaces those lookups (0.2.8306).
+
+        Contract:
+            - The guard is the path entry's: the same module object (or none)
+              and the same `__file__` text as when the answer was kept, and with
+              no module object the same `sys.path`. The custody kind depends only
+              on the path and the policy, which keys the entry.
+            - Callers never keep a synthetic module's answer, nor one derived from
+              a relative `__file__`.
+
+        Args:
+            policy_key:
+                The analyzer's default custody chain roots.
+            module_name:
+                The import target's canonical name.
+            module_obj:
+                Its live module object from `sys.modules`, or None.
+            file_text:
+                The object's `__file__` text now, or None.
+
+        Returns:
+            Optional[EdgeAnswer]: (path, custody kind, leaf record) or None on a miss.
+        """
+        key = (policy_key, module_name)
+        search_path = tuple(sys.path) if module_obj is None else None
+        with cls._lock:
+            entry = cls._edge_answers.get(key)
+            if (
+                    entry is None
+                    or entry[1] != file_text
+                    or entry[2] != search_path
+                    or not cls._same_module(entry[0], module_obj)
+            ):
+                cls._count(False)
+                return None
+            cls._edge_answers.move_to_end(key)
+            cls._count(True)
+            return entry[3]
+
+    @classmethod
+    def store_edge_answer(
+            cls,
+            policy_key: CustodyPolicyKey,
+            module_name: str,
+            module_obj: Optional[Any],
+            file_text: Optional[str],
+            module_path: Optional[Path],
+            kind: str,
+            leaf: Optional[EdgeLeafRecord],
+    ) -> None:
+        """
+        Keep one import target's edge answer for later walks.
+
+        Contract:
+            - Values only: the path is an immutable `Path`, the kind a string, the
+              leaf a tuple; the module object is held weakly, and an object that
+              cannot be weakly referenced is not kept.
+
+        Args:
+            policy_key:
+                The analyzer's default custody chain roots.
+            module_name:
+                The import target's canonical name.
+            module_obj:
+                The module object the answer was derived from, or None.
+            file_text:
+                The object's `__file__` text used, or None.
+            module_path:
+                The resolved path, or None for a pathless module.
+            kind:
+                The matched custody strategy's kind (never `synthetic_module`).
+            leaf:
+                The leaf record, or None when the target descends.
+
+        Returns:
+            None.
+        """
+        keepable, reference = cls._reference_for(module_obj)
+        if not keepable:
+            return
+        key = (policy_key, module_name)
+        search_path = tuple(sys.path) if module_obj is None else None
+        with cls._lock:
+            cls._edge_answers[key] = (reference, file_text, search_path, (module_path, kind, leaf))
+            cls._edge_answers.move_to_end(key)
+            cls._bound(cls._edge_answers)
+
+    # ------------------------------------------------------------------
     # Test hooks
     # ------------------------------------------------------------------
 
@@ -162816,6 +163005,7 @@ class ModuleAnswerCache:
             cls._distribution_maps.clear()
             cls._provenance.clear()
             cls._worlds.clear()
+            cls._edge_answers.clear()
             cls._hits = 0
             cls._misses = 0
 
@@ -162836,6 +163026,7 @@ class ModuleAnswerCache:
                 "distribution_maps": len(cls._distribution_maps),
                 "provenance": len(cls._provenance),
                 "worlds": len(cls._worlds),
+                "edge_answers": len(cls._edge_answers),
                 "capacity": cls._MAX_ENTRIES,
                 "world_capacity": cls._MAX_WORLDS,
                 "hits": cls._hits,
@@ -165423,7 +165614,7 @@ END FILE: src/melder/crystallizer/crystal_analysis/strategies/base_strategy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py
-CONTENT SHA256: 8f57fba75a7c37d2917ddd46965fdf2be8a6348242105a4413db2d80e79be312
+CONTENT SHA256: 16e1a9ff5ecbf06d958febf78521af98b6aefa8205f265ef62f8661e91ea5005
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -165437,6 +165628,7 @@ needs the complete edge map.
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
+import heapq
 from typing import Dict, List, Set
 
 from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
@@ -165527,6 +165719,10 @@ class DependencyViewStrategy(CrystalFactStrategy):
             module set remain manifest facts but do not become ordering nodes.
             A cycle never raises: unresolved nodes are appended
             deterministically and reported through the result's honesty lane.
+            Ready modules wait in a min-heap of names (#331, 0.2.8306): each
+            pick takes the smallest ready name, exactly as the sorted ready
+            list did, in O(log V) instead of a `pop(0)` and a re-sort per
+            insertion; the order and the cycle error are unchanged.
 
         Args:
             result:
@@ -165564,23 +165760,22 @@ class DependencyViewStrategy(CrystalFactStrategy):
                     module_name
                 )
 
-        ready_modules: List[str] = sorted(
+        ready_modules: List[str] = [
             module_name
             for module_name, count in remaining_dependency_counts.items()
             if count == 0
-        )
+        ]
+        heapq.heapify(ready_modules)
         load_order: List[str] = []
         while ready_modules:
-            current_module = ready_modules.pop(0)
+            # The smallest ready name, as the sorted ready list's head was.
+            current_module = heapq.heappop(ready_modules)
             load_order.append(current_module)
-            for dependent_name in sorted(
-                    dependents_by_module.get(current_module, [])
-            ):
+            for dependent_name in dependents_by_module.get(current_module, []):
                 remaining_dependency_counts[dependent_name] -= 1
                 if remaining_dependency_counts[dependent_name] == 0:
-                    # Insert preserving sorted readiness order.
-                    ready_modules.append(dependent_name)
-                    ready_modules.sort()
+                    # The heap keeps readiness order whatever order dependents arrive in.
+                    heapq.heappush(ready_modules, dependent_name)
 
         unresolved_modules = sorted(
             module_name
@@ -176618,14 +176813,24 @@ END FILE: src/melder/crystallizer/crystals/crystallizer_crystal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystals/mutation_research_crystal.py
-CONTENT SHA256: 3a48a28cb5ec90228f20ba9c150e15878a5106df202ec7a4b9de64e9967fa34d
+CONTENT SHA256: ab60b9cfd9fe89261711d6166cd55d9086736cf14b050fa2ca4cb2a9a1e36d96
 SOURCE ENCODING: utf-8
 ================================================================================
 
 
-from typing import Dict, List, Optional
+import threading
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.mutation_research.research_set.research_composition_view import (
+        ResearchCompositionView,
+    )
+
+# The recorded composition and the rows derived from it: (composition payload, research node rows, grouped node
+# rows).
+MaterializedComposition = Tuple[Dict[str, object], List[Dict[str, object]], List[Dict[str, object]]]
 
 
 class MutationResearchCrystal(Cleanable):
@@ -176666,10 +176871,19 @@ class MutationResearchCrystal(Cleanable):
           never disagree. Storage handlers map these lists straight to
           tables; hydration keeps reading the composition (the proven
           loop); the rows are the record's queryable face.
+        - TWO WAYS IN (#331, 0.2.8306): a `composition_payload` (the
+          configuration docking path, tests) is copied and its rows derived
+          at construction, as before; a `composition_view` (the root's
+          emission after every mutating verb) is held as references and
+          materialized - payload and rows - on the twin's FIRST READ, then
+          dropped. Every read returns what a twin built from the materialized
+          payload returns, so readers cannot tell the two apart; emitting
+          costs nothing per recorded node.
 
     Threading:
-        Immutable-after-init; the owning PersistenceProfile serializes
-        replacement.
+        Immutable-after-init as a value; the first read of a view-built twin
+        materializes under `_materialize_lock`, so concurrent first reads
+        build it once. The owning PersistenceProfile serializes replacement.
 
     Lifecycle / Cleanup:
         Owned by exactly one `PersistenceProfile`. Cleanup releases copied
@@ -176714,9 +176928,9 @@ class MutationResearchCrystal(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_activated",
         "_configuration_payload",
-        "_composition_payload",
-        "_research_node_rows",
-        "_grouped_research_node_rows",
+        "_composition",
+        "_composition_view",
+        "_materialize_lock",
     ]
 
     def __init__(
@@ -176724,9 +176938,16 @@ class MutationResearchCrystal(Cleanable):
             activated: bool,
             configuration_payload: Optional[Dict[str, object]] = None,
             composition_payload: Optional[Dict[str, object]] = None,
+            *,
+            composition_view: Optional[ResearchCompositionView] = None,
     ) -> None:
         """
         Initialize the MR twin from emitted root state.
+
+        Contract:
+            - At most one composition source: a payload is copied and its rows
+              derived now; a view is held and materialized on the first read
+              (#331). Neither records an empty composition.
 
         Args:
             activated:
@@ -176738,23 +176959,88 @@ class MutationResearchCrystal(Cleanable):
                 Value-typed research composition (set name ->
                 `ResearchSet.describe_composition()` payload). None is
                 treated as an empty composition (Phase-A emitters).
+            composition_view:
+                The root's composition view (kernel-internal, the emission
+                path); the twin takes ownership and cleans it.
+
+        Raises:
+            ValueError:
+                If both `composition_payload` and `composition_view` are given.
 
         Returns:
             None.
         """
         super().__init__()
+        if composition_payload is not None and composition_view is not None:
+            raise ValueError(
+                "MutationResearchCrystal takes a composition_payload or a composition_view, not both."
+            )
         self._activated: bool = activated
         self._configuration_payload: Dict[str, object] = (
             dict(configuration_payload) if configuration_payload else {}
         )
-        self._composition_payload: Dict[str, object] = (
-            dict(composition_payload) if composition_payload else {}
-        )
+        # The recorded composition and its rows; None until a view-built twin is first read (#331).
+        self._composition: Optional[MaterializedComposition] = None
+        self._composition_view: Optional[ResearchCompositionView] = composition_view
+        self._materialize_lock: threading.Lock = threading.Lock()
+        if composition_view is None:
+            self._composition = MutationResearchCrystal._with_rows(
+                dict(composition_payload) if composition_payload else {},
+            )
+
+    @staticmethod
+    def _with_rows(composition_payload: Dict[str, object]) -> MaterializedComposition:
+        """
+        Pair one composition payload with the rows derived from it.
+
+        Args:
+            composition_payload:
+                The detached composition (set name -> payload) a twin records.
+
+        Returns:
+            MaterializedComposition: (payload, research node rows, grouped node rows).
+        """
         spell_rows, group_rows = MutationResearchCrystal._derive_node_rows(
-            self._composition_payload,
+            composition_payload,
         )
-        self._research_node_rows: List[Dict[str, object]] = spell_rows
-        self._grouped_research_node_rows: List[Dict[str, object]] = group_rows
+        return composition_payload, spell_rows, group_rows
+
+    def _materialized(self) -> MaterializedComposition:
+        """
+        Return the composition payload and both row lists, materializing a held view once.
+
+        Contract:
+            - A view-built twin materializes on its first call (under
+              `_materialize_lock`), derives its rows, then cleans and drops the
+              view; later calls return the kept values. A payload-built twin
+              returns its values at once.
+
+        Threading:
+            The view check and materialization run under `_materialize_lock`;
+            the kept values are never replaced afterwards.
+
+        Returns:
+            MaterializedComposition:
+                (composition payload, research node rows, grouped node rows),
+                the twin's own objects - callers copy before handing them on.
+
+        Raises:
+            RuntimeError:
+                If the twin holds neither a composition nor a view - a broken
+                construction invariant, never a state a caller can reach.
+        """
+        with self._materialize_lock:
+            if self._composition is None and self._composition_view is not None:
+                self._composition = MutationResearchCrystal._with_rows(
+                    self._composition_view.materialize(),
+                )
+                self._composition_view.cleanup()
+                self._composition_view = None
+            if self._composition is None:
+                raise RuntimeError(
+                    "MutationResearchCrystal holds neither a composition nor a composition view."
+                )
+            return self._composition
 
     @staticmethod
     def _derive_node_rows(
@@ -176841,6 +177127,8 @@ class MutationResearchCrystal(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones).
+            - A view never materialized is cleaned here (#331); the research
+              parts it referenced are not touched.
 
         Returns:
             None.
@@ -176848,11 +177136,14 @@ class MutationResearchCrystal(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
+        with self._materialize_lock:
+            if self._composition_view is not None:
+                self._composition_view.cleanup()
+            del self._composition_view
         del self._activated
         del self._configuration_payload
-        del self._composition_payload
-        del self._research_node_rows
-        del self._grouped_research_node_rows
+        del self._composition
+        del self._materialize_lock
 
     @property
     def activated(self) -> bool:
@@ -176901,7 +177192,8 @@ class MutationResearchCrystal(Cleanable):
                 (organization + bounded journal window + snapshot addresses).
         """
         self.check_cleaned()
-        return dict(self._composition_payload)
+        composition_payload, _, _ = self._materialized()
+        return dict(composition_payload)
 
     @property
     def research_nodes(self) -> List[Dict[str, object]]:
@@ -176909,9 +177201,10 @@ class MutationResearchCrystal(Cleanable):
         Return the recorded ResearchNodes as flat, DB-storable rows.
 
         Contract:
-            - DERIVED from `composition_payload` at construction (blob and rows
-              cannot disagree); returns detached row copies - the queryable,
-              DB-storable face of the spell-version records.
+            - DERIVED from `composition_payload` at construction, or at the first
+              read of a view-built twin (blob and rows cannot disagree); returns
+              detached row copies - the queryable, DB-storable face of the
+              spell-version records.
 
         Returns:
             List[Dict[str, object]]:
@@ -176921,7 +177214,8 @@ class MutationResearchCrystal(Cleanable):
                 "campaign", "reason", "created_at"}` (detached copies).
         """
         self.check_cleaned()
-        return [dict(row) for row in self._research_node_rows]
+        _, research_node_rows, _ = self._materialized()
+        return [dict(row) for row in research_node_rows]
 
     @property
     def grouped_research_nodes(self) -> List[Dict[str, object]]:
@@ -176929,9 +177223,9 @@ class MutationResearchCrystal(Cleanable):
         Return the recorded GroupedResearchNodes as flat, DB-storable rows.
 
         Contract:
-            - DERIVED from `composition_payload` at construction; returns
-              detached row copies - the DB-storable face of the composition
-              records.
+            - DERIVED from `composition_payload` at construction, or at the first
+              read of a view-built twin; returns detached row copies - the
+              DB-storable face of the composition records.
 
         Returns:
             List[Dict[str, object]]:
@@ -176941,7 +177235,8 @@ class MutationResearchCrystal(Cleanable):
                 "created_at"}` (detached copies).
         """
         self.check_cleaned()
-        return [dict(row) for row in self._grouped_research_node_rows]
+        _, _, grouped_research_node_rows = self._materialized()
+        return [dict(row) for row in grouped_research_node_rows]
 
     def describe(self) -> Dict[str, object]:
         """
@@ -176957,18 +177252,20 @@ class MutationResearchCrystal(Cleanable):
             - Detached cached-item form carrying `twin_kind:
               "mutation_research"`; blob and node rows are derived from one
               source so they cannot disagree.
+            - A view-built twin materializes on this first read (#331).
         """
         self.check_cleaned()
+        composition_payload, research_node_rows, grouped_research_node_rows = self._materialized()
         return {
             "twin_kind": "mutation_research",
             "activated": self._activated,
             "configuration_payload": dict(self._configuration_payload),
-            "composition_payload": dict(self._composition_payload),
+            "composition_payload": dict(composition_payload),
             "research_nodes": [
-                dict(row) for row in self._research_node_rows
+                dict(row) for row in research_node_rows
             ],
             "grouped_research_nodes": [
-                dict(row) for row in self._grouped_research_node_rows
+                dict(row) for row in grouped_research_node_rows
             ],
         }
 ================================================================================
@@ -188063,7 +188360,7 @@ END FILE: src/melder/mutation_research/mutation_configuration_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/mutation_research/mutation_research.py
-CONTENT SHA256: b1754ff4ffd3c3370d045bd2ffb8ae9309275d5a3c8a9be0bd0e0d9a6ffe7c32
+CONTENT SHA256: a2437bdceffe5cb9fbeccb2be726b10bb1478c260fad77f68fa0ff6c982e9d4d
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -188094,6 +188391,9 @@ from melder.mutation_research.mutation_configuration_builder import (
 )
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
+)
+from melder.mutation_research.research_set.research_composition_view import (
+    ResearchCompositionView,
 )
 from melder.mutation_research.research_set.research_set import ResearchSet
 from melder.mutation_research.synthesis.structural_synthesizer import (
@@ -192022,10 +192322,16 @@ class MutationResearch(Cleanable):
             - NO-OP while the root is inactive or the crystallizer is not
               recording (cleanup sets `_activated` False, so late teardown
               callbacks fall out here too - no cleaned-probing needed).
+            - CONSTANT COST PER EMISSION (#331, 0.2.8306): the twin receives a
+              `ResearchCompositionView` - references to each set's append-only
+              payload parts with their lengths - instead of a full
+              `describe_research_composition()`, so an append's emission describes
+              no node; the twin materializes the payload (equal to that
+              description) when it is first read.
 
         Threading:
             The whole verb runs under the reentrant emission lock: the
-            composition snapshot is built and published by the same holder,
+            composition view is taken and published by the same holder,
             so replace-on-emit publication can never move the durable
             composition backwards relative to committed live mutations (a
             later-arriving emitter always reads the newer live state before
@@ -192051,8 +192357,34 @@ class MutationResearch(Cleanable):
                 MutationResearchCrystal(
                     activated=self._activated,
                     configuration_payload=configuration_payload,
-                    composition_payload=self.describe_research_composition(),
+                    composition_view=self._research_composition_view(),
                 )
+            )
+
+    def _research_composition_view(self) -> ResearchCompositionView:
+        """
+        Take the composition view the twin is emitted with (#331).
+
+        Contract:
+            - One `ResearchSet._composition_view()` per registered set, with the
+              twin's journal window (`ResearchSet.TWIN_JOURNAL_WINDOW`);
+              materialized, it equals `describe_research_composition()` taken at
+              the same moment. Mints nothing and describes no node.
+
+        Threading:
+            Reads the registry under `self._lock` (each set's view under the
+            set's lock inside): emission -> root -> set, the existing order.
+
+        Returns:
+            ResearchCompositionView: The view, owned by the twin it is handed to.
+        """
+        with self._lock:
+            return ResearchCompositionView(
+                {
+                    name: research_set._composition_view()
+                    for name, research_set in self._research_sets_by_name.items()
+                },
+                ResearchSet.TWIN_JOURNAL_WINDOW,
             )
 
     def _require_configured(self) -> None:
@@ -192572,15 +192904,19 @@ END FILE: src/melder/mutation_research/research_set/grouped_research_node.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/mutation_research/research_set/network_versioner.py
-CONTENT SHA256: c5b8bb8c70da276c2c38fa133fb1e960dd91585ea481da98be8c7df83a14047e
+CONTENT SHA256: 0d40b6288e52852604b91a81e4b6088f19fe8a447bf61693f462f3004f97cc8d
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
 import json
 import threading
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+# The undo ring's part of a composition view (#331): the retained addresses, oldest first, and the `describe()`
+# payload, both as of the last mint and never edited afterwards.
+RingPayloadView = Tuple[List[str], Dict[str, object]]
 
 
 class NetworkVersioner(Cleanable):
@@ -192608,6 +192944,13 @@ class NetworkVersioner(Cleanable):
 
     Threading:
         Instance `RLock` serializes snapshot minting, retention, and reads.
+
+    Composition parts (#331, 0.2.8306):
+        Every mint (and hydration) rebuilds `_ring_payload`, the address list
+        and the `describe()` payload as of that mint - at most 64 entries, so
+        constant work. Nothing edits it afterwards and cleanup drops it, so
+        `_payload_view()` hands it out as is: a persistence twin carries the
+        ring as of its last mint without copying it per emission.
 
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` deletes owned fields;
@@ -192651,6 +192994,7 @@ class NetworkVersioner(Cleanable):
         "_canonical_by_sha",
         "_order",
         "_max_snapshots",
+        "_ring_payload",
         "_lock",
     ]
 
@@ -192687,6 +193031,8 @@ class NetworkVersioner(Cleanable):
         self._canonical_by_sha: Dict[str, str] = {}
         self._order: List[str] = []
         self._max_snapshots: int = max_snapshots
+        # The ring as of the last mint, rebuilt by every mint and never edited (composition views hold it).
+        self._ring_payload: RingPayloadView = self._build_ring_payload()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -192698,7 +193044,8 @@ class NetworkVersioner(Cleanable):
             - DELETE-NOT-NULL, no tombstones; the lock is deleted last, outside
               the guarded block.
             - Holds only canonical text and address strings, no owned objects, so
-              there is no child cascade.
+              there is no child cascade. The ring payload is dropped, not
+              cleared: a composition view taken earlier still holds it (#331).
 
         Returns:
             None.
@@ -192714,6 +193061,7 @@ class NetworkVersioner(Cleanable):
             del self._canonical_by_sha
             del self._order
             del self._max_snapshots
+            del self._ring_payload
         del self._lock
 
     def snapshot(self, payload: Dict[str, object]) -> str:
@@ -192735,6 +193083,7 @@ class NetworkVersioner(Cleanable):
               snapshot just added is never the one evicted by its own insert.
             - Payload must be JSON-serializable; canonicalization goes through
               `json.dumps`, so a non-serializable value raises there.
+            - Rebuilds the ring payload `_payload_view()` hands out (#331).
 
         Threading:
             The dedup/insert/evict sequence runs under `self._lock`.
@@ -192767,13 +193116,56 @@ class NetworkVersioner(Cleanable):
                 # mutation's immediate predecessor - the undo ring holds.
                 self._order.remove(snapshot_sha)
                 self._order.append(snapshot_sha)
+                self._ring_payload = self._build_ring_payload()
                 return snapshot_sha
             self._canonical_by_sha[snapshot_sha] = canonical
             self._order.append(snapshot_sha)
             while len(self._order) > self._max_snapshots:
                 oldest = self._order.pop(0)
                 del self._canonical_by_sha[oldest]
+            self._ring_payload = self._build_ring_payload()
             return snapshot_sha
+
+    def _build_ring_payload(self) -> RingPayloadView:
+        """
+        Build the ring payload a composition view carries: the addresses and the `describe()` payload, copied.
+
+        Contract:
+            - Fresh lists and dict (the canonical strings are shared; they are
+              immutable), so later mints never change a payload already handed
+              out. At most `max_snapshots` entries: constant work per mint.
+            - Callers hold `self._lock`, or the versioner is not yet shared.
+
+        Returns:
+            RingPayloadView: (addresses oldest first, describe() payload).
+        """
+        return list(self._order), {
+            "canonical_by_sha": dict(self._canonical_by_sha),
+            "order": list(self._order),
+            "max_snapshots": self._max_snapshots,
+        }
+
+    def _payload_view(self) -> RingPayloadView:
+        """
+        Return the ring's part of a composition view, as of the last mint (#331).
+
+        Contract:
+            - The returned list equals `snapshot_shas()` and the dict equals
+              `describe()` as of the last mint; neither is edited afterwards (each
+              mint installs new ones). A reader must copy what it hands on.
+
+        Threading:
+            Read under `self._lock`.
+
+        Returns:
+            RingPayloadView: (addresses oldest first, describe() payload).
+
+        Raises:
+            RuntimeError: If the versioner has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._ring_payload
 
     def get(self, snapshot_sha: str) -> Dict[str, object]:
         """
@@ -193032,23 +193424,271 @@ class NetworkVersioner(Cleanable):
                         )
                     versioner._canonical_by_sha[str(snapshot_sha)] = canonical
                     versioner._order.append(str(snapshot_sha))
+            versioner._ring_payload = versioner._build_ring_payload()
         return versioner
 ================================================================================
 END FILE: src/melder/mutation_research/research_set/network_versioner.py
 ================================================================================
 ================================================================================
+BEGIN FILE: src/melder/mutation_research/research_set/research_composition_view.py
+CONTENT SHA256: c2f32e60a71102439b26ae1e3326e8b45aef5c624e1bae28d0aa52ca0a7b9396
+SOURCE ENCODING: utf-8
+================================================================================
+import copy
+from typing import TYPE_CHECKING, Dict, List
+
+from melder.utilities.general_base.cleanable import Cleanable
+
+if TYPE_CHECKING:
+    from melder.mutation_research.research_set.research_set import SetCompositionView
+
+
+class ResearchCompositionView(Cleanable):
+    """
+    The research composition as references, materialized into a detached payload when first read (#331).
+
+    Purpose:
+        The MutationResearch root re-emits its persistence twin after every
+        mutating verb. Built from `describe_research_composition()`, each
+        emission described every node of every set again, so a configure's world
+        entries cost time quadratic in its binds. This object holds instead what
+        each `ResearchSet._composition_view()` returned - references to the
+        sets' append-only payload parts with their lengths - and turns them into
+        the composition payload only when the twin is read (a checkpoint seal, a
+        flush, a record description, the emission tap).
+
+    Contract:
+        - `materialize()` returns {set name -> payload} equal to what each set's
+          `describe_composition(recent_transitions=journal_window)` returned when
+          its view was taken: organization (lanes in `lane_id` order, each with
+          its nodes and tip, and the residence mapping), the journal window with
+          `entry_count` and `next_sequence`, and the undo ring as of its last
+          mint.
+        - Fully DETACHED: every node and journal payload, lane metadata, list and
+          the ring payload are copied, so mutating the result reaches neither the
+          live research nor a later materialization.
+        - Holds plain values and lists of plain-value dicts the research
+          structures never edit in place once handed out; it holds no research
+          object, lock or callback.
+
+    Threading:
+        No lock of its own: the parts it reads are only appended to, replaced
+        or dropped by their owners, and a list prefix read (`parts[:length]`) is
+        safe against a concurrent append. The owning twin serializes reads of
+        this object.
+
+    Lifecycle / Cleanup:
+        Owned by the twin that received it; the twin cleans it after its first
+        materialization or at its own cleanup. Idempotent; deletes its fields.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by the MutationResearch root for its twin;
+        never user-constructed or bound.
+
+    Subsystem Context:
+        Beside the four bookkeeping structures of a `ResearchSet` (lanes,
+        journal, residence, versioner), each of which keeps the append-only
+        payload part this view references.
+
+    System Context:
+        The hinge of the constant-cost world entry: the research side pays one
+        node payload per append, and the crystallizer side pays a full
+        description only when it actually reads the twin.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. The research composition as references, materialized for the persistence
+        twin when read. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
+    """
+
+    __slots__ = Cleanable.__slots__ + [
+        "_set_views",
+        "_journal_window",
+    ]
+
+    def __init__(self, set_views: Dict[str, SetCompositionView], journal_window: int) -> None:
+        """
+        Hold one composition view.
+
+        Contract:
+            - Keeps a shallow copy of the name -> view mapping; the views
+              themselves are tuples of strings, ints and references to parts their
+              owners never edit in place.
+
+        Args:
+            set_views:
+                Set name -> `ResearchSet._composition_view()` result.
+            journal_window:
+                How many newest journal entries a materialized set carries (the
+                twin's window, `ResearchSet.TWIN_JOURNAL_WINDOW`); >= 0.
+
+        Raises:
+            ValueError:
+                If journal_window is not an int >= 0.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        if not isinstance(journal_window, int) or journal_window < 0:
+            raise ValueError("journal_window must be an int >= 0.")
+        self._set_views: Dict[str, SetCompositionView] = dict(set_views)
+        self._journal_window: int = journal_window
+
+    def cleanup(self) -> None:
+        """
+        Drop the views and mark this object cleaned.
+
+        Contract:
+            - Idempotent. Deletes its fields (no tombstones); never clears the
+              parts it referenced - they belong to the research structures and to
+              any other view still holding them.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._set_views
+        del self._journal_window
+
+    def materialize(self) -> Dict[str, object]:
+        """
+        Build the detached composition payload the views stand for.
+
+        Returns:
+            Dict[str, object]:
+                Set name -> the `describe_composition()` payload of that set as of
+                its view.
+
+        Raises:
+            RuntimeError:
+                If this object has been cleaned.
+        """
+        self.check_cleaned()
+        return {
+            set_name: ResearchCompositionView._materialize_set(set_view, self._journal_window)
+            for set_name, set_view in self._set_views.items()
+        }
+
+    @staticmethod
+    def _materialize_set(set_view: SetCompositionView, journal_window: int) -> Dict[str, object]:
+        """
+        Build one set's detached `describe_composition()` payload from its view.
+
+        Contract:
+            - Lanes keep the view's (`lane_id`) order; each lane's nodes are the
+              first `length` payloads of its part, copied; the residence mapping
+              is the claim log's first `length` pairs; the journal window is the
+              newest `journal_window` of the first `length` entry payloads, copied,
+              exactly as `ResearchJournal.describe(recent=journal_window)` slices.
+
+        Args:
+            set_view:
+                (set_id, name, created_at, lane views, residence, journal and ring
+                views).
+            journal_window:
+                The journal window size.
+
+        Returns:
+            Dict[str, object]:
+                Detached payload with `organization`, `journal`,
+                `network_snapshot_shas` and `network_versioner`.
+        """
+        set_id, name, created_at, lane_views, residence_view, journal_view, ring_view = set_view
+        lanes: List[Dict[str, object]] = []
+        for header, node_payloads, node_count in lane_views:
+            lane_payload: Dict[str, object] = dict(header)
+            lane_payload["metadata"] = ResearchCompositionView._detached_value(header["metadata"])
+            lane_payload["nodes"] = [
+                ResearchCompositionView._detached_payload(node_payload)
+                for node_payload in node_payloads[:node_count]
+            ]
+            lanes.append(lane_payload)
+        claim_log, claim_count = residence_view
+        entry_payloads, entry_count, next_sequence = journal_view
+        window_start = entry_count - journal_window if journal_window < entry_count else 0
+        snapshot_shas, versioner_payload = ring_view
+        return {
+            "organization": {
+                "set_id": set_id,
+                "name": name,
+                "created_at": created_at,
+                "lanes": lanes,
+                "residence": {"lane_id_by_spell_id": dict(claim_log[:claim_count])},
+            },
+            "journal": {
+                "entries": [
+                    ResearchCompositionView._detached_payload(entry_payload)
+                    for entry_payload in entry_payloads[window_start:entry_count]
+                ],
+                "entry_count": entry_count,
+                "next_sequence": next_sequence,
+            },
+            "network_snapshot_shas": list(snapshot_shas),
+            "network_versioner": ResearchCompositionView._detached_value(versioner_payload),
+        }
+
+    @staticmethod
+    def _detached_payload(payload: Dict[str, object]) -> Dict[str, object]:
+        """
+        Copy one node or journal payload so the copy shares nothing mutable with it.
+
+        Contract:
+            - Strings, numbers, booleans and None are shared (immutable); lists
+              and dicts are copied, an empty one as a new empty one, a non-empty
+              one deeply.
+
+        Args:
+            payload:
+                A `describe()` payload kept by a research structure.
+
+        Returns:
+            Dict[str, object]: The detached copy.
+        """
+        return {
+            key: ResearchCompositionView._detached_value(value)
+            for key, value in payload.items()
+        }
+
+    @staticmethod
+    def _detached_value(value: object) -> object:
+        """
+        Copy one payload value if it is mutable.
+
+        Args:
+            value:
+                A plain payload value.
+
+        Returns:
+            object: The value itself when immutable; a (deep) copy of a list or dict.
+        """
+        if isinstance(value, (list, dict)):
+            return copy.deepcopy(value) if value else type(value)()
+        return value
+================================================================================
+END FILE: src/melder/mutation_research/research_set/research_composition_view.py
+================================================================================
+================================================================================
 BEGIN FILE: src/melder/mutation_research/research_set/research_journal.py
-CONTENT SHA256: f7bacc73b391e5db1d35ed0fe2df6d1c6edd94c43cef2f47a2b4b63b9d6e0492
+CONTENT SHA256: 0d5ec0b4092038bf6bb2f1413da65ac69b6485a5fb6871d0d10708c5e5b80c91
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple
 
 from melder.mutation_research.research_set.transition_entry import (
     TransitionAct,
     TransitionEntry,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+
+# The journal's part of a composition view (#331): its append-only entry-payload list, how many leading payloads
+# belong to the view (the entry count then) and the next sequence it would mint.
+JournalPayloadView = Tuple[List[Dict[str, object]], int, int]
 
 
 class ResearchJournal(Cleanable):
@@ -193077,6 +193717,14 @@ class ResearchJournal(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned entries
         then deletes owned fields; idempotent; lock released last.
+
+    Composition parts (#331, 0.2.8306):
+        Beside its entries the journal keeps `_entry_payloads`, each entry's
+        `describe()` payload built once when it is recorded. The list is only
+        ever appended to and is dropped, not cleared, at cleanup, so
+        `_payload_view()` can hand it out with its length: a persistence twin
+        emitted from the view keeps its journal window without the journal
+        describing its newest entries again on every emission.
 
     THE JOURNAL IS NOT SNAPSHOTTED, AND THAT IS THE POINT:
         `NetworkVersioner` snapshots the ORGANIZATION - which lane holds what,
@@ -193117,6 +193765,7 @@ class ResearchJournal(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_entries",
+        "_entry_payloads",
         "_next_sequence",
         "_lock",
     ]
@@ -193138,6 +193787,8 @@ class ResearchJournal(Cleanable):
         """
         super().__init__()
         self._entries: List[TransitionEntry] = []
+        # Each entry's describe() payload, built once when recorded; append-only (composition views hold it).
+        self._entry_payloads: List[Dict[str, object]] = []
         self._next_sequence: int = 1
         self._lock: threading.RLock = threading.RLock()
 
@@ -193149,6 +193800,8 @@ class ResearchJournal(Cleanable):
             - IDEMPOTENT under double-checked locking.
             - OWNS ITS ENTRIES: every `TransitionEntry` is cleaned (best-effort,
               so one failure cannot strand the rest) before the list is dropped.
+            - The entry-payload list is DROPPED, NEVER CLEARED: a composition
+              view taken earlier still holds it (#331).
             - DELETE-NOT-NULL, no tombstones; the lock is deleted last.
 
         Returns:
@@ -193167,6 +193820,7 @@ class ResearchJournal(Cleanable):
                     pass
             self._entries.clear()
             del self._entries
+            del self._entry_payloads
             del self._next_sequence
         del self._lock
 
@@ -193194,6 +193848,8 @@ class ResearchJournal(Cleanable):
               journal promise a faithful forward history.
             - The mint-and-append is ATOMIC under `self._lock`, so concurrent
               records cannot collide on a sequence or interleave out of order.
+            - The entry's `describe()` payload is built once here and appended to
+              the entry-payload list beside it (#331).
             - Endpoint and metadata semantics are the entry's, not the journal's
               (see `TransitionEntry`): `lane_id` may be a set id for the
               network-scope `restored` act, and `to_spell_id` carries a snapshot
@@ -193237,8 +193893,10 @@ class ResearchJournal(Cleanable):
                 reason=reason,
                 metadata=metadata,
             )
+            payload = entry.describe()
             self._next_sequence += 1
             self._entries.append(entry)
+            self._entry_payloads.append(payload)
             return entry
 
     @property
@@ -193414,6 +194072,32 @@ class ResearchJournal(Cleanable):
                 "next_sequence": self._next_sequence,
             }
 
+    def _payload_view(self) -> JournalPayloadView:
+        """
+        Return this journal's part of a composition view, without describing an entry (#331).
+
+        Contract:
+            - Returns the append-only entry-payload list, its current length
+              (the `entry_count` a `describe()` now would report) and the next
+              sequence. The newest `recent` of the first `length` payloads are
+              what `describe(recent=recent)["entries"]` would return now, and they
+              stay so: the list is only appended to and is dropped at cleanup,
+              never edited. A reader must copy what it hands on.
+            - Set-internal: the owning `ResearchSet` calls it under its own lock.
+
+        Threading:
+            Read under `self._lock`, so the length and the next sequence agree.
+
+        Returns:
+            JournalPayloadView: (entry payloads, length, next sequence).
+
+        Raises:
+            RuntimeError: If the journal has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._entry_payloads, len(self._entry_payloads), self._next_sequence
+
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "ResearchJournal":
         """
@@ -193463,6 +194147,7 @@ class ResearchJournal(Cleanable):
         next_sequence = payload.get("next_sequence")
         with journal._lock:
             journal._entries.extend(rebuilt)
+            journal._entry_payloads.extend(entry.describe() for entry in rebuilt)
             if (
                     isinstance(next_sequence, int)
                     and next_sequence >= minimum_next
@@ -193476,14 +194161,14 @@ END FILE: src/melder/mutation_research/research_set/research_journal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/mutation_research/research_set/research_lane.py
-CONTENT SHA256: a9a45fc4c48f50db4af6c1a94494d2feefdc1901e8341957898a59c44e3ed6fb
+CONTENT SHA256: e74b31ab0b5748cab6ece0b7b7d9c380bab2634f13eaa53c1f37b4b6fca3036f
 SOURCE ENCODING: utf-8
 ================================================================================
 import copy
 import enum
 import threading
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple, Union
 
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
@@ -193491,6 +194176,11 @@ from melder.mutation_research.research_set.grouped_research_node import (
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+# One lane's part of a composition view (#331): the lane's header fields as a fresh dict (its `metadata` value is
+# the lane's own dict, never mutated after construction), the lane's append-only node-payload list, and how many of
+# its leading payloads belong to the view.
+LanePayloadView = Tuple[Dict[str, object], List[Dict[str, object]], int]
 
 
 def node_identity(node: object) -> str:
@@ -193692,6 +194382,16 @@ class ResearchLane(Cleanable):
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned nodes
         then deletes owned fields; idempotent; lock released last.
 
+    Composition parts (#331, 0.2.8306):
+        Beside its node order the lane keeps `_node_payloads`, each held
+        node's `describe()` payload built once when the node arrives, aligned
+        with `_node_order`. The list is append-only while nodes are added; a
+        detach installs a new list, and cleanup drops the reference without
+        clearing it. `_payload_view()` hands out the list with its current
+        length, so a persistence twin emitted from it keeps describing the lane
+        as it was, after later appends, a detach, a restore or cleanup, without
+        the lane describing its nodes again on every emission.
+
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
@@ -193710,6 +194410,7 @@ class ResearchLane(Cleanable):
         "_anchor_spell_id",
         "_nodes_by_spell_id",
         "_node_order",
+        "_node_payloads",
         "_tip_spell_id",
         "_state",
         "_joined_into_lane_id",
@@ -193802,6 +194503,9 @@ class ResearchLane(Cleanable):
         self._anchor_spell_id: Optional[str] = None
         self._nodes_by_spell_id: Dict[str, ResearchNode] = {}
         self._node_order: List[str] = []
+        # Each held node's describe() payload, built once on arrival and aligned with `_node_order`; append-only
+        # until a detach installs a new list (composition views hold the old one).
+        self._node_payloads: List[Dict[str, object]] = []
         self._tip_spell_id: Optional[str] = None
         self._state: LaneState = LaneState.open
         self._joined_into_lane_id: Optional[str] = None
@@ -193826,6 +194530,9 @@ class ResearchLane(Cleanable):
               that cleans it.
             - DELETE-NOT-NULL posture, no tombstones; post-cleanup access raises
               `AttributeError` via `check_cleaned()`.
+            - The node-payload list is DROPPED, NEVER CLEARED: a composition
+              view taken earlier (a persistence twin waiting to be read) still
+              holds it and must keep describing the lane it was taken from.
             - The lock is deleted LAST, outside the guarded block.
 
         Returns:
@@ -193846,6 +194553,7 @@ class ResearchLane(Cleanable):
             self._node_order.clear()
             del self._nodes_by_spell_id
             del self._node_order
+            del self._node_payloads
             del self._tip_spell_id
             del self._anchor_lane_id
             del self._anchor_spell_id
@@ -194063,9 +194771,17 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         return self._created_at
 
-    def _add_node(self, node: object) -> None:
+    def _add_node(self, node: Union[ResearchNode, GroupedResearchNode]) -> None:
         """
         Append one record (either node family) and advance the tip.
+
+        Contract:
+            - The node's `describe()` payload is built ONCE here, before any
+              state changes, and appended to `_node_payloads` beside its identity
+              in `_node_order` (#331): later composition views reuse it instead of
+              describing the node again, so an append costs the same however many
+              nodes the lane already holds. A refusal (closed lane, duplicate
+              identity) leaves both lists unchanged.
 
         Args:
             node:
@@ -194091,8 +194807,10 @@ class ResearchLane(Cleanable):
                     f"Lane '{self._name}' already holds identity "
                     f"'{identity}'."
                 )
+            payload = node.describe()
             self._nodes_by_spell_id[identity] = node
             self._node_order.append(identity)
+            self._node_payloads.append(payload)
             self._tip_spell_id = identity
 
     def get_node(self, spell_id: str) -> ResearchNode:
@@ -194206,6 +194924,11 @@ class ResearchLane(Cleanable):
             The join transfer mechanic: the receiving lane absorbs these
             records; this container stops holding them.
 
+        Contract:
+            - Installs NEW order and node-payload lists rather than editing the
+              old ones, so a composition view taken before the detach keeps
+              describing the lane as it was (#331).
+
         Args:
             spell_ids:
                 Identities to detach; every one must be held here.
@@ -194232,12 +194955,15 @@ class ResearchLane(Cleanable):
                     )
             detached: List[ResearchNode] = []
             remaining_order: List[str] = []
-            for spell_id in self._node_order:
+            remaining_payloads: List[Dict[str, object]] = []
+            for spell_id, payload in zip(self._node_order, self._node_payloads):
                 if spell_id in requested:
                     detached.append(self._nodes_by_spell_id.pop(spell_id))
                 else:
                     remaining_order.append(spell_id)
+                    remaining_payloads.append(payload)
             self._node_order = remaining_order
+            self._node_payloads = remaining_payloads
             self._tip_spell_id = remaining_order[-1] if remaining_order else None
             return detached
 
@@ -194381,6 +195107,51 @@ class ResearchLane(Cleanable):
                 ],
             }
 
+    def _payload_view(self) -> LanePayloadView:
+        """
+        Return this lane's part of a composition view, without describing a node (#331).
+
+        Purpose:
+            The MutationResearch twin is emitted after every mutating verb. Built
+            from `describe()`, each emission described every node again; built
+            from this view, it costs the same however many nodes the lane holds.
+
+        Contract:
+            - Returns a fresh header dict (every `describe()` key except
+              `nodes`, the enum fields as their `.value` strings, `metadata` as
+              the lane's own dict, which nothing mutates after construction), the
+              lane's append-only node-payload list, and its current length.
+            - The first `length` payloads of that list, in order, are what
+              `describe()["nodes"]` would return now, and they stay so: the lane
+              only appends to the list, replaces it on a detach and drops it on
+              cleanup, never editing it. A reader must copy what it hands on.
+            - Set-internal: the owning `ResearchSet` calls it under its own lock.
+
+        Threading:
+            Read under `self._lock`, so header, tip and length agree.
+
+        Returns:
+            LanePayloadView: (header, node payloads, length).
+
+        Raises:
+            RuntimeError: If the lane has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            header: Dict[str, object] = {
+                "lane_id": self._lane_id,
+                "name": self._name,
+                "lane_type": self._lane_type.value,
+                "state": self._state.value,
+                "anchor_lane_id": self._anchor_lane_id,
+                "anchor_spell_id": self._anchor_spell_id,
+                "tip_spell_id": self._tip_spell_id,
+                "joined_into_lane_id": self._joined_into_lane_id,
+                "created_at": self._created_at,
+                "metadata": self._metadata,
+            }
+            return header, self._node_payloads, len(self._node_payloads)
+
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "ResearchLane":
         """
@@ -194474,6 +195245,7 @@ class ResearchLane(Cleanable):
                 identity = node_identity(node)
                 lane._nodes_by_spell_id[identity] = node
                 lane._node_order.append(identity)
+                lane._node_payloads.append(node.describe())
             lane._tip_spell_id = (
                 lane._node_order[-1] if lane._node_order else None
             )
@@ -194920,23 +195692,26 @@ END FILE: src/melder/mutation_research/research_set/research_node.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/mutation_research/research_set/research_set.py
-CONTENT SHA256: 7d87154c81b070f12b6e88f656cc9266938dbcda747373b8beac42f3edf47b07
+CONTENT SHA256: 67ab6d446279bba14c5f223bd185c29b391938a30c677d206490008d09ab220a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
 from datetime import datetime, timezone
-from typing import Callable, ClassVar, Dict, List, Optional
+from typing import Callable, ClassVar, Dict, List, Optional, Tuple
 
 from melder.mutation_research.research_set.network_versioner import (
     NetworkVersioner,
+    RingPayloadView,
 )
 from melder.mutation_research.research_set.research_journal import (
+    JournalPayloadView,
     ResearchJournal,
 )
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
 )
 from melder.mutation_research.research_set.research_lane import (
+    LanePayloadView,
     LaneState,
     LaneType,
     ResearchLane,
@@ -194944,6 +195719,7 @@ from melder.mutation_research.research_set.research_lane import (
 )
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.mutation_research.research_set.residence_registry import (
+    ResidencePayloadView,
     ResidenceRegistry,
 )
 from melder.mutation_research.research_set.transition_entry import (
@@ -194952,6 +195728,18 @@ from melder.mutation_research.research_set.transition_entry import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+# One set's composition view (#331): its id, name and creation stamp, each lane's view in `lane_id` order, and the
+# residence, journal and undo-ring views - references to append-only parts plus lengths, taken under the set lock.
+SetCompositionView = Tuple[
+    str,
+    str,
+    str,
+    Tuple[LanePayloadView, ...],
+    ResidencePayloadView,
+    JournalPayloadView,
+    RingPayloadView,
+]
 
 
 class ResearchSet(Cleanable):
@@ -194977,7 +195765,8 @@ class ResearchSet(Cleanable):
         - A guaranteed `default` lane exists from birth; `register_spell`
           without an explicit lane records there (no orphan binds, no
           history holes).
-        - Every mutating verb re-snapshots the organization and fires the
+        - Every organizing verb re-snapshots the organization (an append marks
+          the undo ring stale instead, #331) and every mutating verb fires the
           injected `on_mutation` callback (the persistence emission seam) -
           this object itself never touches the crystallizer (dependency
           rule: only the MutationResearch root emits).
@@ -194994,6 +195783,20 @@ class ResearchSet(Cleanable):
         Owned by exactly one `MutationResearch` root; `cleanup()` cascades
         into lanes, journal, residence, and versioner; idempotent; lock
         released last.
+
+    CONSTANT-COST APPENDS (#331, 0.2.8306, owner decision 2026-11-17):
+        An append - `record_world_entry`, `register_spell`, `register_group`
+        and `recompose_group` (through `register_group`) - builds its node's
+        payload, its journal entry's payload and one residence claim, and
+        marks the undo ring stale instead of minting a snapshot of the whole
+        organization. The pending snapshot is minted before the next organizing
+        verb (`create_lane`, `attach`, `detach`, `join`, `archive`,
+        `restore_network`), so the organization that verb starts from stays
+        restorable, and by `snapshot_network`, `network_snapshot_shas` and
+        `latest_network_snapshot`. `describe_composition` and every other read
+        mint nothing. `_composition_view()` hands the root references to the
+        structures' append-only payload parts with their lengths, so the
+        persistence twin is emitted without describing a node.
 
     Registration:
         MELDER KERNEL - guarded. Obtained through `MutationResearch.research_set()`
@@ -195036,6 +195839,8 @@ class ResearchSet(Cleanable):
     """
 
     DEFAULT_LANE_NAME: ClassVar[str] = "default"
+    # The journal window the persistence twin carries: `describe_composition`'s default and the composition view's.
+    TWIN_JOURNAL_WINDOW: ClassVar[int] = 200
 
     __slots__ = Cleanable.__slots__ + [
         "_set_id",
@@ -195045,6 +195850,7 @@ class ResearchSet(Cleanable):
         "_journal",
         "_residence",
         "_versioner",
+        "_ring_stale",
         "_on_mutation",
         "_lane_type_enforcement",
         "_created_at",
@@ -195118,6 +195924,8 @@ class ResearchSet(Cleanable):
             max_snapshots=max_network_snapshots,
         )
         self._on_mutation: Optional[Callable[[], None]] = on_mutation
+        # True while appends made since the last mint are missing from the undo ring (#331).
+        self._ring_stale: bool = False
         self._lane_type_enforcement: bool = False
         self._created_at: str = datetime.now(timezone.utc).isoformat()
         self._lock: threading.RLock = threading.RLock()
@@ -195186,6 +195994,7 @@ class ResearchSet(Cleanable):
             del self._journal
             del self._residence
             del self._versioner
+            del self._ring_stale
             del self._on_mutation
             del self._lane_type_enforcement
             del self._created_at
@@ -195425,11 +196234,90 @@ class ResearchSet(Cleanable):
         """
         Snapshot the current organization (caller holds the lock).
 
+        Contract:
+            - Mints through the versioner (content-addressed; an unchanged
+              organization re-uses its address) and clears the stale flag: the
+              ring now holds the organization as it is (#331).
+
         Returns:
             str:
                 Content address of the organization snapshot.
         """
-        return self._versioner.snapshot(self._organization_payload_locked())
+        snapshot_sha = self._versioner.snapshot(self._organization_payload_locked())
+        self._ring_stale = False
+        return snapshot_sha
+
+    def _mint_pending_snapshot_locked(self) -> None:
+        """
+        Mint the snapshot appends left pending, if any (caller holds the lock).
+
+        Purpose:
+            Appends mark the undo ring stale instead of snapshotting the whole
+            organization each time (#331). Organizing verbs call this BEFORE they
+            change anything and the ring reads call it before reading, so the ring
+            holds the organization an organizing verb starts from - the state a
+            restore must reach after a mistake - however many appends came first.
+
+        Contract:
+            - A no-op unless an append happened since the last mint; otherwise
+              one `_snapshot_locked()`. Idempotent: a second call mints nothing.
+
+        Returns:
+            None.
+        """
+        if self._ring_stale:
+            self._snapshot_locked()
+
+    def _composition_view(self) -> SetCompositionView:
+        """
+        Return this set's composition view: what `describe_composition()` reports, as references (#331).
+
+        Purpose:
+            The root re-emits its persistence twin after every mutating verb.
+            Describing the composition for it described every node of every lane
+            again on each append; the view instead hands the twin references to
+            the structures' append-only payload parts with their current lengths,
+            so an emission costs O(lanes) and the twin materializes on its first
+            read (`ResearchCompositionView.materialize`).
+
+        Contract:
+            - Materialized with a journal window of `TWIN_JOURNAL_WINDOW`, the
+              view equals `describe_composition()` taken at the same moment:
+              lanes in `lane_id` order with their nodes and tips, the residence
+              mapping, the journal window with its counts, and the undo ring as of
+              its last mint. It mints nothing.
+            - The parts are never edited in place once handed out (appends extend
+              them; a detach, transfer or restore installs new ones; cleanup drops
+              them), so the view keeps describing this moment after later verbs,
+              a restore, or cleanup.
+            - Kernel-internal: the root's emission is its only caller.
+
+        Threading:
+            Taken under `self._lock` (each structure's view under its own lock
+            inside), so the parts agree with each other.
+
+        Returns:
+            SetCompositionView: (set_id, name, created_at, lane views, residence,
+            journal and ring views).
+
+        Raises:
+            RuntimeError: If the set has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            lane_views = tuple(
+                self._lanes_by_id[lane_id]._payload_view()
+                for lane_id in sorted(self._lanes_by_id.keys())
+            )
+            return (
+                self._set_id,
+                self._name,
+                self._created_at,
+                lane_views,
+                self._residence._payload_view(),
+                self._journal._payload_view(),
+                self._versioner._payload_view(),
+            )
 
     # ------------------------------------------------------------------
     # Identity and reads
@@ -195932,7 +196820,9 @@ class ResearchSet(Cleanable):
               anchor lane is later archived.
             - Ordering is validate -> resolve anchor -> create -> set anchor ->
               journal -> snapshot. A failure at any step leaves no lane, no
-              journal entry and no snapshot.
+              journal entry and no snapshot of its own.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Threading:
             Campaign and anchor-argument validation run outside the lock; lane
@@ -195979,6 +196869,7 @@ class ResearchSet(Cleanable):
                 "attach_to and attach_at_spell_id must be supplied together."
             )
         with self._lock:
+            self._mint_pending_snapshot_locked()
             anchor_lane: Optional[ResearchLane] = None
             if attach_to is not None:
                 anchor_lane = self._resolve_lane_locked(attach_to)
@@ -196049,17 +196940,21 @@ class ResearchSet(Cleanable):
               terminal-state call can race between the two steps under real
               threads; without the rollback a refused add would strand the claim
               and corrupt the residence partition.
-            - Journals `TransitionAct.registered` and snapshots the organization
-              only after the add succeeds - a refused registration leaves no
-              journal entry and no snapshot.
+            - Journals `TransitionAct.registered` only after the add succeeds -
+              a refused registration leaves no journal entry.
+            - AN APPEND, NOT AN ORGANIZING VERB (#331, owner decision
+              2026-11-17): it marks the undo ring stale instead of minting a
+              snapshot of the whole organization, so its cost does not grow with
+              the set. The pending snapshot is minted by the next organizing verb,
+              `snapshot_network` or a ring read.
             - Mutation subscribers are notified AFTER the set lock is released,
               which is what keeps the one-way lock order intact.
 
         Threading:
             The campaign check runs outside the lock; lane resolution, ancestry
-            validation, the claim/add pair, journalling and snapshotting all run
-            under `self._lock`. The `_notify_mutation()` fan-out is deliberately
-            outside it.
+            validation, the claim/add pair, journalling and marking the ring
+            stale all run under `self._lock`. The `_notify_mutation()` fan-out is
+            deliberately outside it.
 
         Args:
             spell_id:
@@ -196144,7 +197039,8 @@ class ResearchSet(Cleanable):
                 reason=reason,
                 metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": parents},
             )
-            self._snapshot_locked()
+            # An append: the undo ring is minted lazily (#331).
+            self._ring_stale = True
         self._notify_mutation()
         return node
 
@@ -196296,7 +197192,8 @@ class ResearchSet(Cleanable):
                     "parent_group_ids": parents,
                 },
             )
-            self._snapshot_locked()
+            # An append: the undo ring is minted lazily (#331).
+            self._ring_stale = True
         self._notify_mutation()
         return node
 
@@ -196575,11 +197472,16 @@ class ResearchSet(Cleanable):
             - Carries the same CLAIM-THEN-ADD compensation: residence is claimed
               before the add and rolled back if the add is refused, so a race
               cannot strand a claim and corrupt the residence partition.
+            - CONSTANT COST (#331): a fresh entry builds its own node's payload
+              and its journal entry's payload once and marks the undo ring stale;
+              it describes no other node and mints no snapshot, so a configure
+              binding hundreds of spells pays the same for the last entry as for
+              the first.
 
         Threading:
             The residence probe, lane resolution, ancestry validation, claim/add
-            pair, journalling and snapshotting all run under `self._lock`;
-            `_notify_mutation()` fires after release.
+            pair, journalling and marking the ring stale all run under
+            `self._lock`; `_notify_mutation()` fires after release.
 
         Args:
             spell_id:
@@ -196666,7 +197568,8 @@ class ResearchSet(Cleanable):
                 reason=reason,
                 metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": parents},
             )
-            self._snapshot_locked()
+            # An append: the undo ring is minted lazily (#331).
+            self._ring_stale = True
         self._notify_mutation()
         return node
 
@@ -196765,6 +197668,8 @@ class ResearchSet(Cleanable):
               name in metadata.
             - Snapshots the organization on success, so an anchor change is
               recoverable through `restore_network`.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Threading:
             Both lane resolutions, the self-anchor check, the anchor write,
@@ -196797,6 +197702,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             lane = self._resolve_lane_locked(lane_ref)
             target = self._resolve_lane_locked(onto)
             if lane.lane_id == target.lane_id:
@@ -196846,6 +197752,8 @@ class ResearchSet(Cleanable):
               `from_spell_id`, which is what makes the detach reversible from
               history - the pointer would otherwise be unrecoverable.
             - Snapshots the organization on success.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Threading:
             Resolution, anchor capture, clear, journalling and snapshotting run
@@ -196871,6 +197779,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             lane = self._resolve_lane_locked(lane_ref)
             previous_anchor = lane.anchor_spell_id
             lane.clear_anchor()
@@ -196912,6 +197821,8 @@ class ResearchSet(Cleanable):
               rest readable in the joined (terminal) source container.
             - Residence transfers with the moved records; the source is
               marked joined and accepts no further work.
+            - FIRST mints the snapshot appends left pending, if any (#331), so
+              the organization the join starts from stays restorable.
 
         Args:
             lane_ref:
@@ -196941,6 +197852,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             source = self._resolve_lane_locked(lane_ref)
             target = self._resolve_lane_locked(into)
             if source.lane_id == target.lane_id:
@@ -197104,6 +198016,8 @@ class ResearchSet(Cleanable):
             - Residence stays permanent: rediscovery keeps pointing at the
               archived container; network snapshots can restore views that
               contained it.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Args:
             lane_ref:
@@ -197125,6 +198039,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             lane = self._resolve_lane_locked(lane_ref)
             if lane.name == ResearchSet.DEFAULT_LANE_NAME:
                 raise RuntimeError(
@@ -197168,8 +198083,10 @@ class ResearchSet(Cleanable):
 
         Returns:
             str:
-                Content address of the organization snapshot (mutating verbs
-                already snapshot automatically; this is the manual seal).
+                Content address of the organization snapshot (organizing verbs
+                snapshot automatically and appends leave the ring stale until the
+                next mint, #331; this is the manual seal, and it also mints what
+                appends left pending).
         """
         self.check_cleaned()
         with self._lock:
@@ -197190,12 +198107,15 @@ class ResearchSet(Cleanable):
             - Lists only RETAINED addresses. The ring is bounded, so an address
               observed earlier can age out and later return `KeyError` from
               `restore_network` - presence here is the honest liveness test.
+            - MINTS WHAT APPENDS LEFT PENDING FIRST (#331): appends mark the ring
+              stale rather than snapshotting, so this read mints one snapshot of
+              the current organization when any append happened since the last
+              mint; the tail then names the organization as it is now. A second
+              read with nothing new mints nothing.
 
         Threading:
-            Does NOT take the set lock. It delegates to `NetworkVersioner`, which
-            serializes the read under its own lock, so the result is a
-            point-in-time view of the retention ring rather than a snapshot
-            consistent with the set's live lanes.
+            Takes the set lock (to mint a pending snapshot consistently with the
+            live lanes), then reads the versioner under its own lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()` here; the versioner guards its own read.
@@ -197208,7 +198128,9 @@ class ResearchSet(Cleanable):
                 Detached ordered address list.
         """
         self.check_cleaned()
-        return self._versioner.snapshot_shas()
+        with self._lock:
+            self._mint_pending_snapshot_locked()
+            return self._versioner.snapshot_shas()
 
     @property
     def latest_network_snapshot(self) -> Optional[str]:
@@ -197226,11 +198148,13 @@ class ResearchSet(Cleanable):
               to a previous shape reports the SAME digest again: this detects
               SHAPE change, not event count. Two structurally identical
               organizations are indistinguishable here by design.
+            - Mints what appends left pending first (#331), so after appends it
+              names the organization holding them; with nothing pending it is a
+              plain read.
 
         Threading:
-            Does NOT take the set lock. It delegates to `NetworkVersioner`, which
-            serializes the read under its own lock; the answer is a point-in-time
-            read of the retention ring.
+            Takes the set lock (to mint a pending snapshot consistently with the
+            live lanes), then reads the versioner under its own lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()` here; the versioner guards its own read.
@@ -197243,7 +198167,9 @@ class ResearchSet(Cleanable):
                 Newest address or None.
         """
         self.check_cleaned()
-        return self._versioner.latest_sha
+        with self._lock:
+            self._mint_pending_snapshot_locked()
+            return self._versioner.latest_sha
 
     def restore_network(
             self,
@@ -197281,6 +198207,8 @@ class ResearchSet(Cleanable):
               is not an identity.
             - Snapshots again on success, so the pre-restore organization is
               itself addressable afterwards.
+            - FIRST mints the snapshot appends left pending, if any (#331), so
+              the organization the restore replaces is addressable too.
 
         Threading:
             The entire validate-teardown-swap-journal sequence runs under
@@ -197307,6 +198235,8 @@ class ResearchSet(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            # The organization the restore starts from stays addressable (#331).
+            self._mint_pending_snapshot_locked()
             payload = self._versioner.get(snapshot_sha)
             lane_payloads = payload.get("lanes")
             residence_payload = payload.get("residence")
@@ -197369,7 +198299,7 @@ class ResearchSet(Cleanable):
     def describe_composition(
             self,
             *,
-            recent_transitions: Optional[int] = 200,
+            recent_transitions: Optional[int] = TWIN_JOURNAL_WINDOW,
     ) -> Dict[str, object]:
         """
         Return the detached persistence payload for this set.
@@ -197394,7 +198324,12 @@ class ResearchSet(Cleanable):
               payload crosses the persistence boundary losslessly and rebuilds
               via `from_payload`.
             - A detached copy: mutating the returned dict cannot affect the set.
-            - Read-only; no snapshot or journal write occurs.
+            - Read-only; no snapshot or journal write occurs. It mints nothing
+              that appends left pending (#331), so `network_snapshot_shas` and
+              `network_versioner` describe the undo ring as of its last mint;
+              the organization itself is always current.
+            - The persistence twin carries the same payload, taken from
+              `_composition_view()` instead of a full describe.
 
         Threading:
             The whole payload is assembled under `self._lock`, so organization,
@@ -197573,13 +198508,17 @@ END FILE: src/melder/mutation_research/research_set/research_set.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/mutation_research/research_set/residence_registry.py
-CONTENT SHA256: 178b31d03112e0b00f35b6e6103051f56d9474611e8b08f1a2dc922cfa41688a
+CONTENT SHA256: 267bc667192374f6c3b58b129d45e71d8764cb6f6337760da58ea1b4e3712e3f
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+# The residence part of a composition view (#331): the append-only claim log - (identity, lane id) pairs in the
+# mapping's order - and how many of its leading pairs belong to the view.
+ResidencePayloadView = Tuple[List[Tuple[str, str]], int]
 
 
 class ResidenceRegistry(Cleanable):
@@ -197642,6 +198581,14 @@ class ResidenceRegistry(Cleanable):
         refuses a node: a claim that outlived its failed add would make a
         never-recorded identity permanently unavailable.
 
+    Composition parts (#331, 0.2.8306):
+        Beside the map the registry keeps `_claim_log`, the map's pairs in its
+        own order. A claim appends; a rollback removes its pair; a transfer
+        installs a new log rebuilt from the map. The log is never edited
+        otherwise and is dropped, not cleared, at cleanup, so `_payload_view()`
+        can hand it out with its length and a persistence twin keeps the
+        residence it was emitted with without copying the map per emission.
+
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
@@ -197651,6 +198598,7 @@ class ResidenceRegistry(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id_by_spell_id",
+        "_claim_log",
         "_lock",
     ]
 
@@ -197672,6 +198620,9 @@ class ResidenceRegistry(Cleanable):
         """
         super().__init__()
         self._lane_id_by_spell_id: Dict[str, str] = {}
+        # The map's (identity, lane id) pairs in its order; composition views hold it, so a claim appends to it,
+        # only the rollback of the newest claim removes from it, and a transfer replaces it.
+        self._claim_log: List[Tuple[str, str]] = []
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -197683,7 +198634,8 @@ class ResidenceRegistry(Cleanable):
             - DELETE-NOT-NULL, no tombstones; the lock is deleted last, outside
               the guarded block.
             - Clears the partition map only - it holds sha strings, not owned
-              objects, so there is no child cascade.
+              objects, so there is no child cascade. The claim log is DROPPED,
+              NEVER CLEARED: a composition view taken earlier still holds it.
 
         Returns:
             None.
@@ -197696,6 +198648,7 @@ class ResidenceRegistry(Cleanable):
             self._cleaned = True
             self._lane_id_by_spell_id.clear()
             del self._lane_id_by_spell_id
+            del self._claim_log
         del self._lock
 
     def claim(self, spell_id: str, lane_id: str) -> None:
@@ -197752,6 +198705,7 @@ class ResidenceRegistry(Cleanable):
                     f"same SHA256."
                 )
             self._lane_id_by_spell_id[spell_id] = lane_id
+            self._claim_log.append((spell_id, lane_id))
 
     def transfer(self, spell_ids: List[str], to_lane_id: str) -> None:
         """
@@ -197773,6 +198727,9 @@ class ResidenceRegistry(Cleanable):
               in is a harmless overwrite.
             - Does not change the resident COUNT - identities move between lanes,
               the partition size is unchanged.
+            - Installs a NEW claim log rebuilt from the updated map (repointing
+              keeps the map's order), so a composition view taken before the
+              transfer keeps the residence it was taken with (#331).
 
         Threading:
             The full check-then-repoint runs under `self._lock`, so no reader
@@ -197806,6 +198763,7 @@ class ResidenceRegistry(Cleanable):
                     )
             for spell_id in spell_ids:
                 self._lane_id_by_spell_id[spell_id] = to_lane_id
+            self._claim_log = list(self._lane_id_by_spell_id.items())
 
     def _rollback_claim(self, spell_id: str, lane_id: str) -> None:
         """
@@ -197823,6 +198781,9 @@ class ResidenceRegistry(Cleanable):
         Contract:
             - The public no-release law stands: residence is permanent for
               every SUCCESSFUL registration.
+            - Removes the claim's pair from the claim log, searching from its
+              end: the compensated claim is the newest one the owning set made
+              under its lock, so log and map keep the same order (#331).
 
         Args:
             spell_id:
@@ -197836,6 +198797,11 @@ class ResidenceRegistry(Cleanable):
         with self._lock:
             if self._lane_id_by_spell_id.get(spell_id) == lane_id:
                 del self._lane_id_by_spell_id[spell_id]
+                claimed = (spell_id, lane_id)
+                for index in range(len(self._claim_log) - 1, -1, -1):
+                    if self._claim_log[index] == claimed:
+                        del self._claim_log[index]
+                        break
 
     def residence_of(self, spell_id: str) -> Optional[str]:
         """
@@ -197938,6 +198904,33 @@ class ResidenceRegistry(Cleanable):
                 "lane_id_by_spell_id": dict(self._lane_id_by_spell_id),
             }
 
+    def _payload_view(self) -> ResidencePayloadView:
+        """
+        Return the residence part of a composition view, without copying the map (#331).
+
+        Contract:
+            - Returns the claim log and its current length. `dict()` of the first
+              `length` pairs equals `describe()["lane_id_by_spell_id"]` now and
+              keeps that value: the log is appended to by a claim, replaced by a
+              transfer and dropped at cleanup; the only in-place removal is the
+              rollback of the newest claim, made and undone inside one verb of the
+              owning set under its lock, so never between a view and its verb. A
+              reader must copy what it hands on.
+            - Set-internal: the owning `ResearchSet` calls it under its own lock.
+
+        Threading:
+            Read under `self._lock`.
+
+        Returns:
+            ResidencePayloadView: (claim log, length).
+
+        Raises:
+            RuntimeError: If the registry has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._claim_log, len(self._claim_log)
+
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "ResidenceRegistry":
         """
@@ -197982,6 +198975,7 @@ class ResidenceRegistry(Cleanable):
         with registry._lock:
             for spell_id, lane_id in mapping.items():
                 registry._lane_id_by_spell_id[str(spell_id)] = str(lane_id)
+            registry._claim_log = list(registry._lane_id_by_spell_id.items())
         return registry
 ================================================================================
 END FILE: src/melder/mutation_research/research_set/residence_registry.py

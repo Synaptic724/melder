@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8305"
-SOURCE_SHA256 = "ed79cc1d0738ddc66982ca7d596c73b5c94486ce8ffc2a7fceae60fde7856c02"
-MARKED_COUNT = 473
+BUILT_FOR_VERSION = "0.2.8306"
+SOURCE_SHA256 = "1bab1b29264bbf6be0824d8bf2e33d067a6cf0d5b2859861300b0ce459718a3f"
+MARKED_COUNT = 474
 EXEMPT_COUNT = 142
 PENDING_COUNT = 19
 
@@ -319,6 +319,7 @@ AGENT_METADATA = {
     ('melder.mutation_research.mutation_research', 'MutationResearch'): ('public', 'access: public. The research root, reached through Aether. Configure and activate, then create_research_set(...) and use the read verbs: source_view, impact_view, module_view, part_view, diff_research, residency_view, group_view.'),
     ('melder.mutation_research.research_set.grouped_research_node', 'GroupedResearchNode'): ('internal', 'access: internal. One immutable COMPOSITION record inside a research lane. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.mutation_research.research_set.network_versioner', 'NetworkVersioner'): ('internal', 'access: internal. Content-addressed version control for the graph network itself. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.mutation_research.research_set.research_composition_view', 'ResearchCompositionView'): ('internal', 'access: internal. The research composition as references, materialized for the persistence twin when read. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.mutation_research.research_set.research_journal', 'ResearchJournal'): ('internal', 'access: internal. Set-level monotonic append-only log of world-entry events. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.mutation_research.research_set.research_lane', 'LaneState'): ('public', 'access: public. Lifecycle state of one research lane. Read it from lane views; MutationResearch verbs move it.'),
     ('melder.mutation_research.research_set.research_lane', 'LaneType'): ('public', 'access: public. Lane classification - development, experiment, production, test. Pass to create_lane(...). Cross-type joins require force=True when configuration lane_type_enforcement is on.'),
@@ -1031,6 +1032,7 @@ CLASS_BASES = {
     ('melder.mutation_research.mutation_research', 'MutationResearch'): ('Cleanable',),
     ('melder.mutation_research.research_set.grouped_research_node', 'GroupedResearchNode'): ('Cleanable',),
     ('melder.mutation_research.research_set.network_versioner', 'NetworkVersioner'): ('Cleanable',),
+    ('melder.mutation_research.research_set.research_composition_view', 'ResearchCompositionView'): ('Cleanable',),
     ('melder.mutation_research.research_set.research_journal', 'ResearchJournal'): ('Cleanable',),
     ('melder.mutation_research.research_set.research_lane', 'LaneState'): ('StrEnum',),
     ('melder.mutation_research.research_set.research_lane', 'LaneType'): ('StrEnum',),

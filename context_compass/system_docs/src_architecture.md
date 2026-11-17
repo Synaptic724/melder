@@ -3957,7 +3957,15 @@ pass asks each module question once. Since 0.2.8304 (#331) those answers
 are kept between passes in a process-wide cache; since 0.2.8305 a loaded
 module is checked by its module object and import spec, never its file,
 and a spell whose root module's world is unchanged receives a copy of the
-kept result instead of a walk; synthetic modules are never kept.
+kept result instead of a walk; synthetic modules are never kept. Since
+0.2.8306 a new root module's walk takes each import target it meets first
+from an edge answer kept across walks (path, custody kind, leaf record)
+and picks its load order from a heap. On the research side of the record,
+a MutationResearch world entry costs the same however large the research
+set is: appends build their own payloads once and mark the undo ring
+stale (organizing verbs and ring reads mint it first), and the root emits
+the MutationResearchCrystal twin from views of the sets' append-only
+parts, materialized when the record reads it (owner decisions 2026-11-17).
 
 Laws: EDGE (acyclic - the record calls nobody; borrowers clean before
 the record), LOCK (one-way facade -> subsystem -> record -> profile),
@@ -4490,9 +4498,9 @@ Aether and frames:
   note: live in-memory module embodiment for crystallized code.
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 4005
-  loc: 4005
-  verified_at: 2026-11-01T13:44:23Z
+  end_line: 4040
+  loc: 4040
+  verified_at: 2026-11-17T12:30:19Z
   note: hosted mutation-research root owned by Aether (ResearchSet registry + composition emission).
 - path: `src/melder/mutation_research/research_set/grouped_research_node.py`
   start_line: 1
@@ -4502,21 +4510,27 @@ Aether and frames:
   note: `GroupedResearchNode`, the composition node of the formal research record.
 - path: `src/melder/mutation_research/research_set/network_versioner.py`
   start_line: 1
-  end_line: 458
-  loc: 458
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 519
+  loc: 519
+  verified_at: 2026-11-17T12:30:19Z
   note: `NetworkVersioner`, part of the formal research record.
+- path: `src/melder/mutation_research/research_set/research_composition_view.py`
+  start_line: 1
+  end_line: 235
+  loc: 235
+  verified_at: 2026-11-17T12:30:19Z
+  note: `ResearchCompositionView`, the research composition as references for the twin (#331).
 - path: `src/melder/mutation_research/research_set/research_journal.py`
   start_line: 1
-  end_line: 430
-  loc: 430
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 479
+  loc: 479
+  verified_at: 2026-11-17T12:30:19Z
   note: `ResearchJournal`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_lane.py`
   start_line: 1
-  end_line: 1016
-  loc: 1016
-  verified_at: 2026-11-01T23:23:03Z
+  end_line: 1103
+  loc: 1103
+  verified_at: 2026-11-17T12:30:19Z
   note: `ResearchLane` with `LaneState` and `LaneType`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_node.py`
   start_line: 1
@@ -4526,15 +4540,15 @@ Aether and frames:
   note: `ResearchNode`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/research_set.py`
   start_line: 1
-  end_line: 2645
-  loc: 2645
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 2808
+  loc: 2808
+  verified_at: 2026-11-17T12:30:19Z
   note: `ResearchSet`, the facade of the formal research record.
 - path: `src/melder/mutation_research/research_set/residence_registry.py`
   start_line: 1
-  end_line: 407
-  loc: 407
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 466
+  loc: 466
+  verified_at: 2026-11-17T12:30:19Z
   note: `ResidenceRegistry`, part of the formal research record.
 - path: `src/melder/mutation_research/research_set/transition_entry.py`
   start_line: 1
@@ -5551,6 +5565,7 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/nexus/configuration/rift_space_type.py`
 - `src/melder/nexus/configuration/rift_validation_mode.py`
 - `src/melder/nexus/configuration/rift_configuration.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 - `src/melder/mutation_research/research_set/research_lane.py`
 - `src/melder/mutation_research/research_set/transition_entry.py`
 - `src/melder/aether/aetheric_mediator/participation.py`

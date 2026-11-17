@@ -1,7 +1,11 @@
 import threading
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
+
+# The residence part of a composition view (#331): the append-only claim log - (identity, lane id) pairs in the
+# mapping's order - and how many of its leading pairs belong to the view.
+ResidencePayloadView = Tuple[List[Tuple[str, str]], int]
 
 
 class ResidenceRegistry(Cleanable):
@@ -64,6 +68,14 @@ class ResidenceRegistry(Cleanable):
         refuses a node: a claim that outlived its failed add would make a
         never-recorded identity permanently unavailable.
 
+    Composition parts (#331, 0.2.8306):
+        Beside the map the registry keeps `_claim_log`, the map's pairs in its
+        own order. A claim appends; a rollback removes its pair; a transfer
+        installs a new log rebuilt from the map. The log is never edited
+        otherwise and is dropped, not cleared, at cleanup, so `_payload_view()`
+        can hand it out with its length and a persistence twin keeps the
+        residence it was emitted with without copying the map per emission.
+
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
@@ -73,6 +85,7 @@ class ResidenceRegistry(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id_by_spell_id",
+        "_claim_log",
         "_lock",
     ]
 
@@ -94,6 +107,9 @@ class ResidenceRegistry(Cleanable):
         """
         super().__init__()
         self._lane_id_by_spell_id: Dict[str, str] = {}
+        # The map's (identity, lane id) pairs in its order; composition views hold it, so a claim appends to it,
+        # only the rollback of the newest claim removes from it, and a transfer replaces it.
+        self._claim_log: List[Tuple[str, str]] = []
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -105,7 +121,8 @@ class ResidenceRegistry(Cleanable):
             - DELETE-NOT-NULL, no tombstones; the lock is deleted last, outside
               the guarded block.
             - Clears the partition map only - it holds sha strings, not owned
-              objects, so there is no child cascade.
+              objects, so there is no child cascade. The claim log is DROPPED,
+              NEVER CLEARED: a composition view taken earlier still holds it.
 
         Returns:
             None.
@@ -118,6 +135,7 @@ class ResidenceRegistry(Cleanable):
             self._cleaned = True
             self._lane_id_by_spell_id.clear()
             del self._lane_id_by_spell_id
+            del self._claim_log
         del self._lock
 
     def claim(self, spell_id: str, lane_id: str) -> None:
@@ -174,6 +192,7 @@ class ResidenceRegistry(Cleanable):
                     f"same SHA256."
                 )
             self._lane_id_by_spell_id[spell_id] = lane_id
+            self._claim_log.append((spell_id, lane_id))
 
     def transfer(self, spell_ids: List[str], to_lane_id: str) -> None:
         """
@@ -195,6 +214,9 @@ class ResidenceRegistry(Cleanable):
               in is a harmless overwrite.
             - Does not change the resident COUNT - identities move between lanes,
               the partition size is unchanged.
+            - Installs a NEW claim log rebuilt from the updated map (repointing
+              keeps the map's order), so a composition view taken before the
+              transfer keeps the residence it was taken with (#331).
 
         Threading:
             The full check-then-repoint runs under `self._lock`, so no reader
@@ -228,6 +250,7 @@ class ResidenceRegistry(Cleanable):
                     )
             for spell_id in spell_ids:
                 self._lane_id_by_spell_id[spell_id] = to_lane_id
+            self._claim_log = list(self._lane_id_by_spell_id.items())
 
     def _rollback_claim(self, spell_id: str, lane_id: str) -> None:
         """
@@ -245,6 +268,9 @@ class ResidenceRegistry(Cleanable):
         Contract:
             - The public no-release law stands: residence is permanent for
               every SUCCESSFUL registration.
+            - Removes the claim's pair from the claim log, searching from its
+              end: the compensated claim is the newest one the owning set made
+              under its lock, so log and map keep the same order (#331).
 
         Args:
             spell_id:
@@ -258,6 +284,11 @@ class ResidenceRegistry(Cleanable):
         with self._lock:
             if self._lane_id_by_spell_id.get(spell_id) == lane_id:
                 del self._lane_id_by_spell_id[spell_id]
+                claimed = (spell_id, lane_id)
+                for index in range(len(self._claim_log) - 1, -1, -1):
+                    if self._claim_log[index] == claimed:
+                        del self._claim_log[index]
+                        break
 
     def residence_of(self, spell_id: str) -> Optional[str]:
         """
@@ -360,6 +391,33 @@ class ResidenceRegistry(Cleanable):
                 "lane_id_by_spell_id": dict(self._lane_id_by_spell_id),
             }
 
+    def _payload_view(self) -> ResidencePayloadView:
+        """
+        Return the residence part of a composition view, without copying the map (#331).
+
+        Contract:
+            - Returns the claim log and its current length. `dict()` of the first
+              `length` pairs equals `describe()["lane_id_by_spell_id"]` now and
+              keeps that value: the log is appended to by a claim, replaced by a
+              transfer and dropped at cleanup; the only in-place removal is the
+              rollback of the newest claim, made and undone inside one verb of the
+              owning set under its lock, so never between a view and its verb. A
+              reader must copy what it hands on.
+            - Set-internal: the owning `ResearchSet` calls it under its own lock.
+
+        Threading:
+            Read under `self._lock`.
+
+        Returns:
+            ResidencePayloadView: (claim log, length).
+
+        Raises:
+            RuntimeError: If the registry has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._claim_log, len(self._claim_log)
+
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "ResidenceRegistry":
         """
@@ -404,4 +462,5 @@ class ResidenceRegistry(Cleanable):
         with registry._lock:
             for spell_id, lane_id in mapping.items():
                 registry._lane_id_by_spell_id[str(spell_id)] = str(lane_id)
+            registry._claim_log = list(registry._lane_id_by_spell_id.items())
         return registry

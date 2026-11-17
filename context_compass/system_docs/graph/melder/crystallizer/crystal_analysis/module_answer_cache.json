@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/module_answer_cache.py",
- "source_sha256": "6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7",
+ "source_sha256": "0151e92b30d387fdbc67d80133d3a5842dbb10ac78b88082eb0ea3f78a08280e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.module_answer_cache": {
@@ -14,6 +14,7 @@
    "role": "Process-wide, guarded, value-only answers about modules that crystal analyses reuse across binds (#331).",
    "responsibilities": [
     "declare the value shapes kept per module and per world: path, custody kind, walk facts, resolved roots, provenance, world entries",
+    "declare the edge-answer shapes EdgeLeafRecord, EdgeAnswer and RememberedEdgeAnswer (0.2.8306)",
     "keep answers reusable only while their inputs are unchanged, so a repeat bind copies a kept world after in-memory checks and a new world's walk does lookups"
    ],
    "phases": [
@@ -27,12 +28,13 @@
    "label": "ModuleAnswerCache",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/module_answer_cache.py",
-   "lineno": 101,
+   "lineno": 111,
    "bases": [],
    "markers": [],
    "public_methods": [
     "lookup_custody_kind",
     "lookup_distribution_map",
+    "lookup_edge_answer",
     "lookup_module_facts",
     "lookup_module_path",
     "lookup_provenance",
@@ -41,6 +43,7 @@
     "make_world_entry",
     "store_custody_kind",
     "store_distribution_map",
+    "store_edge_answer",
     "store_module_facts",
     "store_module_path",
     "store_provenance",
@@ -48,11 +51,11 @@
     "store_world"
    ],
    "shape": {
-    "method_count": 27,
+    "method_count": 29,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "27ab82c7f9c2127e8a9cd39f6af9fbc6608fc9c1b30b373243acb352bbcbdb67",
+   "span_sha256": "49bf362fc0065c7d0b5e87e9ba73ce835eb56b4c8ad3331e6a035f8bf7fb85d7",
    "include": true,
    "role": "Class-hosted cache of the answers a CrystalAnalyzer would otherwise recompute for every bind: module paths, custody kinds, physical facts, policy roots and distribution provenance.",
    "responsibilities": [
@@ -60,6 +63,8 @@
     "serve a path's custody kind under the same user, environment and site roots",
     "serve a loaded module's facts only for the same object, import spec (reload replaces it) and path, with no stat; a module not imported's facts only for the same path and file (mtime_ns, size)",
     "keep whole analysed worlds per root (policy, descent, root name and path) and serve one only when its root and every touched module pass those checks and recorded provenance's site roots are unchanged (0.2.8305)",
+    "serve an import target's edge answer (Path, custody kind, leaf record) per policy key and module name (0.2.8306)",
+    "guard it as the path entry: same module object (weak reference) and __file__ text, or no object and same sys.path",
     "serve resolved policy roots per raw input and interpreter state, and distribution maps and provenance per site-root signature",
     "bound each map LRU (_MAX_ENTRIES; worlds _MAX_WORLDS) under one class RLock; never hold a module, source text, AST or result"
    ],
@@ -72,13 +77,14 @@
     "_provenance",
     "_hits",
     "_misses",
-    "_worlds"
+    "_worlds",
+    "_edge_answers"
    ],
    "phases": [
     "bind",
     "runtime"
    ],
-   "semantics_authored_against": "27ab82c7f9c2127e8a9cd39f6af9fbc6608fc9c1b30b373243acb352bbcbdb67"
+   "semantics_authored_against": "49bf362fc0065c7d0b5e87e9ba73ce835eb56b4c8ad3331e6a035f8bf7fb85d7"
   }
  },
  "edges_out": [],
@@ -110,6 +116,7 @@
   "types": "types",
   "weakref": "weakref",
   "OrderedDict": "collections.OrderedDict",
+  "Path": "pathlib.Path",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Mapping": "typing.Mapping",

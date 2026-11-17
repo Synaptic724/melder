@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: e488112a124d37abc4668b2fb4cd0b78435b2596a09435567628d5eb2c508865
-FILE COUNT: 1211
+SOURCE FINGERPRINT: 3d31f105c1b3b05acc8007f6133cfcb5de48eb0531696159c8fad37ff688f73a
+FILE COUNT: 1213
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -297003,7 +297003,7 @@ END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_impact_engine.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py
-CONTENT SHA256: 5a478777d8cf620b04e377c24bb073b096931fa9f3cf982c38dca10c6e823b53
+CONTENT SHA256: a99db37e244111c41cf5bb5061877277c9b1e1372a9daf576e65698683c3c997
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -297025,6 +297025,7 @@ import importlib.metadata
 import importlib.util
 import os
 import pathlib
+import random
 import sys
 import threading
 import types
@@ -297836,6 +297837,328 @@ def test_concurrent_analyses_of_one_world_record_the_same_result(answer_world: P
         results = [future.result(timeout=120) for future in futures]
 
     assert all(result == expected for result in results)
+
+
+def _record_lookups(monkeypatch: pytest.MonkeyPatch) -> Tuple[List[str], List[str]]:
+    """
+    Record the module names asked of `ModuleAnswerCache.lookup_module_path` and the path texts asked of
+    `lookup_custody_kind`, delegating to the real lookups.
+
+    Args:
+        monkeypatch: The test's monkeypatch, which restores both lookups.
+
+    Returns:
+        Tuple[List[str], List[str]]: The names and the path texts, appended to as lookups happen.
+    """
+    names: List[str] = []
+    path_texts: List[str] = []
+    original_paths = ModuleAnswerCache.lookup_module_path
+    original_kinds = ModuleAnswerCache.lookup_custody_kind
+
+    def recording_paths(module_name: str, module_obj: Optional[Any], file_text: Optional[str]) -> Any:
+        """Record the name, then look it up for real."""
+        names.append(module_name)
+        return original_paths(module_name, module_obj, file_text)
+
+    def recording_kinds(policy_key: Any, path_text: str) -> Any:
+        """Record the path text, then look it up for real."""
+        path_texts.append(path_text)
+        return original_kinds(policy_key, path_text)
+
+    monkeypatch.setattr(ModuleAnswerCache, "lookup_module_path", recording_paths)
+    monkeypatch.setattr(ModuleAnswerCache, "lookup_custody_kind", recording_kinds)
+    return names, path_texts
+
+
+def test_a_new_root_takes_the_import_edges_it_shares_from_kept_edge_answers(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: after a walk from one root, a walk from another root importing the same modules answers those import
+    edges from the kept edge answers - it asks no module path and no custody kind for them - and records what a
+    fresh analysis of that root records (#331, 0.2.8306).
+    """
+    shared = (AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os", "json")
+    shared_paths = {
+        str(CrystalAnalyzer.resolve_module_path(name, sys.modules[name])) for name in shared
+    }
+    _described(answer_world)
+    names, path_texts = _record_lookups(monkeypatch)
+
+    walked = _described(answer_world, root_name=AnswerWorld.CORE)
+
+    assert set(shared).isdisjoint(names)
+    assert shared_paths.isdisjoint(path_texts)
+    monkeypatch.undo()
+    _reset_analysis_caches()
+    assert walked == _described(answer_world, root_name=AnswerWorld.CORE)
+
+
+def test_an_edge_answer_is_reused_only_for_the_same_object_file_and_policy(tmp_path: Path) -> None:
+    """
+    Contract: an edge answer is served for the same module object with the same `__file__` text under the same
+    custody policy; another object (a re-import), another `__file__` or another policy misses.
+    """
+    _reset_analysis_caches()
+    module_file = tmp_path / "p331_edge.py"
+    module_file.write_text("VALUE = 1\n", encoding="utf-8")
+    module = types.ModuleType("p331_edge")
+    module.__file__ = str(module_file)
+    policy = ((str(tmp_path),), (), ())
+    leaf = (str(module_file), "unknown", ".py")
+    try:
+        ModuleAnswerCache.store_edge_answer(policy, "p331_edge", module, module.__file__, module_file, "unknown", leaf)
+        kept = ModuleAnswerCache.lookup_edge_answer(policy, "p331_edge", module, module.__file__)
+        reimported = types.ModuleType("p331_edge")
+        reimported.__file__ = module.__file__
+        other_object = ModuleAnswerCache.lookup_edge_answer(policy, "p331_edge", reimported, module.__file__)
+        other_file = ModuleAnswerCache.lookup_edge_answer(policy, "p331_edge", module, module.__file__ + "c")
+        other_policy = ModuleAnswerCache.lookup_edge_answer(((), (), ()), "p331_edge", module, module.__file__)
+    finally:
+        _reset_analysis_caches()
+
+    assert kept == (module_file, "unknown", leaf)
+    assert other_object is None
+    assert other_file is None
+    assert other_policy is None
+
+
+def test_an_edge_answer_for_a_module_not_imported_follows_sys_path(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: with no module object, an edge answer is served only while `sys.path` is the one it was kept under.
+    """
+    _reset_analysis_caches()
+    module_file = tmp_path / "p331_absent.py"
+    policy = ((str(tmp_path),), (), ())
+    try:
+        ModuleAnswerCache.store_edge_answer(policy, "p331_absent", None, None, module_file, "user_source", None)
+        kept = ModuleAnswerCache.lookup_edge_answer(policy, "p331_absent", None, None)
+        monkeypatch.syspath_prepend(str(tmp_path / "elsewhere"))
+        moved = ModuleAnswerCache.lookup_edge_answer(policy, "p331_absent", None, None)
+    finally:
+        _reset_analysis_caches()
+
+    assert kept == (module_file, "user_source", None)
+    assert moved is None
+
+
+def test_a_synthetic_import_target_is_matched_live_on_every_walk(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Contract: a synthetic module imported by a walked module never gets an edge answer: each walk matches its
+    custody live, so a second walk asks the synthetic strategy about it again.
+    """
+    _reset_analysis_caches()
+    leaf_text = "X = 1\n"
+    leaf = SyntheticModule(
+        module_name="p331_syn_leaf",
+        spell_crystal_id="p331-leaf",
+        source_text=leaf_text,
+        source_sha256=hashlib.sha256(leaf_text.encode("utf-8")).hexdigest(),
+        binding_signature="p331-leaf-signature",
+    )
+    root_text = "import p331_syn_leaf\n"
+    root = SyntheticModule(
+        module_name="p331_syn_root",
+        spell_crystal_id="p331-root",
+        source_text=root_text,
+        source_sha256=hashlib.sha256(root_text.encode("utf-8")).hexdigest(),
+        binding_signature="p331-root-signature",
+    )
+    monkeypatch.setitem(sys.modules, "p331_syn_leaf", leaf)
+    asked: List[str] = []
+    original_matches = SyntheticCustodyStrategy.matches
+
+    def recording(
+            self: SyntheticCustodyStrategy,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> bool:
+        """Record the module name, then match for real."""
+        asked.append(module_name)
+        return original_matches(self, module_name=module_name, module_obj=module_obj, module_path=module_path)
+
+    monkeypatch.setattr(SyntheticCustodyStrategy, "matches", recording)
+    try:
+        for _ in range(2):
+            asked.clear()
+            analyzer = CrystalAnalyzer(user_source_root_paths=(Path.cwd(),), site_package_root_paths=())
+            try:
+                result = analyzer.analyze_spell_root(
+                    root_module_name="p331_syn_root",
+                    root_module_obj=root,
+                    root_module_path=None,
+                )
+            finally:
+                analyzer.cleanup()
+            assert result.module_to_kind["p331_syn_leaf"] == "synthetic_module"
+            result.cleanup()
+            assert "p331_syn_leaf" in asked
+    finally:
+        _reset_analysis_caches()
+
+
+def test_a_kept_edge_answer_does_not_keep_its_module_alive(tmp_path: Path) -> None:
+    """
+    Contract: an edge answer holds its module only by weak reference, so a module nothing else holds is collected.
+    """
+    _reset_analysis_caches()
+    module_file = tmp_path / "p331_edge_ephemeral.py"
+    ephemeral = types.ModuleType("p331_edge_ephemeral")
+    ephemeral.__file__ = str(module_file)
+    policy = ((str(tmp_path),), (), ())
+    try:
+        ModuleAnswerCache.store_edge_answer(
+            policy, "p331_edge_ephemeral", ephemeral, ephemeral.__file__, module_file, "user_source", None,
+        )
+        kept = ModuleAnswerCache._stats_for_tests()["edge_answers"]
+        reference = weakref.ref(ephemeral)
+        del ephemeral
+        gc.collect()
+        collected = reference() is None
+    finally:
+        _reset_analysis_caches()
+
+    assert kept == 1
+    assert collected
+
+
+def test_the_oldest_edge_answers_are_evicted_beyond_the_capacity(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: the edge-answer map is bounded like the others: past the capacity the least recently used answer goes.
+    """
+    _reset_analysis_caches()
+    monkeypatch.setattr(ModuleAnswerCache, "_MAX_ENTRIES", 2)
+    policy = ((str(tmp_path),), (), ())
+    modules: List[types.ModuleType] = []
+    for index in range(3):
+        module = types.ModuleType("p331_edge_bounded_{0}".format(index))
+        module.__file__ = str(tmp_path / "p331_edge_bounded_{0}.py".format(index))
+        modules.append(module)
+    try:
+        for module in modules:
+            ModuleAnswerCache.store_edge_answer(
+                policy, module.__name__, module, module.__file__, Path(module.__file__), "user_source", None,
+            )
+        sizes = ModuleAnswerCache._stats_for_tests()["edge_answers"]
+        oldest = ModuleAnswerCache.lookup_edge_answer(policy, modules[0].__name__, modules[0], modules[0].__file__)
+        newest = ModuleAnswerCache.lookup_edge_answer(policy, modules[2].__name__, modules[2], modules[2].__file__)
+    finally:
+        _reset_analysis_caches()
+
+    assert sizes == 2
+    assert oldest is None
+    assert newest == (Path(modules[2].__file__), "user_source", None)
+
+
+def _sorted_list_load_order(dependency_edges: Dict[str, List[str]]) -> Tuple[List[str], List[str]]:
+    """
+    The dependency order as `DependencyViewStrategy.finalize` computed it before 0.2.8306: Kahn's algorithm over a
+    sorted ready list (`pop(0)`, re-sorted after each insertion), the unresolved names appended in sorted order.
+
+    Args:
+        dependency_edges: Walked module -> its direct dependencies.
+
+    Returns:
+        Tuple[List[str], List[str]]: The load order and the names a cycle left unresolved.
+    """
+    walked = set(dependency_edges)
+    remaining: Dict[str, int] = {}
+    dependents: Dict[str, List[str]] = {}
+    for module_name, dependency_names in dependency_edges.items():
+        walked_dependencies = {name for name in dependency_names if name in walked and name != module_name}
+        remaining[module_name] = len(walked_dependencies)
+        for name in walked_dependencies:
+            dependents.setdefault(name, []).append(module_name)
+    ready = sorted(name for name, count in remaining.items() if count == 0)
+    order: List[str] = []
+    while ready:
+        current = ready.pop(0)
+        order.append(current)
+        for dependent in sorted(dependents.get(current, [])):
+            remaining[dependent] -= 1
+            if remaining[dependent] == 0:
+                ready.append(dependent)
+                ready.sort()
+    unresolved = sorted(name for name, count in remaining.items() if count > 0)
+    return order + unresolved, unresolved
+
+
+def _random_graph(seed: int, size: int, cyclic: bool) -> Dict[str, List[str]]:
+    """
+    Build a seeded module graph: each module depends on a few earlier ones and on a leaf outside the walk; when
+    cyclic, some modules also depend on later ones; a few depend on themselves.
+
+    Args:
+        seed: The random seed.
+        size: How many walked modules.
+        cyclic: Whether to add back edges.
+
+    Returns:
+        Dict[str, List[str]]: Walked module -> its direct dependencies.
+    """
+    rng = random.Random(seed)
+    names = ["m{0:03d}".format(index) for index in range(size)]
+    rng.shuffle(names)
+    graph: Dict[str, List[str]] = {}
+    for position, name in enumerate(names):
+        earlier = names[:position]
+        dependencies = rng.sample(earlier, min(len(earlier), rng.randint(0, 4)))
+        dependencies.append("leaf_{0}".format(rng.randint(0, 3)))
+        if cyclic and position > 2 and rng.random() < 0.1:
+            dependencies.append(names[rng.randint(position, size - 1)])
+        if rng.random() < 0.05:
+            dependencies.append(name)
+        graph[name] = dependencies
+    return graph
+
+
+@pytest.mark.parametrize("seed, size, cyclic", [
+    (1, 1, False), (2, 12, False), (3, 60, False), (4, 200, False), (5, 40, True), (6, 150, True),
+])
+def test_the_heap_ordered_load_order_equals_the_sorted_list_order(seed: int, size: int, cyclic: bool) -> None:
+    """
+    Contract: `DependencyViewStrategy.finalize` picks ready modules from a heap and records exactly the order - and
+    for a cycle exactly the walk error - the sorted-list algorithm recorded.
+    """
+    graph = _random_graph(seed, size, cyclic)
+    if seed == 2:
+        graph.update({"a": ["b", "c"], "b": ["d"], "c": ["d"], "d": []})
+    expected_order, unresolved = _sorted_list_load_order(graph)
+    result = CrystalAnalysisResult()
+    for module_name, dependency_names in graph.items():
+        result.record_module_target(
+            module_name=module_name,
+            module_path=None,
+            module_kind="user_source",
+            module_extension=None,
+            direct_dependencies=list(dependency_names),
+            ast_import_targets=list(dependency_names),
+            ast_from_import_targets={},
+        )
+    try:
+        DependencyViewStrategy().finalize(result)
+        described = result.describe()
+    finally:
+        result.cleanup()
+
+    assert described["module_load_order"] == expected_order
+    cycle_errors = [error for error in described["walk_errors"] if error.startswith("dependency_view")]
+    if unresolved:
+        assert cycle_errors == [
+            "dependency_view: import cycle prevented a full topological order; appended in name order: "
+            + ", ".join(unresolved)
+        ]
+    else:
+        assert cycle_errors == []
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py
 ================================================================================
@@ -311576,6 +311899,205 @@ def test_nested_metadata_mutation_cannot_bypass_publication_control() -> None:
 END FILE: tests/unit/melder/mutation_research/research_set/test_research_set.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py
+CONTENT SHA256: 3f906092fe1762655ad7fea02e9550af9cf24bdc0a9cc522c0e2b51d47edac81
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for MutationResearch appends at constant cost (GitHub #331, patch configure_in_seconds_2026_11_17).
+
+Purpose:
+    Pin the owner's decisions of 2026-11-17: an append (`record_world_entry`, `register_spell`, `register_group`,
+    `recompose_group`) marks the undo ring stale instead of minting a snapshot; organizing verbs, `snapshot_network`
+    and the ring reads mint the pending snapshot first, so the organization an organizing verb started from stays
+    restorable; `describe_composition` mints nothing; an append describes only its own node.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+from collections import Counter
+from typing import Any, Callable
+
+import pytest
+
+from melder.mutation_research.research_set.research_lane import LaneState
+from melder.mutation_research.research_set.research_node import ResearchNode
+from melder.mutation_research.research_set.research_set import ResearchSet
+
+
+def _ring_as_described(research_set: ResearchSet) -> list:
+    """
+    Read the ring addresses the composition payload carries, which reads without minting.
+
+    Args:
+        research_set: The set to describe.
+
+    Returns:
+        list: The `network_snapshot_shas` of `describe_composition()`.
+    """
+    return list(research_set.describe_composition()["network_snapshot_shas"])
+
+
+def _count_node_describes(monkeypatch: pytest.MonkeyPatch) -> Counter:
+    """
+    Count every `ResearchNode.describe` call from now on, delegating to the real method.
+
+    Args:
+        monkeypatch: The test's monkeypatch, which restores the method.
+
+    Returns:
+        Counter: `counts["describe"]` is the number of calls since this returned.
+    """
+    counts: Counter = Counter()
+    original: Callable[..., Any] = ResearchNode.describe
+
+    def counting(self: ResearchNode) -> Any:
+        """Record one call, then describe for real."""
+        counts["describe"] += 1
+        return original(self)
+
+    monkeypatch.setattr(ResearchNode, "describe", counting)
+    return counts
+
+
+def test_appends_mint_no_snapshot_until_the_ring_is_read() -> None:
+    """
+    Contract: world entries and explicit declarations leave the ring as it was; the first ring read mints one
+    snapshot for all of them, and a second read mints nothing more.
+    """
+    research_set = ResearchSet("default")
+    ring_at_birth = _ring_as_described(research_set)
+
+    research_set.record_world_entry("sha-a")
+    research_set.register_spell("sha-b")
+    research_set.record_world_entry("sha-c", staged=True)
+
+    assert _ring_as_described(research_set) == ring_at_birth
+    read_once = research_set.network_snapshot_shas()
+    assert len(read_once) == len(ring_at_birth) + 1
+    assert research_set.network_snapshot_shas() == read_once
+    assert research_set.latest_network_snapshot == read_once[-1]
+    research_set.cleanup()
+
+
+def test_the_latest_snapshot_property_mints_the_pending_organization() -> None:
+    """
+    Contract: `latest_network_snapshot` read after appends names the organization holding them, which a restore
+    rebuilds.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.register_spell("sha-b")
+
+    latest = research_set.latest_network_snapshot
+    research_set.create_lane("later")
+    research_set.restore_network(latest)
+
+    assert research_set.lane_names() == ["default"]
+    assert research_set.default_lane.node_spell_ids() == ["sha-a", "sha-b"]
+    research_set.cleanup()
+
+
+def test_group_appends_mark_the_ring_stale_too() -> None:
+    """
+    Contract: `register_group` and `recompose_group` append a composition and mint nothing; the next ring read mints
+    one snapshot holding both compositions.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.register_spell("sha-b")
+    ring_before = _ring_as_described(research_set)
+
+    first = research_set.register_group(["sha-a"])
+    research_set.recompose_group(first.group_id, add=["sha-b"])
+
+    assert _ring_as_described(research_set) == ring_before
+    assert len(research_set.network_snapshot_shas()) == len(ring_before) + 1
+    research_set.cleanup()
+
+
+@pytest.mark.parametrize("organizing_verb", ["join", "archive"])
+def test_an_organizing_verb_mints_the_organization_it_starts_from(organizing_verb: str) -> None:
+    """
+    Contract: with appends pending and no ring read, `join` and `archive` first mint the organization they start
+    from, so restoring that snapshot (the one before the verb's own) brings the lane and its nodes back.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.create_lane("child", attach_to="default", attach_at_spell_id="sha-a")
+    research_set.register_spell("sha-b", lane="child", parent_spell_ids=["sha-a"])
+    research_set.register_spell("sha-c", lane="child", parent_spell_ids=["sha-b"])
+
+    if organizing_verb == "join":
+        research_set.join("child", into="default")
+    else:
+        research_set.archive("child")
+    shas = research_set.network_snapshot_shas()
+    research_set.restore_network(shas[-2], reason="undo the organizing verb")
+
+    child = research_set.get_lane("child")
+    assert child.state is LaneState.open
+    assert child.node_spell_ids() == ["sha-b", "sha-c"]
+    assert research_set.residence_of("sha-c") == child.lane_id
+    research_set.cleanup()
+
+
+def test_describing_and_reading_the_set_mint_nothing() -> None:
+    """
+    Contract: `describe_composition`, `walk`, `heads` and `history` stay read-only: with appends pending, the ring the
+    composition carries is unchanged by them.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    ring_before = _ring_as_described(research_set)
+
+    research_set.describe_composition()
+    research_set.walk("default")
+    research_set.heads()
+    research_set.history("sha-a")
+
+    assert _ring_as_described(research_set) == ring_before
+    research_set.cleanup()
+
+
+def test_an_append_describes_only_its_own_node(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Contract: the 51st world entry builds its own node's payload once and describes no other node, however many
+    the set already holds.
+    """
+    research_set = ResearchSet("default")
+    for index in range(50):
+        research_set.record_world_entry(f"sha-{index}")
+    counts = _count_node_describes(monkeypatch)
+
+    research_set.record_world_entry("sha-50")
+
+    assert counts["describe"] == 1
+    research_set.cleanup()
+
+
+def test_a_refused_add_leaves_the_residence_and_a_later_append_as_before() -> None:
+    """
+    Contract: a registration into an archived lane claims residence, is refused by the lane and rolls the claim
+    back; the residence the composition carries is unchanged, and the next append lands normally.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.create_lane("closed")
+    research_set.archive("closed")
+    residence_before = research_set.describe_composition()["organization"]["residence"]
+
+    with pytest.raises(RuntimeError):
+        research_set.register_spell("sha-x", lane="closed")
+
+    assert research_set.describe_composition()["organization"]["residence"] == residence_before
+    research_set.record_world_entry("sha-y")
+    assert research_set.residence_of("sha-y") == research_set.default_lane.lane_id
+    assert research_set.residence_of("sha-x") is None
+    research_set.cleanup()
+================================================================================
+END FILE: tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/mutation_research/research_set/test_residence_registry.py
 CONTENT SHA256: c801b671efe6e76c5e4c05f145eb4a8d32b0b810a0b1543482e620eabe806e0d
 SOURCE ENCODING: utf-8
@@ -314659,6 +315181,217 @@ def test_unit_cleanup_guard_matrix(operation_index: int) -> None:
             target()
 ================================================================================
 END FILE: tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/mutation_research/test_mutation_research_twin_views.py
+CONTENT SHA256: d061e90aabb3bdbc832c70481b6e42fd179ccba9b4353c0dc3fce352d9b9108e
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for the MutationResearch twin emitted from incremental parts (GitHub #331, patch
+configure_in_seconds_2026_11_17).
+
+Purpose:
+    Pin the owner's decision of 2026-11-17: the root still emits its persistence twin after every mutating verb,
+    but from views of append-only parts, so an emission describes no node; the twin, read, equals a fresh
+    description of the composition, keeps describing what it was emitted for after a restore or the root's cleanup,
+    and a caller mutating a read never reaches the live research.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+from collections import Counter
+from typing import Any, Callable, Dict, List
+from unittest.mock import MagicMock
+
+import pytest
+
+from melder.crystallizer.crystals.mutation_research_crystal import (
+    MutationResearchCrystal,
+)
+from melder.mutation_research.mutation_research import MutationResearch
+from melder.mutation_research.research_set.research_node import ResearchNode
+
+
+@pytest.fixture(autouse=True)
+def reset_mutation_research_singleton() -> None:
+    """
+    Reset the MutationResearch singleton around each test.
+
+    Returns:
+        None.
+    """
+    MutationResearch._reset_singleton_for_tests()
+    yield
+    MutationResearch._reset_singleton_for_tests()
+
+
+def _recording_root() -> MutationResearch:
+    """
+    Build one active root over a MagicMock Aether whose crystallizer poses as live and recording.
+
+    Returns:
+        MutationResearch: The configured, activated root; `root._aether._crystallizer.emit` records each twin.
+    """
+    aether = MagicMock()
+    aether.cleaned = False
+    aether._crystallizer.cleaned = False
+    aether._crystallizer.activated = True
+    aether._crystallizer.describe_mutation_research_record.return_value = None
+    root = MutationResearch(aether=aether)
+    root.configure(root.create_configuration().with_defaults().activate())
+    root.activate()
+    aether._crystallizer.emit.reset_mock()
+    return root
+
+
+def _emitted_twins(root: MutationResearch) -> List[MutationResearchCrystal]:
+    """
+    Return every twin the root emitted since `_recording_root`, oldest first.
+
+    Args:
+        root: A root built by `_recording_root`.
+
+    Returns:
+        List[MutationResearchCrystal]: The emitted twins.
+    """
+    return [call.args[0] for call in root._aether._crystallizer.emit.call_args_list]
+
+
+def _build_a_busy_composition(root: MutationResearch) -> None:
+    """
+    Drive every kind of mutation through the root's default set: appends, lanes, a join, an archive, a promotion
+    and compositions.
+
+    Args:
+        root: The recording root.
+
+    Returns:
+        None.
+    """
+    research_set = root.research_set()
+    root.record_world_entry("sha-a", author="mutation_0")
+    research_set.create_lane("child", attach_to="default", attach_at_spell_id="sha-a")
+    research_set.register_spell("sha-b", lane="child", parent_spell_ids=["sha-a"], metadata={"k": [1, 2]})
+    research_set.register_spell("sha-c", lane="child", parent_spell_ids=["sha-b"])
+    research_set.join("child", into="default")
+    root.record_world_entry("sha-parked", staged=True)
+    research_set.create_lane("dead-end")
+    research_set.register_spell("sha-d", lane="dead-end")
+    research_set.archive("dead-end")
+    root.record_promotion("sha-a", "sha-c", actor="mutation_0")
+    group = research_set.register_group(["sha-a", "sha-b"])
+    research_set.recompose_group(group.group_id, add=["sha-c"])
+
+
+def test_the_emitted_twin_equals_a_fresh_description_of_the_composition() -> None:
+    """
+    Contract: after every kind of mutation, the last emitted twin's composition and rows equal those of a twin
+    built from `describe_research_composition()`.
+    """
+    root = _recording_root()
+    _build_a_busy_composition(root)
+
+    twin = _emitted_twins(root)[-1]
+    fresh = MutationResearchCrystal(
+        activated=True,
+        configuration_payload=root.configuration.describe_configuration_payload(),
+        composition_payload=root.describe_research_composition(),
+    )
+
+    assert twin.describe() == fresh.describe()
+    assert twin.research_nodes == fresh.research_nodes
+    assert twin.grouped_research_nodes == fresh.grouped_research_nodes
+    fresh.cleanup()
+
+
+def test_an_emission_describes_only_the_appended_node(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Contract: with 50 entries recorded, the 51st world entry - its undo-ring bookkeeping and its twin emission
+    included - describes its own node once and no other.
+    """
+    root = _recording_root()
+    for index in range(50):
+        root.record_world_entry(f"sha-{index}")
+    counts: Counter = Counter()
+    original: Callable[..., Any] = ResearchNode.describe
+
+    def counting(self: ResearchNode) -> Any:
+        """Record one call, then describe for real."""
+        counts["describe"] += 1
+        return original(self)
+
+    monkeypatch.setattr(ResearchNode, "describe", counting)
+    root.record_world_entry("sha-50")
+
+    assert counts["describe"] == 1
+    assert len(_emitted_twins(root)) == 51
+
+
+def test_a_twin_still_describes_its_composition_after_a_restore_and_after_cleanup() -> None:
+    """
+    Contract: a twin emitted before a restore keeps describing the composition it was emitted for, and the last
+    twin keeps describing the composition after the root is cleaned.
+    """
+    root = _recording_root()
+    research_set = root.research_set()
+    research_set.register_spell("sha-a")
+    research_set.create_lane("child", attach_to="default", attach_at_spell_id="sha-a")
+    research_set.register_spell("sha-b", lane="child", parent_spell_ids=["sha-a"])
+    before_restore_twin = _emitted_twins(root)[-1]
+    before_restore: Dict[str, object] = root.describe_research_composition()
+    research_set.restore_network(research_set.network_snapshot_shas()[0], reason="back to birth")
+    last_twin = _emitted_twins(root)[-1]
+    last_composition: Dict[str, object] = root.describe_research_composition()
+
+    root.cleanup()
+
+    assert before_restore_twin.describe()["composition_payload"] == before_restore
+    assert last_twin.describe()["composition_payload"] == last_composition
+
+
+def test_mutating_a_twin_read_never_reaches_the_live_research() -> None:
+    """
+    Contract: a caller editing what a twin returned - a node's fields, its parents, its metadata - changes neither
+    the live composition nor the next twin.
+    """
+    root = _recording_root()
+    research_set = root.research_set()
+    research_set.register_spell("sha-a", metadata={"tags": ["x"]})
+    research_set.register_spell("sha-b", parent_spell_ids=["sha-a"])
+    expected = root.describe_research_composition()
+    twin = _emitted_twins(root)[-1]
+
+    payload = twin.composition_payload
+    nodes = payload["default"]["organization"]["lanes"][0]["nodes"]
+    nodes[0]["author"] = "intruder"
+    nodes[0]["metadata"]["tags"].append("y")
+    nodes[1]["parent_spell_ids"].append("sha-forged")
+    research_set.register_spell("sha-c")
+
+    assert root.describe_research_composition()["default"]["organization"]["lanes"][0]["nodes"][:2] == (
+        expected["default"]["organization"]["lanes"][0]["nodes"]
+    )
+    assert _emitted_twins(root)[-1].describe()["composition_payload"] == root.describe_research_composition()
+
+
+def test_a_refused_add_keeps_the_next_twin_in_step() -> None:
+    """
+    Contract: a registration refused by an archived lane rolls its residence claim back, and the next emitted twin
+    still equals a fresh description.
+    """
+    root = _recording_root()
+    research_set = root.research_set()
+    research_set.register_spell("sha-a")
+    research_set.create_lane("closed")
+    research_set.archive("closed")
+
+    with pytest.raises(RuntimeError):
+        research_set.register_spell("sha-x", lane="closed")
+    root.record_world_entry("sha-y")
+
+    assert _emitted_twins(root)[-1].describe()["composition_payload"] == root.describe_research_composition()
+================================================================================
+END FILE: tests/unit/melder/mutation_research/test_mutation_research_twin_views.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/bind/test_bind.py

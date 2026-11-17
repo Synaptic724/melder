@@ -17,6 +17,7 @@ import importlib.metadata
 import importlib.util
 import os
 import pathlib
+import random
 import sys
 import threading
 import types
@@ -828,3 +829,325 @@ def test_concurrent_analyses_of_one_world_record_the_same_result(answer_world: P
         results = [future.result(timeout=120) for future in futures]
 
     assert all(result == expected for result in results)
+
+
+def _record_lookups(monkeypatch: pytest.MonkeyPatch) -> Tuple[List[str], List[str]]:
+    """
+    Record the module names asked of `ModuleAnswerCache.lookup_module_path` and the path texts asked of
+    `lookup_custody_kind`, delegating to the real lookups.
+
+    Args:
+        monkeypatch: The test's monkeypatch, which restores both lookups.
+
+    Returns:
+        Tuple[List[str], List[str]]: The names and the path texts, appended to as lookups happen.
+    """
+    names: List[str] = []
+    path_texts: List[str] = []
+    original_paths = ModuleAnswerCache.lookup_module_path
+    original_kinds = ModuleAnswerCache.lookup_custody_kind
+
+    def recording_paths(module_name: str, module_obj: Optional[Any], file_text: Optional[str]) -> Any:
+        """Record the name, then look it up for real."""
+        names.append(module_name)
+        return original_paths(module_name, module_obj, file_text)
+
+    def recording_kinds(policy_key: Any, path_text: str) -> Any:
+        """Record the path text, then look it up for real."""
+        path_texts.append(path_text)
+        return original_kinds(policy_key, path_text)
+
+    monkeypatch.setattr(ModuleAnswerCache, "lookup_module_path", recording_paths)
+    monkeypatch.setattr(ModuleAnswerCache, "lookup_custody_kind", recording_kinds)
+    return names, path_texts
+
+
+def test_a_new_root_takes_the_import_edges_it_shares_from_kept_edge_answers(
+        answer_world: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: after a walk from one root, a walk from another root importing the same modules answers those import
+    edges from the kept edge answers - it asks no module path and no custody kind for them - and records what a
+    fresh analysis of that root records (#331, 0.2.8306).
+    """
+    shared = (AnswerWorld.HELPERS, AnswerWorld.PACKAGE, "os", "json")
+    shared_paths = {
+        str(CrystalAnalyzer.resolve_module_path(name, sys.modules[name])) for name in shared
+    }
+    _described(answer_world)
+    names, path_texts = _record_lookups(monkeypatch)
+
+    walked = _described(answer_world, root_name=AnswerWorld.CORE)
+
+    assert set(shared).isdisjoint(names)
+    assert shared_paths.isdisjoint(path_texts)
+    monkeypatch.undo()
+    _reset_analysis_caches()
+    assert walked == _described(answer_world, root_name=AnswerWorld.CORE)
+
+
+def test_an_edge_answer_is_reused_only_for_the_same_object_file_and_policy(tmp_path: Path) -> None:
+    """
+    Contract: an edge answer is served for the same module object with the same `__file__` text under the same
+    custody policy; another object (a re-import), another `__file__` or another policy misses.
+    """
+    _reset_analysis_caches()
+    module_file = tmp_path / "p331_edge.py"
+    module_file.write_text("VALUE = 1\n", encoding="utf-8")
+    module = types.ModuleType("p331_edge")
+    module.__file__ = str(module_file)
+    policy = ((str(tmp_path),), (), ())
+    leaf = (str(module_file), "unknown", ".py")
+    try:
+        ModuleAnswerCache.store_edge_answer(policy, "p331_edge", module, module.__file__, module_file, "unknown", leaf)
+        kept = ModuleAnswerCache.lookup_edge_answer(policy, "p331_edge", module, module.__file__)
+        reimported = types.ModuleType("p331_edge")
+        reimported.__file__ = module.__file__
+        other_object = ModuleAnswerCache.lookup_edge_answer(policy, "p331_edge", reimported, module.__file__)
+        other_file = ModuleAnswerCache.lookup_edge_answer(policy, "p331_edge", module, module.__file__ + "c")
+        other_policy = ModuleAnswerCache.lookup_edge_answer(((), (), ()), "p331_edge", module, module.__file__)
+    finally:
+        _reset_analysis_caches()
+
+    assert kept == (module_file, "unknown", leaf)
+    assert other_object is None
+    assert other_file is None
+    assert other_policy is None
+
+
+def test_an_edge_answer_for_a_module_not_imported_follows_sys_path(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: with no module object, an edge answer is served only while `sys.path` is the one it was kept under.
+    """
+    _reset_analysis_caches()
+    module_file = tmp_path / "p331_absent.py"
+    policy = ((str(tmp_path),), (), ())
+    try:
+        ModuleAnswerCache.store_edge_answer(policy, "p331_absent", None, None, module_file, "user_source", None)
+        kept = ModuleAnswerCache.lookup_edge_answer(policy, "p331_absent", None, None)
+        monkeypatch.syspath_prepend(str(tmp_path / "elsewhere"))
+        moved = ModuleAnswerCache.lookup_edge_answer(policy, "p331_absent", None, None)
+    finally:
+        _reset_analysis_caches()
+
+    assert kept == (module_file, "user_source", None)
+    assert moved is None
+
+
+def test_a_synthetic_import_target_is_matched_live_on_every_walk(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Contract: a synthetic module imported by a walked module never gets an edge answer: each walk matches its
+    custody live, so a second walk asks the synthetic strategy about it again.
+    """
+    _reset_analysis_caches()
+    leaf_text = "X = 1\n"
+    leaf = SyntheticModule(
+        module_name="p331_syn_leaf",
+        spell_crystal_id="p331-leaf",
+        source_text=leaf_text,
+        source_sha256=hashlib.sha256(leaf_text.encode("utf-8")).hexdigest(),
+        binding_signature="p331-leaf-signature",
+    )
+    root_text = "import p331_syn_leaf\n"
+    root = SyntheticModule(
+        module_name="p331_syn_root",
+        spell_crystal_id="p331-root",
+        source_text=root_text,
+        source_sha256=hashlib.sha256(root_text.encode("utf-8")).hexdigest(),
+        binding_signature="p331-root-signature",
+    )
+    monkeypatch.setitem(sys.modules, "p331_syn_leaf", leaf)
+    asked: List[str] = []
+    original_matches = SyntheticCustodyStrategy.matches
+
+    def recording(
+            self: SyntheticCustodyStrategy,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> bool:
+        """Record the module name, then match for real."""
+        asked.append(module_name)
+        return original_matches(self, module_name=module_name, module_obj=module_obj, module_path=module_path)
+
+    monkeypatch.setattr(SyntheticCustodyStrategy, "matches", recording)
+    try:
+        for _ in range(2):
+            asked.clear()
+            analyzer = CrystalAnalyzer(user_source_root_paths=(Path.cwd(),), site_package_root_paths=())
+            try:
+                result = analyzer.analyze_spell_root(
+                    root_module_name="p331_syn_root",
+                    root_module_obj=root,
+                    root_module_path=None,
+                )
+            finally:
+                analyzer.cleanup()
+            assert result.module_to_kind["p331_syn_leaf"] == "synthetic_module"
+            result.cleanup()
+            assert "p331_syn_leaf" in asked
+    finally:
+        _reset_analysis_caches()
+
+
+def test_a_kept_edge_answer_does_not_keep_its_module_alive(tmp_path: Path) -> None:
+    """
+    Contract: an edge answer holds its module only by weak reference, so a module nothing else holds is collected.
+    """
+    _reset_analysis_caches()
+    module_file = tmp_path / "p331_edge_ephemeral.py"
+    ephemeral = types.ModuleType("p331_edge_ephemeral")
+    ephemeral.__file__ = str(module_file)
+    policy = ((str(tmp_path),), (), ())
+    try:
+        ModuleAnswerCache.store_edge_answer(
+            policy, "p331_edge_ephemeral", ephemeral, ephemeral.__file__, module_file, "user_source", None,
+        )
+        kept = ModuleAnswerCache._stats_for_tests()["edge_answers"]
+        reference = weakref.ref(ephemeral)
+        del ephemeral
+        gc.collect()
+        collected = reference() is None
+    finally:
+        _reset_analysis_caches()
+
+    assert kept == 1
+    assert collected
+
+
+def test_the_oldest_edge_answers_are_evicted_beyond_the_capacity(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: the edge-answer map is bounded like the others: past the capacity the least recently used answer goes.
+    """
+    _reset_analysis_caches()
+    monkeypatch.setattr(ModuleAnswerCache, "_MAX_ENTRIES", 2)
+    policy = ((str(tmp_path),), (), ())
+    modules: List[types.ModuleType] = []
+    for index in range(3):
+        module = types.ModuleType("p331_edge_bounded_{0}".format(index))
+        module.__file__ = str(tmp_path / "p331_edge_bounded_{0}.py".format(index))
+        modules.append(module)
+    try:
+        for module in modules:
+            ModuleAnswerCache.store_edge_answer(
+                policy, module.__name__, module, module.__file__, Path(module.__file__), "user_source", None,
+            )
+        sizes = ModuleAnswerCache._stats_for_tests()["edge_answers"]
+        oldest = ModuleAnswerCache.lookup_edge_answer(policy, modules[0].__name__, modules[0], modules[0].__file__)
+        newest = ModuleAnswerCache.lookup_edge_answer(policy, modules[2].__name__, modules[2], modules[2].__file__)
+    finally:
+        _reset_analysis_caches()
+
+    assert sizes == 2
+    assert oldest is None
+    assert newest == (Path(modules[2].__file__), "user_source", None)
+
+
+def _sorted_list_load_order(dependency_edges: Dict[str, List[str]]) -> Tuple[List[str], List[str]]:
+    """
+    The dependency order as `DependencyViewStrategy.finalize` computed it before 0.2.8306: Kahn's algorithm over a
+    sorted ready list (`pop(0)`, re-sorted after each insertion), the unresolved names appended in sorted order.
+
+    Args:
+        dependency_edges: Walked module -> its direct dependencies.
+
+    Returns:
+        Tuple[List[str], List[str]]: The load order and the names a cycle left unresolved.
+    """
+    walked = set(dependency_edges)
+    remaining: Dict[str, int] = {}
+    dependents: Dict[str, List[str]] = {}
+    for module_name, dependency_names in dependency_edges.items():
+        walked_dependencies = {name for name in dependency_names if name in walked and name != module_name}
+        remaining[module_name] = len(walked_dependencies)
+        for name in walked_dependencies:
+            dependents.setdefault(name, []).append(module_name)
+    ready = sorted(name for name, count in remaining.items() if count == 0)
+    order: List[str] = []
+    while ready:
+        current = ready.pop(0)
+        order.append(current)
+        for dependent in sorted(dependents.get(current, [])):
+            remaining[dependent] -= 1
+            if remaining[dependent] == 0:
+                ready.append(dependent)
+                ready.sort()
+    unresolved = sorted(name for name, count in remaining.items() if count > 0)
+    return order + unresolved, unresolved
+
+
+def _random_graph(seed: int, size: int, cyclic: bool) -> Dict[str, List[str]]:
+    """
+    Build a seeded module graph: each module depends on a few earlier ones and on a leaf outside the walk; when
+    cyclic, some modules also depend on later ones; a few depend on themselves.
+
+    Args:
+        seed: The random seed.
+        size: How many walked modules.
+        cyclic: Whether to add back edges.
+
+    Returns:
+        Dict[str, List[str]]: Walked module -> its direct dependencies.
+    """
+    rng = random.Random(seed)
+    names = ["m{0:03d}".format(index) for index in range(size)]
+    rng.shuffle(names)
+    graph: Dict[str, List[str]] = {}
+    for position, name in enumerate(names):
+        earlier = names[:position]
+        dependencies = rng.sample(earlier, min(len(earlier), rng.randint(0, 4)))
+        dependencies.append("leaf_{0}".format(rng.randint(0, 3)))
+        if cyclic and position > 2 and rng.random() < 0.1:
+            dependencies.append(names[rng.randint(position, size - 1)])
+        if rng.random() < 0.05:
+            dependencies.append(name)
+        graph[name] = dependencies
+    return graph
+
+
+@pytest.mark.parametrize("seed, size, cyclic", [
+    (1, 1, False), (2, 12, False), (3, 60, False), (4, 200, False), (5, 40, True), (6, 150, True),
+])
+def test_the_heap_ordered_load_order_equals_the_sorted_list_order(seed: int, size: int, cyclic: bool) -> None:
+    """
+    Contract: `DependencyViewStrategy.finalize` picks ready modules from a heap and records exactly the order - and
+    for a cycle exactly the walk error - the sorted-list algorithm recorded.
+    """
+    graph = _random_graph(seed, size, cyclic)
+    if seed == 2:
+        graph.update({"a": ["b", "c"], "b": ["d"], "c": ["d"], "d": []})
+    expected_order, unresolved = _sorted_list_load_order(graph)
+    result = CrystalAnalysisResult()
+    for module_name, dependency_names in graph.items():
+        result.record_module_target(
+            module_name=module_name,
+            module_path=None,
+            module_kind="user_source",
+            module_extension=None,
+            direct_dependencies=list(dependency_names),
+            ast_import_targets=list(dependency_names),
+            ast_from_import_targets={},
+        )
+    try:
+        DependencyViewStrategy().finalize(result)
+        described = result.describe()
+    finally:
+        result.cleanup()
+
+    assert described["module_load_order"] == expected_order
+    cycle_errors = [error for error in described["walk_errors"] if error.startswith("dependency_view")]
+    if unresolved:
+        assert cycle_errors == [
+            "dependency_view: import cycle prevented a full topological order; appended in name order: "
+            + ", ".join(unresolved)
+        ]
+    else:
+        assert cycle_errors == []

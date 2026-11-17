@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3639782,
-        "lines": 82637,
+        "bytes": 3642674,
+        "lines": 82669,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "96bf9532e0dc0d02a475533194af8724b0d75c3164d9a0e3230fedc0df906026"
+        "sha256": "a2bc32424cbefc17061b69cb37b4b6dc26f6e8c8d20b9eb2d76ed869508a9645"
       },
-      "content_bytes": 3406587,
-      "content_lines": 79271,
+      "content_bytes": 3409479,
+      "content_lines": 79303,
       "file_count": 420,
       "files": {
         ".gitattributes": {
@@ -2502,9 +2502,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 13382,
-          "content_lines": 170,
-          "content_sha256": "c56e94cdda4baf167020a7cc3e8c73526b782083fa11347a3006ada899d6994e",
+          "content_bytes": 16274,
+          "content_lines": 202,
+          "content_sha256": "0c02138317c11576a1597503493d5f06c54fe7a7996c0d871a2cddfc0eb46a75",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2536,20 +2536,20 @@
         "bytes": 70332,
         "lines": 442,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "9ca5c27194013b45022e03b5b5255dbf0543d63a2b57a99a960da44ce6352432"
+        "sha256": "21f76993412fbaf3d22c054ac8c85051ef021ae7bd1acca41879962eca66c475"
       },
-      "source_fingerprint": "3fb0d6842a3ec67cf4f9b1424f2e46ba49134b4904ef35a0dea91c667733b13c"
+      "source_fingerprint": "ebc6a42fbdbb6d6562c387c7d769dbae67e566e565b194cdaf872dbfb4e76eb5"
     },
     "src": {
       "bundle": {
-        "bytes": 11854179,
-        "lines": 294307,
+        "bytes": 11900920,
+        "lines": 295301,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "aea2932e5d436f7e59b97d9c2f92eb106205400a8b536d672c603e0a0430b719"
+        "sha256": "00e7f1c9e9518b733aa6587da4a73dad765e06b2fc7e02181063f3d7b76f2d6e"
       },
-      "content_bytes": 11498678,
-      "content_lines": 289605,
-      "file_count": 587,
+      "content_bytes": 11544827,
+      "content_lines": 290591,
+      "file_count": 588,
       "files": {
         "src/melder/__architecture__.py": {
           "content_bytes": 1904,
@@ -2608,7 +2608,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "47ee471ddd0aa46084f606b583f091dcecefb17e561b402ea0174807075bca5b",
+          "content_sha256": "c7427faf6b6aa914a09d946d16c19103d583e52f86aa6dbd56793fb330276b4b",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -4610,9 +4610,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py": {
-          "content_bytes": 98907,
-          "content_lines": 2337,
-          "content_sha256": "f2b035845d8eed92fa3bff8e0c08fff82d6e95e2be62758ac2b67a851a17054b",
+          "content_bytes": 101656,
+          "content_lines": 2403,
+          "content_sha256": "fb510b4d6a76df3b2b2e67a4f88e9008330b0e966b42ddc36b173057c9fbc034",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py": {
@@ -4652,9 +4652,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/module_answer_cache.py": {
-          "content_bytes": 37594,
-          "content_lines": 973,
-          "content_sha256": "6c9b2733adf66dc30f5b887f998d8a48df9a9d0d5096be3592220ddb4171c3b7",
+          "content_bytes": 43002,
+          "content_lines": 1098,
+          "content_sha256": "0151e92b30d387fdbc67d80133d3a5842dbb10ac78b88082eb0ea3f78a08280e",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/physical_source_cache.py": {
@@ -4748,9 +4748,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py": {
-          "content_bytes": 6858,
-          "content_lines": 171,
-          "content_sha256": "8f57fba75a7c37d2917ddd46965fdf2be8a6348242105a4413db2d80e79be312",
+          "content_bytes": 7233,
+          "content_lines": 175,
+          "content_sha256": "16e1a9ff5ecbf06d958febf78521af98b6aefa8205f265ef62f8661e91ea5005",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py": {
@@ -4856,9 +4856,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystals/mutation_research_crystal.py": {
-          "content_bytes": 14495,
-          "content_lines": 350,
-          "content_sha256": "3a48a28cb5ec90228f20ba9c150e15878a5106df202ec7a4b9de64e9967fa34d",
+          "content_bytes": 19391,
+          "content_lines": 452,
+          "content_sha256": "ab60b9cfd9fe89261711d6166cd55d9086736cf14b050fa2ca4cb2a9a1e36d96",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystals/nexus_crystal.py": {
@@ -4982,9 +4982,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/mutation_research.py": {
-          "content_bytes": 155352,
-          "content_lines": 4005,
-          "content_sha256": "b1754ff4ffd3c3370d045bd2ffb8ae9309275d5a3c8a9be0bd0e0d9a6ffe7c32",
+          "content_bytes": 156948,
+          "content_lines": 4040,
+          "content_sha256": "a2437bdceffe5cb9fbeccb2be726b10bb1478c260fad77f68fa0ff6c982e9d4d",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/grouped_research_node.py": {
@@ -4994,21 +4994,27 @@
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/network_versioner.py": {
-          "content_bytes": 18384,
-          "content_lines": 458,
-          "content_sha256": "c5b8bb8c70da276c2c38fa133fb1e960dd91585ea481da98be8c7df83a14047e",
+          "content_bytes": 21203,
+          "content_lines": 519,
+          "content_sha256": "0d40b6288e52852604b91a81e4b6088f19fe8a447bf61693f462f3004f97cc8d",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/mutation_research/research_set/research_composition_view.py": {
+          "content_bytes": 9294,
+          "content_lines": 235,
+          "content_sha256": "c2f32e60a71102439b26ae1e3326e8b45aef5c624e1bae28d0aa52ca0a7b9396",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_journal.py": {
-          "content_bytes": 16187,
-          "content_lines": 430,
-          "content_sha256": "f7bacc73b391e5db1d35ed0fe2df6d1c6edd94c43cef2f47a2b4b63b9d6e0492",
+          "content_bytes": 18748,
+          "content_lines": 479,
+          "content_sha256": "0d5ec0b4092038bf6bb2f1413da65ac69b6485a5fb6871d0d10708c5e5b80c91",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_lane.py": {
-          "content_bytes": 39290,
-          "content_lines": 1016,
-          "content_sha256": "a9a45fc4c48f50db4af6c1a94494d2feefdc1901e8341957898a59c44e3ed6fb",
+          "content_bytes": 43999,
+          "content_lines": 1103,
+          "content_sha256": "e74b31ab0b5748cab6ece0b7b7d9c380bab2634f13eaa53c1f37b4b6fca3036f",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_node.py": {
@@ -5018,15 +5024,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_set.py": {
-          "content_bytes": 109606,
-          "content_lines": 2645,
-          "content_sha256": "7d87154c81b070f12b6e88f656cc9266938dbcda747373b8beac42f3edf47b07",
+          "content_bytes": 118146,
+          "content_lines": 2808,
+          "content_sha256": "67ab6d446279bba14c5f223bd185c29b391938a30c677d206490008d09ab220a",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/residence_registry.py": {
-          "content_bytes": 15968,
-          "content_lines": 407,
-          "content_sha256": "178b31d03112e0b00f35b6e6103051f56d9474611e8b08f1a2dc922cfa41688a",
+          "content_bytes": 19170,
+          "content_lines": 466,
+          "content_sha256": "267bc667192374f6c3b58b129d45e71d8764cb6f6337760da58ea1b4e3712e3f",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/transition_entry.py": {
@@ -6075,23 +6081,23 @@
         }
       },
       "index": {
-        "bytes": 114883,
-        "lines": 609,
+        "bytes": 115073,
+        "lines": 610,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "41b80eea707f51f8a11fabd89fe24ed36c644e1ed9f4aba093122fbdf8d78f00"
+        "sha256": "9920782caef723c2ad59d6860e98498055e39e872bb30c3b49b337172e310b36"
       },
-      "source_fingerprint": "21f1819021eaf70556bfc5fd0d2ba9ecd7ef1608c12d503bcddc74922aa41320"
+      "source_fingerprint": "8be1d3e1b6642b31231cbdf2ee7353770c0a77206a6fd58f8ed4042f036cbd44"
     },
     "tests": {
       "bundle": {
-        "bytes": 14706801,
-        "lines": 394396,
+        "bytes": 14736807,
+        "lines": 395129,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "34ed3896b790ac1d8fabcbbed0fb0c43cd36bcfe18fe8c82a8166366550b51e4"
+        "sha256": "228408e3e20090053d66006d67081c45c4e2e1b92b81ff7235cb810d63d56fa6"
       },
-      "content_bytes": 13967785,
-      "content_lines": 384702,
-      "file_count": 1211,
+      "content_bytes": 13996585,
+      "content_lines": 385419,
+      "file_count": 1213,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -11476,9 +11482,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py": {
-          "content_bytes": 32417,
-          "content_lines": 830,
-          "content_sha256": "5a478777d8cf620b04e377c24bb073b096931fa9f3cf982c38dca10c6e823b53",
+          "content_bytes": 45837,
+          "content_lines": 1153,
+          "content_sha256": "a99db37e244111c41cf5bb5061877277c9b1e1372a9daf576e65698683c3c997",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_mutation_research_composition_strategy.py": {
@@ -11805,6 +11811,12 @@
           "content_sha256": "fa786c7bbb5ba69e7b569c6143fb7b424157a6fbbec4caa64bf50c28c126b0a3",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py": {
+          "content_bytes": 7470,
+          "content_lines": 191,
+          "content_sha256": "3f906092fe1762655ad7fea02e9550af9cf24bdc0a9cc522c0e2b51d47edac81",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/mutation_research/research_set/test_residence_registry.py": {
           "content_bytes": 2926,
           "content_lines": 98,
@@ -11851,6 +11863,12 @@
           "content_bytes": 4409,
           "content_lines": 138,
           "content_sha256": "d413b91e4db8e1cf31230fabd43e0ecdbf986f629e4a38b50ffe76460c3f7771",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/mutation_research/test_mutation_research_twin_views.py": {
+          "content_bytes": 7910,
+          "content_lines": 203,
+          "content_sha256": "d061e90aabb3bdbc832c70481b6e42fd179ccba9b4353c0dc3fce352d9b9108e",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/bind/test_bind.py": {
@@ -13361,12 +13379,12 @@
         }
       },
       "index": {
-        "bytes": 238452,
-        "lines": 1233,
+        "bytes": 238841,
+        "lines": 1235,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "855e091993960922682ccc98d465d884454b43356aa011de287ea373ca3f8313"
+        "sha256": "43d01862efef96048c1268f87763c4826651167e1caa1980aa3cf7d778e97257"
       },
-      "source_fingerprint": "e488112a124d37abc4668b2fb4cd0b78435b2596a09435567628d5eb2c508865"
+      "source_fingerprint": "3d31f105c1b3b05acc8007f6133cfcb5de48eb0531696159c8fad37ff688f73a"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

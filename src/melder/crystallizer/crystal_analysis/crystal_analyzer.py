@@ -1313,6 +1313,15 @@ class CrystalAnalyzer(Cleanable):
               and must be the same object (`is`) on reuse.
             - The path and custody come from `_resolve_pass_module_path` and
               `_match_custody`, so the answers are those the edge always received.
+            - ACROSS PASSES (#331, 0.2.8306): an analyzer keying answers (default
+              chains) first asks `ModuleAnswerCache.lookup_edge_answer` for a
+              non-synthetic target it meets first in this pass, and on a hit
+              builds the edge from the kept path, its own strategy of the kept
+              kind and the kept leaf record - no path lookup, no custody lookup, no
+              `Path` built. A computed answer is kept for later walks unless its
+              target is synthetic or its `__file__` is relative. The guard is the
+              path's own (same object and `__file__`, or no object and the same
+              `sys.path`); the kind depends only on that path and the policy.
 
         Args:
             dependency_name:
@@ -1327,6 +1336,25 @@ class CrystalAnalyzer(Cleanable):
         edge = self._pass_edges.get(key)
         if edge is not None and edge[1] is dependency_obj:
             return edge
+        policy_key = self._answer_policy_key
+        if isinstance(dependency_obj, SyntheticModule):
+            policy_key = None
+        file_text: Optional[str] = None
+        if policy_key is not None:
+            file_text = CrystalAnalyzer._module_file_text(dependency_obj)
+            kept_answer = ModuleAnswerCache.lookup_edge_answer(
+                policy_key, dependency_name, dependency_obj, file_text,
+            )
+            if kept_answer is not None:
+                edge = (
+                    dependency_name,
+                    dependency_obj,
+                    kept_answer[0],
+                    self._custody_by_kind[kept_answer[1]],
+                    kept_answer[2],
+                )
+                self._pass_edges[key] = edge
+                return edge
         dependency_path = self._resolve_pass_module_path(dependency_name, dependency_obj)
         dependency_custody = self._match_custody(
             module_name=dependency_name,
@@ -1342,7 +1370,45 @@ class CrystalAnalyzer(Cleanable):
             )
         edge = (dependency_name, dependency_obj, dependency_path, dependency_custody, leaf)
         self._pass_edges[key] = edge
+        if (
+                policy_key is not None
+                and dependency_custody.kind != "synthetic_module"
+                and (file_text is None or os.path.isabs(file_text))
+        ):
+            ModuleAnswerCache.store_edge_answer(
+                policy_key,
+                dependency_name,
+                dependency_obj,
+                file_text,
+                dependency_path,
+                dependency_custody.kind,
+                leaf,
+            )
         return edge
+
+    @staticmethod
+    def _module_file_text(module_obj: Optional[Any]) -> Optional[str]:
+        """
+        Return a module object's `__file__` as text, the way `resolve_module_path` reads it.
+
+        Contract:
+            None for no object, an object without `__file__` (a non-module in
+            `sys.modules`) or an empty one; otherwise `str(__file__)`.
+
+        Args:
+            module_obj:
+                A live module object, or None.
+
+        Returns:
+            Optional[str]: The `__file__` text, or None.
+        """
+        if module_obj is None:
+            return None
+        try:
+            module_file = module_obj.__file__
+        except AttributeError:
+            return None
+        return str(module_file) if module_file else None
 
     def _harvest_walked_node(
             self,

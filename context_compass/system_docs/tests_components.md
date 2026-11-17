@@ -1457,7 +1457,7 @@ Protects:
   those answers and classifies nothing again, and since 0.2.8305 a new analyzer over the unchanged world
   copies the kept world and asks nothing; the environment roots are the site roots then `sys.prefix`,
   `sys.base_prefix` and `sys.exec_prefix`
-- analyses reusing module answers (0.2.8304-0.2.8305, #331; `test_module_answer_cache.py`, 19 tests): a
+- analyses reusing module answers (0.2.8304-0.2.8306, #331; `test_module_answer_cache.py`, 26 tests): a
   second analysis of an unchanged world resolves, matches and probes nothing and records what a fresh
   analysis records; a second spell from the same module copies the kept world without a walk, while another
   root walks; a reloaded or re-imported module is derived again, and a loaded module's file edited without a
@@ -1468,7 +1468,12 @@ Protects:
   supplied fact strategies derive every module; a cached path keeps no module alive; each map, worlds
   included, is LRU-bounded; site-package provenance reads installed metadata once until a site root
   changes; the policy roots resolve once per input and working directory; eight concurrent analyses (the
-  GIL off) record the same result. The syntax-memo pins of `test_crystal_analyzer.py` clear the module
+  GIL off) record the same result. Since 0.2.8306 a walk from a new root that shares modules with an earlier
+  walk asks no module path and no custody kind for them and records what a fresh analysis records; an edge
+  answer serves only the same module object, `__file__` and custody policy (with no object, the same
+  `sys.path`); a synthetic import target is matched live on every walk; an edge answer keeps no module alive
+  and its map is LRU-bounded; the heap-ordered load order and cycle error equal the sorted-list ones on
+  acyclic, diamond and cyclic graphs. The syntax-memo pins of `test_crystal_analyzer.py` clear the module
   answers before their second analysis, so they still reach the memo beneath them
 - managed options in the record (0.2.8242): a managed crystal records the mode's name, the limit, the timeout
   and the reset names in order; other crystals carry none of the four keys; a payload's options replay as bind
@@ -1514,9 +1519,17 @@ Protects:
   set and unique set names; composition emission only while active
 - activation that hydrates an untouched registry from the record and never
   clobbers live research; idempotent world-entry recording
+- appends at constant cost (0.2.8306, #331): an append mints no undo-ring snapshot until the ring is
+  read, `join` and `archive` mint the organization they start from (a restore brings it back), describing
+  and reading the set mint nothing, and an append describes only its own node; the twin emitted from views
+  equals a twin built from a fresh description, describes one node per append, still describes its
+  composition after a restore and after the root's cleanup, keeps a refused add in step, and a caller
+  mutating a twin read never reaches the live research
 Key Files (C1):
 - `tests/unit/melder/mutation_research/test_mutation_research_root.py`
 - `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
+- `tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py`
+- `tests/unit/melder/mutation_research/test_mutation_research_twin_views.py`
 
 ### Subcomponent: Spellbook Runtime And Binding Unit Cluster
 Parent Component: Unit Test Suite
@@ -3802,11 +3815,25 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     and a new analysis of the unchanged world copies the kept world (#331).
 - path: `tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py`
   start_line: 1
-  end_line: 830
-  loc: 830
-  verified_at: 2026-11-17T11:13:10Z
-  note: analyses reuse module paths, custody kinds, facts, roots, provenance and whole worlds across
-    binds; in-memory guards, reloads and residuals (#331).
+  end_line: 1153
+  loc: 1153
+  verified_at: 2026-11-17T12:31:06Z
+  note: analyses reuse module paths, custody kinds, facts, roots, provenance, whole worlds and import-edge
+    answers across binds; in-memory guards, reloads, residuals and the heap load order (#331).
+- path: `tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py`
+  start_line: 1
+  end_line: 191
+  loc: 191
+  verified_at: 2026-11-17T12:31:06Z
+  note: appends mark the undo ring stale; organizing verbs and ring reads mint first; an append describes
+    only its own node (#331, 0.2.8306).
+- path: `tests/unit/melder/mutation_research/test_mutation_research_twin_views.py`
+  start_line: 1
+  end_line: 203
+  loc: 203
+  verified_at: 2026-11-17T12:31:06Z
+  note: the twin emitted from composition views equals a fresh description and outlives restore and
+    cleanup (#331, 0.2.8306).
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
   end_line: 994
@@ -5382,6 +5409,8 @@ graph TD
 - `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
 - `tests/unit/melder/crystallizer/test_crystallizer.py`
 - `tests/unit/melder/mutation_research/test_mutation_research_root.py`
+- `tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py`
+- `tests/unit/melder/mutation_research/test_mutation_research_twin_views.py`
 - `tests/component/melder/crystallizer/test_spell_crystal_component.py`
 - `tests/component/melder/mutation_research/test_mutation_research_root_component.py`
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
