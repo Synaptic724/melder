@@ -1,0 +1,53 @@
+spellmap_bind_order_check.py on 0.2.8302 (melder_0, 2026-11-16; .venv_new 3.14.7 free-threaded build), each case in its own process, the GIL off then on.
+===== -X gil=0
+late_spellmap (GIL off)
+  bind(SpectrumBuilders) after conjure, nothing at spectrum/ServiceBuilder -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'service_builder' on spell 'SpectrumBuilders'. SpellMap=<SpellMap spell=Non
+  internal: SpectrumBuilders after that bind                             -> registered, phase-4 result absent
+  meld(SpectrumBuilders)                                                 -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'service_builder' on spell 'SpectrumBuilders'. SpellMap=<SpellMap spell=Non
+  bind(ServiceBuilder, spellframe='spectrum', binding_name='ServiceBuilder') -> ok
+  meld(SpectrumBuilders) after the provider is bound                     -> ServiceBuilder
+  bind(SpectrumBuilders) again                                           -> raises RuntimeError: Spell ID collision detected: this object is already registered as spell_id 772f3584f62082261d1689056727f651547239614ecd93bd886d882d910261be. A spell_i
+late_spellmap_control (GIL off)
+  bind(ServiceBuilder, spellframe='spectrum', binding_name='ServiceBuilder') first -> ok
+  bind(SpectrumBuilders) after its provider                              -> ok
+  meld(SpectrumBuilders)                                                 -> ServiceBuilder
+late_annotation (GIL off)
+  bind(ByAnnotation) after conjure, no ServiceBuilder bound              -> ok
+  internal: ByAnnotation after that bind                                 -> registered, phase-4 result present
+  meld(ByAnnotation)                                                     -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByAnnotation' (ecd327b17ff910b01e91fff6bce454338623715bc786b053c8df783c08611700) at node ecd327b17ff910b01e91fff6bc
+  bind(ServiceBuilder) bare                                              -> ok
+  meld(ByAnnotation) after the provider is bound                         -> ServiceBuilder
+conjure_reverse_order (GIL off)
+  conjure with SpectrumBuilders bound before ServiceBuilder              -> ok
+  meld(SpectrumBuilders)                                                 -> ServiceBuilder
+conjure_address_empty (GIL off)
+  conjure with nothing at spectrum/ServiceBuilder                        -> raises PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be res
+frameless (GIL off)
+  SpellMap(binding_name='ServiceBuilder')                                -> raises ValueError: SpellMap requires at least one of `spell` or `spellframe` to be provided.
+  SpellMap(spellframe='spectrum')                                        -> ('spectrum', '__default__')
+===== -X gil=1
+late_spellmap (GIL on)
+  bind(SpectrumBuilders) after conjure, nothing at spectrum/ServiceBuilder -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'service_builder' on spell 'SpectrumBuilders'. SpellMap=<SpellMap spell=Non
+  internal: SpectrumBuilders after that bind                             -> registered, phase-4 result absent
+  meld(SpectrumBuilders)                                                 -> raises RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved for parameter 'service_builder' on spell 'SpectrumBuilders'. SpellMap=<SpellMap spell=Non
+  bind(ServiceBuilder, spellframe='spectrum', binding_name='ServiceBuilder') -> ok
+  meld(SpectrumBuilders) after the provider is bound                     -> ServiceBuilder
+  bind(SpectrumBuilders) again                                           -> raises RuntimeError: Spell ID collision detected: this object is already registered as spell_id 772f3584f62082261d1689056727f651547239614ecd93bd886d882d910261be. A spell_i
+late_spellmap_control (GIL on)
+  bind(ServiceBuilder, spellframe='spectrum', binding_name='ServiceBuilder') first -> ok
+  bind(SpectrumBuilders) after its provider                              -> ok
+  meld(SpectrumBuilders)                                                 -> ServiceBuilder
+late_annotation (GIL on)
+  bind(ByAnnotation) after conjure, no ServiceBuilder bound              -> ok
+  internal: ByAnnotation after that bind                                 -> registered, phase-4 result present
+  meld(ByAnnotation)                                                     -> raises UnresolvedInputError: [MELD] Execution failed for spell 'ByAnnotation' (ecd327b17ff910b01e91fff6bce454338623715bc786b053c8df783c08611700) at node ecd327b17ff910b01e91fff6bc
+  bind(ServiceBuilder) bare                                              -> ok
+  meld(ByAnnotation) after the provider is bound                         -> ServiceBuilder
+conjure_reverse_order (GIL on)
+  conjure with SpectrumBuilders bound before ServiceBuilder              -> ok
+  meld(SpectrumBuilders)                                                 -> ServiceBuilder
+conjure_address_empty (GIL on)
+  conjure with nothing at spectrum/ServiceBuilder                        -> raises PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be res
+frameless (GIL on)
+  SpellMap(binding_name='ServiceBuilder')                                -> raises ValueError: SpellMap requires at least one of `spell` or `spellframe` to be provided.
+  SpellMap(spellframe='spectrum')                                        -> ('spectrum', '__default__')

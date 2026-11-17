@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_11.py",
- "source_sha256": "b18f37db791d61d6b4bcd99560336b898f01034953860b67afc4d90efda0cfd7",
+ "source_sha256": "c5341b25f932cf5e1b63992ee3c614281dcec2b04238bdb6d599f1a4726eedd9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_11": {

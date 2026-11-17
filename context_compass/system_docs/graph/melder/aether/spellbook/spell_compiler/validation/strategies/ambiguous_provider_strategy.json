@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/ambiguous_provider_strategy.py",
- "source_sha256": "8e4a581fbbb24d8836961fc65a8f4df0135b6e3b509576aae6bf0c9701a5c4ff",
+ "source_sha256": "47ea71c0e70bd393060ff7738e141cd63aa000c81973493c5ecb7bec4c126e7c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.ambiguous_provider_strategy": {

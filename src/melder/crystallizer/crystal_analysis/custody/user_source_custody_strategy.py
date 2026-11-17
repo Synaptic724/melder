@@ -2,10 +2,11 @@
 Custody strategy for user-source (file-backed, policy-rooted) modules.
 
 User-source classification is policy-driven: a module belongs here when its
-resolved path sits under one of the configured user source roots. This is
-also where physical custody gains its S1 upgrade - a bind-time module-text
-SHA256 fingerprint, making on-disk drift detectable at load time instead of
-silently restoring against changed code.
+resolved path sits under one of the configured user source roots and outside
+every Python environment (the owner's root-precedence answer, 2026-11-16,
+#327: the environment wins). This is also where physical custody gains its S1
+upgrade - a bind-time module-text SHA256 fingerprint, making on-disk drift
+detectable at load time instead of silently restoring against changed code.
 
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
@@ -30,12 +31,21 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
 
     Contract:
         - Path-driven: a module with no path can never match.
-        - The root set is fixed at construction (analysis policy input)
+        - The environment wins (owner, 2026-11-16, #327): a path under one
+          of the environment roots, or inside a directory named
+          `site-packages` or `dist-packages` (any letter case), is never
+          user source - even when it also sits under a user root, and even
+          when that user root lies inside the environment. Such a module
+          falls to the next strategy in the chain (site package or the
+          unknown fallback). The checks are pure path comparisons; they
+          read nothing from disk.
+        - Both root sets are fixed at construction (analysis policy input)
           and never mutated.
         - Fingerprints are hex SHA256 over the UTF-8 source (ABC default).
 
     Lifecycle / Cleanup:
-        Owns the user-root tuple; cleanup deletes it (del posture).
+        Owns the user-root and environment-root tuples; cleanup deletes both
+        (del posture).
 
     Registration:
         MELDER KERNEL - guarded. A per-analysis strategy in the analyzer's custody
@@ -44,10 +54,10 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
     Subsystem Context:
         The user-source member of the `crystal_analysis` custody family (see
         `SourceCustodyStrategy`). Policy-driven: it claims modules whose resolved
-        path sits under the configured user source roots, exposes their .py/.pyi
-        text for fact analysis, and stamps the bind-time SHA256 fingerprint over
-        that source. Its optional retention lane (harvest_payload) is the S2
-        physical-custody seam for user modules.
+        path sits under the configured user source roots and outside every
+        environment, exposes their .py/.pyi text for fact analysis, and stamps
+        the bind-time SHA256 fingerprint over that source. Its optional retention
+        lane (harvest_payload) is the S2 physical-custody seam for user modules.
 
     System Context:
         This is the authority the crystallizer takes real custody of, and the
@@ -57,7 +67,9 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
         restoring against changed code. Keeping fingerprint custody to user source
         (not site packages, not binaries) is the trust boundary that makes drift
         detection meaningful: it is Melder's answer for the code its user owns and
-        can change under it.
+        can change under it. That boundary must hold when a project keeps its
+        virtual environment inside its own directory - the default user root is the
+        working directory - which is why an environment always wins over a user root.
 
     AGENT_ACCESS: internal
 
@@ -67,9 +79,21 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
     """
 
 
-    __slots__ = ("_user_root_paths",)
+    # Directory names that mark an installed-package tree wherever it sits,
+    # so a second environment inside a project is caught by name alone.
+    ENVIRONMENT_DIRECTORY_NAMES: ClassVar[Tuple[str, ...]] = (
+        "site-packages",
+        "dist-packages",
+    )
 
-    def __init__(self, user_root_paths: Tuple[Path, ...]) -> None:
+    __slots__ = ("_user_root_paths", "_environment_root_paths")
+
+    def __init__(
+            self,
+            user_root_paths: Tuple[Path, ...],
+            *,
+            environment_root_paths: Tuple[Path, ...] = (),
+    ) -> None:
         """
         Initialize the strategy with the classification policy roots.
 
@@ -77,12 +101,21 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
             user_root_paths:
                 Resolved root paths that define `user_source` authority.
                 An empty tuple is legal and simply never matches.
+            environment_root_paths:
+                Resolved roots that are never user source: the interpreter's
+                site roots and prefixes (the analyzer supplies
+                `CrystalAnalyzer.resolve_environment_root_paths`). An empty
+                tuple leaves only the `site-packages`/`dist-packages`
+                directory-name rule.
 
         Returns:
             None.
         """
         super().__init__()
         self._user_root_paths: Tuple[Path, ...] = tuple(user_root_paths)
+        self._environment_root_paths: Tuple[Path, ...] = tuple(
+            environment_root_paths
+        )
 
     def cleanup(self) -> None:
         """
@@ -95,6 +128,7 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
             return
         self._cleaned = True
         del self._user_root_paths
+        del self._environment_root_paths
 
     @property
     def kind(self) -> str:
@@ -124,7 +158,7 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
             module_path: Optional[Path],
     ) -> bool:
         """
-        Claim modules whose resolved path sits under a user source root.
+        Claim modules under a user source root and outside every environment.
 
         Args:
             module_name:
@@ -137,14 +171,46 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
         Returns:
             bool:
                 True when the resolved path is relative to any configured
-                user root; False for pathless modules.
+                user root and not inside an environment (see
+                `_is_inside_environment`); False for pathless modules.
         """
         if module_path is None:
             return False
         resolved_path = self._normalize_path(module_path)
+        if not any(
+                resolved_path.is_relative_to(root_path)
+                for root_path in self._user_root_paths
+        ):
+            return False
+        return not self._is_inside_environment(resolved_path)
+
+    def _is_inside_environment(self, resolved_path: Path) -> bool:
+        """
+        Return whether one resolved module path lies inside a Python environment.
+
+        Contract:
+            - True when the path is relative to any environment root, or when
+              one of its directories is named `site-packages` or
+              `dist-packages` in any letter case; the file name itself is not
+              considered.
+            - Pure path comparison: no filesystem access, no exception for
+              any input path.
+
+        Args:
+            resolved_path:
+                The module path after `_normalize_path`.
+
+        Returns:
+            bool: True when the environment wins over any user root.
+        """
+        if any(
+                resolved_path.is_relative_to(root_path)
+                for root_path in self._environment_root_paths
+        ):
+            return True
         return any(
-            resolved_path.is_relative_to(root_path)
-            for root_path in self._user_root_paths
+            directory_name.lower() in self.ENVIRONMENT_DIRECTORY_NAMES
+            for directory_name in resolved_path.parent.parts
         )
 
     def resolve_source(

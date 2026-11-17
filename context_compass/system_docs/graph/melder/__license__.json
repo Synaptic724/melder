@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__license__.py",
- "source_sha256": "7895d4a5e13ecb557ec93a3af9911e0a178c7bcfe820c56dcad934ca9ec71669",
+ "source_sha256": "5212e43b2fe8e53fbb6c5979ba5c75a1e0fd9df302e557f90ff73d47e0e17bf2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.__license__": {

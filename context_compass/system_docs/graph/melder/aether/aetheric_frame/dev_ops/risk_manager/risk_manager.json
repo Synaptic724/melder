@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py",
- "source_sha256": "11c6d2e39a0d92e6fdb1364c7810caf498378fd1bda9a951a1df10b45d99d11a",
+ "source_sha256": "734df5a19f3c5b4f7bd96f8dcad32e3a5d902e5466b37dd2a298df08a4a8438c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager": {

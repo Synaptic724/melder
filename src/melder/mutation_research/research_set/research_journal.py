@@ -1,11 +1,15 @@
 import threading
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple
 
 from melder.mutation_research.research_set.transition_entry import (
     TransitionAct,
     TransitionEntry,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+
+# The journal's part of a composition view (#331): its append-only entry-payload list, how many leading payloads
+# belong to the view (the entry count then) and the next sequence it would mint.
+JournalPayloadView = Tuple[List[Dict[str, object]], int, int]
 
 
 class ResearchJournal(Cleanable):
@@ -34,6 +38,14 @@ class ResearchJournal(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned entries
         then deletes owned fields; idempotent; lock released last.
+
+    Composition parts (#331, 0.2.8306):
+        Beside its entries the journal keeps `_entry_payloads`, each entry's
+        `describe()` payload built once when it is recorded. The list is only
+        ever appended to and is dropped, not cleared, at cleanup, so
+        `_payload_view()` can hand it out with its length: a persistence twin
+        emitted from the view keeps its journal window without the journal
+        describing its newest entries again on every emission.
 
     THE JOURNAL IS NOT SNAPSHOTTED, AND THAT IS THE POINT:
         `NetworkVersioner` snapshots the ORGANIZATION - which lane holds what,
@@ -74,6 +86,7 @@ class ResearchJournal(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_entries",
+        "_entry_payloads",
         "_next_sequence",
         "_lock",
     ]
@@ -95,6 +108,8 @@ class ResearchJournal(Cleanable):
         """
         super().__init__()
         self._entries: List[TransitionEntry] = []
+        # Each entry's describe() payload, built once when recorded; append-only (composition views hold it).
+        self._entry_payloads: List[Dict[str, object]] = []
         self._next_sequence: int = 1
         self._lock: threading.RLock = threading.RLock()
 
@@ -106,6 +121,8 @@ class ResearchJournal(Cleanable):
             - IDEMPOTENT under double-checked locking.
             - OWNS ITS ENTRIES: every `TransitionEntry` is cleaned (best-effort,
               so one failure cannot strand the rest) before the list is dropped.
+            - The entry-payload list is DROPPED, NEVER CLEARED: a composition
+              view taken earlier still holds it (#331).
             - DELETE-NOT-NULL, no tombstones; the lock is deleted last.
 
         Returns:
@@ -124,6 +141,7 @@ class ResearchJournal(Cleanable):
                     pass
             self._entries.clear()
             del self._entries
+            del self._entry_payloads
             del self._next_sequence
         del self._lock
 
@@ -151,6 +169,8 @@ class ResearchJournal(Cleanable):
               journal promise a faithful forward history.
             - The mint-and-append is ATOMIC under `self._lock`, so concurrent
               records cannot collide on a sequence or interleave out of order.
+            - The entry's `describe()` payload is built once here and appended to
+              the entry-payload list beside it (#331).
             - Endpoint and metadata semantics are the entry's, not the journal's
               (see `TransitionEntry`): `lane_id` may be a set id for the
               network-scope `restored` act, and `to_spell_id` carries a snapshot
@@ -194,8 +214,10 @@ class ResearchJournal(Cleanable):
                 reason=reason,
                 metadata=metadata,
             )
+            payload = entry.describe()
             self._next_sequence += 1
             self._entries.append(entry)
+            self._entry_payloads.append(payload)
             return entry
 
     @property
@@ -371,6 +393,32 @@ class ResearchJournal(Cleanable):
                 "next_sequence": self._next_sequence,
             }
 
+    def _payload_view(self) -> JournalPayloadView:
+        """
+        Return this journal's part of a composition view, without describing an entry (#331).
+
+        Contract:
+            - Returns the append-only entry-payload list, its current length
+              (the `entry_count` a `describe()` now would report) and the next
+              sequence. The newest `recent` of the first `length` payloads are
+              what `describe(recent=recent)["entries"]` would return now, and they
+              stay so: the list is only appended to and is dropped at cleanup,
+              never edited. A reader must copy what it hands on.
+            - Set-internal: the owning `ResearchSet` calls it under its own lock.
+
+        Threading:
+            Read under `self._lock`, so the length and the next sequence agree.
+
+        Returns:
+            JournalPayloadView: (entry payloads, length, next sequence).
+
+        Raises:
+            RuntimeError: If the journal has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._entry_payloads, len(self._entry_payloads), self._next_sequence
+
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "ResearchJournal":
         """
@@ -420,6 +468,7 @@ class ResearchJournal(Cleanable):
         next_sequence = payload.get("next_sequence")
         with journal._lock:
             journal._entries.extend(rebuilt)
+            journal._entry_payloads.extend(entry.describe() for entry in rebuilt)
             if (
                     isinstance(next_sequence, int)
                     and next_sequence >= minimum_next

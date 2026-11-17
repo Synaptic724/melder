@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/conduit_crystal.py",
- "source_sha256": "bdb4b17ffc1c3790427ed398d97f06f612b1b2f6b2b6435df8979c3c8624cf5e",
+ "source_sha256": "9de576930a0eec6fe65d16abbeaa90d20f00d2c52b6e2be6190ca869f72c339a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.conduit_crystal": {

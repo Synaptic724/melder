@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/impact_engine.py",
- "source_sha256": "45cbad030696cfba125d108f0c554484f3ca1febfecb59ef700334a95a0bff95",
+ "source_sha256": "220021911255c3c0594ec52635429c7f20e58c9278f5097b90a156c925e0509d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.impact_engine": {

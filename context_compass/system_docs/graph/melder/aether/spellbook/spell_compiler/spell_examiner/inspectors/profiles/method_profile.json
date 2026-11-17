@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py",
- "source_sha256": "fcece73400e0ff8d98d3cbc441f8c6552fbd35f2873afd55ae1130222535a26a",
+ "source_sha256": "af8600bfecdad02448cb1e2c48ac87bf3a1a9b36d503eb9859ed23a386d61c6a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile": {

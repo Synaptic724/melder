@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/frame_viewer.py",
- "source_sha256": "46f8b3751c93011630f79345d0e2a6206eae8463765f859a2b6c3bc11b2d2b41",
+ "source_sha256": "eb524919b83be689179fd1dd337eb011501c4408713235eff093cfa75b8a7eee",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.frame_viewer": {
@@ -187,14 +187,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "2c2d8e9059b77f759edb80d7048df8ed641454f074afb0610081c01099bc7324",
+   "span_sha256": "c310727e7803d654a4decdcb00ba8e7ed3d186ffc9989619eb34f37d3fa161f3",
    "role": "Projection-backed room viewer asset.",
    "responsibilities": [
     "reads current view projections from its borrowed Rift on demand, caching no projection and no helper",
     "builds the view, frame, conduit and spell helper surfaces per call, owned by the call",
     "provides the visible frame-local query surface",
     "delegates registered relationship navigation to the current ACL-filtered spell viewer",
-    "a read overlapping a frame link or an ACL refresh can raise the cleaned RuntimeError of the projection it read; a retry reads the new projection"
+    "holds the owning Rift's gate ticket for every read (_entered_view_action, which every helper it builds reaches), so a removal and an ACL refresh with the refresh gate on wait for in-flight reads",
+    "a read overlapping a frame link's refresh, or an ACL refresh with the refresh gate off, can raise the cleaned RuntimeError of the projection it read; a retry reads the new projection"
    ],
    "owns_state": [
     "_id",
@@ -205,7 +206,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "2c2d8e9059b77f759edb80d7048df8ed641454f074afb0610081c01099bc7324"
+   "semantics_authored_against": "c310727e7803d654a4decdcb00ba8e7ed3d186ffc9989619eb34f37d3fa161f3"
   }
  },
  "edges_out": [
@@ -371,6 +372,18 @@
    "phase": [
     "refresh",
     "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+   "to": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+   "relation": "borrows",
+   "why": "Every viewer read takes and releases the calling thread's ticket on the owning Rift's gate, reached through the borrowed Rift (rift.rift_gate) and held in a local for the read.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime",
+    "refresh"
    ],
    "strength": "borrowed"
   }

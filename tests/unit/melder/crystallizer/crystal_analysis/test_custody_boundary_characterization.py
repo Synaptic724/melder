@@ -3,20 +3,19 @@ Characterization tests for the Crystallizer's custody boundary (core-protection 
 
 Purpose:
     Pin how the analyzer decides which modules are the user's own source and which are installed
-    packages, and how far it walks into each, so that a change made after the owner's answer to the
-    review's open question on root precedence (is a virtual environment inside the user root meant to
-    count as user source?) has to update these tests on purpose. They describe today's behaviour; they
-    do not claim it is the intended policy.
+    packages, and how far it walks into each. The review left one question open on root precedence (is a
+    virtual environment inside the user root meant to count as user source?); the owner answered it on
+    2026-11-16 (#327): the environment wins. These tests moved to that answer on purpose.
 
 Contract pinned here:
-    - The custody chain tries user roots before site roots, so an environment nested inside a user root
-      classifies as user source, is walked and is fingerprinted, whatever the descent setting says.
-    - With a user root that excludes the environment, an installed package is a site-package leaf:
-      recorded, never fingerprinted, and walked into only when descent is on.
-    - Retained user source text follows the same classification.
+    - An environment nested inside a user root is never user source: its installed package classifies as
+      a site package, is never fingerprinted, and is walked into only when descent is on - the same as
+      when the user root excludes the environment.
+    - Retained user source text follows the classification, so no installed package's text is retained.
     - User roots classify modules; they never make a module importable.
     - `CrystallizerConfiguration.with_defaults()` takes the working directory as the user root and
-      turns descent off.
+      turns descent off; run from a project with a `.venv` inside it, the environment stays a site
+      package.
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -158,27 +157,35 @@ def _analyze_app(
 
 
 @pytest.mark.parametrize("descent", [False, True])
-def test_environment_nested_in_the_user_root_is_user_source_whatever_the_descent_setting(
+def test_environment_nested_in_the_user_root_classifies_as_site_packages(
         nested_venv_project: Tuple[Path, Path, Path],
         descent: bool,
 ) -> None:
     """
-    Contract: with the project directory as the user root, the installed package and its own
-    dependency classify as user source, the walk enters the package, and both get physical
-    fingerprints - the descent setting never applies because nothing reaches the site-package rung.
+    Contract: with the project directory as the user root, the project's module is user source and
+    fingerprinted, while the installed package in the project's `.venv` is a site package with no
+    fingerprint - the environment wins over the user root. Descent decides whether the walk enters the
+    package: off, it is a leaf and its dependency is never recorded; on, its dependency records as a
+    site package, also unfingerprinted.
     """
     project_root, source_root, site_root = nested_venv_project
 
     result = _analyze_app(source_root, site_root, (project_root,), descent=descent)
     try:
         kinds = dict(result.module_to_kind)
-        assert kinds[CustodyNames.PACKAGE] == "user_source"
-        assert kinds[CustodyNames.DEPENDENCY] == "user_source"
+        assert kinds[CustodyNames.APP] == "user_source"
+        assert kinds[CustodyNames.PACKAGE] == "site_package"
         dependencies = dict(result.module_to_direct_dependencies)
-        assert CustodyNames.DEPENDENCY in dependencies[CustodyNames.PACKAGE]
+        if descent:
+            assert kinds[CustodyNames.DEPENDENCY] == "site_package"
+            assert CustodyNames.DEPENDENCY in dependencies[CustodyNames.PACKAGE]
+        else:
+            assert dependencies[CustodyNames.PACKAGE] == []
+            assert CustodyNames.DEPENDENCY not in kinds
         fingerprints = dict(result.physical_module_fingerprints)
-        assert CustodyNames.PACKAGE in fingerprints
-        assert CustodyNames.DEPENDENCY in fingerprints
+        assert CustodyNames.APP in fingerprints
+        assert CustodyNames.PACKAGE not in fingerprints
+        assert CustodyNames.DEPENDENCY not in fingerprints
     finally:
         result.cleanup()
 
@@ -228,22 +235,15 @@ def test_descent_walks_the_excluded_environment_as_site_packages_without_fingerp
         result.cleanup()
 
 
-@pytest.mark.parametrize(
-    ("root_choice", "package_text_retained"),
-    [
-        ("project", True),
-        ("source", False),
-    ],
-)
+@pytest.mark.parametrize("root_choice", ["project", "source"])
 def test_retained_user_source_follows_the_root_classification(
         nested_venv_project: Tuple[Path, Path, Path],
         root_choice: str,
-        package_text_retained: bool,
 ) -> None:
     """
     Contract: with retention on, the record keeps the text of every module classified as user
-    source - the installed package's text too when the environment is inside the user root, and
-    only the project's own module when it is not.
+    source - the project's own module, and never the installed package, whether or not the
+    environment sits inside the user root.
     """
     project_root, source_root, site_root = nested_venv_project
     user_root = project_root if root_choice == "project" else source_root
@@ -252,10 +252,7 @@ def test_retained_user_source_follows_the_root_classification(
     try:
         retained = result.user_module_sources
         assert "class AppService" in str(retained[CustodyNames.APP]["source_text"])
-        assert (CustodyNames.PACKAGE in retained) is package_text_retained
-        if package_text_retained:
-            package_text = str(retained[CustodyNames.PACKAGE]["source_text"])
-            assert "import {0}".format(CustodyNames.DEPENDENCY) in package_text
+        assert CustodyNames.PACKAGE not in retained
     finally:
         result.cleanup()
 
@@ -305,8 +302,8 @@ def test_with_defaults_takes_the_working_directory_as_the_user_root_and_turns_de
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Contract: the default configuration's user root is the resolved working directory - so a
-    `.venv` inside it is user source under the defaults - with descent off and no text retained.
+    Contract: the default configuration's user root is the resolved working directory, with descent
+    off and no text retained.
     """
     monkeypatch.chdir(tmp_path)
 
@@ -319,14 +316,15 @@ def test_with_defaults_takes_the_working_directory_as_the_user_root_and_turns_de
         configuration.cleanup()
 
 
-def test_default_configuration_classifies_a_working_directory_venv_as_user_source(
+def test_default_configuration_classifies_a_working_directory_venv_as_a_site_package(
         nested_venv_project: Tuple[Path, Path, Path],
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Contract: run from the project directory, the policy `with_defaults()` produces - working
-    directory as user root, descent off - classifies the nested environment's package as user
-    source and fingerprints it, which is the case the review's root-precedence question is about.
+    directory as user root, descent off - records the nested environment's package as an
+    unfingerprinted site-package leaf: the case the review's root-precedence question was about,
+    answered by the owner on 2026-11-16 (#327).
     """
     project_root, source_root, site_root = nested_venv_project
     monkeypatch.chdir(project_root)
@@ -339,7 +337,8 @@ def test_default_configuration_classifies_a_working_directory_venv_as_user_sourc
 
     result = _analyze_app(source_root, site_root, user_roots, descent=descent)
     try:
-        assert dict(result.module_to_kind)[CustodyNames.PACKAGE] == "user_source"
-        assert CustodyNames.PACKAGE in dict(result.physical_module_fingerprints)
+        assert dict(result.module_to_kind)[CustodyNames.PACKAGE] == "site_package"
+        assert dict(result.module_to_direct_dependencies)[CustodyNames.PACKAGE] == []
+        assert CustodyNames.PACKAGE not in dict(result.physical_module_fingerprints)
     finally:
         result.cleanup()

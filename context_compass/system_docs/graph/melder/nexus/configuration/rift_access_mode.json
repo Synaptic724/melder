@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_access_mode.py",
- "source_sha256": "bae7591ac571d8dffa6fa06bba04f04759df058453e3dd5be6c4755a6f8f24c0",
+ "source_sha256": "1615ac43cfc4c67e181f1d5bf71ede0e43220e603bb697505b8ec1c960c682ca",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_access_mode": {

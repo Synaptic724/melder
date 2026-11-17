@@ -22,8 +22,10 @@ class SocketKind(StrEnum):
         A required input whose selected registration is non-resolvable. Its
         target is descriptive; a caller supplies the value during construction.
     - UNRESOLVED_INPUT:
-        A single typed dependency that no registered spell provides. Resolution
-        records it instead of failing: it has no target and no DAG edge, the
+        A single typed dependency that no registered spell provides, or a
+        SpellMap default whose address has nothing bound (2026-11-16, GitHub
+        #329). Resolution records it instead of failing: it has no target and no
+        DAG edge, the
         constructing call must supply the value through its override payload,
         and a missing value raises `UnresolvedInputError` when that object is
         built. Registering a matching provider later re-resolves the consumer
@@ -57,7 +59,7 @@ class SocketKind(StrEnum):
     AGENT_PURPOSE:
         access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
         SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input),
-        UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported),
+        UNRESOLVED_INPUT (typed or SpellMap dependency with no provider; supplied by the call or reported),
         AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).
     """
 

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
- "source_sha256": "620c7ec5987577dfe3ac4078a6bdd4fbd1dc88252e3be8472ec6406204702712",
+ "source_sha256": "6f55eb08274e85dbcf28bb323a593bd15f1cce8533314794f8b3329e29f9f3f0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy": {

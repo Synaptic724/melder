@@ -1905,6 +1905,8 @@ class SpellSystemStates(Cleanable):
             - An UNRESOLVED_INPUT socket is watched under its expected type's frame
               key, so binding a matching provider later marks this consumer
               dependency-changed and its next meld re-resolves it into a NORMAL edge.
+              A SpellMap socket (2026-11-16, GitHub #329) is watched under its
+              SpellMap's frame key, so a spell bound under that frame re-gates it.
             - An AMBIGUOUS_INPUT socket is watched the same way (2026-10-04), so
               removing one of the competing providers re-gates the consumer.
             - An UNRESOLVED_INPUT socket is also watched under its

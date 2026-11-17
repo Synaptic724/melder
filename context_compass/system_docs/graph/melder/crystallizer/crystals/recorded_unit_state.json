@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/recorded_unit_state.py",
- "source_sha256": "c3e3930f16612621ff2ea11cdc31a21e89a501421362028a6ee307251d3fc550",
+ "source_sha256": "367f5d30b3be00b860b0eea9800ac06bad3ba9b75241b2901af62979901e02d9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.recorded_unit_state": {

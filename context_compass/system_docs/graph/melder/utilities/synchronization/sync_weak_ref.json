@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/sync_weak_ref.py",
- "source_sha256": "4c6a60ac05412483ca121201372870bc3bb4b4e37462e2cd91c6ae1db3219dac",
+ "source_sha256": "424e10c83ad6303e6c29cbc9cd3a29d19c13e8b39ce2beaf5d39dc1424189b16",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.sync_weak_ref": {

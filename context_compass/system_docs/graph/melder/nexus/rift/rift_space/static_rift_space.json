@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/static_rift_space.py",
- "source_sha256": "093da31e16cb88fd150558cc9fc305435aeb4b69df348331fa57e73917953371",
+ "source_sha256": "5ebf868e5007b0ef36e757a827e54c799fbc734e16b9f89afe9319716072417d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.static_rift_space": {

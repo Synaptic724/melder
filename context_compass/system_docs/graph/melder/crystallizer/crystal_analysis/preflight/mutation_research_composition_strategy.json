@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/mutation_research_composition_strategy.py",
- "source_sha256": "598351540422de15c35fea3876b8fcbde122e934f2f9a7c6c90a324173b9a611",
+ "source_sha256": "c5dd747cdd3a3e96d798c8e1fe49ae55043b8047434c12552cec05366a257fb9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy": {

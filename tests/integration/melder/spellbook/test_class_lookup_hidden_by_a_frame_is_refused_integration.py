@@ -34,7 +34,6 @@ import pytest
 from melder import Aether, Conduit, Spellbook, SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnosticSeverity
-from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
@@ -486,7 +485,9 @@ def test_class_bound_nowhere_keeps_the_unresolved_input_and_the_earlier_failures
     """
     Control: nothing of English bound. The single consumers conjure and their meld raises UnresolvedInputError saying
     nothing registered provides English (an override supplies it); `list[English]` keeps Phase 6's earlier text
-    byte for byte; `SpellMap(English)` still fails Phase 3 (D4: a SpellMap miss with its class bound nowhere).
+    byte for byte. `SpellMap(English)` - a SpellMap miss with its class bound nowhere - failed Phase 3 under D4; since
+    0.2.8303 (GitHub #329, the owner's rule that bind order must not matter) it is an unresolved input too: it
+    conjures, its meld names the SpellMap, and an override supplies it.
     """
     book = _book("control-none", "automatic")
     for consumer in SINGLE_CONSUMERS.values():
@@ -503,9 +504,14 @@ def test_class_bound_nowhere_keeps_the_unresolved_input_and_the_earlier_failures
         "in dynamic mode if members arrive via contracts.", "collection_socket_no_providers")
     mapping = _book("control-none-spellmap", "automatic")
     mapping.bind(spell=SpellMapClass, existence="many", permissions="create")
-    with pytest.raises(PhaseExecutionError, match="SpellMap default could not be resolved for parameter 'greeter' on "
-                                                  "spell 'SpellMapClass'"):
-        mapping.conjure(name="root")
+    mapped = mapping.conjure(name="root")
+    assert _unsupplied(mapped, SpellMapClass) == (
+        "SpellMapClass.greeter asks for the spell its default SpellMap(English) names, but nothing is bound there and "
+        "this meld did not supply it. Supply it with override={'greeter': ...} when melding SpellMapClass, a path key "
+        "ending in '>greeter' (or '**greeter') when SpellMapClass is built as a dependency, or bind a spell at that "
+        "address."
+    )
+    assert type(mapped.meld(SpellMapClass, override={"greeter": English()}).greeter) is English
 
 
 def test_refused_consumer_melds_a_version_of_its_class_bound_bare_after_the_refusal() -> None:

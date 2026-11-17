@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/admission_result.py",
- "source_sha256": "40128e22b2b88faeea6ee98946ecd3d8f2c74ecd66da7ea3bd31c2ffa1450142",
+ "source_sha256": "1473d8f028d99de30010434e870d2d18bfb701fa1695103ca77109f330d351fc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.admission_result": {

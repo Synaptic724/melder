@@ -73,13 +73,24 @@ class FrameViewer(Cleanable):
     Threading:
         Uses one instance `threading.RLock` to serialize cleanup and
         multi-step viewer-state mutation and teardown.
-        A read that overlaps a frame link or an ACL refresh of its frame can
-        meet the projection set that refresh replaces: the Rift cleans the old
-        set when it installs the new one, and the read raises the cleaned
+        A read holds the owning Rift's gate for its whole run: every public
+        viewer method, and every helper the viewer builds, takes the calling
+        thread's ticket in `_entered_view_action` (GitHub #274, step 3). So an
+        ACL refresh of the read's frame with `projection_refresh_gate_enabled`
+        on (the default) waits for in-flight reads before it replaces any
+        projection, and parks new reads - or refuses them, in the gate's
+        "raise" entry mode - until it has reopened the gate; a removal of the
+        Rift likewise waits for them and refuses new ones.
+        Two paths can still replace a projection under a read (GitHub #274,
+        V1): an ACL refresh with `projection_refresh_gate_enabled` off, which
+        swaps without draining, and a frame link - `Rift.create_frame_link` or
+        `CommandSystem.link_frame` - whose refresh replaces every projection set
+        of the Rift from inside the gate without waiting for other threads'
+        reads. A read that meets a replaced projection raises the cleaned
         RuntimeError of the projection object it was reading (for example
         "CompiledFrameACLAccessSurface has already been cleaned. "). The read
-        changed nothing; retry it and it reads the new projection (GitHub #274,
-        V1; the owner, 2026-11-08).
+        changed nothing; retry it and it reads the new projection (the owner,
+        2026-11-08).
 
     Lifecycle:
         Cleanup clears only viewer-owned references. It does not cleanup the
@@ -6658,7 +6669,22 @@ class FrameViewer(Cleanable):
     @contextmanager
     def _entered_view_action(self, *, action_name: str) -> Any:
         """
-        Enter one viewer action hook scope through the owning room.
+        Enter one viewer action: the Rift gate first, then the room's hook
+        scope.
+
+        Contract:
+            - Every public viewer method runs through here (the class is
+              decorated with `decorate_public_view_actions`), and so does every
+              helper the viewer builds - `ViewFrame` through its scope factory,
+              `ViewMultiFrame` through this viewer, `ViewConduit` and `ViewSpell`
+              through their frame view - so a viewer read is an agent door.
+            - Takes the calling thread's ticket on the owning Rift's gate after
+              the cleaned check and before the hook scope, and releases it last,
+              after the hook scope exits (GitHub #274, step 3). Nested viewer
+              actions, and reads nested in another call of the same Rift, pass by
+              re-entry.
+            - The gate is held in a local, so its release after a teardown -
+              the same thread's removal of its own Rift - is a quiet no-op.
 
         Args:
             action_name:
@@ -6666,15 +6692,26 @@ class FrameViewer(Cleanable):
 
         Returns:
             Any: Viewer hook scope context manager.
+
+        Raises:
+            RuntimeError: If the viewer or its Rift was cleaned, or the Rift's
+                gate refuses the read (terminally closed for a removal, or
+                disabled in "raise" entry mode for an ACL refresh). In "wait"
+                entry mode a read parks while an ACL refresh holds the gate.
         """
         self.check_cleaned()
-        if self._action_hook_scope_factory is None:
-            action_scope = noop_action_scope()
-        else:
-            action_scope = self._action_hook_scope_factory(
-                category="viewer",
-                action_name=action_name,
-            )
-        with action_scope:
-            yield
+        rift_gate = self._rift.rift_gate
+        rift_gate.admit_ticket()
+        try:
+            if self._action_hook_scope_factory is None:
+                action_scope = noop_action_scope()
+            else:
+                action_scope = self._action_hook_scope_factory(
+                    category="viewer",
+                    action_name=action_name,
+                )
+            with action_scope:
+                yield
+        finally:
+            rift_gate.unregister_ticket()
 

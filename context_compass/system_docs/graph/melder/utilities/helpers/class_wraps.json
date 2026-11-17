@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/class_wraps.py",
- "source_sha256": "eb76a5a009e5b2fc1dfd63d708080b76812a9bbc0bcb56f2eea5b0fb04726816",
+ "source_sha256": "70707db9aea05f1829009b6c73ea61e7896b06bc85fc5e47bf3d619a7d8af3e4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.class_wraps": {

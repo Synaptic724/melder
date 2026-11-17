@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/record_version.py",
- "source_sha256": "3d643ccc28d23db98afb93e89f16fcb92917a64938b2a0e0153dc05ceb63024e",
+ "source_sha256": "2945373e3fa30939aab63463dae5df5e1414ac70c69052db7f597c7769c918bb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.record_version": {
@@ -41,8 +41,8 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "31feef678a9e128f637eff6184413568149ede75145479f47cd3359778aa73e1",
-   "role": "Static record-schema version authority (stamp 5.0.0; readers gate on MAJOR, from OLDEST_READABLE_MAJOR 5 to the current; absent stamps read 0.0.0).",
+   "span_sha256": "3c8a4a3a26a9fc148df6f3fd75f602685b2ab861d0ec3395789c1e3748932673",
+   "role": "Static record-schema version authority (stamp 5.0.1; readers gate on MAJOR, from OLDEST_READABLE_MAJOR 5 to the current; absent stamps read 0.0.0).",
    "responsibilities": [
     "stamps cached items, formation records, and emission-tap envelopes",
     "refuses newer-major payloads, and payloads below OLDEST_READABLE_MAJOR, at the read gates",
@@ -52,12 +52,13 @@
     "uses minor 4.1.0 for the additive spellframe-kind keys on spell crystals (0.2.8222); 4.0.0 records stayed readable, hydrating frames by name, until 5.0.0",
     "uses minor 4.2.0 for a managed spell's recorded options on its spell crystal (0.2.8242); 4.1 readers ignore them and a 4.1 record holds none",
     "uses minor 4.3.0 for the spell crystal's binding_hash, written for every spell (0.2.8258); 4.2 readers ignore it and a 4.2 record compares no binding",
-    "uses major 5.0.0 with OLDEST_READABLE_MAJOR 5 (2026-10-25): a record written before every version of a SpellIndex shared its first version's binding cannot promise it, so check_readable refuses every major below 5, pre-versioning stamps included, naming the record, the reason and the remedy (record the world again) - the owner's call to invalidate all the records"
+    "uses major 5.0.0 with OLDEST_READABLE_MAJOR 5 (2026-10-25): a record written before every version of a SpellIndex shared its first version's binding cannot promise it, so check_readable refuses every major below 5, pre-versioning stamps included, naming the record, the reason and the remedy (record the world again) - the owner's call to invalidate all the records",
+    "uses patch 5.0.1 (0.2.8302, #327) to note that a module inside a Python environment records as a site package or unknown, never user source; no key or shape changed and 5.0.0 records read alike"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "31feef678a9e128f637eff6184413568149ede75145479f47cd3359778aa73e1"
+   "semantics_authored_against": "3c8a4a3a26a9fc148df6f3fd75f602685b2ab861d0ec3395789c1e3748932673"
   }
  },
  "edges_out": [],

@@ -9,6 +9,7 @@ needs the complete edge map.
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
+import heapq
 from typing import Dict, List, Set
 
 from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
@@ -99,6 +100,10 @@ class DependencyViewStrategy(CrystalFactStrategy):
             module set remain manifest facts but do not become ordering nodes.
             A cycle never raises: unresolved nodes are appended
             deterministically and reported through the result's honesty lane.
+            Ready modules wait in a min-heap of names (#331, 0.2.8306): each
+            pick takes the smallest ready name, exactly as the sorted ready
+            list did, in O(log V) instead of a `pop(0)` and a re-sort per
+            insertion; the order and the cycle error are unchanged.
 
         Args:
             result:
@@ -136,23 +141,22 @@ class DependencyViewStrategy(CrystalFactStrategy):
                     module_name
                 )
 
-        ready_modules: List[str] = sorted(
+        ready_modules: List[str] = [
             module_name
             for module_name, count in remaining_dependency_counts.items()
             if count == 0
-        )
+        ]
+        heapq.heapify(ready_modules)
         load_order: List[str] = []
         while ready_modules:
-            current_module = ready_modules.pop(0)
+            # The smallest ready name, as the sorted ready list's head was.
+            current_module = heapq.heappop(ready_modules)
             load_order.append(current_module)
-            for dependent_name in sorted(
-                    dependents_by_module.get(current_module, [])
-            ):
+            for dependent_name in dependents_by_module.get(current_module, []):
                 remaining_dependency_counts[dependent_name] -= 1
                 if remaining_dependency_counts[dependent_name] == 0:
-                    # Insert preserving sorted readiness order.
-                    ready_modules.append(dependent_name)
-                    ready_modules.sort()
+                    # The heap keeps readiness order whatever order dependents arrive in.
+                    heapq.heappush(ready_modules, dependent_name)
 
         unresolved_modules = sorted(
             module_name

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
- "source_sha256": "10737e4a8c20214bf02049c2cb23e0e1058d68769bcbab320b5fdf1d72c3e9cc",
+ "source_sha256": "b962034937a98df89f596a896fbd65bbea6d2bd4c38ca79fdb5e4ce0aae74e30",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.view.safe_profile": {

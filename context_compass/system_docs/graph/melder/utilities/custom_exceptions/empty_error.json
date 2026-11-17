@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/empty_error.py",
- "source_sha256": "f8375cdac9adf19ca4c5948738cfa1a9b6ad50fbb8192c9f140cc8d71bd8b7f1",
+ "source_sha256": "c85cc195ce1b82899bccb12857da0ba43ae6c5625b0dc9139dcc5f57c748265a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.empty_error": {

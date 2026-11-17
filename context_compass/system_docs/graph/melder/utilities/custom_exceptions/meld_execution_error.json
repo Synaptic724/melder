@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
- "source_sha256": "7dcf97304d582386599083d76372bacf020c5401f3e8d676bb09185f02da2311",
+ "source_sha256": "61b62cef76d7a3c205516d1e1694e08ea4f9016f1aa4148b43548f22fedcd862",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.meld_execution_error": {

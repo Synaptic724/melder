@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/nexus_crystal.py",
- "source_sha256": "3646184aea8ba01bb9cc7664057cbdbd553d3ef12cb2ea3a94705dab57fd8727",
+ "source_sha256": "8d3d49c8fda49e6f1512fd721d76f40eb4d456ad469508b7a43fcda143e49158",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.nexus_crystal": {

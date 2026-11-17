@@ -145,12 +145,14 @@ def test_record_version_is_5_0_and_refuses_the_4_x_records_that_carried_the_opti
     """
     4.2.0 added the managed options and 4.3.0 the binding hash (minors). 5.0.0 refuses every 4.x record (the owner's
     call, 2026-10-25: a record made before every version of an index shared its binding cannot promise it), so the
-    options are read from 5.x records only.
+    options are read from 5.x records only. 5.0.1 (a patch, #327) notes the custody change of 2026-11-16 and leaves
+    5.0.0 records readable.
     """
-    assert RecordVersion.CURRENT == "5.0.0"
+    assert RecordVersion.CURRENT == "5.0.1"
     for older in ("4.1.0", "4.2.0", "4.3.0"):
         with pytest.raises(ValueError, match=r"older than the oldest this melder reads \(5\.0\.0\)"):
             RecordVersion.check_readable({RecordVersion.KEY: older}, "older record")
-    RecordVersion.check_readable({RecordVersion.KEY: "5.0.0"}, "current record")
-    with pytest.raises(ValueError, match="newer than this code's 5.0.0"):
+    RecordVersion.check_readable({RecordVersion.KEY: "5.0.0"}, "record from before the custody note")
+    RecordVersion.check_readable({RecordVersion.KEY: "5.0.1"}, "current record")
+    with pytest.raises(ValueError, match="newer than this code's 5.0.1"):
         RecordVersion.check_readable({RecordVersion.KEY: "6.0.0"}, "future record")

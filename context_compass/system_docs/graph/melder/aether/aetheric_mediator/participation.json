@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/participation.py",
- "source_sha256": "f45840ccdbe38765b3e82563affbfc183ae992eb0b59ff6f2f027f4d632b23d1",
+ "source_sha256": "491e801c39a0d0afaf95ccc7766c048fa94492d52c53e0a0b02be93d9c1cc644",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.participation": {

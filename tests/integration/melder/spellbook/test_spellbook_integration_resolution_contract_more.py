@@ -10,6 +10,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests._spell_identity_test_support import version_of
 
 
@@ -2708,12 +2709,13 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
         conduit.cleanup()
 
 
-def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:
+def test_spellmap_explicit_class_with_wrong_frame_waits_as_an_unresolved_input() -> None:
     """
     Purpose:
-        Validate explicit SpellMap frame mismatches raise during resolution.
+        Validate that an explicit SpellMap whose frame holds no such spell waits (GitHub #329).
     Contract:
-        - SpellMap(explicit class, spellframe=wrong) fails during conjure.
+        - SpellMap(explicit class, spellframe=wrong) conjures (it failed conjure before 0.2.8303); the meld
+          raises UnresolvedInputError naming the SpellMap until a spell is bound there.
     Returns:
         None.
     Raises:
@@ -2786,8 +2788,10 @@ def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError):
-        spellbook.conjure(name="root")
+    root = spellbook.conjure(name="root")
+    with pytest.raises(UnresolvedInputError,
+                       match=r"asks for the spell its default SpellMap\(.*_Cache, spellframe='wrong'\) names"):
+        root.meld(_Service)
 
 
 def test_spellmap_explicit_class_with_wrong_binding_name_raises() -> None:
@@ -2875,12 +2879,13 @@ def test_spellmap_explicit_class_with_wrong_binding_name_raises() -> None:
     )
 
 
-def test_spellmap_explicit_method_with_wrong_frame_raises() -> None:
+def test_spellmap_explicit_method_with_wrong_frame_waits_as_an_unresolved_input() -> None:
     """
     Purpose:
-        Validate explicit method SpellMap frame mismatches raise during resolution.
+        Validate that an explicit method SpellMap whose frame holds no such spell waits (GitHub #329).
     Contract:
-        - SpellMap(explicit method, spellframe=wrong) fails during conjure.
+        - SpellMap(explicit method, spellframe=wrong) conjures (it failed conjure before 0.2.8303); the meld
+          raises UnresolvedInputError naming the SpellMap - the method by its qualified name.
     Returns:
         None.
     Raises:
@@ -2946,8 +2951,11 @@ def test_spellmap_explicit_method_with_wrong_frame_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError):
-        spellbook.conjure(name="root")
+    root = spellbook.conjure(name="root")
+    with pytest.raises(UnresolvedInputError,
+                       match=r"asks for the spell its default SpellMap\(.*_Factory\.build, spellframe='wrong'\) "
+                             r"names"):
+        root.meld(_Service)
 
 
 def test_collection_di_by_list_protocol_reuses_unique_instances() -> None:

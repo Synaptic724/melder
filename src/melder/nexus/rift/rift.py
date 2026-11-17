@@ -1,5 +1,6 @@
+from contextlib import contextmanager
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, TYPE_CHECKING
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
@@ -82,13 +83,31 @@ class Rift(Cleanable):
         (`projection_refresh_gate_enabled` and its timeout/poll settings) blocks
         new entrants at the Rift gate, drains in-flight tickets, refreshes once,
         then reopens.
+        Agent doors hold the calling thread's ticket on this Rift's gate while
+        they run (GitHub #274, step 3), so a removal waits for them and refuses
+        new ones and an ACL refresh drains them. The Rift's own doors are the
+        methods an agent calls: `get_frame_link_contract`, `create_frame_link`,
+        `get_frame_viewer`, `get_nexus_frame`, `create_nexus_frame`,
+        `list_accessible_nexus_frame_names` and
+        `list_accessible_non_nexus_frame_names` (the room's workstation, viewer
+        and commands are doors through their own objects). A call nested in
+        another call of the same Rift passes by re-entry.
+        The rest take no ticket because Nexus calls them while it refreshes,
+        registers or removes this Rift - with the gate disabled or closed, where
+        a ticket would park or be refused: `list_assigned_frame_names`,
+        `get_selected_contract_names` (Nexus builds the Rift's projection sets
+        with it during a refresh), `refresh_runtime_projections`,
+        `mark_registered` / `mark_active` / `mark_inactive`,
+        `on_nexus_frame_disposed`, and every property. No untagged path calls a
+        door of its own Rift: they go through the untagged private
+        implementations (`_get_frame_link_contract`, `_create_frame_link`).
         The Rift keeps `_lock` after cleanup, the documented exception to
         `Cleanable`'s lock rule: `create_frame_link` publishes its contract and
         `_apply_projection_sets` installs a refresh under it, each checking
         `_cleaned` there. A removal landing after an attach reserved its
         budget slot, or after a refresh's sets were built, makes it give the
         slot back or clean those sets and raise the cleaned error (GitHub
-        #274); one landing earlier can still hit the unlocked reads.
+        #274); one landing earlier on an untagged path can hit the unlocked reads.
         Cleanup marks the Rift cleaned under the lock and cleans the room after
         releasing it, so an agent attaching through the room's command system,
         which holds the command lock while it takes the Rift lock, cannot freeze
@@ -502,6 +521,9 @@ class Rift(Cleanable):
         """
         Return the per-frame contract for one engaged frame.
 
+        Contract:
+            - Returns the live contract object, not a copy.
+
         Args:
             frame_name:
                 Engaged target frame name.
@@ -512,6 +534,40 @@ class Rift(Cleanable):
         Raises:
             ValueError:
                 If `frame_name` is empty or not engaged on this Rift.
+            RuntimeError:
+                If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3). Paths Nexus drives use the
+            untagged `_get_frame_link_contract`.
+        """
+        self.check_cleaned()
+        with self._entered_door():
+            return self._get_frame_link_contract(frame_name)
+
+    def _get_frame_link_contract(self, frame_name: str) -> FrameLinkContract:
+        """
+        Return the per-frame contract for one engaged frame, without the gate.
+
+        Purpose:
+            The untagged implementation of `get_frame_link_contract`, for the
+            paths that must not take a ticket on their own Rift - the refresh
+            Nexus drives through `get_selected_contract_names`, the viewer
+            metadata snapshot.
+
+        Args:
+            frame_name:
+                Engaged target frame name.
+
+        Returns:
+            FrameLinkContract: Per-frame contract object.
+
+        Raises:
+            ValueError:
+                If `frame_name` is empty or not engaged on this Rift.
+            RuntimeError:
+                If the Rift is cleaned.
         """
         self.check_cleaned()
         if not frame_name:
@@ -542,7 +598,9 @@ class Rift(Cleanable):
               raises rather than returning an empty tuple.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            Unsynchronized read; a snapshot only. Takes no gate ticket: Nexus
+            calls it while it builds this Rift's projection sets during a
+            refresh, with the gate disabled (GitHub #274, step 3).
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
@@ -554,7 +612,7 @@ class Rift(Cleanable):
             Dict[str, str]: Selected view/command/codegen contract names.
         """
         self.check_cleaned()
-        return self.get_frame_link_contract(frame_name).get_selected_contract_names()
+        return self._get_frame_link_contract(frame_name).get_selected_contract_names()
 
     def create_frame_link(self, frame_name: str) -> None:
         """
@@ -596,11 +654,51 @@ class Rift(Cleanable):
                 given back first.
 
         Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the whole attach (GitHub #274, step 3), so a removal started
+            meanwhile waits until the attach has published its contract and
+            refreshed - it then gives the frame's budget count back with the
+            others - and a removal already closing the gate refuses the attach
+            at once. `CommandSystem.link_frame` reaches it by re-entry.
             Validation and the budget reservation run without the Rift lock,
             which Nexus forbids holding across the reservation. The contract is
             published under the Rift lock with a re-check, so concurrent
             attaches of one frame publish one contract and keep one budget
             count (GitHub #274, R4).
+        """
+        self.check_cleaned()
+        with self._entered_door():
+            self._create_frame_link(frame_name)
+
+    def _create_frame_link(self, frame_name: str) -> None:
+        """
+        Validate and engage one target frame, without the gate.
+
+        Purpose:
+            The untagged implementation of `create_frame_link`. Only the public
+            door holds a ticket; this body keeps the attach's own guards - the
+            budget reservation given back when a removal overtakes the attach
+            (GitHub #274, the R4 residual) - for any path that runs it without
+            one.
+
+        Args:
+            frame_name:
+                Target frame name to engage.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If `frame_name` is empty, the frame has no descriptor,
+                or it fails Nexus's target-frame policy or budget.
+            RuntimeError: If the Rift is cleaned - also when a removal
+                overtakes the attach after its budget reservation, which is
+                given back first.
+
+        Threading:
+            As `create_frame_link`, minus the gate: validation and the
+            reservation run without the Rift lock, the contract is published
+            under it with a re-check.
         """
         self.check_cleaned()
         if not frame_name:
@@ -906,7 +1004,8 @@ class Rift(Cleanable):
             "available_view_count": len(refreshed_assigned_frame_names),
             "rift_id": self._id,
             "frame_link_contract_ids_by_frame_name": {
-                current_frame_name: self.get_frame_link_contract(
+                # The untagged lookup: this snapshot is internal and must not take a ticket on its own Rift.
+                current_frame_name: self._get_frame_link_contract(
                     current_frame_name
                 ).contract_id
                 for current_frame_name in refreshed_assigned_frame_names
@@ -1020,19 +1119,24 @@ class Rift(Cleanable):
               viewer's own `get_view_*` accessors, which build fresh helpers per call.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3), so it is refused at once while a
+            removal closes the gate. Otherwise an unsynchronized read; a snapshot
+            only.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or its gate refuses
+                the call.
 
         Returns:
             FrameViewer: Attached frame viewer for the owned space.
         """
         self.check_cleaned()
-        return self.space.frame_viewer
+        with self._entered_door():
+            return self.space.frame_viewer
 
     @property
     def space(self) -> RiftSpace:
@@ -1219,9 +1323,20 @@ class Rift(Cleanable):
 
         Returns:
             Conduit: Root conduit for the resolved Nexus-managed frame.
+
+        Raises:
+            ValueError: If the requested frame is not available to this Rift
+                under the current frame policy.
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3); `CommandSystem.get_nexus_frame`
+            reaches it by re-entry.
         """
         self.check_cleaned()
-        return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
+        with self._entered_door():
+            return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
 
     def create_nexus_frame(
             self,
@@ -1252,14 +1367,20 @@ class Rift(Cleanable):
         Raises:
             ValueError: If the target Nexus-managed frame already exists or
                 creation is invalid under the current topology rules.
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3).
         """
         self.check_cleaned()
-        return self._nexus.create_nexus_frame_for_rift(
-            self._id,
-            frame_name=frame_name,
-            root_conduit_name=root_conduit_name,
-            immutable=immutable,
-        )
+        with self._entered_door():
+            return self._nexus.create_nexus_frame_for_rift(
+                self._id,
+                frame_name=frame_name,
+                root_conduit_name=root_conduit_name,
+                immutable=immutable,
+            )
 
     def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
         """
@@ -1273,9 +1394,18 @@ class Rift(Cleanable):
 
         Returns:
             Tuple[str, ...]: Accessible Nexus frame names.
+
+        Raises:
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3); the viewer's multi-frame reads
+            reach it by re-entry.
         """
         self.check_cleaned()
-        return self._nexus.list_accessible_nexus_frame_names(self._id)
+        with self._entered_door():
+            return self._nexus.list_accessible_nexus_frame_names(self._id)
 
     def list_accessible_non_nexus_frame_names(self) -> Tuple[str, ...]:
         """
@@ -1290,9 +1420,46 @@ class Rift(Cleanable):
 
         Returns:
             Tuple[str, ...]: Accessible published non-Nexus frame names.
+
+        Raises:
+            RuntimeError: If the Rift is cleaned, or its gate refuses the call.
+
+        Threading:
+            An agent door: holds the calling thread's ticket on this Rift's gate
+            for the call (GitHub #274, step 3); the viewer's multi-frame reads
+            reach it by re-entry.
         """
         self.check_cleaned()
-        return self._nexus.list_accessible_non_nexus_frame_names(self._id)
+        with self._entered_door():
+            return self._nexus.list_accessible_non_nexus_frame_names(self._id)
+
+    @contextmanager
+    def _entered_door(self) -> Iterator[None]:
+        """
+        Hold this Rift's gate for one call through an agent door.
+
+        Contract:
+            - Admits the calling thread at the gate - a thread already inside
+              the Rift passes by re-entry - and releases the admission when the
+              call returns or raises (GitHub #274, step 3).
+            - The gate is held in a local: a removal during the call - the same
+              thread's removal of its own Rift - deletes `_rift_gate`, and the
+              release after a cleaned gate is a quiet no-op.
+            - Callers check `_cleaned` first; a cleaned Rift has no gate field.
+
+        Yields:
+            None.
+
+        Raises:
+            RuntimeError: If the gate refuses the call (terminally closed for a
+                removal, or disabled in "raise" entry mode).
+        """
+        rift_gate = self._rift_gate
+        rift_gate.admit_ticket()
+        try:
+            yield
+        finally:
+            rift_gate.unregister_ticket()
 
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
         """

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/transaction_type.py",
- "source_sha256": "31c29d70fc9cefe3a8ecd558c8f7419fb57d8647c3f8e44be1053e66e8f225ed",
+ "source_sha256": "e67117c87ca4c410b5ebb4dee7b0ad0e7ea1793d55efde7f29d89731a51980e5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.transaction_type": {

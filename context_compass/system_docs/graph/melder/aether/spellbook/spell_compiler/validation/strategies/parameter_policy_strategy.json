@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
- "source_sha256": "6f90bfe5698b40ddb4f3463942844542b0ae0a45f94423ee15b55056d2f5593e",
+ "source_sha256": "809462c886f714dd22fe3730e6a2ba4dce06f9999ae567074174a594c22a4428",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy": {

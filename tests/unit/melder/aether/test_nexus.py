@@ -13,6 +13,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
@@ -502,6 +503,12 @@ def _make_detached_rift_projection_owner() -> object:
             self._projection_sets_by_frame_name = {}
             self._id = "detached-rift"
             self._codegen_projections_by_frame_name = {}
+            # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
+            self._rift_gate = RiftGate()
+
+        @property
+        def rift_gate(self) -> RiftGate:
+            return self._rift_gate
 
         def _apply_projection_sets(
                 self,

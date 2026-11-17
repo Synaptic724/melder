@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/synthesis/structural_synthesizer.py",
- "source_sha256": "b76fd8c0f9b15b48e23211d5aab983b129343941a53b61ce20e2e0db400af88b",
+ "source_sha256": "4fdecbf505e97af1dc2eea567da74a4dab143485ad7d997da5be8fd1d1a7a990",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.synthesis.structural_synthesizer": {

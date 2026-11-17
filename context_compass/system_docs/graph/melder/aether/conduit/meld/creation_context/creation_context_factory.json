@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
- "source_sha256": "be275f0a16588b5c5560d1fe4cac422e875fdcd2409cbc0f64c89e1d6a00d232",
+ "source_sha256": "c708e74511e38bd90e02bda4605249c17d83a2ebd65aaf55b93e0c9783dafd9c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.creation_context.creation_context_factory": {

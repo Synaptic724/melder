@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py",
- "source_sha256": "e591c04a6087e1b3f2bc9723d8a8aedcce3695e3d09bb4e2957c0af1e2764c23",
+ "source_sha256": "730d4beb4edf3701af6bf05e00818c0caf7412e1282bc4506ab621fb718922ac",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency": {

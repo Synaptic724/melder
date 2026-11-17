@@ -14,10 +14,15 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, ClassVar
+from typing import Any, Dict, List, Optional, Tuple, ClassVar
 
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
+)
+from melder.crystallizer.crystal_analysis.module_answer_cache import (
+    ModuleAnswerCache,
+    ProvenanceValues,
+    SiteRootSignature,
 )
 
 
@@ -229,6 +234,14 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
               packages) report every mapped name honestly.
             - Honest None when the top-level maps to no distribution
               (vendored trees, path-hacked imports) or metadata raises.
+            - Reused across analyses (#331): `packages_distributions()`
+              scans every installed distribution (154 ms a call after the
+              first, measured with 66 installed), so the map and each
+              top-level's answer are kept in `ModuleAnswerCache` under the
+              site roots' (path, directory mtime_ns) signature. Installing,
+              upgrading or removing a package in a site root changes that
+              directory and the next harvest reads the metadata again. A
+              failed read is never kept. Every call returns a new dict.
 
         Args:
             module_name:
@@ -248,12 +261,21 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
         """
         self.check_cleaned()
         top_level = module_name.split(".", 1)[0]
+        signature = self.site_root_signature()
+        found, kept_values = ModuleAnswerCache.lookup_provenance(signature, top_level)
+        if found:
+            return self._provenance_payload(kept_values)
         try:
             import importlib.metadata as importlib_metadata
-            mapped = importlib_metadata.packages_distributions().get(
-                top_level
-            )
+            distribution_map = ModuleAnswerCache.lookup_distribution_map(signature)
+            if distribution_map is None:
+                distribution_map = ModuleAnswerCache.store_distribution_map(
+                    signature,
+                    importlib_metadata.packages_distributions(),
+                )
+            mapped = distribution_map.get(top_level)
             if not mapped:
+                ModuleAnswerCache.store_provenance(signature, top_level, None)
                 return None
             distribution_name = str(mapped[0])
             try:
@@ -262,13 +284,74 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
                 )
             except importlib_metadata.PackageNotFoundError:
                 distribution_version = None
-            return {
-                "distribution_name": distribution_name,
-                "distribution_version": distribution_version,
-                "all_distributions": [str(name) for name in mapped],
-                "top_level": top_level,
-            }
+            values: ProvenanceValues = (
+                distribution_name,
+                distribution_version,
+                tuple(str(name) for name in mapped),
+                top_level,
+            )
         except Exception:
             # Best-effort by contract: provenance must never break a
             # bind-time walk - unresolvable metadata is an honest None.
             return None
+        ModuleAnswerCache.store_provenance(signature, top_level, values)
+        return self._provenance_payload(values)
+
+    def site_root_signature(self) -> SiteRootSignature:
+        """
+        Return the state of this strategy's site roots that installed metadata depends on.
+
+        Contract:
+            One (path text, directory mtime_ns) pair per site root, in order;
+            a root that cannot be stat'ed records -1. Adding, replacing or
+            removing a distribution in a site root changes its directory's
+            modification time, so the signature names one state of what is
+            installed there. `CrystalAnalyzer` keeps it with a reused world that
+            carries provenance, so that world is walked again when a site root
+            changes (#331).
+
+        Raises:
+            RuntimeError: If the strategy has been cleaned.
+
+        Returns:
+            SiteRootSignature: The signature `ModuleAnswerCache` keys
+            provenance by.
+        """
+        self.check_cleaned()
+        signature: List[Tuple[str, int]] = []
+        for root_path in self._site_package_root_paths:
+            try:
+                modified_ns = root_path.stat().st_mtime_ns
+            except OSError:
+                modified_ns = -1
+            signature.append((str(root_path), modified_ns))
+        return tuple(signature)
+
+    @staticmethod
+    def _provenance_payload(values: Optional[ProvenanceValues]) -> Optional[Dict[str, object]]:
+        """
+        Build the provenance payload the record carries from kept values.
+
+        Contract:
+            Returns a new dict (and a new `all_distributions` list) on every
+            call, so a caller that mutates its payload never changes what a
+            later harvest returns.
+
+        Args:
+            values:
+                (distribution name, version, every mapped distribution,
+                top-level name), or None when no distribution provides the
+                module.
+
+        Returns:
+            Optional[Dict[str, object]]: The payload, or None.
+        """
+        if values is None:
+            return None
+        distribution_name, distribution_version, all_distributions, top_level = values
+        return {
+            "distribution_name": distribution_name,
+            "distribution_version": distribution_version,
+            "all_distributions": list(all_distributions),
+            "top_level": top_level,
+        }

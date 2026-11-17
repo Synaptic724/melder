@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py",
- "source_sha256": "1a470851698dabe89ca176ebdeaa019a83790897f95196f3f67248be93f12869",
+ "source_sha256": "807a551300fe7b766353d14e8456edd170351b6d0a3a8d65001fab5ead55c5c1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.data_structures.weak_data_structures.weak_concurrent_set": {

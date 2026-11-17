@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/asset_management/mesh_interface_contract.py",
- "source_sha256": "a259bfcd841896cc234e0648c10a87f33529e47003bba12adeb90567c45e77bd",
+ "source_sha256": "89bbcc84376771f1d34f60266d6ade2eda9045f7b570779ec0f5e81f574fb8fa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.asset_management.mesh_interface_contract": {

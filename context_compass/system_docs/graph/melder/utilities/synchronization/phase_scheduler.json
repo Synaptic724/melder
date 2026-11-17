@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/phase_scheduler.py",
- "source_sha256": "71b5038babb32dbc5717f75c8fbbc8b93037f1d9bd952652b8c60d6ad127878e",
+ "source_sha256": "182089be2e46ca3b6f6b819a3313c370878107eb152e96c1a1424802ca88482b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.phase_scheduler": {

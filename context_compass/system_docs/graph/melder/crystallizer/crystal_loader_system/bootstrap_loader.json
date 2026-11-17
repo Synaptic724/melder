@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
- "source_sha256": "439d40365fe1b4b926c70e054a3453111063c9c50e85d42bbe5b4204f9459b5b",
+ "source_sha256": "2096cdeb3e2f25142636db08cfc7dac502ddbc70b6bd9c4aa2fceb3b4028c62c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.bootstrap_loader": {

@@ -13,7 +13,7 @@ physical module fingerprints, export surfaces, and topological load order.
 """
 
 import threading
-from typing import Any, Dict, List, Mapping, Optional, Sequence, ClassVar
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -40,6 +40,11 @@ class CrystalAnalysisResult(Cleanable):
         - `describe()` is the persistence-facing payload and is a strict
           superset of the pre-decomposition SpellCrystal manifest keys for
           the fields this object owns.
+        - Each ordered target list has a companion set, so recording a module
+          checks membership in O(1) (#331); the sets never reach a reader.
+        - `load_described_payload` fills a fresh result from a `describe()`
+          payload in one step: how the analyzer hands a reused module world to
+          a new crystal (#331).
 
     Threading:
         One instance `RLock` guards every mutation and detached read.
@@ -102,6 +107,9 @@ class CrystalAnalysisResult(Cleanable):
         "_export_surfaces",
         "_module_load_order",
         "_walk_errors",
+        "_module_target_set",
+        "_path_target_set",
+        "_kind_target_sets",
     )
 
     def __init__(self) -> None:
@@ -159,6 +167,17 @@ class CrystalAnalysisResult(Cleanable):
         # Honesty channel: read/parse/walk failures are reported, never
         # raised mid-walk.
         self._walk_errors: List[str] = []
+        # Membership companions of the ordered target lists (#331): a walk
+        # records hundreds of modules, and a list scan per record made each
+        # record O(n). The lists stay the ordered truth readers see.
+        self._module_target_set: Set[str] = set()
+        self._path_target_set: Set[str] = set()
+        self._kind_target_sets: Dict[str, Set[str]] = {
+            "synthetic_module": set(),
+            "user_source": set(),
+            "site_package": set(),
+            "unknown": set(),
+        }
 
     def cleanup(self) -> None:
         """
@@ -207,6 +226,9 @@ class CrystalAnalysisResult(Cleanable):
             del self._export_surfaces
             del self._module_load_order
             del self._walk_errors
+            del self._module_target_set
+            del self._path_target_set
+            del self._kind_target_sets
         del self._lock
 
     # ------------------------------------------------------------------
@@ -282,10 +304,12 @@ class CrystalAnalysisResult(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if module_name not in self._module_targets:
+            if module_name not in self._module_target_set:
+                self._module_target_set.add(module_name)
                 self._module_targets.append(module_name)
             if module_path is not None:
-                if module_path not in self._path_targets:
+                if module_path not in self._path_target_set:
+                    self._path_target_set.add(module_path)
                     self._path_targets.append(module_path)
                 self._module_to_path[module_name] = module_path
             if module_extension:
@@ -306,8 +330,112 @@ class CrystalAnalysisResult(Cleanable):
                 "unknown": self._unknown_targets,
             }
             target_list = target_list_by_kind[module_kind]
-            if module_name not in target_list:
+            target_set = self._kind_target_sets[module_kind]
+            if module_name not in target_set:
+                target_set.add(module_name)
                 target_list.append(module_name)
+
+    def load_described_payload(self, payload: Mapping[str, Any]) -> None:
+        """
+        Fill this fresh result with an exact, independent copy of a `describe()` payload.
+
+        Purpose:
+            Let `CrystalAnalyzer` hand a reused module world to a new crystal in
+            one step (#331), instead of replaying hundreds of `record_*` calls
+            and recomputing the load order.
+
+        Contract:
+            - Accepts only a fresh result: nothing recorded, no root kind, no
+              walk error. The payload must carry every key `describe()` emits.
+            - Every list and dictionary layer is copied, so later changes to the
+              payload never reach this result; the membership sets are rebuilt
+              from the copied lists.
+            - The result afterwards equals the one whose `describe()` produced
+              the payload: same order, same maps, same load order and walk
+              errors. No strategy runs.
+
+        Args:
+            payload:
+                A complete `describe()` payload of another result.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the result was cleaned or already holds records.
+            KeyError: If the payload lacks a key `describe()` emits.
+
+        Threading:
+            Serialized by the instance lock; the caller is the result's only
+            writer, as during an analysis pass.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._module_targets or self._walk_errors or self._root_module_kind is not None:
+                raise RuntimeError(
+                    "CrystalAnalysisResult.load_described_payload needs a fresh result: this one already holds "
+                    "records. Create a new CrystalAnalysisResult for the payload."
+                )
+            self._root_module_kind = payload["root_module_kind"]
+            self._load_ordered_targets(payload)
+            self._synthetic_module_sources = {
+                name: dict(source) for name, source in payload["synthetic_module_sources"].items()
+            }
+            self._user_module_sources = {
+                name: dict(source) for name, source in payload["user_module_sources"].items()
+            }
+            self._distribution_provenance = {
+                name: dict(provenance) for name, provenance in payload["distribution_provenance"].items()
+            }
+            self._module_to_path = dict(payload["module_to_path"])
+            self._module_to_kind = dict(payload["module_to_kind"])
+            self._module_to_extension = dict(payload["module_to_extension"])
+            self._module_to_direct_dependencies = {
+                name: list(names) for name, names in payload["module_to_direct_dependencies"].items()
+            }
+            self._ast_import_targets_by_module = {
+                name: list(names) for name, names in payload["ast_import_targets_by_module"].items()
+            }
+            self._ast_from_import_targets_by_module = {
+                name: {base: list(members) for base, members in from_targets.items()}
+                for name, from_targets in payload["ast_from_import_targets_by_module"].items()
+            }
+            self._physical_module_fingerprints = dict(payload["physical_module_fingerprints"])
+            self._export_surfaces = {
+                name: {key: list(names) for key, names in surface.items()}
+                for name, surface in payload["export_surfaces"].items()
+            }
+            self._module_load_order = list(payload["module_load_order"])
+            self._walk_errors = list(payload["walk_errors"])
+
+    def _load_ordered_targets(self, payload: Mapping[str, Any]) -> None:
+        """
+        Copy the payload's ordered target lists and rebuild their membership sets.
+
+        Args:
+            payload:
+                A complete `describe()` payload.
+
+        Returns:
+            None.
+
+        Threading:
+            The caller holds the instance lock.
+        """
+        self._module_targets = list(payload["module_targets"])
+        self._path_targets = list(payload["path_targets"])
+        self._synthetic_module_targets = list(payload["synthetic_module_targets"])
+        self._user_source_targets = list(payload["user_source_targets"])
+        self._site_package_targets = list(payload["site_package_targets"])
+        self._unknown_targets = list(payload["unknown_targets"])
+        self._module_target_set = set(self._module_targets)
+        self._path_target_set = set(self._path_targets)
+        self._kind_target_sets = {
+            "synthetic_module": set(self._synthetic_module_targets),
+            "user_source": set(self._user_source_targets),
+            "site_package": set(self._site_package_targets),
+            "unknown": set(self._unknown_targets),
+        }
 
     def record_synthetic_module_source(
             self,

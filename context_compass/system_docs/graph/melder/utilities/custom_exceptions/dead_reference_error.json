@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
- "source_sha256": "74dc80f2faf8838800944a60c834de80671e4a45bdb563415b65258fad77b41a",
+ "source_sha256": "5eb1dfd7ecd9eadb937ca36920bfbc5349baeb16b21e8826bfea431a2c4d2adf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.dead_reference_error": {

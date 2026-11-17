@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
- "source_sha256": "ea6778d2e22bc697c714788f07d09a1f8d48e49dcb785b706f7f01f2164cfac6",
+ "source_sha256": "10e987cbf917748dc89907694581c8aba8cc8c4f6b5c9bcc2590fab5917d615b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy": {

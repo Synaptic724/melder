@@ -1,5 +1,45 @@
+from collections.abc import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.spellbook.existence.existence import Existence
+
+
+def _install_fresh_aether() -> None:
+    """
+    Purpose:
+        Install a fresh Aether singleton for Spellbook and Conduit.
+    Contract:
+        - Resets the Aether singleton (which cleans up the previous one and its Nexus), creates a new one - and with
+          it the Nexus that `Spellbook()` reaches through `Nexus()` - and binds Spellbook._aether and
+          Conduit._aether to it.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> Iterator[None]:
+    """
+    Purpose:
+        Isolate each test from the Aether and Nexus singletons an earlier test in the same worker left behind.
+    Contract:
+        - Installs a fresh Aether before the test and again after it. Without this, a preceding teardown that reset
+          the singletons without re-creating them left no initialized Nexus, and `Spellbook()` raised ValueError
+          ("Nexus must be initialized with an Aether instance") in a parallel full run.
+    Returns:
+        Iterator[None]: Yields once, around the test.
+    """
+    _install_fresh_aether()
+    yield
+    _install_fresh_aether()
 
 
 def test_spellbook_snapshot_state_returns_detached_maps() -> None:

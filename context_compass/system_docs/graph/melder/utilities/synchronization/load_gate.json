@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/load_gate.py",
- "source_sha256": "6981e7c5b1f45e30cd55be4c446ce89d1c83e4a512de609c72376a13dc08970a",
+ "source_sha256": "ea90bdbf2b6c2d1062dfa240f621442f1bfffdc945195c17963f81076e5222e4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.load_gate": {

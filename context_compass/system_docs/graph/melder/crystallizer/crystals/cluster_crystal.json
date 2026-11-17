@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/cluster_crystal.py",
- "source_sha256": "74ab9fe5600359eaeec0b2a309dd81ba09a41ecdf706fb9360834dd23feece17",
+ "source_sha256": "fc22cef61de4760f13d2a8a96b8e090fc4262b133f4cb6e4621c5ea80db6e4b9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.cluster_crystal": {
