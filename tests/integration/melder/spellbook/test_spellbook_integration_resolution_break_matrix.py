@@ -776,8 +776,12 @@ def test_c1_single_many_existence_member_injects_one_element_list() -> None:
 # =========================================================================== #
 # D1 / D2 - SpellMap capabilities
 # =========================================================================== #
-def test_d2_frame_only_unbound_frame_fails_conjure() -> None:
-    """D2: SpellMap(spell=None, spellframe=<unbound>) must fail to resolve."""
+def test_d2_frame_only_unbound_frame_waits_as_an_unresolved_input() -> None:
+    """
+    D2: SpellMap(spell=None, spellframe=<unbound>) resolves nothing. Since 0.2.8303 (GitHub #329, the owner's rule that
+    bind order must not matter) that is an unresolved input, not a conjure failure: conjure succeeds and the meld
+    raises UnresolvedInputError naming the SpellMap until a spell is bound under the frame or the value is supplied.
+    """
     spellbook = _make_spellbook()
 
     class UsesUnboundFrameMap:
@@ -786,8 +790,10 @@ def test_d2_frame_only_unbound_frame_fails_conjure() -> None:
 
     try:
         spellbook.bind(spell=UsesUnboundFrameMap, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        root = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError,
+                           match=r"asks for the spell its default SpellMap\(spellframe='never_bound_frame'\) names"):
+            root.meld(UsesUnboundFrameMap)
     finally:
         spellbook.cleanup()
 

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 13632
-CONTENT_SHA256 = '56dc4a7bfccfbd0c91e972d887efbe7273a454eae6cb25a0a7bfeb1e2e3c09dc'
+LINE_COUNT = 14042
+CONTENT_SHA256 = 'e048d9f8a1b97dfb61d3cb03751acb0556915d83cd3c21b1672d7731f8d350ad'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -200,7 +200,11 @@ Each item must include:
   rest stays open (updated 2026-11-08). The Rift's class docstring now names where the two fixes stop - a removal
   landing after an attach reserved its budget slot, or after a refresh's sets were built, is handled, and one
   landing earlier can still hit the unlocked reads - as the R4 and R5 items record (added 2026-11-08; until then it
-  read as if any overlapping removal were handled). Evidence: `src/melder/nexus/rift/rift.py:85-91`.
+  read as if any overlapping removal were handled). Evidence: `src/melder/nexus/rift/rift.py:104-110` (it read
+  85-91 before 0.2.8301). Since 0.2.8301 (GitHub #274, step 3) the Rift gate closes the agent-racing-a-removal item
+  below and narrows R2, R4's early window and the `Nexus.cleanup` item: every agent door holds the calling thread's
+  `RiftGate` ticket, and `Nexus.remove_rift` and `Nexus.cleanup` drain the gate before they tear a Rift down; the
+  items say what each still leaves open, and three new ones follow (updated 2026-11-09).
   - Unlocked reads: the `FrameLinkContract` properties (`contract_id`, `rift_id`, `frame_name`, `metadata`), the
     `FrameLink` properties (`link_id`, `frame_name`, `source_kind`, `source_id`, `display_name`, `metadata`) and
     `FrameLink.clone` check `_cleaned` and read without `_lock`, so one that races `cleanup()` past its check can
@@ -216,10 +220,14 @@ Each item must include:
     Rift (the registry or `_id` deleted) or ValueError "Rift '<id>' is not engaged with frame '<name>'." (the
     registry cleared, not yet deleted); one that got its contract first gets the contract's cleaned RuntimeError
     (0.2.8288). Reachable as D2 is: `Nexus.create_frame_projection_sets_for_rift` against `Nexus.remove_rift`,
-    which cleans the Rift outside the Nexus lock. Evidence: `src/melder/nexus/rift/rift.py:278-424`, `:501-557`;
-    `src/melder/nexus/nexus.py:1266-1334`, `:2498-2559` (remapped 2026-11-08 at 0.2.8292; they read rift.py
-    268-321 and 398-454 and nexus.py 1264-1312 and 2476-2537, and the rift.py ranges 261-312 and 389-445 before
-    0.2.8289).
+    which cleans the Rift outside the Nexus lock. Narrowed in 0.2.8301: `get_frame_link_contract` is an agent door
+    that holds a gate ticket, so a removal waits for it or refuses it; `get_selected_contract_names` stays untagged
+    because Nexus calls it while it builds a refresh's sets with the gate disabled, and the refresh holds no ticket a
+    removal would wait for, so this race stays open through the refresh. Evidence:
+    `src/melder/nexus/rift/rift.py:297-443`, `:520-615`; `src/melder/nexus/nexus.py:1358-1465`, `:2710-2771`
+    (remapped 2026-11-09 at 0.2.8301; they read rift.py 278-424 and 501-557 and nexus.py 1266-1334 and 2498-2559 at
+    0.2.8292, rift.py 268-321 and 398-454 and nexus.py 1264-1312 and 2476-2537 before, and the rift.py ranges 261-312
+    and 389-445 before 0.2.8289).
   - R4, FIXED in 0.2.8289, and its residual in 0.2.8291 (this read "but for one residual"). It read:
     `Rift.create_frame_link` checks whether the frame is new,
     reserves it (`Nexus._reserve_target_frame`, which must not be called under a Rift lock) and inserts its
@@ -238,10 +246,16 @@ Each item must include:
     an attach that publishes after the mark finds the Rift cleaned, gives its reservation back and raises the
     cleaned RuntimeError (`test_attach_landing_inside_rift_removal_leaves_no_budget_count`). A removal before the
     reservation meets the attach's unlocked reads of the Rift's fields (AttributeError once the teardown ran), as
-    R2's reads do. Evidence: `src/melder/nexus/rift/rift.py:559-678`, `:341-371`;
-    `src/melder/nexus/nexus.py:1306-1330`, `:3499-3557`, `:3574-3614` (the ref counts);
-    `src/melder/nexus/rift/command_system/command_system.py:1148-1164` (remapped 2026-11-08 at 0.2.8292; they read
-    rift.py 456-572, nexus.py 1288-1308, 3477-3535 and 3552-3592, and command_system.py 1121-1137).
+    R2's reads do. Narrowed in 0.2.8301: the public `create_frame_link` door holds a gate ticket for the whole
+    attach, so a removal started meanwhile waits until it has published and refreshed, and one already closing the
+    gate refuses it at once (`test_attach_through_create_frame_link_holds_a_removal_started_inside_it_until_it_finished`);
+    the window stays for the untagged `_create_frame_link`, through which the residual's regression now drives the
+    attach, and for a teardown that does not wait. Evidence: `src/melder/nexus/rift/rift.py:617-776`, `:360-390`;
+    `src/melder/nexus/nexus.py:1437-1461`, `:3744-3802`, `:3819-3859` (the ref counts);
+    `src/melder/nexus/rift/command_system/command_system.py:1153-1169` (remapped 2026-11-09 at 0.2.8301; they read
+    rift.py 559-678 and 341-371, nexus.py 1306-1330, 3499-3557 and 3574-3614, and command_system.py 1148-1164 at
+    0.2.8292, and rift.py 456-572, nexus.py 1288-1308, 3477-3535 and 3552-3592, and command_system.py 1121-1137
+    before).
   - R5, FIXED in 0.2.8289 (found in #274's investigation): `Rift._apply_projection_sets` checked `_cleaned` before
     its lock, so a refresh that `Nexus.remove_rift` overtook after Nexus built its projection sets raised the
     cleaned error with those sets uncleaned, and one waiting on the lock raised AttributeError on the deleted
@@ -249,40 +263,72 @@ Each item must include:
     incoming sets before the cleaned RuntimeError. Not covered, read from the code: a removal before Nexus builds the
     sets meets `refresh_runtime_projections`' unlocked reads of `_nexus` and `_id` - AttributeError once the cleanup
     ran, or ValueError "Rift with id '<id>' was not found." from `Nexus._get_required_rift` once only the registry
-    phase ran - the same class as R2. Evidence: `src/melder/nexus/rift/rift.py:740-854`;
-    `src/melder/nexus/nexus.py:1306-1330`, `:2498-2559`, `:3426-3446` (remapped 2026-11-08 at 0.2.8292; they read
-    634-748, 1288-1308, 2476-2537 and 3404-3424).
+    phase ran - the same class as R2. Still open after 0.2.8301: `refresh_runtime_projections` is untagged - Nexus
+    drives the refresh with the gate disabled - so a removal's drain does not wait for it. Evidence:
+    `src/melder/nexus/rift/rift.py:838-952`; `src/melder/nexus/nexus.py:1437-1461`, `:2710-2771`, `:3671-3691`
+    (remapped 2026-11-09 at 0.2.8301; they read 740-854, 1306-1330, 2498-2559 and 3426-3446 at 0.2.8292, and
+    634-748, 1288-1308, 2476-2537 and 3404-3424 before).
   - W5, FIXED in 0.2.8290 (agent code under Melder's locks): `Workstation.call_target` held the workstation lock
     while the target ran and `cleanup_target` while its cleanup methods ran; `CommandSystem.get_target_attribute`,
     `get_target_method` and `execute_target_method` held the command lock while they read the attribute (a property
     is agent code) or ran the method; `CodegenCommandSystem.execute_codegen` held it across the engine call, which
     runs the script. Agents sharing a room waited on each other's code, and agent code that waited on another
     agent's call in the room froze. Now each resolves what it needs under the lock and runs the agent code after
-    releasing it (Component: RiftSpace Workstation And Command Surface). Evidence:
-    `src/melder/nexus/rift/rift_space/workstation.py:529-659`;
-    `src/melder/nexus/rift/command_system/command_system.py:1029-1146`;
-    `src/melder/nexus/rift/command_system/codegen_command_system.py:671-748`.
+    releasing it (Component: RiftSpace Workstation And Command Surface). Evidence (remapped 2026-11-09 at 0.2.8301;
+    they read workstation.py 529-659, command_system.py 1029-1146 and codegen_command_system.py 671-748):
+    `src/melder/nexus/rift/rift_space/workstation.py:619-761`;
+    `src/melder/nexus/rift/command_system/command_system.py:1034-1151`;
+    `src/melder/nexus/rift/command_system/codegen_command_system.py:678-762`.
   - W4 and W6, FIXED in 0.2.8291 (teardown under the room lock): `RiftSpace.cleanup` cleaned its children under the
     room lock, while agent paths took a child's lock and then the room's - an agent whose `call_target` held the
     workstation lock left a room command's action-hook scope (W4), and a weak workstation binding collected under
     the workstation lock published its room event (W6) - so `Nexus.remove_rift` froze against them. Now the room is
     marked cleaned under its lock and its children are cleaned after the lock is released (AR Runtime Surface).
-    Evidence: `src/melder/nexus/rift/rift_space/rift_space.py:268-333`, `:741-850`.
+    Evidence: `src/melder/nexus/rift/rift_space/rift_space.py:277-342`, `:806-923` (remapped 2026-11-09 at
+    0.2.8301; they read 268-333 and 741-850).
   - C3, FIXED in 0.2.8291 (teardown under the Rift lock): `Rift.cleanup` cleaned the room under the Rift lock, while
     an agent attaching through `CommandSystem.link_frame` holds the command lock and takes the Rift lock to apply
     its refresh, so a removal froze against it. Now `Rift.cleanup` marks under the lock (`_mark_cleaned`) and runs
     `_clean_owned_state` after releasing it, and `remove_rift` runs that teardown after the Nexus lock (AR Runtime
-    Surface). Evidence: `src/melder/nexus/rift/rift.py:278-424`; `src/melder/nexus/nexus.py:1266-1334`.
-  - Open, an agent racing a removal: a call that passed its checks before `remove_rift` marked the Rift still meets
-    the teardown - AttributeError for a deleted field or lock, or a room child's cleaned RuntimeError - and nothing
-    tells it the Rift is being removed. One case read from the code: `Workstation.cleanup_target` checks `_cleaned`
-    unlocked after the cleanup methods ran, so a workstation cleanup landing between that check and its lock makes
-    the selection check raise AttributeError (the lock or the selection fields deleted) instead of returning; its
-    docstring now says so (0.2.8292). The owner's direction (chat 2026-11-08) is to synchronize agents leaving the
-    way `CreationGate` is used: a generic gate tags agents going in, closes the door, waits for them to leave, then
-    cleans up. `RiftGate` is proposed as that gate, and its details (#274's questions 5a-5d) wait on the owner
-    (corrected 2026-11-08: this said the owner chose a RiftGate drain). Evidence:
-    `src/melder/nexus/rift/rift_space/workstation.py:167-210`, `:591-598`; `src/melder/nexus/rift/rift.py:278-424`.
+    Surface). Evidence: `src/melder/nexus/rift/rift.py:297-443`; `src/melder/nexus/nexus.py:1358-1465` (remapped
+    2026-11-09 at 0.2.8301; they read 278-424 and 1266-1334).
+  - An agent racing a removal, FIXED in 0.2.8301 (GitHub #274, step 3), but for a teardown that does not wait. It
+    read: a call that passed its checks before `remove_rift` marked the Rift still meets the teardown -
+    AttributeError for a deleted field or lock, or a room child's cleaned RuntimeError - and nothing tells it the
+    Rift is being removed; the owner's direction (chat 2026-11-08) was a generic gate that tags agents going in,
+    closes the door, waits for them to leave, then cleans up, as `CreationGate` is used. That gate is now the
+    `RiftGate` (AR Runtime Surface): every agent door holds the calling thread's ticket, one per thread inside;
+    `remove_rift` closes the gate, waits for the threads inside with no Nexus lock held and only then tears down,
+    refusing newcomers at once; a drain timeout raises and keeps the Rift registered with its gate closed (5b); a
+    self-removal is not waited for and its call returns normally (5c); `Nexus.cleanup` drains every gate under one
+    deadline (5d). Residual, read from the code: a teardown that runs with threads still inside - `Nexus.cleanup`
+    past its deadline, which logs a WARNING and cleans anyway, or a direct `Rift.cleanup`, which drains nothing -
+    still meets them as before, and a door's release racing that teardown itself can raise AttributeError (the
+    gate's bookkeeping, or the room's hook state, deleted mid-release); `Workstation.cleanup_target`'s unlocked
+    `_cleaned` check before its lock is one such case, as its docstring says. Evidence:
+    `src/melder/nexus/rift/rift_gate/rift_gate.py:192-235`, `:431-468`; `src/melder/nexus/nexus.py:306-473`,
+    `:1358-1530`; `src/melder/nexus/rift/rift_space/workstation.py:189-235`, `:687-694`;
+    `src/melder/nexus/rift/rift.py:297-443` (remapped 2026-11-09 at 0.2.8301; they read workstation.py 167-210 and
+    591-598 and rift.py 278-424).
+  - Open, GitHub #284 (read from the code and pinned by no test): an ACL change made from inside a door of the same
+    Rift waits on its own ticket. An agent inside a call of Rift R - a command, a workstation target, a viewer read -
+    that changes the ACL of a frame R has attached starts the refresh on its own thread: Nexus disables R's gate and
+    waits until it holds no ticket (`_wait_until_rift_gate_is_idle`, which counts the caller's own), so the refresh
+    times out after `projection_refresh_gate_timeout_seconds`, raises RuntimeError "Timeout waiting for Rift gate
+    '<id>' to drain." and reopens the gate without refreshing. Evidence: `src/melder/nexus/nexus.py:2906-3012`.
+  - Open, GitHub #285 (read from the code): the room's action hooks misfire with concurrent agents.
+    `RiftSpace._entered_action_hook_scope` counts its nesting depth per room and category, not per thread, so a
+    second agent's command entering while another's runs is not top-level (its pre-hooks do not fire), and the post
+    hooks fire only when a top-level entry leaves the depth at zero - with two agents in flight neither may. Evidence:
+    `src/melder/nexus/rift/rift_space/rift_space.py:806-888`.
+  - Open (V1, narrowed in 0.2.8301): a viewer read now holds a gate ticket, so an ACL refresh with
+    `projection_refresh_gate_enabled` on waits for in-flight reads before it replaces a projection
+    (`test_an_acl_refresh_waits_for_an_in_flight_viewer_read_before_swapping_its_projection`). An ACL refresh with
+    the gate off swaps without draining, and a frame link - `Rift.create_frame_link` or `CommandSystem.link_frame` -
+    refreshes every projection set of its Rift from inside the gate without waiting for other threads' reads; a
+    read that meets a replaced projection raises that projection's cleaned RuntimeError, changed nothing, and reads
+    the new one on retry (the owner, 2026-11-08). Evidence: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:73-93`;
+    `src/melder/nexus/rift/rift.py:673-776`, `:884-952`.
   - Open, a question for the owner - what still serializes a room's agents: the engine's own locks
     (`CodegenSystem.execute_codegen_request` holds the engine lock for the whole request, `CodegenExecutor.execute`
     its own across the `exec`) take one script at a time, `materialize_codegen` executes its module under the
@@ -290,13 +336,16 @@ Each item must include:
     any of them that waits on another agent's call needing the same lock still freezes (read from the code, not
     probed). Evidence: `src/melder/nexus/rift/codegen_system/codegen_system.py:298-345`;
     `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:79-127`;
-    `src/melder/nexus/rift/command_system/codegen_command_system.py:750-944`;
+    `src/melder/nexus/rift/command_system/codegen_command_system.py:764-965` (it read 750-944 before 0.2.8301);
     `src/melder/nexus/rift/command_system/capability_command_system.py:1026-1089`.
   - UNKNOWN, read from the code and not probed: `Nexus.cleanup` calls each registered Rift's `cleanup()` under the
     Nexus lock, and that teardown cleans the room, taking the command lock, which an attaching agent holds while
     `Rift.create_frame_link` reserves under the Nexus lock (`Nexus._reserve_target_frame`) - C3's shape with the
-    Nexus lock in the Rift lock's place. Evidence: `src/melder/nexus/nexus.py:306-381`, `:3499-3529`;
-    `src/melder/nexus/rift/command_system/command_system.py:1148-1164`.
+    Nexus lock in the Rift lock's place. Narrowed in 0.2.8301: the cleanup first drains every gate with no Nexus lock
+    held, and an attach holds a ticket through the `create_frame_link` door, so the attach finishes before the
+    teardown; the shape needs an attach still inside past the drain deadline. Evidence:
+    `src/melder/nexus/nexus.py:306-473`, `:3744-3774`; `src/melder/nexus/rift/command_system/command_system.py:1153-1169`
+    (remapped 2026-11-09 at 0.2.8301; they read nexus.py 306-381 and 3499-3529 and command_system.py 1148-1164).
   Why it matters: a reader holding a frame link or a Rift sees an undocumented AttributeError (or a misleading
   ValueError, or empty metadata) instead of the cleaned RuntimeError, and a room's agents still take turns on the
   engine and the locked commands (R4's residual, which kept a frame-budget slot used after the Rift was gone, is
@@ -305,10 +354,14 @@ Each item must include:
   status: R4 and R5 fixed in 0.2.8289 with single-thread regressions
   (`tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`); W5, W4, W6, C3 and R4's
   residual fixed in 0.2.8290-0.2.8291 with regressions whose agent threads are joined within a bound
-  (`tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`); the rest
-  uninvestigated, filed 2026-11-08 as GitHub #274 (Rift thread safety) on the owner's word that agents share a Rift
-  at the same time - the agents' exit gate (questions 5a-5d) and the serialization question wait for the owner's
-  answers (it read "R4's residual and #274's teardown questions", then "the drain and the serialization questions").
+  (`tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`); the agents' exit
+  gate fixed in 0.2.8301 (`tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`,
+  `tests/unit/melder/aether/test_rift_gate_thread_tickets.py`); the rest open - R2, R5's early window and the
+  unlocked reads through the refresh Nexus drives, V1's two paths, #284, #285 and the serialization question for
+  the owner - filed 2026-11-08 as GitHub #274 (Rift thread safety) on the owner's word that agents share a Rift at
+  the same time, with #284 and #285 filed apart (it read "R4's residual and #274's teardown questions", then "the
+  drain and the serialization questions", then "the agents' exit gate (questions 5a-5d) and the serialization
+  question wait for the owner's answers").
 
 ## C3 Components Catalog
 
@@ -1725,8 +1778,8 @@ Declarative DI descriptors:
   2) `SpellMap(ILogic)`, a Protocol given as `spell` (listed as a frame-type key until the class docstring was
      corrected on 2026-11-07): Phase 3 matches `spell` by identity, so this shape reaches only ILogic's own
      definition (bound `resolvable=False`) and, since 0.2.8278, only one bound bare; an implementation bound under
-     ILogic is a miss ("SpellMap default could not be resolved", measured on 0.2.8278). The frame-only shape 4
-     reaches an implementation.
+     ILogic is a miss - an unresolved input the meld must supply since 0.2.8303 (it raised "SpellMap default
+     could not be resolved" before, measured on 0.2.8278). The frame-only shape 4 reaches an implementation.
   3) `SpellMap(MyService, spellframe=ILogic, binding_name="primary")`.
   4) `SpellMap(spell=None, spellframe=ILogic, binding_name="primary")`.
 - `SpellContract` declares late-bound contract sockets for dynamic mode;
@@ -1994,6 +2047,7 @@ Key Files (C1):
 - `src/melder/mutation_research/mutation_configuration.py`
 - `src/melder/mutation_research/mutation_configuration_builder.py`
 - `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 - `src/melder/mutation_research/research_set/research_journal.py`
 - `src/melder/mutation_research/research_set/research_lane.py`
 - `src/melder/mutation_research/research_set/research_node.py`
@@ -2413,7 +2467,9 @@ Responsibilities:
   names, spellbook parent edge, derived `rebindability`).
 - Hold source-classification + checkpoint policy in
   `CrystallizerConfiguration` (`with_defaults()` = complete easy mode; only
-  `user_source_root_paths` is hard-required).
+  `user_source_root_paths` is hard-required). A user root never claims a
+  module inside a Python environment, so the working-directory default
+  leaves a project's `.venv` to site-package custody (0.2.8302, #327).
 - Use `SyntheticModule` as the live in-memory module embodiment; on park,
   optionally unpublish a spell's synthetic root module
   (`remove_inactive_synthmodules`, default False).
@@ -2569,6 +2625,7 @@ Key Files (C1):
 - `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
 - `src/melder/crystallizer/crystal_analysis/impact_engine.py`
 - `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
+- `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
 - The crystal_analysis package carries custody (5 modules), strategies (5)
   and preflight (12) beneath these four - 22 further modules that are not
   key files of this component.
@@ -2671,6 +2728,11 @@ Responsibilities:
 - Let `RiftSpace` build the durable Rift-backed viewer asset during room init.
 - Let static rooms host `StaticFrameViewer` directly so the spell-facing viewer
   surface stays live-only while still reading current Rift projection truth.
+- Gate every agent door of a Rift with that Rift's `RiftGate` (0.2.8301, GitHub #274, step 3): the workstation's
+  public methods, every viewer read, every room command, the room's hook registration methods and the Rift's seven
+  agent methods hold the calling thread's ticket, and `Nexus.remove_rift` and `Nexus.cleanup` drain the gate -
+  newcomers refused, the threads inside waited for, the caller's own ticket not counted - before they tear a Rift
+  down.
 
 Inputs:
 - Nexus configuration and Rift configuration/profile templates.
@@ -2711,21 +2773,43 @@ Lifecycle/Cleanup:
   budget slot, or after a refresh's sets were built, makes it give the slot back or clean those sets, then raise
   the cleaned RuntimeError; one landing earlier can still hit the unlocked reads (Unknowns: R2, R4, R5)
   (corrected 2026-11-08: this said any removal that overtakes an attach or a refresh, as the class docstring did
-  until it named the windows). That is the documented exception to `Cleanable`'s lock rule; the cleanup never
+  until it named the windows; corrected 2026-11-09: since 0.2.8301 a removal drains the gate first, so it waits for
+  an attach made through the `create_frame_link` door or refuses it, and these guards serve the untagged
+  `_create_frame_link`, a self-removal, a teardown that does not wait, and the refresh Nexus drives, which holds no
+  ticket). That is the documented exception to `Cleanable`'s lock rule; the cleanup never
   deleted the lock, and the Rift's docstrings now say why it stays. Since 0.2.8291 (GitHub #274, C3) the cleanup is
   two steps: `_mark_cleaned` sets `_cleaned` under the Rift lock, once, and the caller that marked runs
   `_clean_owned_state` - the teardown above, every field deleted but `_lock` - with no Rift lock held, because
   cleaning the room takes the room's child locks, which an attaching agent holds while it takes the Rift lock.
   `Nexus.remove_rift` marks through `_mark_cleaned_for_removal` inside its registry phase and runs the teardown
   itself after the Nexus lock. A cleanup that overlaps a running one returns at once, before that teardown finishes.
-  EVIDENCE (remapped 2026-11-08 at 0.2.8292; they read 78-96 and 268-321):
-  - `src/melder/nexus/rift/rift.py:78-106`
-  - `src/melder/nexus/rift/rift.py:278-424`
+  EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read 78-106 and 278-424 at 0.2.8292, and 78-96 and 268-321
+  before):
+  - `src/melder/nexus/rift/rift.py:79-125`
+  - `src/melder/nexus/rift/rift.py:297-443`
+- `Nexus.remove_rift` and `Nexus.cleanup` drain the Rift gate before any teardown (0.2.8301, GitHub #274, step 3).
+  `remove_rift` resolves the Rift, its gate and the drain bounds (`_get_rift_gate_drain_bounds`:
+  `projection_refresh_gate_timeout_seconds` and `_poll_interval_seconds`) under the Nexus lock - a Rift cleaned
+  outside Nexus is refused there, before anything is drained or popped - then closes the gate and waits with the
+  lock released (`_drain_rift_gate_for_removal`, `RiftGate.close_and_wait_until_free`): newcomers at every door
+  are refused, the threads inside finish and leave, and the caller's own ticket is not waited for, so an agent
+  removing its own Rift proceeds and its call returns normally on the cleaned room. On a drain timeout it logs a
+  WARNING and raises RuntimeError naming the Rift and the threads still inside; nothing is removed and the gate
+  stays closed, so the removal can be retried. A gate cleaned while it drains means another removal won: the
+  registry phase answers with the not-found ValueError. `Nexus.cleanup` runs `_drain_rift_gates_before_cleanup`
+  first: it snapshots every Rift's gate under the Nexus lock, closes them all (`RiftGate.close_terminally`), then
+  waits for each with what remains of ONE deadline, logging a WARNING per Rift whose threads outstay it and
+  cleaning that Rift anyway with them inside.
+  EVIDENCE: `src/melder/nexus/nexus.py:306-473`, `:1358-1530`, `:2860-2904`;
+  `src/melder/nexus/rift/rift_gate/rift_gate.py:506-628`.
 - `RiftSpace` cleanup clears room-local state and its event system: since 0.2.8291 (GitHub #274, W4 and W6) it marks
   the room cleaned under the room lock and then, after releasing it, cleans its viewer, command system,
   workstation, event system and memory system, clears its hook maps and metadata, and deletes its fields and lock;
-  agent paths take a child's lock and then the room's.
-  EVIDENCE: `src/melder/nexus/rift/rift_space/rift_space.py:268-333`.
+  agent paths take a child's lock and then the room's. Since 0.2.8301 the action-hook scope's exit skips its depth
+  bookkeeping and post hooks on a room cleaned while the action ran - under the gate, the acting thread's own
+  removal of its Rift, or a teardown that did not wait for it.
+  EVIDENCE: `src/melder/nexus/rift/rift_space/rift_space.py:277-342`, `:806-888` (remapped 2026-11-09 at 0.2.8301;
+  the cleanup read 268-333).
 - `FrameLinkContract.cleanup()` tears its state down under `_lock` and keeps `_lock` as a documented post-cleanup
   tombstone (0.2.8288, GitHub #271; until then it ended with `del self._lock`), the exception the owner allows
   because `Nexus.remove_rift` can race a projection build. `FrameLink.cleanup()` tears its state down under `_lock`
@@ -2756,11 +2840,40 @@ Concurrency/Threading:
   racing a removal, and `Nexus.cleanup`, which cleans every Rift under the Nexus lock (corrected 2026-11-08: this
   called `create_frame_link`'s insert unlocked and R4 open, and both locks per-instance; then it left open the
   budget count an attach kept when it published between `remove_rift`'s registry phase and its cleanup, fixed in
-  0.2.8291).
+  0.2.8291; corrected 2026-11-09: agents racing a removal are fixed in 0.2.8301 by the Rift gate, below, and
+  `Nexus.cleanup` drains every gate before it takes the Nexus lock; R2 stays open through the refresh Nexus drives).
+- `RiftGate` (0.2.8301, GitHub #274, step 3): every agent door holds the calling thread's ticket while it runs -
+  the Rift's seven agent methods through `Rift._entered_door`, every viewer read and every helper the viewer builds
+  through `FrameViewer._entered_view_action`, the workstation's public methods and the room's hook registration
+  methods through their `_entered_door`, and every command from before its action-hook scope until after its memory
+  record and post-hooks. The gate holds ONE ticket per thread inside: `admit_ticket` and `register_ticket` append a
+  ticket on the thread's first admission and otherwise deepen a thread-local depth (`_RiftGateHolder`), and
+  `unregister_ticket` pops it when the depth returns to 0. A thread already inside passes again at once whatever
+  the gate's state - disabled by an ACL refresh or terminally closed by a removal - because that close is waiting
+  for it to leave; a thread without a ticket is parked (disabled, "wait" entry mode), refused (disabled, "raise"
+  entry mode) or refused at once (closed). `wait_until_free` waits while the gate holds more tickets than the
+  caller's own, so a drain never waits for the draining thread; `close_terminally` closes for good and wakes parked
+  first-time callers so they raise. A release after cleanup is a no-op: the cleanup cleared every ticket, and the
+  doors hold the gate in a local because the teardown deletes the fields that led to it. Untagged on purpose, as
+  Nexus calls them with the gate disabled or closed: `Rift.list_assigned_frame_names`,
+  `get_selected_contract_names`, `refresh_runtime_projections`, `mark_registered` / `mark_active` /
+  `mark_inactive`, `on_nexus_frame_disposed`, the properties, and the internal `_get_frame_link_contract` and
+  `_create_frame_link`. Re-entry is one thread-local read and write, with no lock.
+  EVIDENCE:
+  - `src/melder/nexus/rift/rift_gate/rift_gate.py:46-65` (`_RiftGateHolder`), `:68-145` (the class docstring),
+    `:316-468` (`admit_ticket`, `register_ticket`, `unregister_ticket`), `:506-628` (the drains)
+  - `src/melder/nexus/rift/rift.py:79-125` (the class Threading), `:520-583` (`get_frame_link_contract`,
+    `_get_frame_link_contract`), `:617-776` (`create_frame_link`, `_create_frame_link`), `:1110-1139`
+    (`get_frame_viewer`), `:1310-1462` (the Nexus-frame doors, the two listings, `_entered_door`)
+  - `src/melder/nexus/rift/frame_viewer/frame_viewer.py:6669-6716` (`_entered_view_action`)
 - `RiftSpace` owns an `RLock` and uses it for grouped room mutation and cleanup - since 0.2.8291 only to mark
   itself cleaned: its children are cleaned after the lock is released, because agent paths take a child's lock and
   then the room's - a weak workstation binding's collection event (`_publish_runtime_event`), a command entering or
-  leaving its action-hook scope (`_entered_action_hook_scope`) (W4, W6).
+  leaving its action-hook scope (`_entered_action_hook_scope`) (W4, W6). Since 0.2.8301 its hook registration
+  methods (`register_category_pre_hook` / `_post_hook`, `register_action_pre_hook` / `_post_hook`,
+  `unregister_action_hook`) hold the gate ticket through `_entered_door`, and it hands its workstation the gate it
+  borrows from the Rift; its properties and internal callbacks take no ticket. Its hook depth is counted per room
+  and category, not per thread (Unknowns, GitHub #285).
 - `FrameLinkContract` (0.2.8288): `cleanup()` and the four lock-guarded reads - `get_selected_contract_names`,
   `get_selected_contract_name`, `describe`, `clone` - check `_cleaned`, take `_lock` and check again under it, so
   two concurrent cleanups tear the state down once and both return, and a read overtaken by a cleanup raises the
@@ -2772,14 +2885,16 @@ Concurrency/Threading:
   EVIDENCE:
   - `src/melder/nexus/rift/frame_link/frame_link_contract.py:35-46`, `:188-281`
   - `src/melder/nexus/rift/frame_link/frame_link.py:30-42`, `:206-256`
-  - `src/melder/nexus/rift/rift.py:501-678`, `:786-854` (remapped 2026-11-08 at 0.2.8292; they read 398-572 and
-    680-748, and 389-527 before 0.2.8289)
-  - `src/melder/nexus/rift/rift.py:278-424` (`cleanup`, the two marks, `_clean_owned_state`)
+  - `src/melder/nexus/rift/rift.py:520-776`, `:884-952` (remapped 2026-11-09 at 0.2.8301; they read 501-678 and
+    786-854 at 0.2.8292, 398-572 and 680-748 before, and 389-527 before 0.2.8289)
+  - `src/melder/nexus/rift/rift.py:297-443` (`cleanup`, the two marks, `_clean_owned_state`; it read 278-424)
   - `src/melder/nexus/nexus.py:137` (the class-level `_lock`; it read 135)
-  - `src/melder/nexus/nexus.py:1266-1334` (`remove_rift`)
-  - `src/melder/nexus/nexus.py:3499-3557` (`_reserve_target_frame`, `_release_target_frame`; it read 3477-3535)
-  - `src/melder/nexus/rift/rift_space/rift_space.py:268-333`, `:741-850` (its cleanup; the room-lock entries of
-    agent paths)
+  - `src/melder/nexus/nexus.py:1358-1465` (`remove_rift`; it read 1266-1334)
+  - `src/melder/nexus/nexus.py:3744-3802` (`_reserve_target_frame`, `_release_target_frame`; it read 3499-3557, and
+    3477-3535 before)
+  - `src/melder/nexus/rift/rift_space/rift_space.py:277-342`, `:344-432`, `:623-923` (its cleanup; the hook
+    registration doors and `_entered_door`; the room-lock entries of agent paths, which read 741-850; the cleanup
+    read 268-333)
 
 Invariants/Guarantees:
 - An active `Nexus` keeps its installed policy object (0.2.8210): `configure(...)`, and `activate(...)` handed
@@ -2808,12 +2923,21 @@ Invariants/Guarantees:
   accepted into the frame contract or the viewer path.
 - `Rift.create_frame_link(...)` attaches a frame once (0.2.8289, GitHub #274): another attach of the same frame,
   concurrent or later, keeps the published `FrameLinkContract` and the frame's single target-frame budget count.
-  EVIDENCE: `src/melder/nexus/rift/rift.py:559-678` (remapped 2026-11-08 at 0.2.8292; it read 456-572).
+  EVIDENCE: `src/melder/nexus/rift/rift.py:617-776` (remapped 2026-11-09 at 0.2.8301, the door and its untagged body
+  `_create_frame_link`; it read 559-678, and 456-572 before 0.2.8292).
 - `Rift.create_frame_link(...)` is public (0.2.8292; it was marked Internal while the class docstring pointed agents
   at it): agents attach with it directly or through `CommandSystem.link_frame`, and may call it in parallel.
 - A removal decrements the target-frame budget for exactly the frames attached when `Nexus.remove_rift` marks the
   Rift; an attach that publishes after the mark keeps no count (0.2.8291).
-  EVIDENCE: `src/melder/nexus/rift/rift.py:341-371`, `:559-678` and `src/melder/nexus/nexus.py:1266-1334`.
+  EVIDENCE: `src/melder/nexus/rift/rift.py:360-390`, `:617-776` and `src/melder/nexus/nexus.py:1358-1465` (remapped
+  2026-11-09 at 0.2.8301; they read 341-371, 559-678 and 1266-1334).
+- A Rift is torn down by `Nexus.remove_rift` or `Nexus.cleanup` only after the threads inside its agent doors have
+  left (0.2.8301, GitHub #274, step 3), except the caller's own thread, which is never waited for, and threads that
+  outstay `Nexus.cleanup`'s one deadline; a removal that runs out of time removes nothing. A direct `Rift.cleanup`
+  drains nothing. A thread inside a Rift always passes that Rift's gate again, so nested calls never park behind
+  an ACL refresh or a removal waiting for that same thread.
+  EVIDENCE: `src/melder/nexus/nexus.py:306-473`, `:1358-1530`; `src/melder/nexus/rift/rift_gate/rift_gate.py:316-382`,
+  `:538-591`; `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`.
 - `Nexus` does not build live viewers.
 - `RiftSpace` does not manage projection state directly.
 - `Rift` applies projection state to the hosted viewer and command assets.
@@ -2865,7 +2989,9 @@ Invariants/Guarantees:
   - `projection_refresh_gate_enabled`
   - `projection_refresh_gate_timeout_seconds`
   - `projection_refresh_gate_poll_interval_seconds`
-  with default-on RiftGate drain behavior around the refresh.
+  with default-on RiftGate drain behavior around the refresh. Since 0.2.8301 the drain covers viewer reads too, so
+  a refresh with the gate on never swaps a projection under an in-flight read, and the same timeout and poll
+  interval bound the drains of `Nexus.remove_rift` and `Nexus.cleanup` (`Nexus._get_rift_gate_drain_bounds`).
 
 Failure Modes:
 - Unconfigured or disabled `Nexus` operations fail fast.
@@ -2899,23 +3025,55 @@ Failure Modes:
   refresh raised the cleaned error with the fresh sets uncleaned, or AttributeError when it had waited on the Rift
   lock. Two concurrent attaches of one frame no longer leave an orphaned contract and a budget count of 2. Since
   0.2.8291 the attach raises it too when it publishes after `Nexus.remove_rift`'s registry phase marked the Rift;
-  until then that attach published and kept its count (R4's residual).
-  EVIDENCE (the rift.py ranges remapped 2026-11-08 at 0.2.8292; they read 456-572 and 634-748):
-  - `src/melder/nexus/rift/rift.py:559-678`
-  - `src/melder/nexus/rift/rift.py:740-854`
+  until then that attach published and kept its count (R4's residual). Since 0.2.8301 a removal waits for an attach
+  made through the `create_frame_link` door, so the attach meets this error only through the untagged
+  `_create_frame_link`, by removing its own Rift, or under a teardown that does not wait.
+  EVIDENCE (the rift.py ranges remapped 2026-11-09 at 0.2.8301; they read 559-678 and 740-854 at 0.2.8292, and
+  456-572 and 634-748 before):
+  - `src/melder/nexus/rift/rift.py:617-776`
+  - `src/melder/nexus/rift/rift.py:838-952`
   - `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`
   - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
-    (`test_attach_landing_inside_rift_removal_leaves_no_budget_count`)
+    (`test_attach_landing_inside_rift_removal_leaves_no_budget_count`, driven through `_create_frame_link` since
+    0.2.8301)
 - RuntimeError "<class> has already been cleaned. " of a projection object - for example
   "CompiledFrameACLAccessSurface has already been cleaned. " - from a `FrameViewer` read that overlaps a frame link
   or an ACL refresh of its frame: the Rift cleans the projection set it replaces when it installs the new one. The
   read changed nothing, and a retry reads the new projection (documented in 0.2.8292, GitHub #274, V1; the owner,
-  2026-11-08).
-  EVIDENCE: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:73-82`, `src/melder/nexus/rift/rift.py:786-854`
-  and `src/melder/utilities/general_base/cleanable.py:140-155`.
+  2026-11-08). Narrowed in 0.2.8301: a read holds a gate ticket, so an ACL refresh with
+  `projection_refresh_gate_enabled` on waits for it; the error remains for a frame link's refresh, which replaces
+  every projection set of the Rift from inside the gate, and for an ACL refresh with the gate off.
+  EVIDENCE: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:73-93` (it read 73-82),
+  `src/melder/nexus/rift/rift.py:884-952` (it read 786-854) and `src/melder/utilities/general_base/cleanable.py:140-155`.
 - AttributeError for a field the teardown deleted, or a room child's cleaned RuntimeError, from an agent call that
   passed its checks before `Nexus.remove_rift` marked the Rift; nothing tells the agent the Rift is being removed
-  (open; Unknowns, an agent racing a removal).
+  (open; Unknowns, an agent racing a removal) (corrected 2026-11-09: fixed in 0.2.8301 - a removal now drains the
+  gate first - but for a teardown that runs with threads still inside, a `Nexus.cleanup` past its drain deadline
+  or a direct `Rift.cleanup`, whose race with a door's own release can still raise AttributeError).
+- RuntimeError "RiftGate is closed." from any agent door - a workstation call, a viewer read, a command, a hook
+  registration, a Rift agent method - while a removal or a cleanup is draining or tearing the Rift down, raised at
+  once, before any hook runs; RuntimeError "RiftGate entry is disabled." from a newcomer while an ACL refresh holds
+  the gate in "raise" entry mode ("wait" mode parks it until the gate reopens) (0.2.8301). A thread already inside
+  is never refused.
+  EVIDENCE: `src/melder/nexus/rift/rift_gate/rift_gate.py:316-382`;
+  `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`
+  (`test_newcomers_are_refused_at_once_while_a_removal_waits_for_an_agent_inside`,
+  `test_newcomers_are_refused_at_once_while_a_removal_tears_the_rift_down`).
+- RuntimeError "Rift '<name>' (id=<id>) was not removed: <n> thread(s) were still inside it after the <t> s drain
+  timeout (projection_refresh_gate_timeout_seconds). It stays registered with its gate closed to new work; call
+  remove_rift again once they have left." from `Nexus.remove_rift`, logged at WARNING first and chained from the
+  gate's `RiftGateDrainTimeoutError` (0.2.8301). `Nexus.close_and_wait_rift` raises that error itself (a
+  RuntimeError, "Timeout waiting for rift tickets to drain.", with `threads_inside`). `Nexus.cleanup` raises
+  nothing for it: it logs a WARNING per Rift and cleans up anyway. `remove_rift` of a Rift cleaned outside Nexus now
+  raises the cleaned RuntimeError before anything is drained or popped (its id-registry entry was lost before).
+  EVIDENCE: `src/melder/nexus/nexus.py:393-473`, `:1358-1530`, `:1786-1834`;
+  `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`
+  (`test_rift_removal_times_out_on_an_agent_that_stays_inside_and_keeps_the_rift_with_its_gate_closed`,
+  `test_nexus_cleanup_gives_up_on_agents_that_stay_inside_after_one_shared_timeout_and_logs_it`).
+- RuntimeError "Timeout waiting for Rift gate '<id>' to drain." from an ACL refresh started from inside a door of
+  a Rift that has the changed frame attached: the refresh waits for every ticket, the caller's own included, so it
+  times out and reopens the gate unrefreshed (open; Unknowns, GitHub #284).
+  EVIDENCE: `src/melder/nexus/nexus.py:2906-3012`.
 
 Observability:
 - `Nexus` and `Rift` log lifecycle events through the provider-based
@@ -3032,7 +3190,8 @@ Key Files (C1):
   - one `FrameLinkContract` per engaged target frame, each storing per-frame ACL selection across
     `view`, `command`, and `codegen` families
   - exactly one primary room created from `space_type`
-  - one Rift-owned `RiftGate`
+  - one Rift-owned `RiftGate`, on which every agent door of the Rift - its seven agent methods, the room's
+    workstation, viewer, commands and hook registration - holds the calling thread's ticket (0.2.8301)
   - no eager Nexus-frame attachment state at Rift creation
   - no room registry or active-space switching surface
   - registration/active flags, logger, and live metadata
@@ -3042,7 +3201,8 @@ Key Files (C1):
     - store the current projection state on the Rift itself
     - apply updated projection state to the hosted room assets
   - a two-step teardown (0.2.8291): mark cleaned under the Rift lock, then clean the room and the rest with no
-    lock held, the caller that marked running it
+    lock held, the caller that marked running it; `Nexus.remove_rift` and `Nexus.cleanup` start it only after
+    draining the gate (0.2.8301)
 - `RiftSpace` owns room-local identity, metadata, the durable attached
   Rift-backed `FrameViewer` asset, room-local workstation state, room-local
   command-system state, one room-local event system, and one room-local memory
@@ -3166,7 +3326,8 @@ Key Files (C1):
     - `projection_refresh_gate_poll_interval_seconds`
   - default behavior remains:
     - block new entrants through the impacted Rift gates
-    - wait for in-flight tickets to drain
+    - wait for in-flight tickets to drain - since 0.2.8301 viewer reads hold tickets too, and a thread already
+      inside passes the disabled gate by re-entry, so its nested calls finish and it leaves
     - refresh each impacted Rift once for its changed-frame subset
     - reopen the gates
 
@@ -3221,7 +3382,7 @@ Concurrency/Threading:
   script does; whether the engine should keep serializing a room's scripts is a question for the owner (Unknowns).
   EVIDENCE: `src/melder/nexus/rift/codegen_system/codegen_system.py:298-345`,
   `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:79-127` and
-  `src/melder/nexus/rift/command_system/codegen_command_system.py:671-748`.
+  `src/melder/nexus/rift/command_system/codegen_command_system.py:678-762` (it read 671-748 before 0.2.8301).
 
 Invariants/Guarantees:
 - validation runs before execution on the execute path
@@ -3309,7 +3470,8 @@ Named scope publication (2026-09-23):
   live-conduit lookup (`Aether.get_conduit_by_id`: root map, then root wards; 0.2.79), then refuse
   changed live names. Capability create_lesser_conduit forwards
   name=; static raw-object access and normal-only operations stay restricted. No admitted command
-  drains its own Rift by synchronously refreshing projections.
+  drains its own Rift by synchronously refreshing projections through publication (an ACL change made from inside
+  a door of a Rift with that frame attached does, and waits on its own gate ticket: Unknowns, GitHub #284).
 - EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._publish_conduit_record`,
   `src/melder/nexus/rift/command_system/command_system.py:CommandSystem._get_conduit_by_name_locked`.
 
@@ -3434,6 +3596,14 @@ Invariants/Guarantees:
 Failure Modes:
 - Publication short-circuits when a frame is not Rift-enabled/publishable.
 - Required frame/container lookups raise when callers target missing state.
+- An ACL change runs its callback into `Nexus._refresh_rift_projection_sets_for_frames` on the changing thread,
+  which, with `projection_refresh_gate_enabled` on, disables each impacted Rift's gate and waits for every ticket
+  on it. Made from inside a door of such a Rift, the change waits on its own ticket: the refresh raises
+  RuntimeError "Timeout waiting for Rift gate '<id>' to drain." after `projection_refresh_gate_timeout_seconds` and
+  reopens the gates unrefreshed (read from the code; open, Unknowns, GitHub #284). An agent inside a Rift that the
+  refresh drains from another thread passes the disabled gate by re-entry, so its nested calls finish (0.2.8301).
+  EVIDENCE: `src/melder/nexus/nexus.py:2906-3025` (`_wait_until_rift_gate_is_idle`,
+  `_refresh_rift_projection_sets_for_frames`, `_on_frame_acl_changed`).
 
 Observability:
 - Runtime effects are visible through the descriptor and ACL surfaces consumed
@@ -3518,7 +3688,13 @@ Lifecycle/Cleanup:
 - `Workstation.cleanup_target(...)` cleans the target selected when it starts and clears the selection afterwards
   only while it still names that binding (name and store); when the workstation was cleaned while the cleanup
   methods ran, it returns without clearing (0.2.8290), except that a teardown landing just before it retakes the
-  lock raises AttributeError (Unknowns, an agent racing a removal).
+  lock raises AttributeError (Unknowns, an agent racing a removal). Since 0.2.8301 it holds the Rift gate across
+  the cleanup methods, so a removal waits for it: the workstation is cleaned meanwhile only by the calling thread's
+  own removal of its Rift, or by a teardown that does not wait for it (a `Nexus.cleanup` past its drain deadline, a
+  direct `Rift.cleanup`), and only the latter can land just before the lock.
+- The workstation borrows the room's `RiftGate` (`rift_gate=`, 0.2.8301) and drops the reference at cleanup
+  without cleaning the gate, which the Rift owns; a standalone workstation, built with none, runs its methods
+  ungated.
 
 Concurrency/Threading:
 - `Workstation` and `CommandSystem` each use an instance `RLock`.
@@ -3529,8 +3705,19 @@ Concurrency/Threading:
   agent code runs: `call_target` resolves the target through `get_target` and calls it with no lock held, and
   `cleanup_target` resolves it under the lock, runs its cleanup methods after releasing it and clears the selection
   under the lock again. Whether a target's own methods are safe from several threads is the target's business (the
-  owner, 2026-11-08).
-- Every public command enters the room's action-hook scope and holds a `RiftGate` ticket while it runs; most do
+  owner, 2026-11-08). Since 0.2.8301 (GitHub #274, step 3) every public workstation method - the three binds, `get`,
+  `release`, `describe_bindings`, `set_target`, `get_target`, `clear_target`, `cleanup_target`, `call_target` - is
+  an agent door: it holds the calling thread's Rift gate ticket for its whole run (`_entered_door`), `call_target`
+  and `cleanup_target` across the agent code too, so a removal waits for the target to return and an ACL refresh
+  drains it; a target that calls back into its own Rift passes by re-entry, and one that removes its own Rift is
+  not waited for. The weak-binding collection callback and the identity properties take no ticket.
+- Every public command holds a `RiftGate` ticket for its whole run and enters the room's action-hook scope inside
+  it: since 0.2.8301 (GitHub #274, step 3) it is admitted before the scope (`_begin_command_action`,
+  `admit_ticket`) and releases the ticket last, after its memory record, which it emits inside the scope before
+  the post-hooks, and after the post-hooks (`_entered_command_action`); until then it took the ticket inside the
+  scope and released it before the memory record. A refused admission raises before any hook runs, and the memory
+  record is skipped on a command system cleaned during the call. The three codegen commands, which manage their
+  own scope, follow the same order. Most commands do
   their work under the command lock (`self._lock`), so they take turns within one room. The target commands -
   `get_target_attribute`, `get_target_method`, `execute_target_method` - take no command lock (0.2.8290, W5): the
   attribute read or the method is agent code, and the workstation's own lock covers the target lookup.
@@ -3539,10 +3726,12 @@ Concurrency/Threading:
   (Unknowns): `materialize_codegen`'s module execution and capability `meld`'s `Conduit.meld`; and the engine's
   own locks still take one request at a time (Component: Codegen Internal Engine). Until 0.2.8290 the class
   docstring said `CommandSystem` takes no lock of its own.
-  EVIDENCE:
-  - `src/melder/nexus/rift/rift_space/workstation.py:74-85`, `:493-659`
-  - `src/melder/nexus/rift/command_system/command_system.py:47-58`, `:454-493`, `:1029-1146`, `:1204-1306`
-  - `src/melder/nexus/rift/command_system/codegen_command_system.py:671-748`, `:750-944`
+  EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read workstation.py 74-85 and 493-659, command_system.py 47-58,
+  454-493, 1029-1146 and 1204-1306, and codegen_command_system.py 671-748 and 750-944):
+  - `src/melder/nexus/rift/rift_space/workstation.py:78-98`, `:287-793` (the doors and `_entered_door`)
+  - `src/melder/nexus/rift/command_system/command_system.py:47-63`, `:459-498`, `:1034-1151`, `:1209-1343`
+  - `src/melder/nexus/rift/command_system/codegen_command_system.py:602-965` (`validate_codegen`,
+    `execute_codegen`, `materialize_codegen`)
   - `src/melder/nexus/rift/command_system/capability_command_system.py:1026-1089`
 - `get_spell_by_spell_id` (`get_spell_by_id` until 0.2.8253) resolves the spell in the owner's Book through
   `Spellbook.find_spell_by_spell_id` (0.2.8230; `find_spell_by_id` until 0.2.8253); it used to walk that Book's live
@@ -3555,7 +3744,14 @@ Invariants/Guarantees:
   bindings only.
 - `Workstation.cleanup_target(...)` never clears a selection another agent made while the cleanup methods ran, and
   `call_target(...)` calls the target selected when it starts, whatever is selected meanwhile (0.2.8290).
-  EVIDENCE: `src/melder/nexus/rift/rift_space/workstation.py:529-659`.
+  EVIDENCE: `src/melder/nexus/rift/rift_space/workstation.py:619-761` (it read 529-659 before 0.2.8301).
+- A room's Rift is not torn down under a public workstation call or a command of that room (0.2.8301, GitHub #274,
+  step 3): the call holds the gate ticket for its whole run, a command until after its memory record and
+  post-hooks, and a removal waits for it - except the calling thread's own removal of its Rift, after which the
+  call returns normally, and a teardown that does not wait for it.
+  EVIDENCE: `src/melder/nexus/rift/rift_space/workstation.py:763-793`;
+  `src/melder/nexus/rift/command_system/command_system.py:1209-1343`;
+  `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`.
 - `CommandSystem` gates runtime access before bind and leaves already-bound
   workstation objects outside post-bind ACL policing.
 - `StaticCommandSystem` denies topology mutation and direct `meld(...)`.
@@ -3638,10 +3834,15 @@ Failure Modes:
   '<id>' was not found in the owner spellbooks for frame '<frame>'."). The old command name `get_spell_by_id` is
   gone (AttributeError).
 - RuntimeError "Workstation has already been cleaned. " from `call_target(...)` binding its result
-  (`bind_as_name`) when a teardown cleaned the workstation while the target ran (0.2.8290; `_bind`'s check).
+  (`bind_as_name`) when a teardown cleaned the workstation while the target ran (0.2.8290; `_bind`'s check) -
+  since 0.2.8301 a target that removed its own Rift, or a teardown that did not wait for it.
+- RuntimeError "RiftGate is closed." from every public workstation method and every command while a removal or a
+  cleanup drains or tears the room's Rift down, and "RiftGate entry is disabled." while an ACL refresh holds the
+  gate in "raise" entry mode; a command refused there runs no hook (0.2.8301).
 - An agent call racing a room teardown can still raise AttributeError rather than the cleaned error - for example
   `cleanup_target` when the workstation is cleaned between its unlocked `_cleaned` check and its lock (Unknowns, an
-  agent racing a removal).
+  agent racing a removal) (corrected 2026-11-09: since 0.2.8301 only a teardown that does not wait for the call -
+  a `Nexus.cleanup` past its drain deadline, a direct `Rift.cleanup` - can race it).
 
 Observability:
 - Weak-binding collection can publish room-local events.
@@ -4979,7 +5180,10 @@ Unresolved inputs (2026-09-26):
 - The expected type is read when the error is built, from the constructor signature with FORWARDREF
   annotations, because Phase 1-4 artifacts are released after resolution. `expected_type_name` renders it:
   Optional/Union with None unwrapped, a ForwardRef or quoted string as its written name, a class as its
-  `__qualname__`. The socket's lowercased frame key is only the fallback.
+  `__qualname__`. The socket's lowercased frame key is only the fallback. A parameter whose default is a
+  SpellMap (an UNRESOLVED_INPUT since 0.2.8303) is named by that SpellMap as written instead
+  (`UnresolvedInputError._spellmap_address_name`, shared with the Phase 4 warning), and the text asks for a
+  spell at that address.
 - OVERRIDE_REQUIRED inputs keep their existing errors when omitted.
 
 Shared context rebuild windows (2026-09-26):
@@ -5593,9 +5797,10 @@ report names the bindings; the matching rule stands):
   predicate, so membership is equal with and without a pass cache.
 - SpellMap: `_resolve_spellmap_default`'s explicit-spell branch with no spellframe skips an X bound under any
   spellframe; with no `binding_name` it keeps only X under the default binding, with `binding_name=b` only X bound
-  bare under b. A SpellMap that names a spellframe, and the frame-only form, are unchanged, and so is the miss:
-  RuntimeError "SpellCrafter Phase 3: SpellMap default could not be resolved ...", which conjure raises inside
-  PhaseExecutionError (a RuntimeError).
+  bare under b. A SpellMap that names a spellframe, and the frame-only form, are unchanged, and so was the miss:
+  RuntimeError "SpellCrafter Phase 3: SpellMap default could not be resolved ...", which conjure raised inside
+  PhaseExecutionError (a RuntimeError), until 0.2.8303 made it an UNRESOLVED_INPUT socket at the SpellMap's
+  address (Flow: SpellMap Default Resolution).
 - Outcomes: a single socket left with no candidate is an UNRESOLVED_INPUT socket (`_build_local_frame_dag`,
   unchanged), also when the class is registered but only under a spellframe or a binding name; `list[Class]` gathers
   only bare, default-binding spells, and a required one left empty is refused by Phase 6's `EmptyCollectionStrategy`
@@ -5727,6 +5932,10 @@ Unresolved inputs (2026-09-26):
   only under a spellframe or a binding name carries `hidden_spell_ids` and refuses its spell (HIDDEN_PROVIDER) instead
   of becoming a warning - `RequiredHolesStrategy` skips it; a SPELLMAP_DEFAULT socket can be UNRESOLVED_INPUT in that
   shape too; and the collection-frame watcher also keys the socket by its `hidden_frame_keys`.
+- Since 0.2.8303 (GitHub #329, the owner's rule that bind order must not matter): a SPELLMAP_DEFAULT socket that
+  matches nothing is UNRESOLVED_INPUT without hidden candidates, keeping its SpellMap's canonical key as its
+  `dependency_key`; the watcher keys it by that key's frame, and `RequiredHolesStrategy` and
+  UnresolvedInputError name it by the SpellMap as written.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`, `CompilerPhase3._build_local_topology`,
   `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`,
   `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._report_validation_warnings`.
@@ -6061,12 +6270,14 @@ Failure Modes:
 - SpellbookValidationError (HIDDEN_PROVIDER, 0.2.8281) when a class lookup's class is bound only under a spellframe
   or a binding name: at conjure, at a late dynamic bind (the spell stays registered and invalid) and at every meld,
   override or not (Hidden providers refused, above).
-- RuntimeError when SpellMap defaults resolve to zero or multiple candidates; conjure raises it inside
-  PhaseExecutionError (a RuntimeError, "Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted.
-  Errors: RuntimeError: SpellCrafter Phase 3: SpellMap default could not be resolved ..."). Since 0.2.8278
-  `SpellMap(X)` of an X bound only under a spellframe or a binding name is such a miss - until 0.2.8281, which
-  records that miss for HIDDEN_PROVIDER instead; X registered nowhere, frame-named misses and several candidates
-  still raise.
+- RuntimeError when a SpellMap default resolves to several candidates; conjure raises it inside
+  PhaseExecutionError (a RuntimeError, "Phase 'local_frame' encountered 1 error(s). Resolution pipeline
+  aborted. Errors: RuntimeError: ..."). A SpellMap default that resolves to none raised the same way
+  ("SpellCrafter Phase 3: SpellMap default could not be resolved ...") until 0.2.8303 (GitHub #329, the owner's
+  rule that bind order must not matter): it is now an UNRESOLVED_INPUT socket, so conjure and a late bind
+  succeed and the meld raises UnresolvedInputError naming the SpellMap until a spell is bound at its address or
+  the value is supplied. Since 0.2.8281 `SpellMap(X)` of an X bound only under a spellframe or a binding name
+  is recorded for HIDDEN_PROVIDER instead (Hidden providers refused, above).
 - RuntimeError at hydration when a contract override ref names a consumer, parameter or payload key that
   the spell lookup or the consumer's descriptor does not carry (2026-09-26).
 - KeyError(spell_id, message) from a Phase 8 or 9 lookup that misses a spell in the live pool (0.2.8227). A
@@ -7711,14 +7922,17 @@ Contract/Interface:
   object, bound live at meld.
 - `SpellMap(spell=X)` with no spellframe is a class lookup (2026-11-07, 0.2.8278; the class and `__init__`
   docstrings say so): Phase 3 reaches only an X bound with no spellframe - under the default binding when
-  `binding_name` is omitted, bare under `binding_name` when it is given - and a miss refuses at conjure with "SpellMap
-  default could not be resolved". With a spellframe named, Phase 3 reads the frame as before (Parent Component,
+  `binding_name` is omitted, bare under `binding_name` when it is given - and a miss refused at conjure with
+  "SpellMap default could not be resolved" until 0.2.8303. With a spellframe named, Phase 3 reads the frame as
+  before (Parent Component,
   Invariants/Guarantees). Since 0.2.8281 a miss with X registered elsewhere - under a spellframe, or bare under
   another binding name - refuses with HIDDEN_PROVIDER through the readable report instead, naming each address and
   the SpellMap that reaches it ("Parameter 'greeter' on spell 'Host' has the default SpellMap(English), a class lookup
   that reaches English only where it is bound bare under the default binding, but English is bound only where that
   lookup does not reach: <entries>. Point the SpellMap at the address it means, as shown, or bind English bare.");
-  X registered nowhere keeps the "could not be resolved" refusal.
+  X registered nowhere, and a SpellMap that names a spellframe and finds nothing there, wait as UNRESOLVED_INPUT
+  sockets since 0.2.8303 (GitHub #329): the meld raises UnresolvedInputError naming the SpellMap until a spell is
+  bound at its address, whose bind re-gates the consumer.
 Data Structures:
 - `(spell, spellframe, binding_name)` tuple and override payload.
 Concurrency/Threading:
@@ -8231,7 +8445,9 @@ Purpose:
 Contract/Interface:
 - Constructed from one live `Spell` plus crystallizer source-root policy.
 - Delegates the module-world walk to a single-use `CrystalAnalyzer` and
-  carries the returned `CrystalAnalysisResult` (V3 carrier law).
+  carries the returned `CrystalAnalysisResult` (V3 carrier law). The pass
+  resolves and classifies each distinct module once, and a module inside a
+  Python environment is never user source (0.2.8302, #327).
 - Exposes root module identity, module/path inventories, classification
   buckets, direct-dependency maps, physical SHA256 fingerprints, export
   surfaces, and topological module load order via delegating properties.
@@ -8319,6 +8535,15 @@ Contract/Interface:
   touchpoint: sets call it through their injected `on_mutation` callback
   after every mutating verb (replace-on-emit; NO-OP while the root is
   inactive or the crystallizer records nothing).
+- Constant-cost emission (0.2.8306, #331): the twin is emitted with a `ResearchCompositionView` - each set's
+  `_composition_view()`, references to its append-only payload parts with their lengths, taken under the set
+  lock - instead of a full `describe_research_composition()`. `MutationResearchCrystal` materializes it once,
+  on its first read (a seal, a flush, a record description, the emission tap), equal to that description, so
+  an append's emission describes no node.
+  EVIDENCE:
+  - `src/melder/mutation_research/mutation_research.py:MutationResearch._emit_research_composition`
+  - `src/melder/mutation_research/mutation_research.py:MutationResearch._research_composition_view`
+  - `src/melder/crystallizer/crystals/mutation_research_crystal.py:MutationResearchCrystal._materialized`
 - Research record (2026-07-11): `record_world_entry(...)`, `record_promotion(...)`, `residency_view(...)` (the
   query-time active/parked/stored join), the ambient campaign stamp `set_active_campaign(...)` /
   `clear_active_campaign()` / `active_campaign` (carried by every runtime auto-record), `diff_research(...)` and
@@ -8528,7 +8753,28 @@ Contract/Interface:
   ONE lane network-wide, permanently; claim collisions raise the rediscovery
   signal naming the holding lane; no release verb exists.
 - `NetworkVersioner`: content-addressed (canonical-JSON SHA256) organization
-  snapshots with dedupe and a FIFO retention ring.
+  snapshots with dedupe and a FIFO retention ring (64 slots).
+- Constant-cost appends (0.2.8306, #331, owner decisions 2026-11-17): `record_world_entry`, `register_spell` and
+  `register_group` (`recompose_group` through it) build their node's payload and their journal entry's payload
+  once and mark the undo ring stale instead of minting a snapshot of the whole organization. `create_lane`,
+  `attach`, `detach`, `join`, `archive` and `restore_network` mint the pending snapshot before they change
+  anything, so the organization they start from stays restorable; `snapshot_network`, `network_snapshot_shas`
+  and `latest_network_snapshot` mint it first too (the two reads now take the set lock). `describe_composition`
+  mints nothing and reports the ring as of its last mint; hydration mints at load.
+- Composition parts and views (0.2.8306): the lane's `_node_payloads` (aligned with `_node_order`), the
+  journal's `_entry_payloads`, the residence's `_claim_log` and the versioner's `_ring_payload` are only
+  appended to or replaced - a detach, a transfer, a restore install new ones; a rollback removes only the claim
+  it undoes - and are dropped, never cleared, at cleanup. Each structure's `_payload_view()` hands its part out
+  with its length, `ResearchSet._composition_view()` gathers them under the set lock, and
+  `ResearchCompositionView.materialize()` rebuilds the `describe_composition()` payload, detached, so a twin
+  emitted before a restore or a cleanup still describes what it was emitted for.
+  EVIDENCE:
+  - `src/melder/mutation_research/research_set/research_set.py:ResearchSet._mint_pending_snapshot_locked`
+  - `src/melder/mutation_research/research_set/research_set.py:ResearchSet._composition_view`
+  - `src/melder/mutation_research/research_set/research_lane.py:ResearchLane._add_node`
+  - `src/melder/mutation_research/research_set/research_lane.py:ResearchLane._detach_nodes`
+  - `src/melder/mutation_research/research_set/residence_registry.py:ResidenceRegistry._rollback_claim`
+  - `src/melder/mutation_research/research_set/research_composition_view.py:ResearchCompositionView.materialize`
 Data Structures:
 - Per set: lanes by id + name index, one journal, one residence partition,
   one snapshot ring, one optional `on_mutation` callback.
@@ -8542,6 +8788,7 @@ Key Files (C1):
 - `src/melder/mutation_research/research_set/research_journal.py`
 - `src/melder/mutation_research/research_set/residence_registry.py`
 - `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 
 ### Subcomponent: MutationResearch Configuration
 Parent Component: Aether Singleton (Global Runtime)
@@ -9044,10 +9291,17 @@ Contract/Interface:
 - `space`, `list_assigned_frame_names`, `get_selected_contract_names(...)`,
   `create_frame_link(...)`, `refresh_runtime_projections(...)`, `get_frame_viewer()`,
   and `event_configuration`.
+- Agent doors (0.2.8301, GitHub #274, step 3), each holding the calling thread's gate ticket for the call through
+  `_entered_door`: `get_frame_link_contract`, `create_frame_link`, `get_frame_viewer`, `get_nexus_frame`,
+  `create_nexus_frame`, `list_accessible_nexus_frame_names`, `list_accessible_non_nexus_frame_names`. Untagged,
+  because Nexus calls them with the gate disabled or closed: `list_assigned_frame_names`,
+  `get_selected_contract_names`, `refresh_runtime_projections`, `mark_registered` / `mark_active` /
+  `mark_inactive`, `on_nexus_frame_disposed`, the properties, and the internal `_get_frame_link_contract` and
+  `_create_frame_link` that untagged paths use.
 Data Structures:
 - one owned `_space`, `_is_registered`, `_is_active`, `_metadata`, one
   `FrameLinkContract` per engaged frame, one `RiftGate`, plus the room-local
-  `_event_configuration`.
+  `_event_configuration`. The room borrows the gate (`RiftSpace._rift_gate`) and hands it to its workstation.
 Concurrency/Threading:
 - `Rift` uses an `RLock`; `RiftSpace` also owns an `RLock` because it manages attached viewer state, event-system
   state, memory-system state, workstation state, and command-system state. Each cleanup takes its own lock only to
@@ -9062,9 +9316,13 @@ Concurrency/Threading:
   `FrameLinkContract` guards its own selection reads (0.2.8288). Still open: the unlocked reads' races (Unknowns:
   R2) (corrected 2026-11-08: this said `create_frame_link` inserts unlocked and R4 was open; then it left R4's
   residual open and said `cleanup` clears the registry under the lock, both changed in 0.2.8291).
-  EVIDENCE: `src/melder/nexus/rift/rift.py:278-424`, `:501-678`, `:786-854`;
-  `src/melder/nexus/rift/rift_space/rift_space.py:268-333` (remapped 2026-11-08 at 0.2.8292; the rift.py ranges
-  read 268-321, 398-572 and 680-748, and 261-312 and 389-527 before 0.2.8289).
+- Since 0.2.8301 the doors above hold the Rift gate, so `Nexus.remove_rift` and `Nexus.cleanup`, which drain it
+  before any teardown, wait for them; R2 stays open through `get_selected_contract_names`, which the refresh Nexus
+  drives reads untagged.
+  EVIDENCE: `src/melder/nexus/rift/rift.py:297-443`, `:520-776`, `:884-952`, `:1436-1462`;
+  `src/melder/nexus/rift/rift_space/rift_space.py:277-342` (remapped 2026-11-09 at 0.2.8301; at 0.2.8292 they read
+  rift.py 278-424, 501-678 and 786-854 and rift_space.py 268-333; the rift.py ranges read 268-321, 398-572 and
+  680-748 before, and 261-312 and 389-527 before 0.2.8289).
 Key Files (C1):
 - `src/melder/nexus/rift/rift.py`
 - `src/melder/nexus/rift/rift_space/rift_space.py`
@@ -9087,7 +9345,12 @@ Concurrency/Threading:
 - Workstation instance `RLock`, never held while agent code runs: `call_target` and `cleanup_target` resolve the
   target under it and run the target, or its cleanup methods, after releasing it (0.2.8290, GitHub #274, W5). One
   workstation per room, shared by the room's agents.
-  EVIDENCE: `src/melder/nexus/rift/rift_space/workstation.py:74-85`, `:529-659`.
+- Every public method is an agent door (0.2.8301, GitHub #274, step 3): it holds the calling thread's ticket on the
+  room's Rift gate - borrowed through `rift_gate=`, never closed or cleaned here - for its whole run, the target
+  and its cleanup methods included, so a removal of the Rift waits for it. A workstation built with no gate runs
+  its methods ungated; the weak-binding callback and the identity properties take no ticket.
+  EVIDENCE: `src/melder/nexus/rift/rift_space/workstation.py:78-98`, `:619-793` (remapped 2026-11-09 at 0.2.8301;
+  they read 74-85 and 529-659).
 Key Files (C1):
 - `src/melder/nexus/rift/rift_space/workstation.py`
 
@@ -9116,10 +9379,17 @@ Data Structures:
 - viewer id, borrowed Rift reference, and on-demand helper instances.
 Concurrency/Threading:
 - `FrameViewer` and the frame-local helpers use instance `RLock` discipline.
+- Every read is an agent door (0.2.8301, GitHub #274, step 3): `_entered_view_action`, which every public viewer
+  method runs through (`decorate_public_view_actions`) and which every helper the viewer builds reaches - `ViewFrame`
+  through its scope factory, `ViewMultiFrame` through the viewer, `ViewConduit` and `ViewSpell` through their frame
+  view - takes the calling thread's ticket on the Rift's gate before the room's hook scope and releases it last;
+  nested reads pass by re-entry. A removal therefore waits for in-flight reads and refuses new ones, and an ACL
+  refresh with the gate on waits for them before it swaps a projection.
 - A read that overlaps a frame link or an ACL refresh of its frame can raise the cleaned RuntimeError of the
   projection object it read - the Rift cleans the set it replaces - and changes nothing; a retry reads the new
-  projection (0.2.8292, the class Threading; GitHub #274, V1; the owner, 2026-11-08).
-  EVIDENCE: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:73-82`.
+  projection (0.2.8292, the class Threading; GitHub #274, V1; the owner, 2026-11-08). Narrowed in 0.2.8301 to a
+  frame link's refresh and an ACL refresh with `projection_refresh_gate_enabled` off.
+  EVIDENCE: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:73-93` (it read 73-82), `:6669-6716`.
 Key Files (C1):
 - `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
 - `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
@@ -9162,8 +9432,13 @@ Concurrency/Threading:
 - Command-system instance `RLock`, which most commands take for their work. The target commands take none and
   `CodegenCommandSystem.execute_codegen` releases it before the engine runs (0.2.8290, GitHub #274, W5);
   `materialize_codegen` and capability `meld` still run agent code under it (Unknowns).
-  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:1029-1146` and
-  `src/melder/nexus/rift/command_system/codegen_command_system.py:671-944`.
+- Ticket first, released last (0.2.8301, GitHub #274, step 3): every command is admitted at the room's Rift gate
+  before its action-hook scope and releases the ticket after its memory record and post-hooks, so a removal or an
+  ACL refresh waiting on the room never tears down or swaps under a command's exit; a nested command passes by
+  re-entry, and the memory record is skipped on a command system cleaned during the call.
+  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:1034-1151`, `:1209-1343` and
+  `src/melder/nexus/rift/command_system/codegen_command_system.py:602-965` (remapped 2026-11-09 at 0.2.8301; they
+  read command_system.py 1029-1146 and codegen_command_system.py 671-944).
 Key Files (C1):
 - `src/melder/nexus/rift/command_system/command_system.py`
 - `src/melder/nexus/rift/command_system/static_command_system.py`
@@ -9323,28 +9598,46 @@ These flows describe concrete method sequences for core behaviors.
    - Ensures the frame-name ACL contract exists for the frame.
    - Updates the frame contract and synchronizes the durable room-owned viewer.
 
-### Flow: Nexus.remove_rift -> Mark Under Locks -> Unlocked Teardown
-1. `Nexus.remove_rift(rift_id)` takes the Nexus lock and pops the Rift from `_rifts_by_id` (ValueError when absent),
-   then reads its name - a Rift already cleaned outside Nexus raises the cleaned RuntimeError here, popped from
-   `_rifts_by_id` but still in `_rift_ids_by_name`, its gate registered and its frames counted - drops the name and
-   unregisters its gate (`RiftGateController.unregister_rift_gate`).
-2. Still under the Nexus lock, `Rift._mark_cleaned_for_removal()` takes the Rift lock, raises the cleaned
+### Flow: Nexus.remove_rift -> Gate Drain -> Mark Under Locks -> Unlocked Teardown
+(Renamed 2026-11-09 at 0.2.8301; it was "Nexus.remove_rift -> Mark Under Locks -> Unlocked Teardown". Steps 1 and 2
+are new; steps 3-7 were 1-5.)
+1. `Nexus.remove_rift(rift_id)` takes the Nexus lock and resolves the Rift (ValueError when absent), refuses one
+   already cleaned outside Nexus with its cleaned RuntimeError before anything is drained or popped, and reads its
+   name, its gate (`RiftGateController.get_rift_gate`) and the drain bounds (`_get_rift_gate_drain_bounds`:
+   `projection_refresh_gate_timeout_seconds` and `projection_refresh_gate_poll_interval_seconds`) (0.2.8301).
+2. With the Nexus lock released, `_drain_rift_gate_for_removal` runs `RiftGate.close_and_wait_until_free`: the
+   gate closes for good, so a newcomer at any agent door raises "RiftGate is closed." at once, and the call waits
+   while the gate holds tickets other than the caller's own - the threads inside pass the closed gate by re-entry,
+   finish their calls and leave, and an agent removing its own Rift is not waited for (0.2.8301, GitHub #274,
+   step 3). On a timeout it logs a WARNING and raises RuntimeError naming the Rift and the threads still inside,
+   chained from `RiftGateDrainTimeoutError`: nothing is removed and the gate stays closed, so the removal can be
+   retried. A gate cleaned meanwhile means another removal won, and the next step answers the not-found ValueError.
+3. `remove_rift` takes the Nexus lock again, pops the Rift from `_rifts_by_id` (ValueError when absent), drops its
+   name and unregisters its gate (`RiftGateController.unregister_rift_gate`). (Until 0.2.8301 this was the first
+   step, and a Rift already cleaned outside Nexus raised here, popped from `_rifts_by_id` but still in
+   `_rift_ids_by_name`, its gate registered and its frames counted.)
+4. Still under the Nexus lock, `Rift._mark_cleaned_for_removal()` takes the Rift lock, raises the cleaned
    RuntimeError when the Rift was cleaned meanwhile, sets `_cleaned` and returns the frames attached at that
    moment; `remove_rift` decrements each one's target-frame count (`_decrement_ref_count`) and collects the orphaned
    Nexus-managed frames (`NexusFrameManager.get_frame_names_to_cleanup_for_removed_rift`).
-3. An attach racing it publishes under the same Rift lock (`Rift.create_frame_link`): before the mark, its frame is
-   among those decremented; after it, the attach finds `_cleaned`, gives its reservation back
-   (`Nexus._release_target_frame`) and raises "Rift has already been cleaned. ".
-4. With the Nexus lock released, `remove_rift` removes each orphaned frame (`NexusFrameManager.remove`) and then
+5. An attach racing it publishes under the same Rift lock: before the mark, its frame is among those decremented;
+   after it, the attach finds `_cleaned`, gives its reservation back (`Nexus._release_target_frame`) and raises
+   "Rift has already been cleaned. ". Since 0.2.8301 an attach through the `create_frame_link` door holds a gate
+   ticket, so step 2 waited for it (or refused it at the closed gate); only the untagged `_create_frame_link` and
+   the remover's own attach still reach this race.
+6. With the Nexus lock released, `remove_rift` removes each orphaned frame (`NexusFrameManager.remove`) and then
    runs `Rift._clean_owned_state()` with no lock held: `RiftSpace.cleanup()` - its own mark under the room lock,
    then the viewer, command system, workstation, event system and memory system - then the configuration
-   snapshot, the gate, the metadata, the projection sets, the frame-link contracts and the logger; every Rift field
-   but `_lock` is deleted.
-5. `Rift.cleanup()` called directly runs `_mark_cleaned()` - the Rift lock, once - and the same
-   `_clean_owned_state()`; a second call returns at once, even while the first is still tearing down. Neither
-   touches Nexus's registries or budget counts.
-   EVIDENCE: `src/melder/nexus/nexus.py:1266-1334`, `src/melder/nexus/rift/rift.py:278-424`, `:559-678` and
-   `src/melder/nexus/rift/rift_space/rift_space.py:268-333` (0.2.8291, GitHub #274).
+   snapshot, the gate (its tickets cleared, so a thread still inside releases quietly), the metadata, the
+   projection sets, the frame-link contracts and the logger; every Rift field but `_lock` is deleted.
+7. `Rift.cleanup()` called directly runs `_mark_cleaned()` - the Rift lock, once - and the same
+   `_clean_owned_state()`, draining nothing; a second call returns at once, even while the first is still tearing
+   down. Neither touches Nexus's registries or budget counts. `Nexus.cleanup` drains every Rift's gate under one
+   deadline (`_drain_rift_gates_before_cleanup`) before it calls each Rift's `cleanup()` under the Nexus lock.
+   EVIDENCE: `src/melder/nexus/nexus.py:306-473`, `:1358-1530`, `:2860-2904`,
+   `src/melder/nexus/rift/rift_gate/rift_gate.py:506-628`, `src/melder/nexus/rift/rift.py:297-443`, `:617-776` and
+   `src/melder/nexus/rift/rift_space/rift_space.py:277-342` (0.2.8291 and 0.2.8301, GitHub #274; remapped 2026-11-09,
+   they read nexus.py 1266-1334, rift.py 278-424 and 559-678, and rift_space.py 268-333).
 
 ### Flow: Codegen Room Init -> Attach Internal Engine
 1. `CodegenRiftSpace.__init__(...)` delegates base room setup to `RiftSpace`.
@@ -9358,27 +9651,32 @@ These flows describe concrete method sequences for core behaviors.
    advances or changes current selection.
 2. The frame ACL container emits a frame-level ACL change callback.
 3. `FrameACLManager` forwards that through
-   `Nexus._on_frame_acl_changed(frame_name)` (`src/melder/nexus/nexus.py:2769`),
+   `Nexus._on_frame_acl_changed(frame_name)` (`src/melder/nexus/nexus.py:3014`),
    the single entry point for the whole fan-out below.
 4. `Nexus` finds impacted Rifts by checking whether the changed frame is
    present in each Rift's assigned frame-contract set.
 5. By default, `NexusConfiguration` enables RiftGate-controlled refresh:
    - disable the impacted Rift gates (`Nexus.disable_rift_gate(rift_id)`,
-     `src/melder/nexus/nexus.py:1558`)
-   - wait for in-flight tickets to drain
+     `src/melder/nexus/nexus.py:1754`)
+   - wait for in-flight tickets to drain (`Nexus._wait_until_rift_gate_is_idle`): since 0.2.8301 every agent door
+     holds one - viewer reads included - and a thread already inside passes the disabled gate by re-entry, so its
+     nested calls finish and it leaves; the wait counts every ticket, so a change made from inside a door of an
+     impacted Rift waits on its own and times out (Unknowns, GitHub #284)
    - delegate the single-frame callback into the batch refresh primitive
      `Nexus._refresh_rift_projection_sets_for_frames(...)`
-     (`src/melder/nexus/nexus.py:2681`) - the single-frame path and the batch
+     (`src/melder/nexus/nexus.py:2939`) - the single-frame path and the batch
      path share this ONE primitive rather than each carrying its own refresh
    - refresh each impacted Rift once for its changed-frame subset via
      `Rift.refresh_runtime_projections(...)`
-     (`src/melder/nexus/rift/rift.py:740`)
+     (`src/melder/nexus/rift/rift.py:838`)
     - apply the refreshed projection state to the durable room viewer and
       room-owned command assets
    - reopen the impacted Rift gates (`Nexus.enable_rift_gate(rift_id)`,
-     `src/melder/nexus/nexus.py:1526`)
-   The same config owns the drain timeout and poll interval. (The line citations in this flow were remapped
-   2026-11-08 at 0.2.8292; they read nexus.py 2747, 1536, 2659 and 1504 and rift.py 634.)
+     `src/melder/nexus/nexus.py:1722`)
+   The same config owns the drain timeout and poll interval, which also bound the drains of `Nexus.remove_rift` and
+   `Nexus.cleanup` (`Nexus._get_rift_gate_drain_bounds`, 0.2.8301). (The line citations in this flow were remapped
+   2026-11-09 at 0.2.8301; they read nexus.py 2769, 1558, 2681 and 1526 and rift.py 740 at 0.2.8292, and nexus.py
+   2747, 1536, 2659 and 1504 and rift.py 634 before.)
 6. Each impacted `Rift` asks `Nexus` for one refreshed multi-frame projection
    subset, merges it into the Rift-owned projection registry once, and then
    applies the refreshed projection state to its hosted viewer and command
@@ -9416,6 +9714,12 @@ These flows describe concrete method sequences for core behaviors.
    `close`, `dispose` by default) without it, and clears the selection under the lock only while it still names
    that binding, returning without clearing when the workstation was cleaned meanwhile (0.2.8290) - or raising
    AttributeError when that teardown lands just before it retakes the lock.
+5. Each of these calls - and `get`, `release`, `describe_bindings`, `get_target` and `clear_target` - first takes
+   the calling thread's ticket on the room's Rift gate (`_entered_door`) and releases it when it returns or
+   raises, `call_target` and `cleanup_target` across the agent code too (0.2.8301, GitHub #274, step 3): a removal
+   of the Rift waits for the call, a newcomer during a removal raises "RiftGate is closed.", and a nested call
+   passes by re-entry. So the workstation is cleaned under a running target only by that target's own removal of
+   its Rift, or by a teardown that does not wait for it.
 
 ### Flow: RiftSpace Command Surface -> Runtime Operation
 1. `CommandSystem` resolves frame-scoped records and compiled command ACL state
@@ -9427,20 +9731,29 @@ These flows describe concrete method sequences for core behaviors.
    static spell-status/reuse surface on static.
 4. Optional results are rebound into the workstation through `_bind_result(...)`
    when the caller requests room-local persistence.
+5. Around all of it, `_entered_command_action` admits the command at the room's Rift gate first
+   (`_begin_command_action`, `admit_ticket`), then enters the room's action-hook scope (pre-hooks), runs the
+   command, emits its `RiftMemory` record inside the scope (`_finish_command_action`, skipped on a command system
+   cleaned during the call), leaves the scope (post-hooks) and releases the ticket last (0.2.8301, GitHub #274,
+   step 3; until then the ticket was taken inside the scope and released before the memory record). A refused
+   admission raises before any hook runs; a nested command passes by re-entry.
 
 ### Flow: Codegen Command -> Engine Delegation -> Memory Emission
-1. `CodegenCommandSystem.validate_codegen(...)` or `execute_codegen(...)`
-   validates inputs and enters the room action-hook scope.
-2. The command facade begins one command action and acquires the RiftGate
-   ticket.
+(Steps 1, 2 and 5 rewritten 2026-11-09 for 0.2.8301: the ticket now comes first and goes last.)
+1. `CodegenCommandSystem.validate_codegen(...)`, `execute_codegen(...)` or `materialize_codegen(...)` validates its
+   inputs.
+2. The command facade begins one command action - admitted at the room's RiftGate, ticket first
+   (`_begin_command_action`) - and only then enters the room action-hook scope (GitHub #274, step 3).
 3. The facade requires the attached `CodegenSystem` and delegates into
    `validate_codegen_request(...)` or `execute_codegen_request(...)`. Validation runs under the command lock;
    `execute_codegen` reads the engine under it and runs the request after releasing it, the RiftGate ticket still
    held (0.2.8290, GitHub #274, W5).
 4. `CodegenSystem` builds the transaction context and, on the execute path,
    validates before building the namespace and compiling/executing code.
-5. The command facade unregisters the RiftGate ticket and emits the
-   full-source codegen room-memory record when room memory is enabled.
+5. Still inside the hook scope the command facade emits the full-source codegen room-memory record when room
+   memory is enabled - skipped when the command system was cleaned during the call - then the scope exits (post
+   hooks) and the RiftGate ticket is released last. (It read: the facade unregisters the RiftGate ticket and then
+   emits the memory record.)
 
 ### Flow: Bind Spell -> SpellIndex and SpellSystemStates
 1. `Spellbook.bind(...)`:
@@ -9587,13 +9900,16 @@ These flows describe concrete method sequences for core behaviors.
    no spellframe is a class lookup (0.2.8278): a candidate bound under any spellframe is skipped, and with no
    `binding_name` so is one bound under a binding name - `SpellMap(X)` reaches X bound bare under the default
    binding, `SpellMap(X, binding_name=b)` X bound bare under b. With a spellframe named the frame is read as before.
-3. Zero candidates raises RuntimeError; multiple candidates raise RuntimeError with disambiguation guidance. At
-   conjure the RuntimeError arrives inside PhaseExecutionError (a RuntimeError) for the 'local_frame' phase.
+3. Multiple candidates raise RuntimeError with disambiguation guidance; at conjure it arrives inside
+   PhaseExecutionError (a RuntimeError) for the 'local_frame' phase. Zero candidates raise nothing in Phase 3's
+   own call since 0.2.8303 (GitHub #329; before, a consumer bound into a conjured book ahead of its provider was
+   refused): `_resolve_spellmap_default` returns an empty mapping and `_build_local_frame_dag` records the
+   socket UNRESOLVED_INPUT with the SpellMap's canonical key as its dependency key (Flow: Unresolved Input).
    Since 0.2.8281 a class-lookup miss with X registered elsewhere does not raise: Phase 3's call passes
    `hidden_out`, which receives X's registrations; `_build_local_frame_dag` marks the socket UNRESOLVED_INPUT with
    them as hidden candidates, and Phase 4's `HiddenProviderStrategy` refuses the spell with HIDDEN_PROVIDER in the
-   SpellMap form. A direct caller without `hidden_out` still gets the RuntimeError, with a sentence naming where X
-   is bound.
+   SpellMap form. A direct caller without `hidden_out` still gets the RuntimeError for every miss, with a
+   sentence naming where X is bound in that shape.
 4. The single resolved spell becomes the dependency target in the local resolution frame.
 5. A SpellMap carrying an `override` payload (2026-09-26): phase 9 records the payload against that
    dependency occurrence with value-only refs; the no-overrides hydration binds the live values.
@@ -9617,12 +9933,14 @@ These flows describe concrete method sequences for core behaviors.
    `SocketKind.UNRESOLVED_INPUT` with its `dependency_key`. Since 0.2.8278 a class registered only under a
    spellframe or a binding name is no provider for a class annotation (a class lookup reaches only a spell bound
    bare), so its consumer takes this path too - and since 0.2.8281 `_record_unresolved_miss` also records that
-   class's hidden candidates on the socket (`hidden_spell_ids`, `hidden_frame_keys`).
+   class's hidden candidates on the socket (`hidden_spell_ids`, `hidden_frame_keys`). Since 0.2.8303 (GitHub
+   #329) a SpellMap default that matches nothing takes this path too, keyed by its SpellMap's canonical key.
 2. `SpellSystemStates._extract_collection_frame_keys(...)` registers the consumer under that frame key. For a class
    annotation the key (its name, the default binding) is the address of every provider it can match (0.2.8278), so
    the bind, notch or grant of such a provider announces the key the consumer waits under. Since 0.2.8281 it is also
    registered under the socket's `hidden_frame_keys`, and a framed or named spell's bind, notch, link or grant
-   announces its type key too, so a consumer compiled before such a spell arrived is gated by its arrival.
+   announces its type key too, so a consumer compiled before such a spell arrived is gated by its arrival. A
+   SpellMap socket waits under its SpellMap's frame key, which a bind under that frame announces (0.2.8303).
 3. `RequiredHolesStrategy.validate(...)` stores a Phase-4 UNRESOLVED_INPUT warning;
    `SpellbookCreationSystem._report_validation_warnings(...)` lists it in the grouped conjure WARNING
    only when `conjure(validation_warnings=True)`. A socket with hidden candidates gets no warning:
@@ -10082,9 +10400,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 4005
-  loc: 4005
-  verified_at: 2026-11-01T13:44:23Z
+  end_line: 4040
+  loc: 4040
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
   end_line: 1338
@@ -10144,9 +10462,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
-  end_line: 3639
-  loc: 3639
-  verified_at: 2026-11-08T23:37:21Z
+  end_line: 3884
+  loc: 3884
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
   end_line: 871
@@ -10179,19 +10497,19 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-11-08T16:21:51Z
 - path: `src/melder/nexus/rift/rift_gate/rift_gate.py`
   start_line: 1
-  end_line: 411
-  loc: 411
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 659
+  loc: 659
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
   start_line: 1
-  end_line: 333
-  loc: 333
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 354
+  loc: 354
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
   start_line: 1
-  end_line: 6680
-  loc: 6680
-  verified_at: 2026-11-08T23:10:09Z
+  end_line: 6717
+  loc: 6717
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
   start_line: 1
   end_line: 3134
@@ -10214,9 +10532,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/nexus/rift/rift.py`
   start_line: 1
-  end_line: 1324
-  loc: 1324
-  verified_at: 2026-11-08T23:10:09Z
+  end_line: 1491
+  loc: 1491
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
   start_line: 1
   end_line: 343
@@ -10224,9 +10542,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T12:02:52Z
 - path: `src/melder/nexus/rift/rift_space/rift_space.py`
   start_line: 1
-  end_line: 1000
-  loc: 1000
-  verified_at: 2026-11-08T23:37:21Z
+  end_line: 1073
+  loc: 1073
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
   start_line: 1
   end_line: 290
@@ -10254,9 +10572,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/nexus/rift/rift_space/workstation.py`
   start_line: 1
-  end_line: 1000
-  loc: 1000
-  verified_at: 2026-11-08T23:37:21Z
+  end_line: 1134
+  loc: 1134
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
   start_line: 1
   end_line: 435
@@ -10269,9 +10587,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1850
-  loc: 1850
-  verified_at: 2026-11-08T23:10:09Z
+  end_line: 1887
+  loc: 1887
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
   end_line: 789
@@ -10284,9 +10602,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/nexus/rift/command_system/codegen_command_system.py`
   start_line: 1
-  end_line: 2120
-  loc: 2120
-  verified_at: 2026-11-08T23:10:09Z
+  end_line: 2141
+  loc: 2141
+  verified_at: 2026-11-09T11:20:47Z
 - path: `src/melder/nexus/rift/codegen_system/codegen_system.py`
   start_line: 1
   end_line: 591
@@ -10784,9 +11102,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
-  end_line: 1445
-  loc: 1445
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 2403
+  loc: 2403
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
   start_line: 1
   end_line: 264
@@ -10824,14 +11142,14 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/mutation_research/research_set/research_set.py`
   start_line: 1
-  end_line: 2645
-  loc: 2645
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 2808
+  loc: 2808
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/research_lane.py`
   start_line: 1
-  end_line: 1016
-  loc: 1016
-  verified_at: 2026-11-01T23:24:09Z
+  end_line: 1103
+  loc: 1103
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/research_node.py`
   start_line: 1
   end_line: 412
@@ -10844,19 +11162,24 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-11-01T23:24:09Z
 - path: `src/melder/mutation_research/research_set/research_journal.py`
   start_line: 1
-  end_line: 430
-  loc: 430
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 479
+  loc: 479
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/residence_registry.py`
   start_line: 1
-  end_line: 407
-  loc: 407
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 466
+  loc: 466
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/mutation_research/research_set/network_versioner.py`
   start_line: 1
-  end_line: 458
-  loc: 458
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 519
+  loc: 519
+  verified_at: 2026-11-17T12:29:52Z
+- path: `src/melder/mutation_research/research_set/research_composition_view.py`
+  start_line: 1
+  end_line: 235
+  loc: 235
+  verified_at: 2026-11-17T12:29:52Z
 
 Modules of `src/melder/crystallizer/crystal_loader_system/`:
 
@@ -10980,14 +11303,19 @@ Modules of `src/melder/nexus/acl/`:
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
   start_line: 1
-  end_line: 867
-  loc: 867
+  end_line: 995
+  loc: 995
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystal_analysis/impact_engine.py`
   start_line: 1
   end_line: 421
   loc: 421
   verified_at: 2026-10-25T01:07:42Z
+- path: `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
+  start_line: 1
+  end_line: 1098
+  loc: 1098
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   start_line: 1
   end_line: 231
@@ -11025,9 +11353,9 @@ Modules of `src/melder/nexus/acl/`:
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/crystallizer/crystals/mutation_research_crystal.py`
   start_line: 1
-  end_line: 350
-  loc: 350
-  verified_at: 2026-10-25T01:07:42Z
+  end_line: 452
+  loc: 452
+  verified_at: 2026-11-17T12:29:52Z
 - path: `src/melder/crystallizer/crystals/nexus_crystal.py`
   start_line: 1
   end_line: 188
@@ -12030,6 +12358,8 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   Custody strategy for user-source (file-backed, policy-rooted) modules
 - `src/melder/crystallizer/crystal_analysis/impact_engine.py`
   Blast-radius view over the custody manifests (S3 impact engine)
+- `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
+  Process-wide guarded answers about modules, reused across crystal analyses (#331)
 - `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   Process-wide stat-guarded physical-source fingerprint cache
 - `src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py`
@@ -12137,6 +12467,8 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   One immutable COMPOSITION record inside a research lane
 - `src/melder/mutation_research/research_set/network_versioner.py`
   Content-addressed version control for the graph network itself
+- `src/melder/mutation_research/research_set/research_composition_view.py`
+  The research composition as references, materialized for the persistence twin when read (#331)
 - `src/melder/mutation_research/research_set/research_journal.py`
   Set-level monotonic append-only log of world-entry events
 - `src/melder/mutation_research/research_set/research_lane.py` - Lifecycle states for one research lane
@@ -12353,6 +12685,42 @@ facades only.
   user_source SHA256 FINGERPRINTS at bind = on-disk drift detection, site_package path law, binary/unknown honest
   leaves), strategies/ (fact passes: import/from-import extraction, export_surface, dependency_view topological load
   order), preflight/ (the default preflight strategies + PersistenceAnalyzer).
+  Since 0.2.8302 (#327; the owner's root-precedence answer, 2026-11-16) the environment wins: user_source never
+  claims a module under an interpreter site root, under `sys.prefix`/`sys.base_prefix`/`sys.exec_prefix`
+  (`CrystalAnalyzer.resolve_environment_root_paths`) or in a `site-packages`/`dist-packages` directory, even under
+  a user root, so such a module falls to site_package or unknown. One `analyze_spell_root` pass resolves each
+  distinct module's path and runs the custody chain once (keyed by name and module object). Since 0.2.8304
+  (#331, the owner's decisions of 2026-11-17) what a pass derives is kept between analyses in the
+  process-wide `ModuleAnswerCache`: each module's resolved path (same module object and `__file__`; for a
+  module not imported, the same `sys.path`), each path's custody kind under the same user, environment and
+  site roots, each physical module's facts - dependency candidates after the member probes, fingerprint,
+  export surface - the resolved policy roots, and site-package provenance while the site roots' directories
+  keep their modification times. Since 0.2.8305 a loaded module's answers are checked in memory - the same
+  module object and import spec, which `importlib.reload` replaces - and its file is not stat'ed again; a
+  module not imported keeps the file (mtime_ns, size) check. A whole analysed world is kept per root module
+  after a walk with no read or parse error, and a later spell from that module, every touched module
+  unchanged, receives a copy (`CrystalAnalysisResult.load_described_payload`) instead of a walk. A walk that
+  still runs answers each import target once per pass and records each shared leaf once. Since 0.2.8306 the
+  first answer to an import target in a pass comes from an edge answer kept across walks
+  (`ModuleAnswerCache.lookup_edge_answer`: the resolved path, the custody kind and the leaf record, under the
+  path entry's guard and the custody policy roots), so a new root module's walk makes one lookup per target
+  instead of a path lookup, a custody lookup and a `Path` built from text; the dependency order is picked from a
+  heap, the same order at O(log n) per pick. Synthetic modules,
+  many with no physical copy, are never kept. Measured, 600 binds over 150 modules (Windows, GIL off): 14.2 s
+  at 0.2.8303, about 2 s at 0.2.8304, 1.15 s at 0.2.8305, about 1.0 s at 0.2.8306 (2.77 s at 0.2.8305 with
+  MutationResearch recording, 1.02-1.07 s at 0.2.8306). Accepted residuals: a loaded module's file edited
+  without a reload keeps its earlier analysis until a reload or re-import; a member submodule created later
+  is seen once its importer is reloaded.
+  EVIDENCE:
+  `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:UserSourceCustodyStrategy.matches`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._match_custody`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._extract_remembered_module_facts`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer.analyze_spell_root`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py:CrystalAnalysisResult.load_described_payload`,
+  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache.lookup_world`,
+  `src/melder/crystallizer/crystal_analysis/module_answer_cache.py:ModuleAnswerCache.lookup_edge_answer`,
+  `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:CrystalAnalyzer._resolve_pass_edge`,
+  `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:DependencyViewStrategy.finalize`.
 - `crystallizer/persistence/` - the RECORD, ledger only:
   persistence_system.py + persistence_profile.py + persistence_crystal.py.
   Verbs: profiles, twins/journal, checkpoint minting, retention, chain
@@ -12960,6 +13328,7 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
 - `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
 - `src/melder/crystallizer/crystal_analysis/impact_engine.py`
+- `src/melder/crystallizer/crystal_analysis/module_answer_cache.py`
 - `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
 - `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
 - `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py`
@@ -12991,6 +13360,7 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/mutation_research/mutation_configuration_builder.py`
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_composition_view.py`
 - `src/melder/mutation_research/research_set/research_journal.py`
 - `src/melder/mutation_research/research_set/research_lane.py`
 - `src/melder/mutation_research/research_set/research_node.py`
@@ -13081,12 +13451,14 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/utilities/synchronization/safeguard.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_input_fast_door.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py`
+- `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`
 - `tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py`
 - `tests/integration/melder/aether/test_aether_integration_change_control_transactions.py`
 - `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`
 - `tests/mocks/spellbook/codegen_signature_reference.py`
 - `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
 - `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
+- `tests/unit/melder/aether/test_rift_gate_thread_tickets.py`
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
 
 Companion documents:
@@ -13099,6 +13471,44 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+2026-11-09 the Rift gate (0.2.8301, GitHub #274, step 3; the owner's direction, chat 2026-11-08: tag agents going in,
+close the door, wait for them to leave, then clean up). What component contracts changed: AR Runtime Surface -
+`RiftGate` holds one ticket per thread inside (`_RiftGateHolder`, a thread-local depth), admits a thread already
+inside whatever the gate's state, never waits for the caller's own ticket, treats a release after cleanup as a
+no-op, and gains `close_terminally`, `wait_until_free` and `RiftGateDrainTimeoutError`; every agent door holds the
+calling thread's ticket - the Rift's seven agent methods (`_entered_door`; the internal `_get_frame_link_contract`
+and `_create_frame_link` stay untagged with the methods Nexus calls during a refresh, registration or removal),
+every viewer read (`FrameViewer._entered_view_action`), the room's hook registration methods; `Nexus.remove_rift`
+drains the gate without the Nexus lock before its registry phase (a timeout raises, keeps the Rift registered
+with its gate closed and can be retried; a Rift cleaned outside Nexus is refused before anything moves; a
+self-removal is not waited for) and `Nexus.cleanup` drains every gate under one deadline, logging and cleaning up
+anyway past it - in its responsibilities, lifecycle (a new removal-and-cleanup drain bullet; the Rift bullet
+corrected in place), threading (a new `RiftGate` bullet; the Rift bullet's open list corrected in place), two new
+invariants, failure modes (the agent racing a removal fixed but for a teardown that does not wait, V1 narrowed,
+the attach's cleaned error narrowed, and three new: the closed or "raise"-mode gate, the drain timeout, #284) and
+narrative. RiftSpace Workstation And Command Surface - the workstation's eleven public methods hold the borrowed
+gate's ticket, `call_target` and `cleanup_target` across agent code; every command is admitted before its
+action-hook scope and releases the ticket after its memory record and post-hooks, skipping the memory record on a
+command system cleaned during the call - in its lifecycle, threading, a new invariant and failure modes. Nexus
+Descriptor And ACL Managers - a failure mode for an ACL change made from inside a door (#284), and its publication
+note now points there. The Rift Single Space And Event Seam, RiftSpace Workstation, Rift-Backed Frame Viewer Surface
+and RiftSpace Command System subcomponents follow. The removal flow is renamed "Nexus.remove_rift -> Gate Drain ->
+Mark Under Locks -> Unlocked Teardown" and begins with the resolve and the drain; the ACL refresh, workstation,
+command and codegen flows carry the gate (the codegen flow's ticket order is corrected in place). The Unknowns
+entry marks the agent racing a removal fixed with its residual (a teardown that runs with threads still inside -
+a cleanup past its deadline, a direct `Rift.cleanup` - and a release racing it can raise AttributeError), narrows
+R2, R4's early window and the `Nexus.cleanup` item, and adds three open items: #284 (an ACL change from inside a
+door waits on its own ticket), #285 (room action hooks count depth per room, not per thread) and V1's two
+remaining paths. Every numeric citation into the moved lines of the nine changed files was remapped, the old ranges
+kept beside the new; the C1 map remeasures the nine files. Docstrings this pass found wrong were corrected in
+source with line counts unchanged: `RiftSpace`'s class Threading, `_entered_door` and `_entered_action_hook_scope`
+(and the comment in its exit) said only the acting thread's own removal can tear a room down mid-action;
+`Workstation.cleanup_target` named only that and a cleanup past its deadline; `CommandSystem._entered_command_action`
+and `_finish_command_action`, and the codegen commands' comments, gave the self-removal as the only reason a
+command system is cleaned mid-call - a teardown that does not wait (a `Nexus.cleanup` past its drain deadline, a
+direct `Rift.cleanup`) can do all of these. Still unknown: the Unknowns entry. Verify next: #284 and #285, then R2
+and V1's remaining paths.
+
 2026-11-08 agent code outside Melder's locks and a Rift teardown that cannot freeze against its agents
 (0.2.8290-0.2.8292, GitHub #274; the owner, 2026-11-08: agents can work in the same workstation at the same time).
 What component contracts changed: RiftSpace Workstation And Command Surface (0.2.8290, W5) -

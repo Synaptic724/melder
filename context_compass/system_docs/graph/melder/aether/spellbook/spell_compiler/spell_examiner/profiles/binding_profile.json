@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
- "source_sha256": "e129b889810ffff0a94806b3bd1819ee11477826772a478572b5171bc46ac5e5",
+ "source_sha256": "23f2323e142e3c440e9370a97293c61a6044e02b6579d4d77c05d5c688acb43e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile": {

@@ -194,14 +194,20 @@ class RiftGateController(Cleanable):
 
     def count_active_threads_for_rift(self, rift_id: str) -> int:
         """
-        Return active ticket count for one Rift gate.
+        Return how many threads are inside one Rift gate.
+
+        Contract:
+            - A gate holds one ticket per thread inside, however many nested
+              calls that thread is making (GitHub #274, step 3), so this counts
+              threads, not calls.
 
         Args:
             rift_id:
                 Rift id to resolve.
 
         Returns:
-            int: Active ticket count for the Rift gate, or 0 when missing.
+            int: Threads inside the Rift gate (its ticket count), or 0 when
+            missing.
         """
         self.check_cleaned()
         with self._lock:
@@ -212,10 +218,14 @@ class RiftGateController(Cleanable):
 
     def count_active_threads_total(self) -> int:
         """
-        Return active ticket count summed across all registered Rift gates.
+        Return the threads inside each registered Rift gate, summed.
+
+        Contract:
+            - Counts threads, not calls, per gate (GitHub #274, step 3); a thread
+              inside two Rifts at once counts once per Rift.
 
         Returns:
-            int: Sum of active tickets across the Rift registry.
+            int: Sum of the per-gate thread counts across the Rift registry.
         """
         self.check_cleaned()
         with self._lock:
@@ -233,6 +243,12 @@ class RiftGateController(Cleanable):
         """
         Terminally close and drain one Rift gate.
 
+        Contract:
+            - `RiftGate.close_and_wait_until_free`: newcomers are refused at once,
+              the threads already inside pass by re-entry until they leave, and
+              the caller's own ticket is not waited for (GitHub #274, step 3).
+            - A missing Rift id is a no-op.
+
         Args:
             rift_id:
                 Rift id to resolve.
@@ -243,6 +259,11 @@ class RiftGateController(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RiftGateDrainTimeoutError: A RuntimeError, if threads other than the
+                caller are still inside when the timeout runs out; the gate stays
+                closed.
         """
         self.check_cleaned()
         with self._lock:

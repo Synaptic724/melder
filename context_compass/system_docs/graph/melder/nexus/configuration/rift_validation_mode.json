@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_validation_mode.py",
- "source_sha256": "0e85fe0f2b1087a5dc95c74bbc305c931a7392e4d0837b1f8a1cede0fecd9bcb",
+ "source_sha256": "2d0a00f6e747a7eaa89dd4350aaa16ede8ba698fae932d22867f428bfeb79797",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_validation_mode": {

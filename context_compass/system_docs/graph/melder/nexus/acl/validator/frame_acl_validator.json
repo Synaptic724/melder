@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/frame_acl_validator.py",
- "source_sha256": "a9cb7d9dbbbca8bb71819e88946968067be62551a0fcf18a7d12acd9bb4529a4",
+ "source_sha256": "40c232d226ff203f2ef3d6cd321bc99aad2f4c772dd703b956bcf0cd358e9b41",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.frame_acl_validator": {

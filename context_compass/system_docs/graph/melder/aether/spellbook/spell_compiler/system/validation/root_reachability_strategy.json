@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py",
- "source_sha256": "13c53623b4d5c3b193f5b948c15cd9b0139a9ddc43caf447fee38c869e3a9ab1",
+ "source_sha256": "5ff25528896a38747ebbd98a86df26bf8e7104664009db76cd1a434ea5e2f81d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy": {

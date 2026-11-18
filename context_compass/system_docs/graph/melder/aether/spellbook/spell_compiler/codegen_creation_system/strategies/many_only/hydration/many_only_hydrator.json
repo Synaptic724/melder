@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py",
- "source_sha256": "64bbc10c14c063d0b23287e1d4639d9bff3d0dfae55b424c49f85c62d0adf430",
+ "source_sha256": "07c8e60cd40f54e5d2989fdeed6b67ffab92cbc75efe3aa091ebe1ea1b37b2f2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator": {

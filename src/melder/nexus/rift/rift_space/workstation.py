@@ -1,11 +1,15 @@
+from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict import (
     WeakConcurrentDict,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 
 
 class Workstation(Cleanable):
@@ -83,6 +87,15 @@ class Workstation(Cleanable):
         it (GitHub #274, W5), so agents' calls run concurrently. Whether the
         target's own methods are safe to call from several threads at once is
         the target's business, not Melder's (the owner, 2026-11-08).
+        Every public method below - the binds, `get`, `release`,
+        `describe_bindings` and the target methods - is an agent door: when the
+        room hands the workstation its Rift gate, the method holds the calling
+        thread's gate ticket for its whole run, `call_target` and
+        `cleanup_target` across the agent code too (GitHub #274, step 3). A
+        removal of the Rift therefore waits for them and refuses new ones, and an
+        ACL refresh drains them; a call nested in another call of the same Rift
+        passes by re-entry. The weak-binding collection callback and the
+        identity properties take no ticket.
 
     AGENT_ACCESS: public
 
@@ -106,6 +119,7 @@ class Workstation(Cleanable):
         "_weak_methods_by_name",
         "_target_name",
         "_target_store",
+        "_rift_gate",
     ]
     _VALID_STORES: Tuple[str, ...] = ("objects", "attributes", "methods")
     _DEFAULT_CLEANUP_METHODS: Tuple[str, ...] = ("cleanup", "close", "dispose")
@@ -116,6 +130,7 @@ class Workstation(Cleanable):
             *,
             default_weak_ref_bindings: bool = False,
             event_publisher: Optional[Callable[[Dict[str, object]], None]] = None,
+            rift_gate: Optional[RiftGate] = None,
     ) -> None:
         """
         Internal
@@ -131,6 +146,12 @@ class Workstation(Cleanable):
             event_publisher:
                 Optional best-effort room-local event publisher used for weak
                 binding collection signals.
+            rift_gate:
+                Optional Rift gate of the owning room, BORROWED: every public
+                method holds the calling thread's ticket on it while it runs
+                (GitHub #274, step 3). The workstation never closes or cleans
+                it. None - a standalone workstation - runs its methods
+                ungated.
 
         Returns:
             None.
@@ -163,6 +184,7 @@ class Workstation(Cleanable):
         )
         self._target_name: Optional[str] = None
         self._target_store: Optional[str] = None
+        self._rift_gate: Optional[RiftGate] = rift_gate
 
     def cleanup(self) -> None:
         """
@@ -176,6 +198,8 @@ class Workstation(Cleanable):
             - Clears active-target state.
             - Does not attempt to cleanup every stored binding automatically;
               explicit target cleanup is a separate operation.
+            - Drops the borrowed Rift gate reference without cleaning the gate,
+              which the owning Rift owns.
 
         Returns:
             None.
@@ -205,6 +229,7 @@ class Workstation(Cleanable):
             del self._event_publisher
             del self._target_name
             del self._target_store
+            del self._rift_gate
             del self._owner_space_id
             del self._id
         del self._lock
@@ -292,9 +317,17 @@ class Workstation(Cleanable):
             TypeError:
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        self._bind("objects", name, value, weak_ref=weak_ref)
+        with self._entered_door():
+            self._bind("objects", name, value, weak_ref=weak_ref)
 
     def bind_attribute(
             self,
@@ -329,9 +362,17 @@ class Workstation(Cleanable):
             TypeError:
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        self._bind("attributes", name, value, weak_ref=weak_ref)
+        with self._entered_door():
+            self._bind("attributes", name, value, weak_ref=weak_ref)
 
     def bind_method(
             self,
@@ -366,9 +407,17 @@ class Workstation(Cleanable):
             TypeError:
                 If weak storage is requested for a value that cannot be
                 weak-referenced.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        self._bind("methods", name, value, weak_ref=weak_ref)
+        with self._entered_door():
+            self._bind("methods", name, value, weak_ref=weak_ref)
 
     def get(self, name: str, *, store: Optional[str] = None) -> object:
         """
@@ -389,9 +438,16 @@ class Workstation(Cleanable):
             ValueError:
                 If `name` is empty, the binding is missing, or the name is
                 ambiguous across the logical stores.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and reads under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             _, _, value = self._resolve_binding(name, store=store)
             return value
 
@@ -412,9 +468,16 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If the binding cannot be resolved.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and writes under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             resolved_store, resolved_weak_ref, value = self._resolve_binding(
                 name,
                 store=store,
@@ -445,19 +508,22 @@ class Workstation(Cleanable):
               bindings currently hold.
 
         Threading:
-            Reads under `self._lock`, so the result is a coherent snapshot.
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3). Reads under `self._lock`, so the result is a
+            coherent snapshot.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or the room's Rift
+                gate refuses the call.
 
         Returns:
             Dict[str, List[str]]: Binding names grouped by logical store.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             return {
                 "objects": self._describe_store_names("objects"),
                 "attributes": self._describe_store_names("attributes"),
@@ -483,9 +549,16 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If the binding cannot be resolved.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and selects under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             resolved_store, _, _ = self._resolve_binding(name, store=store)
             self._target_name = name
             self._target_store = resolved_store
@@ -500,9 +573,17 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If no target is selected.
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and reads under the workstation lock;
+            `call_target` reaches it by re-entry.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             if self._target_name is None or self._target_store is None:
                 raise ValueError("Workstation has no active target.")
             _, _, value = self._resolve_binding(
@@ -521,9 +602,18 @@ class Workstation(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If the workstation is cleaned, or the room's Rift gate refuses
+                the call.
+
+        Threading:
+            An agent door: holds the room's Rift gate ticket for the call
+            (GitHub #274, step 3) and clears under the workstation lock.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_door(), self._lock:
             self._clear_target_locked()
 
     def cleanup_target(self, *method_names: str) -> None:
@@ -537,7 +627,10 @@ class Workstation(Cleanable):
               binding just cleaned (by name and store): a target another agent
               selected while the cleanup methods ran stays selected.
             - Returns without clearing when a teardown cleaned the workstation
-              meanwhile; one landing just before the lock raises AttributeError.
+              meanwhile: the calling thread's own removal of its Rift, or one
+              that did not wait for it (a Nexus cleanup past its drain deadline,
+              a direct `Rift.cleanup`); one of the latter landing just before the
+              lock raises AttributeError.
 
         Args:
             *method_names:
@@ -553,49 +646,52 @@ class Workstation(Cleanable):
                 If no target is selected, a method name is empty, or no cleanup
                 method can be resolved on the current target.
             RuntimeError:
-                If the workstation is cleaned, or one resolved cleanup method is
-                not callable.
+                If the workstation is cleaned, one resolved cleanup method is
+                not callable, or the room's Rift gate refuses the call.
 
         Threading:
-            Resolves the target under the workstation lock and runs its cleanup
-            methods - agent code - after releasing it, so another agent's use
-            of this workstation does not wait on them and a cleanup method that
-            uses this room cannot freeze against it (GitHub #274, W5). The
-            selection is cleared under the lock again.
+            An agent door: holds the room's Rift gate ticket for its whole run,
+            the cleanup methods included (GitHub #274, step 3), so a removal of
+            the Rift waits for them. Resolves the target under the workstation
+            lock and runs its cleanup methods - agent code - after releasing it,
+            so another agent's use of this workstation does not wait on them and
+            a cleanup method that uses this room cannot freeze against it
+            (GitHub #274, W5). The selection is cleared under the lock again.
         """
         self.check_cleaned()
-        with self._lock:
-            if self._target_name is None or self._target_store is None:
-                raise ValueError("Workstation has no active target.")
-            target_name = self._target_name
-            target_store = self._target_store
-            _, _, target = self._resolve_binding(target_name, store=target_store)
-        cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
-        resolved_any = False
-        for method_name in cleanup_names:
-            if not method_name:
-                raise ValueError("cleanup method names cannot be empty.")
-            method = getattr(target, method_name, None)
-            if method is None:
-                continue
-            if not callable(method):
-                raise RuntimeError(
-                    "Target cleanup attribute '{0}' is not callable.".format(
-                        method_name
+        with self._entered_door():
+            with self._lock:
+                if self._target_name is None or self._target_store is None:
+                    raise ValueError("Workstation has no active target.")
+                target_name = self._target_name
+                target_store = self._target_store
+                _, _, target = self._resolve_binding(target_name, store=target_store)
+            cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
+            resolved_any = False
+            for method_name in cleanup_names:
+                if not method_name:
+                    raise ValueError("cleanup method names cannot be empty.")
+                method = getattr(target, method_name, None)
+                if method is None:
+                    continue
+                if not callable(method):
+                    raise RuntimeError(
+                        "Target cleanup attribute '{0}' is not callable.".format(
+                            method_name
+                        )
                     )
-                )
-            method()
-            resolved_any = True
-        if not resolved_any:
-            raise ValueError("No cleanup method was found on the active target.")
-        if self._cleaned:
-            # A teardown cleaned this workstation while the cleanup methods ran; its selection went with it.
-            return
-        with self._lock:
-            # Clear the selection only while it still names the binding just cleaned: another agent may have
-            # selected a different target while the cleanup methods ran outside the lock (GitHub #274, W5).
-            if self._target_name == target_name and self._target_store == target_store:
-                self._clear_target_locked()
+                method()
+                resolved_any = True
+            if not resolved_any:
+                raise ValueError("No cleanup method was found on the active target.")
+            if self._cleaned:
+                # A teardown cleaned this workstation while the cleanup methods ran; its selection went with it.
+                return
+            with self._lock:
+                # Clear the selection only while it still names the binding just cleaned: another agent may have
+                # selected a different target while the cleanup methods ran outside the lock (GitHub #274, W5).
+                if self._target_name == target_name and self._target_store == target_store:
+                    self._clear_target_locked()
 
     def call_target(
             self,
@@ -633,30 +729,68 @@ class Workstation(Cleanable):
             ValueError:
                 If no target is selected or `bind_as_store` is invalid.
             RuntimeError:
-                If the target is not callable, or the workstation is cleaned -
-                also when a teardown cleaned it while the target ran and
-                `bind_as_name` asks to bind the result.
+                If the target is not callable, the room's Rift gate refuses the
+                call, or the workstation is cleaned - also when the target
+                removed its own Rift and `bind_as_name` asks to bind the result.
 
         Threading:
-            Resolves the target under the workstation lock and calls it - agent
-            code - after releasing it, so agents sharing this workstation run
-            their calls concurrently and a target that uses this room through a
-            command cannot freeze against another command reading the target
+            An agent door: holds the room's Rift gate ticket for its whole run,
+            the target included (GitHub #274, step 3), so a removal of the Rift
+            waits for the target to return and an ACL refresh drains it; a
+            target that calls back into its own Rift passes by re-entry, and one
+            that removes its own Rift is not waited for. Resolves the target
+            under the workstation lock and calls it - agent code - after
+            releasing it, so agents sharing this workstation run their calls
+            concurrently and a target that uses this room through a command
+            cannot freeze against another command reading the target
             (GitHub #274, W5).
         """
         self.check_cleaned()
-        target = self.get_target()
-        if not callable(target):
-            raise RuntimeError("Active target is not callable.")
-        result = target(*args, **kwargs)
-        if bind_as_name is not None:
-            self._bind(
-                bind_as_store,
-                bind_as_name,
-                result,
-                weak_ref=None,
-            )
-        return result
+        with self._entered_door():
+            target = self.get_target()
+            if not callable(target):
+                raise RuntimeError("Active target is not callable.")
+            result = target(*args, **kwargs)
+            if bind_as_name is not None:
+                self._bind(
+                    bind_as_store,
+                    bind_as_name,
+                    result,
+                    weak_ref=None,
+                )
+            return result
+
+    @contextmanager
+    def _entered_door(self) -> Iterator[None]:
+        """
+        Hold the room's Rift gate for one public workstation call, when the
+        workstation was given one.
+
+        Contract:
+            - Admits the calling thread at the gate - a thread already inside
+              the Rift passes by re-entry - and releases the admission when the
+              call returns or raises. A workstation without a gate runs the
+              call as is.
+            - The gate is held in a local: a teardown during the call - the same
+              thread's removal of its own Rift - deletes the workstation's field,
+              and the release after a cleaned gate is a quiet no-op.
+
+        Yields:
+            None.
+
+        Raises:
+            RuntimeError: If the gate refuses the call (terminally closed, or
+                disabled in "raise" entry mode).
+        """
+        rift_gate = self._rift_gate
+        if rift_gate is None:
+            yield
+            return
+        rift_gate.admit_ticket()
+        try:
+            yield
+        finally:
+            rift_gate.unregister_ticket()
 
     def _bind(
             self,

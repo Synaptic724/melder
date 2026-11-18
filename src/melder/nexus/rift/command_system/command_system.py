@@ -47,9 +47,14 @@ class CommandSystem(Cleanable):
     Threading:
         Room-confined: it holds no cross-room state, and the ACL projections it
         enforces against are refreshed by the owning Rift. Every public command
-        enters the room's action-hook scope and holds a `RiftGate` ticket while
-        it runs; most also do their work under the command lock (`self._lock`),
-        so those commands take turns within one room. The target commands -
+        holds a `RiftGate` ticket for its whole run: it is admitted before it
+        enters the room's action-hook scope and releases the ticket only after
+        its post-hooks and its memory record, so a removal or an ACL refresh
+        waiting on the room never tears down or swaps under a command's own
+        exit (GitHub #274, step 3); a command nested in another call of the same
+        Rift passes by re-entry. Most commands also do their work under the
+        command lock (`self._lock`), so those commands take turns within one
+        room. The target commands -
         `get_target_attribute`, `get_target_method` and `execute_target_method` -
         take no command lock: reading an attribute or calling a method of the
         target runs agent code, the workstation's own lock covers the target
@@ -1212,32 +1217,58 @@ class CommandSystem(Cleanable):
         """
         Enter one explicit top-level public command action.
 
+        Contract:
+            - TICKET FIRST, RELEASED LAST (GitHub #274, step 3): the command is
+              admitted at the room's `RiftGate` before it enters the action-hook
+              scope. On the way out the memory record is emitted inside the hook
+              scope - before the post-hooks, the order commands always had - then
+              the hook scope exits (post-hooks), then the ticket is released. The
+              ticket spans the hooks and the memory record so a removal cannot
+              tear the room down under the command's own exit; a hook or memory
+              callback that re-enters its own Rift passes by re-entry.
+            - A refused admission (closed gate, or "raise" entry mode on a
+              disabled gate) raises before any hook runs.
+            - Memory is emitted only for a command whose body succeeded, and not
+              when this command system was cleaned during the call (the thread
+              removed its own Rift, design 5c, or a teardown did not wait).
+            - The ticket is released even when the memory record or a post-hook
+              raises; its release after a cleaned gate is a quiet no-op.
+
         Args:
             action_name:
                 Stable public command method name that completed successfully.
             frame_name:
                 Optional caller-supplied frame name associated with the action.
+            category:
+                Action-hook category the command runs under.
 
         Returns:
             Any: Context manager that guarantees symmetric RiftGate release and
             successful top-level memory emission.
+
+        Raises:
+            RuntimeError: If the room's gate refuses the command.
         """
-        with self._entered_action_hook_scope_if_available(
-                category=category,
-                action_name=action_name,
-        ):
-            rift_gate = self._begin_command_action()
-            command_succeeded = False
-            try:
-                yield
-                command_succeeded = True
-            finally:
-                self._finish_command_action(
-                    rift_gate=rift_gate,
+        rift_gate = self._begin_command_action()
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category=category,
                     action_name=action_name,
-                    frame_name=frame_name,
-                    emit_memory=command_succeeded,
-                )
+            ):
+                command_succeeded = False
+                try:
+                    yield
+                    command_succeeded = True
+                finally:
+                    # Memory before the post-hooks, as commands always had it; the ticket outlives both (below).
+                    self._finish_command_action(
+                        action_name=action_name,
+                        frame_name=frame_name,
+                        emit_memory=command_succeeded,
+                    )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     def _begin_command_action(self) -> Optional[Any]:
         """
@@ -1246,13 +1277,19 @@ class CommandSystem(Cleanable):
         Contract:
             - Verifies that the command system is still live.
             - Resolves the owning room Rift gate when one is available.
-            - Calls `admit()` before registering one active ticket.
+            - Admits the command with `admit_ticket()` - ticket-first, and a
+              thread already inside the Rift passes by re-entry - BEFORE the
+              caller enters the action-hook scope.
             - Returns the gate object so the caller can guarantee symmetric
-              release in a `finally` block.
+              release in a `finally` block, after its memory record and hooks.
 
         Returns:
             Optional[Any]: Owning room Rift gate, or None when no gate is bound
             to the room.
+
+        Raises:
+            RuntimeError: If the gate refuses the command (terminally closed, or
+                disabled in "raise" entry mode).
         """
         self.check_cleaned()
         rift_gate = self._get_rift_gate_if_available()
@@ -1268,7 +1305,6 @@ class CommandSystem(Cleanable):
     def _finish_command_action(
             self,
             *,
-            rift_gate: Optional[Any],
             action_name: str,
             frame_name: Optional[str],
             emit_memory: bool,
@@ -1277,15 +1313,18 @@ class CommandSystem(Cleanable):
         Exit one top-level command action and optionally emit command memory.
 
         Contract:
-            - Releases the RiftGate ticket before emitting memory so the gate
-              never stays held across memory callbacks.
+            - Runs inside the action-hook scope, before the post-hooks, while the
+              command still holds its RiftGate ticket: the ticket spans the
+              memory record and the hooks, and `_entered_command_action`
+              releases it after both, so a removal waiting on this command cannot
+              tear the room down under its exit (GitHub #274, step 3). A memory
+              callback that re-enters its own Rift passes the gate by re-entry.
             - Emits command memory only when the caller marks the command as a
-              successful top-level action.
-            - Never suppresses gate-release failures.
+              successful top-level action, and skips it when this command system
+              was cleaned during the call - the thread removed its own Rift
+              (design 5c), or a teardown did not wait for it.
 
         Args:
-            rift_gate:
-                Rift gate returned by `_begin_command_action(...)`.
             action_name:
                 Stable public command method name.
             frame_name:
@@ -1297,9 +1336,7 @@ class CommandSystem(Cleanable):
         Returns:
             None.
         """
-        if rift_gate is not None:
-            rift_gate.unregister_ticket()
-        if emit_memory:
+        if emit_memory and not self._cleaned:
             self._emit_command_memory_if_enabled(
                 action_name=action_name,
                 frame_name=frame_name,

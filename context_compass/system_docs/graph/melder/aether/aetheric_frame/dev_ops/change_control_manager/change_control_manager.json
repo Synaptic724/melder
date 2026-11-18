@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py",
- "source_sha256": "c98e19202cbed01b98305629d5ffc43b2f24633f3ccb1d8c571044320e3dd83a",
+ "source_sha256": "5a85dbf90b035232040a9b80e26a4ed467ba912b798db0b73c6b19d667c2ee5b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager": {

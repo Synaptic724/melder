@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/unit_of_work.py",
- "source_sha256": "97eb22deb138a3a34793de2ba1509fc65665748eb08f0c0539e9999e549c3987",
+ "source_sha256": "3d2fc8225780fbdacab480052b81e7bac3f6aa243c5500b5264853c8ed69c6dc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.unit_of_work": {

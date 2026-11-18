@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py",
- "source_sha256": "2f5b0ade0e8e968134f1d86c912a43f1e8b10da789862eb8b02c8546b192f417",
+ "source_sha256": "30b6be4ab544db3b3b8bea7a126a852a71dff6e7bc879408a938959140b4bfef",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature": {

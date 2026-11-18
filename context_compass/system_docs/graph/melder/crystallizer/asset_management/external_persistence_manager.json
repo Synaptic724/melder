@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
- "source_sha256": "7a576442c1ad532132a57dc587116b9561f64af164b51635e68941e52ef4ba9e",
+ "source_sha256": "f8728a8c58f356386402f632b80405a4ed0afc76fee7cde49105d4294b984bb2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.asset_management.external_persistence_manager": {

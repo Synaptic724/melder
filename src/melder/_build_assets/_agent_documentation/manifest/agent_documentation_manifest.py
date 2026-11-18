@@ -19,11 +19,11 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8300"
-SOURCE_SHA256 = "7f7f63fa906022710be3d4630e6320c83da7af85d926783bdc8df29bb0e5668a"
-MARKED_COUNT = 471
+BUILT_FOR_VERSION = "0.2.8310"
+SOURCE_SHA256 = "6896b5b2ed8146f6cea4f50b01c59071e447ff7dd3c7cd6779cfe086a3499ca8"
+MARKED_COUNT = 474
 EXEMPT_COUNT = 142
-PENDING_COUNT = 18
+PENDING_COUNT = 19
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -147,7 +147,7 @@ AGENT_METADATA = {
     ('melder.aether.conduit.creations.release_managed_spell', 'ReleaseManagedSpell'): ('public', "access: public. Give managed objects back: `ReleaseManagedSpell().release(obj)` returns an object leased from a managed_spell_quantity pool (its resets run, it is reused by the next lease); `managed(obj)` gives a lease for a `with` block; `release_all(objects)`; `describe(cls)` shows each pool's mode, count and idle objects. Pass spell_id= or conduit= only when one class is managed by several pools. In a hot loop bind it once: `release = ReleaseManagedSpell().release`."),
     ('melder.aether.conduit.meld.conduit_meld', 'ConduitMeld'): ('internal', 'access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.contracts.spell_contract', 'SpellContract'): ('public', 'access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it as a constructor default when the provider will arrive from another conduit. Requires at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic.'),
-    ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo) for MyRepo bound bare, SpellMap(MyRepo, binding_name='primary') for MyRepo bound bare under that name, or SpellMap(spellframe=ILogic, binding_name='primary') for a spell filed under a frame. Zero or multiple matches raise at build time."),
+    ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('public', "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a constructor default: SpellMap(MyRepo) for MyRepo bound bare, SpellMap(MyRepo, binding_name='primary') for MyRepo bound bare under that name, or SpellMap(spellframe=ILogic, binding_name='primary') for a spell filed under a frame. Several matches raise at build time; no match waits as an unresolved input until a spell is bound at the address or the meld supplies the value."),
     ('melder.aether.conduit.meld.creation_context.creation_context', 'CreationContext'): ('internal', 'access: internal. Spell-bound runtime executor context. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.creation_context.creation_context_builder', 'CreationContextBuilder'): ('internal', 'access: internal. Build spell-bound `CreationContext` objects from phase-11 creation inputs. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.meld.creation_context.creation_context_factory', 'CreationContextFactory'): ('internal', 'access: internal. Produce spell-shaped `CreationContext` instances. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
@@ -191,7 +191,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.dag.dag_node', 'DagNode'): ('internal', 'access: internal. A node in the resolution DAG: a keyed unit of work with dependency/dependent DagNode sets and param-aware edges (children_by_param / incoming_params). Lightweight - no separate Edge objects.'),
     ('melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph', 'DirectedAcyclicWorkGraph'): ('internal', 'access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ bulk), topological_sort, topological_levels (parallel-execution peeling), collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general workflow engine.'),
     ('melder.aether.spellbook.spell_compiler.dag.resolution_frame.resolution_frame', 'ResolutionFrame'): ('internal', 'access: internal. Per-meld resolution state: caller overrides, per-node results, and per-node errors keyed by node id. Created once per resolution run, RLock-guarded, cleaned after. Knows no graph structure.'),
-    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input), UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported), AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).'),
+    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input), UNRESOLVED_INPUT (typed or SpellMap dependency with no provider; supplied by the call or reported), AMBIGUOUS_INPUT (typed dependency with several providers; refused by Phase 4 with the candidates).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpec'): ('internal', 'access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpecKind'): ('internal', 'access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), BROADCAST (**name). Classifies how an override key targets DAG sockets.'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellResolutionFrame'): ('internal', "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id plus ordered_node_ids (the topological order the resolver walks). Distinct from dag/resolution_frame's ResolutionFrame."),
@@ -259,6 +259,7 @@ AGENT_METADATA = {
     ('melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy', 'SyntheticCustodyStrategy'): ('internal', 'access: internal. Authority-class custody for `SyntheticModule` objects. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy', 'UserSourceCustodyStrategy'): ('internal', 'access: internal. Authority-class custody for policy-rooted user source modules. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.impact_engine', 'ImpactEngine'): ('internal', 'access: internal. Index custody manifests and answer blast-radius questions. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.crystallizer.crystal_analysis.module_answer_cache', 'ModuleAnswerCache'): ('internal', 'access: internal. Process-wide guarded answers about modules for crystal analyses. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.physical_source_cache', 'PhysicalSourceCache'): ('internal', 'access: internal. Shared stat-guarded fingerprint cache over physical source files. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy', 'ClusterMembershipStrategy'): ('internal', 'access: internal. Detect cluster members missing from the bundle. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy', 'ConfigurationLossStrategy'): ('internal', 'access: internal. Surface configuration facts a record can never fully rebuild. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
@@ -318,6 +319,7 @@ AGENT_METADATA = {
     ('melder.mutation_research.mutation_research', 'MutationResearch'): ('public', 'access: public. The research root, reached through Aether. Configure and activate, then create_research_set(...) and use the read verbs: source_view, impact_view, module_view, part_view, diff_research, residency_view, group_view.'),
     ('melder.mutation_research.research_set.grouped_research_node', 'GroupedResearchNode'): ('internal', 'access: internal. One immutable COMPOSITION record inside a research lane. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.mutation_research.research_set.network_versioner', 'NetworkVersioner'): ('internal', 'access: internal. Content-addressed version control for the graph network itself. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.mutation_research.research_set.research_composition_view', 'ResearchCompositionView'): ('internal', 'access: internal. The research composition as references, materialized for the persistence twin when read. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.mutation_research.research_set.research_journal', 'ResearchJournal'): ('internal', 'access: internal. Set-level monotonic append-only log of world-entry events. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.mutation_research.research_set.research_lane', 'LaneState'): ('public', 'access: public. Lifecycle state of one research lane. Read it from lane views; MutationResearch verbs move it.'),
     ('melder.mutation_research.research_set.research_lane', 'LaneType'): ('public', 'access: public. Lane classification - development, experiment, production, test. Pass to create_lane(...). Cross-type joins require force=True when configuration lane_type_enforcement is on.'),
@@ -432,6 +434,7 @@ AGENT_METADATA = {
     ('melder.nexus.rift.projection.view_projection', 'ViewProjection'): ('internal', 'access: internal. Consumer-shaped view projection for one targeted frame. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.rift', 'Rift'): ('public', 'access: public. One live AR connection. Created bare by Nexus with a single primary room from space_type; attach targets afterwards with create_frame_link(frame_name), which REQUIRES descriptor truth to exist. Reach the room via .space.'),
     ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGate'): ('internal', 'access: internal. Generic gate primitive for coordinating Rift-scoped operations. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGateDrainTimeoutError'): ('internal', 'access: internal. The drain-timeout error of the Rift gate. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.rift_gate_controller.rift_gate_controller', 'RiftGateController'): ('internal', 'access: internal. Central registry and control plane for `RiftGate` instances. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.rift_space.capability_rift_space', 'CapabilityRiftSpace'): ('internal', 'access: internal. CapabilityRiftSpace runtime object. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.rift_space.codegen_rift_space', 'CodegenRiftSpace'): ('public', "access: public. The codegen room type - a room that owns an internal CodegenSystem for validate/execute-code workflows plus a slim runtime-helper surface and the full research command family. You get it as a Rift's space when space_type=codegen."),
@@ -469,7 +472,7 @@ AGENT_METADATA = {
     ('melder.utilities.custom_exceptions.phase_timeout_error', 'PhaseTimeoutError'): ('public', 'access: public. Raised when a conjure phase exceeds its barrier timeout; phase_name + timeout_ms locate it. Usually a blocked constructor/lock/hook, not slow work.'),
     ('melder.utilities.custom_exceptions.spell_space_scope_error', 'SpellSpaceScopeError'): ('public', 'access: public. Raised when a unique_per_spell_space spell is resolved with no active SpellSpace, or a SpellSpace is used cross-conduit or after close; enter conduit.enter_spellspace() first.'),
     ('melder.utilities.custom_exceptions.spellbook_validation_error', 'SpellbookValidationError'): ('public', "access: public. The build-time 'your graph is broken' error from conjure/meld; the message lists each broken spell's errors by name with a fix, plus whole-graph errors. Fix the binding, not the validator."),
-    ('melder.utilities.custom_exceptions.unresolved_input_error', 'UnresolvedInputError'): ('public', 'access: public. Raised at meld when an object whose typed parameter has no registered provider is built without that value; supply it by override (root key, `>param` path key or `**param`) or bind a provider for expected_type.'),
+    ('melder.utilities.custom_exceptions.unresolved_input_error', 'UnresolvedInputError'): ('public', "access: public. Raised at meld when an object whose typed parameter has no registered provider, or whose SpellMap default's address has nothing bound, is built without that value; supply it by override (root key, `>param` path key or `**param`), or bind a provider for expected_type (for a SpellMap, a spell at its address)."),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', 'WeakConcurrentDict'): ('public', 'access: public. Dict with STRONG keys and WEAK values - putting an object in never keeps it alive, so use it as a cache, not a store. An entry can die between two statements, so `k in d` then `d[k]` may raise DeadReferenceError. Dead entries stay visible until pruned; freeze() speeds reads but does not stop collection.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_list', 'WeakConcurrentList'): ('public', 'access: public. Ordered container holding elements WEAKLY - it never keeps its contents alive. Indices are NOT stable: entries vanish on collection, so iterate directly rather than by index, and expect DeadReferenceError from a stale one.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_set', 'WeakConcurrentSet'): ('public', 'access: public. Set holding members WEAKLY - membership is a question about lifetime, since a member nothing else references drops out on its own. `x in s` is point-in-time and len() is advisory unless you just pruned. freeze() speeds reads but does not stop collection.'),
@@ -650,6 +653,7 @@ PENDING = (
     ('melder.crystallizer.crystal_analysis.conduit_hierarchy', 'ConduitHierarchy'),
     ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
     ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
+    ('melder.nexus.rift.rift_gate.rift_gate', '_RiftGateHolder'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictKeysView'),
@@ -1028,6 +1032,7 @@ CLASS_BASES = {
     ('melder.mutation_research.mutation_research', 'MutationResearch'): ('Cleanable',),
     ('melder.mutation_research.research_set.grouped_research_node', 'GroupedResearchNode'): ('Cleanable',),
     ('melder.mutation_research.research_set.network_versioner', 'NetworkVersioner'): ('Cleanable',),
+    ('melder.mutation_research.research_set.research_composition_view', 'ResearchCompositionView'): ('Cleanable',),
     ('melder.mutation_research.research_set.research_journal', 'ResearchJournal'): ('Cleanable',),
     ('melder.mutation_research.research_set.research_lane', 'LaneState'): ('StrEnum',),
     ('melder.mutation_research.research_set.research_lane', 'LaneType'): ('StrEnum',),
@@ -1129,6 +1134,8 @@ CLASS_BASES = {
     ('melder.nexus.rift.projection.view_projection', 'ViewProjection'): ('Cleanable',),
     ('melder.nexus.rift.rift', 'Rift'): ('Cleanable',),
     ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGate'): ('Cleanable',),
+    ('melder.nexus.rift.rift_gate.rift_gate', 'RiftGateDrainTimeoutError'): ('RuntimeError',),
+    ('melder.nexus.rift.rift_gate.rift_gate', '_RiftGateHolder'): ('local',),
     ('melder.nexus.rift.rift_gate_controller.rift_gate_controller', 'RiftGateController'): ('Cleanable',),
     ('melder.nexus.rift.rift_space.capability_rift_space', 'CapabilityRiftSpace'): ('RiftSpace',),
     ('melder.nexus.rift.rift_space.codegen_rift_space', 'CodegenRiftSpace'): ('RiftSpace',),

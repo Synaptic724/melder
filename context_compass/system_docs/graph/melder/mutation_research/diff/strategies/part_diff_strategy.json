@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/diff/strategies/part_diff_strategy.py",
- "source_sha256": "aac8ad62e54883710ab7a51caa8e784c1cd956b8af126fe8bea074b52a9aee57",
+ "source_sha256": "247747215714f61da2925b92364d488f135c559e58a97a3c392a7a15c7056383",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.diff.strategies.part_diff_strategy": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
- "source_sha256": "f5e26038177fe5de7e6540bf692c7b55a066707cebe9c1d826b677717e5cf5d9",
+ "source_sha256": "ca139b8f871bdc750ceb249be55890788943c6ff1915fc0836a6a0be06e37d9e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.phase_timeout_error": {

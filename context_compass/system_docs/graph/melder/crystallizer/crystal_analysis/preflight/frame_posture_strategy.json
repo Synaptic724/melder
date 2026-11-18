@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/frame_posture_strategy.py",
- "source_sha256": "851ed3bae701ddfe957a5f67186e55863c7d527e13f147bf84cbcbdedfd1c2f2",
+ "source_sha256": "7a163e3735f1d479fd70d75aea96db705eca93f7122479704f0e78b85f67e708",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy": {

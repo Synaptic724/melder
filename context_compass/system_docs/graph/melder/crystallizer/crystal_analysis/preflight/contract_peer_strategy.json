@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/contract_peer_strategy.py",
- "source_sha256": "fec0197f5251363d1e9aa2e339140cd41984c3f115966a9da188ef79818eec2a",
+ "source_sha256": "776a274158619317d7aa149afa6520ebce1bfd4e7d5332a9df36c072bd3a7f1b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy": {

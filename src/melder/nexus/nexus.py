@@ -55,7 +55,7 @@ from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
-from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate, RiftGateDrainTimeoutError
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -313,6 +313,13 @@ class Nexus(Cleanable):
 
         Contract:
             - Safe to call more than once.
+            - Drains every registered Rift's gate before the teardown (GitHub
+              #274, design 5d): every gate is closed, so newcomers are refused
+              everywhere at once, and the cleanup waits for the threads inside
+              to leave under ONE deadline shared by all Rifts
+              (`projection_refresh_gate_timeout_seconds`). Threads that outstay
+              it are logged at WARNING and their Rift is cleaned up anyway; a
+              caller inside one of the Rifts is not waited for.
             - Cleans registered Rifts, profile templates, installed
               configuration, ACL manager, and descriptor manager before
               dropping references.
@@ -320,7 +327,9 @@ class Nexus(Cleanable):
               completes.
 
         Threading:
-            Takes `Nexus._lock`, the one class-level lock, for the teardown and
+            Takes `Nexus._lock`, the one class-level lock, briefly to snapshot
+            the gates for the drain, waits for the drain without it (an agent
+            inside may need it to leave), then takes it for the teardown and
             again to reset the singleton bookkeeping.
 
         Returns:
@@ -328,6 +337,7 @@ class Nexus(Cleanable):
         """
         if self._cleaned:
             return
+        self._drain_rift_gates_before_cleanup()
         with self._lock:
             if self._cleaned:
                 return
@@ -379,6 +389,88 @@ class Nexus(Cleanable):
         with Nexus._lock:
             Nexus._instance = None
             Nexus._initialized = False
+
+    def _drain_rift_gates_before_cleanup(self) -> None:
+        """
+        Internal
+
+        Close every registered Rift's gate and wait, under one shared deadline,
+        for the threads inside to leave.
+
+        Purpose:
+            The drain step of `cleanup` (GitHub #274, design 5d): the teardown
+            does not run under an agent that is still inside one of its Rift's
+            calls and can finish, and it does not hang on one that cannot.
+
+        Contract:
+            - Snapshots (name, id, gate) of every registered Rift and the drain
+              bounds under the Nexus lock, then releases it. Nothing to drain
+              when Nexus was cleaned, is not configured, or holds no Rift.
+            - Closes every gate first (`RiftGate.close_terminally`), so
+              newcomers are refused everywhere at once, then waits for each gate
+              with what remains of ONE deadline - now plus
+              `projection_refresh_gate_timeout_seconds` - shared by all Rifts.
+            - A gate whose threads outstay the deadline is logged at WARNING
+              (Rift name and id, threads still inside, cleaned up anyway) and the
+              drain moves on; the teardown that follows cleans that Rift with
+              them inside. A gate cleaned before or during the drain - a
+              concurrent `remove_rift` tore its Rift down - has nobody left to
+              wait for and is skipped; this best-effort step never aborts the
+              cleanup for it.
+            - The caller's own ticket is never waited for.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: If the configured drain bounds are no longer numeric.
+
+        Threading:
+            Takes the Nexus lock only for the snapshot; the waits run without
+            it, because an agent inside may need it to leave.
+        """
+        with self._lock:
+            if self._cleaned or not self._configured or not self._rifts_by_id:
+                return
+            rift_names_by_id = {
+                rift_id: rift_name
+                for rift_name, rift_id in self._rift_ids_by_name.items()
+            }
+            rift_gates: List[Tuple[Optional[str], str, RiftGate]] = []
+            for rift_id in self._rifts_by_id:
+                rift_gate = self._rift_gate_controller.get_rift_gate(rift_id)
+                if rift_gate is not None:
+                    rift_gates.append((rift_names_by_id.get(rift_id), rift_id, rift_gate))
+            timeout, interval = self._get_rift_gate_drain_bounds()
+        for _, _, rift_gate in rift_gates:
+            try:
+                rift_gate.close_terminally()
+            except RuntimeError:
+                # A concurrent removal tore this Rift down after the snapshot: its gate is cleaned, nothing to drain.
+                if not rift_gate.cleaned:
+                    raise
+        deadline = time.monotonic() + timeout
+        for rift_name, rift_id, rift_gate in rift_gates:
+            try:
+                rift_gate.wait_until_free(
+                    timeout=max(0.0, deadline - time.monotonic()),
+                    interval=interval,
+                )
+            except RiftGateDrainTimeoutError as exc:
+                self._logger.warning(
+                    "Rift '{0}' (id={1}) still had {2} thread(s) inside after the {3} s drain timeout "
+                    "(projection_refresh_gate_timeout_seconds); cleaning it up anyway.".format(
+                        rift_name,
+                        rift_id,
+                        exc.threads_inside,
+                        timeout,
+                    ),
+                    "cleanup",
+                )
+            except RuntimeError:
+                # Cleaned by a concurrent removal while this waited: nobody is left in it to wait for.
+                if not rift_gate.cleaned:
+                    raise
 
     def _initialize_logging(self, logger: Optional[Any]) -> None:
         """
@@ -1270,6 +1362,21 @@ class Nexus(Cleanable):
         Remove one Rift from Nexus and update frame lifecycle state.
 
         Contract:
+            - Drains the Rift's gate first (GitHub #274, step 3): it closes the
+              gate, so a newcomer at any agent door - a workstation call, a
+              viewer read, a command, a Rift door - is refused at once, and it
+              waits for the threads already inside to finish their calls and
+              leave (they pass the closed gate by re-entry). Only then is the
+              Rift taken out of the registries and cleaned up. The wait is
+              bounded by the configured `projection_refresh_gate_timeout_seconds`
+              and polls at `projection_refresh_gate_poll_interval_seconds`.
+            - A caller removing the Rift it is itself inside - an agent calling
+              this from one of that Rift's calls - is not waited for (its own
+              ticket is not counted); its call then returns normally on the
+              cleaned room (design 5c).
+            - When the drain times out nothing is removed: the Rift stays
+              registered with its gate closed to new work, and the removal can
+              be retried once the threads inside have left (design 5b).
             - Removes the Rift from Nexus registries under the Nexus lock.
             - Marks the Rift cleaned there and decrements the target-frame ref
               counts for exactly the frames attached at that moment, so an
@@ -1289,20 +1396,44 @@ class Nexus(Cleanable):
             None.
 
         Raises:
-            ValueError: If no Rift with that id is registered.
-            RuntimeError: If the Rift was already cleaned outside Nexus; only its
-                id-registry entry is gone by then (its name, gate, counts stay).
+            ValueError: If no Rift with that id is registered - also when
+                another removal of the same Rift won while this one drained.
+            RuntimeError: If threads other than the caller are still inside
+                when the drain times out; the message names the Rift, how many
+                threads are still inside, and that it stays registered with its
+                gate closed until a retry. Also if the Rift was already cleaned
+                outside Nexus: that is now refused before anything is drained
+                or popped, so the Rift, its name, gate and counts all stay.
 
         Threading:
-            The registry phase holds the Nexus lock and takes the Rift lock
-            inside it, briefly, to mark the Rift (Nexus, then Rift - the order
-            `Nexus.cleanup` takes). The Rift's teardown runs after the Nexus
-            lock is released: it cleans the room, whose command lock an
-            attaching agent holds while it reserves under the Nexus lock.
+            Resolves the Rift, its gate and the drain bounds under the Nexus
+            lock, then drains with the lock released: an agent inside may need
+            it to leave. The registry phase holds the Nexus lock and takes the
+            Rift lock inside it, briefly, to mark the Rift (Nexus, then Rift -
+            the order `Nexus.cleanup` takes). The Rift's teardown runs after
+            the Nexus lock is released: it cleans the room, whose command lock
+            an attaching agent holds while it reserves under the Nexus lock.
         """
         self._require_activated()
+        with self._lock:
+            try:
+                rift_to_drain = self._rifts_by_id[rift_id]
+            except KeyError as exc:
+                raise ValueError("Rift with id '{0}' was not found.".format(rift_id)) from exc
+            # A Rift cleaned outside Nexus took its gate with it: refuse before draining or popping anything.
+            rift_to_drain.check_cleaned()
+            rift_name: Optional[str] = rift_to_drain.rift_name
+            rift_gate = self._rift_gate_controller.get_rift_gate(rift_id)
+            timeout, interval = self._get_rift_gate_drain_bounds()
+        if rift_gate is not None:
+            self._drain_rift_gate_for_removal(
+                rift_gate,
+                rift_name=rift_name,
+                rift_id=rift_id,
+                timeout=timeout,
+                interval=interval,
+            )
         frame_names_to_cleanup: List[str] = []
-        rift_name: Optional[str] = None
         with self._lock:
             try:
                 rift = self._rifts_by_id.pop(rift_id)
@@ -1332,6 +1463,71 @@ class Nexus(Cleanable):
             "Removed Rift '{0}' (id={1}).".format(rift_name, rift_id),
             "remove_rift",
         )
+
+    def _drain_rift_gate_for_removal(
+            self,
+            rift_gate: RiftGate,
+            *,
+            rift_name: Optional[str],
+            rift_id: str,
+            timeout: float,
+            interval: float,
+    ) -> None:
+        """
+        Internal
+
+        Close one Rift's gate for its removal and wait for the threads inside to
+        leave.
+
+        Contract:
+            - `RiftGate.close_and_wait_until_free(timeout, interval)`: newcomers
+              are refused from here on, the threads inside pass by re-entry until
+              they leave, and the caller's own ticket is not waited for.
+            - A gate already cleaned, or cleaned while this drains, has nothing
+              to drain: another removal of this Rift won meanwhile, and the
+              registry phase that follows answers with the not-found ValueError.
+            - On a drain timeout the gate stays closed and nothing else changes.
+
+        Args:
+            rift_gate:
+                The Rift's registered gate.
+            rift_name:
+                The Rift's name, for the messages.
+            rift_id:
+                The Rift's id, for the messages.
+            timeout:
+                The configured drain timeout, in seconds.
+            interval:
+                The configured poll interval, in seconds.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If threads other than the caller are still inside when
+                the timeout runs out (raised from the gate's
+                `RiftGateDrainTimeoutError`, after a WARNING log).
+
+        Threading:
+            Runs without the Nexus lock; an agent inside may need it to leave.
+        """
+        if rift_gate.cleaned:
+            return
+        try:
+            rift_gate.close_and_wait_until_free(timeout=timeout, interval=interval)
+        except RiftGateDrainTimeoutError as exc:
+            message = (
+                "Rift '{0}' (id={1}) was not removed: {2} thread(s) were still inside it after the {3} s drain "
+                "timeout (projection_refresh_gate_timeout_seconds). It stays registered with its gate closed to "
+                "new work; call remove_rift again once they have left."
+            ).format(rift_name, rift_id, exc.threads_inside, timeout)
+            self._logger.warning(message, "remove_rift")
+            raise RuntimeError(message) from exc
+        except RuntimeError:
+            # Another removal of this Rift tore it down while this one drained: the registry phase that follows
+            # answers with the not-found ValueError. Any other RuntimeError is the gate's own and propagates.
+            if not rift_gate.cleaned:
+                raise
 
     def _publish_frame_record(self, spellbook: Spellbook) -> bool:
         """
@@ -1605,11 +1801,16 @@ class Nexus(Cleanable):
                 Poll interval in seconds while draining.
 
         Contract:
-            - BLOCKS. It closes the gate and then waits until no threads remain inside
-              the rift, polling at the given interval up to the timeout - this is the
+            - BLOCKS. It closes the gate terminally - newcomers are refused at once -
+              and then waits until no thread other than the caller remains inside
+              the rift, polling at the given interval up to the timeout. This is the
               quiescence primitive that plain `disable_rift_gate` is not.
-            - The timeout bounds the wait, so a return does not by itself prove the
-              rift is empty; check the active-thread count if that matters.
+            - The threads already inside pass the closed gate by re-entry, so they can
+              finish and leave; the caller's own ticket is never waited for.
+            - A return means the drain completed; running out of time raises instead,
+              and the gate stays closed. An unknown rift id is a silent no-op.
+            - It only drains: it does not remove the rift. `remove_rift` drains the same
+              way before it tears a rift down.
 
         Threading:
             Delegated to the rift-gate controller, which owns the gate locking.
@@ -1618,7 +1819,9 @@ class Nexus(Cleanable):
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If Nexus has been cleaned.
+            RuntimeError: If Nexus has been cleaned, or the gate was cleaned.
+            RiftGateDrainTimeoutError: A RuntimeError, if threads other than the
+                caller are still inside when the timeout runs out.
 
         Returns:
             None.
@@ -1632,18 +1835,23 @@ class Nexus(Cleanable):
 
     def count_active_rift_threads(self, rift_id: str) -> int:
         """
-        Return active ticket count for one Rift gate.
+        Return how many threads are inside one Rift.
 
         Args:
             rift_id:
                 Canonical Rift id.
 
         Contract:
+            - Counts THREADS inside the rift's gate, not calls: a thread inside a
+              command that makes nested viewer reads or commands counts once (GitHub
+              #274, step 3). Every agent door - workstation calls, viewer reads,
+              commands, the Rift's own doors - holds the thread's ticket while it runs.
             - A point-in-time count for ONE rift; it can change the instant it returns.
             - A DIAGNOSTIC, not a synchronization primitive - do not spin on it to decide
               a rift is quiescent; use `close_and_wait_rift` for that.
             - A point-in-time count for ONE rift; it can change the instant it
               returns, so it is a diagnostic rather than a synchronization primitive.
+            - An unknown rift id counts 0.
 
         Threading:
             Delegated to the rift-gate controller, which owns the gate locking.
@@ -1655,16 +1863,19 @@ class Nexus(Cleanable):
             RuntimeError: If Nexus has been cleaned.
 
         Returns:
-            int: Active ticket count.
+            int: Threads inside the rift (its active ticket count).
         """
         self.check_cleaned()
         return self._rift_gate_controller.count_active_threads_for_rift(rift_id)
 
     def count_active_rift_threads_total(self) -> int:
         """
-        Return active ticket count summed across all Rift gates.
+        Return the threads inside each Rift, summed across all Rift gates.
 
         Contract:
+            - Counts THREADS inside each rift's gate, not calls (GitHub #274, step 3).
+              A thread inside two rifts at once - one rift's agent code calling into
+              another - counts once per rift.
             - A point-in-time count ACROSS ALL rifts.
             - The per-rift counts are NOT sampled atomically together, so this total need
               not equal the sum of individually queried rifts.
@@ -1682,7 +1893,8 @@ class Nexus(Cleanable):
             RuntimeError: If Nexus has been cleaned.
 
         Returns:
-            int: Total active ticket count.
+            int: Total threads inside, summed per rift (the total active ticket
+            count).
         """
         self.check_cleaned()
         return self._rift_gate_controller.count_active_threads_total()
@@ -2645,6 +2857,52 @@ class Nexus(Cleanable):
                 )
         return normalized_selection
 
+    def _get_rift_gate_drain_bounds(self) -> Tuple[float, float]:
+        """
+        Read the configured Rift-gate drain bounds: the timeout and the poll interval.
+
+        Purpose:
+            One reading of `projection_refresh_gate_timeout_seconds` and
+            `projection_refresh_gate_poll_interval_seconds`, with the same type
+            checks, for every drain Nexus runs: an ACL refresh
+            (`_refresh_rift_projection_sets_for_frames`), a removal
+            (`remove_rift`) and a shutdown (`cleanup`).
+
+        Contract:
+            - Reads the installed configuration as it stands; it does not cache.
+            - Returns both values as floats.
+
+        Returns:
+            Tuple[float, float]: The drain timeout and the poll interval, in
+            seconds.
+
+        Raises:
+            RuntimeError: If Nexus has no installed configuration.
+            TypeError: If either property is no longer numeric.
+
+        Threading:
+            Callers read it under the Nexus lock, with the rest of the snapshot
+            the drain works from.
+        """
+        configuration = self._configuration
+        if configuration is None:
+            raise RuntimeError("Nexus is not configured.")
+        timeout = configuration.get_property(
+            "projection_refresh_gate_timeout_seconds"
+        )
+        interval = configuration.get_property(
+            "projection_refresh_gate_poll_interval_seconds"
+        )
+        if not isinstance(timeout, (int, float)):
+            raise TypeError(
+                "projection_refresh_gate_timeout_seconds must remain numeric."
+            )
+        if not isinstance(interval, (int, float)):
+            raise TypeError(
+                "projection_refresh_gate_poll_interval_seconds must remain numeric."
+            )
+        return float(timeout), float(interval)
+
     def _wait_until_rift_gate_is_idle(
             self,
             rift_id: str,
@@ -2704,24 +2962,11 @@ class Nexus(Cleanable):
             projection_refresh_gate_enabled = self._configuration.get_property(
                 "projection_refresh_gate_enabled"
             )
-            timeout = self._configuration.get_property(
-                "projection_refresh_gate_timeout_seconds"
-            )
-            interval = self._configuration.get_property(
-                "projection_refresh_gate_poll_interval_seconds"
-            )
-        if not isinstance(projection_refresh_gate_enabled, bool):
-            raise TypeError(
-                "projection_refresh_gate_enabled must remain a bool."
-            )
-        if not isinstance(timeout, (int, float)):
-            raise TypeError(
-                "projection_refresh_gate_timeout_seconds must remain numeric."
-            )
-        if not isinstance(interval, (int, float)):
-            raise TypeError(
-                "projection_refresh_gate_poll_interval_seconds must remain numeric."
-            )
+            if not isinstance(projection_refresh_gate_enabled, bool):
+                raise TypeError(
+                    "projection_refresh_gate_enabled must remain a bool."
+                )
+            timeout, interval = self._get_rift_gate_drain_bounds()
         impacted_rifts = []
         frame_names_by_rift_id: Dict[str, Tuple[str, ...]] = {}
         for rift in rifts:

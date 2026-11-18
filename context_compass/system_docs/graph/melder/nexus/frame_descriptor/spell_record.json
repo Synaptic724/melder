@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor/spell_record.py",
- "source_sha256": "9141856e39bf27c5e8e8c16d095c475c0fbea6d13adeb8faedcb5966956b0f02",
+ "source_sha256": "d9623d9bb775c012e40de24e909e6c5e9450fddbe333d8d1ee1e59dbb781dcbe",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor.spell_record": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_gate/rift_gate.py",
- "source_sha256": "3dbbf33b87b40c5ff9e2d5a5fb14bcd60e378347b55fdbf96964322a6cf486d1",
+ "source_sha256": "4372ffed9f5b21cea7d208673bb40e873935d36ea0114bc34007942169dd0ef6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_gate.rift_gate": {
@@ -11,15 +11,79 @@
    "file": "src/melder/nexus/rift/rift_gate/rift_gate.py",
    "lineno": 1,
    "include": true,
-   "role": "The admission and drain gate of the AR layer, sibling to CreationGate for conduits and LoadGate for crystallizer loads; reversible blocking for refresh, one-way close for shutdown.",
-   "semantics_authored_against": "3dbbf33b87b40c5ff9e2d5a5fb14bcd60e378347b55fdbf96964322a6cf486d1"
+   "role": "The admission and drain gate of the AR layer, sibling to CreationGate for conduits and LoadGate for crystallizer loads; reversible blocking for refresh, one-way close for removal and shutdown, one ticket per thread inside.",
+   "semantics_authored_against": ""
+  },
+  "melder.nexus.rift.rift_gate.rift_gate.RiftGateDrainTimeoutError": {
+   "id": "melder.nexus.rift.rift_gate.rift_gate.RiftGateDrainTimeoutError",
+   "label": "RiftGateDrainTimeoutError",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_gate/rift_gate.py",
+   "lineno": 9,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "d96c24bb1320c12e3cc9ddad2130a71d4a43c7e2b342dc283d798f22ceed86e3",
+   "include": true,
+   "role": "The Rift gate's drain-timeout error: a RuntimeError carrying how many threads other than the draining caller were still inside.",
+   "responsibilities": [
+    "lets Nexus.remove_rift and Nexus.cleanup tell a drain timeout apart from the gate's other RuntimeErrors",
+    "keeps the drain's message, Timeout waiting for rift tickets to drain., so callers catching RuntimeError keep working",
+    "carries threads_inside, never counting the draining caller"
+   ],
+   "owns_state": [
+    "threads_inside"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "d96c24bb1320c12e3cc9ddad2130a71d4a43c7e2b342dc283d798f22ceed86e3"
+  },
+  "melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder": {
+   "id": "melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder",
+   "label": "_RiftGateHolder",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_gate/rift_gate.py",
+   "lineno": 46,
+   "bases": [
+    "local"
+   ],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "7b035b27cd90d5f227b5d9bb0bec218bd3f6f74a0937ccf5d7a373426bf37c56",
+   "include": true,
+   "role": "One thread's ticket depth on one RiftGate: a threading.local the gate owns.",
+   "responsibilities": [
+    "counts the calling thread's unreleased admit_ticket and register_ticket calls on its gate, read and written by that thread only",
+    "marks the thread as inside: a non-zero depth lets re-entry pass a disabled or closed gate and lets a drain skip the caller's own ticket"
+   ],
+   "owns_state": [
+    "depth"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "7b035b27cd90d5f227b5d9bb0bec218bd3f6f74a0937ccf5d7a373426bf37c56"
   },
   "melder.nexus.rift.rift_gate.rift_gate.RiftGate": {
    "id": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
    "label": "RiftGate",
    "kind": "class",
    "file": "src/melder/nexus/rift/rift_gate/rift_gate.py",
-   "lineno": 9,
+   "lineno": 68,
    "bases": [
     "Cleanable"
    ],
@@ -31,6 +95,7 @@
     "cleanup",
     "close",
     "close_and_wait_until_free",
+    "close_terminally",
     "entry_mode",
     "has_active_tickets",
     "is_closed",
@@ -38,35 +103,46 @@
     "register_ticket",
     "set_entry_mode",
     "unregister_ticket",
-    "wait"
+    "wait",
+    "wait_until_free"
    ],
    "shape": {
-    "method_count": 15,
+    "method_count": 17,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "56e69ccefd33df9ec7921e720748df48ed905fef227af1ff764dee431460ff6f",
-   "role": "Rift-scoped admission and drain gate.",
+   "span_sha256": "325f5cc01102de2314ad491264596f90035e02279698fb17845d5c2578ffd3db",
+   "role": "Rift-scoped admission and drain gate holding one ticket per thread inside.",
    "responsibilities": [
-    "blocks or admits Rift-scoped work",
-    "tracks in-flight tickets",
-    "supports terminal close-and-drain behavior"
+    "blocks or admits Rift-scoped work: parks a newcomer while disabled in wait mode, refuses it in raise mode or once terminally closed",
+    "holds one ticket per thread inside, a thread-local depth (_RiftGateHolder) counting that thread's nested admissions",
+    "admits a thread that already holds a ticket again at once whatever its state, so an ACL refresh or a removal waiting for that thread lets it finish and leave",
+    "closes terminally (close_terminally) and drains (wait_until_free, close_and_wait_until_free) without waiting for the caller's own ticket, raising RiftGateDrainTimeoutError when other threads outstay the timeout",
+    "treats a ticket released after cleanup as a no-op, its cleanup having cleared every ticket"
    ],
    "owns_state": [
     "_event",
     "_tickets",
     "_closed",
-    "enabled"
+    "enabled",
+    "_entry_mode",
+    "_holder"
    ],
    "phases": [
     "runtime",
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "56e69ccefd33df9ec7921e720748df48ed905fef227af1ff764dee431460ff6f"
+   "semantics_authored_against": "325f5cc01102de2314ad491264596f90035e02279698fb17845d5c2578ffd3db"
   }
  },
  "edges_out": [
+  {
+   "from": "melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder",
+   "to_label": "local",
+   "relation": "specializes",
+   "to": "threading.local"
+  },
   {
    "from": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
    "to_label": "Cleanable",
@@ -98,6 +174,12 @@
    "to_label": "ValueError",
    "relation": "creates",
    "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+   "to_label": "RiftGateDrainTimeoutError",
+   "relation": "creates",
+   "confidence": "candidate"
   }
  ],
  "published_aliases": [],
@@ -106,12 +188,22 @@
   "time": "time",
   "deque": "collections.deque",
   "Deque": "typing.Deque",
-  "Optional": "typing.Optional",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
  },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.rift_gate.rift_gate",
-  "class": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "label": "RiftGate"
- }
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+   "to": "melder.nexus.rift.rift_gate.rift_gate._RiftGateHolder",
+   "relation": "owns_lifecycle_of",
+   "why": "The gate creates its per-thread holder at construction and deletes it at cleanup; a thread's depth there is how the gate knows the thread is already inside.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py",
- "source_sha256": "360be609dfc0302404e62044f6b69796e6d11eb920d74069b9719fb5eca5c253",
+ "source_sha256": "abd4e73ac726ec9dfcaca366bca69668cbcdc45a69936ee6c3beca05673a59f1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.view.permissive_profile": {

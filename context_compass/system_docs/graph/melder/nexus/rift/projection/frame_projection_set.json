@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/projection/frame_projection_set.py",
- "source_sha256": "c34ed845e3ec3d42810d40c478bac1472edf7568a8bc72333ee431f3f64a2c71",
+ "source_sha256": "921099cc10ca18db33cfb406a4b2ec91f9fd9938b68c599fcee4f8c033dfeb87",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.projection.frame_projection_set": {

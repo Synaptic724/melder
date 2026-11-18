@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/transition_entry.py",
- "source_sha256": "4a22766938f1003c078b09c3bb0db2d59338e1e6c974f2a80842f12182e5d185",
+ "source_sha256": "80944cabed210ed06300a09e1ceaff03340a0084ce9e8766a9f45251a2fa7d5f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.transition_entry": {

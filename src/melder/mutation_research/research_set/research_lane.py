@@ -2,7 +2,7 @@ import copy
 import enum
 import threading
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, ClassVar
+from typing import Dict, List, Optional, ClassVar, Tuple, Union
 
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
@@ -10,6 +10,11 @@ from melder.mutation_research.research_set.grouped_research_node import (
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+# One lane's part of a composition view (#331): the lane's header fields as a fresh dict (its `metadata` value is
+# the lane's own dict, never mutated after construction), the lane's append-only node-payload list, and how many of
+# its leading payloads belong to the view.
+LanePayloadView = Tuple[Dict[str, object], List[Dict[str, object]], int]
 
 
 def node_identity(node: object) -> str:
@@ -211,6 +216,16 @@ class ResearchLane(Cleanable):
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned nodes
         then deletes owned fields; idempotent; lock released last.
 
+    Composition parts (#331, 0.2.8306):
+        Beside its node order the lane keeps `_node_payloads`, each held
+        node's `describe()` payload built once when the node arrives, aligned
+        with `_node_order`. The list is append-only while nodes are added; a
+        detach installs a new list, and cleanup drops the reference without
+        clearing it. `_payload_view()` hands out the list with its current
+        length, so a persistence twin emitted from it keeps describing the lane
+        as it was, after later appends, a detach, a restore or cleanup, without
+        the lane describing its nodes again on every emission.
+
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
@@ -229,6 +244,7 @@ class ResearchLane(Cleanable):
         "_anchor_spell_id",
         "_nodes_by_spell_id",
         "_node_order",
+        "_node_payloads",
         "_tip_spell_id",
         "_state",
         "_joined_into_lane_id",
@@ -321,6 +337,9 @@ class ResearchLane(Cleanable):
         self._anchor_spell_id: Optional[str] = None
         self._nodes_by_spell_id: Dict[str, ResearchNode] = {}
         self._node_order: List[str] = []
+        # Each held node's describe() payload, built once on arrival and aligned with `_node_order`; append-only
+        # until a detach installs a new list (composition views hold the old one).
+        self._node_payloads: List[Dict[str, object]] = []
         self._tip_spell_id: Optional[str] = None
         self._state: LaneState = LaneState.open
         self._joined_into_lane_id: Optional[str] = None
@@ -345,6 +364,9 @@ class ResearchLane(Cleanable):
               that cleans it.
             - DELETE-NOT-NULL posture, no tombstones; post-cleanup access raises
               `AttributeError` via `check_cleaned()`.
+            - The node-payload list is DROPPED, NEVER CLEARED: a composition
+              view taken earlier (a persistence twin waiting to be read) still
+              holds it and must keep describing the lane it was taken from.
             - The lock is deleted LAST, outside the guarded block.
 
         Returns:
@@ -365,6 +387,7 @@ class ResearchLane(Cleanable):
             self._node_order.clear()
             del self._nodes_by_spell_id
             del self._node_order
+            del self._node_payloads
             del self._tip_spell_id
             del self._anchor_lane_id
             del self._anchor_spell_id
@@ -582,9 +605,17 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         return self._created_at
 
-    def _add_node(self, node: object) -> None:
+    def _add_node(self, node: Union[ResearchNode, GroupedResearchNode]) -> None:
         """
         Append one record (either node family) and advance the tip.
+
+        Contract:
+            - The node's `describe()` payload is built ONCE here, before any
+              state changes, and appended to `_node_payloads` beside its identity
+              in `_node_order` (#331): later composition views reuse it instead of
+              describing the node again, so an append costs the same however many
+              nodes the lane already holds. A refusal (closed lane, duplicate
+              identity) leaves both lists unchanged.
 
         Args:
             node:
@@ -610,8 +641,10 @@ class ResearchLane(Cleanable):
                     f"Lane '{self._name}' already holds identity "
                     f"'{identity}'."
                 )
+            payload = node.describe()
             self._nodes_by_spell_id[identity] = node
             self._node_order.append(identity)
+            self._node_payloads.append(payload)
             self._tip_spell_id = identity
 
     def get_node(self, spell_id: str) -> ResearchNode:
@@ -725,6 +758,11 @@ class ResearchLane(Cleanable):
             The join transfer mechanic: the receiving lane absorbs these
             records; this container stops holding them.
 
+        Contract:
+            - Installs NEW order and node-payload lists rather than editing the
+              old ones, so a composition view taken before the detach keeps
+              describing the lane as it was (#331).
+
         Args:
             spell_ids:
                 Identities to detach; every one must be held here.
@@ -751,12 +789,15 @@ class ResearchLane(Cleanable):
                     )
             detached: List[ResearchNode] = []
             remaining_order: List[str] = []
-            for spell_id in self._node_order:
+            remaining_payloads: List[Dict[str, object]] = []
+            for spell_id, payload in zip(self._node_order, self._node_payloads):
                 if spell_id in requested:
                     detached.append(self._nodes_by_spell_id.pop(spell_id))
                 else:
                     remaining_order.append(spell_id)
+                    remaining_payloads.append(payload)
             self._node_order = remaining_order
+            self._node_payloads = remaining_payloads
             self._tip_spell_id = remaining_order[-1] if remaining_order else None
             return detached
 
@@ -900,6 +941,51 @@ class ResearchLane(Cleanable):
                 ],
             }
 
+    def _payload_view(self) -> LanePayloadView:
+        """
+        Return this lane's part of a composition view, without describing a node (#331).
+
+        Purpose:
+            The MutationResearch twin is emitted after every mutating verb. Built
+            from `describe()`, each emission described every node again; built
+            from this view, it costs the same however many nodes the lane holds.
+
+        Contract:
+            - Returns a fresh header dict (every `describe()` key except
+              `nodes`, the enum fields as their `.value` strings, `metadata` as
+              the lane's own dict, which nothing mutates after construction), the
+              lane's append-only node-payload list, and its current length.
+            - The first `length` payloads of that list, in order, are what
+              `describe()["nodes"]` would return now, and they stay so: the lane
+              only appends to the list, replaces it on a detach and drops it on
+              cleanup, never editing it. A reader must copy what it hands on.
+            - Set-internal: the owning `ResearchSet` calls it under its own lock.
+
+        Threading:
+            Read under `self._lock`, so header, tip and length agree.
+
+        Returns:
+            LanePayloadView: (header, node payloads, length).
+
+        Raises:
+            RuntimeError: If the lane has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            header: Dict[str, object] = {
+                "lane_id": self._lane_id,
+                "name": self._name,
+                "lane_type": self._lane_type.value,
+                "state": self._state.value,
+                "anchor_lane_id": self._anchor_lane_id,
+                "anchor_spell_id": self._anchor_spell_id,
+                "tip_spell_id": self._tip_spell_id,
+                "joined_into_lane_id": self._joined_into_lane_id,
+                "created_at": self._created_at,
+                "metadata": self._metadata,
+            }
+            return header, self._node_payloads, len(self._node_payloads)
+
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "ResearchLane":
         """
@@ -993,6 +1079,7 @@ class ResearchLane(Cleanable):
                 identity = node_identity(node)
                 lane._nodes_by_spell_id[identity] = node
                 lane._node_order.append(identity)
+                lane._node_payloads.append(node.describe())
             lane._tip_spell_id = (
                 lane._node_order[-1] if lane._node_order else None
             )

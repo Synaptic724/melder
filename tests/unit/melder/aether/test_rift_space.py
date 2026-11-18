@@ -6,12 +6,21 @@ from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
 def _make_detached_rift_projection_owner() -> object:
     class _DetachedRiftProjectionOwner:
+        def __init__(self) -> None:
+            # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
+            self._rift_gate = RiftGate()
+
+        @property
+        def rift_gate(self) -> RiftGate:
+            return self._rift_gate
+
         def _get_default_runtime_frame_name(self):
             return None
 

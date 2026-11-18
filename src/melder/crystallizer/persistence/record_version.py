@@ -95,7 +95,12 @@ class RecordVersion:
     # index whose versions are bound at different addresses, which bind_inactive now refuses, so it is not read
     # (the owner's call, 2026-10-25: "notch the cache version and invalidate all the records"). The shape did
     # not change; OLDEST_READABLE_MAJOR is the gate.
-    CURRENT: ClassVar[str] = "5.0.0"
+    # Patch 5.0.1 (2026-11-16, #327) notes a custody change: a module inside a Python environment - under an
+    # interpreter site root or prefix, or in a site-packages or dist-packages directory - is never user source,
+    # even under a user source root, so it records as a site package (or unknown) with no fingerprint and no
+    # retained text. A 5.0.0 record may still list such modules as user source with fingerprints. No key or
+    # shape changed; 5.0.0 and 5.0.1 records read alike.
+    CURRENT: ClassVar[str] = "5.0.1"
     OLDEST_READABLE_MAJOR: ClassVar[int] = 5
     KEY: ClassVar[str] = "record_version"
 

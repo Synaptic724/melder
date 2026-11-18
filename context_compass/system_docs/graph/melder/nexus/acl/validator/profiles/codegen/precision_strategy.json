@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py",
- "source_sha256": "acbaeb6a6b0c0eed81ff2126c321298deaef750f053ed4b0dfd95e458705700c",
+ "source_sha256": "fff64d82b6847dc828599f9542409fa8990ef663b4689f65012be7c439929e7c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.profiles.codegen.precision_strategy": {

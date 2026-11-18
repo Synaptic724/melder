@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py",
- "source_sha256": "86fc56fdd1689e0b735a5fb354a798f73110904b13a31850137d4bc32e5a40ca",
+ "source_sha256": "3d33923465e767b06b8a1a6f0b73fa1cb7ae16ff6c240781993715fc4e492de8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops": {

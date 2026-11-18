@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
- "source_sha256": "e7d6820e3844a93b918c7d65e1f3c3b97147097ebedb395d7ed329ff5f3fc830",
+ "source_sha256": "af602f40396edc5bcdf0c813f46d3b95267911b6368e445635b4db7fdbb112a1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state": {

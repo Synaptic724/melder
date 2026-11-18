@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py",
- "source_sha256": "302f3d32c92145cc89e06190c434de7d6f6c08f21b6a8c0bf23b869d2c4a1dc7",
+ "source_sha256": "6af1808378edc868bf99d311ac78aebf0441bb35089e5c8b8c463c9a1a0ea01d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor/frame_record.py",
- "source_sha256": "b170904052cb8b3d1a3f8a3587b5dec35a4ed23485f8671d836e11bc83ffe7d0",
+ "source_sha256": "5286d40bc34e5b11f3cff886cd7fd2b9889394527152eb1749da6e8e40ae04cd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor.frame_record": {

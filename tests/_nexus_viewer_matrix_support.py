@@ -26,6 +26,7 @@ from melder.nexus.rift.projection.command_projection import CommandProjection
 from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.nexus.rift.projection.view_projection import ViewProjection
 from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 
@@ -37,6 +38,10 @@ class ViewerProjectionRiftDouble:
     Purpose:
         Let direct `FrameViewer` fixtures follow the live ownership model
         without requiring a full `Rift` runtime object.
+
+    Contract:
+        - Owns one open `RiftGate`, as a live Rift does: every viewer read takes
+          the calling thread's ticket on `rift.rift_gate` (GitHub #274, step 3).
     """
 
     def __init__(
@@ -50,6 +55,7 @@ class ViewerProjectionRiftDouble:
     ) -> None:
         self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
         self._id = rift_id
+        self._rift_gate = RiftGate()
         self._selected_contract_names_by_frame_name = (
             dict(selected_contract_names_by_frame_name)
             if selected_contract_names_by_frame_name is not None
@@ -66,6 +72,16 @@ class ViewerProjectionRiftDouble:
     @property
     def id(self) -> str:
         return self._id
+
+    @property
+    def rift_gate(self) -> RiftGate:
+        """
+        Return the double's gate, the one every viewer read takes its ticket on.
+
+        Returns:
+            RiftGate: The double's open gate.
+        """
+        return self._rift_gate
 
     def list_assigned_frame_names(self) -> Tuple[str, ...]:
         return tuple(sorted(self._projection_sets_by_frame_name.keys()))
