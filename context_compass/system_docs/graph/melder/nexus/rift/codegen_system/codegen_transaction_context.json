@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/codegen_transaction_context.py",
- "source_sha256": "c0ad467675701b1934bdfe09f1b4f0ebb007955cc852353d5147e52677c4b3c6",
+ "source_sha256": "d080519ce39b63f21a2d72ec557a9f0c7483d0c140787fe0f412233f82919f8b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.codegen_transaction_context": {

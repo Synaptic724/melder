@@ -638,35 +638,42 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        with self._entered_action_hook_scope_if_available(
-                category="codegen",
-                action_name="validate_codegen",
-        ):
-            rift_gate = self._begin_command_action()
-            transaction_context: Optional[CodegenTransactionContext] = None
-            validation_result: Optional[CodegenValidationResult] = None
-            try:
-                with self._lock:
-                    codegen_system = self._require_codegen_system()
-                    transaction_context, validation_result = (
-                        codegen_system.validate_codegen_request(
-                            code,
-                            frame_name=frame_name,
+        # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
+        # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        validation_result: Optional[CodegenValidationResult] = None
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category="codegen",
+                    action_name="validate_codegen",
+            ):
+                try:
+                    with self._lock:
+                        codegen_system = self._require_codegen_system()
+                        transaction_context, validation_result = (
+                            codegen_system.validate_codegen_request(
+                                code,
+                                frame_name=frame_name,
+                            )
                         )
-                    )
-                    return codegen_system.report_validation_result(validation_result)
-            finally:
-                if rift_gate is not None:
-                    rift_gate.unregister_ticket()
-                if (
-                        transaction_context is not None
-                        and validation_result is not None
-                ):
-                    self._emit_codegen_memory_if_enabled(
-                        action_name="validate_codegen",
-                        transaction_context=transaction_context,
-                        validation_result=validation_result,
-                    )
+                        return codegen_system.report_validation_result(validation_result)
+                finally:
+                    # Memory before the post-hooks, as codegen commands always had it. None once this command system
+                    # was cleaned meanwhile: the same thread removed its own Rift, or a teardown did not wait for it.
+                    if (
+                            transaction_context is not None
+                            and validation_result is not None
+                            and not self._cleaned
+                    ):
+                        self._emit_codegen_memory_if_enabled(
+                            action_name="validate_codegen",
+                            transaction_context=transaction_context,
+                            validation_result=validation_result,
+                        )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     def execute_codegen(
             self,
@@ -716,36 +723,43 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        with self._entered_action_hook_scope_if_available(
-                category="codegen",
-                action_name="execute_codegen",
-        ):
-            rift_gate = self._begin_command_action()
-            transaction_context: Optional[CodegenTransactionContext] = None
-            execution_result: Optional[CodegenExecutionResult] = None
-            try:
-                with self._lock:
-                    codegen_system = self._require_codegen_system()
-                # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
-                transaction_context, execution_result = (
-                    codegen_system.execute_codegen_request(
-                        code,
-                        frame_name=frame_name,
+        # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
+        # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        execution_result: Optional[CodegenExecutionResult] = None
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category="codegen",
+                    action_name="execute_codegen",
+            ):
+                try:
+                    with self._lock:
+                        codegen_system = self._require_codegen_system()
+                    # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
+                    transaction_context, execution_result = (
+                        codegen_system.execute_codegen_request(
+                            code,
+                            frame_name=frame_name,
+                        )
                     )
-                )
-                return execution_result.to_payload()
-            finally:
-                if rift_gate is not None:
-                    rift_gate.unregister_ticket()
-                if (
-                        transaction_context is not None
-                        and execution_result is not None
-                ):
-                    self._emit_codegen_memory_if_enabled(
-                        action_name="execute_codegen",
-                        transaction_context=transaction_context,
-                        execution_result=execution_result,
-                    )
+                    return execution_result.to_payload()
+                finally:
+                    # Memory before the post-hooks, as codegen commands always had it. None once this command system
+                    # was cleaned meanwhile: the same thread removed its own Rift, or a teardown did not wait for it.
+                    if (
+                            transaction_context is not None
+                            and execution_result is not None
+                            and not self._cleaned
+                    ):
+                        self._emit_codegen_memory_if_enabled(
+                            action_name="execute_codegen",
+                            transaction_context=transaction_context,
+                            execution_result=execution_result,
+                        )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     def materialize_codegen(
             self,
@@ -830,118 +844,125 @@ class CodegenCommandSystem(CommandSystem):
         # Method-local import (Aether `_get_mutation_research` precedent):
         # keeps the crystallizer import chain off nexus module import time.
         from melder.crystallizer.synthetic_module import SyntheticModule
-        with self._entered_action_hook_scope_if_available(
-                category="codegen",
-                action_name="materialize_codegen",
-        ):
-            rift_gate = self._begin_command_action()
-            transaction_context: Optional[CodegenTransactionContext] = None
-            validation_result: Optional[CodegenValidationResult] = None
-            try:
-                with self._lock:
-                    codegen_system = self._require_codegen_system()
-                    transaction_context, validation_result = (
-                        codegen_system.validate_codegen_request(
-                            code,
-                            frame_name=frame_name,
+        # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
+        # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        validation_result: Optional[CodegenValidationResult] = None
+        try:
+            with self._entered_action_hook_scope_if_available(
+                    category="codegen",
+                    action_name="materialize_codegen",
+            ):
+                try:
+                    with self._lock:
+                        codegen_system = self._require_codegen_system()
+                        transaction_context, validation_result = (
+                            codegen_system.validate_codegen_request(
+                                code,
+                                frame_name=frame_name,
+                            )
                         )
-                    )
-                    validation_payload = codegen_system.report_validation_result(
-                        validation_result,
-                    )
-                    if not validation_result.accepted:
-                        # Refusal lane: the validator's own verdict answers;
-                        # no registry or sys.modules mutation happened.
-                        return {
-                            "materialized": False,
-                            "module_name": module_name,
-                            "validation": validation_payload,
-                        }
-                    # D-20 name gate: refuse live, core, stdlib, installed and
-                    # out-of-namespace names before anything is registered or
-                    # published.
-                    refusal = self._refuse_materialize_name(
-                        module_name,
-                        transaction_context,
-                    )
-                    if refusal is not None:
-                        return {
-                            "materialized": False,
-                            "module_name": module_name,
-                            "validation": validation_payload,
-                            "refusal": refusal,
-                        }
-                    # D-20: materialized code runs with the room's filtered
-                    # builtins, the mapping execute_codegen gives room code.
-                    room_builtins = codegen_system.build_materialize_builtins(
-                        transaction_context,
-                    )
-                    source_sha256 = hashlib.sha256(
-                        code.encode("utf-8"),
-                    ).hexdigest()
-                    module = SyntheticModule(
-                        module_name=module_name,
-                        spell_crystal_id="unbound_codegen",
-                        source_text=code,
-                        source_sha256=source_sha256,
-                        binding_signature="codegen_materialized",
-                        parent_name=(
-                            module_name.rsplit(".", 1)[0]
-                            if "." in module_name
-                            else None
-                        ),
-                        is_package=False,
-                    )
-                    module.merge_namespace({"__builtins__": room_builtins})
-                    created_parent_names = self._absent_parent_module_names(
-                        module_name,
-                        SyntheticModule,
-                    )
-                    try:
-                        module.materialize(install_import_hook=True)
-                    except BaseException:
-                        # R8 + D-20 (R6): never leave a half-published module
-                        # or a parent shell this call created behind.
+                        validation_payload = codegen_system.report_validation_result(
+                            validation_result,
+                        )
+                        if not validation_result.accepted:
+                            # Refusal lane: the validator's own verdict answers;
+                            # no registry or sys.modules mutation happened.
+                            return {
+                                "materialized": False,
+                                "module_name": module_name,
+                                "validation": validation_payload,
+                            }
+                        # D-20 name gate: refuse live, core, stdlib, installed and
+                        # out-of-namespace names before anything is registered or
+                        # published.
+                        refusal = self._refuse_materialize_name(
+                            module_name,
+                            transaction_context,
+                        )
+                        if refusal is not None:
+                            return {
+                                "materialized": False,
+                                "module_name": module_name,
+                                "validation": validation_payload,
+                                "refusal": refusal,
+                            }
+                        # D-20: materialized code runs with the room's filtered
+                        # builtins, the mapping execute_codegen gives room code.
+                        room_builtins = codegen_system.build_materialize_builtins(
+                            transaction_context,
+                        )
+                        source_sha256 = hashlib.sha256(
+                            code.encode("utf-8"),
+                        ).hexdigest()
+                        module = SyntheticModule(
+                            module_name=module_name,
+                            spell_crystal_id="unbound_codegen",
+                            source_text=code,
+                            source_sha256=source_sha256,
+                            binding_signature="codegen_materialized",
+                            parent_name=(
+                                module_name.rsplit(".", 1)[0]
+                                if "." in module_name
+                                else None
+                            ),
+                            is_package=False,
+                        )
+                        module.merge_namespace({"__builtins__": room_builtins})
+                        created_parent_names = self._absent_parent_module_names(
+                            module_name,
+                            SyntheticModule,
+                        )
                         try:
-                            module.cleanup()
-                        except Exception:
-                            pass
-                        for parent_name in created_parent_names:
-                            with SyntheticModule._registry_lock:
-                                shell = SyntheticModule._registered_modules_by_name.get(
-                                    parent_name,
-                                )
-                            if shell is not None and not shell.cleaned:
-                                try:
-                                    shell.cleanup()
-                                except Exception:
-                                    pass
-                        raise
-                    export_names = sorted(
-                        name
-                        for name in module.__dict__
-                        if not name.startswith("_")
-                    )
-                    return {
-                        "materialized": True,
-                        "module_name": module_name,
-                        "source_sha256": source_sha256,
-                        "module_file": module.__file__,
-                        "export_names": export_names,
-                        "validation": validation_payload,
-                    }
-            finally:
-                if rift_gate is not None:
-                    rift_gate.unregister_ticket()
-                if (
-                        transaction_context is not None
-                        and validation_result is not None
-                ):
-                    self._emit_codegen_memory_if_enabled(
-                        action_name="materialize_codegen",
-                        transaction_context=transaction_context,
-                        validation_result=validation_result,
-                    )
+                            module.materialize(install_import_hook=True)
+                        except BaseException:
+                            # R8 + D-20 (R6): never leave a half-published module
+                            # or a parent shell this call created behind.
+                            try:
+                                module.cleanup()
+                            except Exception:
+                                pass
+                            for parent_name in created_parent_names:
+                                with SyntheticModule._registry_lock:
+                                    shell = SyntheticModule._registered_modules_by_name.get(
+                                        parent_name,
+                                    )
+                                if shell is not None and not shell.cleaned:
+                                    try:
+                                        shell.cleanup()
+                                    except Exception:
+                                        pass
+                            raise
+                        export_names = sorted(
+                            name
+                            for name in module.__dict__
+                            if not name.startswith("_")
+                        )
+                        return {
+                            "materialized": True,
+                            "module_name": module_name,
+                            "source_sha256": source_sha256,
+                            "module_file": module.__file__,
+                            "export_names": export_names,
+                            "validation": validation_payload,
+                        }
+                finally:
+                    # Memory before the post-hooks, as codegen commands always had it. None once this command system
+                    # was cleaned meanwhile: the same thread removed its own Rift, or a teardown did not wait for it.
+                    if (
+                            transaction_context is not None
+                            and validation_result is not None
+                            and not self._cleaned
+                    ):
+                        self._emit_codegen_memory_if_enabled(
+                            action_name="materialize_codegen",
+                            transaction_context=transaction_context,
+                            validation_result=validation_result,
+                        )
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
 
     # ------------------------------------------------------------------
     # Research surface (MutationResearch) - full: reads + organization

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py",
- "source_sha256": "ad6dce2125bf25ed6293ffa8b7c02876dc8a8a3c61e9205a317f34ee08339e03",
+ "source_sha256": "2d5f37dac6719f2fe6f8fd3a6015aa39b65e95db000e1a59feb86e53eb36f807",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.profiles.codegen.safe_strategy": {

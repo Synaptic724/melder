@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py",
- "source_sha256": "527c5ee43b8819996451bceedd4280d8672a1de927068e5b75d41b7a4e0fee8c",
+ "source_sha256": "671e4128f24d9e3e6523924f9067ccb9f95b5f45b2034c6e88658ba5c4cbd6f6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy": {

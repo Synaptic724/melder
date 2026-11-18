@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py",
- "source_sha256": "845b32324e0d0916a8adf84c5539edefa30a905e19b803c7900d336cf79b4984",
+ "source_sha256": "abf4407e253809714ae54e4adc51bc1bde6aae0f631b368e6e4e3594fdfcf9ec",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy": {

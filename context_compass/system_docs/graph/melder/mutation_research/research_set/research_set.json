@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/research_set.py",
- "source_sha256": "606052b3d34aa68c2bc1b458951a5c1f6cd5cb77f2b0ed9ded681179bb3a36a5",
+ "source_sha256": "67ab6d446279bba14c5f223bd185c29b391938a30c677d206490008d09ab220a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.research_set": {
@@ -15,21 +15,22 @@
    "responsibilities": [
     "own lanes and the single forward-only journal",
     "enforce single residence through the registry",
-    "notify on mutation so the composition twin stays current"
+    "notify on mutation so the composition twin stays current",
+    "declare SetCompositionView: identity fields plus lane, residence, journal and ring views (0.2.8306)"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "606052b3d34aa68c2bc1b458951a5c1f6cd5cb77f2b0ed9ded681179bb3a36a5"
+   "semantics_authored_against": ""
   },
   "melder.mutation_research.research_set.research_set.ResearchSet": {
    "id": "melder.mutation_research.research_set.research_set.ResearchSet",
    "label": "ResearchSet",
    "kind": "class",
    "file": "src/melder/mutation_research/research_set/research_set.py",
-   "lineno": 32,
+   "lineno": 48,
    "bases": [
     "Cleanable"
    ],
@@ -69,18 +70,23 @@
     "walk"
    ],
    "shape": {
-    "method_count": 40,
+    "method_count": 42,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a614afb9ebcf6a98cdc294ed181474eaafd5bd085ee07e7b1bde2e0c8826dfc7",
+   "span_sha256": "879ffe5834a408368b30b97c76e79e4cfd01f79da7f1bad12d42931112fe7c3e",
    "role": "The overarching research network: every lane, one journal, one residence partition; the single agent-facing MR surface.",
    "responsibilities": [
     "verbs: create_lane, register_spell, attach/detach, join (divergence-aware; collapse/force dials), archive, walk/history/heads",
     "version-controls its own organization (snapshot_network/restore_network); journal survives restore",
     "guarantees the default lane; enforces single residence via the owned registry",
     "fires the injected on_mutation callback after every mutating verb (persistence emission seam; set stays crystallizer-free)",
-    "group_history(group_id) = the subsystem-area journal gather (own lane + member ids + member lanes, journal order)"
+    "group_history(group_id) = the subsystem-area journal gather (own lane + member ids + member lanes, journal order)",
+    "appends (record_world_entry, register_spell, register_group, recompose_group) set _ring_stale and mint nothing",
+    "organizing verbs (create_lane, attach, detach, join, archive, restore_network) mint the pending snapshot first",
+    "snapshot_network, network_snapshot_shas and latest_network_snapshot mint first; describe_composition never",
+    "_composition_view(): references to append-only parts with lengths, lanes in lane_id order, under the set lock",
+    "TWIN_JOURNAL_WINDOW (200) is describe_composition's default window and the twin's (0.2.8306)"
    ],
    "owns_state": [
     "_lanes_by_id",
@@ -88,6 +94,7 @@
     "_journal",
     "_residence",
     "_versioner",
+    "_ring_stale",
     "_on_mutation"
    ],
    "phases": [
@@ -95,7 +102,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "a614afb9ebcf6a98cdc294ed181474eaafd5bd085ee07e7b1bde2e0c8826dfc7"
+   "semantics_authored_against": "879ffe5834a408368b30b97c76e79e4cfd01f79da7f1bad12d42931112fe7c3e"
   }
  },
  "edges_out": [
@@ -178,14 +185,19 @@
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
   "NetworkVersioner": "melder.mutation_research.research_set.network_versioner.NetworkVersioner",
+  "RingPayloadView": "melder.mutation_research.research_set.network_versioner.RingPayloadView",
+  "JournalPayloadView": "melder.mutation_research.research_set.research_journal.JournalPayloadView",
   "ResearchJournal": "melder.mutation_research.research_set.research_journal.ResearchJournal",
   "GroupedResearchNode": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+  "LanePayloadView": "melder.mutation_research.research_set.research_lane.LanePayloadView",
   "LaneState": "melder.mutation_research.research_set.research_lane.LaneState",
   "LaneType": "melder.mutation_research.research_set.research_lane.LaneType",
   "ResearchLane": "melder.mutation_research.research_set.research_lane.ResearchLane",
   "node_identity": "melder.mutation_research.research_set.research_lane.node_identity",
   "ResearchNode": "melder.mutation_research.research_set.research_node.ResearchNode",
+  "ResidencePayloadView": "melder.mutation_research.research_set.residence_registry.ResidencePayloadView",
   "ResidenceRegistry": "melder.mutation_research.research_set.residence_registry.ResidenceRegistry",
   "TransitionAct": "melder.mutation_research.research_set.transition_entry.TransitionAct",
   "TransitionEntry": "melder.mutation_research.research_set.transition_entry.TransitionEntry",

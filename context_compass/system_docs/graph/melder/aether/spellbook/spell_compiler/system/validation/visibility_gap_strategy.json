@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py",
- "source_sha256": "d8138948be6028223e4a9116fc257d883619c996a051284e23c106e9a4cbfb9e",
+ "source_sha256": "432f4712f52a9df2d34adc018067575216f0535c5a96b27da60c6e3924bcb5ad",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy": {

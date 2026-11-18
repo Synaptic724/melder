@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/hydration/solo_hydrator.py",
- "source_sha256": "a10fc5a48dacf662062e1f260f9159712dec804ef22b78c4538e3e9a4a0c8d71",
+ "source_sha256": "f9505b79203de5b0cff7bdcf131cfa796e365787d97932fb3419f83b3ae11abe",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator": {

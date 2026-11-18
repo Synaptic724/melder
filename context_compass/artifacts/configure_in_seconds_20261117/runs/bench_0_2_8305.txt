@@ -1,0 +1,6 @@
+# Melder 0.2.8305 (5311a90b1), GIL off, Windows 11, no profiler; machine shared with other agents' test runs
+# 150 modules x 4 spells, 4 imports each; probe bench_configure_binds.py, research off then on
+melder=0.2.8305 research=0 binds=600 modules=150 total=1.19s per_bind=1.98ms first100=1.74ms/bind last100=2.66ms/bind
+create_spell_crystal 600 calls 0.39s; record_world_entry 0 calls 0.00s; ResearchNode.describe 0 calls; NetworkVersioner.snapshot 0 calls
+melder=0.2.8305 research=1 binds=600 modules=150 total=2.77s per_bind=4.62ms first100=1.84ms/bind last100=8.90ms/bind
+create_spell_crystal 600 calls 0.43s; record_world_entry 600 calls 1.37s; ResearchNode.describe 360600 calls; NetworkVersioner.snapshot 600 calls

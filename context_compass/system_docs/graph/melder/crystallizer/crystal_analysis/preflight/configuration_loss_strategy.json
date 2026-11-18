@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py",
- "source_sha256": "31832fe3bf6d4ff7c26b86ec1d3d94522f319f79f249622e45380e50268d964a",
+ "source_sha256": "0403efa1b2c4d6b1cf79723af81305af9ed0794f7251884a5addcbb56dcad544",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy": {

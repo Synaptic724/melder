@@ -1,11 +1,13 @@
-# Melder has ZERO third-party RUNTIME dependencies.
+# Melder has ONE third-party RUNTIME dependency: pip, at 26.3 or later
+# (`[project] dependencies = ["pip>=26.3"]` in pyproject.toml), so
+# `pip install melder` pulls pip and nothing else. The requirement is the
+# owner's choice (2026-11-09); Melder's code does not use pip.
 #
 # Verified: no import of any third-party package exists anywhere in
-# `src/melder`, including dynamic paths (every `importlib.import_module`
-# call takes a USER module name for hydration, never a package). ULIDs come
-# from the in-house `melder.utilities.helpers.ulid_factory` (stdlib `os` +
-# `time` only). `[project] dependencies = []` in pyproject.toml is correct
-# and load-bearing: `pip install melder` pulls nothing.
+# `src/melder`, pip included, and that covers dynamic paths (every
+# `importlib.import_module` call takes a USER module name for hydration,
+# never a package). ULIDs come from the in-house
+# `melder.utilities.helpers.ulid_factory` (stdlib `os` + `time` only).
 #
 # Everything below is DEVELOPMENT tooling. The canonical declaration lives in
 # pyproject.toml under PEP 735 `[dependency-groups]`; this file is a

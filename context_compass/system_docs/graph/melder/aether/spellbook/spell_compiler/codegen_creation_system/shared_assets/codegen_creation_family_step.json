@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_family_step.py",
- "source_sha256": "1692454ee9719384ebeec24309f64cd549fde3e25b2a813a4d0d700dc269be54",
+ "source_sha256": "31a6f2051b82ceabd774169043bc5ec342fdf26c823d4bcbc21f54c76845826a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step": {

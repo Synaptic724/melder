@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/phase_latch.py",
- "source_sha256": "4a62eb0825561d3f56a407d2f4785aeeb6675d4461e1f33a9dd65830c127d12c",
+ "source_sha256": "4d7350ff29d5e9c411a9ea3a1f83e888081e8eb3fc2175bbf3d9d0db876c4e17",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.phase_latch": {

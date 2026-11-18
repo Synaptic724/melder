@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py",
- "source_sha256": "f8309527b02c34d512eaf4cf819f10b940ee2d112eb02456b36ecd3a5e082c43",
+ "source_sha256": "a6585bfcb328a50b42eceb50c55a3230b954f883c79e644cee8712cb4d36e23f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy": {

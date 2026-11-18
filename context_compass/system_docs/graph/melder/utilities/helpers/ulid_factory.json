@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/ulid_factory.py",
- "source_sha256": "72d0fedade9853662d5e78234bf5e24deffac6a47e262e792717a378aa03c1a9",
+ "source_sha256": "cdbc96bc0889f0d315a83b88d0df62b416c7b9281abe5f73362f107b25deea52",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.ulid_factory": {

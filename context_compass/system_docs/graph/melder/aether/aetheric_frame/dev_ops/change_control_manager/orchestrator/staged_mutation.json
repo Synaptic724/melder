@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
- "source_sha256": "e7d9f9a1887df6413c188a28e591f2b97eef94ec19875841d3e4495a1665be21",
+ "source_sha256": "ee672e4aee82c0d3994ea19bd3bc353c7d2169621ddbb9cbcea2f343ffa0daf5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation": {

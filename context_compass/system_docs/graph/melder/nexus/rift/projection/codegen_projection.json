@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/projection/codegen_projection.py",
- "source_sha256": "4c82508e42d1de6f69c9e07b98e9295cc4c4feb117d6fefa2664bcb8b5fa07b6",
+ "source_sha256": "0e9b80352f92d1bb50f6199f99e35a5b0579eefbd156659ddba632abfb0eb4d1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.projection.codegen_projection": {

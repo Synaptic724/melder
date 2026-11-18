@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
     SpellLocalTopology,
@@ -547,10 +548,48 @@ def test_hidden_provider_socket_is_not_also_reported_as_an_unresolved_input_warn
     spell._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: topology)
     requirements = SimpleNamespace(
         iter_required_holes=lambda: iter(()),
-        parameters=[SimpleNamespace(name="greeter", annotation=object), SimpleNamespace(name="other", annotation=_Missing)],
+        parameters=[
+            SimpleNamespace(name="greeter", annotation=object, spellmap_default=None),
+            SimpleNamespace(name="other", annotation=_Missing, spellmap_default=None),
+        ],
     )
     issues: List[SpellValidationIssue] = []
 
     RequiredHolesStrategy().validate(_make_context(spell=spell, requirements=requirements, issues=issues))
 
     assert [(issue.code, issue.details["parameter_name"]) for issue in issues] == [("UNRESOLVED_INPUT", "other")]
+
+
+def test_unresolved_spellmap_socket_warning_names_its_spellmap() -> None:
+    """
+    An UNRESOLVED_INPUT socket whose parameter defaults to a SpellMap (GitHub #329: a SpellMap that matches nothing
+    waits instead of failing) is reported by that SpellMap as written - the address it asks for - not by an
+    annotation, and the warning asks for a spell at that address.
+    """
+    spell_map = SpellMap(spellframe="spectrum", binding_name="ServiceBuilder")
+    topology = SpellLocalTopology("consumer", [
+        SpellSocketDescriptor(
+            spell_id="consumer", param_name="service_builder", position=0, socket_kind=SocketKind.UNRESOLVED_INPUT,
+            is_collection=False, is_optional=False, target_spell_ids=(), dependency_key=spell_map.canonical_key,
+        ),
+    ])
+    spell = _SpellStub("SpectrumBuilders")
+    spell.spell_id = "consumer"
+    spell._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: topology)
+    requirements = SimpleNamespace(
+        iter_required_holes=lambda: iter(()),
+        parameters=[SimpleNamespace(name="service_builder", annotation=Any, spellmap_default=spell_map)],
+    )
+    issues: List[SpellValidationIssue] = []
+
+    RequiredHolesStrategy().validate(_make_context(spell=spell, requirements=requirements, issues=issues))
+
+    assert [(issue.code, issue.message, issue.details["expected_type"]) for issue in issues] == [(
+        "UNRESOLVED_INPUT",
+        "Parameter 'service_builder' on spell 'SpectrumBuilders' asks for the spell its default "
+        "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder') names, but nothing is bound there. Supply it "
+        "through a meld override (key 'service_builder', or a path key ending in '>service_builder' when this spell is "
+        "built as a dependency) or bind a spell at that address. Constructing this spell without it raises "
+        "UnresolvedInputError.",
+        "SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')",
+    )]

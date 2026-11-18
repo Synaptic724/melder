@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/view_multiframe.py",
- "source_sha256": "3226c5e625b5f8c904c5caa03f44491552bffb95fe2cb5fad7730bbc57c03272",
+ "source_sha256": "6a87d4f053088cff3ea449663804b70d494759998a099807a92e9686bc858cdf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.view_multiframe": {

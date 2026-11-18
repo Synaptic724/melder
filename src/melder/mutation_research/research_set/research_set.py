@@ -1,17 +1,20 @@
 import threading
 from datetime import datetime, timezone
-from typing import Callable, ClassVar, Dict, List, Optional
+from typing import Callable, ClassVar, Dict, List, Optional, Tuple
 
 from melder.mutation_research.research_set.network_versioner import (
     NetworkVersioner,
+    RingPayloadView,
 )
 from melder.mutation_research.research_set.research_journal import (
+    JournalPayloadView,
     ResearchJournal,
 )
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
 )
 from melder.mutation_research.research_set.research_lane import (
+    LanePayloadView,
     LaneState,
     LaneType,
     ResearchLane,
@@ -19,6 +22,7 @@ from melder.mutation_research.research_set.research_lane import (
 )
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.mutation_research.research_set.residence_registry import (
+    ResidencePayloadView,
     ResidenceRegistry,
 )
 from melder.mutation_research.research_set.transition_entry import (
@@ -27,6 +31,18 @@ from melder.mutation_research.research_set.transition_entry import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+# One set's composition view (#331): its id, name and creation stamp, each lane's view in `lane_id` order, and the
+# residence, journal and undo-ring views - references to append-only parts plus lengths, taken under the set lock.
+SetCompositionView = Tuple[
+    str,
+    str,
+    str,
+    Tuple[LanePayloadView, ...],
+    ResidencePayloadView,
+    JournalPayloadView,
+    RingPayloadView,
+]
 
 
 class ResearchSet(Cleanable):
@@ -52,7 +68,8 @@ class ResearchSet(Cleanable):
         - A guaranteed `default` lane exists from birth; `register_spell`
           without an explicit lane records there (no orphan binds, no
           history holes).
-        - Every mutating verb re-snapshots the organization and fires the
+        - Every organizing verb re-snapshots the organization (an append marks
+          the undo ring stale instead, #331) and every mutating verb fires the
           injected `on_mutation` callback (the persistence emission seam) -
           this object itself never touches the crystallizer (dependency
           rule: only the MutationResearch root emits).
@@ -69,6 +86,20 @@ class ResearchSet(Cleanable):
         Owned by exactly one `MutationResearch` root; `cleanup()` cascades
         into lanes, journal, residence, and versioner; idempotent; lock
         released last.
+
+    CONSTANT-COST APPENDS (#331, 0.2.8306, owner decision 2026-11-17):
+        An append - `record_world_entry`, `register_spell`, `register_group`
+        and `recompose_group` (through `register_group`) - builds its node's
+        payload, its journal entry's payload and one residence claim, and
+        marks the undo ring stale instead of minting a snapshot of the whole
+        organization. The pending snapshot is minted before the next organizing
+        verb (`create_lane`, `attach`, `detach`, `join`, `archive`,
+        `restore_network`), so the organization that verb starts from stays
+        restorable, and by `snapshot_network`, `network_snapshot_shas` and
+        `latest_network_snapshot`. `describe_composition` and every other read
+        mint nothing. `_composition_view()` hands the root references to the
+        structures' append-only payload parts with their lengths, so the
+        persistence twin is emitted without describing a node.
 
     Registration:
         MELDER KERNEL - guarded. Obtained through `MutationResearch.research_set()`
@@ -111,6 +142,8 @@ class ResearchSet(Cleanable):
     """
 
     DEFAULT_LANE_NAME: ClassVar[str] = "default"
+    # The journal window the persistence twin carries: `describe_composition`'s default and the composition view's.
+    TWIN_JOURNAL_WINDOW: ClassVar[int] = 200
 
     __slots__ = Cleanable.__slots__ + [
         "_set_id",
@@ -120,6 +153,7 @@ class ResearchSet(Cleanable):
         "_journal",
         "_residence",
         "_versioner",
+        "_ring_stale",
         "_on_mutation",
         "_lane_type_enforcement",
         "_created_at",
@@ -193,6 +227,8 @@ class ResearchSet(Cleanable):
             max_snapshots=max_network_snapshots,
         )
         self._on_mutation: Optional[Callable[[], None]] = on_mutation
+        # True while appends made since the last mint are missing from the undo ring (#331).
+        self._ring_stale: bool = False
         self._lane_type_enforcement: bool = False
         self._created_at: str = datetime.now(timezone.utc).isoformat()
         self._lock: threading.RLock = threading.RLock()
@@ -261,6 +297,7 @@ class ResearchSet(Cleanable):
             del self._journal
             del self._residence
             del self._versioner
+            del self._ring_stale
             del self._on_mutation
             del self._lane_type_enforcement
             del self._created_at
@@ -500,11 +537,90 @@ class ResearchSet(Cleanable):
         """
         Snapshot the current organization (caller holds the lock).
 
+        Contract:
+            - Mints through the versioner (content-addressed; an unchanged
+              organization re-uses its address) and clears the stale flag: the
+              ring now holds the organization as it is (#331).
+
         Returns:
             str:
                 Content address of the organization snapshot.
         """
-        return self._versioner.snapshot(self._organization_payload_locked())
+        snapshot_sha = self._versioner.snapshot(self._organization_payload_locked())
+        self._ring_stale = False
+        return snapshot_sha
+
+    def _mint_pending_snapshot_locked(self) -> None:
+        """
+        Mint the snapshot appends left pending, if any (caller holds the lock).
+
+        Purpose:
+            Appends mark the undo ring stale instead of snapshotting the whole
+            organization each time (#331). Organizing verbs call this BEFORE they
+            change anything and the ring reads call it before reading, so the ring
+            holds the organization an organizing verb starts from - the state a
+            restore must reach after a mistake - however many appends came first.
+
+        Contract:
+            - A no-op unless an append happened since the last mint; otherwise
+              one `_snapshot_locked()`. Idempotent: a second call mints nothing.
+
+        Returns:
+            None.
+        """
+        if self._ring_stale:
+            self._snapshot_locked()
+
+    def _composition_view(self) -> SetCompositionView:
+        """
+        Return this set's composition view: what `describe_composition()` reports, as references (#331).
+
+        Purpose:
+            The root re-emits its persistence twin after every mutating verb.
+            Describing the composition for it described every node of every lane
+            again on each append; the view instead hands the twin references to
+            the structures' append-only payload parts with their current lengths,
+            so an emission costs O(lanes) and the twin materializes on its first
+            read (`ResearchCompositionView.materialize`).
+
+        Contract:
+            - Materialized with a journal window of `TWIN_JOURNAL_WINDOW`, the
+              view equals `describe_composition()` taken at the same moment:
+              lanes in `lane_id` order with their nodes and tips, the residence
+              mapping, the journal window with its counts, and the undo ring as of
+              its last mint. It mints nothing.
+            - The parts are never edited in place once handed out (appends extend
+              them; a detach, transfer or restore installs new ones; cleanup drops
+              them), so the view keeps describing this moment after later verbs,
+              a restore, or cleanup.
+            - Kernel-internal: the root's emission is its only caller.
+
+        Threading:
+            Taken under `self._lock` (each structure's view under its own lock
+            inside), so the parts agree with each other.
+
+        Returns:
+            SetCompositionView: (set_id, name, created_at, lane views, residence,
+            journal and ring views).
+
+        Raises:
+            RuntimeError: If the set has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            lane_views = tuple(
+                self._lanes_by_id[lane_id]._payload_view()
+                for lane_id in sorted(self._lanes_by_id.keys())
+            )
+            return (
+                self._set_id,
+                self._name,
+                self._created_at,
+                lane_views,
+                self._residence._payload_view(),
+                self._journal._payload_view(),
+                self._versioner._payload_view(),
+            )
 
     # ------------------------------------------------------------------
     # Identity and reads
@@ -1007,7 +1123,9 @@ class ResearchSet(Cleanable):
               anchor lane is later archived.
             - Ordering is validate -> resolve anchor -> create -> set anchor ->
               journal -> snapshot. A failure at any step leaves no lane, no
-              journal entry and no snapshot.
+              journal entry and no snapshot of its own.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Threading:
             Campaign and anchor-argument validation run outside the lock; lane
@@ -1054,6 +1172,7 @@ class ResearchSet(Cleanable):
                 "attach_to and attach_at_spell_id must be supplied together."
             )
         with self._lock:
+            self._mint_pending_snapshot_locked()
             anchor_lane: Optional[ResearchLane] = None
             if attach_to is not None:
                 anchor_lane = self._resolve_lane_locked(attach_to)
@@ -1124,17 +1243,21 @@ class ResearchSet(Cleanable):
               terminal-state call can race between the two steps under real
               threads; without the rollback a refused add would strand the claim
               and corrupt the residence partition.
-            - Journals `TransitionAct.registered` and snapshots the organization
-              only after the add succeeds - a refused registration leaves no
-              journal entry and no snapshot.
+            - Journals `TransitionAct.registered` only after the add succeeds -
+              a refused registration leaves no journal entry.
+            - AN APPEND, NOT AN ORGANIZING VERB (#331, owner decision
+              2026-11-17): it marks the undo ring stale instead of minting a
+              snapshot of the whole organization, so its cost does not grow with
+              the set. The pending snapshot is minted by the next organizing verb,
+              `snapshot_network` or a ring read.
             - Mutation subscribers are notified AFTER the set lock is released,
               which is what keeps the one-way lock order intact.
 
         Threading:
             The campaign check runs outside the lock; lane resolution, ancestry
-            validation, the claim/add pair, journalling and snapshotting all run
-            under `self._lock`. The `_notify_mutation()` fan-out is deliberately
-            outside it.
+            validation, the claim/add pair, journalling and marking the ring
+            stale all run under `self._lock`. The `_notify_mutation()` fan-out is
+            deliberately outside it.
 
         Args:
             spell_id:
@@ -1219,7 +1342,8 @@ class ResearchSet(Cleanable):
                 reason=reason,
                 metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": parents},
             )
-            self._snapshot_locked()
+            # An append: the undo ring is minted lazily (#331).
+            self._ring_stale = True
         self._notify_mutation()
         return node
 
@@ -1371,7 +1495,8 @@ class ResearchSet(Cleanable):
                     "parent_group_ids": parents,
                 },
             )
-            self._snapshot_locked()
+            # An append: the undo ring is minted lazily (#331).
+            self._ring_stale = True
         self._notify_mutation()
         return node
 
@@ -1650,11 +1775,16 @@ class ResearchSet(Cleanable):
             - Carries the same CLAIM-THEN-ADD compensation: residence is claimed
               before the add and rolled back if the add is refused, so a race
               cannot strand a claim and corrupt the residence partition.
+            - CONSTANT COST (#331): a fresh entry builds its own node's payload
+              and its journal entry's payload once and marks the undo ring stale;
+              it describes no other node and mints no snapshot, so a configure
+              binding hundreds of spells pays the same for the last entry as for
+              the first.
 
         Threading:
             The residence probe, lane resolution, ancestry validation, claim/add
-            pair, journalling and snapshotting all run under `self._lock`;
-            `_notify_mutation()` fires after release.
+            pair, journalling and marking the ring stale all run under
+            `self._lock`; `_notify_mutation()` fires after release.
 
         Args:
             spell_id:
@@ -1741,7 +1871,8 @@ class ResearchSet(Cleanable):
                 reason=reason,
                 metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": parents},
             )
-            self._snapshot_locked()
+            # An append: the undo ring is minted lazily (#331).
+            self._ring_stale = True
         self._notify_mutation()
         return node
 
@@ -1840,6 +1971,8 @@ class ResearchSet(Cleanable):
               name in metadata.
             - Snapshots the organization on success, so an anchor change is
               recoverable through `restore_network`.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Threading:
             Both lane resolutions, the self-anchor check, the anchor write,
@@ -1872,6 +2005,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             lane = self._resolve_lane_locked(lane_ref)
             target = self._resolve_lane_locked(onto)
             if lane.lane_id == target.lane_id:
@@ -1921,6 +2055,8 @@ class ResearchSet(Cleanable):
               `from_spell_id`, which is what makes the detach reversible from
               history - the pointer would otherwise be unrecoverable.
             - Snapshots the organization on success.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Threading:
             Resolution, anchor capture, clear, journalling and snapshotting run
@@ -1946,6 +2082,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             lane = self._resolve_lane_locked(lane_ref)
             previous_anchor = lane.anchor_spell_id
             lane.clear_anchor()
@@ -1987,6 +2124,8 @@ class ResearchSet(Cleanable):
               rest readable in the joined (terminal) source container.
             - Residence transfers with the moved records; the source is
               marked joined and accepts no further work.
+            - FIRST mints the snapshot appends left pending, if any (#331), so
+              the organization the join starts from stays restorable.
 
         Args:
             lane_ref:
@@ -2016,6 +2155,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             source = self._resolve_lane_locked(lane_ref)
             target = self._resolve_lane_locked(into)
             if source.lane_id == target.lane_id:
@@ -2179,6 +2319,8 @@ class ResearchSet(Cleanable):
             - Residence stays permanent: rediscovery keeps pointing at the
               archived container; network snapshots can restore views that
               contained it.
+            - FIRST mints the snapshot appends left pending, if any (#331),
+              so the organization this verb starts from stays restorable.
 
         Args:
             lane_ref:
@@ -2200,6 +2342,7 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         self._validate_campaign(campaign)
         with self._lock:
+            self._mint_pending_snapshot_locked()
             lane = self._resolve_lane_locked(lane_ref)
             if lane.name == ResearchSet.DEFAULT_LANE_NAME:
                 raise RuntimeError(
@@ -2243,8 +2386,10 @@ class ResearchSet(Cleanable):
 
         Returns:
             str:
-                Content address of the organization snapshot (mutating verbs
-                already snapshot automatically; this is the manual seal).
+                Content address of the organization snapshot (organizing verbs
+                snapshot automatically and appends leave the ring stale until the
+                next mint, #331; this is the manual seal, and it also mints what
+                appends left pending).
         """
         self.check_cleaned()
         with self._lock:
@@ -2265,12 +2410,15 @@ class ResearchSet(Cleanable):
             - Lists only RETAINED addresses. The ring is bounded, so an address
               observed earlier can age out and later return `KeyError` from
               `restore_network` - presence here is the honest liveness test.
+            - MINTS WHAT APPENDS LEFT PENDING FIRST (#331): appends mark the ring
+              stale rather than snapshotting, so this read mints one snapshot of
+              the current organization when any append happened since the last
+              mint; the tail then names the organization as it is now. A second
+              read with nothing new mints nothing.
 
         Threading:
-            Does NOT take the set lock. It delegates to `NetworkVersioner`, which
-            serializes the read under its own lock, so the result is a
-            point-in-time view of the retention ring rather than a snapshot
-            consistent with the set's live lanes.
+            Takes the set lock (to mint a pending snapshot consistently with the
+            live lanes), then reads the versioner under its own lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()` here; the versioner guards its own read.
@@ -2283,7 +2431,9 @@ class ResearchSet(Cleanable):
                 Detached ordered address list.
         """
         self.check_cleaned()
-        return self._versioner.snapshot_shas()
+        with self._lock:
+            self._mint_pending_snapshot_locked()
+            return self._versioner.snapshot_shas()
 
     @property
     def latest_network_snapshot(self) -> Optional[str]:
@@ -2301,11 +2451,13 @@ class ResearchSet(Cleanable):
               to a previous shape reports the SAME digest again: this detects
               SHAPE change, not event count. Two structurally identical
               organizations are indistinguishable here by design.
+            - Mints what appends left pending first (#331), so after appends it
+              names the organization holding them; with nothing pending it is a
+              plain read.
 
         Threading:
-            Does NOT take the set lock. It delegates to `NetworkVersioner`, which
-            serializes the read under its own lock; the answer is a point-in-time
-            read of the retention ring.
+            Takes the set lock (to mint a pending snapshot consistently with the
+            live lanes), then reads the versioner under its own lock.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()` here; the versioner guards its own read.
@@ -2318,7 +2470,9 @@ class ResearchSet(Cleanable):
                 Newest address or None.
         """
         self.check_cleaned()
-        return self._versioner.latest_sha
+        with self._lock:
+            self._mint_pending_snapshot_locked()
+            return self._versioner.latest_sha
 
     def restore_network(
             self,
@@ -2356,6 +2510,8 @@ class ResearchSet(Cleanable):
               is not an identity.
             - Snapshots again on success, so the pre-restore organization is
               itself addressable afterwards.
+            - FIRST mints the snapshot appends left pending, if any (#331), so
+              the organization the restore replaces is addressable too.
 
         Threading:
             The entire validate-teardown-swap-journal sequence runs under
@@ -2382,6 +2538,8 @@ class ResearchSet(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            # The organization the restore starts from stays addressable (#331).
+            self._mint_pending_snapshot_locked()
             payload = self._versioner.get(snapshot_sha)
             lane_payloads = payload.get("lanes")
             residence_payload = payload.get("residence")
@@ -2444,7 +2602,7 @@ class ResearchSet(Cleanable):
     def describe_composition(
             self,
             *,
-            recent_transitions: Optional[int] = 200,
+            recent_transitions: Optional[int] = TWIN_JOURNAL_WINDOW,
     ) -> Dict[str, object]:
         """
         Return the detached persistence payload for this set.
@@ -2469,7 +2627,12 @@ class ResearchSet(Cleanable):
               payload crosses the persistence boundary losslessly and rebuilds
               via `from_payload`.
             - A detached copy: mutating the returned dict cannot affect the set.
-            - Read-only; no snapshot or journal write occurs.
+            - Read-only; no snapshot or journal write occurs. It mints nothing
+              that appends left pending (#331), so `network_snapshot_shas` and
+              `network_versioner` describe the undo ring as of its last mint;
+              the organization itself is always current.
+            - The persistence twin carries the same payload, taken from
+              `_composition_view()` instead of a full describe.
 
         Threading:
             The whole payload is assembled under `self._lock`, so organization,

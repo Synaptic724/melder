@@ -311,6 +311,10 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
             self.rift_name = "alpha"
             self.cleaned = False
 
+        def check_cleaned(self) -> None:
+            # remove_rift refuses a Rift cleaned outside Nexus before it drains or pops anything (GitHub #274).
+            return None
+
         def _mark_cleaned_for_removal(self):
             # remove_rift marks the Rift and takes its attached frames in one step (GitHub #274, the R4 residual).
             cleanup_calls.append("rift_mark")
@@ -324,7 +328,18 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
     nexus._rifts_by_id = {rift.id: rift}
     nexus._rift_ids_by_name = {rift.rift_name: rift.id}
     nexus._target_frame_ref_counts = {"ops": 1, "finance": 1}
+
+    class _RemoveGate:
+        cleaned = False
+
+        def close_and_wait_until_free(self, *, timeout: float, interval: float) -> None:
+            # remove_rift drains the Rift's gate before its registry phase (GitHub #274, step 3).
+            cleanup_calls.append("gate_drain")
+
     class _RemoveGateController:
+        def get_rift_gate(self, _rift_id) -> _RemoveGate:
+            return _RemoveGate()
+
         def unregister_rift_gate(self, _rift_id) -> None:
             cleanup_calls.append("unregister")
 
@@ -349,6 +364,7 @@ def test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup(
     nexus.remove_rift(rift.id)
 
     assert cleanup_calls == [
+        "gate_drain",
         "unregister",
         "rift_mark",
         ("frame_remove", "nexus-frame"),

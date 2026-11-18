@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystallizer.py",
- "source_sha256": "e90c5026bd5fac4e26ee430f920753faea161bab4336614cebc1a5374226fedc",
+ "source_sha256": "19bedbda2d354d168e7659ee1a5ae3e46e29491871abfb27f747417c3f89f4d9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystallizer": {

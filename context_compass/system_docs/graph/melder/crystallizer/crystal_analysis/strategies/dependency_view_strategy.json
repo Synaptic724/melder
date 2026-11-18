@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
- "source_sha256": "ccacce3bdba95a9e7e46f4e4c99df7709c108dc4d8615fbcda92b060450f73a3",
+ "source_sha256": "16e1a9ff5ecbf06d958febf78521af98b6aefa8205f265ef62f8661e91ea5005",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy": {
@@ -12,18 +12,20 @@
    "lineno": 1,
    "role": "Deterministic topological module load order over walked edges; cycle-tolerant with an honesty walk error.",
    "responsibilities": [
-    "implemented S1 (decomposition epic); see crystal_analysis component docs"
+    "hold DependencyViewStrategy, the finalize-time pass that records module_load_order (decomposition story S1)",
+    "pick ready modules from a min-heap of names: the sorted-list order at O(log V) per pick (0.2.8306)"
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   },
   "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy": {
    "id": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
    "label": "DependencyViewStrategy",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
-   "lineno": 22,
+   "lineno": 23,
    "bases": [
     "CrystalFactStrategy"
    ],
@@ -37,18 +39,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d58868a36c526a2d26fefeb85bbb5789da82e6df7c64a97ae2dd10f830caaec4",
+   "span_sha256": "10686c5bd5b5cfbd343b5012466b679da5b99d3c2d7b84e4f70c97c1e302ce5b",
    "include": true,
    "role": "Fact pass computing the topological dependencies-first unfold order, making load order recorded truth instead of restore-time guessing.",
    "responsibilities": [
     "order every walked module over dependency->dependent edges restricted to walked modules",
-    "stay deterministic by processing ready nodes in sorted name order",
+    "stay deterministic: each pick takes the smallest ready name from a min-heap, the sorted-list order (0.2.8306)",
     "stay cycle-tolerant: append the blocked remainder in sorted order and name them in one walk error"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "d58868a36c526a2d26fefeb85bbb5789da82e6df7c64a97ae2dd10f830caaec4"
+   "semantics_authored_against": "10686c5bd5b5cfbd343b5012466b679da5b99d3c2d7b84e4f70c97c1e302ce5b"
   }
  },
  "edges_out": [
@@ -62,6 +64,7 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "heapq": "heapq",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Set": "typing.Set",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/operation_cancelled_error.py",
- "source_sha256": "e7011f744f19aa8d04fae6b84c3fc554c162260bae00ce111e254d2ed209fa6a",
+ "source_sha256": "2e35b33b741b97c4b72dcee99076ab1873b82f5806b32c3ade47a19484133857",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.operation_cancelled_error": {

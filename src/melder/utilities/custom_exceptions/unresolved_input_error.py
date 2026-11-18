@@ -4,6 +4,7 @@ import types
 import typing
 from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Tuple
 
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.aether.spellbook.spell_compiler.validation.hidden_provider_report import HiddenProviderReport
@@ -26,8 +27,10 @@ class UnresolvedInputError(MeldExecutionError):
 
     Raised When:
         Constructing an object whose Phase-3 topology carries an UNRESOLVED_INPUT
-        socket (a single typed dependency no registered spell provides), and the
-        constructing call's overrides did not supply that parameter. It fires only
+        socket (a single typed dependency no registered spell provides, or - since
+        2026-11-16, GitHub #329 - a SpellMap default whose address has nothing
+        bound), and the constructing call's overrides did not supply that
+        parameter. It fires only
         when that object is actually built: a stored (reused) object never demands
         its unresolved inputs, and conjure succeeds regardless. It is decided before
         construction: the many_only and generalized plans raise it before building
@@ -42,7 +45,9 @@ class UnresolvedInputError(MeldExecutionError):
         on its next meld. When the expected class is registered, but only under a
         spellframe or a binding name - where a class lookup does not reach it -
         the message names each such address and the lookup that reaches it, and
-        `hidden_spell_ids` lists those spells (2026-11-07).
+        `hidden_spell_ids` lists those spells (2026-11-07). For a SpellMap
+        parameter the message names the SpellMap as written and asks for a spell
+        at that address; binding one there re-gates the consumer.
 
     Contract:
         - A `MeldExecutionError`: code that catches `MeldExecutionError` keeps
@@ -51,6 +56,8 @@ class UnresolvedInputError(MeldExecutionError):
         - `expected_type` is the parameter annotation's display name, read from the
           constructor signature on the failure path (Optional and forward references
           unwrapped); the lowercased frame key is used only if that is unreadable.
+          For a parameter whose default is a SpellMap it is that SpellMap rendered
+          as written (`_spellmap_address_name`), whatever the annotation.
         - `unresolved_params` lists every missing unresolved parameter of the
           consumer, in signature order.
         - `inner` is None: nothing has been called when it is raised.
@@ -88,9 +95,10 @@ class UnresolvedInputError(MeldExecutionError):
 
     AGENT_PURPOSE:
         access: public. Raised at meld when an object whose typed parameter has no
-        registered provider is built without that value; supply it by override
-        (root key, `>param` path key or `**param`) or bind a provider for
-        expected_type.
+        registered provider, or whose SpellMap default's address has nothing bound,
+        is built without that value; supply it by override (root key, `>param` path
+        key or `**param`), or bind a provider for expected_type (for a SpellMap, a
+        spell at its address).
     """
 
     __slots__ = (
@@ -201,6 +209,52 @@ class UnresolvedInputError(MeldExecutionError):
             return annotation.__qualname__
         return repr(annotation)
 
+    @staticmethod
+    def _spellmap_address_name(spell_map: SpellMap) -> str:
+        """
+        Render a SpellMap default as written: the expected-type text of a SpellMap socket.
+
+        Purpose:
+            One naming rule for a SpellMap parameter in the Phase-4
+            UNRESOLVED_INPUT warning and in this error (2026-11-16, GitHub #329: a
+            SpellMap that matches nothing waits as an unresolved input), so both
+            name the address the consumer asks for rather than its annotation.
+
+        Contract:
+            - `SpellMap(<spell>, spellframe=<frame>, binding_name=<name>)` with the
+              fields the descriptor carries, in that order; a field that is None is
+              left out, and the override payload is never shown.
+            - A string (a category frame) renders with quotes; a function or
+              method spell by its `__qualname__`; any other object as
+              `expected_type_name` renders it (a class or Protocol by its
+              `__qualname__`).
+            - Pure: no lookups, no side effects.
+
+        Args:
+            spell_map:
+                The parameter's SpellMap default.
+
+        Returns:
+            str: For example `SpellMap(spellframe='spectrum', binding_name='ServiceBuilder')`
+            or `SpellMap(ServiceBuilder)`.
+        """
+        def render(value: object) -> str:
+            """Quote a string; name a function or method by its qualified name, any other object as an annotation."""
+            if isinstance(value, str):
+                return repr(value)
+            if isinstance(value, (types.FunctionType, types.MethodType, types.BuiltinFunctionType)):
+                return value.__qualname__
+            return UnresolvedInputError.expected_type_name(value)
+
+        parts: List[str] = []
+        if spell_map.spell is not None:
+            parts.append(render(spell_map.spell))
+        if spell_map.spellframe is not None:
+            parts.append(f"spellframe={render(spell_map.spellframe)}")
+        if spell_map.binding_name is not None:
+            parts.append(f"binding_name={spell_map.binding_name!r}")
+        return f"SpellMap({', '.join(parts)})"
+
     @classmethod
     def for_unsupplied(cls, spell: Spell, param_names: Collection[str]) -> UnresolvedInputError:
         """
@@ -255,9 +309,15 @@ class UnresolvedInputError(MeldExecutionError):
         Contract:
             - The first missing socket (lowest position) names the type; the
               others are listed as "Also not supplied".
-            - When the first socket's class lookup finds its class bound only
-              under a spellframe or a binding name (`_hidden_candidates`, a live
-              read of the consumer's pool), the text is
+            - When the first socket's parameter defaults to a SpellMap
+              (`_constructor_spell_map`; 2026-11-16, GitHub #329), the text names
+              that SpellMap (`_spellmap_address_name`) and asks for a spell at its
+              address. No class-lookup search runs for it: Phase 3 records a
+              SpellMap's HIDDEN_PROVIDER shape itself, and a framed bind of its
+              class re-gates the consumer into that refusal.
+            - Otherwise, when the first socket's class lookup finds its class bound
+              only under a spellframe or a binding name (`_hidden_candidates`, a
+              live read of the consumer's pool), the text is
               `HiddenProviderReport.unresolved_input_message` and
               `hidden_spell_ids` carries the candidates; otherwise the text says
               nothing registered provides it, unchanged since 2026-09-26.
@@ -273,22 +333,20 @@ class UnresolvedInputError(MeldExecutionError):
         first = missing[0]
         consumer = spell.spell_name
         param_name = first.param_name
-        expected_type = cls._constructor_expected_type(spell, first)
-        candidates = cls._hidden_candidates(spell, cls._constructor_annotation(spell, first))
-        if candidates:
-            message = HiddenProviderReport.unresolved_input_message(
-                consumer_name=consumer,
-                param_name=param_name,
-                expected_type=expected_type,
-                candidates=candidates,
+        spell_map = cls._constructor_spell_map(spell, first)
+        candidates: List[Dict[str, Optional[str]]] = []
+        if spell_map is not None:
+            expected_type = cls._spellmap_address_name(spell_map)
+            message = (
+                f"{consumer}.{param_name} asks for the spell its default {expected_type} names, but nothing is bound "
+                f"there and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+                f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when {consumer} is "
+                "built as a dependency, or bind a spell at that address."
             )
         else:
-            message = (
-                f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
-                f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
-                f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
-                f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
-            )
+            expected_type = cls._constructor_expected_type(spell, first)
+            candidates = cls._hidden_candidates(spell, cls._constructor_annotation(spell, first))
+            message = cls._class_lookup_message(consumer, param_name, expected_type, candidates)
         if len(missing) > 1:
             others = ", ".join(repr(socket.param_name) for socket in missing[1:])
             message += f" Also not supplied: {others}."
@@ -306,6 +364,79 @@ class UnresolvedInputError(MeldExecutionError):
                 candidate["spell_id"] for candidate in candidates if candidate["spell_id"] is not None
             )),
         )
+
+    @staticmethod
+    def _class_lookup_message(
+            consumer: str,
+            param_name: str,
+            expected_type: str,
+            candidates: List[Dict[str, Optional[str]]],
+    ) -> str:
+        """
+        Word the error for a typed parameter: where its class is bound, or that nothing provides it.
+
+        Contract:
+            - With candidates (the class bound only under a spellframe or a
+              binding name) the text is `HiddenProviderReport.unresolved_input_message`;
+              otherwise it says nothing registered provides the expected type,
+              unchanged since 2026-09-26.
+            - Pure; reads only the arguments.
+
+        Args:
+            consumer: The consumer's spell name.
+            param_name: The first missing parameter.
+            expected_type: Display name of its expected type.
+            candidates: The described hidden candidates, possibly empty.
+
+        Returns:
+            str: The message, without the "Also not supplied" tail.
+        """
+        if candidates:
+            return HiddenProviderReport.unresolved_input_message(
+                consumer_name=consumer,
+                param_name=param_name,
+                expected_type=expected_type,
+                candidates=candidates,
+            )
+        return (
+            f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
+            f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+            f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
+            f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
+        )
+
+    @staticmethod
+    def _constructor_spell_map(spell: Spell, socket: SpellSocketDescriptor) -> Optional[SpellMap]:
+        """
+        Read the SpellMap one unresolved parameter defaults to, from the consumer's constructor signature.
+
+        Contract:
+            - Returns the parameter's default when it is a `SpellMap` (2026-11-16,
+              GitHub #329: a SpellMap that matches nothing is an UNRESOLVED_INPUT
+              socket), otherwise None - including when the signature cannot be
+              read (TypeError, ValueError) or has no such parameter.
+            - Reads the default by identity; it is never called or copied.
+            - Failure path only.
+
+        Args:
+            spell: The consumer whose construction failed.
+            socket: One of its missing UNRESOLVED_INPUT sockets.
+
+        Returns:
+            Optional[SpellMap]: The SpellMap default, or None.
+        """
+        try:
+            signature = inspect.signature(
+                spell.spell,
+                annotation_format=annotationlib.Format.FORWARDREF,
+            )
+        except (TypeError, ValueError):
+            return None
+        parameter = signature.parameters.get(socket.param_name)
+        if parameter is None or not isinstance(parameter.default, SpellMap):
+            return None
+        spell_map: SpellMap = parameter.default
+        return spell_map
 
     @staticmethod
     def _constructor_annotation(spell: Spell, socket: SpellSocketDescriptor) -> object:

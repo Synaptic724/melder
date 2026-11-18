@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from melder.nexus.rift.rift_gate.rift_gate import RiftGate
+from melder.nexus.rift.rift_gate.rift_gate import RiftGate, RiftGateDrainTimeoutError
 from melder.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
@@ -20,10 +20,12 @@ def test_rift_gate_starts_open_and_tracks_tickets() -> None:
     gate.register_ticket()
     gate.register_ticket()
 
+    # One ticket per thread inside (GitHub #274, step 3): the nested registration deepens this thread's ticket.
     assert gate.has_active_tickets() is True
-    assert gate.active_ticket_count() == 2
+    assert gate.active_ticket_count() == 1
 
     gate.unregister_ticket()
+    assert gate.active_ticket_count() == 1
     gate.unregister_ticket()
 
     assert gate.has_active_tickets() is False
@@ -99,12 +101,29 @@ def test_rift_gate_close_and_wait_until_free_waits_for_drain() -> None:
 
 def test_rift_gate_close_and_wait_until_free_timeout_raises() -> None:
     gate = RiftGate()
-    gate.register_ticket()
+    registered = threading.Event()
+    release = threading.Event()
 
-    with pytest.raises(RuntimeError, match="Timeout waiting for rift tickets to drain."):
-        gate.close_and_wait_until_free(timeout=0.05, interval=0.01)
+    def _holder() -> None:
+        # The ticket is another thread's: a drain never waits for the caller's own ticket (GitHub #274, step 3).
+        gate.register_ticket()
+        registered.set()
+        release.wait(timeout=5.0)
+        gate.unregister_ticket()
 
-    gate.unregister_ticket()
+    thread = threading.Thread(target=_holder, daemon=True)
+    thread.start()
+    try:
+        assert registered.wait(timeout=5.0)
+        with pytest.raises(RiftGateDrainTimeoutError, match="Timeout waiting for rift tickets to drain.") as raised:
+            gate.close_and_wait_until_free(timeout=0.05, interval=0.01)
+    finally:
+        release.set()
+        thread.join(timeout=5.0)
+
+    assert isinstance(raised.value, RuntimeError)
+    assert raised.value.threads_inside == 1
+    assert gate.active_ticket_count() == 0
 
 
 def test_rift_gate_cleanup_is_idempotent() -> None:
@@ -145,9 +164,10 @@ def test_rift_gate_controller_create_register_unregister_and_counts() -> None:
     second_gate.register_ticket()
     second_gate.register_ticket()
 
+    # The counts are of threads inside (GitHub #274, step 3): this one thread is inside each gate once.
     assert controller.count_active_threads_for_rift("rift-1") == 1
-    assert controller.count_active_threads_for_rift("rift-2") == 2
-    assert controller.count_active_threads_total() == 3
+    assert controller.count_active_threads_for_rift("rift-2") == 1
+    assert controller.count_active_threads_total() == 2
 
     first_gate.unregister_ticket()
     second_gate.unregister_ticket()
@@ -167,14 +187,19 @@ def test_rift_gate_controller_enable_disable_and_close_and_wait_work() -> None:
     controller.enable_all()
     assert gate.enabled is True
 
-    gate.register_ticket()
+    registered = threading.Event()
 
     def _release() -> None:
+        # The ticket is taken and released on this thread: a ticket belongs to the thread inside, and a drain never
+        # waits for the caller's own ticket (GitHub #274, step 3).
+        gate.register_ticket()
+        registered.set()
         time.sleep(0.1)
         gate.unregister_ticket()
 
     thread = threading.Thread(target=_release)
     thread.start()
+    assert registered.wait(timeout=2.0)
 
     controller.close_and_wait_until_rift_free("rift-1", timeout=2.0, interval=0.01)
     thread.join(timeout=1.0)

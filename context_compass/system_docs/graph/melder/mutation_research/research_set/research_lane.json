@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/research_set/research_lane.py",
- "source_sha256": "67db07ba9308c5fe068fe8ae2a67390de8260bd2f6783fbe47212e57f3f80070",
+ "source_sha256": "e74b31ab0b5748cab6ece0b7b7d9c380bab2634f13eaa53c1f37b4b6fca3036f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.research_set.research_lane": {
@@ -14,19 +14,20 @@
    "role": "One lane of a research network, plus its lifecycle and policy vocabularies.",
    "responsibilities": [
     "hold an ordered node sequence with an anchor and a tip",
-    "keep every mutator set-internal so residence cannot be bypassed"
+    "keep its mutators set-internal (underscore-prefixed) so residence cannot be bypassed; clear_anchor is public",
+    "declare LanePayloadView, one lane's part of a composition view (0.2.8306)"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "2df4ff9aa8edbc57758b4e3bd5dc6419c9da19fbac9b48242e2e4d0b6ba2c732"
+   "semantics_authored_against": ""
   },
   "melder.mutation_research.research_set.research_lane.LaneState": {
    "id": "melder.mutation_research.research_set.research_lane.LaneState",
    "label": "LaneState",
    "kind": "enum",
    "file": "src/melder/mutation_research/research_set/research_lane.py",
-   "lineno": 49,
+   "lineno": 54,
    "bases": [],
    "markers": [
     "StrEnum"
@@ -41,19 +42,20 @@
    "include": true,
    "role": "Lifecycle vocabulary for a lane: open, joined or archived.",
    "responsibilities": [
-    "name the terminal states a lane can reach"
+    "name a lane's states: open takes work; joined and archived are terminal, never reopened in place",
+    "StrEnum: names equal values and members compare as strings"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "ec05ce2f7b629bdfd97911ae1c70b3c3fe7d2f0f753b10532c7d68144c3b55b0"
+   "semantics_authored_against": "c353bb6e07db14cd6eae0818cccb0ab481c5343e259a3764cb5f266ef625e122"
   },
   "melder.mutation_research.research_set.research_lane.LaneType": {
    "id": "melder.mutation_research.research_set.research_lane.LaneType",
    "label": "LaneType",
    "kind": "enum",
    "file": "src/melder/mutation_research/research_set/research_lane.py",
-   "lineno": 101,
+   "lineno": 106,
    "bases": [],
    "markers": [
     "StrEnum"
@@ -68,19 +70,20 @@
    "include": true,
    "role": "Policy vocabulary classifying a lane as development, experiment, production or test.",
    "responsibilities": [
-    "carry the type the join gate enforces when armed"
+    "carry the type the join gate enforces when armed",
+    "StrEnum: names equal values and members compare as strings"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "cf19735b8e011f5ef0d275b88f60be5bb41c9b83ccf427796f32520e0090cc77"
+   "semantics_authored_against": "df4c7029467ad9f9b599030401c2af9e37b565ed3f95602d42325c7c513b7959"
   },
   "melder.mutation_research.research_set.research_lane.ResearchLane": {
    "id": "melder.mutation_research.research_set.research_lane.ResearchLane",
    "label": "ResearchLane",
    "kind": "class",
    "file": "src/melder/mutation_research/research_set/research_lane.py",
-   "lineno": 154,
+   "lineno": 159,
    "bases": [
     "Cleanable"
    ],
@@ -106,20 +109,24 @@
     "tip_spell_id"
    ],
    "shape": {
-    "method_count": 24,
+    "method_count": 25,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5d34d58261c0221c34be1cb6bb3cf7eb854b7a44db9a16b434f02d1291f946d8",
+   "span_sha256": "15c7e854b3c2c952bd8c15b549c82b105dffa781caa9059817a2e674aaa93d8b",
    "role": "One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).",
    "responsibilities": [
-    "holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)",
+    "holds ordered records of either node family keyed via node_identity (spell_id or group_id), dedup per lane",
     "carries the ancestry anchor (organization only, never content)",
-    "detach_nodes powers the join transfer; terminal states refuse further work"
+    "_detach_nodes powers the join transfer; terminal states refuse further work",
+    "keeps _node_payloads aligned with _node_order: _add_node builds each describe() payload once (0.2.8306)",
+    "from_payload fills the payloads too; a detach installs new lists; cleanup drops the list without clearing it",
+    "_payload_view() returns a fresh header, the payload list and its length under the lane lock"
    ],
    "owns_state": [
     "_nodes_by_spell_id",
     "_node_order",
+    "_node_payloads",
     "_tip_spell_id",
     "_state",
     "_anchor_lane_id",
@@ -130,7 +137,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f2eb526ac4be9d05693ad6efced788378c668992449c50921b9bf3672d514254"
+   "semantics_authored_against": "15c7e854b3c2c952bd8c15b549c82b105dffa781caa9059817a2e674aaa93d8b"
   }
  },
  "edges_out": [
@@ -190,6 +197,8 @@
   "List": "typing.List",
   "Optional": "typing.Optional",
   "ClassVar": "typing.ClassVar",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
   "GroupedResearchNode": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
   "ResearchNode": "melder.mutation_research.research_set.research_node.ResearchNode",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",

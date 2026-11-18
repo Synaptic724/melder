@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8",
+ "source_sha256": "ceb93228b567a76dcb6966a2a2be2296038bb47035e61d11adee1a7a69497094",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -64,7 +64,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f2065dde45ba2227744024dce4d278c8371fd6c007a189dab3cb20ad76829e1d",
+   "span_sha256": "4a67e0aa14e0c6fad658045217fa954dfa51e489737f296196d9dc4171a77df5",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
@@ -72,7 +72,7 @@
     "owns per-conduit resolution state buckets",
     "provides targeted dependency and contract invalidation",
     "indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges",
-    "watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them",
+    "watches UNRESOLVED_INPUT consumers under their dependency key's frame - the expected type's for a typed socket, the SpellMap's frame for a SpellMap socket (0.2.8303) - so a later matching bind re-resolves them",
     "retires a spell id's per-conduit resolution verdicts in every live conduit state when its lineage is unregistered and when a version id is registered, so a content-stable id re-entering the frame is resolved again per conduit (0.2.8219)",
     "watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)",
     "records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)",

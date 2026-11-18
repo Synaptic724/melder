@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py",
- "source_sha256": "87ec85474e7727b05f85632817f1c8252a2e49f1aaff2b0a31a517911cb02947",
+ "source_sha256": "fa1ff7f14c2f7052d022d1b7de3c1921dd1f81a00945c58b3ede2baed4297e1b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy": {

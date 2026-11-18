@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/contract/contract.py",
- "source_sha256": "1f094f18e9b9c75ecfa5f3b955a4059a9008b1b4316dd120ca74f833c6becb8e",
+ "source_sha256": "0c7ae73c87e689138009f08c80fc445ec2329589502487270d90da4c0e6aaf2e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.contract.contract": {

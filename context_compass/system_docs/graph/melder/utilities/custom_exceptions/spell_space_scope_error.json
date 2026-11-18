@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
- "source_sha256": "f2a4f995c21670b4433166c7faa9b98c9fb53ca01824e045ae6b3c97175cfedb",
+ "source_sha256": "f0c8792df9db284d8acfb957a19d925ec45446585fb5d1c3a1c9d6cdcebcc155",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.spell_space_scope_error": {

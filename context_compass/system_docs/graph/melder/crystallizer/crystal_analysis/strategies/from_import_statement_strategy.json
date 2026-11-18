@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/strategies/from_import_statement_strategy.py",
- "source_sha256": "d91317d80bd3aec19d4d5da306463de7bfc91fe49a818ef3e5f61f35de702ee3",
+ "source_sha256": "447ba6f07d2190477f93467c5ef32743d9c053b891b339a945f454c4c472d23a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.strategies.from_import_statement_strategy": {

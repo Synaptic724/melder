@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/ticket_flag.py",
- "source_sha256": "3cf4c83d27a4e2fb14fd1c89a1ccdc4c0c7d20c2b0337c7cf02924909f73c17e",
+ "source_sha256": "1c3ca044d13e67f3506d66a53d8a3d9deaac4a5109cee9ae71d18af027e02c8e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.ticket_flag": {

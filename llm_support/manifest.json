@@ -2,14 +2,14 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3625387,
-        "lines": 82473,
+        "bytes": 3643772,
+        "lines": 82681,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "84e67d4e71f33e3d64a1bd253856b4ee031cc269117a2b5696bdfd1bf7798921"
+        "sha256": "8c6de358a7c7a46318e856f3d165d43c76d81a76a9e2db089c831ea137220e2b"
       },
-      "content_bytes": 3392192,
-      "content_lines": 79107,
-      "file_count": 420,
+      "content_bytes": 3410077,
+      "content_lines": 79307,
+      "file_count": 421,
       "files": {
         ".gitattributes": {
           "content_bytes": 2948,
@@ -42,9 +42,9 @@
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/python_versions.md": {
-          "content_bytes": 9533,
+          "content_bytes": 9531,
           "content_lines": 151,
-          "content_sha256": "f73739ea60048c9216f22b78f1359237c497fe8e8a99eda462b72c7bc8c48396",
+          "content_sha256": "3f9bb70ca358b8c7e79524378086d0b649a0c000dd9b2e780de0bf27526b2da2",
           "source_encoding": "utf-8"
         },
         ".github/ci_cd/scripts.md": {
@@ -84,81 +84,81 @@
           "source_encoding": "utf-8"
         },
         ".github/python/speed/3.14.7.toml": {
-          "content_bytes": 821,
+          "content_bytes": 819,
           "content_lines": 19,
-          "content_sha256": "8e71a2964ca0c98368fe4e50874fa561282907fd02fa0dc7ee4d8a8a17d75c86",
+          "content_sha256": "de6bd7d555e357f7674bceba377fd9ad98cdb77a335e9b348ab681c30aa374c0",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.0.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "8582fff7ef6938199fb722e3e33615c6aed06fd215c5a8e71e5af64f45cef5c6",
+          "content_sha256": "cd21e91b554d0a95bcbcdfb9296347fc62fa0f2f3c97a1f7d0313fb047e491e8",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.1.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "c869c6ef555b26c5ab120341eb3195b9ed0f279b48cd76af226bde1d84dd416e",
+          "content_sha256": "d8f59c5c40a8c731b11f17ec7bfc102730c3042cbae6933cf0b42f30cbbb4ac0",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.2.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "930ca8409fa0606b514b9553b4d667b4d2823c621e89288044383ca4be4ff6be",
+          "content_sha256": "89e15dc21d43f4205c504bdf1181469ad1f4eb05bd49f120809fbc9286838c22",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.3.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "6e798919466e6273c44155d5a1e11765d26a9a45f3ed964178ebc20fe4087ef7",
+          "content_sha256": "2cde1425840902d65fdd0bbc727954d2b888442be41e6b6b15798900706ccc13",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.4.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "4b59c196e244d929d8f44999276d24048f20c16a8b7befc548c12cf4e49ab393",
+          "content_sha256": "0edc6f7a713c3024aca265411874ce35533e979e2078b156295a201ba339d05e",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.5.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "934a7f5a2e59c7d1957d4885f35aaff4dc9b3b6300789558cfc1ebb0bb59d3cd",
+          "content_sha256": "4ada78eeea446f4b9d6c24163c0d22fdcc407414a25a78575f0cebeb3be77069",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.6.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "22ee4c0532072e887f2f703a415931097a39949e4bb0700aa360201867242e82",
+          "content_sha256": "2c1d81e049693c1ce58241af0f374a8257409d1a3bea17e50cc24dce8d6bed77",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.7.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "65a20311d9dbca9f442c10983bbfd85e9821430a2f61a6a21f9951146d2880d3",
+          "content_sha256": "707b48d678a3e31463aca4d37a3ac7a40428fa97a76123937daa32f8fb9933d0",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.8.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "d33d832f9589438b674c447c907f07d03f8ad87ce55b04e9e3f52c0f035af757",
+          "content_sha256": "2796a5a123907b13f651e86f450d89704114c3e0d66241042fd23d3278465945",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.14.9.toml": {
-          "content_bytes": 690,
+          "content_bytes": 688,
           "content_lines": 18,
-          "content_sha256": "e55b5e50200e601114185f661a77d1329153895c2a13b6f7224ef489f4bfa21f",
+          "content_sha256": "cbd329e4a597dc68b3deb1adcf8a3ba2c1db207592e45f4bb916e93bffe28d9f",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.15.0.toml": {
-          "content_bytes": 832,
+          "content_bytes": 830,
           "content_lines": 20,
-          "content_sha256": "2623c7f633e3bab86a3bec172ecc8ee622b6653c0a096559cefcc9d878ee8b82",
+          "content_sha256": "a43f421d69fa00892f95f265fdc51cbab8d0ed433533eb9eb07ae195b53259ed",
           "source_encoding": "utf-8"
         },
         ".github/python/tests/3.15.1.toml": {
-          "content_bytes": 832,
+          "content_bytes": 830,
           "content_lines": 20,
-          "content_sha256": "1362554f2155731da5ace268b2218bed323590c964931a17c460327158dce363",
+          "content_sha256": "6be4a1dc7303d4fdab159c4fed131d7c587733b7fd0fd88df8e65bf718fb83e7",
           "source_encoding": "utf-8"
         },
         ".github/rulesets/dev.json": {
@@ -1368,9 +1368,9 @@
           "source_encoding": "utf-8"
         },
         "agents/MELDER_AGENT_OPERATIONS.md": {
-          "content_bytes": 53824,
-          "content_lines": 669,
-          "content_sha256": "a61b7a29ef2413c2fb727706364b05a5ac5116989eb8ff4c9f70f931f40fb44d",
+          "content_bytes": 54739,
+          "content_lines": 661,
+          "content_sha256": "a5746c513c75f28755d06353c2603fe408517afc7f5a33769332a67395e63ae2",
           "source_encoding": "utf-8"
         },
         "architecture_and_design/01_overview/capability_ladder.md": {
@@ -2472,9 +2472,9 @@
           "source_encoding": "utf-8"
         },
         "pyproject.toml": {
-          "content_bytes": 7815,
+          "content_bytes": 7813,
           "content_lines": 248,
-          "content_sha256": "e2e8c3e12599ecdeacc039ecf85149703a1866c07efe5fe36c5180a671068a44",
+          "content_sha256": "dde43b263b3d565e641eb47b2fa31d02d358a5646b4af3b80ed0de5275bc4b08",
           "source_encoding": "utf-8"
         },
         "release_docs/0.2.8227.md": {
@@ -2501,6 +2501,12 @@
           "content_sha256": "d4d2094cfda18c5e30c0069e012bfcb79f0ee7627c2517afdfc95d36a9dbcaf7",
           "source_encoding": "utf-8"
         },
+        "release_docs/0.2.8310.md": {
+          "content_bytes": 16872,
+          "content_lines": 206,
+          "content_sha256": "6893a75eed5a1276c7e846e3345d96f35377df628bcee1c25ac7c29b7f8de541",
+          "source_encoding": "utf-8"
+        },
         "release_docs/next_version_release.md": {
           "content_bytes": 0,
           "content_lines": 0,
@@ -2508,9 +2514,9 @@
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
-          "content_bytes": 2442,
-          "content_lines": 61,
-          "content_sha256": "e3af53c142f9acdb9c2d2b4134c3695df75ec22b33d819d3af47334ff58681f4",
+          "content_bytes": 2570,
+          "content_lines": 63,
+          "content_sha256": "fa1313e7bdf5593ff76e92896118e61d7d4d35b22d93df32e741ee187e16c558",
           "source_encoding": "utf-8"
         },
         "roadmap.md": {
@@ -2533,23 +2539,23 @@
         }
       },
       "index": {
-        "bytes": 70318,
-        "lines": 442,
+        "bytes": 70458,
+        "lines": 443,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "fec7e93f6a06f0afa5550086eab1c8dea48c1cbe462ec0b93b5a135a3814596b"
+        "sha256": "ce711ce2793b7c5323d352b037eebfac4e6e3861ad4bb6c549b6622163a0240f"
       },
-      "source_fingerprint": "c09aaf8513266235ea486e1f35c1b4b194ec304d778c71967752ec0c4b883d3e"
+      "source_fingerprint": "7a28d116602264b2860f9806fde287b1c6d5f2a15d62240c23003e172b29c3a0"
     },
     "src": {
       "bundle": {
-        "bytes": 11700454,
-        "lines": 290914,
+        "bytes": 11900920,
+        "lines": 295301,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "38330aa0dea74e89b15ae4b91b155172337c2b09d813d75455f2dea48d28cecc"
+        "sha256": "acc42ea9ab9d547d8216939c51e7547b81a39ac9b4ddb7a0b70802215381c901"
       },
-      "content_bytes": 11345531,
-      "content_lines": 286220,
-      "file_count": 586,
+      "content_bytes": 11544827,
+      "content_lines": 290591,
+      "file_count": 588,
       "files": {
         "src/melder/__architecture__.py": {
           "content_bytes": 1904,
@@ -2608,7 +2614,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 316,
           "content_lines": 12,
-          "content_sha256": "7796a7012de3a08a70117d3d12e61eafdb8fae5a522e560eb568232b39134dde",
+          "content_sha256": "14a3bce9abd0b2621c1ada189724a92b5d882eac8e4f9455a78f33e21adb0a84",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -2978,9 +2984,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py": {
-          "content_bytes": 89053,
-          "content_lines": 2061,
-          "content_sha256": "885d66911cd290427fe4f0aceb7c39b6449baf93ee95d08a2d36e8986820dea8",
+          "content_bytes": 89215,
+          "content_lines": 2063,
+          "content_sha256": "ceb93228b567a76dcb6966a2a2be2296038bb47035e61d11adee1a7a69497094",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py": {
@@ -3260,9 +3266,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/meld/contracts/spell_map.py": {
-          "content_bytes": 16251,
-          "content_lines": 382,
-          "content_sha256": "6dc958da786551f0884944c5929ae7d484d2c389a2f58bc7925a85a6cdf6c6d8",
+          "content_bytes": 16812,
+          "content_lines": 388,
+          "content_sha256": "a5383a395a66ed52134372d15eb207f8692b7e5b2d49cbcae41b57d660dcea64",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/meld/creation_context/creation_context.py": {
@@ -3926,9 +3932,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py": {
-          "content_bytes": 4576,
-          "content_lines": 108,
-          "content_sha256": "7c8ea89ad312d696c7e0018bd8e4d8d0f50937c74de2c912c663785a328321bf",
+          "content_bytes": 4685,
+          "content_lines": 110,
+          "content_sha256": "c69b385d753a1725d95d77df8ad78415491150addb11aef8f0eda22f7a999e35",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/dag/target_spec.py": {
@@ -3974,9 +3980,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py": {
-          "content_bytes": 83366,
-          "content_lines": 1775,
-          "content_sha256": "eef37bac2fde1782545773baba59b6e16c515627d30a6ba17f297c0e7d56c46b",
+          "content_bytes": 86002,
+          "content_lines": 1815,
+          "content_sha256": "4594bf92c3a743ccd6d725f91e4172b0a362cb3bdf12262870fedb76d1ca7b99",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py": {
@@ -4484,9 +4490,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py": {
-          "content_bytes": 11276,
-          "content_lines": 249,
-          "content_sha256": "aeb86bcde9f45024b891403a1936b380fbb9edb78a4aca1b1abe3534d8e86539",
+          "content_bytes": 14688,
+          "content_lines": 322,
+          "content_sha256": "3ad8c6f8fa1144dbed0f52cbd6923fdb6ac982954c18cfef4541c9d9733586c7",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py": {
@@ -4532,9 +4538,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook.py": {
-          "content_bytes": 409222,
-          "content_lines": 8742,
-          "content_sha256": "fc0492af077ba5c129120442dcb435def2b502129c42afd9a14905e77130176c",
+          "content_bytes": 409292,
+          "content_lines": 8743,
+          "content_sha256": "4865c723f6da4d002486a1d392177075cabce50dff6e86950116842674c8242c",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook_creation_system.py": {
@@ -4604,15 +4610,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py": {
-          "content_bytes": 32183,
-          "content_lines": 867,
-          "content_sha256": "0570f372ec1d2736c42a4a56eb4fef2d343d6992ac92a67d9610a6f89b3f82e4",
+          "content_bytes": 38308,
+          "content_lines": 995,
+          "content_sha256": "e59fc076e52b81acb37d4092a521a90d01f7a754270b321ef05b3ef96638fe4e",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py": {
-          "content_bytes": 58898,
-          "content_lines": 1445,
-          "content_sha256": "e51f367644defe0d8e9d0845d508af6093752a9f31fa857b05a9d9d140eaa9e5",
+          "content_bytes": 101656,
+          "content_lines": 2403,
+          "content_sha256": "fb510b4d6a76df3b2b2e67a4f88e9008330b0e966b42ddc36b173057c9fbc034",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py": {
@@ -4622,9 +4628,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py": {
-          "content_bytes": 9721,
-          "content_lines": 274,
-          "content_sha256": "b0cff30073e030bc251c80c88c1040ed1bca627fb326612e3ccaf566e5782cb1",
+          "content_bytes": 13378,
+          "content_lines": 357,
+          "content_sha256": "23a7621da6f73b5a169b50e0afa5ee9435be1d20e62e76389aa1e8e93f9d1293",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/source_custody_strategy.py": {
@@ -4640,15 +4646,21 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py": {
-          "content_bytes": 7581,
-          "content_lines": 216,
-          "content_sha256": "790097ffd3444f4a51d81711dd542aa8e1ce41afc746754d275bca2cb9346bf0",
+          "content_bytes": 10664,
+          "content_lines": 282,
+          "content_sha256": "dc9eac2275b0ba0ce3c940cd5373bc40a5b4e5245eed206dd61a1e738b1cae5c",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/impact_engine.py": {
           "content_bytes": 16762,
           "content_lines": 421,
           "content_sha256": "220021911255c3c0594ec52635429c7f20e58c9278f5097b90a156c925e0509d",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/crystallizer/crystal_analysis/module_answer_cache.py": {
+          "content_bytes": 43002,
+          "content_lines": 1098,
+          "content_sha256": "0151e92b30d387fdbc67d80133d3a5842dbb10ac78b88082eb0ea3f78a08280e",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/physical_source_cache.py": {
@@ -4742,9 +4754,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py": {
-          "content_bytes": 6858,
-          "content_lines": 171,
-          "content_sha256": "8f57fba75a7c37d2917ddd46965fdf2be8a6348242105a4413db2d80e79be312",
+          "content_bytes": 7233,
+          "content_lines": 175,
+          "content_sha256": "16e1a9ff5ecbf06d958febf78521af98b6aefa8205f265ef62f8661e91ea5005",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py": {
@@ -4850,9 +4862,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystals/mutation_research_crystal.py": {
-          "content_bytes": 14495,
-          "content_lines": 350,
-          "content_sha256": "3a48a28cb5ec90228f20ba9c150e15878a5106df202ec7a4b9de64e9967fa34d",
+          "content_bytes": 19391,
+          "content_lines": 452,
+          "content_sha256": "ab60b9cfd9fe89261711d6166cd55d9086736cf14b050fa2ca4cb2a9a1e36d96",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystals/nexus_crystal.py": {
@@ -4904,9 +4916,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/persistence/record_version.py": {
-          "content_bytes": 10103,
-          "content_lines": 217,
-          "content_sha256": "3d643ccc28d23db98afb93e89f16fcb92917a64938b2a0e0153dc05ceb63024e",
+          "content_bytes": 10598,
+          "content_lines": 222,
+          "content_sha256": "2945373e3fa30939aab63463dae5df5e1414ac70c69052db7f597c7769c918bb",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/synthetic_module.py": {
@@ -4976,9 +4988,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/mutation_research.py": {
-          "content_bytes": 155352,
-          "content_lines": 4005,
-          "content_sha256": "b1754ff4ffd3c3370d045bd2ffb8ae9309275d5a3c8a9be0bd0e0d9a6ffe7c32",
+          "content_bytes": 156948,
+          "content_lines": 4040,
+          "content_sha256": "a2437bdceffe5cb9fbeccb2be726b10bb1478c260fad77f68fa0ff6c982e9d4d",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/grouped_research_node.py": {
@@ -4988,21 +5000,27 @@
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/network_versioner.py": {
-          "content_bytes": 18384,
-          "content_lines": 458,
-          "content_sha256": "c5b8bb8c70da276c2c38fa133fb1e960dd91585ea481da98be8c7df83a14047e",
+          "content_bytes": 21203,
+          "content_lines": 519,
+          "content_sha256": "0d40b6288e52852604b91a81e4b6088f19fe8a447bf61693f462f3004f97cc8d",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/mutation_research/research_set/research_composition_view.py": {
+          "content_bytes": 9294,
+          "content_lines": 235,
+          "content_sha256": "c2f32e60a71102439b26ae1e3326e8b45aef5c624e1bae28d0aa52ca0a7b9396",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_journal.py": {
-          "content_bytes": 16187,
-          "content_lines": 430,
-          "content_sha256": "f7bacc73b391e5db1d35ed0fe2df6d1c6edd94c43cef2f47a2b4b63b9d6e0492",
+          "content_bytes": 18748,
+          "content_lines": 479,
+          "content_sha256": "0d5ec0b4092038bf6bb2f1413da65ac69b6485a5fb6871d0d10708c5e5b80c91",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_lane.py": {
-          "content_bytes": 39290,
-          "content_lines": 1016,
-          "content_sha256": "a9a45fc4c48f50db4af6c1a94494d2feefdc1901e8341957898a59c44e3ed6fb",
+          "content_bytes": 43999,
+          "content_lines": 1103,
+          "content_sha256": "e74b31ab0b5748cab6ece0b7b7d9c380bab2634f13eaa53c1f37b4b6fca3036f",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_node.py": {
@@ -5012,15 +5030,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/research_set.py": {
-          "content_bytes": 109606,
-          "content_lines": 2645,
-          "content_sha256": "7d87154c81b070f12b6e88f656cc9266938dbcda747373b8beac42f3edf47b07",
+          "content_bytes": 118146,
+          "content_lines": 2808,
+          "content_sha256": "67ab6d446279bba14c5f223bd185c29b391938a30c677d206490008d09ab220a",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/residence_registry.py": {
-          "content_bytes": 15968,
-          "content_lines": 407,
-          "content_sha256": "178b31d03112e0b00f35b6e6103051f56d9474611e8b08f1a2dc922cfa41688a",
+          "content_bytes": 19170,
+          "content_lines": 466,
+          "content_sha256": "267bc667192374f6c3b58b129d45e71d8764cb6f6337760da58ea1b4e3712e3f",
           "source_encoding": "utf-8"
         },
         "src/melder/mutation_research/research_set/transition_entry.py": {
@@ -5414,9 +5432,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/nexus.py": {
-          "content_bytes": 134995,
-          "content_lines": 3639,
-          "content_sha256": "4f55ee64b571ab53b7d922638e53890de218a88241a9396374429916de94248b",
+          "content_bytes": 147360,
+          "content_lines": 3884,
+          "content_sha256": "9ec146d51b26b0a6aa0d99fb7acdf7489dcda2c32e62958c6670d1484c08af50",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/nexus_frame_builder.py": {
@@ -5606,15 +5624,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/command_system/codegen_command_system.py": {
-          "content_bytes": 77339,
-          "content_lines": 2120,
-          "content_sha256": "79fcd97dbd7995a1e3b9457d950b8ee6cb334cf777c5d45c9b193c3b856a2428",
+          "content_bytes": 79514,
+          "content_lines": 2141,
+          "content_sha256": "44c437eeba1e491657a15e31e50c2279bb2b07d3a1b96f365f10787e46bd0b79",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/command_system/command_system.py": {
-          "content_bytes": 65783,
-          "content_lines": 1850,
-          "content_sha256": "5e9fd4f918491e717d16a29a14d3b692445bda27590ae55c2b6afb8815d20b25",
+          "content_bytes": 68305,
+          "content_lines": 1887,
+          "content_sha256": "886a4facc2e213d05c2e6de1195e69d7835086cbe056a219d513f6095428044c",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/command_system/static_command_system.py": {
@@ -5636,9 +5654,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/frame_viewer/frame_viewer.py": {
-          "content_bytes": 288277,
-          "content_lines": 6680,
-          "content_sha256": "d7a851af1b78cef9b2e5a4bb4aa22ebb08d18d220664a2fbd24ea4c798a192d1",
+          "content_bytes": 290527,
+          "content_lines": 6717,
+          "content_sha256": "eb524919b83be689179fd1dd337eb011501c4408713235eff093cfa75b8a7eee",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/frame_viewer/static_frame_viewer.py": {
@@ -5702,21 +5720,21 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift.py": {
-          "content_bytes": 49353,
-          "content_lines": 1324,
-          "content_sha256": "5f6c6a0b5aebda472361a8d679559e52a2b36226f6fea9f93e302c0e9d2996cb",
+          "content_bytes": 56877,
+          "content_lines": 1491,
+          "content_sha256": "a56cde2b19d409b41b72b10c63dd48a14f17c2878cc730a3edcb4ba7751a832e",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift_gate/rift_gate.py": {
-          "content_bytes": 13490,
-          "content_lines": 411,
-          "content_sha256": "ee200691686d6831782531294688c7661088a150b6fa5d452713f8c01408afe7",
+          "content_bytes": 24243,
+          "content_lines": 659,
+          "content_sha256": "4372ffed9f5b21cea7d208673bb40e873935d36ea0114bc34007942169dd0ef6",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py": {
-          "content_bytes": 9721,
-          "content_lines": 333,
-          "content_sha256": "dbce0214162d8e086791b195efb353d05b09f2a69a130c8f509aec7c0c866318",
+          "content_bytes": 10633,
+          "content_lines": 354,
+          "content_sha256": "7acf92dca917ae4a76f9998125c39ef4d125a988c9b5157d6ba146c04f2fcefa",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift_space/capability_rift_space.py": {
@@ -5756,9 +5774,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift_space/rift_space.py": {
-          "content_bytes": 34577,
-          "content_lines": 1000,
-          "content_sha256": "2f8a2b389caf76b92dd4e457e0f615a2972c5b15bac0242caec55601ee232e0e",
+          "content_bytes": 38451,
+          "content_lines": 1073,
+          "content_sha256": "1813b0042ddeaa3fca140b830dc3a2cd183c08d3e957acc0faa0a50c20370469",
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift_space/static_rift_space.py": {
@@ -5768,9 +5786,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/nexus/rift/rift_space/workstation.py": {
-          "content_bytes": 34602,
-          "content_lines": 1000,
-          "content_sha256": "f671edf2b7a9a778e7f072402de86bdbd87eec231b5df13a34f0838730c62ec5",
+          "content_bytes": 41084,
+          "content_lines": 1134,
+          "content_sha256": "80f2310a557293f0ae030165f51192f1eaaa8660f14373401c953a5cf5fa0f46",
           "source_encoding": "utf-8"
         },
         "src/melder/system_document.py": {
@@ -5882,9 +5900,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/utilities/custom_exceptions/unresolved_input_error.py": {
-          "content_bytes": 18801,
-          "content_lines": 417,
-          "content_sha256": "e6920b7bd3b6bf95b56f8fd4a66ebbe0c22def45b1c08d4eacb4eb81fef83de6",
+          "content_bytes": 25178,
+          "content_lines": 548,
+          "content_sha256": "4c0043c8455230ad18fcd728a1747e0a24c61bb1374b775a03157c87ec6459c4",
           "source_encoding": "utf-8"
         },
         "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py": {
@@ -6069,23 +6087,23 @@
         }
       },
       "index": {
-        "bytes": 114695,
-        "lines": 608,
+        "bytes": 115073,
+        "lines": 610,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "d63be320d7ec26e11009db6dca32490b65338c4b5a368a321b1feb0d8719ee10"
+        "sha256": "e8b3bdd14c94a625fff54277807fda1b10f07ebeb851f33c4d74d06302d33b9d"
       },
-      "source_fingerprint": "5ca2cbcb5c3a3ae6f0667d88ad1a64cbd05697a56e947c07cf3f337424569eaa"
+      "source_fingerprint": "ec13ba03b6e37a287ef1be8fc64cbd7fbd159db211d39b0bbfb8157fb1948e68"
     },
     "tests": {
       "bundle": {
-        "bytes": 14552263,
-        "lines": 390743,
+        "bytes": 14736807,
+        "lines": 395129,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "b7c01b867db5ddc82924130f53dd5ab2791f35d721ffdc246329f482e4700296"
+        "sha256": "228408e3e20090053d66006d67081c45c4e2e1b92b81ff7235cb810d63d56fa6"
       },
-      "content_bytes": 13816287,
-      "content_lines": 381089,
-      "file_count": 1206,
+      "content_bytes": 13996585,
+      "content_lines": 385419,
+      "file_count": 1213,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -6112,9 +6130,9 @@
           "source_encoding": "utf-8"
         },
         "tests/_nexus_viewer_matrix_support.py": {
-          "content_bytes": 25085,
-          "content_lines": 638,
-          "content_sha256": "5222f8887497a4fe0392d6bac024df3186a794d2650bf33307b41b0099d1c0f6",
+          "content_bytes": 25610,
+          "content_lines": 654,
+          "content_sha256": "27dc3bad53d1ee0187e989767c740f481ae8de7b788bf77580620cd55e181890",
           "source_encoding": "utf-8"
         },
         "tests/_one_active_spell_per_address_support.py": {
@@ -6634,15 +6652,21 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py": {
-          "content_bytes": 37365,
-          "content_lines": 939,
-          "content_sha256": "679c84638da7e5e92c2c935e5009367b2b2f920a993081f6656acd4325bcc927",
+          "content_bytes": 47881,
+          "content_lines": 1157,
+          "content_sha256": "826e83330f50ed9814c977f704e024900ab1587428af71f6ba5c0ba33881075c",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py": {
           "content_bytes": 10304,
           "content_lines": 271,
           "content_sha256": "809ac3812235f92de06bb0eb582ffa986fed3f02fc35f0a9e82fdacd2ae83777",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py": {
+          "content_bytes": 57599,
+          "content_lines": 1348,
+          "content_sha256": "e4b57b2171f25f4f5497cf98fb7a20e5d5bfa649f7c6f57a1969545bdd125755",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/crystallizer/test_crystallizer_cadence_soak_component.py": {
@@ -7120,9 +7144,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py": {
-          "content_bytes": 57485,
-          "content_lines": 1751,
-          "content_sha256": "cbc90cf0c9260a5cb5dde0d9031dee01e64c0bf8f2e8e4aff1bb25eefaab4c70",
+          "content_bytes": 60084,
+          "content_lines": 1808,
+          "content_sha256": "4f23e5325153d26b16f436ced6f89c0c171253ee4ca693c41709861814b6323e",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_spell_id_integrity.py": {
@@ -9120,7 +9144,7 @@
         "tests/integration/melder/crystallizer/test_cleaned_record_names_656.py": {
           "content_bytes": 7778,
           "content_lines": 170,
-          "content_sha256": "1d10d95145eddf367991017771b96aa10955e0c067a06057226de5e66fe82505",
+          "content_sha256": "9a5f72d3b544ae521a741c1a609761bd44f5c60edd84d2a20f4f400c02811c54",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py": {
@@ -9192,7 +9216,7 @@
         "tests/integration/melder/crystallizer/test_nexus_config_enum_persistence_657.py": {
           "content_bytes": 3923,
           "content_lines": 98,
-          "content_sha256": "4ce80b728f2299c8169986e9c85b0df900f47f2a6f88d2c30e484079cf01b2a3",
+          "content_sha256": "2f4999f889c6ede212666d594fee56905e6072c658a0bf8adb0c02e68b93de9f",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_ordered_disposal_replay.py": {
@@ -9364,9 +9388,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py": {
-          "content_bytes": 46337,
-          "content_lines": 835,
-          "content_sha256": "824ffe1794d0c3dcf781f736870267e2fbb0b9d2158c57451d2e29b3021f93e3",
+          "content_bytes": 46779,
+          "content_lines": 841,
+          "content_sha256": "1d15e16155050880a086cbde8510a151027591515797707cdb0f8ecb73a16059",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_deferred_annotations.py": {
@@ -9592,9 +9616,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py": {
-          "content_bytes": 39719,
-          "content_lines": 989,
-          "content_sha256": "75aa120d5418c168cc407703869be9d51f45faa6bd5aa08d7670d1b74e8bd92a",
+          "content_bytes": 40188,
+          "content_lines": 995,
+          "content_sha256": "5f47f8cbcaa96da3902986747a566606bda560f685dcd58c2a8d7477a507e443",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py": {
@@ -9616,9 +9640,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py": {
-          "content_bytes": 87642,
-          "content_lines": 3061,
-          "content_sha256": "d2c61ac1d32349ba63eb24a7b29f67bb49b51bc9d43a93fc70938825bb6a4d72",
+          "content_bytes": 88391,
+          "content_lines": 3069,
+          "content_sha256": "ccb4001f6abf0061dce160ab08b0a4085dc363363586404d0059fcf71a7c2926",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_ticket_coverage.py": {
@@ -9628,9 +9652,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_resolution_error_matrix.py": {
-          "content_bytes": 16211,
-          "content_lines": 476,
-          "content_sha256": "b6732345ec0952ca9aff1430cd4ebc2d39c8c8cd70f1ac0c4650e06feadfa61e",
+          "content_bytes": 16548,
+          "content_lines": 481,
+          "content_sha256": "1b63dc3a99fc5c37e84392bb293e528b6db64551de76e412535216250d44846c",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py": {
@@ -9673,6 +9697,12 @@
           "content_bytes": 5051,
           "content_lines": 131,
           "content_sha256": "550e11cbaaf7b235688ae58caf11f38be9dd37c2989c2a839bd6c98ff5702f64",
+          "source_encoding": "utf-8"
+        },
+        "tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py": {
+          "content_bytes": 8767,
+          "content_lines": 191,
+          "content_sha256": "fd7716f93b6ae8dbc5b5444125092c0eb16b540538fbaee8990d6c1ce64ffbec",
           "source_encoding": "utf-8"
         },
         "tests/mocks/SKILLS.MD": {
@@ -11158,9 +11188,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_nexus.py": {
-          "content_bytes": 209554,
-          "content_lines": 6374,
-          "content_sha256": "dbac9b4370b93b338c56a755a80bd14ec8ae38199eb1c2a7503618b5d684fb4c",
+          "content_bytes": 209858,
+          "content_lines": 6381,
+          "content_sha256": "bf22b3fea0e4a4085d71209ad2209b6da4bd5adf2f787a3fb78cd6364fa19630",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_nexus_configuration.py": {
@@ -11218,9 +11248,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py": {
-          "content_bytes": 24166,
-          "content_lines": 728,
-          "content_sha256": "864748ad538706f1f7df7e428f5f9817bc0e035189ceea8d7d056fa055b6c398",
+          "content_bytes": 24742,
+          "content_lines": 744,
+          "content_sha256": "14d493c0783167d80d55a303a90bc96abedb3221773d32f297080e5078c4b45a",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_nexus_passive_ingest.py": {
@@ -11290,9 +11320,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_rift_gate.py": {
-          "content_bytes": 5802,
-          "content_lines": 212,
-          "content_sha256": "25cb7d3e62195b35d64d55f371e42996637fd514afcaad383c65ee70166543d1",
+          "content_bytes": 7017,
+          "content_lines": 237,
+          "content_sha256": "bcbf1ad19304b19d5f8aa283a5655208e94efdc46873970edce3b5b1c0f5c42d",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/aether/test_rift_gate_thread_tickets.py": {
+          "content_bytes": 13027,
+          "content_lines": 357,
+          "content_sha256": "c48ffb6999fb51e8e930b4923719f2d2571184e666aa441c79bdc4363c3cc0c3",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_rift_memory_system.py": {
@@ -11308,9 +11344,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_rift_space.py": {
-          "content_bytes": 7435,
-          "content_lines": 210,
-          "content_sha256": "e989ddd1ac957cf3ca74c46dc3da77e6dadad4acf1964f6922103eea61bccdef",
+          "content_bytes": 7776,
+          "content_lines": 219,
+          "content_sha256": "28ad1585206e490f46b1709fb6fd452a2c9db7f88a1e67bcfea99321ff0f8ed1",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_rift_space_type.py": {
@@ -11356,9 +11392,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_static_rift_space.py": {
-          "content_bytes": 1576,
-          "content_lines": 52,
-          "content_sha256": "4925732ca25767854f9d1c29539ecf0d575bc8f10be3d9ed941bced5e712dd80",
+          "content_bytes": 1917,
+          "content_lines": 61,
+          "content_sha256": "41841abbef988b32e7ba0ad542ba69893403d30c77f725abfe60cec056331c91",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/test_static_rooms_managed_spell_quantity.py": {
@@ -11410,21 +11446,27 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer.py": {
-          "content_bytes": 23802,
-          "content_lines": 702,
-          "content_sha256": "1105a45fc0b3cfac28a9bf7fc2f912ce6a43d8b8fc80f5f4dd786d3e1960f6a6",
+          "content_bytes": 24782,
+          "content_lines": 719,
+          "content_sha256": "541757c20f66c70b7216d5fc3cd07e5a7f132ee8b7b4ee676bcc86872eddee06",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/crystallizer/crystal_analysis/test_crystal_analyzer_pass_dedup.py": {
+          "content_bytes": 10662,
+          "content_lines": 285,
+          "content_sha256": "217482e5cdf7899f21431f69fe6edaed8956b3d10c76a6a191174a921226be9c",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_custody_boundary_characterization.py": {
-          "content_bytes": 13716,
-          "content_lines": 345,
-          "content_sha256": "161b05845b368c0fc7d13f92e56bf7f6bc6f6b5bb0d9b145c57f1b14124fd6c1",
+          "content_bytes": 13818,
+          "content_lines": 344,
+          "content_sha256": "f39c9ec7955ca16d5b4e710acc213d3d5563582fda63eea943dffe2cf4d439c3",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_custody_strategies.py": {
-          "content_bytes": 8511,
-          "content_lines": 240,
-          "content_sha256": "2a23ac671b6024599dc892457f7556c9db188ac1e64011228e9f16c0376da9df",
+          "content_bytes": 11494,
+          "content_lines": 309,
+          "content_sha256": "01583256e0bffe82368538e897b4c82b7c9ae8fe8a3073e5fd92f4365f3e040a",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_distribution_provenance.py": {
@@ -11443,6 +11485,12 @@
           "content_bytes": 10265,
           "content_lines": 293,
           "content_sha256": "ba9e42eb0f4b5efa1704ffe4d52c7c4d2a3f02a3c0473881e16dd6e8a0eabae9",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/crystallizer/crystal_analysis/test_module_answer_cache.py": {
+          "content_bytes": 45837,
+          "content_lines": 1153,
+          "content_sha256": "a99db37e244111c41cf5bb5061877277c9b1e1372a9daf576e65698683c3c997",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/crystal_analysis/test_mutation_research_composition_strategy.py": {
@@ -11590,9 +11638,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/persistence/test_record_version_and_json_contract.py": {
-          "content_bytes": 13225,
-          "content_lines": 351,
-          "content_sha256": "2d2cbe7ac76ecdd3bda1ce4ab1e257259bb8087668488e126aa078be46fcf304",
+          "content_bytes": 13260,
+          "content_lines": 352,
+          "content_sha256": "3f7b4507470258838cc68343ed4d7eabe50c1bfaf5e7cb5ed240fd89a6b6f4d8",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/persistence/test_restore_engine.py": {
@@ -11674,9 +11722,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/test_spell_crystal_managed_options.py": {
-          "content_bytes": 6938,
-          "content_lines": 156,
-          "content_sha256": "73b81875aa44135d97bc24d87c1c5d43d0af0e1b88c0f5f59d9c4a4793e88d46",
+          "content_bytes": 7140,
+          "content_lines": 158,
+          "content_sha256": "01fc5e53a934656c450c4e894b819b674a85627ad40277187303071aba36cb5b",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/test_synthetic_module.py": {
@@ -11769,6 +11817,12 @@
           "content_sha256": "fa786c7bbb5ba69e7b569c6143fb7b424157a6fbbec4caa64bf50c28c126b0a3",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/mutation_research/research_set/test_research_set_lazy_ring.py": {
+          "content_bytes": 7470,
+          "content_lines": 191,
+          "content_sha256": "3f906092fe1762655ad7fea02e9550af9cf24bdc0a9cc522c0e2b51d47edac81",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/mutation_research/research_set/test_residence_registry.py": {
           "content_bytes": 2926,
           "content_lines": 98,
@@ -11815,6 +11869,12 @@
           "content_bytes": 4409,
           "content_lines": 138,
           "content_sha256": "d413b91e4db8e1cf31230fabd43e0ecdbf986f629e4a38b50ffe76460c3f7771",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/mutation_research/test_mutation_research_twin_views.py": {
+          "content_bytes": 7910,
+          "content_lines": 203,
+          "content_sha256": "d061e90aabb3bdbc832c70481b6e42fd179ccba9b4353c0dc3fce352d9b9108e",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/bind/test_bind.py": {
@@ -11938,9 +11998,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py": {
-          "content_bytes": 86507,
-          "content_lines": 2134,
-          "content_sha256": "0bcfa09c7a320db1b6891608cb01e1478a9499c76999e2ed704ec909af686df3",
+          "content_bytes": 86759,
+          "content_lines": 2137,
+          "content_sha256": "cc9a5f60fcf84b39d23cd896e81cf9424b12622d5b2a26645c0998a8e87dec85",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_4.py": {
@@ -12670,9 +12730,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_required_holes_strategy.py": {
-          "content_bytes": 17752,
-          "content_lines": 556,
-          "content_sha256": "7b59552b0f6294ae478ad3d97f3551070397dfdb4e47bfccf574262bbcd68073",
+          "content_bytes": 19891,
+          "content_lines": 595,
+          "content_sha256": "cc9ea5b085a7e7af8d4145a0c0b173bc67c564085e1845e97d6e9b960c68a04d",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_resolution_frame_presence_strategy.py": {
@@ -12874,9 +12934,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/test_spellbook_snapshot.py": {
-          "content_bytes": 1765,
-          "content_lines": 59,
-          "content_sha256": "803db8a87ad0c7f4139472ba24ed92347d41c63eef5adb5c22db83a0fb2963b9",
+          "content_bytes": 3133,
+          "content_lines": 99,
+          "content_sha256": "9771548e9ccf3e0de94cfeca5416dcaf736e337980e67ffa64d7ee25db8eb937",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/test_annotation_integrity.py": {
@@ -13072,9 +13132,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/utilities/custom_exceptions/test_unresolved_input_error.py": {
-          "content_bytes": 6666,
-          "content_lines": 137,
-          "content_sha256": "89b98c2089766ca229bf26ff247c9e8c8f6c9e5faf8339a0048c56d2edaa9eea",
+          "content_bytes": 9217,
+          "content_lines": 187,
+          "content_sha256": "d30665a1fec451616344ffebb321b1d9763028ca6d11fedb983f97329f3f629c",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool.py": {
@@ -13325,12 +13385,12 @@
         }
       },
       "index": {
-        "bytes": 237442,
-        "lines": 1228,
+        "bytes": 238841,
+        "lines": 1235,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "6c95ebfe040373cd9175332a38b8656af4bb57b05ee048a32c8877b8dbdee617"
+        "sha256": "43d01862efef96048c1268f87763c4826651167e1caa1980aa3cf7d778e97257"
       },
-      "source_fingerprint": "bc998bdbef18b8c87b7e73edffb9c48186b8d5892b7b984860091eb30ad02b49"
+      "source_fingerprint": "3d31f105c1b3b05acc8007f6133cfcb5de48eb0531696159c8fad37ff688f73a"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
- "source_sha256": "9699c305d3d70b42a92cdfc2cfe01c889f62805394e76166537474b9d5a3eb13",
+ "source_sha256": "3ad8c6f8fa1144dbed0f52cbd6923fdb6ac982954c18cfef4541c9d9733586c7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy": {
@@ -26,7 +26,7 @@
    "label": "RequiredHolesStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
-   "lineno": 15,
+   "lineno": 18,
    "bases": [
     "SpellValidationStrategy"
    ],
@@ -35,11 +35,11 @@
     "validate"
    ],
    "shape": {
-    "method_count": 3,
+    "method_count": 5,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "356b09e7dd24532238a018f742c91ed105c55491ecdd22a0c905d1804953314f",
+   "span_sha256": "3f43aeee88d8bfab7d6dd18a67f2d63df120d41747567d538d754091729d33d4",
    "include": true,
    "role": "Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.",
    "responsibilities": [
@@ -47,12 +47,12 @@
     "emit warnings rather than hard errors",
     "adds the list-only collection hint to REQUIRED_HOLE only when a set, frozenset, dict or tuple annotation holds a user class; plain data containers get no hint",
     "reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations",
-    "warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key - except a socket carrying hidden_spell_ids, which HiddenProviderStrategy reports as the HIDDEN_PROVIDER error (0.2.8281)"
+    "warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type - for a SpellMap parameter the SpellMap as written, asking for a spell at its address (_unresolved_input_issue, 0.2.8303) - and dependency key - except a socket carrying hidden_spell_ids, which HiddenProviderStrategy reports as the HIDDEN_PROVIDER error (0.2.8281)"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "356b09e7dd24532238a018f742c91ed105c55491ecdd22a0c905d1804953314f"
+   "semantics_authored_against": "3f43aeee88d8bfab7d6dd18a67f2d63df120d41747567d538d754091729d33d4"
   }
  },
  "edges_out": [
@@ -66,13 +66,13 @@
  "edge_candidates": [
   {
    "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-   "to_label": "RuntimeError",
+   "to_label": "SpellValidationIssue",
    "relation": "creates",
    "confidence": "candidate"
   },
   {
    "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-   "to_label": "SpellValidationIssue",
+   "to_label": "RuntimeError",
    "relation": "creates",
    "confidence": "candidate"
   }
@@ -82,13 +82,17 @@
   "inspect": "inspect",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
+  "Optional": "typing.Optional",
   "get_args": "typing.get_args",
   "get_origin": "typing.get_origin",
   "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
   "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
   "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
   "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+  "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
+  "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
   "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
  },
  "collapse_candidate": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_creation_context_setup_step.py",
- "source_sha256": "b240dd22faf7747e844381b3fe692c6661d6d9aff85561d761e18eccda4e51b8",
+ "source_sha256": "dd1d58eefc6b8a556abb2f7eac7ab5dd8f05c187642c351beb6ff64dab05d65a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_creation_context_setup_step": {

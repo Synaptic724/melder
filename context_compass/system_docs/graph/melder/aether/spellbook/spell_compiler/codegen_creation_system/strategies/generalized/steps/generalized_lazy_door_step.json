@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py",
- "source_sha256": "360ef7751b972bc8401f17861ebb3512d742698248eafa75f0a91966f37468dd",
+ "source_sha256": "a8810cdaed149cfe062078a1d82fe477d311d9e5b0b796442b21730acd1497b1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step": {

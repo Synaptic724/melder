@@ -1,0 +1,31 @@
+# Melder 0.2.8304 (uncommitted tree on b25d88eed), GIL off, Windows 11; 150 modules x 4 spells, 4 imports each
+# run (no profiler):
+binds=600 modules=150 total=2.01s per_bind=3.3ms first50=0.10s
+realpath calls=480 (0.06s)  find_spec calls=1746 (0.01s)
+# run (cProfile over all binds; times inflated by the profiler), top functions by internal time:
+binds=600 modules=150 total=5.35s per_bind=8.9ms first50=0.19s
+realpath calls=480 (0.07s)  find_spec calls=1746 (0.01s)
+         14539815 function calls (14522946 primitive calls) in 5.328 seconds
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      600    0.401    0.001    2.547    0.004 crystallizer\crystal_analysis\crystal_analyzer.py:963(_walk_module_dependencies)
+   153160    0.286    0.000    0.366    0.000 crystallizer\crystal_analysis\crystal_analysis_result.py:236(record_module_target)
+    22849    0.218    0.000    0.227    0.000 {built-in method nt.stat}
+  1055801    0.208    0.000    0.426    0.000 {method 'get' of 'dict' objects}
+      600    0.172    0.000    0.616    0.001 aether\spellbook\spell_compiler\validation\strategies\binding_resolution_cycle_strategy.py:178(_build_binding_graph)
+      600    0.167    0.000    0.486    0.001 aether\spellbook\spell_compiler\validation\strategies\duplicate_spell_name_strategy.py:71(validate)
+   382800    0.117    0.000    0.166    0.000 utilities\synchronization\cancellation_event_signal.py:150(is_set)
+      600    0.112    0.000    0.188    0.000 crystallizer\crystal_analysis\strategies\dependency_view_strategy.py:91(finalize)
+   182100    0.104    0.000    0.257    0.000 utilities\helpers\general_helpers.py:380(make_spell_key_from_parts)
+   230196    0.102    0.000    0.559    0.000 crystallizer\crystal_analysis\crystal_analyzer.py:1768(_match_custody)
+   183300    0.101    0.000    0.174    0.000 aether\aetheric_frame\dev_ops\spell_system_states\spell_system_states.py:1847(get_local_topology)
+   836754    0.094    0.000    0.094    0.000 {method 'append' of 'list' objects}
+      600    0.088    0.000    0.162    0.000 aether\spellbook\spell_compiler\validation\strategies\circular_dependency_strategy.py:71(validate)
+  1039320    0.084    0.000    0.084    0.000 utilities\general_base\cleanable.py:140(check_cleaned)
+    21730    0.084    0.000    0.132    0.000 crystallizer\crystal_analysis\crystal_analyzer.py:1285(_replay_remembered_module_facts)
+   153910    0.081    0.000    0.159    0.000 pathlib\__init__.py:454(suffix)
+   207716    0.080    0.000    0.278    0.000 crystallizer\crystal_analysis\crystal_analyzer.py:1729(_resolve_pass_module_path)
+   178820    0.075    0.000    0.153    0.000 utilities\helpers\general_helpers.py:255(normalize_frame_key)
+   747974    0.070    0.000    0.076    0.000 {built-in method builtins.isinstance}
+   229596    0.069    0.000    0.094    0.000 crystallizer\crystal_analysis\crystal_analyzer.py:933(_custody_descends)
+   546566    0.065    0.000    0.065    0.000 {method '__enter__' of '_thread.RLock' objects}
+   546566    0.062    0.000    0.062    0.000 {method '__exit__' of '_thread.RLock' objects}

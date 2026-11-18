@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/mutation_research/mutation_configuration_builder.py",
- "source_sha256": "caf2677223cbe837b42e38fe2599bb80d445ca234a10de40d975e617e3b30a01",
+ "source_sha256": "2a4bbaabc7adafed310db067265f4c6bf1ef9d722afda9f10ba62393f537e9f2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.mutation_research.mutation_configuration_builder": {

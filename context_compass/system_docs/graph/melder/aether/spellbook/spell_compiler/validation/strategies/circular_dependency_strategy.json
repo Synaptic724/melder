@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
- "source_sha256": "8deea584d5b489f343d3666531193e23c799dfc443bd6795f38ad2e57fa769d8",
+ "source_sha256": "1bbd1d1b230b2edeef5c9c08d8ced24106c4ada514e99dfef24201e3ab527fda",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy": {

@@ -1,0 +1,39 @@
+# Melder 0.2.8303, b25d88eed, GIL off, Windows 11; 150 modules x 4 spells, 4 imports each
+# run 1 (no profiler):
+binds=600 modules=150 total=14.16s per_bind=23.6ms first50=0.72s
+realpath calls=58915 (6.78s)  find_spec calls=240392 (0.72s)
+# run 2 (cProfile over all binds; times inflated by the profiler):
+binds=600 modules=150 total=24.17s per_bind=40.3ms first50=0.74s
+realpath calls=58915 (6.54s)  find_spec calls=240392 (1.09s)
+         49495388 function calls (47452622 primitive calls) in 24.138 seconds
+
+   Ordered by: internal time
+   List reduced from 1551 to 22 due to restriction <22>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   117838    5.829    0.000    5.829    0.000 {built-in method nt._getfinalpathname}
+  2216160    1.153    0.000    1.811    0.000 pathlib\__init__.py:198(_str_normcase)
+  1070160    0.857    0.000    5.066    0.000 pathlib\__init__.py:63(__getitem__)
+  1078870    0.728    0.000    1.211    0.000 pathlib\__init__.py:135(__init__)
+4295711/2257311    0.674    0.000    1.009    0.000 {built-in method builtins.len}
+  1049035    0.655    0.000    2.207    0.000 pathlib\__init__.py:157(with_segments)
+   240392    0.640    0.000    0.921    0.000 <frozen importlib.util>:69(find_spec)
+      600    0.538    0.001   19.968    0.033 crystallizer\crystal_analysis\crystal_analyzer.py:860(_walk_module_dependencies)
+  1093240    0.508    0.000    2.154    0.000 pathlib\__init__.py:217(__eq__)
+  5180764    0.492    0.000    0.501    0.000 {built-in method builtins.isinstance}
+   990120    0.448    0.000    3.198    0.000 pathlib\__init__.py:269(_from_parsed_parts)
+   123800    0.433    0.000    7.641    0.000 <frozen _collections_abc>:1025(__contains__)
+    21730    0.371    0.000    1.929    0.000 crystallizer\crystal_analysis\crystal_analyzer.py:1217(_replay_memoized_module_facts)
+   153160    0.370    0.000    0.472    0.000 crystallizer\crystal_analysis\crystal_analysis_result.py:236(record_module_target)
+  1078870    0.353    0.000    0.551    0.000 pathlib\__init__.py:261(_format_parsed_parts)
+    22696    0.340    0.000    0.352    0.000 {built-in method nt.stat}
+  1092040    0.339    0.000    5.404    0.000 <frozen _collections_abc>:1015(__iter__)
+  2038400    0.335    0.000    0.487    0.000 pathlib\__init__.py:60(__len__)
+   299307    0.333    0.000    7.790    0.000 bench_crystal_binds.py:43(wrapped)
+  2232198    0.309    0.000    0.309    0.000 {method 'append' of 'list' objects}
+  1024616    0.279    0.000    0.581    0.000 {method 'get' of 'dict' objects}
+   990120    0.251    0.000    2.260    0.000 pathlib\__init__.py:276(_from_parsed_string)
+
+
+
+# importlib.metadata.packages_distributions(): 66 dists, first call 1202.2 ms, second 154.5 ms; version('pip') 1.39 ms

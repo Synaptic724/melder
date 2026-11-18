@@ -1,0 +1,8 @@
+# Melder 0.2.8306 tree (uncommitted on 5311a90b1; __version__ still read 0.2.8305 when measured), GIL off,
+# Windows 11, no profiler; machine shared with other agents' test runs; 150 modules x 4 spells, 4 imports
+melder=0.2.8305 research=0 binds=600 modules=150 total=1.03s per_bind=1.72ms first100=1.28ms/bind last100=2.25ms/bind
+create_spell_crystal 600 calls 0.30s; record_world_entry 0 calls 0.00s; ResearchNode.describe 0 calls; NetworkVersioner.snapshot 0 calls
+melder=0.2.8305 research=1 binds=600 modules=150 total=1.07s per_bind=1.79ms first100=1.28ms/bind last100=2.46ms/bind
+create_spell_crystal 600 calls 0.34s; record_world_entry 600 calls 0.03s; ResearchNode.describe 600 calls; NetworkVersioner.snapshot 0 calls
+melder=0.2.8305 research=1 binds=600 modules=150 total=1.02s per_bind=1.70ms first100=1.24ms/bind last100=2.29ms/bind
+create_spell_crystal 600 calls 0.32s; record_world_entry 600 calls 0.02s; ResearchNode.describe 600 calls; NetworkVersioner.snapshot 0 calls

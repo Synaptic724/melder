@@ -19,6 +19,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     OverrideKeyResolver,
 )
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -630,18 +631,16 @@ class _SpellSystemStatesStub:
         self.unregistered_lineages.append(spell_index)
 
 
-def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates() -> None:
+def _frame_only_consumer() -> type:
     """
     Purpose:
-        Validate missing SpellMap default candidates raise during Phase 3.
+        Build a fresh consumer class whose one parameter is a frame-only SpellMap default (IService, "primary").
     Contract:
-        - run_phase_local_frame raises when SpellMap defaults resolve to none.
+        - Each call returns a new class, so each test binds its own spell.
     Returns:
-        None.
-    Raises:
-        AssertionError: If missing SpellMap defaults do not raise.
+        type: The consumer class; its `service` parameter defaults to `SpellMap(spellframe=IService,
+        binding_name="primary")`.
     """
-    spellbook = _make_spellbook()
 
     class Consumer:
         """
@@ -672,8 +671,26 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
             """
             self.service = service
 
+    return Consumer
+
+
+def test_component_spell_crafter_spellmap_default_waits_when_missing_candidates() -> None:
+    """
+    Purpose:
+        Validate that a SpellMap default matching nothing becomes an unresolved input in Phase 3 (0.2.8303).
+    Contract:
+        - run_phase_local_frame records the socket UNRESOLVED_INPUT with the SpellMap's canonical key as its
+          dependency key, no target and no hidden candidates, and the spell gains no dependency. Before 0.2.8303 it
+          raised RuntimeError ("SpellMap default could not be resolved"), so a consumer bound before its provider
+          was refused (GitHub #329).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the miss raises or is recorded as anything but an unresolved input.
+    """
+    spellbook = _make_spellbook()
     consumer_id = spellbook.bind(
-        spell=Consumer,
+        spell=_frame_only_consumer(),
         existence=Existence.unique,
         permissions="create",
     )
@@ -683,8 +700,48 @@ def test_component_spell_crafter_spellmap_default_raises_when_missing_candidates
         assert spell is not None
         _run_phase_requirements(spell)
         _run_phase_symbolic_graph(spell)
-        with pytest.raises(RuntimeError, match="SpellMap default could not be resolved"):
-            _run_phase_local_frame(spell)
+        _run_phase_local_frame(spell)
+
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        assert topology is not None
+        sockets = topology.get_sockets_for_param("service")
+        expected_key = SpellMap(spell=None, spellframe=IService, binding_name="primary").canonical_key
+        assert [
+            (socket.socket_kind, socket.target_spell_ids, socket.dependency_key, socket.hidden_spell_ids)
+            for socket in sockets
+        ] == [(SocketKind.UNRESOLVED_INPUT, (), expected_key, ())]
+        assert list(spell.dependencies) == []
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_direct_spellmap_lookup_still_raises_on_a_miss() -> None:
+    """
+    Purpose:
+        Validate that a direct `_resolve_spellmap_default` caller keeps the RuntimeError for a miss.
+    Contract:
+        - Without `hidden_out` (not Phase 3's own call) a SpellMap default that matches nothing raises
+          RuntimeError naming the parameter; only Phase 3's own call records the miss as an unresolved input.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the direct call does not raise.
+    """
+    spellbook = _make_spellbook()
+    consumer_id = spellbook.bind(
+        spell=_frame_only_consumer(),
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert spell is not None
+        _run_phase_requirements(spell)
+        _run_phase_symbolic_graph(spell)
+        dependency = next(iter(spell._compiler_artifact._symbolic_graph.dependencies))
+        with pytest.raises(RuntimeError, match="SpellMap default could not be resolved for parameter 'service'"):
+            CompilerPhase3()._resolve_spellmap_default(spell, spellbook, dependency)
     finally:
         spellbook.cleanup()
 

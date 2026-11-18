@@ -14,6 +14,7 @@ import pytest
 from melder.crystallizer.crystal_analysis.crystal_analyzer import (
     CrystalAnalyzer,
 )
+from melder.crystallizer.crystal_analysis.module_answer_cache import ModuleAnswerCache
 
 
 def _build_package(tmp_path, package_name):
@@ -279,8 +280,11 @@ def test_memoized_facts_survive_analyzer_cleanup_and_preserve_payload_order(
     """
     Regression: repeated analyses reuse syntax facts after the first analyzer
     is cleaned while producing an identical, independently owned payload.
+    The module answers of #331 are cleared before the second analysis, so it
+    reaches this syntax memo instead of the answers kept above it.
     """
     CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    ModuleAnswerCache._clear_for_tests()
     package_name = "t7memoorderpkg"
     package_dir = _build_package(tmp_path, package_name)
     root_name = "{0}.rootmod".format(package_name)
@@ -313,6 +317,7 @@ def test_memoized_facts_survive_analyzer_cleanup_and_preserve_payload_order(
         assert cold_stats["misses"] > 0
         assert cold_stats["hits"] == 0
 
+        ModuleAnswerCache._clear_for_tests()
         second = _analyze(tmp_path, package_name)
         try:
             assert second.describe() == first_payload
@@ -323,6 +328,7 @@ def test_memoized_facts_survive_analyzer_cleanup_and_preserve_payload_order(
         assert warm_stats["hits"] == cold_stats["misses"]
     finally:
         CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+        ModuleAnswerCache._clear_for_tests()
 
 
 def test_source_edit_invalidates_only_changed_memoized_module_facts(
@@ -331,9 +337,12 @@ def test_source_edit_invalidates_only_changed_memoized_module_facts(
 ) -> None:
     """
     Regression: changing one dependency source misses that entry while
-    unchanged modules continue to reuse their memoized syntax facts.
+    unchanged modules continue to reuse their memoized syntax facts. The
+    module answers of #331 are cleared before the second analysis, so every
+    module reaches this syntax memo.
     """
     CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    ModuleAnswerCache._clear_for_tests()
     package_name = "t7memodriftpkg"
     package_dir = _build_package(tmp_path, package_name)
     helper_name = "{0}.helper".format(package_name)
@@ -353,6 +362,7 @@ def test_source_edit_invalidates_only_changed_memoized_module_facts(
             "    pass\n",
             encoding="utf-8",
         )
+        ModuleAnswerCache._clear_for_tests()
         after = _analyze(tmp_path, package_name)
         try:
             assert "Changed" in after.export_surfaces[helper_name]["public_names"]
@@ -365,6 +375,7 @@ def test_source_edit_invalidates_only_changed_memoized_module_facts(
         assert drift_stats["hits"] >= 1
     finally:
         CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+        ModuleAnswerCache._clear_for_tests()
 
 
 def test_from_import_submodule_probe_remains_live_on_memo_hit(
@@ -372,10 +383,14 @@ def test_from_import_submodule_probe_remains_live_on_memo_hit(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Regression: a cached from-import descriptor reruns find_spec, allowing a
-    newly created submodule to enter the current dependency graph.
+    Regression: a cached from-import descriptor reruns find_spec on a syntax
+    memo hit, allowing a newly created submodule to enter the dependency graph.
+    The module answers of #331 keep the probed result while the importing
+    module and its file are unchanged, so they are cleared before the second
+    analysis here; `test_module_answer_cache.py` pins that kept behaviour.
     """
     CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    ModuleAnswerCache._clear_for_tests()
     package_name = "t7memoprobepkg"
     package_dir = tmp_path / package_name
     package_dir.mkdir()
@@ -402,6 +417,7 @@ def test_from_import_submodule_probe_remains_live_on_memo_hit(
         )
         importlib.invalidate_caches()
 
+        ModuleAnswerCache._clear_for_tests()
         after = _analyze(tmp_path, package_name)
         try:
             assert child_name in after.module_to_direct_dependencies[root_name]
@@ -411,6 +427,7 @@ def test_from_import_submodule_probe_remains_live_on_memo_hit(
         assert warm_stats["hits"] > cold_stats["hits"]
     finally:
         CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+        ModuleAnswerCache._clear_for_tests()
 
 
 def test_memoized_facts_contain_values_only(

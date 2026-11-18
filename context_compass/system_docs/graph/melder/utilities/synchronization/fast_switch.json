@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/synchronization/fast_switch.py",
- "source_sha256": "772212eabb8218bd3c8922587e78faf0c0d750c84e477d03cae584197d6e0e09",
+ "source_sha256": "b216e8086ba6691a8160d645ddb8351034152bcb15e79965a23e37dc6159d688",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.synchronization.fast_switch": {

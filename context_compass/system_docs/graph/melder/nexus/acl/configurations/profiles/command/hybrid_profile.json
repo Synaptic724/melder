@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
- "source_sha256": "9859ca15d52cb1b6cc69baa27b8c166d8c968dbff5754ea74864d4d6055b11b5",
+ "source_sha256": "ea0db3cd5db7876a2d644b30f48c729c216d372b0b8ce6e769ba2d11f8e58758",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.command.hybrid_profile": {

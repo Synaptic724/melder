@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
- "source_sha256": "7f728dd70a1dddfc8860c9a840bdf4bf2aef58aa13e750357f5565610de6cf33",
+ "source_sha256": "cfc0bb9694a00475fcd91705e6d73f2758a29fb02743dadfaa5162fe188ced19",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder": {

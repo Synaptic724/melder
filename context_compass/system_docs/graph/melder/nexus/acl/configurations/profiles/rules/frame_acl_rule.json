@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
- "source_sha256": "281d5443de0b4b44c47327f64cd0cb2bae249e48e6f5fcb0f85cbcf6b65d205c",
+ "source_sha256": "b76bc7b8898421e63501627a985ab2943caa536cfeb69cd6a26040754f9c700b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py",
- "source_sha256": "2d990f2b60b14e08dfd9a4c103d1e49cc84121b415dc9f11ccbb3ec41aeebed2",
+ "source_sha256": "fca5753730f8cf3ec5aadcd8420e0e70a5cc7a7b2c656602840bca1e0e98b64d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.memory_system.rift_memory_system": {

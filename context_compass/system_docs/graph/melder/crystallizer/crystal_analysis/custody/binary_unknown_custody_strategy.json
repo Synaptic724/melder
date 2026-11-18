@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py",
- "source_sha256": "279b5afe8d75cc1a885be0de2a8f9808862c28c1c30b849dbaa6ef2aa32bd268",
+ "source_sha256": "b29ae952ba81b120eaebaed117c05b44abe429963169fb72ad5a1d5e13af82e5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy": {

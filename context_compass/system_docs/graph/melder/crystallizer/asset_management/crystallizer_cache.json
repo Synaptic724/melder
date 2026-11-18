@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/asset_management/crystallizer_cache.py",
- "source_sha256": "9ea8977fb298baff78c6be12e6121340b9f8da2fd5d82d709aafea8eca5792e0",
+ "source_sha256": "17e56f147a38cb8b51159a4d02316e14a55efb736370f5ec839227d3f7cb69d9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.asset_management.crystallizer_cache": {
