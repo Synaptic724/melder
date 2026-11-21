@@ -286,6 +286,105 @@ def test_unit_codegen_name_resolution_strategy_accepts_known_names(
     assert result is None
 
 
+NAME_RESOLUTION_BINDING_FORM_CASES = [
+    pytest.param(
+        "try:\n    int('x')\nexcept ValueError as error:\n    result = str(error)",
+        id="except-as",
+    ),
+    pytest.param(
+        "def parse(text: str) -> object:\n"
+        "    try:\n"
+        "        return int(text)\n"
+        "    except ValueError as error:\n"
+        "        return str(error)\n"
+        "result = parse('x')",
+        id="except-as-inside-a-function",
+    ),
+    pytest.param(
+        "try:\n    result = 1\nexcept* ValueError as group:\n    result = group",
+        id="except-star-as",
+    ),
+    pytest.param("match 1:\n    case value:\n        result = value", id="match-capture"),
+    pytest.param("match 5:\n    case int() as number:\n        result = number", id="match-as-pattern"),
+    pytest.param(
+        "match [1, 2, 3]:\n    case [first, *rest]:\n        result = (first, rest)",
+        id="match-star",
+    ),
+    pytest.param(
+        "match {'a': 1}:\n    case {'a': value, **others}:\n        result = (value, others)",
+        id="match-mapping-rest",
+    ),
+    pytest.param(
+        "def first[T](items: list[T]) -> T:\n    return items[0]\nresult = first([1])",
+        id="type-var-parameter",
+    ),
+    pytest.param(
+        "def wrap[**P](*args: P.args, **kwargs: P.kwargs) -> None:\n    return None\nresult = wrap",
+        id="param-spec-parameter",
+    ),
+    pytest.param("type Row[*Ts] = tuple[*Ts]\nresult = Row", id="type-var-tuple-parameter"),
+    pytest.param("class Box[T]:\n    item: T\nresult = Box", id="class-type-parameter"),
+]
+
+
+@pytest.mark.parametrize("code", NAME_RESOLUTION_BINDING_FORM_CASES)
+def test_unit_codegen_name_resolution_strategy_accepts_every_binding_form(
+        code: str,
+) -> None:
+    """
+    Contract: a load of a name the code binds through `except ... as`, `except* ... as`, a match capture or a PEP 695
+    type parameter passes name resolution, as an assignment-bound name does (GitHub #337, task 1).
+    """
+    strategy = CodegenNameResolutionStrategy()
+    context = _context(code)
+
+    result = strategy.validate(context, ast.parse(code, mode="exec"))
+
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    ("code", "unknown_name"),
+    [
+        pytest.param(
+            "try:\n    int('x')\nexcept ValueError as error:\n    result = str(mystery)",
+            "mystery",
+            id="beside-except-as",
+        ),
+        pytest.param("match 1:\n    case _:\n        result = _", "_", id="match-wildcard-binds-nothing"),
+        pytest.param("match [1, 2]:\n    case [*_]:\n        result = _", "_", id="match-star-wildcard-binds-nothing"),
+        pytest.param(
+            "match {'a': 1}:\n    case {**others}:\n        result = rest",
+            "rest",
+            id="beside-match-mapping-rest",
+        ),
+        pytest.param(
+            "def first[T](items: list[T]) -> U:\n    return items[0]\nresult = first([1])",
+            "U",
+            id="beside-type-parameter",
+        ),
+    ],
+)
+def test_unit_codegen_name_resolution_strategy_still_refuses_names_nothing_binds(
+        code: str,
+        unknown_name: str,
+) -> None:
+    """
+    Contract: next to the binding forms above, a name that nothing in the code binds - wildcards included, which bind
+    nothing - is still refused with the name-resolution message (GitHub #337, task 1).
+    """
+    strategy = CodegenNameResolutionStrategy()
+    context = _context(code)
+
+    result = strategy.validate(context, ast.parse(code, mode="exec"))
+
+    assert result is not None
+    assert result.accepted is False
+    assert result.validation_issues[0] == (
+        "Name '{0}' is not available in the codegen namespace.".format(unknown_name)
+    )
+
+
 @pytest.mark.parametrize(
     ("code", "unknown_name"),
     [

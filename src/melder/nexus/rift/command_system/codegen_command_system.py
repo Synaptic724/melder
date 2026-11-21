@@ -692,6 +692,18 @@ class CodegenCommandSystem(CommandSystem):
 
         Contract:
             - Delegates execution into the attached `CodegenSystem`.
+            - Returning a value: assign it to a variable named `result`; the
+              payload carries it under `result` (`result = {'answer': 42}`
+              returns `'result': {'answer': 42}`). A `result` of None, or none
+              assigned, adds no `result` key.
+            - Printed output: by default what the code prints to stdout comes
+              back under `output` (at most the room's
+              `RiftConfiguration.codegen_output_limit`, 65,536 characters
+              unless set, then one "[output truncated: N more characters not
+              kept]" line) and does not reach the host's stdout. A room whose
+              configuration turns `codegen_output_capture` off prints to the
+              host's stdout instead. `print(..., file=x)` writes to `x`
+              (GitHub #337, task 2).
             - Emits one full-source codegen memory record for the completed
               top-level execution action when room memory is enabled.
             - Requires non-empty `code` and `frame_name` to preserve the future
@@ -699,13 +711,24 @@ class CodegenCommandSystem(CommandSystem):
 
         Args:
             code:
-                Generated Python source to execute later.
+                Generated Python source to execute.
             frame_name:
-                Target frame whose codegen ACL/namespace policy will later be
-                applied.
+                Target frame whose codegen ACL/namespace policy is applied.
 
         Returns:
-            Dict[str, object]: Public execution payload.
+            Dict[str, object]: The execution payload:
+                - `accepted` (bool): True when the code passed validation and
+                  ran without raising.
+                - `frame_name` (str): The target frame.
+                - `reason` (str, on refusal): `codegen_execution_validation_failed`
+                  or `codegen_execution_runtime_failed`.
+                - `validation_issues` (Tuple[str, ...], when validation refused
+                  the code): why, one message per issue; the code did not run.
+                - `runtime_error` (str, when the code raised): `"<Type>: <message>"`.
+                - `result` (object, when the code assigned `result` a value
+                  other than None).
+                - `output` (str, when the code printed anything): the captured
+                  text, also on a run that raised.
 
         Raises:
             ValueError: If `code` or `frame_name` is empty.

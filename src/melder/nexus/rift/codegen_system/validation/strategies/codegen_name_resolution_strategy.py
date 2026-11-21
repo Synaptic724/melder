@@ -152,12 +152,23 @@ class CodegenNameResolutionStrategy(Cleanable):
         """
         Collect names that are assigned locally inside the submitted code.
 
+        Contract:
+            - An `ast.Name` in Store context covers `=`, augmented and annotated assignment, `for` and comprehension
+              targets, `with ... as`, `:=` and `type` alias names.
+            - Python records the other binding statements' names as plain strings on their own nodes, so they are
+              collected from those nodes: `except ... as name` and `except* ... as name` (`ast.ExceptHandler.name`),
+              and the match captures `case name`, `case <pattern> as name` (`ast.MatchAs.name`), `[*name]`
+              (`ast.MatchStar.name`) and `{**name}` (`ast.MatchMapping.rest`) (GitHub #337, task 1).
+            - A wildcard (`case _`, `[*_]`) records `None` and binds nothing, so it adds no name.
+            - Scope-insensitive, like every collector here: a name bound anywhere in the code counts as bound
+              everywhere, and a load outside the binding's scope is left to the runtime NameError.
+
         Args:
             syntax_tree:
                 Parsed AST for the request.
 
         Returns:
-            Set[str]: Names introduced locally through assignment-style nodes.
+            Set[str]: Names introduced locally through assignment-style nodes, exception handlers and match patterns.
         """
         self.check_cleaned()
         with self._lock:
@@ -165,6 +176,11 @@ class CodegenNameResolutionStrategy(Cleanable):
             for node in ast.walk(syntax_tree):
                 if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                     assigned_names.add(node.id)
+                elif isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)):
+                    if node.name is not None:
+                        assigned_names.add(node.name)
+                elif isinstance(node, ast.MatchMapping) and node.rest is not None:
+                    assigned_names.add(node.rest)
             return assigned_names
 
     def _collect_locally_declared_names(self, syntax_tree: ast.AST) -> Set[str]:
@@ -224,14 +240,21 @@ class CodegenNameResolutionStrategy(Cleanable):
 
     def _collect_local_parameter_names(self, syntax_tree: ast.AST) -> Set[str]:
         """
-        Collect function and lambda parameter names defined locally.
+        Collect function and lambda parameter names and PEP 695 type parameter names defined locally.
+
+        Contract:
+            - `ast.arg` covers every function and lambda parameter, positional-only, keyword-only, `*args` and
+              `**kwargs` included.
+            - The type parameters of a generic function, class or `type` alias (`def f[T]`, `class Box[T]`,
+              `type Row[*Ts] = ...`) are `ast.TypeVar`, `ast.ParamSpec` and `ast.TypeVarTuple` nodes carrying their
+              name as a string; each is collected (GitHub #337, task 1).
 
         Args:
             syntax_tree:
                 Parsed AST for the request.
 
         Returns:
-            Set[str]: Parameter names introduced by local callable scopes.
+            Set[str]: Parameter and type parameter names introduced by local callable, class and alias scopes.
         """
         self.check_cleaned()
         with self._lock:
@@ -239,6 +262,8 @@ class CodegenNameResolutionStrategy(Cleanable):
             for node in ast.walk(syntax_tree):
                 if isinstance(node, ast.arg):
                     parameter_names.add(node.arg)
+                elif isinstance(node, (ast.TypeVar, ast.ParamSpec, ast.TypeVarTuple)):
+                    parameter_names.add(node.name)
             return parameter_names
 
     def _collect_allowed_builtin_names(

@@ -12,10 +12,21 @@ class SafeCodegenProfileStrategy:
     Build the reusable `safe` codegen profile.
 
     Contract:
-        This is the most restrictive of the standard codegen profiles. It
-        limits codegen to safe query/bind-existing operations and denies link
-        mutation, local creation, invocation, writes, and dangerous capability
-        escalation.
+        This is the most restrictive of the standard codegen profiles.
+        What it enforces on room code is the Python surface: imports are off,
+        the dangerous builtins (`SAFE_DENIED_BUILTIN_NAMES`) are refused at
+        validation and left out of the runtime builtins, and unsafe
+        reflection, dunder access and recursive codegen are refused.
+        Its frame, conduit and spell rules - query and bind-existing only;
+        link, unlink, create-lesser, transfer-ownership, local-create,
+        invoke-method and attribute reads and writes denied - compile into the
+        frame's `allowed_commands`, which the frame views publish to agents.
+        They do NOT bind room code: the room's commands check the frame's
+        command ACL instead, and room code that holds a live object (the
+        conduit `command.get_conduit_by_name` returns, for one) can call any
+        of its methods. Enforcing them on room code is GitHub #338.
+        Every profile exposes the same room objects to room code (`viewer`,
+        `workstation`, `target`, `command`, `codegen`).
         Files: `open` is a denied builtin - refused at validation whether
         called or only named, and left out of the room's runtime builtins -
         and imports are off, so `io`, `os` and `pathlib` are refused too.

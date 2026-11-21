@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py",
- "source_sha256": "7433f5e35916cd13b203dfed9c12f4cef369dc51e664ae5126fbf78c6d7c0222",
+ "source_sha256": "ff63f704f7864ca30860c28db33c0320068a40a718e2e7d18262046e22086010",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder": {
@@ -12,14 +12,14 @@
    "lineno": 1,
    "include": true,
    "role": "Builder that assembles a live codegen namespace from the exposure strategies.",
-   "semantics_authored_against": "ad4c518cc888f06eeefaeac51f0c81e3909410d3711e193be6da8bc4239e0019"
+   "semantics_authored_against": ""
   },
   "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder": {
    "id": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
    "label": "CodegenNamespaceBuilder",
    "kind": "class",
    "file": "src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py",
-   "lineno": 35,
+   "lineno": 38,
    "bases": [
     "Cleanable"
    ],
@@ -30,17 +30,18 @@
     "cleanup"
    ],
    "shape": {
-    "method_count": 3,
+    "method_count": 4,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "043cadd6ebfec4b4c9e4ea1f41c0bc2405b2251f150ae128fe244336f615529a",
+   "span_sha256": "2cb132f0124585586c7dc71674f733d2374d947a958c008d87c3d830386623a0",
    "role": "Builder for live codegen namespaces.",
    "responsibilities": [
     "owns namespace entry strategies for room workstation command target builtins and control surfaces",
     "builds one live namespace from configuration and room collaborators",
     "cleans owned strategies on teardown",
-    "builds the builtins mapping alone (build_builtins) through its builtins strategy, for materialized code (D-20, 0.2.8272)"
+    "builds the builtins mapping alone (build_builtins) through its builtins strategy, for materialized code (D-20, 0.2.8272)",
+    "builds one CodegenOutputCapture per request from the owning Rift's configuration (codegen_output_capture, codegen_output_limit), passes it to the builtins strategy and the namespace, and cleans it when no namespace takes it; build_builtins never captures (GitHub #337, 0.2.8312)"
    ],
    "owns_state": [
     "_room_objects_strategy",
@@ -54,7 +55,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "043cadd6ebfec4b4c9e4ea1f41c0bc2405b2251f150ae128fe244336f615529a"
+   "semantics_authored_against": "2cb132f0124585586c7dc71674f733d2374d947a958c008d87c3d830386623a0"
   }
  },
  "edges_out": [
@@ -110,13 +111,19 @@
   },
   {
    "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to_label": "CodegenNamespace",
+   "to_label": "CodegenOutputCapture",
    "relation": "creates",
    "confidence": "candidate"
   },
   {
    "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
    "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
+   "to_label": "CodegenNamespace",
    "relation": "creates",
    "confidence": "candidate"
   }
@@ -126,7 +133,9 @@
   "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
   "CodegenNamespace": "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace",
+  "CodegenOutputCapture": "melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture",
   "CodegenBuiltinsStrategy": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy",
   "CodegenCommandStrategy": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy.CodegenCommandStrategy",
   "CodegenControlStrategy": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
@@ -226,6 +235,28 @@
     "cleanup"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
+   "to": "melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture",
+   "relation": "creates",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "why": "CodegenNamespaceBuilder creates the request's output capture when the room's configuration enables it.",
+   "strength": "soft"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
+   "to": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
+   "relation": "uses",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "why": "CodegenNamespaceBuilder reads the owning Rift's codegen output settings on every request.",
+   "strength": "borrowed"
   }
  ]
 }

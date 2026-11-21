@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8310"
-SOURCE_SHA256 = "6896b5b2ed8146f6cea4f50b01c59071e447ff7dd3c7cd6779cfe086a3499ca8"
-ENTRY_COUNT = 635
+BUILT_FOR_VERSION = "0.2.8313"
+SOURCE_SHA256 = "1d2651695b2112ca8e4b447e108d743d9ad4d2cd06902c89fc0dc9c56352fe9e"
+ENTRY_COUNT = 636
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -538,6 +538,7 @@ ENTRIES = (
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace', 'CodegenNamespace'),
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder', 'CodegenNamespaceBuilder'),
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration', 'CodegenNamespaceConfiguration'),
+    ('melder.nexus.rift.codegen_system.namespace.codegen_output_capture', 'CodegenOutputCapture'),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy', 'CodegenBuiltinsStrategy'),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy', 'CodegenCommandStrategy'),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy', 'CodegenControlStrategy'),

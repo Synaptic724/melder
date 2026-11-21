@@ -18,7 +18,7 @@ Python objects: a tokenizer, counter, reporter, and a population of independent 
 | Step | Result to inspect |
 | --- | --- |
 | `validate_codegen` | `accepted`, the selected frame, and any validation issues |
-| `execute_codegen` | The execution payload, including `result` and error information |
+| `execute_codegen` | The execution payload: `result`, `output` and error information (below) |
 | `materialize_codegen` | `materialized` and the named module's publication result; `refusal` when the name is already loaded, under `melder`, a standard-library or installed name, or outside the frame's `materialize_modules` roots |
 | Import | The generated module's real classes |
 | Bind and meld | Objects managed through the normal registration and lifetime rules |
@@ -26,6 +26,37 @@ Python objects: a tokenizer, counter, reporter, and a population of independent 
 Validation checks the room's policy before execution; it does not prove arbitrary
 Python safe. Malformed requests and policy refusals have different result/error
 contracts. Inspect the returned payload before treating a call as completed work.
+
+## What `execute_codegen` returns
+
+The payload always carries `accepted` and `frame_name`. To return a value, assign it
+to a variable named `result`; the payload carries it under `result` unless it is
+`None`. What the code prints comes back under `output`, also when the code raises:
+
+```python
+payload = command.execute_codegen("print('rows:', 3)\nresult = {'answer': 42}\n", frame_name="ops")
+# {'accepted': True, 'frame_name': 'ops', 'result': {'answer': 42}, 'output': 'rows: 3\n'}
+```
+
+A refusal adds `reason` and `validation_issues` (the code did not run); a run that
+raised adds `reason` and `runtime_error` (`"ValueError: ..."`). Printed text is
+captured per room: `RiftConfiguration.with_codegen_output_capture(False)` sends room
+code's `print` to the host process's stdout instead, and
+`with_codegen_output_limit(characters)` sets how much one execution keeps (65,536
+characters by default, then a single "[output truncated: N more characters not kept]"
+line). `print(..., file=x)` always writes to `x`.
+
+## What a codegen profile limits
+
+A frame's codegen profile (`safe`, `hybrid`, `permissive`, `full_access`, the
+`precision` overlay) governs the Python room code may run: imports, the builtins it
+may call, reflection, dunder access and nested codegen. Every profile exposes the
+same room objects to room code - `viewer`, `workstation`, `target`, `command` and
+`codegen` - and an object one of them returns, such as the live conduit from
+`command.get_conduit_by_name`, accepts any of its methods. The profiles' frame,
+conduit and spell rules (for `safe`: no linking, no lesser conduits, no transfers, no
+spell creation, method calls or attribute writes) are published to agents as the
+frame's `allowed_commands`; they are not yet enforced on room code (GitHub #338).
 
 ## The complete application
 

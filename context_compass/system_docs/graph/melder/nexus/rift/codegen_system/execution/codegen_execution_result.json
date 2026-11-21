@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py",
- "source_sha256": "93db2c56dbeaae790c399fb7fc3ad38e1417b3e4b87035413dfb169e2a05a9b9",
+ "source_sha256": "64fef631ccecdc925f27df8509c533007dbc252702fd69a1850fc391df5545e6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.execution.codegen_execution_result": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "The execution-layer result for one codegen request.",
-   "semantics_authored_against": "eb7e4a514a8ef5ce65d273f231f1c1bb92944f5999b607dfba30061d64922cc2"
+   "semantics_authored_against": ""
   },
   "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult": {
    "id": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
@@ -30,6 +30,7 @@
     "executed",
     "frame_name",
     "not_implemented",
+    "output",
     "reason",
     "result",
     "runtime_error",
@@ -40,15 +41,16 @@
     "validation_issues"
    ],
    "shape": {
-    "method_count": 13,
+    "method_count": 14,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e7bf19943532a7d90bf25653b3a246a2a1f4971726ce82d009185547dc849e13",
+   "span_sha256": "d2fa6f234881d44c2020add5c7d0fd2a6e63fc602deef0b2b19bdcb21376ea12",
    "role": "Execution-layer result for one codegen request.",
    "responsibilities": [
     "stores accepted or rejected execution outcome",
-    "stores runtime result validation issues and runtime error details"
+    "stores runtime result validation issues and runtime error details",
+    "carries the text room code printed and adds it to the payload as `output` when it is not empty (GitHub #337, 0.2.8312)"
    ],
    "owns_state": [
     "_accepted",
@@ -57,13 +59,14 @@
     "_validation_issues",
     "_runtime_error",
     "_result",
-    "_transaction_id"
+    "_transaction_id",
+    "_output"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "e7bf19943532a7d90bf25653b3a246a2a1f4971726ce82d009185547dc849e13"
+   "semantics_authored_against": "d2fa6f234881d44c2020add5c7d0fd2a6e63fc602deef0b2b19bdcb21376ea12"
   }
  },
  "edges_out": [

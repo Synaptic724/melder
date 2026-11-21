@@ -505,6 +505,9 @@ def _make_detached_rift_projection_owner() -> object:
             self._codegen_projections_by_frame_name = {}
             # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
             self._rift_gate = RiftGate()
+            # A live Rift carries its frozen configuration; the codegen namespace builder reads the room's
+            # output-capture settings from it on every request (GitHub #337, task 2).
+            self.configuration = RiftConfiguration().with_defaults().finalize()
 
         @property
         def rift_gate(self) -> RiftGate:

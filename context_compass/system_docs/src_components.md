@@ -2670,6 +2670,12 @@ Responsibilities:
   same batch path.
 - Create and register bare `Rift` objects with finalized per-Rift config snapshots.
 - Program one primary room from `RiftConfiguration.space_type`.
+- Carry a codegen room's output settings on the same per-Rift configuration (0.2.8312, GitHub #337):
+  `codegen_output_capture` (default on) and `codegen_output_limit` (at least 1, default 65,536 characters; a bool is
+  refused), read by the codegen namespace builder on every `execute_codegen` request and fixed for the room's life
+  once the configuration is frozen (Component: Codegen Internal Engine).
+  EVIDENCE: `src/melder/nexus/configuration/rift_configuration.py:RiftConfiguration.with_codegen_output_capture`,
+  `RiftConfiguration.with_codegen_output_limit`, `RiftConfiguration.load_default_dictionary`.
 - Enforce Nexus frame topology rules (`single`, `indexed`,
   `one_per_workspace`) and target-frame eligibility for static vs codegen AR.
 - Keep Nexus-frame creation explicit rather than auto-provisioned.
@@ -3323,6 +3329,8 @@ Responsibilities:
 - Build default namespace configuration and live codegen namespaces.
 - Validate generated Python before execution.
 - Compile accepted code and execute it against the built namespace.
+- Capture room code's `print` per request into the execution payload's `output`, as the owning Rift's configuration
+  sets (0.2.8312, GitHub #337).
 - Publish validation/execution lifecycle events through the room event system.
 
 Inputs:
@@ -3342,12 +3350,17 @@ Outputs:
   EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:263
   (`validate_codegen_request`), :298 (`execute_codegen_request`)
 - public validation payloads through the reporter
+- the public execution payload (`CodegenExecutionResult.to_payload`): `accepted` and `frame_name` always; `reason`,
+  `validation_issues`, `runtime_error` when present; `result` when room code assigned it a value other than None;
+  `output` when room code printed anything (0.2.8312). `execute_codegen`'s docstring names every key.
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py:CodegenExecutionResult.to_payload`
 
 Owned State:
 - `CodegenSystem`: `_validator`, `_validation_reporter`,
   `_namespace_builder`, `_compiler`, `_executor`, `_monitor`
 - `CodegenTransactionContext`: frame name, code, code hash, optional
   projection, namespace configuration, optional namespace, and metadata
+- `CodegenNamespace`: the request's optional `CodegenOutputCapture` (kernel class, 0.2.8312), which it owns and cleans
 
 Lifecycle/Cleanup:
 - `CodegenSystem` is owned by `CodegenRiftSpace`.
@@ -3369,6 +3382,28 @@ Invariants/Guarantees:
 - validation runs before execution on the execute path
 - namespace building happens only after accepted validation
 - room-memory emission stays on `CodegenCommandSystem`, not the engine root
+- name resolution counts a name as bound by every Python binding form (0.2.8311, GitHub #337): `ast.Name` in Store
+  context (`=`, augmented and annotated assignment, `for`, comprehensions, `with ... as`, `:=`, `type` aliases),
+  definitions, parameters, import aliases, `except ... as` and `except* ... as`, the match captures (`case n`,
+  `case <pattern> as n`, `[*rest]`, `{**rest}`) and PEP 695 type parameters; wildcards bind nothing. The check is
+  scope-insensitive, as before. A name nothing binds is still refused with "Name '<name>' is not available in the
+  codegen namespace."
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:CodegenNameResolutionStrategy._collect_locally_assigned_names`,
+  `CodegenNameResolutionStrategy._collect_local_parameter_names`
+- output capture (0.2.8312, GitHub #337): with the owning Rift's `codegen_output_capture` on (the default),
+  `CodegenNamespaceBuilder.build` makes one `CodegenOutputCapture(limit=codegen_output_limit)` per request,
+  `CodegenBuiltinsStrategy` installs its `capture_print` as the request's `print` (only when `print` survives the
+  denied builtins), the namespace owns it, and `CodegenExecutor` puts its text on the result after `exec` returns
+  or raises. The capture keeps the first `limit` characters of what `print` would have written to stdout and counts
+  the rest, `output` then ending with "[output truncated: N more characters not kept]"; it holds its own lock, so
+  concurrent prints lose nothing below the limit. `print(..., file=x)` writes to `x`. The materialize path
+  (`build_builtins`) never captures, and a capture the namespace never took is cleaned by the builder.
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py:CodegenOutputCapture`,
+  `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:CodegenNamespaceBuilder.build`,
+  `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:CodegenExecutor.execute`
+- a codegen profile binds room code through its capability rules only; its frame, conduit and spell rules are
+  published as `allowed_commands` and not enforced on room code (Component: Nexus Descriptor And ACL Managers,
+  GitHub #338)
 - a request naming a frame the owning Rift holds no codegen projection for runs under the safe
   posture (0.2.8270): imports off; no unsafe reflection, dunder access or recursive codegen; and the
   denied builtins `__import__` plus `SAFE_DENIED_BUILTIN_NAMES`, `open` among them, read from the
@@ -3409,7 +3444,13 @@ Failure Modes:
   '<root>' is not allowed in this codegen mode.") through the room's `__import__` wrapper (0.2.8271)
 - `build_materialize_builtins(context)` returns the room's filtered builtins mapping for an accepted materialize -
   the mapping `execute_codegen` places under `__builtins__`, through `CodegenNamespaceBuilder.build_builtins` - so a
-  materialized module reaches what room code reaches (0.2.8272, D-20)
+  materialized module reaches what room code reaches (0.2.8272, D-20), except that its `print` stays the
+  interpreter's (0.2.8312)
+- until 0.2.8311, valid code binding a name through an exception handler, a match pattern or a type parameter was
+  refused at validation ("Name 'e' is not available in the codegen namespace."); until 0.2.8312, what room code
+  printed reached only the host process's stdout
+- an invalid output limit is refused at configuration time: a non-int or a bool raises TypeError, a value below 1
+  ValueError (`RiftConfiguration.with_codegen_output_limit`)
 
 Observability:
 - `CodegenMonitor` publishes validation/execution lifecycle events through the
@@ -3425,6 +3466,7 @@ Key Files (C1):
 - `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py`
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py`
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
@@ -3501,6 +3543,21 @@ Codegen presets' file posture (0.2.8270):
   `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:CodegenNameResolutionStrategy.validate`,
   `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py:CodegenImportPolicyStrategy`
   and `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:CodegenBuiltinsStrategy.build_namespace_entries`.
+
+What a codegen preset binds on room code (documented 0.2.8313, GitHub #337 task 3; enforcement is GitHub #338):
+- Only the capability rules bind room code: imports, the denied builtins, unsafe reflection, dunder access and
+  recursive codegen reach the namespace configuration and the validation strategies.
+- The frame, conduit and spell rules (safe: query and bind-existing only, with link, unlink, create-lesser,
+  transfer-ownership, local-create, invoke-method and attribute reads and writes denied) compile only into the
+  frame's `allowed_commands`, which the frame views publish; no room command checks it - room commands check the
+  frame's command ACL - and room code that holds a live object can call any of its methods. Observed on 0.2.8310: in
+  a safe room, code took the live root conduit from `command.get_conduit_by_name('root')` and created a lesser
+  conduit on it.
+- Every preset exposes the same five room objects (`viewer`, `workstation`, `target`, `command`, `codegen`): the
+  namespace configuration's include flags default on and nothing sets them.
+- EVIDENCE: `src/melder/nexus/acl/frame_acl_compiler.py:FrameACLCompiler._compile_allowed_commands`,
+  `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py:CodegenNamespaceConfiguration.exposed_names`,
+  `src/melder/nexus/rift/command_system/codegen_command_system.py:CodegenCommandSystem.get_conduit_by_name`.
 
 Codegen dynamic-import gate (0.2.8271):
 - D-11 adds `static_only_denied_builtin_names` to `CompiledFrameACLAccessSurface` beside `denied_builtin_names`.
@@ -12225,6 +12282,8 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   Internal Builder for live codegen namespaces
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
   Internal Namespace exposure policy for one codegen request
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py`
+  Internal Room-owned print for one codegen execution, keeping room code's output for the payload
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py`
   Internal Namespace exposure strategy for Python builtins
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_command_strategy.py`
@@ -13379,6 +13438,7 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py`
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py`
 - `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
 - `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`

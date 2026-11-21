@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py",
- "source_sha256": "91ab58a6e44eda12edc504d178d32bebb491f7c3df58243e1c33eb7908f755b3",
+ "source_sha256": "2b301ff1150f93dff54f1da050c4971c2f985c3eacddeadd56974d8b95259923",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "Name-resolution validation pass over submitted codegen source.",
-   "semantics_authored_against": "55ad4e8ee81686b0a431827de9fe4e1109b2a07acb15613c5bd1967af181a092"
+   "semantics_authored_against": ""
   },
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy": {
    "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy",
@@ -33,11 +33,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f36ee5463248a76ac69b596d55205b05a3464acc383e7f1fdb9239e73a579105",
+   "span_sha256": "fc42b8c34dcac4c0fc9d911ff4ae2dfe34b529a138e2bbc964ae3c3b3a23f007",
    "role": "Name-resolution validation strategy.",
    "responsibilities": [
     "validates load-time ast.Name usage against the namespace configuration contract",
-    "drops `denied_builtin_names` united with `static_only_denied_builtin_names` from the allowed builtin names, so a bare `__import__` reference is refused wherever an import list applies (D-11, 0.2.8271)"
+    "drops `denied_builtin_names` united with `static_only_denied_builtin_names` from the allowed builtin names, so a bare `__import__` reference is refused wherever an import list applies (D-11, 0.2.8271)",
+    "counts a name as bound by every Python binding form - assignment-style stores, definitions, parameters, import aliases, `except ... as` and `except* ... as`, the match captures and PEP 695 type parameters - so only a name nothing binds is refused (GitHub #337, 0.2.8311)"
    ],
    "owns_state": [
     "_lock",
@@ -47,7 +48,7 @@
     "validation",
     "cleanup"
    ],
-   "semantics_authored_against": "f36ee5463248a76ac69b596d55205b05a3464acc383e7f1fdb9239e73a579105"
+   "semantics_authored_against": "fc42b8c34dcac4c0fc9d911ff4ae2dfe34b529a138e2bbc964ae3c3b3a23f007"
   }
  },
  "edges_out": [

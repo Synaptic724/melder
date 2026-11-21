@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/configuration/rift_configuration.py",
- "source_sha256": "2dbb457d04d8f64631613d6ac8aaaf868496ea2cccc9da89815e220004f5847d",
+ "source_sha256": "20f31b8ddc42984f8d9c736137e6eb8f6990e1ca2f2ee91b93cc50bbab8b4575",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.configuration.rift_configuration": {
@@ -19,7 +19,7 @@
    "phases": [
     "init"
    ],
-   "semantics_authored_against": "dfbd3cf426712ee53c26f7fd00da5265483d5d2a57bea1cf09e2fefc27f5a6e8"
+   "semantics_authored_against": ""
   },
   "melder.nexus.configuration.rift_configuration.RiftConfiguration": {
    "id": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
@@ -34,6 +34,8 @@
    "public_methods": [
     "build",
     "cleanup",
+    "codegen_output_capture",
+    "codegen_output_limit",
     "consumed",
     "finalize",
     "freeze",
@@ -46,21 +48,24 @@
     "space_type",
     "validate",
     "with_auto_activate_on_program",
+    "with_codegen_output_capture",
+    "with_codegen_output_limit",
     "with_defaults",
     "with_space_name",
     "with_space_type",
     "with_validation_mode"
    ],
    "shape": {
-    "method_count": 19,
+    "method_count": 24,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f31b5eaf32baea71c9a585611164cf649504974f0ce453f9d09d4fe123f04f10",
+   "span_sha256": "e2735d99c36ecb7734cbf6c495f921e423568e7bef5868525a787cee6c79c869",
    "role": "Per-Rift configuration object used to build one live Rift.",
    "responsibilities": [
     "stores typed room/runtime defaults for one Rift",
-    "freezes into a consumed configuration during Rift creation"
+    "freezes into a consumed configuration during Rift creation",
+    "declares a codegen room's output settings, codegen_output_capture (bool, default on) and codegen_output_limit (an int of at least 1, never a bool; default 65,536), which the codegen namespace builder reads (GitHub #337, 0.2.8312)"
    ],
    "owns_state": [
     "_properties",
@@ -71,7 +76,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "03170b610118805d89398df2b45dfcf1578113c0978f3842cad6fa9ec2cc5de8"
+   "semantics_authored_against": "e2735d99c36ecb7734cbf6c495f921e423568e7bef5868525a787cee6c79c869"
   }
  },
  "edges_out": [
@@ -112,6 +117,7 @@
  "imports": {
   "threading": "threading",
   "Enum": "enum.Enum",
+  "ClassVar": "typing.ClassVar",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",

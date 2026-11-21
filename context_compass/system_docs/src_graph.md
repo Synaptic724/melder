@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `c7427faf6b6aa914a09d946d16c19103d583e52f86aa6dbd56793fb330276b4b`
+- source_sha256: `14a3bce9abd0b2621c1ada189724a92b5d882eac8e4f9455a78f33e21adb0a84`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `abfe8e5c6eefc56bce28b98f58c8ffcefaa60e5deec5936b2eac0d36ca5327a5`
+- source_sha256: `ee7ff153bf46bb5f69cfc5b228b7c652f81ba3e2e1833b99732c7171b4462ac4`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `d1c58ad37dbe12506c8d988f5843214ccf01baf4a8ac12523e9975c57800f420`
+- source_sha256: `fd586b1fa5d2a250929b5f617869fd45fc2c372562b002c41e29b5123ec2fcc0`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `c9e11ea7fe202827eeab5f4debc766950819c9ee06b6f947e81ead4ef4666863`
+- source_sha256: `b99204ec8725c90fe5cab17bf24fce4d0f60b5bc56516a49cc1dae731c168559`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `2035325d4f23769304eb90f83ab05c4d896f77727c69151bf38f2be4c34f93ae`
+- source_sha256: `d91e41057bd1ef7821a7faf4d70f413420da69698061fa4ead4d1299e6697982`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `a5cc6fcfab01bcae90111718c70e108e635ac4008344d1da64d4ebdedc4cc177`
+- source_sha256: `5cb6171183645e9fb98e2d2a014f4fef52ee114736599c80840817a36285cd68`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `0328db8efc9da9ac337a296084021fc13373c992efdc147b0d6f717f9a6debf2`
+- source_sha256: `728b6f449048662853f6e291102d166591b13d82a4d3670f6d35785d344357fe`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `d8616ec3a04e9e20126b3e7c666a2130465d6802f263949e52b63d0f5e868e5b`
+- source_sha256: `24a1e5abf62adfc04bc8366a195cae23a62853bb664a18c19acf6faaabb3e0be`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `4853d82c8f1b2243ea2c3e9c3f880ce9da6aad8fc70ae71755c24038949fe813`
+- source_sha256: `4e18fc3d5a10d7933b6c66e3001602629658433e2eec559faa0d82c556531155`
 - nodes: 1
 
 ### Nodes
@@ -20823,7 +20823,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
 
-- source_sha256: `8f42c8b7ea35a6b2842ecdf61f174ac1518155d87e96c58f881d0e38701fe621`
+- source_sha256: `0aff69dccdc90910f34c83fcb83270d6d14cc052f5d8924c676505c78b0ba159`
 - nodes: 2
 
 ### Nodes
@@ -20846,6 +20846,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - allow core query/link/invoke/read operations
   - still deny local creation, direct mutation, and the more aggressive capability overrides
   - deny `open` (the safe tuple) and keep `io`, `os` and `pathlib` off its import allow list, since they are permissive extras (0.2.8270)
+  - bind room code through its capability rules only; its frame, conduit and spell rules compile into the frame's published `allowed_commands`, which no room command checks (documented 0.2.8313; enforcement GitHub #338)
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -20968,7 +20969,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
 
-- source_sha256: `4f2de640537616e76d3d5f2137f49dfb52684f07dcb62188fd94fe437a615c49`
+- source_sha256: `701c535766a83202c009d1532abd8cbba31968225d099fa97434f5b6b1e904ce`
 - nodes: 2
 
 ### Nodes
@@ -20988,8 +20989,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py:10`
 - role: Bottom rung of the codegen posture ladder: the reviewed restrictive default.
 - responsibilities:
-  - build a FrameACLCodegenProfile limited to safe query/bind-existing operations
-  - deny link mutation, local creation, invocation, writes, and dangerous capability escalation
+  - build a FrameACLCodegenProfile whose frame, conduit and spell rules allow only query and bind-existing operations
+  - bind room code through its capability rules - imports off, the dangerous builtins, unsafe reflection, dunder access and recursive codegen; its denials of linking, local creation, invocation and writes compile into the frame's published `allowed_commands`, which no room command checks (documented 0.2.8313; enforcement GitHub #338)
   - register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset
   - hold a closed file posture (0.2.8270): `open` denied by its SAFE_DENIED_BUILTIN_NAMES rule and imports off, so `io`, `os` and `pathlib` are refused too - policy checked in the room's process, not isolation
 - phases: `init`
@@ -22516,7 +22517,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_configuration.py
 
-- source_sha256: `2dbb457d04d8f64631613d6ac8aaaf868496ea2cccc9da89815e220004f5847d`
+- source_sha256: `20f31b8ddc42984f8d9c736137e6eb8f6990e1ca2f2ee91b93cc50bbab8b4575`
 - nodes: 2
 
 ### Nodes
@@ -22540,9 +22541,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores typed room/runtime defaults for one Rift
   - freezes into a consumed configuration during Rift creation
+  - declares a codegen room's output settings, codegen_output_capture (bool, default on) and codegen_output_limit (an int of at least 1, never a bool; default 65,536), which the codegen namespace builder reads (GitHub #337, 0.2.8312)
 - owns_state: `_properties`, `available_properties`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `build`, `cleanup`, `consumed`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `load_default_dictionary`, `mark_consumed`, `set_property`, `space_type` (+6 more)
+- public methods: `build`, `cleanup`, `codegen_output_capture`, `codegen_output_limit`, `consumed`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `load_default_dictionary`, `mark_consumed` (+10 more)
 
 ### Edges out
 
@@ -23549,7 +23551,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
 
-- source_sha256: `93db2c56dbeaae790c399fb7fc3ad38e1417b3e4b87035413dfb169e2a05a9b9`
+- source_sha256: `64fef631ccecdc925f27df8509c533007dbc252702fd69a1850fc391df5545e6`
 - nodes: 2
 
 ### Nodes
@@ -23569,9 +23571,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores accepted or rejected execution outcome
   - stores runtime result validation issues and runtime error details
-- owns_state: `_accepted`, `_frame_name`, `_reason`, `_validation_issues`, `_runtime_error`, `_result`, `_transaction_id`
+  - carries the text room code printed and adds it to the payload as `output` when it is not empty (GitHub #337, 0.2.8312)
+- owns_state: `_accepted`, `_frame_name`, `_reason`, `_validation_issues`, `_runtime_error`, `_result`, `_transaction_id`, `_output`
 - phases: `runtime`, `cleanup`
-- public methods: `accepted`, `cleanup`, `executed`, `frame_name`, `not_implemented`, `reason`, `result`, `runtime_error`, `runtime_failed`, `to_payload`, `transaction_id`, `validation_failed` (+1 more)
+- public methods: `accepted`, `cleanup`, `executed`, `frame_name`, `not_implemented`, `output`, `reason`, `result`, `runtime_error`, `runtime_failed`, `to_payload`, `transaction_id` (+2 more)
 
 ### Edges out
 
@@ -23592,7 +23595,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_executor.py
 
-- source_sha256: `844ee03b1792dd62a4fe71e695701a2e63e5dcff2af22d476f0a9e49aeb4bce8`
+- source_sha256: `1acffaf7b3a3efc83be7a72b453a311aaba0ce4776fabba26e21bca881a76c20`
 - nodes: 2
 
 ### Nodes
@@ -23612,6 +23615,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - executes compiled code against the built namespace
   - returns execution-layer result objects for the request
+  - puts the namespace's captured output on the execution result after exec returns or raises (GitHub #337, 0.2.8312)
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `execute`
 
@@ -23682,7 +23686,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py
 
-- source_sha256: `3d85dad638cc25b96b0b8ec57784b295eb6a13cf51cf55af69413e6ef6ebe110`
+- source_sha256: `6125e620cb823e30b58b64bfbf3c7197bccafb50db9e2bcbb1493c5d2dd14ea8`
 - nodes: 2
 
 ### Nodes
@@ -23696,22 +23700,26 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenNamespace` (class)
 
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace`
-- defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py:13`
+- defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py:16`
 - extends: `Cleanable`
 - role: Live namespace payload for one codegen request.
 - responsibilities:
   - stores the globals and locals dictionaries used for execution
   - keeps namespace metadata separate from raw execution mappings
   - preserves the configuration that shaped the namespace
-- owns_state: `_configuration`, `_globals_dict`, `_locals_dict`, `_metadata`
+  - owns the request's optional CodegenOutputCapture, reports its text through get_output and cleans it with the namespace (GitHub #337, 0.2.8312)
+- owns_state: `_configuration`, `_globals_dict`, `_locals_dict`, `_metadata`, `_output_capture`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `configuration`, `create_placeholder`, `get_result`, `globals_dict`, `locals_dict`, `metadata`
+- public methods: `cleanup`, `configuration`, `create_placeholder`, `get_output`, `get_result`, `globals_dict`, `locals_dict`, `metadata`
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` | one_to_one | runtime,cleanup | authored |
+
+- `melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace` -> `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture`: CodegenNamespace takes ownership of the capture its builder hands it and cleans it in its own cleanup.
 
 ### Edge candidates (2, unconfirmed)
 
@@ -23726,7 +23734,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py
 
-- source_sha256: `7433f5e35916cd13b203dfed9c12f4cef369dc51e664ae5126fbf78c6d7c0222`
+- source_sha256: `ff63f704f7864ca30860c28db33c0320068a40a718e2e7d18262046e22086010`
 - nodes: 2
 
 ### Nodes
@@ -23740,7 +23748,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenNamespaceBuilder` (class)
 
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder`
-- defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:35`
+- defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:38`
 - extends: `Cleanable`
 - role: Builder for live codegen namespaces.
 - responsibilities:
@@ -23748,6 +23756,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds one live namespace from configuration and room collaborators
   - cleans owned strategies on teardown
   - builds the builtins mapping alone (build_builtins) through its builtins strategy, for materialized code (D-20, 0.2.8272)
+  - builds one CodegenOutputCapture per request from the owning Rift's configuration (codegen_output_capture, codegen_output_limit), passes it to the builtins strategy and the namespace, and cleans it when no namespace takes it; build_builtins never captures (GitHub #337, 0.2.8312)
 - owns_state: `_room_objects_strategy`, `_workstation_strategy`, `_command_strategy`, `_target_strategy`, `_builtins_strategy`, `_control_strategy`
 - phases: `runtime`, `cleanup`
 - public methods: `build`, `build_builtins`, `cleanup`
@@ -23764,6 +23773,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` | owns_lifecycle_of | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy.CodegenWorkstationStrategy` | one_to_one | runtime,cleanup | authored |
+| `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` | creates | `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` | one_to_one | runtime | authored |
+| `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` | uses | `melder.nexus.configuration.rift_configuration.RiftConfiguration` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace`: CodegenNamespaceBuilder creates one live namespace for the current transaction.
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy`: CodegenNamespaceBuilder owns the builtins exposure strategy used when building live namespaces.
@@ -23772,8 +23783,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy`: CodegenNamespaceBuilder owns the room-object exposure strategy used when building live namespaces.
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy`: CodegenNamespaceBuilder owns the target exposure strategy used when building live namespaces.
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy.CodegenWorkstationStrategy`: CodegenNamespaceBuilder owns the workstation exposure strategy used when building live namespaces.
+- `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture`: CodegenNamespaceBuilder creates the request's output capture when the room's configuration enables it.
+- `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` -> `melder.nexus.configuration.rift_configuration.RiftConfiguration`: CodegenNamespaceBuilder reads the owning Rift's codegen output settings on every request.
 
-### Edge candidates (9, unconfirmed)
+### Edge candidates (10, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -23784,8 +23797,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `CodegenCommandStrategy`
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `CodegenControlStrategy`
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `CodegenBuiltinsStrategy`
-- `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `CodegenNamespace`
+- `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `CodegenOutputCapture`
 - `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `TypeError`
+- `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder` creates `CodegenNamespace`
 
 <!-- END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py -->
 
@@ -23834,11 +23848,58 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py -->
 
+<!-- BEGIN FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py -->
+
+## src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py
+
+- source_sha256: `f400c6f3c160b7754486cb7e9419d9c2da13ce58d70abf8997646d54c1adb5ad`
+- nodes: 2
+
+### Nodes
+
+#### `codegen_output_capture` (module)
+
+- id: `melder.nexus.rift.codegen_system.namespace.codegen_output_capture`
+- defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py:1`
+- role: Room-owned print for one codegen execution, keeping room code's output for the execution payload.
+
+#### `CodegenOutputCapture` (class)
+
+- id: `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture`
+- defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py:8`
+- extends: `Cleanable`
+- role: Room-owned `print` for one execute_codegen request; what room code prints comes back as `output`.
+- responsibilities:
+  - keeps what `print` would write to stdout, with the builtin's sep, end and None semantics and TypeError text
+  - keeps at most the room's codegen_output_limit characters and counts the rest for one truncation line
+  - writes an explicit `file` target through the interpreter's print, capturing nothing
+  - guards the kept text with its own lock, so concurrent prints lose nothing below the limit
+  - drops the kept text on cleanup; afterwards prints and reads raise RuntimeError
+- owns_state: `_lock`, `_limit`, `_kept_chunks`, `_kept_characters`, `_dropped_characters`
+- phases: `runtime`, `cleanup`
+- public methods: `capture_print`, `cleanup`, `output`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (3, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` creates `RLock`
+- `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` creates `TypeError`
+- `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` creates `ValueError`
+
+<!-- END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py -->
+
 <!-- BEGIN FILE: src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py -->
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py
 
-- source_sha256: `733828f30f6f76938d65612fb40b5be6d0b8160978475ee073e9c483cb99db57`
+- source_sha256: `3d7d17340188237311295ed6677726a957c57cf9489c2b0d24f118840ba0e574`
 - nodes: 2
 
 ### Nodes
@@ -23852,13 +23913,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenBuiltinsStrategy` (class)
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy`
-- defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:17`
+- defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:20`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for Python builtins.
 - responsibilities:
   - builds the __builtins__ mapping from the current namespace configuration
   - applies the compiled builtin denylist for one request
   - installs a runtime `__import__` wrapper when imports are on and an import list applies, raising ImportError for a denied or unlisted root and delegating an allowed root to the real import; full_access and safe install none (D-11, 0.2.8271)
+  - installs a request's CodegenOutputCapture.capture_print as `print` when one is given and `print` survives the denied builtins; the materialize path passes none (GitHub #337, 0.2.8312)
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -23871,10 +23933,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | uses | `melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration` | one_to_one | runtime | authored |
 | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | one_to_one | runtime,cleanup | authored |
 | `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | uses | `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets` | many_to_one | runtime | authored |
+| `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` | uses | `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration`: CodegenBuiltinsStrategy reads CodegenNamespaceConfiguration when building the builtins namespace mapping.
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.utilities.general_base.cleanable.Cleanable`: CodegenBuiltinsStrategy inherits the explicit cleanup lifecycle from Cleanable.
 - `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`: CodegenBuiltinsStrategy reads IMPORT_BUILTIN_NAMES to replace the room's runtime `__import__` with a root-checking wrapper wherever an import list applies.
+- `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy` -> `melder.nexus.rift.codegen_system.namespace.codegen_output_capture.CodegenOutputCapture`: CodegenBuiltinsStrategy installs the capture's capture_print as the request's print and keeps no reference.
 
 ### Edge candidates (3, unconfirmed)
 
@@ -24558,7 +24622,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py
 
-- source_sha256: `91ab58a6e44eda12edc504d178d32bebb491f7c3df58243e1c33eb7908f755b3`
+- source_sha256: `2b301ff1150f93dff54f1da050c4971c2f985c3eacddeadd56974d8b95259923`
 - nodes: 2
 
 ### Nodes
@@ -24578,6 +24642,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - validates load-time ast.Name usage against the namespace configuration contract
   - drops `denied_builtin_names` united with `static_only_denied_builtin_names` from the allowed builtin names, so a bare `__import__` reference is refused wherever an import list applies (D-11, 0.2.8271)
+  - counts a name as bound by every Python binding form - assignment-style stores, definitions, parameters, import aliases, `except ... as` and `except* ... as`, the match captures and PEP 695 type parameters - so only a name nothing binds is refused (GitHub #337, 0.2.8311)
 - owns_state: `_lock`, `_ALWAYS_ALLOWED_NAME_NODES`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -24744,7 +24809,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `44c437eeba1e491657a15e31e50c2279bb2b07d3a1b96f365f10787e46bd0b79`
+- source_sha256: `d1e0c8332fcdba84c5331c4b3c1ea5a8a51590c896b110017eee7da98a8e2955`
 - nodes: 2
 
 ### Nodes
@@ -24770,6 +24835,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - refuses, in materialize_codegen after validation accepts and before anything is registered or published, a name already in sys.modules, under the protected core root `melder`, a standard-library root or an installed import name, and per the frame's compiled surface a name under a denied generation root or outside its declared ones; runs the module with the room's filtered builtins and cleans the module and the parent shells it created when materialize fails (D-20, 0.2.8272)
   - runs execute_codegen's engine request after releasing the command lock, its RiftGate ticket held; materialize_codegen still runs its module under that lock
   - takes the RiftGate ticket of validate_codegen, execute_codegen and materialize_codegen before their action-hook scope and releases it after the codegen memory record and the post-hooks, skipping the record on a command system cleaned meanwhile
+  - states in execute_codegen's docstring how room code returns a value (`result`) and every payload key, `output` included (GitHub #337)
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)

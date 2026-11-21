@@ -5,6 +5,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.nexus.nexus import Nexus
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
@@ -126,10 +127,14 @@ class CodegenSpaceDouble:
 class DetachedRiftProjectionOwner:
     """
     Small Rift-like double that serves codegen projections by frame name.
+
+    It also carries a real default `RiftConfiguration`, frozen as a Rift's is, because the namespace builder reads
+    the room's output-capture settings from `rift.configuration` on every request (GitHub #337, task 2).
     """
 
     def __init__(self) -> None:
         self._codegen_projections_by_frame_name = {}
+        self.configuration = RiftConfiguration().with_defaults().finalize()
 
     def _get_required_codegen_projection(self, frame_name: str) -> object:
         return self._codegen_projections_by_frame_name[frame_name]

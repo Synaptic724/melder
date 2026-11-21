@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
         CodegenNamespaceConfiguration,
     )
+    from melder.nexus.rift.codegen_system.namespace.codegen_output_capture import (
+        CodegenOutputCapture,
+    )
 
 
 class CodegenBuiltinsStrategy(Cleanable):
@@ -86,13 +89,25 @@ class CodegenBuiltinsStrategy(Cleanable):
     def build_namespace_entries(
             self,
             configuration: CodegenNamespaceConfiguration,
+            output_capture: Optional[CodegenOutputCapture] = None,
     ) -> Dict[str, object]:
         """
         Build builtins namespace entries for one request.
 
+        Contract:
+            - The interpreter's builtins minus `denied_builtin_names`, with the D-11 import guard where an import list
+              applies.
+            - With an `output_capture`, `print` is that capture's `capture_print`, so the text room code prints to
+              stdout comes back in the execution payload (GitHub #337, task 2). Only when `print` survives the denied
+              names: a posture that denies `print` keeps it absent.
+            - Without one - the materialize path, or a room whose configuration turns capture off - `print` is the
+              interpreter's.
+
         Args:
             configuration:
                 Namespace configuration for the request.
+            output_capture:
+                The request's capture, owned by its namespace; None to keep the interpreter's `print`.
 
         Returns:
             Dict[str, object]: Builtins namespace entries.
@@ -109,6 +124,8 @@ class CodegenBuiltinsStrategy(Cleanable):
             for builtin_name in configuration.denied_builtin_names:
                 builtins_dict.pop(builtin_name, None)
             self._install_import_guard(builtins_dict, configuration)
+            if output_capture is not None and "print" in builtins_dict:
+                builtins_dict["print"] = output_capture.capture_print
             return {
                 "__builtins__": builtins_dict,
             }

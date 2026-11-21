@@ -1141,6 +1141,8 @@ Purpose:
 Contract/Interface:
 - namespace/event/memory doubles for codegen tests plus helper functions that
   drive compiler phases through the supported compiler-system surfaces
+- `DetachedRiftProjectionOwner`, the Rift double, carries a frozen default `RiftConfiguration` as a live Rift does,
+  because the namespace builder reads the room's output-capture settings from it (GitHub #337, 2026-11-21)
 Key Files (C1):
 - `tests/_codegen_system_support.py`
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
@@ -1292,8 +1294,24 @@ Protects:
   once, so the controller totals 2 where they read 3), and the drain tests hold their ticket on another thread,
   since a drain never waits for the caller's own - the timeout test expects `RiftGateDrainTimeoutError`, still a
   RuntimeError with the old message, with `threads_inside` 1
+- codegen validation's binding forms (GitHub #337, 0.2.8311), in `test_codegen_validation_strategy_unit_matrix.py`:
+  name resolution accepts a load of a name bound by `except ... as` (also inside a function and with `except*`), each
+  match capture (`case n`, `int() as n`, `[first, *rest]`, `{**rest}`) and PEP 695 type parameters (`TypeVar`,
+  `ParamSpec`, `TypeVarTuple`, a generic class) - 11 cases, failing first on 0.2.8310 - and still refuses, with the
+  exact message, a name nothing binds beside them, wildcards (`case _`, `[*_]`) included (5 cases)
+- room code's captured output (GitHub #337, 0.2.8312): `test_codegen_output_capture_unit.py` (13 tests, 19 cases) pins
+  `CodegenOutputCapture` - the builtin's `sep`/`end`/None semantics and TypeError text, an explicit `file` written
+  through, the limit's exact boundary and truncation line, every later print counted, a refused limit (0, -1, bool,
+  float), 8 threads x 200 prints losing nothing with the GIL off, idempotent cleanup - plus
+  `CodegenExecutionResult.output` and its payload key and `CodegenNamespace.get_output` and its cleanup cascade;
+  `test_rift_configuration.py` adds the room settings: defaults (capture on, 65,536), the chained setters, a limit
+  refused when 0, negative, a bool, a string or a float, a non-bool switch refused, both refused once frozen.
+  `test_nexus.py`'s detached Rift double carries a frozen default `RiftConfiguration`, as a live Rift does
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
+- `tests/unit/melder/aether/test_codegen_validation_strategy_unit_matrix.py` (binding forms, GitHub #337)
+- `tests/unit/melder/aether/test_codegen_output_capture_unit.py` (captured output, GitHub #337, 2026-11-21)
+- `tests/unit/melder/aether/test_rift_configuration.py` (room output settings, GitHub #337)
 - `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
 - `tests/unit/melder/aether/test_root_configuration_value_snapshots.py` (root configuration snapshots, 2026-09-30)
 - `tests/unit/melder/aether/test_configuration_read_accessors.py` (configuration read accessors, 2026-09-29)
@@ -2377,6 +2395,12 @@ Key Files (C1):
 - `tests/integration/melder/aether/test_codegen_core_boundary_integration.py` (characterization, 2026-10-10;
   file postures, 2026-10-25; dynamic import gate, 2026-10-25)
 - `tests/integration/melder/aether/test_codegen_materialize_boundary_integration.py` (D-20, 2026-10-25)
+- `tests/integration/melder/aether/test_codegen_room_agent_contract_integration.py` (GitHub #337, 2026-11-21): in a
+  real safe-profile room, code binding names through `except ... as`, match patterns and a type parameter validates
+  and executes and returns its `result`; a name nothing binds is still refused; `print` comes back under `output` with
+  stdout untouched, also beside a runtime error; a room with `with_codegen_output_limit(10)` cuts it with the
+  truncation line; a room with capture off prints to stdout and has no `output` key; a silent run's payload is
+  exactly `accepted`, `frame_name` and `result` (7 tests, 10 cases)
 - `tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py` (2026-10-17)
 - `tests/integration/melder/aether/test_aether_integration_change_control_transactions.py` (catalogued 2026-11-08)
 

@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8310"
-SOURCE_SHA256 = "6896b5b2ed8146f6cea4f50b01c59071e447ff7dd3c7cd6779cfe086a3499ca8"
-MARKED_COUNT = 474
+BUILT_FOR_VERSION = "0.2.8313"
+SOURCE_SHA256 = "1d2651695b2112ca8e4b447e108d743d9ad4d2cd06902c89fc0dc9c56352fe9e"
+MARKED_COUNT = 475
 EXEMPT_COUNT = 142
 PENDING_COUNT = 19
 
@@ -372,7 +372,7 @@ AGENT_METADATA = {
     ('melder.nexus.configuration.nexus_configuration', 'NexusConfiguration'): ('public', 'access: public. Process-wide AR policy: creation/access gates, frame topology mode, target-frame restrictions, Rift budgets, and the projection refresh barrier. Mutable until frozen. Per-Rift settings belong on RiftConfiguration.'),
     ('melder.nexus.configuration.nexus_frame_mode', 'NexusFrameMode'): ('public', 'access: public. Frame topology: single (one shared), indexed (named, shared by name), one_per_workspace (private per Rift). Note one_per_workspace REJECTS raw manager creation - use the Rift-scoped path.'),
     ('melder.nexus.configuration.rift_access_mode', 'RiftAccessMode'): ('internal', 'access: internal. System-level policy for direct Rift retrieval. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.nexus.configuration.rift_configuration', 'RiftConfiguration'): ('public', "access: public. Per-Rift settings, chiefly space_type which fixes the room posture for the Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration()."),
+    ('melder.nexus.configuration.rift_configuration', 'RiftConfiguration'): ('public', "access: public. Per-Rift settings, chiefly space_type which fixes the room posture for the Rift's life, and for a codegen room whether room code's print output comes back in execute_codegen's payload (codegen_output_capture, codegen_output_limit). Mutable until frozen. Build via Nexus.create_rift_configuration()."),
     ('melder.nexus.configuration.rift_creation_mode', 'RiftCreationMode'): ('internal', 'access: internal. System-level policy for Rift creation/programming. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.configuration.rift_space_type', 'RiftSpaceType'): ('public', 'access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no mutation), capability (broad manual, no codegen), codegen (slim manual surface plus the codegen engine). Those three are the whole set - there is no `dynamic` member.'),
     ('melder.nexus.configuration.rift_validation_mode', 'RiftValidationMode'): ('internal', 'access: internal. Validation posture for Rift codegen/runtime execution. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
@@ -398,6 +398,7 @@ AGENT_METADATA = {
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace', 'CodegenNamespace'): ('internal', 'access: internal. Live namespace payload for one codegen request. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder', 'CodegenNamespaceBuilder'): ('internal', 'access: internal. Builder for live codegen namespaces. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration', 'CodegenNamespaceConfiguration'): ('internal', 'access: internal. Namespace exposure policy for one codegen request. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.nexus.rift.codegen_system.namespace.codegen_output_capture', 'CodegenOutputCapture'): ('internal', "access: internal. Room-owned print that keeps room code's output for the execution payload. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy', 'CodegenBuiltinsStrategy'): ('internal', 'access: internal. Namespace exposure strategy for Python builtins. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy', 'CodegenCommandStrategy'): ('internal', 'access: internal. Namespace exposure strategy for the room-facing command surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy', 'CodegenControlStrategy'): ('internal', 'access: internal. Namespace exposure strategy for the room-owned codegen object. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
@@ -1098,6 +1099,7 @@ CLASS_BASES = {
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace', 'CodegenNamespace'): ('Cleanable',),
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder', 'CodegenNamespaceBuilder'): ('Cleanable',),
     ('melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration', 'CodegenNamespaceConfiguration'): ('Cleanable',),
+    ('melder.nexus.rift.codegen_system.namespace.codegen_output_capture', 'CodegenOutputCapture'): ('Cleanable',),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy', 'CodegenBuiltinsStrategy'): ('Cleanable',),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy', 'CodegenCommandStrategy'): ('Cleanable',),
     ('melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy', 'CodegenControlStrategy'): ('Cleanable',),

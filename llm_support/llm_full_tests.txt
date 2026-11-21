@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 3d31f105c1b3b05acc8007f6133cfcb5de48eb0531696159c8fad37ff688f73a
-FILE COUNT: 1213
+SOURCE FINGERPRINT: 711b127078bfb5e2bcd7378ef58e630aefc6542863bb2c3db95f33bf4cafd932
+FILE COUNT: 1215
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -909,7 +909,7 @@ END FILE: tests/_cleanup_recheck_support.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
-CONTENT SHA256: 4ca4f09ad2e592a91006e00dca6510094fad0a217634e447e1d00ee878704b52
+CONTENT SHA256: 1d88b3f25a96b4f863c71ccb684330d8b0cb5d6191177da2c4beab6ef55c3bfd
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -919,6 +919,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.nexus.nexus import Nexus
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
@@ -1040,10 +1041,14 @@ class CodegenSpaceDouble:
 class DetachedRiftProjectionOwner:
     """
     Small Rift-like double that serves codegen projections by frame name.
+
+    It also carries a real default `RiftConfiguration`, frozen as a Rift's is, because the namespace builder reads
+    the room's output-capture settings from `rift.configuration` on every request (GitHub #337, task 2).
     """
 
     def __init__(self) -> None:
         self._codegen_projections_by_frame_name = {}
+        self.configuration = RiftConfiguration().with_defaults().finalize()
 
     def _get_required_codegen_projection(self, frame_name: str) -> object:
         return self._codegen_projections_by_frame_name[frame_name]
@@ -119341,6 +119346,238 @@ def test_materialized_code_runs_with_the_rooms_filtered_builtins() -> None:
     assert "open" in full_builtins
 ================================================================================
 END FILE: tests/integration/melder/aether/test_codegen_materialize_boundary_integration.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/aether/test_codegen_room_agent_contract_integration.py
+CONTENT SHA256: ebb4dd4301690a4bff3dae44380c0f39196e399191c9b925da79ba3ab89736c0
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+What an agent writing ordinary Python gets from a codegen room (GitHub #337).
+
+Purpose:
+    An external agent loop drove a codegen room under the safe profile and met the room's contract from the agent's
+    side: validation refused valid Python that binds a name through an exception handler, a match pattern or a type
+    parameter (task 1), and the room's help never said how a value comes back (task 2). These integration tests pin,
+    in a real safe-profile room, that such code validates and executes and what the execution payload carries.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+from typing import TYPE_CHECKING, Iterator, Optional, Tuple
+
+import pytest
+
+from tests._codegen_system_support import (
+    create_enabled_nexus,
+    reset_runtime_singletons,
+)
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+    from melder.nexus.rift.command_system.codegen_command_system import CodegenCommandSystem
+
+
+@pytest.fixture(autouse=True)
+def isolated_runtime() -> Iterator[None]:
+    """
+    Run each test against fresh runtime singletons.
+
+    Yields:
+        None.
+    """
+    reset_runtime_singletons()
+    yield
+    reset_runtime_singletons()
+
+
+def _safe_room(
+        output_capture: Optional[bool] = None,
+        output_limit: Optional[int] = None,
+) -> Tuple[Conduit, CodegenCommandSystem]:
+    """
+    Open a codegen room on frame "ops" governed by the safe codegen profile.
+
+    Args:
+        output_capture:
+            When given, the room configuration's `with_codegen_output_capture` value; None keeps the default.
+        output_limit:
+            When given, the room configuration's `with_codegen_output_limit` value; None keeps the default.
+
+    Returns:
+        Tuple[Conduit, CodegenCommandSystem]: The frame's root conduit (the caller cleans it) and the room's command
+        system.
+    """
+    nexus = create_enabled_nexus()
+    configuration = nexus.create_rift_configuration()
+    configuration.with_space_type("codegen")
+    if output_capture is not None:
+        configuration.with_codegen_output_capture(output_capture)
+    if output_limit is not None:
+        configuration.with_codegen_output_limit(output_limit)
+    rift = nexus.create_rift(configuration=configuration, rift_name="alpha")
+    conduit = rift.create_nexus_frame(frame_name="ops")
+    codegen_change = nexus.get_frame_acl_builder("ops").begin_codegen_change(
+        reason="agent_contract",
+    )
+    codegen_change.use_profile("safe")
+    codegen_change.commit_change()
+    rift.create_frame_link("ops")
+    return conduit, rift.space.command_system
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_result"),
+    [
+        pytest.param(
+            "try:\n    int('x')\nexcept ValueError as error:\n    result = str(error)\n",
+            "invalid literal for int() with base 10: 'x'",
+            id="except-as",
+        ),
+        pytest.param(
+            "match [1, 2, 3]:\n    case [first, *rest]:\n        result = (first, rest)\n",
+            (1, [2, 3]),
+            id="match-star",
+        ),
+        pytest.param(
+            "match {'a': 1, 'b': 2}:\n    case {'a': value, **others}:\n        result = (value, others)\n",
+            (1, {"b": 2}),
+            id="match-mapping-rest",
+        ),
+        pytest.param(
+            "def first[T](items: list[T]) -> T:\n    return items[0]\nresult = first([7])\n",
+            7,
+            id="type-parameter",
+        ),
+    ],
+)
+def test_safe_room_validates_and_executes_code_that_binds_names_beyond_assignment(
+        code: str,
+        expected_result: object,
+) -> None:
+    """
+    Contract: in a safe-profile room, code that binds a name through `except ... as`, a match pattern or a PEP 695
+    type parameter is accepted by `validate_codegen` and by `execute_codegen`, which returns its `result` (GitHub
+    #337, task 1; before the fix both refused it with "Name '<name>' is not available in the codegen namespace.").
+    """
+    conduit, command_system = _safe_room()
+    try:
+        validation = command_system.validate_codegen(code, frame_name="ops")
+        execution = command_system.execute_codegen(code, frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert validation["accepted"] is True
+    assert execution["accepted"] is True
+    assert execution["result"] == expected_result
+
+
+def test_safe_room_still_refuses_a_name_that_nothing_binds() -> None:
+    """
+    Contract: an exception handler's binding admits only its own name - a load of a name nothing in the code binds
+    is still refused, and the code does not run (GitHub #337, task 1).
+    """
+    code = "try:\n    int('x')\nexcept ValueError as error:\n    result = str(mystery)\n"
+    conduit, command_system = _safe_room()
+    try:
+        execution = command_system.execute_codegen(code, frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert execution["accepted"] is False
+    assert execution["validation_issues"] == (
+        "Name 'mystery' is not available in the codegen namespace.",
+    )
+    assert "result" not in execution
+
+
+def test_safe_room_returns_what_the_code_printed_under_output(
+        capsys: pytest.CaptureFixture[str],
+) -> None:
+    """
+    Contract: by default a codegen room captures room code's `print` - `sep` and `end` honoured - into the payload's
+    `output` key beside `result`, and nothing reaches the host process's stdout (GitHub #337, task 2).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        execution = command_system.execute_codegen(
+            "print('rows:', 3)\nprint('a', 'b', sep='-', end='!')\nresult = 1\n",
+            frame_name="ops",
+        )
+    finally:
+        conduit.cleanup()
+
+    assert execution["accepted"] is True
+    assert execution["output"] == "rows: 3\na-b!"
+    assert execution["result"] == 1
+    assert capsys.readouterr().out == ""
+
+
+def test_a_run_that_raises_still_returns_what_it_printed() -> None:
+    """
+    Contract: when room code raises, the payload carries what it printed before the error beside `runtime_error`
+    (GitHub #337, task 2).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        execution = command_system.execute_codegen(
+            "print('before')\nraise ValueError('boom')\n",
+            frame_name="ops",
+        )
+    finally:
+        conduit.cleanup()
+
+    assert execution["accepted"] is False
+    assert execution["runtime_error"] == "ValueError: boom"
+    assert execution["output"] == "before\n"
+
+
+def test_output_past_the_room_limit_is_cut_with_a_truncation_line() -> None:
+    """
+    Contract: a room whose configuration sets `with_codegen_output_limit(10)` keeps the first 10 printed characters,
+    then one line counting the characters it dropped (GitHub #337, task 2).
+    """
+    conduit, command_system = _safe_room(output_limit=10)
+    try:
+        execution = command_system.execute_codegen("print('x' * 25)\nresult = 1\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert execution["accepted"] is True
+    assert execution["output"] == "x" * 10 + "\n[output truncated: 16 more characters not kept]\n"
+
+
+def test_a_room_with_capture_off_prints_to_the_host_stdout(
+        capsys: pytest.CaptureFixture[str],
+) -> None:
+    """
+    Contract: a room whose configuration sets `with_codegen_output_capture(False)` keeps the interpreter's `print`:
+    the text reaches the host's stdout and the payload has no `output` key (GitHub #337, task 2).
+    """
+    conduit, command_system = _safe_room(output_capture=False)
+    try:
+        execution = command_system.execute_codegen("print('hello')\nresult = 1\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert execution["accepted"] is True
+    assert "output" not in execution
+    assert capsys.readouterr().out == "hello\n"
+
+
+def test_the_payload_has_no_output_key_when_nothing_was_printed() -> None:
+    """
+    Contract: code that prints nothing returns exactly `accepted`, `frame_name` and its `result` (GitHub #337,
+    task 2).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        execution = command_system.execute_codegen("result = {'answer': 42}\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert execution == {"accepted": True, "frame_name": "ops", "result": {"answer": 42}}
+================================================================================
+END FILE: tests/integration/melder/aether/test_codegen_room_agent_contract_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_codegen_system_integration_matrix.py
@@ -259973,6 +260210,247 @@ def test_unit_codegen_builtins_strategy_keeps_import_present_under_a_list() -> N
 END FILE: tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/aether/test_codegen_output_capture_unit.py
+CONTENT SHA256: 62616f1fce63a6c2ea8d91f298e0c75b43e69ecd141ab2e4ce2f5bcbdb03cfa8
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit contracts for room code's captured `print` output (GitHub #337, task 2).
+
+Purpose:
+    A codegen room replaces room code's `print` with `CodegenOutputCapture.capture_print`, so what the code prints
+    returns in `execute_codegen`'s payload under `output` instead of reaching the host's stdout. These tests pin the
+    capture's `print` semantics, its limit and truncation line, its lock under concurrent prints and its cleanup; the
+    execution result's `output` field and payload key; and the namespace that owns the capture.
+"""
+import io
+import threading
+from typing import List
+
+import pytest
+
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
+    CodegenExecutionResult,
+)
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
+    CodegenNamespace,
+)
+from melder.nexus.rift.codegen_system.namespace.codegen_output_capture import (
+    CodegenOutputCapture,
+)
+from tests._codegen_system_support import build_namespace_configuration
+
+
+def test_capture_print_joins_values_with_the_default_sep_and_end() -> None:
+    """
+    Contract: `capture_print(*values)` keeps what the builtin would write - each value's `str`, joined by a space,
+    ended by a newline.
+    """
+    capture = CodegenOutputCapture(limit=1000)
+
+    capture.capture_print(1, "a", None, [2])
+
+    assert capture.output == "1 a None [2]\n"
+
+
+@pytest.mark.parametrize(
+    ("sep", "end", "expected"),
+    [
+        pytest.param("-", "!", "a-b!", id="custom"),
+        pytest.param(None, None, "a b\n", id="none-means-the-defaults"),
+        pytest.param("", "", "ab", id="empty"),
+    ],
+)
+def test_capture_print_honours_sep_and_end(sep: object, end: object, expected: str) -> None:
+    """
+    Contract: `sep` and `end` behave as the builtin's - a string is used as given and None means the default.
+    """
+    capture = CodegenOutputCapture(limit=1000)
+
+    capture.capture_print("a", "b", sep=sep, end=end)
+
+    assert capture.output == expected
+
+
+@pytest.mark.parametrize(
+    ("keyword", "message"),
+    [
+        pytest.param("sep", "sep must be None or a string, not int", id="sep"),
+        pytest.param("end", "end must be None or a string, not int", id="end"),
+    ],
+)
+def test_capture_print_refuses_a_non_string_sep_or_end(keyword: str, message: str) -> None:
+    """
+    Contract: a `sep` or `end` that is neither None nor a string raises TypeError with the builtin's message, and
+    nothing is kept.
+    """
+    capture = CodegenOutputCapture(limit=1000)
+
+    with pytest.raises(TypeError, match=message):
+        capture.capture_print("a", **{keyword: 5})
+
+    assert capture.output == ""
+
+
+def test_capture_print_writes_to_an_explicit_file_and_keeps_nothing() -> None:
+    """
+    Contract: `print(..., file=x)` with an explicit file writes to that file as the builtin does; the capture keeps
+    only what would have gone to stdout.
+    """
+    capture = CodegenOutputCapture(limit=1000)
+    target = io.StringIO()
+
+    capture.capture_print("to", "file", sep="+", file=target)
+
+    assert target.getvalue() == "to+file\n"
+    assert capture.output == ""
+
+
+def test_output_at_exactly_the_limit_has_no_truncation_line() -> None:
+    """
+    Contract: text that fills the limit exactly is kept whole, with no truncation line.
+    """
+    capture = CodegenOutputCapture(limit=4)
+
+    capture.capture_print("abc")
+
+    assert capture.output == "abc\n"
+
+
+def test_output_one_character_past_the_limit_counts_the_dropped_character() -> None:
+    """
+    Contract: one character past the limit is dropped and counted; the kept text gets a newline before the
+    truncation line when it does not end with one.
+    """
+    capture = CodegenOutputCapture(limit=3)
+
+    capture.capture_print("abc")
+
+    assert capture.output == "abc\n[output truncated: 1 more characters not kept]\n"
+
+
+def test_truncation_keeps_the_first_characters_and_counts_every_later_print() -> None:
+    """
+    Contract: once the limit is reached, every later print is counted, not kept; a kept text that ends with a
+    newline takes the truncation line directly.
+    """
+    capture = CodegenOutputCapture(limit=6)
+
+    capture.capture_print("12345")
+    capture.capture_print("678")
+    capture.capture_print("9")
+
+    assert capture.output == "12345\n[output truncated: 6 more characters not kept]\n"
+
+
+@pytest.mark.parametrize(
+    ("limit", "error_type"),
+    [
+        pytest.param(0, ValueError, id="zero"),
+        pytest.param(-1, ValueError, id="negative"),
+        pytest.param(True, TypeError, id="bool"),
+        pytest.param(1.5, TypeError, id="float"),
+    ],
+)
+def test_capture_refuses_a_limit_that_is_not_a_positive_int(limit: object, error_type: type) -> None:
+    """
+    Contract: the limit is an int of at least 1; a bool, a float or a value below 1 is refused at construction.
+    """
+    with pytest.raises(error_type):
+        CodegenOutputCapture(limit=limit)
+
+
+def test_concurrent_prints_lose_no_text_below_the_limit() -> None:
+    """
+    Contract: the capture's lock keeps every line whole and loses none when room code prints from several threads
+    at once (run with the GIL off).
+    """
+    capture = CodegenOutputCapture(limit=1_000_000)
+    barrier = threading.Barrier(8)
+
+    def print_lines() -> None:
+        barrier.wait()
+        for _ in range(200):
+            capture.capture_print("ab", "cd")
+
+    threads: List[threading.Thread] = [threading.Thread(target=print_lines) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    lines = capture.output.splitlines()
+    assert len(lines) == 1600
+    assert set(lines) == {"ab cd"}
+
+
+def test_capture_cleanup_is_idempotent_and_ends_its_output() -> None:
+    """
+    Contract: cleanup may run twice; after it the capture refuses reads and prints with RuntimeError.
+    """
+    capture = CodegenOutputCapture(limit=10)
+    capture.capture_print("kept")
+
+    capture.cleanup()
+    capture.cleanup()
+
+    with pytest.raises(RuntimeError):
+        _ = capture.output
+    with pytest.raises(RuntimeError):
+        capture.capture_print("late")
+
+
+def test_execution_result_payload_carries_output_only_when_text_was_printed() -> None:
+    """
+    Contract: `executed` and `runtime_failed` carry the printed text as `output`; the payload adds an `output` key
+    only when it is not empty.
+    """
+    executed = CodegenExecutionResult.executed(frame_name="ops", result=1, output="hi\n")
+    failed = CodegenExecutionResult.runtime_failed(
+        frame_name="ops",
+        runtime_error="ValueError: boom",
+        output="before\n",
+    )
+    silent = CodegenExecutionResult.executed(frame_name="ops", result=1)
+
+    assert executed.output == "hi\n"
+    assert executed.to_payload() == {"accepted": True, "frame_name": "ops", "output": "hi\n", "result": 1}
+    assert failed.to_payload()["output"] == "before\n"
+    assert silent.output == ""
+    assert "output" not in silent.to_payload()
+
+
+def test_namespace_without_a_capture_reports_no_output() -> None:
+    """
+    Contract: a namespace built without a capture (a room with capture off) answers `get_output()` with "".
+    """
+    namespace = CodegenNamespace(configuration=build_namespace_configuration(frame_name="ops"))
+
+    assert namespace.get_output() == ""
+
+
+def test_namespace_reports_and_cleans_its_capture() -> None:
+    """
+    Contract: the namespace reports its capture's text through `get_output()` and cleans the capture it owns when it
+    is cleaned.
+    """
+    capture = CodegenOutputCapture(limit=100)
+    namespace = CodegenNamespace(
+        configuration=build_namespace_configuration(frame_name="ops"),
+        output_capture=capture,
+    )
+    capture.capture_print("from room code")
+
+    assert namespace.get_output() == "from room code\n"
+
+    namespace.cleanup()
+
+    with pytest.raises(RuntimeError):
+        _ = capture.output
+================================================================================
+END FILE: tests/unit/melder/aether/test_codegen_output_capture_unit.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_support_object_unit_matrix.py
 CONTENT SHA256: 307c03752b38149dc307ec309cfc2be5aa2afa0af86097aef3cbf36688ee31ed
 SOURCE ENCODING: utf-8
@@ -260588,7 +261066,7 @@ END FILE: tests/unit/melder/aether/test_codegen_system_unit_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_validation_strategy_unit_matrix.py
-CONTENT SHA256: 16eb3095ffb30f9673c9d9658eeef76a3425f27e38b13b6c014bb272c5f9305c
+CONTENT SHA256: 43a1fa5dde2a55fe9729c0e5301d1af023375ea889a7e2647949a11d5605725a
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -260877,6 +261355,105 @@ def test_unit_codegen_name_resolution_strategy_accepts_known_names(
     result = strategy.validate(context, ast.parse(code, mode="exec"))
 
     assert result is None
+
+
+NAME_RESOLUTION_BINDING_FORM_CASES = [
+    pytest.param(
+        "try:\n    int('x')\nexcept ValueError as error:\n    result = str(error)",
+        id="except-as",
+    ),
+    pytest.param(
+        "def parse(text: str) -> object:\n"
+        "    try:\n"
+        "        return int(text)\n"
+        "    except ValueError as error:\n"
+        "        return str(error)\n"
+        "result = parse('x')",
+        id="except-as-inside-a-function",
+    ),
+    pytest.param(
+        "try:\n    result = 1\nexcept* ValueError as group:\n    result = group",
+        id="except-star-as",
+    ),
+    pytest.param("match 1:\n    case value:\n        result = value", id="match-capture"),
+    pytest.param("match 5:\n    case int() as number:\n        result = number", id="match-as-pattern"),
+    pytest.param(
+        "match [1, 2, 3]:\n    case [first, *rest]:\n        result = (first, rest)",
+        id="match-star",
+    ),
+    pytest.param(
+        "match {'a': 1}:\n    case {'a': value, **others}:\n        result = (value, others)",
+        id="match-mapping-rest",
+    ),
+    pytest.param(
+        "def first[T](items: list[T]) -> T:\n    return items[0]\nresult = first([1])",
+        id="type-var-parameter",
+    ),
+    pytest.param(
+        "def wrap[**P](*args: P.args, **kwargs: P.kwargs) -> None:\n    return None\nresult = wrap",
+        id="param-spec-parameter",
+    ),
+    pytest.param("type Row[*Ts] = tuple[*Ts]\nresult = Row", id="type-var-tuple-parameter"),
+    pytest.param("class Box[T]:\n    item: T\nresult = Box", id="class-type-parameter"),
+]
+
+
+@pytest.mark.parametrize("code", NAME_RESOLUTION_BINDING_FORM_CASES)
+def test_unit_codegen_name_resolution_strategy_accepts_every_binding_form(
+        code: str,
+) -> None:
+    """
+    Contract: a load of a name the code binds through `except ... as`, `except* ... as`, a match capture or a PEP 695
+    type parameter passes name resolution, as an assignment-bound name does (GitHub #337, task 1).
+    """
+    strategy = CodegenNameResolutionStrategy()
+    context = _context(code)
+
+    result = strategy.validate(context, ast.parse(code, mode="exec"))
+
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    ("code", "unknown_name"),
+    [
+        pytest.param(
+            "try:\n    int('x')\nexcept ValueError as error:\n    result = str(mystery)",
+            "mystery",
+            id="beside-except-as",
+        ),
+        pytest.param("match 1:\n    case _:\n        result = _", "_", id="match-wildcard-binds-nothing"),
+        pytest.param("match [1, 2]:\n    case [*_]:\n        result = _", "_", id="match-star-wildcard-binds-nothing"),
+        pytest.param(
+            "match {'a': 1}:\n    case {**others}:\n        result = rest",
+            "rest",
+            id="beside-match-mapping-rest",
+        ),
+        pytest.param(
+            "def first[T](items: list[T]) -> U:\n    return items[0]\nresult = first([1])",
+            "U",
+            id="beside-type-parameter",
+        ),
+    ],
+)
+def test_unit_codegen_name_resolution_strategy_still_refuses_names_nothing_binds(
+        code: str,
+        unknown_name: str,
+) -> None:
+    """
+    Contract: next to the binding forms above, a name that nothing in the code binds - wildcards included, which bind
+    nothing - is still refused with the name-resolution message (GitHub #337, task 1).
+    """
+    strategy = CodegenNameResolutionStrategy()
+    context = _context(code)
+
+    result = strategy.validate(context, ast.parse(code, mode="exec"))
+
+    assert result is not None
+    assert result.accepted is False
+    assert result.validation_issues[0] == (
+        "Name '{0}' is not available in the codegen namespace.".format(unknown_name)
+    )
 
 
 @pytest.mark.parametrize(
@@ -275962,7 +276539,7 @@ END FILE: tests/unit/melder/aether/test_lookup_container_repoint.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus.py
-CONTENT SHA256: bf22b3fea0e4a4085d71209ad2209b6da4bd5adf2f787a3fb78cd6364fa19630
+CONTENT SHA256: 988871e3f6e98cef739326a3f649c4cb2a118b5247827e602bbe5a5f87209864
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -276472,6 +277049,9 @@ def _make_detached_rift_projection_owner() -> object:
             self._codegen_projections_by_frame_name = {}
             # A live Rift owns one gate, and every viewer read takes its ticket on it (GitHub #274, step 3).
             self._rift_gate = RiftGate()
+            # A live Rift carries its frozen configuration; the codegen namespace builder reads the room's
+            # output-capture settings from it on every request (GitHub #337, task 2).
+            self.configuration = RiftConfiguration().with_defaults().finalize()
 
         @property
         def rift_gate(self) -> RiftGate:
@@ -288044,7 +288624,7 @@ END FILE: tests/unit/melder/aether/test_rift_access_mode.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_rift_configuration.py
-CONTENT SHA256: c8e41360d52acce14f8e218742b727a415beef9dd9f7ed76002e5e3c770de030
+CONTENT SHA256: 47fd03e67e4eadffeb7816e39824fb0d6b39501a7e76602ea06fc8a7fecdd012
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -288241,6 +288821,80 @@ def test_rift_configuration_mark_consumed_sets_consumed_state() -> None:
 
     assert configuration.consumed is True
     assert configuration.frozen is False
+
+
+def test_rift_configuration_defaults_capture_codegen_output_up_to_65536_characters() -> None:
+    """
+    Contract: a room's defaults capture room code's `print` into the execution payload, keeping at most 65,536
+    characters (GitHub #337, task 2).
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    assert configuration.codegen_output_capture is True
+    assert configuration.codegen_output_limit == 65_536
+
+
+def test_rift_configuration_codegen_output_setters_store_values_and_chain() -> None:
+    """
+    Contract: `with_codegen_output_capture` and `with_codegen_output_limit` store their values and return the same
+    configuration, so a room can turn capture off or pick its own limit.
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    chained = configuration.with_codegen_output_capture(False).with_codegen_output_limit(10)
+
+    assert chained is configuration
+    assert configuration.codegen_output_capture is False
+    assert configuration.codegen_output_limit == 10
+
+
+@pytest.mark.parametrize(
+    ("limit", "error_type"),
+    [
+        pytest.param(0, ValueError, id="zero"),
+        pytest.param(-5, ValueError, id="negative"),
+        pytest.param(True, TypeError, id="bool"),
+        pytest.param("10", TypeError, id="string"),
+        pytest.param(1.5, TypeError, id="float"),
+    ],
+)
+def test_rift_configuration_refuses_a_codegen_output_limit_that_is_not_a_positive_int(
+        limit: object,
+        error_type: type,
+) -> None:
+    """
+    Contract: the limit is an int of at least 1; a bool, a non-int or a value below 1 is refused and the default
+    stays.
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    with pytest.raises(error_type):
+        configuration.with_codegen_output_limit(limit)
+
+    assert configuration.codegen_output_limit == 65_536
+
+
+def test_rift_configuration_refuses_a_non_bool_codegen_output_capture() -> None:
+    """
+    Contract: the capture switch takes a bool only.
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    with pytest.raises(TypeError):
+        configuration.with_codegen_output_capture("yes")
+
+
+def test_rift_configuration_codegen_output_settings_are_fixed_once_frozen() -> None:
+    """
+    Contract: like every room setting, the capture switch and limit are refused after freeze, so they hold for the
+    room's life.
+    """
+    configuration = RiftConfiguration().with_defaults().finalize()
+
+    with pytest.raises(RuntimeError, match="Cannot modify RiftConfiguration after freeze"):
+        configuration.with_codegen_output_limit(10)
+    with pytest.raises(RuntimeError, match="Cannot modify RiftConfiguration after freeze"):
+        configuration.with_codegen_output_capture(False)
 ================================================================================
 END FILE: tests/unit/melder/aether/test_rift_configuration.py
 ================================================================================

@@ -1,8 +1,11 @@
 import threading
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
+)
+from melder.nexus.rift.codegen_system.namespace.codegen_output_capture import (
+    CodegenOutputCapture,
 )
 from melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy import (
     CodegenBuiltinsStrategy,
@@ -143,6 +146,8 @@ class CodegenNamespaceBuilder(Cleanable):
         Contract:
             - The same mapping `build` places under `__builtins__`: the interpreter's builtins minus
               `denied_builtin_names`, with the D-11 root-checking `__import__` wrapper where an import list applies.
+            - Never captures output: a materialized module's code runs after its request has returned, so its `print`
+              stays the interpreter's whatever the room's `codegen_output_capture` says (GitHub #337, task 2).
             - A fresh dict per call; no room objects are built.
 
         Args:
@@ -167,11 +172,19 @@ class CodegenNamespaceBuilder(Cleanable):
         """
         Build one live namespace from config and room/runtime state.
 
+        Contract:
+            - When the owning Rift's configuration has `codegen_output_capture` on (the default), builds one
+              `CodegenOutputCapture` with the configuration's `codegen_output_limit`, installs it as the request's
+              `print` through the builtins strategy and hands it to the returned namespace, which owns and cleans it
+              (GitHub #337, task 2). With capture off, `print` is the interpreter's and the namespace has no capture.
+            - A capture is built after the room-object strategies and, if the builtins strategy or the namespace
+              constructor raises before the namespace owns it, cleaned before the error propagates.
+
         Args:
             configuration:
                 Namespace configuration for the request.
             rift:
-                Owning `Rift`.
+                Owning `Rift`; its configuration decides the output capture.
             space:
                 Owning `CodegenRiftSpace`.
 
@@ -222,14 +235,48 @@ class CodegenNamespaceBuilder(Cleanable):
                     space=space,
                 )
             )
-            globals_dict.update(
-                self._builtins_strategy.build_namespace_entries(configuration)
-            )
-            return CodegenNamespace(
-                configuration=configuration,
-                globals_dict=globals_dict,
-                locals_dict={},
-                metadata={
-                    "exposed_names": configuration.exposed_names,
-                },
-            )
+            output_capture = self._build_output_capture(rift)
+            namespace_owns_capture = False
+            try:
+                globals_dict.update(
+                    self._builtins_strategy.build_namespace_entries(
+                        configuration,
+                        output_capture=output_capture,
+                    )
+                )
+                namespace = CodegenNamespace(
+                    configuration=configuration,
+                    globals_dict=globals_dict,
+                    locals_dict={},
+                    metadata={
+                        "exposed_names": configuration.exposed_names,
+                    },
+                    output_capture=output_capture,
+                )
+                namespace_owns_capture = True
+                return namespace
+            finally:
+                # A capture no namespace took ownership of is cleaned here rather than left to the garbage collector.
+                if output_capture is not None and not namespace_owns_capture:
+                    output_capture.cleanup()
+
+    @staticmethod
+    def _build_output_capture(rift: Rift) -> Optional[CodegenOutputCapture]:
+        """
+        Build the request's output capture from the owning Rift's configuration, if it asks for one.
+
+        Contract:
+            - Reads `codegen_output_capture` and `codegen_output_limit` from the Rift's configuration, which is frozen
+              when the Rift is created, so every request of a room gets the same answer (GitHub #337, task 2).
+
+        Args:
+            rift:
+                The owning `Rift`.
+
+        Returns:
+            Optional[CodegenOutputCapture]: A fresh capture when the room captures output; None otherwise.
+        """
+        rift_configuration = rift.configuration
+        if not rift_configuration.codegen_output_capture:
+            return None
+        return CodegenOutputCapture(limit=rift_configuration.codegen_output_limit)

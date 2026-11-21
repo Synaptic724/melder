@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py",
- "source_sha256": "4f2de640537616e76d3d5f2137f49dfb52684f07dcb62188fd94fe437a615c49",
+ "source_sha256": "701c535766a83202c009d1532abd8cbba31968225d099fa97434f5b6b1e904ce",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.configurations.profiles.codegen.safe_profile": {
@@ -36,19 +36,19 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "67fedbf5d113495272faa1dce461a116402fa59cd40d1d68efba57f30573a48e",
+   "span_sha256": "16b6d81c08a788037aaa6e85e453c4eff0befc098eb800055fd83f8ae09734b1",
    "include": true,
    "role": "Bottom rung of the codegen posture ladder: the reviewed restrictive default.",
    "responsibilities": [
-    "build a FrameACLCodegenProfile limited to safe query/bind-existing operations",
-    "deny link mutation, local creation, invocation, writes, and dangerous capability escalation",
+    "build a FrameACLCodegenProfile whose frame, conduit and spell rules allow only query and bind-existing operations",
+    "bind room code through its capability rules - imports off, the dangerous builtins, unsafe reflection, dunder access and recursive codegen; its denials of linking, local creation, invocation and writes compile into the frame's published `allowed_commands`, which no room command checks (documented 0.2.8313; enforcement GitHub #338)",
     "register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset",
     "hold a closed file posture (0.2.8270): `open` denied by its SAFE_DENIED_BUILTIN_NAMES rule and imports off, so `io`, `os` and `pathlib` are refused too - policy checked in the room's process, not isolation"
    ],
    "phases": [
     "init"
    ],
-   "semantics_authored_against": "67fedbf5d113495272faa1dce461a116402fa59cd40d1d68efba57f30573a48e"
+   "semantics_authored_against": "16b6d81c08a788037aaa6e85e453c4eff0befc098eb800055fd83f8ae09734b1"
   }
  },
  "edges_out": [],

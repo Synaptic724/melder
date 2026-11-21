@@ -192,3 +192,77 @@ def test_rift_configuration_mark_consumed_sets_consumed_state() -> None:
 
     assert configuration.consumed is True
     assert configuration.frozen is False
+
+
+def test_rift_configuration_defaults_capture_codegen_output_up_to_65536_characters() -> None:
+    """
+    Contract: a room's defaults capture room code's `print` into the execution payload, keeping at most 65,536
+    characters (GitHub #337, task 2).
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    assert configuration.codegen_output_capture is True
+    assert configuration.codegen_output_limit == 65_536
+
+
+def test_rift_configuration_codegen_output_setters_store_values_and_chain() -> None:
+    """
+    Contract: `with_codegen_output_capture` and `with_codegen_output_limit` store their values and return the same
+    configuration, so a room can turn capture off or pick its own limit.
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    chained = configuration.with_codegen_output_capture(False).with_codegen_output_limit(10)
+
+    assert chained is configuration
+    assert configuration.codegen_output_capture is False
+    assert configuration.codegen_output_limit == 10
+
+
+@pytest.mark.parametrize(
+    ("limit", "error_type"),
+    [
+        pytest.param(0, ValueError, id="zero"),
+        pytest.param(-5, ValueError, id="negative"),
+        pytest.param(True, TypeError, id="bool"),
+        pytest.param("10", TypeError, id="string"),
+        pytest.param(1.5, TypeError, id="float"),
+    ],
+)
+def test_rift_configuration_refuses_a_codegen_output_limit_that_is_not_a_positive_int(
+        limit: object,
+        error_type: type,
+) -> None:
+    """
+    Contract: the limit is an int of at least 1; a bool, a non-int or a value below 1 is refused and the default
+    stays.
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    with pytest.raises(error_type):
+        configuration.with_codegen_output_limit(limit)
+
+    assert configuration.codegen_output_limit == 65_536
+
+
+def test_rift_configuration_refuses_a_non_bool_codegen_output_capture() -> None:
+    """
+    Contract: the capture switch takes a bool only.
+    """
+    configuration = RiftConfiguration().with_defaults()
+
+    with pytest.raises(TypeError):
+        configuration.with_codegen_output_capture("yes")
+
+
+def test_rift_configuration_codegen_output_settings_are_fixed_once_frozen() -> None:
+    """
+    Contract: like every room setting, the capture switch and limit are refused after freeze, so they hold for the
+    room's life.
+    """
+    configuration = RiftConfiguration().with_defaults().finalize()
+
+    with pytest.raises(RuntimeError, match="Cannot modify RiftConfiguration after freeze"):
+        configuration.with_codegen_output_limit(10)
+    with pytest.raises(RuntimeError, match="Cannot modify RiftConfiguration after freeze"):
+        configuration.with_codegen_output_capture(False)

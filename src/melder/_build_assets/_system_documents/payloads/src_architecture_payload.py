@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 6349
-CONTENT_SHA256 = 'e3d0514e21775dba97a6cd880806a67b6a24e98e2a537bf534065561a52b5044'
+LINE_COUNT = 6368
+CONTENT_SHA256 = '01ba407295dde09344203f79fdbd7ac859668116d2972f3d13d5aed4db537c58'
 
 TEXT = """# Src Architecture (C4)
 
@@ -1589,6 +1589,25 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:CodegenBuiltinsStrategy._install_import_guard`,
   `CodegenBuiltinsStrategy._build_guarded_import` and
   `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem._build_default_namespace_configuration`.
+- Codegen room code's contract from the agent's side (2026-11-21, 0.2.8311-0.2.8313; GitHub #337, on the owner's
+  decisions of that day). Name resolution counts every Python binding form: besides assignment-style stores,
+  definitions, parameters and import aliases, also `except ... as` and `except* ... as`, the match captures and PEP
+  695 type parameters (0.2.8311), so valid code binding a name those ways is no longer refused, while a name nothing
+  binds still is. `execute_codegen` captures room code's `print` per request into the payload's `output` key, as the
+  owning Rift's configuration sets - `codegen_output_capture` on by default, `codegen_output_limit` 65,536 characters
+  by default, then one truncation line - also on a run that raised, and nothing reaches the host's stdout (0.2.8312);
+  a materialized module keeps the interpreter's `print`, and `print(..., file=x)` writes to `x`. A codegen preset
+  binds room code through its capability rules only: its frame, conduit and spell rules compile into the published
+  `allowed_commands`, which no room command checks, and room code holding a live object can call any of its methods
+  (documented 0.2.8313; enforcement is GitHub #338). Policy in the room's own process - defence in depth, not
+  isolation. Nothing persisted, cached or recorded reads these settings, so no cache generation or record version
+  moves. Locks: the capture holds one RLock per request; none other added.
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:CodegenNameResolutionStrategy._collect_locally_assigned_names`,
+  `CodegenNameResolutionStrategy._collect_local_parameter_names`,
+  `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py:CodegenOutputCapture`,
+  `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:CodegenNamespaceBuilder.build`,
+  `src/melder/nexus/configuration/rift_configuration.py:RiftConfiguration.with_codegen_output_capture` and
+  `src/melder/nexus/acl/frame_acl_compiler.py:FrameACLCompiler._compile_allowed_commands`.
 - A lender's notch moves its borrowers inside its frozen window (2026-10-25, 0.2.8275; TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout,
   the owner's design 2 and his "1": undo on failure). `Conduit.notch_spell` passes the lineage roots of its ward
   links as `linked_root_conduit_ids`; `NotchTransactionStrategy.build_start_plan` adds them to the conduits it seals

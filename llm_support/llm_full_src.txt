@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: ec13ba03b6e37a287ef1be8fc64cbd7fbd159db211d39b0bbfb8157fb1948e68
-FILE COUNT: 588
+SOURCE FINGERPRINT: bdeeabe1f557338898f7e5d75b77bf57694bd57669479af5fee835a4605e059c
+FILE COUNT: 589
 
 ================================================================================
 BEGIN FILE: src/melder/__architecture__.py
@@ -614,7 +614,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 14a3bce9abd0b2621c1ada189724a92b5d882eac8e4f9455a78f33e21adb0a84
+CONTENT SHA256: 222be9d34968383f4f46ca032245fa9680ae310f8bee8074eef067194f5f58b8
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -628,7 +628,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8310"
+__version__ = "0.2.8313"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -206679,7 +206679,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/full_access_profi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py
-CONTENT SHA256: 8f42c8b7ea35a6b2842ecdf61f174ac1518155d87e96c58f881d0e38701fe621
+CONTENT SHA256: 0aff69dccdc90910f34c83fcb83270d6d14cc052f5d8924c676505c78b0ba159
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -206702,6 +206702,12 @@ class HybridCodegenProfileStrategy:
         open `permissive` posture. It allows core query/link/invoke/read
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
+        As with `safe`, only the capability rules bind room code (imports
+        through the allowlist, denied builtins, reflection, dunder access,
+        recursive codegen); the frame, conduit and spell rules compile into
+        the frame's published `allowed_commands`, which no room command checks,
+        and room code holding a live object can call any of its methods
+        (GitHub #338).
         Files: `open` is a denied builtin (the safe tuple), and `io`, `os`
         and `pathlib` are not on the import allowlist - they are
         permissive-only roots - so those routes are refused at validation.
@@ -207142,7 +207148,7 @@ END FILE: src/melder/nexus/acl/configurations/profiles/codegen/precision.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py
-CONTENT SHA256: 4f2de640537616e76d3d5f2137f49dfb52684f07dcb62188fd94fe437a615c49
+CONTENT SHA256: 701c535766a83202c009d1532abd8cbba31968225d099fa97434f5b6b1e904ce
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -207159,10 +207165,21 @@ class SafeCodegenProfileStrategy:
     Build the reusable `safe` codegen profile.
 
     Contract:
-        This is the most restrictive of the standard codegen profiles. It
-        limits codegen to safe query/bind-existing operations and denies link
-        mutation, local creation, invocation, writes, and dangerous capability
-        escalation.
+        This is the most restrictive of the standard codegen profiles.
+        What it enforces on room code is the Python surface: imports are off,
+        the dangerous builtins (`SAFE_DENIED_BUILTIN_NAMES`) are refused at
+        validation and left out of the runtime builtins, and unsafe
+        reflection, dunder access and recursive codegen are refused.
+        Its frame, conduit and spell rules - query and bind-existing only;
+        link, unlink, create-lesser, transfer-ownership, local-create,
+        invoke-method and attribute reads and writes denied - compile into the
+        frame's `allowed_commands`, which the frame views publish to agents.
+        They do NOT bind room code: the room's commands check the frame's
+        command ACL instead, and room code that holds a live object (the
+        conduit `command.get_conduit_by_name` returns, for one) can call any
+        of its methods. Enforcing them on room code is GitHub #338.
+        Every profile exposes the same room objects to room code (`viewer`,
+        `workstation`, `target`, `command`, `codegen`).
         Files: `open` is a denied builtin - refused at validation whether
         called or only named, and left out of the room's runtime builtins -
         and imports are off, so `io`, `os` and `pathlib` are refused too.
@@ -220127,12 +220144,12 @@ END FILE: src/melder/nexus/configuration/rift_access_mode.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/configuration/rift_configuration.py
-CONTENT SHA256: 2dbb457d04d8f64631613d6ac8aaaf868496ea2cccc9da89815e220004f5847d
+CONTENT SHA256: 20f31b8ddc42984f8d9c736137e6eb8f6990e1ca2f2ee91b93cc50bbab8b4575
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
 from enum import Enum
-from typing import Dict, Optional, Tuple, Type, Union
+from typing import ClassVar, Dict, Optional, Tuple, Type, Union
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
@@ -220183,7 +220200,9 @@ class RiftConfiguration(Cleanable):
 
     AGENT_PURPOSE:
         access: public. Per-Rift settings, chiefly space_type which fixes the room posture for
-        the Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration().
+        the Rift's life, and for a codegen room whether room code's print output comes back in
+        execute_codegen's payload (codegen_output_capture, codegen_output_limit). Mutable until
+        frozen. Build via Nexus.create_rift_configuration().
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -220195,6 +220214,9 @@ class RiftConfiguration(Cleanable):
         "available_properties",
     ]
 
+    _DEFAULT_CODEGEN_OUTPUT_LIMIT: ClassVar[int] = 65_536
+    """Default `codegen_output_limit`: the characters of room code's print output one execution keeps."""
+
     def __init__(self) -> None:
         """
         Internal
@@ -220204,10 +220226,12 @@ class RiftConfiguration(Cleanable):
         Contract:
             - STARTS EMPTY: the property bag holds nothing until seeded, so a bare
               configuration is not yet usable.
-            - The schema is four keys - `space_type` (RiftSpaceType), `space_name`
-              (str or None), `auto_activate_on_program` (bool) and
-              `validation_mode` (RiftValidationMode). `space_name` is the only one
-              that legally accepts None.
+            - The schema is six keys - `space_type` (RiftSpaceType), `space_name`
+              (str or None), `auto_activate_on_program` (bool), `validation_mode`
+              (RiftValidationMode), `codegen_output_capture` (bool) and
+              `codegen_output_limit` (int, at least 1, never a bool). `space_name`
+              is the only one that legally accepts None. The two codegen keys take
+              effect only in a codegen room (GitHub #337).
             - Lifecycle is MUTABLE -> FROZEN -> CONSUMED. Note the third stage is
               CONSUMED, not "activated": a rift configuration is spent by the rift
               that takes it rather than marked live in place.
@@ -220238,6 +220262,8 @@ class RiftConfiguration(Cleanable):
             "space_name": (str, type(None)),
             "auto_activate_on_program": bool,
             "validation_mode": RiftValidationMode,
+            "codegen_output_capture": bool,
+            "codegen_output_limit": int,
         }
 
     def cleanup(self) -> None:
@@ -220310,13 +220336,16 @@ class RiftConfiguration(Cleanable):
             - Rejects mutation after freeze().
             - Normalizes enum-backed values before storage.
             - Enforces the declared type contract for every property.
+            - `codegen_output_limit` must also be at least 1 and not a bool (a bool
+              is an int to `isinstance`, so it is refused by name).
 
         Returns:
             None.
 
         Raises:
             RuntimeError: If the configuration is already frozen.
-            ValueError: If the property name is unknown.
+            ValueError: If the property name is unknown, or `codegen_output_limit`
+                is below 1.
             TypeError: If the supplied value does not satisfy the declared type.
         """
         self.check_cleaned()
@@ -220336,6 +220365,8 @@ class RiftConfiguration(Cleanable):
             raise TypeError(
                 f"Invalid type for property '{key}': expected {expected_names}, got {type(converted_value).__name__}."
             )
+        if key == "codegen_output_limit":
+            self._check_codegen_output_limit(converted_value)
         self._properties[key] = converted_value
 
     def get_property(self, key: str) -> object:
@@ -220373,6 +220404,54 @@ class RiftConfiguration(Cleanable):
         value = self.get_property("space_type")
         if not isinstance(value, RiftSpaceType):
             raise TypeError("space_type must be a RiftSpaceType.")
+        return value
+
+    @property
+    def codegen_output_capture(self) -> bool:
+        """
+        Return whether a codegen room captures room code's print output into its execution payload.
+
+        Contract:
+            - True: `execute_codegen` swaps room code's `print` for a capture, and the text it would have written
+              to stdout comes back under the payload's `output` key (GitHub #337, task 2).
+            - False: room code's `print` is the interpreter's and writes to the host process's stdout.
+            - Read by the codegen room's namespace builder on every request; fixed for the room's life once the
+              configuration is frozen. A non-codegen room ignores it.
+
+        Returns:
+            bool: The stored capture switch.
+
+        Raises:
+            KeyError: If the property has not been set.
+            RuntimeError: If the configuration has been cleaned.
+            TypeError: If the stored value is not a bool (`set_property` never stores one).
+        """
+        value = self.get_property("codegen_output_capture")
+        if not isinstance(value, bool):
+            raise TypeError("codegen_output_capture must be a bool.")
+        return value
+
+    @property
+    def codegen_output_limit(self) -> int:
+        """
+        Return how many characters of room code's print output one codegen execution keeps.
+
+        Contract:
+            - Applies when `codegen_output_capture` is True: text past the limit is dropped and counted, and the
+              payload's `output` then ends with one line "[output truncated: N more characters not kept]".
+            - At least 1; defaults to 65,536 (`with_defaults()`).
+
+        Returns:
+            int: The stored limit, in characters.
+
+        Raises:
+            KeyError: If the property has not been set.
+            RuntimeError: If the configuration has been cleaned.
+            TypeError: If the stored value is not an int (`set_property` never stores one).
+        """
+        value = self.get_property("codegen_output_limit")
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise TypeError("codegen_output_limit must be an int.")
         return value
 
     def has_property(self, key: str) -> bool:
@@ -220414,6 +220493,8 @@ class RiftConfiguration(Cleanable):
             - Sets default room type, room naming posture, activation posture,
               validation mode, and room-event configuration defaults used when
               Nexus builds a Rift without overrides.
+            - A codegen room captures room code's print output by default, keeping
+              at most 65,536 characters per execution (GitHub #337, task 2).
             - Does not select or bind any target frames.
 
         Returns:
@@ -220425,6 +220506,8 @@ class RiftConfiguration(Cleanable):
             "space_name": None,
             "auto_activate_on_program": True,
             "validation_mode": RiftValidationMode.strict,
+            "codegen_output_capture": True,
+            "codegen_output_limit": self._DEFAULT_CODEGEN_OUTPUT_LIMIT,
         }
         for key, value in defaults.items():
             self.set_property(key, value)
@@ -220676,6 +220759,109 @@ class RiftConfiguration(Cleanable):
         """
         self.set_property("validation_mode", mode)
         return self
+
+    def with_codegen_output_capture(
+            self,
+            enabled: bool = True,
+    ) -> RiftConfiguration:
+        """
+        Fluent
+
+        Set whether a codegen room captures room code's print output into its execution payload.
+
+        Args:
+            enabled:
+                True to return what room code prints under `execute_codegen`'s `output` key; False to let it write
+                to the host process's stdout.
+
+        Contract:
+            - Defaults to True (`with_defaults()`); takes effect only in a codegen room, on every
+              `execute_codegen` request. `validate_codegen`, `research_preview` and `materialize_codegen` print
+              nothing into a payload, and a materialized module keeps the interpreter's `print`.
+            - `print(..., file=x)` with an explicit file always writes to `x`.
+            - MUTATES THIS OBJECT and returns `self`; refused once frozen, so the setting holds for the room's life.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned, frozen or consumed.
+            TypeError: If `enabled` is not a bool.
+
+        Returns:
+            RiftConfiguration: This configuration instance.
+        """
+        self.set_property("codegen_output_capture", enabled)
+        return self
+
+    def with_codegen_output_limit(
+            self,
+            characters: int,
+    ) -> RiftConfiguration:
+        """
+        Fluent
+
+        Set how many characters of room code's print output one codegen execution keeps.
+
+        Args:
+            characters:
+                The most characters `output` holds; at least 1. Defaults to 65,536 (`with_defaults()`).
+
+        Contract:
+            - Applies while `codegen_output_capture` is on. Text past the limit is dropped and counted, and `output`
+              ends with one line "[output truncated: N more characters not kept]".
+            - MUTATES THIS OBJECT and returns `self`; refused once frozen, so the limit holds for the room's life.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned, frozen or consumed.
+            TypeError: If `characters` is not an int, or is a bool.
+            ValueError: If `characters` is below 1.
+
+        Returns:
+            RiftConfiguration: This configuration instance.
+        """
+        self.set_property("codegen_output_limit", characters)
+        return self
+
+    @staticmethod
+    def _check_codegen_output_limit(value: object) -> None:
+        """
+        Internal
+
+        Refuse a `codegen_output_limit` the type check alone would let through.
+
+        Contract:
+            - `isinstance(True, int)` holds, so a bool passes the declared `int` type; it is refused here.
+            - A limit below 1 would keep nothing and is refused.
+
+        Args:
+            value:
+                The candidate limit, already type-checked as an int.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: If `value` is a bool.
+            ValueError: If `value` is below 1.
+        """
+        if isinstance(value, bool):
+            raise TypeError(
+                "Invalid type for property 'codegen_output_limit': expected int, got bool."
+            )
+        if isinstance(value, int) and value < 1:
+            raise ValueError(
+                "codegen_output_limit must be at least 1 character, got {0}.".format(value)
+            )
 
     def _convert_enum_if_needed(self, key: str, value: object) -> object:
         """
@@ -231208,7 +231394,7 @@ END FILE: src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
-CONTENT SHA256: 93db2c56dbeaae790c399fb7fc3ad38e1417b3e4b87035413dfb169e2a05a9b9
+CONTENT SHA256: 64fef631ccecdc925f27df8509c533007dbc252702fd69a1850fc391df5545e6
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -231230,10 +231416,12 @@ class CodegenExecutionResult(Cleanable):
 
     Contract:
         - Carries acceptance state, target frame name, optional reason,
-          optional validation issues, optional runtime error, and optional
-          `result` payload.
-        - Serializes to the current public payload shape expected by the room
-          placeholder tests.
+          optional validation issues, optional runtime error, optional
+          `result` payload, and the text room code printed (`output`, "" when
+          nothing was captured; GitHub #337, task 2).
+        - Serializes to the public payload `execute_codegen` returns: `accepted`
+          and `frame_name` always; `reason`, `validation_issues`,
+          `runtime_error`, `result` and `output` only when present.
 
     Registration:
         MELDER KERNEL - guarded. Produced by `CodegenExecutor`.
@@ -231268,6 +231456,7 @@ class CodegenExecutionResult(Cleanable):
         "_runtime_error",
         "_result",
         "_transaction_id",
+        "_output",
     ]
 
     def __init__(
@@ -231280,6 +231469,7 @@ class CodegenExecutionResult(Cleanable):
             runtime_error: Optional[str] = None,
             result: Optional[object] = None,
             transaction_id: Optional[str] = None,
+            output: str = "",
     ) -> None:
         """
         Initialize one execution result.
@@ -231300,6 +231490,9 @@ class CodegenExecutionResult(Cleanable):
                 Optional final `result` value from execution.
             transaction_id:
                 Optional internal transaction id.
+            output:
+                The text room code printed during execution, as the room's output capture kept it; "" when nothing
+                was printed or the room does not capture output.
 
         Returns:
             None.
@@ -231321,6 +231514,7 @@ class CodegenExecutionResult(Cleanable):
         self._runtime_error: Optional[str] = runtime_error
         self._result: Optional[object] = result
         self._transaction_id: Optional[str] = transaction_id
+        self._output: str = output
 
     def cleanup(self) -> None:
         """
@@ -231343,6 +231537,7 @@ class CodegenExecutionResult(Cleanable):
             del self._runtime_error
             del self._result
             del self._transaction_id
+            del self._output
         del self._lock
 
     @classmethod
@@ -231408,6 +231603,7 @@ class CodegenExecutionResult(Cleanable):
             frame_name: str,
             runtime_error: str,
             transaction_id: Optional[str] = None,
+            output: str = "",
     ) -> "CodegenExecutionResult":
         """
         Build an execution result representing runtime failure.
@@ -231419,6 +231615,8 @@ class CodegenExecutionResult(Cleanable):
                 Runtime error summary.
             transaction_id:
                 Optional internal transaction id.
+            output:
+                The text room code printed before it raised; "" when none.
 
         Returns:
             CodegenExecutionResult: Rejected runtime-failure result.
@@ -231429,6 +231627,7 @@ class CodegenExecutionResult(Cleanable):
             reason="codegen_execution_runtime_failed",
             runtime_error=runtime_error,
             transaction_id=transaction_id,
+            output=output,
         )
 
     @classmethod
@@ -231438,6 +231637,7 @@ class CodegenExecutionResult(Cleanable):
             frame_name: str,
             result: Optional[object],
             transaction_id: Optional[str] = None,
+            output: str = "",
     ) -> "CodegenExecutionResult":
         """
         Build an execution result for one successful codegen execution.
@@ -231449,6 +231649,8 @@ class CodegenExecutionResult(Cleanable):
                 Optional final `result` value from the namespace.
             transaction_id:
                 Optional internal transaction id.
+            output:
+                The text room code printed; "" when none.
 
         Returns:
             CodegenExecutionResult: Successful execution result.
@@ -231458,6 +231660,7 @@ class CodegenExecutionResult(Cleanable):
             frame_name=frame_name,
             result=result,
             transaction_id=transaction_id,
+            output=output,
         )
 
     @property
@@ -231544,9 +231747,27 @@ class CodegenExecutionResult(Cleanable):
         with self._lock:
             return self._transaction_id
 
+    @property
+    def output(self) -> str:
+        """
+        Return the text room code printed during execution.
+
+        Returns:
+            str: The captured text, with one truncation line when the room's limit dropped some; "" when nothing was
+            printed or the room does not capture output.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._output
+
     def to_payload(self) -> Dict[str, object]:
         """
         Serialize this result to the current public execution payload shape.
+
+        Contract:
+            - `accepted` and `frame_name` always; `reason`, `validation_issues`, `runtime_error` and `result` when
+              present (`result` when the code assigned it a value other than None); `output` when room code printed
+              anything (GitHub #337, task 2).
 
         Returns:
             Dict[str, object]: Public execution payload.
@@ -231565,13 +231786,15 @@ class CodegenExecutionResult(Cleanable):
                 payload["runtime_error"] = self._runtime_error
             if self._result is not None:
                 payload["result"] = self._result
+            if self._output:
+                payload["output"] = self._output
             return payload
 ================================================================================
 END FILE: src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/execution/codegen_executor.py
-CONTENT SHA256: 844ee03b1792dd62a4fe71e695701a2e63e5dcff2af22d476f0a9e49aeb4bce8
+CONTENT SHA256: 1acffaf7b3a3efc83be7a72b453a311aaba0ce4776fabba26e21bca881a76c20
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -231660,6 +231883,11 @@ class CodegenExecutor(Cleanable):
         """
         Execute one compiled code object against the transaction namespace.
 
+        Contract:
+            - After `exec` returns, the result carries the namespace's `result` value and the text room code printed
+              (`CodegenNamespace.get_output()`); after `exec` raises, the runtime error and the text printed before it
+              (GitHub #337, task 2).
+
         Args:
             compiled_code:
                 Compiled Python code object produced by `CodegenCompiler`.
@@ -231695,11 +231923,13 @@ class CodegenExecutor(Cleanable):
                         exc,
                     ),
                     transaction_id=transaction_context.transaction_id,
+                    output=namespace.get_output(),
                 )
             return CodegenExecutionResult.executed(
                 frame_name=transaction_context.frame_name,
                 result=namespace.get_result(),
                 transaction_id=transaction_context.transaction_id,
+                output=namespace.get_output(),
             )
 ================================================================================
 END FILE: src/melder/nexus/rift/codegen_system/execution/codegen_executor.py
@@ -231884,7 +232114,7 @@ END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py
-CONTENT SHA256: 3d85dad638cc25b96b0b8ec57784b295eb6a13cf51cf55af69413e6ef6ebe110
+CONTENT SHA256: 6125e620cb823e30b58b64bfbf3c7197bccafb50db9e2bcbb1493c5d2dd14ea8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -231895,6 +232125,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
         CodegenNamespaceConfiguration,
+    )
+    from melder.nexus.rift.codegen_system.namespace.codegen_output_capture import (
+        CodegenOutputCapture,
     )
 
 
@@ -231914,6 +232147,8 @@ class CodegenNamespace(Cleanable):
         - Stores one namespace configuration.
         - Stores one globals dict and one locals dict.
         - Keeps metadata separate from the raw globals/locals mappings.
+        - Owns the request's optional `CodegenOutputCapture` (the room's `print` when its configuration captures
+          output) and cleans it on cleanup; `get_output()` reads it (GitHub #337, task 2).
 
     Registration:
         MELDER KERNEL - guarded. Produced by `CodegenNamespaceBuilder` after
@@ -231946,6 +232181,7 @@ class CodegenNamespace(Cleanable):
         "_globals_dict",
         "_locals_dict",
         "_metadata",
+        "_output_capture",
     ]
 
     def __init__(
@@ -231955,6 +232191,7 @@ class CodegenNamespace(Cleanable):
             globals_dict: Optional[Dict[str, object]] = None,
             locals_dict: Optional[Dict[str, object]] = None,
             metadata: Optional[Dict[str, object]] = None,
+            output_capture: Optional[CodegenOutputCapture] = None,
     ) -> None:
         """
         Initialize one live codegen namespace.
@@ -231968,6 +232205,9 @@ class CodegenNamespace(Cleanable):
                 Optional locals dictionary.
             metadata:
                 Optional live namespace metadata.
+            output_capture:
+                The request's output capture, installed as its `print`; OWNED by this namespace from here on and
+                cleaned with it. None when the room does not capture output.
 
         Returns:
             None.
@@ -231988,10 +232228,14 @@ class CodegenNamespace(Cleanable):
             dict(locals_dict) if locals_dict else {}
         )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+        self._output_capture: Optional[CodegenOutputCapture] = output_capture
 
     def cleanup(self) -> None:
         """
         Idempotently clear live namespace state.
+
+        Contract:
+            - Cleans the owned output capture, when there is one, before dropping the dictionaries.
 
         Returns:
             None.
@@ -232002,9 +232246,12 @@ class CodegenNamespace(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            if self._output_capture is not None:
+                self._output_capture.cleanup()
             self._globals_dict.clear()
             self._locals_dict.clear()
             self._metadata.clear()
+            del self._output_capture
             del self._configuration
             del self._globals_dict
             del self._locals_dict
@@ -232097,19 +232344,40 @@ class CodegenNamespace(Cleanable):
             if "result" not in self._locals_dict:
                 return None
             return self._locals_dict["result"]
+
+    def get_output(self) -> str:
+        """
+        Return the text room code printed to stdout during this request, as its output capture kept it.
+
+        Contract:
+            - With a capture: the capture's `output` - at most the room's limit, plus one truncation line when text
+              was dropped (GitHub #337, task 2).
+            - Without one (the room's configuration turns capture off): "".
+
+        Returns:
+            str: The printed text for the execution payload's `output` key; "" when nothing was captured.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._output_capture is None:
+                return ""
+            return self._output_capture.output
 ================================================================================
 END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py
-CONTENT SHA256: 7433f5e35916cd13b203dfed9c12f4cef369dc51e664ae5126fbf78c6d7c0222
+CONTENT SHA256: ff63f704f7864ca30860c28db33c0320068a40a718e2e7d18262046e22086010
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
+)
+from melder.nexus.rift.codegen_system.namespace.codegen_output_capture import (
+    CodegenOutputCapture,
 )
 from melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy import (
     CodegenBuiltinsStrategy,
@@ -232250,6 +232518,8 @@ class CodegenNamespaceBuilder(Cleanable):
         Contract:
             - The same mapping `build` places under `__builtins__`: the interpreter's builtins minus
               `denied_builtin_names`, with the D-11 root-checking `__import__` wrapper where an import list applies.
+            - Never captures output: a materialized module's code runs after its request has returned, so its `print`
+              stays the interpreter's whatever the room's `codegen_output_capture` says (GitHub #337, task 2).
             - A fresh dict per call; no room objects are built.
 
         Args:
@@ -232274,11 +232544,19 @@ class CodegenNamespaceBuilder(Cleanable):
         """
         Build one live namespace from config and room/runtime state.
 
+        Contract:
+            - When the owning Rift's configuration has `codegen_output_capture` on (the default), builds one
+              `CodegenOutputCapture` with the configuration's `codegen_output_limit`, installs it as the request's
+              `print` through the builtins strategy and hands it to the returned namespace, which owns and cleans it
+              (GitHub #337, task 2). With capture off, `print` is the interpreter's and the namespace has no capture.
+            - A capture is built after the room-object strategies and, if the builtins strategy or the namespace
+              constructor raises before the namespace owns it, cleaned before the error propagates.
+
         Args:
             configuration:
                 Namespace configuration for the request.
             rift:
-                Owning `Rift`.
+                Owning `Rift`; its configuration decides the output capture.
             space:
                 Owning `CodegenRiftSpace`.
 
@@ -232329,17 +232607,51 @@ class CodegenNamespaceBuilder(Cleanable):
                     space=space,
                 )
             )
-            globals_dict.update(
-                self._builtins_strategy.build_namespace_entries(configuration)
-            )
-            return CodegenNamespace(
-                configuration=configuration,
-                globals_dict=globals_dict,
-                locals_dict={},
-                metadata={
-                    "exposed_names": configuration.exposed_names,
-                },
-            )
+            output_capture = self._build_output_capture(rift)
+            namespace_owns_capture = False
+            try:
+                globals_dict.update(
+                    self._builtins_strategy.build_namespace_entries(
+                        configuration,
+                        output_capture=output_capture,
+                    )
+                )
+                namespace = CodegenNamespace(
+                    configuration=configuration,
+                    globals_dict=globals_dict,
+                    locals_dict={},
+                    metadata={
+                        "exposed_names": configuration.exposed_names,
+                    },
+                    output_capture=output_capture,
+                )
+                namespace_owns_capture = True
+                return namespace
+            finally:
+                # A capture no namespace took ownership of is cleaned here rather than left to the garbage collector.
+                if output_capture is not None and not namespace_owns_capture:
+                    output_capture.cleanup()
+
+    @staticmethod
+    def _build_output_capture(rift: Rift) -> Optional[CodegenOutputCapture]:
+        """
+        Build the request's output capture from the owning Rift's configuration, if it asks for one.
+
+        Contract:
+            - Reads `codegen_output_capture` and `codegen_output_limit` from the Rift's configuration, which is frozen
+              when the Rift is created, so every request of a room gets the same answer (GitHub #337, task 2).
+
+        Args:
+            rift:
+                The owning `Rift`.
+
+        Returns:
+            Optional[CodegenOutputCapture]: A fresh capture when the room captures output; None otherwise.
+        """
+        rift_configuration = rift.configuration
+        if not rift_configuration.codegen_output_capture:
+            return None
+        return CodegenOutputCapture(limit=rift_configuration.codegen_output_limit)
 ================================================================================
 END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py
 ================================================================================
@@ -232749,8 +233061,247 @@ class CodegenNamespaceConfiguration(Cleanable):
 END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py
 ================================================================================
 ================================================================================
+BEGIN FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py
+CONTENT SHA256: f400c6f3c160b7754486cb7e9419d9c2da13ce58d70abf8997646d54c1adb5ad
+SOURCE ENCODING: utf-8
+================================================================================
+import builtins
+import threading
+from typing import Callable, List
+
+from melder.utilities.general_base.cleanable import Cleanable
+
+
+class CodegenOutputCapture(Cleanable):
+    """
+    Internal
+
+    Room-owned `print` for one codegen execution, keeping what room code prints for the execution payload.
+
+    Purpose:
+        Let an agent see what its code printed. A codegen room whose configuration enables output capture
+        (`RiftConfiguration.with_codegen_output_capture`, on by default) puts this object's `capture_print` in place of
+        the interpreter's `print` in the request's builtins, so the text room code prints to stdout is kept here and
+        returned under `execute_codegen`'s `output` key instead of reaching the host process's stdout (GitHub #337,
+        task 2).
+
+    Contract:
+        - `capture_print` takes the builtin's signature - `*values, sep=' ', end='\\n', file=None, flush=False` - and
+          keeps exactly the text the builtin would have written to stdout: each value's `str`, joined by `sep`, ended
+          by `end`, with None meaning the default. A `sep` or `end` that is neither None nor a string raises TypeError
+          with the builtin's message, keeping nothing.
+        - A `file` that is not None goes to the interpreter's `print` with every argument, as before; only stdout text
+          is captured. `flush` has nothing to flush here.
+        - At most `limit` characters are kept: the first ones, in print order. Every later character is counted, and
+          `output` then ends with one line "[output truncated: N more characters not kept]".
+
+    Threading:
+        One `RLock` guards the kept text and both counters, so room code printing from several threads (where its
+        profile allows threads) loses no text below the limit and never interleaves inside one print's text.
+
+    Lifecycle / Cleanup:
+        Built per request by `CodegenNamespaceBuilder.build` and owned by that request's `CodegenNamespace`, which
+        cleans it. `cleanup` is idempotent and drops the kept text; afterwards `capture_print` and `output` raise
+        RuntimeError, so a thread room code left printing after its request ended fails rather than writing anywhere.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `CodegenNamespaceBuilder`; never user-constructed or bound.
+
+    Subsystem Context:
+        Installed by `CodegenBuiltinsStrategy` into the execute path's builtins only; the materialize path
+        (`CodegenNamespaceBuilder.build_builtins`) never captures, because a materialized module's code runs after the
+        request that created it has returned. `CodegenExecutor` reads `output` after `exec` returns or raises and
+        hands it to `CodegenExecutionResult`.
+
+    System Context:
+        A room whose code printed to the host's stdout told its agent nothing: the payload is the agent's only view of
+        what happened. Capturing per request, and bounding what is kept, returns that view without letting code that
+        prints in a loop grow the host's memory.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Room-owned print that keeps room code's output for the execution payload. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
+    """
+
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_limit",
+        "_kept_chunks",
+        "_kept_characters",
+        "_dropped_characters",
+    ]
+
+    def __init__(self, *, limit: int) -> None:
+        """
+        Initialize an empty capture.
+
+        Args:
+            limit:
+                The most characters of printed text this capture keeps; an int of at least 1 (the room's
+                `codegen_output_limit`).
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `limit` is not an int, or is a bool.
+            ValueError:
+                If `limit` is below 1.
+        """
+        super().__init__()
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            raise TypeError("limit must be an int, not {0}.".format(type(limit).__name__))
+        if limit < 1:
+            raise ValueError("limit must be at least 1 character, got {0}.".format(limit))
+        self._lock: threading.RLock = threading.RLock()
+        self._limit: int = limit
+        self._kept_chunks: List[str] = []
+        self._kept_characters: int = 0
+        self._dropped_characters: int = 0
+
+    def cleanup(self) -> None:
+        """
+        Idempotently drop the kept text and end the capture.
+
+        Contract:
+            - Safe to call more than once; later calls return at once.
+            - Afterwards `capture_print` and `output` raise RuntimeError.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            # Re-read the latch under the lock: another thread may have finished cleanup while this one waited.
+            if self.cleaned:
+                return
+            self._cleaned = True
+            self._kept_chunks.clear()
+            del self._kept_chunks
+            del self._limit
+            del self._kept_characters
+            del self._dropped_characters
+        del self._lock
+
+    def capture_print(
+            self,
+            *values: object,
+            sep: object = " ",
+            end: object = "\n",
+            file: object = None,
+            flush: bool = False,
+    ) -> None:
+        """
+        Keep what `print(*values, sep=sep, end=end)` would have written to stdout, up to the limit.
+
+        Args:
+            values:
+                The objects room code prints; each is converted with `str`.
+            sep:
+                The separator between values: a string, or None for a single space.
+            end:
+                The text after the last value: a string, or None for a newline.
+            file:
+                None to capture; any other object receives the text through the interpreter's `print`, as the builtin
+                would write it.
+            flush:
+                Passed to the interpreter's `print` with an explicit `file`; nothing to flush when capturing.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `sep` or `end` is neither None nor a string ("sep must be None or a string, not int"), as the
+                builtin raises.
+            RuntimeError:
+                If the capture has been cleaned (the request that owned it has ended).
+        """
+        self.check_cleaned()
+        if file is not None:
+            # Room code's arguments go to the interpreter's print unchanged; it checks them as it always has.
+            interpreter_print: Callable[..., None] = builtins.print
+            interpreter_print(*values, sep=sep, end=end, file=file, flush=flush)
+            return
+        separator = self._resolve_print_text("sep", sep, " ")
+        ending = self._resolve_print_text("end", end, "\n")
+        text = separator.join([str(value) for value in values]) + ending
+        with self._lock:
+            room_left = self._limit - self._kept_characters
+            if room_left <= 0:
+                self._dropped_characters += len(text)
+                return
+            kept_text = text[:room_left]
+            self._kept_chunks.append(kept_text)
+            self._kept_characters += len(kept_text)
+            self._dropped_characters += len(text) - len(kept_text)
+
+    @property
+    def output(self) -> str:
+        """
+        Return the kept text, with one truncation line when text past the limit was dropped.
+
+        Contract:
+            - Without drops: exactly the kept text, possibly empty.
+            - With drops: the kept text, a newline when it does not already end with one, then
+              "[output truncated: N more characters not kept]\\n", N counting every dropped character.
+
+        Returns:
+            str: The text for the execution payload's `output` key.
+
+        Raises:
+            RuntimeError:
+                If the capture has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            kept_text = "".join(self._kept_chunks)
+            if self._dropped_characters == 0:
+                return kept_text
+            line_break = "" if kept_text.endswith("\n") else "\n"
+            return "{0}{1}[output truncated: {2} more characters not kept]\n".format(
+                kept_text,
+                line_break,
+                self._dropped_characters,
+            )
+
+    @staticmethod
+    def _resolve_print_text(keyword: str, value: object, default: str) -> str:
+        """
+        Resolve one of `print`'s `sep` or `end` arguments the way the builtin does.
+
+        Args:
+            keyword:
+                "sep" or "end", for the error message.
+            value:
+                The argument room code passed.
+            default:
+                The text None stands for.
+
+        Returns:
+            str: `value` when it is a string; `default` when it is None.
+
+        Raises:
+            TypeError:
+                If `value` is neither None nor a string, with the builtin's message.
+        """
+        if value is None:
+            return default
+        if isinstance(value, str):
+            return value
+        raise TypeError(
+            "{0} must be None or a string, not {1}".format(keyword, type(value).__name__)
+        )
+================================================================================
+END FILE: src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py
+================================================================================
+================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py
-CONTENT SHA256: 733828f30f6f76938d65612fb40b5be6d0b8160978475ee073e9c483cb99db57
+CONTENT SHA256: 3d7d17340188237311295ed6677726a957c57cf9489c2b0d24f118840ba0e574
 SOURCE ENCODING: utf-8
 ================================================================================
 import builtins
@@ -232766,6 +233317,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
         CodegenNamespaceConfiguration,
+    )
+    from melder.nexus.rift.codegen_system.namespace.codegen_output_capture import (
+        CodegenOutputCapture,
     )
 
 
@@ -232841,13 +233395,25 @@ class CodegenBuiltinsStrategy(Cleanable):
     def build_namespace_entries(
             self,
             configuration: CodegenNamespaceConfiguration,
+            output_capture: Optional[CodegenOutputCapture] = None,
     ) -> Dict[str, object]:
         """
         Build builtins namespace entries for one request.
 
+        Contract:
+            - The interpreter's builtins minus `denied_builtin_names`, with the D-11 import guard where an import list
+              applies.
+            - With an `output_capture`, `print` is that capture's `capture_print`, so the text room code prints to
+              stdout comes back in the execution payload (GitHub #337, task 2). Only when `print` survives the denied
+              names: a posture that denies `print` keeps it absent.
+            - Without one - the materialize path, or a room whose configuration turns capture off - `print` is the
+              interpreter's.
+
         Args:
             configuration:
                 Namespace configuration for the request.
+            output_capture:
+                The request's capture, owned by its namespace; None to keep the interpreter's `print`.
 
         Returns:
             Dict[str, object]: Builtins namespace entries.
@@ -232864,6 +233430,8 @@ class CodegenBuiltinsStrategy(Cleanable):
             for builtin_name in configuration.denied_builtin_names:
                 builtins_dict.pop(builtin_name, None)
             self._install_import_guard(builtins_dict, configuration)
+            if output_capture is not None and "print" in builtins_dict:
+                builtins_dict["print"] = output_capture.capture_print
             return {
                 "__builtins__": builtins_dict,
             }
@@ -235485,7 +236053,7 @@ END FILE: src/melder/nexus/rift/codegen_system/validation/strategies/codegen_imp
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py
-CONTENT SHA256: 91ab58a6e44eda12edc504d178d32bebb491f7c3df58243e1c33eb7908f755b3
+CONTENT SHA256: 2b301ff1150f93dff54f1da050c4971c2f985c3eacddeadd56974d8b95259923
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -235642,12 +236210,23 @@ class CodegenNameResolutionStrategy(Cleanable):
         """
         Collect names that are assigned locally inside the submitted code.
 
+        Contract:
+            - An `ast.Name` in Store context covers `=`, augmented and annotated assignment, `for` and comprehension
+              targets, `with ... as`, `:=` and `type` alias names.
+            - Python records the other binding statements' names as plain strings on their own nodes, so they are
+              collected from those nodes: `except ... as name` and `except* ... as name` (`ast.ExceptHandler.name`),
+              and the match captures `case name`, `case <pattern> as name` (`ast.MatchAs.name`), `[*name]`
+              (`ast.MatchStar.name`) and `{**name}` (`ast.MatchMapping.rest`) (GitHub #337, task 1).
+            - A wildcard (`case _`, `[*_]`) records `None` and binds nothing, so it adds no name.
+            - Scope-insensitive, like every collector here: a name bound anywhere in the code counts as bound
+              everywhere, and a load outside the binding's scope is left to the runtime NameError.
+
         Args:
             syntax_tree:
                 Parsed AST for the request.
 
         Returns:
-            Set[str]: Names introduced locally through assignment-style nodes.
+            Set[str]: Names introduced locally through assignment-style nodes, exception handlers and match patterns.
         """
         self.check_cleaned()
         with self._lock:
@@ -235655,6 +236234,11 @@ class CodegenNameResolutionStrategy(Cleanable):
             for node in ast.walk(syntax_tree):
                 if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                     assigned_names.add(node.id)
+                elif isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)):
+                    if node.name is not None:
+                        assigned_names.add(node.name)
+                elif isinstance(node, ast.MatchMapping) and node.rest is not None:
+                    assigned_names.add(node.rest)
             return assigned_names
 
     def _collect_locally_declared_names(self, syntax_tree: ast.AST) -> Set[str]:
@@ -235714,14 +236298,21 @@ class CodegenNameResolutionStrategy(Cleanable):
 
     def _collect_local_parameter_names(self, syntax_tree: ast.AST) -> Set[str]:
         """
-        Collect function and lambda parameter names defined locally.
+        Collect function and lambda parameter names and PEP 695 type parameter names defined locally.
+
+        Contract:
+            - `ast.arg` covers every function and lambda parameter, positional-only, keyword-only, `*args` and
+              `**kwargs` included.
+            - The type parameters of a generic function, class or `type` alias (`def f[T]`, `class Box[T]`,
+              `type Row[*Ts] = ...`) are `ast.TypeVar`, `ast.ParamSpec` and `ast.TypeVarTuple` nodes carrying their
+              name as a string; each is collected (GitHub #337, task 1).
 
         Args:
             syntax_tree:
                 Parsed AST for the request.
 
         Returns:
-            Set[str]: Parameter names introduced by local callable scopes.
+            Set[str]: Parameter and type parameter names introduced by local callable, class and alias scopes.
         """
         self.check_cleaned()
         with self._lock:
@@ -235729,6 +236320,8 @@ class CodegenNameResolutionStrategy(Cleanable):
             for node in ast.walk(syntax_tree):
                 if isinstance(node, ast.arg):
                     parameter_names.add(node.arg)
+                elif isinstance(node, (ast.TypeVar, ast.ParamSpec, ast.TypeVarTuple)):
+                    parameter_names.add(node.name)
             return parameter_names
 
     def _collect_allowed_builtin_names(
@@ -237938,7 +238531,7 @@ END FILE: src/melder/nexus/rift/command_system/capability_command_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/command_system/codegen_command_system.py
-CONTENT SHA256: 44c437eeba1e491657a15e31e50c2279bb2b07d3a1b96f365f10787e46bd0b79
+CONTENT SHA256: d1e0c8332fcdba84c5331c4b3c1ea5a8a51590c896b110017eee7da98a8e2955
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -238635,6 +239228,18 @@ class CodegenCommandSystem(CommandSystem):
 
         Contract:
             - Delegates execution into the attached `CodegenSystem`.
+            - Returning a value: assign it to a variable named `result`; the
+              payload carries it under `result` (`result = {'answer': 42}`
+              returns `'result': {'answer': 42}`). A `result` of None, or none
+              assigned, adds no `result` key.
+            - Printed output: by default what the code prints to stdout comes
+              back under `output` (at most the room's
+              `RiftConfiguration.codegen_output_limit`, 65,536 characters
+              unless set, then one "[output truncated: N more characters not
+              kept]" line) and does not reach the host's stdout. A room whose
+              configuration turns `codegen_output_capture` off prints to the
+              host's stdout instead. `print(..., file=x)` writes to `x`
+              (GitHub #337, task 2).
             - Emits one full-source codegen memory record for the completed
               top-level execution action when room memory is enabled.
             - Requires non-empty `code` and `frame_name` to preserve the future
@@ -238642,13 +239247,24 @@ class CodegenCommandSystem(CommandSystem):
 
         Args:
             code:
-                Generated Python source to execute later.
+                Generated Python source to execute.
             frame_name:
-                Target frame whose codegen ACL/namespace policy will later be
-                applied.
+                Target frame whose codegen ACL/namespace policy is applied.
 
         Returns:
-            Dict[str, object]: Public execution payload.
+            Dict[str, object]: The execution payload:
+                - `accepted` (bool): True when the code passed validation and
+                  ran without raising.
+                - `frame_name` (str): The target frame.
+                - `reason` (str, on refusal): `codegen_execution_validation_failed`
+                  or `codegen_execution_runtime_failed`.
+                - `validation_issues` (Tuple[str, ...], when validation refused
+                  the code): why, one message per issue; the code did not run.
+                - `runtime_error` (str, when the code raised): `"<Type>: <message>"`.
+                - `result` (object, when the code assigned `result` a value
+                  other than None).
+                - `output` (str, when the code printed anything): the captured
+                  text, also on a run that raised.
 
         Raises:
             ValueError: If `code` or `frame_name` is empty.

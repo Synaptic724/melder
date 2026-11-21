@@ -1,6 +1,6 @@
 import threading
 from enum import Enum
-from typing import Dict, Optional, Tuple, Type, Union
+from typing import ClassVar, Dict, Optional, Tuple, Type, Union
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
@@ -51,7 +51,9 @@ class RiftConfiguration(Cleanable):
 
     AGENT_PURPOSE:
         access: public. Per-Rift settings, chiefly space_type which fixes the room posture for
-        the Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration().
+        the Rift's life, and for a codegen room whether room code's print output comes back in
+        execute_codegen's payload (codegen_output_capture, codegen_output_limit). Mutable until
+        frozen. Build via Nexus.create_rift_configuration().
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -63,6 +65,9 @@ class RiftConfiguration(Cleanable):
         "available_properties",
     ]
 
+    _DEFAULT_CODEGEN_OUTPUT_LIMIT: ClassVar[int] = 65_536
+    """Default `codegen_output_limit`: the characters of room code's print output one execution keeps."""
+
     def __init__(self) -> None:
         """
         Internal
@@ -72,10 +77,12 @@ class RiftConfiguration(Cleanable):
         Contract:
             - STARTS EMPTY: the property bag holds nothing until seeded, so a bare
               configuration is not yet usable.
-            - The schema is four keys - `space_type` (RiftSpaceType), `space_name`
-              (str or None), `auto_activate_on_program` (bool) and
-              `validation_mode` (RiftValidationMode). `space_name` is the only one
-              that legally accepts None.
+            - The schema is six keys - `space_type` (RiftSpaceType), `space_name`
+              (str or None), `auto_activate_on_program` (bool), `validation_mode`
+              (RiftValidationMode), `codegen_output_capture` (bool) and
+              `codegen_output_limit` (int, at least 1, never a bool). `space_name`
+              is the only one that legally accepts None. The two codegen keys take
+              effect only in a codegen room (GitHub #337).
             - Lifecycle is MUTABLE -> FROZEN -> CONSUMED. Note the third stage is
               CONSUMED, not "activated": a rift configuration is spent by the rift
               that takes it rather than marked live in place.
@@ -106,6 +113,8 @@ class RiftConfiguration(Cleanable):
             "space_name": (str, type(None)),
             "auto_activate_on_program": bool,
             "validation_mode": RiftValidationMode,
+            "codegen_output_capture": bool,
+            "codegen_output_limit": int,
         }
 
     def cleanup(self) -> None:
@@ -178,13 +187,16 @@ class RiftConfiguration(Cleanable):
             - Rejects mutation after freeze().
             - Normalizes enum-backed values before storage.
             - Enforces the declared type contract for every property.
+            - `codegen_output_limit` must also be at least 1 and not a bool (a bool
+              is an int to `isinstance`, so it is refused by name).
 
         Returns:
             None.
 
         Raises:
             RuntimeError: If the configuration is already frozen.
-            ValueError: If the property name is unknown.
+            ValueError: If the property name is unknown, or `codegen_output_limit`
+                is below 1.
             TypeError: If the supplied value does not satisfy the declared type.
         """
         self.check_cleaned()
@@ -204,6 +216,8 @@ class RiftConfiguration(Cleanable):
             raise TypeError(
                 f"Invalid type for property '{key}': expected {expected_names}, got {type(converted_value).__name__}."
             )
+        if key == "codegen_output_limit":
+            self._check_codegen_output_limit(converted_value)
         self._properties[key] = converted_value
 
     def get_property(self, key: str) -> object:
@@ -241,6 +255,54 @@ class RiftConfiguration(Cleanable):
         value = self.get_property("space_type")
         if not isinstance(value, RiftSpaceType):
             raise TypeError("space_type must be a RiftSpaceType.")
+        return value
+
+    @property
+    def codegen_output_capture(self) -> bool:
+        """
+        Return whether a codegen room captures room code's print output into its execution payload.
+
+        Contract:
+            - True: `execute_codegen` swaps room code's `print` for a capture, and the text it would have written
+              to stdout comes back under the payload's `output` key (GitHub #337, task 2).
+            - False: room code's `print` is the interpreter's and writes to the host process's stdout.
+            - Read by the codegen room's namespace builder on every request; fixed for the room's life once the
+              configuration is frozen. A non-codegen room ignores it.
+
+        Returns:
+            bool: The stored capture switch.
+
+        Raises:
+            KeyError: If the property has not been set.
+            RuntimeError: If the configuration has been cleaned.
+            TypeError: If the stored value is not a bool (`set_property` never stores one).
+        """
+        value = self.get_property("codegen_output_capture")
+        if not isinstance(value, bool):
+            raise TypeError("codegen_output_capture must be a bool.")
+        return value
+
+    @property
+    def codegen_output_limit(self) -> int:
+        """
+        Return how many characters of room code's print output one codegen execution keeps.
+
+        Contract:
+            - Applies when `codegen_output_capture` is True: text past the limit is dropped and counted, and the
+              payload's `output` then ends with one line "[output truncated: N more characters not kept]".
+            - At least 1; defaults to 65,536 (`with_defaults()`).
+
+        Returns:
+            int: The stored limit, in characters.
+
+        Raises:
+            KeyError: If the property has not been set.
+            RuntimeError: If the configuration has been cleaned.
+            TypeError: If the stored value is not an int (`set_property` never stores one).
+        """
+        value = self.get_property("codegen_output_limit")
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise TypeError("codegen_output_limit must be an int.")
         return value
 
     def has_property(self, key: str) -> bool:
@@ -282,6 +344,8 @@ class RiftConfiguration(Cleanable):
             - Sets default room type, room naming posture, activation posture,
               validation mode, and room-event configuration defaults used when
               Nexus builds a Rift without overrides.
+            - A codegen room captures room code's print output by default, keeping
+              at most 65,536 characters per execution (GitHub #337, task 2).
             - Does not select or bind any target frames.
 
         Returns:
@@ -293,6 +357,8 @@ class RiftConfiguration(Cleanable):
             "space_name": None,
             "auto_activate_on_program": True,
             "validation_mode": RiftValidationMode.strict,
+            "codegen_output_capture": True,
+            "codegen_output_limit": self._DEFAULT_CODEGEN_OUTPUT_LIMIT,
         }
         for key, value in defaults.items():
             self.set_property(key, value)
@@ -544,6 +610,109 @@ class RiftConfiguration(Cleanable):
         """
         self.set_property("validation_mode", mode)
         return self
+
+    def with_codegen_output_capture(
+            self,
+            enabled: bool = True,
+    ) -> RiftConfiguration:
+        """
+        Fluent
+
+        Set whether a codegen room captures room code's print output into its execution payload.
+
+        Args:
+            enabled:
+                True to return what room code prints under `execute_codegen`'s `output` key; False to let it write
+                to the host process's stdout.
+
+        Contract:
+            - Defaults to True (`with_defaults()`); takes effect only in a codegen room, on every
+              `execute_codegen` request. `validate_codegen`, `research_preview` and `materialize_codegen` print
+              nothing into a payload, and a materialized module keeps the interpreter's `print`.
+            - `print(..., file=x)` with an explicit file always writes to `x`.
+            - MUTATES THIS OBJECT and returns `self`; refused once frozen, so the setting holds for the room's life.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned, frozen or consumed.
+            TypeError: If `enabled` is not a bool.
+
+        Returns:
+            RiftConfiguration: This configuration instance.
+        """
+        self.set_property("codegen_output_capture", enabled)
+        return self
+
+    def with_codegen_output_limit(
+            self,
+            characters: int,
+    ) -> RiftConfiguration:
+        """
+        Fluent
+
+        Set how many characters of room code's print output one codegen execution keeps.
+
+        Args:
+            characters:
+                The most characters `output` holds; at least 1. Defaults to 65,536 (`with_defaults()`).
+
+        Contract:
+            - Applies while `codegen_output_capture` is on. Text past the limit is dropped and counted, and `output`
+              ends with one line "[output truncated: N more characters not kept]".
+            - MUTATES THIS OBJECT and returns `self`; refused once frozen, so the limit holds for the room's life.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned, frozen or consumed.
+            TypeError: If `characters` is not an int, or is a bool.
+            ValueError: If `characters` is below 1.
+
+        Returns:
+            RiftConfiguration: This configuration instance.
+        """
+        self.set_property("codegen_output_limit", characters)
+        return self
+
+    @staticmethod
+    def _check_codegen_output_limit(value: object) -> None:
+        """
+        Internal
+
+        Refuse a `codegen_output_limit` the type check alone would let through.
+
+        Contract:
+            - `isinstance(True, int)` holds, so a bool passes the declared `int` type; it is refused here.
+            - A limit below 1 would keep nothing and is refused.
+
+        Args:
+            value:
+                The candidate limit, already type-checked as an int.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: If `value` is a bool.
+            ValueError: If `value` is below 1.
+        """
+        if isinstance(value, bool):
+            raise TypeError(
+                "Invalid type for property 'codegen_output_limit': expected int, got bool."
+            )
+        if isinstance(value, int) and value < 1:
+            raise ValueError(
+                "codegen_output_limit must be at least 1 character, got {0}.".format(value)
+            )
 
     def _convert_enum_if_needed(self, key: str, value: object) -> object:
         """

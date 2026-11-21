@@ -18,6 +18,12 @@ class HybridCodegenProfileStrategy:
         open `permissive` posture. It allows core query/link/invoke/read
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
+        As with `safe`, only the capability rules bind room code (imports
+        through the allowlist, denied builtins, reflection, dunder access,
+        recursive codegen); the frame, conduit and spell rules compile into
+        the frame's published `allowed_commands`, which no room command checks,
+        and room code holding a live object can call any of its methods
+        (GitHub #338).
         Files: `open` is a denied builtin (the safe tuple), and `io`, `os`
         and `pathlib` are not on the import allowlist - they are
         permissive-only roots - so those routes are refused at validation.

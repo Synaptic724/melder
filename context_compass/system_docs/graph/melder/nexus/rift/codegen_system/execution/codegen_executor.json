@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
- "source_sha256": "844ee03b1792dd62a4fe71e695701a2e63e5dcff2af22d476f0a9e49aeb4bce8",
+ "source_sha256": "1acffaf7b3a3efc83be7a72b453a311aaba0ce4776fabba26e21bca881a76c20",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.execution.codegen_executor": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "Owner of governed code execution for one codegen request.",
-   "semantics_authored_against": "a37f76730b269c329ddd5f26f3d502602ee31a8aba62f15f515a79c9c49c1ffd"
+   "semantics_authored_against": ""
   },
   "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor": {
    "id": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
@@ -33,17 +33,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "97bedeb2e6c9b0c2d7c7b0c212913fa41d9e1614dd26b93f0c53eed5fb54763b",
+   "span_sha256": "50469eae979e5052acd435dd1ce6e92af9806f318e0391df1fc8ea93077a7fa1",
    "role": "Owner of governed code execution for one codegen request.",
    "responsibilities": [
     "executes compiled code against the built namespace",
-    "returns execution-layer result objects for the request"
+    "returns execution-layer result objects for the request",
+    "puts the namespace's captured output on the execution result after exec returns or raises (GitHub #337, 0.2.8312)"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "97bedeb2e6c9b0c2d7c7b0c212913fa41d9e1614dd26b93f0c53eed5fb54763b"
+   "semantics_authored_against": "50469eae979e5052acd435dd1ce6e92af9806f318e0391df1fc8ea93077a7fa1"
   }
  },
  "edges_out": [

@@ -84,6 +84,11 @@ class CodegenExecutor(Cleanable):
         """
         Execute one compiled code object against the transaction namespace.
 
+        Contract:
+            - After `exec` returns, the result carries the namespace's `result` value and the text room code printed
+              (`CodegenNamespace.get_output()`); after `exec` raises, the runtime error and the text printed before it
+              (GitHub #337, task 2).
+
         Args:
             compiled_code:
                 Compiled Python code object produced by `CodegenCompiler`.
@@ -119,9 +124,11 @@ class CodegenExecutor(Cleanable):
                         exc,
                     ),
                     transaction_id=transaction_context.transaction_id,
+                    output=namespace.get_output(),
                 )
             return CodegenExecutionResult.executed(
                 frame_name=transaction_context.frame_name,
                 result=namespace.get_result(),
                 transaction_id=transaction_context.transaction_id,
+                output=namespace.get_output(),
             )

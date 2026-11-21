@@ -17,10 +17,12 @@ class CodegenExecutionResult(Cleanable):
 
     Contract:
         - Carries acceptance state, target frame name, optional reason,
-          optional validation issues, optional runtime error, and optional
-          `result` payload.
-        - Serializes to the current public payload shape expected by the room
-          placeholder tests.
+          optional validation issues, optional runtime error, optional
+          `result` payload, and the text room code printed (`output`, "" when
+          nothing was captured; GitHub #337, task 2).
+        - Serializes to the public payload `execute_codegen` returns: `accepted`
+          and `frame_name` always; `reason`, `validation_issues`,
+          `runtime_error`, `result` and `output` only when present.
 
     Registration:
         MELDER KERNEL - guarded. Produced by `CodegenExecutor`.
@@ -55,6 +57,7 @@ class CodegenExecutionResult(Cleanable):
         "_runtime_error",
         "_result",
         "_transaction_id",
+        "_output",
     ]
 
     def __init__(
@@ -67,6 +70,7 @@ class CodegenExecutionResult(Cleanable):
             runtime_error: Optional[str] = None,
             result: Optional[object] = None,
             transaction_id: Optional[str] = None,
+            output: str = "",
     ) -> None:
         """
         Initialize one execution result.
@@ -87,6 +91,9 @@ class CodegenExecutionResult(Cleanable):
                 Optional final `result` value from execution.
             transaction_id:
                 Optional internal transaction id.
+            output:
+                The text room code printed during execution, as the room's output capture kept it; "" when nothing
+                was printed or the room does not capture output.
 
         Returns:
             None.
@@ -108,6 +115,7 @@ class CodegenExecutionResult(Cleanable):
         self._runtime_error: Optional[str] = runtime_error
         self._result: Optional[object] = result
         self._transaction_id: Optional[str] = transaction_id
+        self._output: str = output
 
     def cleanup(self) -> None:
         """
@@ -130,6 +138,7 @@ class CodegenExecutionResult(Cleanable):
             del self._runtime_error
             del self._result
             del self._transaction_id
+            del self._output
         del self._lock
 
     @classmethod
@@ -195,6 +204,7 @@ class CodegenExecutionResult(Cleanable):
             frame_name: str,
             runtime_error: str,
             transaction_id: Optional[str] = None,
+            output: str = "",
     ) -> "CodegenExecutionResult":
         """
         Build an execution result representing runtime failure.
@@ -206,6 +216,8 @@ class CodegenExecutionResult(Cleanable):
                 Runtime error summary.
             transaction_id:
                 Optional internal transaction id.
+            output:
+                The text room code printed before it raised; "" when none.
 
         Returns:
             CodegenExecutionResult: Rejected runtime-failure result.
@@ -216,6 +228,7 @@ class CodegenExecutionResult(Cleanable):
             reason="codegen_execution_runtime_failed",
             runtime_error=runtime_error,
             transaction_id=transaction_id,
+            output=output,
         )
 
     @classmethod
@@ -225,6 +238,7 @@ class CodegenExecutionResult(Cleanable):
             frame_name: str,
             result: Optional[object],
             transaction_id: Optional[str] = None,
+            output: str = "",
     ) -> "CodegenExecutionResult":
         """
         Build an execution result for one successful codegen execution.
@@ -236,6 +250,8 @@ class CodegenExecutionResult(Cleanable):
                 Optional final `result` value from the namespace.
             transaction_id:
                 Optional internal transaction id.
+            output:
+                The text room code printed; "" when none.
 
         Returns:
             CodegenExecutionResult: Successful execution result.
@@ -245,6 +261,7 @@ class CodegenExecutionResult(Cleanable):
             frame_name=frame_name,
             result=result,
             transaction_id=transaction_id,
+            output=output,
         )
 
     @property
@@ -331,9 +348,27 @@ class CodegenExecutionResult(Cleanable):
         with self._lock:
             return self._transaction_id
 
+    @property
+    def output(self) -> str:
+        """
+        Return the text room code printed during execution.
+
+        Returns:
+            str: The captured text, with one truncation line when the room's limit dropped some; "" when nothing was
+            printed or the room does not capture output.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._output
+
     def to_payload(self) -> Dict[str, object]:
         """
         Serialize this result to the current public execution payload shape.
+
+        Contract:
+            - `accepted` and `frame_name` always; `reason`, `validation_issues`, `runtime_error` and `result` when
+              present (`result` when the code assigned it a value other than None); `output` when room code printed
+              anything (GitHub #337, task 2).
 
         Returns:
             Dict[str, object]: Public execution payload.
@@ -352,4 +387,6 @@ class CodegenExecutionResult(Cleanable):
                 payload["runtime_error"] = self._runtime_error
             if self._result is not None:
                 payload["result"] = self._result
+            if self._output:
+                payload["output"] = self._output
             return payload
