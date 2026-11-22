@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
- "source_sha256": "1acffaf7b3a3efc83be7a72b453a311aaba0ce4776fabba26e21bca881a76c20",
+ "source_sha256": "16daf3783f6cfa3e3ea169ea4164525f1e87aaa6e16e90df9abf61fba7b4a160",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.execution.codegen_executor": {
@@ -19,7 +19,7 @@
    "label": "CodegenExecutor",
    "kind": "class",
    "file": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
-   "lineno": 16,
+   "lineno": 19,
    "bases": [
     "Cleanable"
    ],
@@ -29,22 +29,24 @@
     "execute"
    ],
    "shape": {
-    "method_count": 2,
+    "method_count": 4,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "50469eae979e5052acd435dd1ce6e92af9806f318e0391df1fc8ea93077a7fa1",
+   "span_sha256": "7922098d8ec53d0e5eccc3abddfd43c2fef191c20e651efaf2942e922f0fb1d0",
    "role": "Owner of governed code execution for one codegen request.",
    "responsibilities": [
     "executes compiled code against the built namespace",
     "returns execution-layer result objects for the request",
-    "puts the namespace's captured output on the execution result after exec returns or raises (GitHub #337, 0.2.8312)"
+    "puts the namespace's captured output on the execution result after exec returns or raises (GitHub #337, 0.2.8312)",
+    "on a runtime failure walks the traceback to its innermost room-code frame for its line and run (GitHub #339)",
+    "quotes that line, stripped, from the room's kept run sources when the run's source is kept and has the line"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "50469eae979e5052acd435dd1ce6e92af9806f318e0391df1fc8ea93077a7fa1"
+   "semantics_authored_against": "7922098d8ec53d0e5eccc3abddfd43c2fef191c20e651efaf2942e922f0fb1d0"
   }
  },
  "edges_out": [
@@ -79,7 +81,11 @@
  "imports": {
   "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
   "CodeType": "types.CodeType",
+  "CodegenCompiler": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
   "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
@@ -100,6 +106,17 @@
     "runtime"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+   "to": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
+   "relation": "uses",
+   "why": "It reads each traceback entry's run id through CodegenCompiler.run_id_from_filename.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

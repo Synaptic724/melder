@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
- "source_sha256": "4ede07a12f02546dc1f2eec2ccd9bdea2232b3a554ea532c89bd18406509be20",
+ "source_sha256": "7468cd147356e5770a93c52d35a4a6fbe9b711d0f528986d61def5250fcc42dc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.codegen_system": {
@@ -40,7 +40,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b000227f0f7c1e725994ee4af318895556a29c978bd75336a5b6ad7332a507c5",
+   "span_sha256": "55327986809ca47021f05fae24488fd2e80235b609651989e8daa68b8a41f31f",
    "role": "Room-owned internal codegen engine.",
    "responsibilities": [
     "builds per-call transaction contexts",
@@ -49,7 +49,9 @@
     "delegates compile and execute stages for accepted requests",
     "runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)",
     "reads `static_only_denied_builtin_names` off the projection's compiled surface into the namespace configuration, empty for the no-projection default, so the codegen import gate reaches every built namespace (D-11, 0.2.8271)",
-    "returns the room's filtered builtins mapping for an accepted materialize (build_materialize_builtins), the mapping execute_codegen gives room code, so a materialized module reaches what the room reaches (D-20, 0.2.8272)"
+    "returns the room's filtered builtins mapping for an accepted materialize (build_materialize_builtins), the mapping execute_codegen gives room code, so a materialized module reaches what the room reaches (D-20, 0.2.8272)",
+    "keeps each validation-accepted run's source by transaction id in _run_sources until cleanup (GitHub #339)",
+    "hands the kept run sources to CodegenExecutor.execute so a runtime failure can quote its room-code line"
    ],
    "owns_state": [
     "_rift",
@@ -59,14 +61,15 @@
     "_namespace_builder",
     "_compiler",
     "_executor",
-    "_monitor"
+    "_monitor",
+    "_run_sources"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "b000227f0f7c1e725994ee4af318895556a29c978bd75336a5b6ad7332a507c5"
+   "semantics_authored_against": "55327986809ca47021f05fae24488fd2e80235b609651989e8daa68b8a41f31f"
   }
  },
  "edges_out": [

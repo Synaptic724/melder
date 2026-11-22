@@ -29,22 +29,44 @@ contracts. Inspect the returned payload before treating a call as completed work
 
 ## What `execute_codegen` returns
 
-The payload always carries `accepted` and `frame_name`. To return a value, assign it
-to a variable named `result`; the payload carries it under `result` unless it is
-`None`. What the code prints comes back under `output`, also when the code raises:
+The payload always carries `accepted`, `frame_name` and `run_id`, the id of this run.
+`frame_name` is optional on `validate_codegen`, `execute_codegen` and
+`materialize_codegen`: left out, it is the room's only assigned frame, and a room
+without exactly one raises `ValueError` ("Rift has no default runtime frame."). To
+return a value, assign it to a variable named `result`; the payload carries it under
+`result` unless it is `None`. What the code prints comes back under `output`, also
+when the code raises:
 
 ```python
-payload = command.execute_codegen("print('rows:', 3)\nresult = {'answer': 42}\n", frame_name="ops")
-# {'accepted': True, 'frame_name': 'ops', 'result': {'answer': 42}, 'output': 'rows: 3\n'}
+payload = command.execute_codegen("print('rows:', 3)\nresult = {'answer': 42}\n")
+# {'accepted': True, 'frame_name': 'ops', 'run_id': '...', 'result': {'answer': 42}, 'output': 'rows: 3\n'}
 ```
 
 A refusal adds `reason` and `validation_issues` (the code did not run); a run that
-raised adds `reason` and `runtime_error` (`"ValueError: ..."`). Printed text is
-captured per room: `RiftConfiguration.with_codegen_output_capture(False)` sends room
+raised adds `reason` and `runtime_error` (`"ValueError: ..."`) and says where room code
+failed: `runtime_error_line` is the line, `runtime_error_run_id` the run whose code
+holds it, and `runtime_error_line_text` that line's text:
+
+```python
+payload = command.execute_codegen("x = 1\nassert x == 2\n")
+# payload["runtime_error"] == "AssertionError: ", payload["runtime_error_line"] == 2,
+# payload["runtime_error_line_text"] == "assert x == 2", payload["runtime_error_run_id"] == payload["run_id"]
+```
+
+The location is the last room-code line in the error's traceback: a failure inside a
+function an earlier run defined names that run and its line, and a failure inside
+Melder or library code names the room line that called it. Printed text is captured
+per room: `RiftConfiguration.with_codegen_output_capture(False)` sends room
 code's `print` to the host process's stdout instead, and
 `with_codegen_output_limit(characters)` sets how much one execution keeps (65,536
 characters by default, then a single "[output truncated: N more characters not kept]"
 line). `print(..., file=x)` always writes to `x`.
+
+Each run starts from a fresh namespace, so a name one run defines is gone when the run
+ends. Keep what a later run needs on the room's workstation, which room code reaches as
+`workstation`: `workstation.bind_object("rows", rows)` in one run and
+`workstation.get("rows")` in a later one. A function kept this way works in later runs,
+and a failure inside it names the run that defined it.
 
 ## What a codegen profile limits
 

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
- "source_sha256": "ee7ff153bf46bb5f69cfc5b228b7c652f81ba3e2e1833b99732c7171b4462ac4",
+ "source_sha256": "42f3c559a30fc70b59adfd80013aa9ffda868757e6b7a8fd5080d3ece66ef3da",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._agent_documentation.manifest.agent_documentation_manifest": {

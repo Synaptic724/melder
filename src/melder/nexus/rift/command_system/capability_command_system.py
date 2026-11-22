@@ -1208,6 +1208,14 @@ class CapabilityCommandSystem(CommandSystem):
         """
         Return the tip identity of every open research lane.
 
+        Contract:
+            - Each tip is the newest version recorded on its lane - the last one
+              registered there - not the version the spell's SpellIndex has
+              active. After a notch back to an older version, the tip still
+              names the newer one; `research_residency(spell_id)` says which
+              version is active (GitHub #339).
+            - Open lanes only; an open lane with no node yet maps to None.
+
         Returns:
             object: lane name -> tip spell id mapping (detached).
         """
@@ -1663,19 +1671,40 @@ class CapabilityCommandSystem(CommandSystem):
             return self._require_live_mutation_research(
             ).recent_activity_view(limit=limit)
 
+    def _list_supported_command_methods_tuple(self) -> Tuple[str, ...]:
+        """
+        Return the capability room's command list without any gate or
+        room-policy filtering.
+
+        Contract:
+            - The shared command names, then the capability-owned method names,
+              then the two help commands `describe_commands` and
+              `describe_command` (GitHub #339), in stable presentation order.
+            - The single source of truth for this room's list:
+              `list_supported_command_methods()` returns it inside its gate and
+              `run_command` dispatches only these names.
+
+        Returns:
+            Tuple[str, ...]: The capability room's command-method names.
+        """
+        return (
+            self._SHARED_COMMAND_METHOD_NAMES
+            + self._CAPABILITY_COMMAND_METHOD_NAMES
+            + self._HELP_COMMAND_METHOD_NAMES
+        )
+
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """
         Return the public command methods supported by capability rooms.
 
         Returns:
             Tuple[str, ...]: Shared command names plus capability-owned method
-            names in stable presentation order.
+            names, then the two help commands, in stable presentation order
+            (`_list_supported_command_methods_tuple()`).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="list_supported_command_methods",
                 frame_name=None,
         ):
-            return self._list_supported_command_methods_tuple() + (
-                self._CAPABILITY_COMMAND_METHOD_NAMES
-            )
+            return self._list_supported_command_methods_tuple()

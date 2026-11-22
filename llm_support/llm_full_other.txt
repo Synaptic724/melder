@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 03a82ae03e68197b67f77765197c0da1314b143abb5df9741c9aebafb43f078d
+SOURCE FINGERPRINT: 2dd0120e69615800abb3a062fa588841ffe69c006b53e8dc7efc8efe1d3a49f7
 FILE COUNT: 421
 
 ================================================================================
@@ -72709,7 +72709,7 @@ END FILE: docs/examples/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/agent-rooms.md
-CONTENT SHA256: 6693e0374099c2c6145745d23f1471a82be716caafaa7f4e8782ad1144861faf
+CONTENT SHA256: 2f9f920c8c46d5db8f36b36ac64f438f0d0127205301f81fffc6ff5153defcd6
 SOURCE ENCODING: utf-8
 ================================================================================
 # Give each agent an explicit room and target
@@ -72727,6 +72727,52 @@ workstation, command surface, and optional codegen machinery.
 Ask `list_supported_command_methods()` for the commands the actual room exposes.
 A method may also require an active subsystem. Availability and authority are
 different: activating research does not add its authoring commands to a capability room.
+
+## Learn and run commands by name
+
+Every room also describes and runs its own commands, read from their signatures and
+docstrings. `describe_commands()` lists each command in
+`list_supported_command_methods()` with its signature and the first line of its
+docstring; `describe_command(name)` gives one command's arguments (`name`, `type`,
+`required`, and `default` when it has one) and its full docstring. Both are in every
+room's command list, at its end.
+
+`run_command(name, arguments)` runs a listed command with keyword arguments and returns
+exactly what the command returns. A call it cannot make comes back as a refusal
+instead of an exception:
+
+```python
+link_help = commands.describe_command("link_frame")
+assert link_help["signature"] == "link_frame(frame_name: str) -> None"
+
+refusal = commands.run_command("link_frame", {})
+assert refusal["accepted"] is False
+assert refusal["reason"] == "command_arguments_invalid"
+assert refusal["missing_arguments"] == ("frame_name",)
+assert commands.run_command("cleanup", {})["reason"] == "command_not_supported"
+```
+
+The refusal's `message` names the command, the problem and how to call it. An
+argument no parameter takes is listed under `unknown_arguments`, and a name outside the
+list is answered with `supported_commands`. Argument values are not checked, whatever
+the command raises reaches the caller unchanged, and `arguments` that is not a mapping
+of names raises `TypeError`. `run_command` adds no authority: it runs only listed
+commands, each through its own checks.
+
+`tool_definitions()` returns one `name`, `description` and `input_schema` per listed
+command. The description is the docstring's text before its `Args:`, `Returns:`,
+`Raises:` or `Yields:` section, and the input schema is a JSON Schema object built from
+the signature, whose `required` names the arguments `run_command` requires:
+
+```python
+tools = commands.tool_definitions()
+link_tool = next(tool for tool in tools if tool["name"] == "link_frame")
+assert link_tool["input_schema"]["required"] == ["frame_name"]
+```
+
+A harness offers these to a model as its tools and passes each tool call to
+`run_command(name, arguments)`. The answer can be a live object, such as a conduit;
+how to show it to the model is the harness's choice.
 
 ## Attach with both sides configured
 
@@ -72876,7 +72922,7 @@ END FILE: docs/expert/bind-hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/codegen.md
-CONTENT SHA256: ea5075d33a996975eb659e1abe157dd030872a83be0d2eb3d5cc59f5549bdb49
+CONTENT SHA256: 663821d23002749a7a28fb08dfd984bde2aea8246ac52c20c8742d02b11ab15c
 SOURCE ENCODING: utf-8
 ================================================================================
 ---
@@ -72910,22 +72956,44 @@ contracts. Inspect the returned payload before treating a call as completed work
 
 ## What `execute_codegen` returns
 
-The payload always carries `accepted` and `frame_name`. To return a value, assign it
-to a variable named `result`; the payload carries it under `result` unless it is
-`None`. What the code prints comes back under `output`, also when the code raises:
+The payload always carries `accepted`, `frame_name` and `run_id`, the id of this run.
+`frame_name` is optional on `validate_codegen`, `execute_codegen` and
+`materialize_codegen`: left out, it is the room's only assigned frame, and a room
+without exactly one raises `ValueError` ("Rift has no default runtime frame."). To
+return a value, assign it to a variable named `result`; the payload carries it under
+`result` unless it is `None`. What the code prints comes back under `output`, also
+when the code raises:
 
 ```python
-payload = command.execute_codegen("print('rows:', 3)\nresult = {'answer': 42}\n", frame_name="ops")
-# {'accepted': True, 'frame_name': 'ops', 'result': {'answer': 42}, 'output': 'rows: 3\n'}
+payload = command.execute_codegen("print('rows:', 3)\nresult = {'answer': 42}\n")
+# {'accepted': True, 'frame_name': 'ops', 'run_id': '...', 'result': {'answer': 42}, 'output': 'rows: 3\n'}
 ```
 
 A refusal adds `reason` and `validation_issues` (the code did not run); a run that
-raised adds `reason` and `runtime_error` (`"ValueError: ..."`). Printed text is
-captured per room: `RiftConfiguration.with_codegen_output_capture(False)` sends room
+raised adds `reason` and `runtime_error` (`"ValueError: ..."`) and says where room code
+failed: `runtime_error_line` is the line, `runtime_error_run_id` the run whose code
+holds it, and `runtime_error_line_text` that line's text:
+
+```python
+payload = command.execute_codegen("x = 1\nassert x == 2\n")
+# payload["runtime_error"] == "AssertionError: ", payload["runtime_error_line"] == 2,
+# payload["runtime_error_line_text"] == "assert x == 2", payload["runtime_error_run_id"] == payload["run_id"]
+```
+
+The location is the last room-code line in the error's traceback: a failure inside a
+function an earlier run defined names that run and its line, and a failure inside
+Melder or library code names the room line that called it. Printed text is captured
+per room: `RiftConfiguration.with_codegen_output_capture(False)` sends room
 code's `print` to the host process's stdout instead, and
 `with_codegen_output_limit(characters)` sets how much one execution keeps (65,536
 characters by default, then a single "[output truncated: N more characters not kept]"
 line). `print(..., file=x)` always writes to `x`.
+
+Each run starts from a fresh namespace, so a name one run defines is gone when the run
+ends. Keep what a later run needs on the room's workstation, which room code reaches as
+`workstation`: `workstation.bind_object("rows", rows)` in one run and
+`workstation.get("rows")` in a later one. A function kept this way works in later runs,
+and a failure inside it names the run that defined it.
 
 ## What a codegen profile limits
 
@@ -81619,10 +81687,10 @@ END FILE: release_docs/0.2.8310.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 22750295fa90c46a25a2e93fb8e28b59bba92cddada7ae9539043a631341eb68
+CONTENT SHA256: 8cb091cb311dedd82939481dd1502a7cae76dbf1fb279268156ab97a44b0f82b
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8313
+# Melder 0.2.8315
 
 **Unreleased**
 
@@ -81658,6 +81726,59 @@ issue #337).
 **Breaking change:** in a codegen room, room code's `print` no longer reaches the host process's stdout by default.
 To keep the old behaviour, create the room from a configuration with `.with_codegen_output_capture(False)`.
 
+## A room's commands can be listed, explained and run by name
+
+A room offered its commands as methods and their names through `list_supported_command_methods()`, and nothing more.
+A caller that ran them by name - as an agent's tool layer does - used `getattr(room, name)(**arguments)`: a missing
+argument raised Python's `TypeError` in the caller, and any attribute of the room, `cleanup` included, was reachable
+(GitHub issue #339). Every room - static, capability and codegen - now answers four more calls, all read from its
+commands' own signatures and docstrings, so they cannot drift from the code:
+
+- `describe_commands()`: each command with its signature and the first line of its docstring.
+- `describe_command(name)`: one command's arguments (name, type, required, default) and its whole docstring.
+- `run_command(name, arguments)`: runs a command of the room's list with keyword arguments and returns exactly what
+  the command returns. A name outside the list, or arguments that do not fit the command's signature, are answered
+  instead of raised; what the command itself raises still propagates.
+- `tool_definitions()`: one `{name, description, input_schema}` per command, ready to offer each command as its own
+  tool. The description is the docstring's text before `Args:`, each argument is described by its `Args:` entry,
+  and the JSON Schema comes from the signature.
+
+```python
+command.run_command("validate_codegen", {})
+# {'accepted': False, 'command': 'validate_codegen', 'reason': 'command_arguments_invalid',
+#  'message': "Command 'validate_codegen' cannot run with these arguments: missing required argument 'code'.
+#              Call it as validate_codegen(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object].",
+#  'missing_arguments': ('code',), 'unknown_arguments': ()}
+```
+
+`describe_commands` and `describe_command` are appended to every room's `list_supported_command_methods()`;
+`run_command` and `tool_definitions` serve the caller and are not in it. A command run by name passes the same checks,
+locks and hooks as a direct call. `validate_codegen`, `execute_codegen` and `materialize_codegen` no longer require
+`frame_name`: when it is omitted they use the room's only assigned frame, as the room's other commands already did,
+and a room assigned no frame or several raises the existing "Rift has no default runtime frame." `ValueError`.
+
+## `execute_codegen` says where room code failed
+
+A runtime failure reported only its type and message, so a failing bare `assert` came back as `"AssertionError: "`
+with no line (GitHub issue #339). Every execute payload now carries `run_id`, the id of that run. A run that raised
+also carries `runtime_error_line`, `runtime_error_run_id` and `runtime_error_line_text`: the innermost line of room
+code on the failing path, the run whose code it is, and that line's text.
+
+```python
+command.execute_codegen("x = 1\nassert x == 2\n")
+# {'accepted': False, 'frame_name': 'ops', 'run_id': '...', 'reason': 'codegen_execution_runtime_failed',
+#  'runtime_error': 'AssertionError: ', 'runtime_error_line': 2, 'runtime_error_run_id': '...',
+#  'runtime_error_line_text': 'assert x == 2'}
+```
+
+A failure inside a function an earlier run left on the room's workstation names that earlier run and the line of its
+code; a failure inside melder or library code names the room line that called it. To quote such lines, a codegen room
+keeps the source of every run that passed validation until the room is removed. `runtime_error` itself is unchanged.
+`execute_codegen`'s docstring now says that each run starts from a fresh namespace and that state kept between runs
+goes on the workstation (`workstation.bind_object(name, obj)`, then `workstation.get(name)`), and `research_heads`
+says that each lane's tip is the newest version recorded there, not the active one: after a notch back,
+`research_residency(spell_id)` names the active version.
+
 ## Packaging and documentation
 
 The codegen profile docstrings and `docs/expert/codegen.md` now state what a profile enforces on room code: its
@@ -81665,16 +81786,20 @@ capability rules - imports, the denied builtins, reflection, dunder access and n
 spell rules, among them `safe`'s denial of linking, lesser conduits, transfers, spell creation, method calls and
 attribute writes, are published to agents as the frame's `allowed_commands` but are not yet enforced on room code,
 which can call any method of a live object it holds, such as the conduit `command.get_conduit_by_name` returns (GitHub
-issue #338). The same page now lists what `execute_codegen` returns and the room settings above.
+issue #338). The same page now lists what `execute_codegen` returns and the room settings above, including `run_id`,
+the failure location and keeping state between runs on the workstation, and `docs/expert/agent-rooms.md` gains a
+section on learning and running a room's commands by name (GitHub issue #339).
 
-The new kernel class `CodegenOutputCapture` (`melder.nexus.rift.codegen_system.namespace.codegen_output_capture`) is
-room code's `print` in a capturing room. The internal-bind guard manifest holds 636 entries (635 at 0.2.8310):
-`CodegenOutputCapture` cannot be bound. The docstrings of `RiftConfiguration`, `CodegenNameResolutionStrategy`,
-`CodegenNamespaceBuilder`, `CodegenBuiltinsStrategy`, `CodegenNamespace`, `CodegenExecutor`, `CodegenExecutionResult`
-and `CodegenCommandSystem.execute_codegen` describe the change; the source and test maps, their indexes and the source
-graph describe it.
+Two new kernel classes: `CodegenOutputCapture` (`melder.nexus.rift.codegen_system.namespace.codegen_output_capture`)
+is room code's `print` in a capturing room, and `CommandCatalog` (`melder.nexus.rift.command_system.command_catalog`)
+reads a room command's signature and docstring for the command line. The internal-bind guard manifest holds 637
+entries (635 at 0.2.8310): neither class can be bound. The docstrings of `RiftConfiguration`,
+`CodegenNameResolutionStrategy`, `CodegenNamespaceBuilder`, `CodegenBuiltinsStrategy`, `CodegenNamespace`,
+`CodegenSystem`, `CodegenCompiler`, `CodegenExecutor`, `CodegenExecutionResult`, `CommandSystem` and its static,
+capability and codegen rooms describe the changes; the source and test maps, their indexes and the source graph
+describe them.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8313.
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8315.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

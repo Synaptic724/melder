@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 14102
-CONTENT_SHA256 = '7bfabe5513587d3ff42081501ba0f38dd94728176b0d000a96cd6d759e465374'
+LINE_COUNT = 14221
+CONTENT_SHA256 = '81e17d31138e57d5c446f9e228375185ceb9139b748bad8b46849e3922ab856f'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -252,10 +252,10 @@ Each item must include:
     the window stays for the untagged `_create_frame_link`, through which the residual's regression now drives the
     attach, and for a teardown that does not wait. Evidence: `src/melder/nexus/rift/rift.py:617-776`, `:360-390`;
     `src/melder/nexus/nexus.py:1437-1461`, `:3744-3802`, `:3819-3859` (the ref counts);
-    `src/melder/nexus/rift/command_system/command_system.py:1153-1169` (remapped 2026-11-09 at 0.2.8301; they read
-    rift.py 559-678 and 341-371, nexus.py 1306-1330, 3499-3557 and 3574-3614, and command_system.py 1148-1164 at
-    0.2.8292, and rift.py 456-572, nexus.py 1288-1308, 3477-3535 and 3552-3592, and command_system.py 1121-1137
-    before).
+    `src/melder/nexus/rift/command_system/command_system.py:1178-1194` (remapped 2026-11-09 at 0.2.8301, and
+    command_system.py again 2026-11-22 at 0.2.8315, when it read 1153-1169; they read rift.py 559-678 and 341-371,
+    nexus.py 1306-1330, 3499-3557 and 3574-3614, and command_system.py 1148-1164 at 0.2.8292, and rift.py 456-572,
+    nexus.py 1288-1308, 3477-3535 and 3552-3592, and command_system.py 1121-1137 before).
   - R5, FIXED in 0.2.8289 (found in #274's investigation): `Rift._apply_projection_sets` checked `_cleaned` before
     its lock, so a refresh that `Nexus.remove_rift` overtook after Nexus built its projection sets raised the
     cleaned error with those sets uncleaned, and one waiting on the lock raised AttributeError on the deleted
@@ -275,10 +275,11 @@ Each item must include:
     runs the script. Agents sharing a room waited on each other's code, and agent code that waited on another
     agent's call in the room froze. Now each resolves what it needs under the lock and runs the agent code after
     releasing it (Component: RiftSpace Workstation And Command Surface). Evidence (remapped 2026-11-09 at 0.2.8301;
-    they read workstation.py 529-659, command_system.py 1029-1146 and codegen_command_system.py 671-748):
+    they read workstation.py 529-659, command_system.py 1029-1146 and codegen_command_system.py 671-748; the
+    command-system files remapped again 2026-11-22 at 0.2.8315 from 1034-1151 and 678-762):
     `src/melder/nexus/rift/rift_space/workstation.py:619-761`;
-    `src/melder/nexus/rift/command_system/command_system.py:1034-1151`;
-    `src/melder/nexus/rift/command_system/codegen_command_system.py:678-762`.
+    `src/melder/nexus/rift/command_system/command_system.py:1059-1176`;
+    `src/melder/nexus/rift/command_system/codegen_command_system.py:684-820`.
   - W4 and W6, FIXED in 0.2.8291 (teardown under the room lock): `RiftSpace.cleanup` cleaned its children under the
     room lock, while agent paths took a child's lock and then the room's - an agent whose `call_target` held the
     workstation lock left a room command's action-hook scope (W4), and a weak workstation binding collected under
@@ -334,9 +335,10 @@ Each item must include:
     its own across the `exec`) take one script at a time, `materialize_codegen` executes its module under the
     command lock, and capability `meld` runs `Conduit.meld`, which constructs spells, under it. Agent code under
     any of them that waits on another agent's call needing the same lock still freezes (read from the code, not
-    probed). Evidence: `src/melder/nexus/rift/codegen_system/codegen_system.py:298-345`;
-    `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:79-127`;
-    `src/melder/nexus/rift/command_system/codegen_command_system.py:764-965` (it read 750-944 before 0.2.8301);
+    probed). Evidence (the first three remapped 2026-11-22 at 0.2.8315 from 298-345, 79-127 and 764-965):
+    `src/melder/nexus/rift/codegen_system/codegen_system.py:313-369`;
+    `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:82-152`;
+    `src/melder/nexus/rift/command_system/codegen_command_system.py:822-1031` (it read 750-944 before 0.2.8301);
     `src/melder/nexus/rift/command_system/capability_command_system.py:1026-1089`.
   - UNKNOWN, read from the code and not probed: `Nexus.cleanup` calls each registered Rift's `cleanup()` under the
     Nexus lock, and that teardown cleans the room, taking the command lock, which an attaching agent holds while
@@ -344,8 +346,10 @@ Each item must include:
     Nexus lock in the Rift lock's place. Narrowed in 0.2.8301: the cleanup first drains every gate with no Nexus lock
     held, and an attach holds a ticket through the `create_frame_link` door, so the attach finishes before the
     teardown; the shape needs an attach still inside past the drain deadline. Evidence:
-    `src/melder/nexus/nexus.py:306-473`, `:3744-3774`; `src/melder/nexus/rift/command_system/command_system.py:1153-1169`
-    (remapped 2026-11-09 at 0.2.8301; they read nexus.py 306-381 and 3499-3529 and command_system.py 1148-1164).
+    `src/melder/nexus/nexus.py:306-473`, `:3744-3774`;
+    `src/melder/nexus/rift/command_system/command_system.py:1178-1194` (remapped 2026-11-09 at 0.2.8301; they read
+    nexus.py 306-381 and 3499-3529 and command_system.py 1148-1164; command_system.py remapped again 2026-11-22 at
+    0.2.8315 from 1153-1169).
   Why it matters: a reader holding a frame link or a Rift sees an undocumented AttributeError (or a misleading
   ValueError, or empty metadata) instead of the cleaned RuntimeError, and a room's agents still take turns on the
   engine and the locked commands (R4's residual, which kept a frame-budget slot used after the Rift was gone, is
@@ -3350,6 +3354,8 @@ Responsibilities:
 - Compile accepted code and execute it against the built namespace.
 - Capture room code's `print` per request into the execution payload's `output`, as the owning Rift's configuration
   sets (0.2.8312, GitHub #337).
+- Name every execution by its run id and say where room code failed - the line, its run and its text - keeping each
+  accepted run's source until the room is removed (0.2.8315, GitHub #339).
 - Publish validation/execution lifecycle events through the room event system.
 
 Inputs:
@@ -3366,17 +3372,20 @@ Outputs:
   `execute_codegen_request(...)`)
 - shared `CodegenTransactionContext` (the FIRST element of both tuples - the
   context is returned alongside the verdict, not separately)
-  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:263
-  (`validate_codegen_request`), :298 (`execute_codegen_request`)
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:278
+  (`validate_codegen_request`), :313 (`execute_codegen_request`) (remapped 2026-11-22 at 0.2.8315 from :263, :298)
 - public validation payloads through the reporter
-- the public execution payload (`CodegenExecutionResult.to_payload`): `accepted` and `frame_name` always; `reason`,
-  `validation_issues`, `runtime_error` when present; `result` when room code assigned it a value other than None;
-  `output` when room code printed anything (0.2.8312). `execute_codegen`'s docstring names every key.
+- the public execution payload (`CodegenExecutionResult.to_payload`): `accepted`, `frame_name` and `run_id` (the
+  transaction id, 0.2.8315) always; `reason`, `validation_issues`, `runtime_error` when present; on a runtime failure
+  in room code `runtime_error_line`, `runtime_error_run_id` and, when the room kept that run's source,
+  `runtime_error_line_text` (0.2.8315); `result` when room code assigned it a value other than None; `output` when
+  room code printed anything (0.2.8312). `execute_codegen`'s docstring names every key.
   EVIDENCE: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py:CodegenExecutionResult.to_payload`
 
 Owned State:
 - `CodegenSystem`: `_validator`, `_validation_reporter`,
-  `_namespace_builder`, `_compiler`, `_executor`, `_monitor`
+  `_namespace_builder`, `_compiler`, `_executor`, `_monitor`, and `_run_sources` (0.2.8315): run id -> source of
+  every execute request validation accepted, written once under the engine lock
 - `CodegenTransactionContext`: frame name, code, code hash, optional
   projection, namespace configuration, optional namespace, and metadata
 - `CodegenNamespace`: the request's optional `CodegenOutputCapture` (kernel class, 0.2.8312), which it owns and cleans
@@ -3385,6 +3394,8 @@ Lifecycle/Cleanup:
 - `CodegenSystem` is owned by `CodegenRiftSpace`.
 - cleanup is idempotent, lock-disciplined, and cascades into the owned
   monitor before references are nulled.
+- `CodegenSystem.cleanup` clears and deletes the kept run sources (0.2.8315), so they live until the room is
+  removed; their memory grows with the room's accepted runs until then (owner-accepted, 2026-11-22).
 
 Concurrency/Threading:
 - `CodegenSystem` uses an instance `RLock` around validate/execute flows.
@@ -3393,9 +3404,12 @@ Concurrency/Threading:
   `exec`, so one room's scripts run one at a time. Since 0.2.8290 the room command lock is no longer held around
   the request (`CodegenCommandSystem.execute_codegen`, GitHub #274, W5), so the room's other commands run while a
   script does; whether the engine should keep serializing a room's scripts is a question for the owner (Unknowns).
-  EVIDENCE: `src/melder/nexus/rift/codegen_system/codegen_system.py:298-345`,
-  `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:79-127` and
-  `src/melder/nexus/rift/command_system/codegen_command_system.py:678-762` (it read 671-748 before 0.2.8301).
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/codegen_system.py:313-369`,
+  `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:82-152` and
+  `src/melder/nexus/rift/command_system/codegen_command_system.py:684-820` (it read 671-748 before 0.2.8301;
+  remapped 2026-11-22 at 0.2.8315 from 298-345, 79-127 and 678-762).
+- The kept run sources (0.2.8315) are written under the engine lock after validation accepts and before the
+  namespace is built, and `CodegenExecutor.execute` reads them within the same request; no lock is added.
 
 Invariants/Guarantees:
 - validation runs before execution on the execute path
@@ -3420,6 +3434,26 @@ Invariants/Guarantees:
   EVIDENCE: `src/melder/nexus/rift/codegen_system/namespace/codegen_output_capture.py:CodegenOutputCapture`,
   `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:CodegenNamespaceBuilder.build`,
   `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:CodegenExecutor.execute`
+- a runtime failure in room code is located (0.2.8315, GitHub #339): each run compiles under
+  `<melder-codegen:{transaction_id}>` (`CodegenCompiler.run_filename`), so every code object the run defines - its
+  functions and classes too - names its run; when `exec` raises, `CodegenExecutor._locate_room_code_failure` walks
+  the traceback to its end and keeps the last entry whose `co_filename` is a run file name
+  (`CodegenCompiler.run_id_from_filename`). Its line and run id become `runtime_error_line` and
+  `runtime_error_run_id` - this run, an earlier run whose function was called, or this run's line that called the
+  melder or library code that raised - and that line's text, stripped, becomes `runtime_error_line_text` when the
+  room kept that run's source and it has the line. A traceback with no run frame adds no location, and a materialized
+  module's frames are not run frames (it executes its source text with `exec`). The walk only reads the traceback;
+  `runtime_error`'s text is built as before, and a validation refusal carries `run_id` but no location.
+  EVIDENCE:
+  `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:CodegenExecutor._locate_room_code_failure`,
+  `CodegenExecutor._kept_source_line`,
+  `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py:CodegenCompiler.run_filename`,
+  `CodegenCompiler.run_id_from_filename` and `src/melder/crystallizer/synthetic_module.py:946`
+- each execute request validation accepted keeps its source by transaction id (`CodegenSystem._run_sources`) from
+  acceptance until cleanup, so a later run failing inside a function an earlier run defined quotes that run's line; a
+  request validation refused keeps nothing (0.2.8315)
+  EVIDENCE: `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem.execute_codegen_request`,
+  `CodegenSystem.cleanup`
 - a codegen profile binds room code through its capability rules only; its frame, conduit and spell rules are
   published as `allowed_commands` and not enforced on room code (Component: Nexus Descriptor And ACL Managers,
   GitHub #338)
@@ -3448,7 +3482,9 @@ Invariants/Guarantees:
   and `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:CodegenNameResolutionStrategy._collect_allowed_builtin_names`
 
 Failure Modes:
-- empty code or frame names raise `ValueError`
+- empty code or frame names raise `ValueError`; since 0.2.8314 the room's three codegen commands resolve an omitted
+  `frame_name` to the room's default runtime frame before the engine sees it, refuse only one given empty, and raise
+  ValueError "Rift has no default runtime frame." for an omitted one in a room with no single assigned frame
 - rejected validation returns a validation-failed execution result without
   compile/exec
 - missing projection support degrades to `None` projection instead of failing
@@ -3467,7 +3503,8 @@ Failure Modes:
   interpreter's (0.2.8312)
 - until 0.2.8311, valid code binding a name through an exception handler, a match pattern or a type parameter was
   refused at validation ("Name 'e' is not available in the codegen namespace."); until 0.2.8312, what room code
-  printed reached only the host process's stdout
+  printed reached only the host process's stdout; until 0.2.8315 a runtime failure answered only `runtime_error`,
+  with no line or run, and no execute payload named its run
 - an invalid output limit is refused at configuration time: a non-int or a bool raises TypeError, a value below 1
   ValueError (`RiftConfiguration.with_codegen_output_limit`)
 
@@ -3717,14 +3754,24 @@ Responsibilities:
   execution actions.
 - Let static/capability/codegen subclasses narrow or widen the shared command
   posture without forking the whole API surface.
+- Give every room a command line read from its commands' live signatures and docstrings (0.2.8314, GitHub #339):
+  `describe_commands()` and `describe_command(name)`, the last two names of every room's command list;
+  `run_command(name, arguments)`, which runs a listed command by name and answers a refusal payload for an unlisted
+  name or arguments that do not bind; and `tool_definitions()`, one `{name, description, input_schema}` per listed
+  command. The reading rules belong to the kernel class `CommandCatalog`.
 
 Inputs:
 - Viewer-projected records and frame names.
 - Room-local workstation bindings and optional result-binding requests.
+- Command names and keyword-argument mappings for `run_command` (0.2.8314).
 
 Outputs:
 - Retrieved records/runtime objects, runtime mutations, status/query payloads,
   and optional workstation-bound command results.
+- The command line's answers (0.2.8314): catalog entries (`command`, `signature`, `summary`), one command's help
+  (`accepted` True, `command`, `signature`, `arguments` rows of `name`, `type`, `required` and `default` when not
+  required, `doc`), tool definitions, the dispatched command's own value, and the refusal payload (`accepted` False,
+  `command`, `reason`, `message`, then `supported_commands`, or `missing_arguments` and `unknown_arguments`).
 
 Owned State:
 - `Workstation`: strong/weak binding stores, active target name/store,
@@ -3734,6 +3781,9 @@ Owned State:
   suppress duplicate memory emission from internal command-to-command calls.
 - `CodegenCommandSystem`: the base command-system state above plus one
   attached `_codegen_system` reference.
+- A room's command list is class data, not instance state (0.2.8314): `_list_supported_command_methods_tuple()`
+  composes `_SHARED_COMMAND_METHOD_NAMES` (codegen rooms keep only `link_frame` and `get_nexus_frame` of it), the
+  room's own names and `_HELP_COMMAND_METHOD_NAMES`. `CommandCatalog` holds no state.
 
 Lifecycle/Cleanup:
 - Both objects are owned by `RiftSpace`.
@@ -3784,12 +3834,20 @@ Concurrency/Threading:
   own locks still take one request at a time (Component: Codegen Internal Engine). Until 0.2.8290 the class
   docstring said `CommandSystem` takes no lock of its own.
   EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read workstation.py 74-85 and 493-659, command_system.py 47-58,
-  454-493, 1029-1146 and 1204-1306, and codegen_command_system.py 671-748 and 750-944):
+  454-493, 1029-1146 and 1204-1306, and codegen_command_system.py 671-748 and 750-944; the command-system files
+  remapped again 2026-11-22 at 0.2.8315 from 47-63, 459-498, 1034-1151, 1209-1343 and 602-965):
   - `src/melder/nexus/rift/rift_space/workstation.py:78-98`, `:287-793` (the doors and `_entered_door`)
-  - `src/melder/nexus/rift/command_system/command_system.py:47-63`, `:459-498`, `:1034-1151`, `:1209-1343`
-  - `src/melder/nexus/rift/command_system/codegen_command_system.py:602-965` (`validate_codegen`,
+  - `src/melder/nexus/rift/command_system/command_system.py:57-73`, `:492-531`, `:1059-1176`, `:1437-1571`
+  - `src/melder/nexus/rift/command_system/codegen_command_system.py:602-1031` (`validate_codegen`,
     `execute_codegen`, `materialize_codegen`)
   - `src/melder/nexus/rift/command_system/capability_command_system.py:1026-1089`
+- The command line (0.2.8314): `run_command` takes no lock and no `RiftGate` ticket of its own - the dispatched
+  command's own admission is the only one, so a by-name call costs the command what a direct call does.
+  `describe_commands` and `describe_command` enter one command action, as `list_supported_command_methods()` does;
+  `tool_definitions` reads with no command action, so no ticket, hook or memory record. The three codegen commands
+  resolve an omitted `frame_name` under the command lock.
+  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:1239-1435` (`run_command`, `describe_commands`,
+  `describe_command`, `tool_definitions`)
 - `get_spell_by_spell_id` (`get_spell_by_id` until 0.2.8253) resolves the spell in the owner's Book through
   `Spellbook.find_spell_by_spell_id` (0.2.8230; `find_spell_by_id` until 0.2.8253); it used to walk that Book's live
   index map, which a bind or removal on another thread could resize mid-walk. `get_spell_by_source_id` reads the
@@ -3807,10 +3865,33 @@ Invariants/Guarantees:
   post-hooks, and a removal waits for it - except the calling thread's own removal of its Rift, after which the
   call returns normally, and a teardown that does not wait for it.
   EVIDENCE: `src/melder/nexus/rift/rift_space/workstation.py:763-793`;
-  `src/melder/nexus/rift/command_system/command_system.py:1209-1343`;
-  `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`.
+  `src/melder/nexus/rift/command_system/command_system.py:1437-1571` (remapped 2026-11-22 at 0.2.8315 from
+  1209-1343); `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py`.
 - `CommandSystem` gates runtime access before bind and leaves already-bound
   workstation objects outside post-bind ACL policing.
+- The command line adds no reach (0.2.8314, GitHub #339): `run_command` dispatches only a name in
+  `_list_supported_command_methods_tuple()` - the list `list_supported_command_methods()` returns - and the command
+  runs its own gates, locks, hooks and memory record as a direct call does. `cleanup`, private methods and public
+  methods outside the list are refused, and `run_command` and `tool_definitions` are not in it. Only the bind is
+  checked, never argument values; what the command raises propagates unchanged.
+- The catalog, help, refusals and schemas are read from the live signatures - annotations as forward references or
+  source text, never evaluated - and docstrings on every call, with no cache, so they cannot drift from the code. A
+  tool definition's description is the docstring's text before its first `Args:`, `Returns:`, `Raises:` or `Yields:`
+  line and each property's description its `Args:` entry, else its annotation text (the owner, 2026-11-22);
+  `required` lists the parameters without defaults, so the schema and `run_command`'s bind agree, and
+  `additionalProperties` is true only for a command taking `**kwargs`, such as `execute_target_method`.
+  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:CommandSystem.run_command`,
+  `CommandSystem.describe_commands`, `CommandSystem.describe_command`, `CommandSystem.tool_definitions` and
+  `src/melder/nexus/rift/command_system/command_catalog.py:CommandCatalog`.
+- `validate_codegen`, `execute_codegen` and `materialize_codegen` take `frame_name` optional (0.2.8314): omitted, it
+  is the room's default runtime frame - its only assigned frame - resolved under the command lock through
+  `_resolve_runtime_frame_name`, as the room's other commands resolve it; given empty, it is still refused.
+  EVIDENCE: `src/melder/nexus/rift/command_system/codegen_command_system.py:CodegenCommandSystem.execute_codegen`,
+  `CodegenCommandSystem.validate_codegen`, `CodegenCommandSystem.materialize_codegen` and
+  `src/melder/nexus/rift/command_system/command_system.py:CommandSystem._resolve_runtime_frame_name`.
+- `research_heads` in capability and codegen rooms documents its tip as the newest version recorded on the lane, not
+  the one the spell's SpellIndex has active; `research_residency(spell_id)` names the active one (docstrings,
+  0.2.8315, GitHub #339).
 - `StaticCommandSystem` denies topology mutation and direct `meld(...)`.
 - A spell lookup by spell_id or by source id answers exactly the spell named (0.2.8253; owner, 2026-10-17: a
   spell_id and a SpellIndex are separate things): the base room returns the owner Book's `find_spell_by_spell_id`
@@ -3900,6 +3981,14 @@ Failure Modes:
   `cleanup_target` when the workstation is cleaned between its unlocked `_cleaned` check and its lock (Unknowns, an
   agent racing a removal) (corrected 2026-11-09: since 0.2.8301 only a teardown that does not wait for the call -
   a `Nexus.cleanup` past its drain deadline, a direct `Rift.cleanup` - can race it).
+- A bad by-name call is refused, not raised (0.2.8314): `run_command` answers `accepted` False with `reason`
+  `command_not_supported` and `supported_commands` for a name outside the list, or `command_arguments_invalid` with
+  `missing_arguments` and `unknown_arguments` for arguments that do not bind, its `message` naming the command, the
+  problem and the command's signature; `describe_command` refuses an unknown name the same way. `arguments` that is
+  not a mapping with string keys raises TypeError (a caller bug). Until 0.2.8314 a by-name dispatch
+  (`getattr(room, name)(**kwargs)`) met Python's TypeError on a missing argument and reached any attribute.
+- An omitted `frame_name` on the three codegen commands in a room with no single assigned frame raises ValueError
+  "Rift has no default runtime frame." (0.2.8314).
 
 Observability:
 - Weak-binding collection can publish room-local events.
@@ -3913,6 +4002,7 @@ Key Files (C1):
 - `src/melder/nexus/rift/rift_space/rift_space.py`
 - `src/melder/nexus/rift/rift_space/workstation.py`
 - `src/melder/nexus/rift/command_system/command_system.py`
+- `src/melder/nexus/rift/command_system/command_catalog.py`
 - `src/melder/nexus/rift/command_system/static_command_system.py`
 - `src/melder/nexus/rift/command_system/capability_command_system.py`
 - `src/melder/nexus/rift/command_system/codegen_command_system.py`
@@ -9470,6 +9560,13 @@ Contract/Interface:
 - Static-owned:
   live-only spell retrieval, `meld_existing_spell(...)`, and static
   spell-status helpers.
+- Every room (0.2.8314, GitHub #339): `describe_commands()`, `describe_command(name)`, `run_command(name,
+  arguments)` and `tool_definitions()` on the base, read through `CommandCatalog`. Each room's list is its override
+  of `_list_supported_command_methods_tuple()` - shared names (codegen: `link_frame` and `get_nexus_frame` only),
+  the room's own names, then `describe_commands` and `describe_command` - which `list_supported_command_methods()`
+  returns inside its gate.
+- Codegen-owned: `validate_codegen`, `execute_codegen` and `materialize_codegen` take `frame_name` optional, the
+  room's default runtime frame when omitted (0.2.8314).
 - Conduit id lookups (`_get_conduit_by_id_locked`) pass the ACL gates, then delegate to
   `Aether.get_conduit_by_id`; a miss reports the frame error when the frame is gone, else "Conduit id 'I' was
   not found in frame 'F'.". Static spell owners resolve through `Aether.get_root_conduit_by_id` (0.2.79).
@@ -9493,11 +9590,15 @@ Concurrency/Threading:
   before its action-hook scope and releases the ticket after its memory record and post-hooks, so a removal or an
   ACL refresh waiting on the room never tears down or swaps under a command's exit; a nested command passes by
   re-entry, and the memory record is skipped on a command system cleaned during the call.
-  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:1034-1151`, `:1209-1343` and
-  `src/melder/nexus/rift/command_system/codegen_command_system.py:602-965` (remapped 2026-11-09 at 0.2.8301; they
-  read command_system.py 1029-1146 and codegen_command_system.py 671-944).
+  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:1059-1176`, `:1437-1571` and
+  `src/melder/nexus/rift/command_system/codegen_command_system.py:602-1031` (remapped 2026-11-09 at 0.2.8301; they
+  read command_system.py 1029-1146 and codegen_command_system.py 671-944; remapped again 2026-11-22 at 0.2.8315 from
+  1034-1151, 1209-1343 and 602-965).
+- `run_command` takes no lock and no ticket of its own; the dispatched command's own admission is the only one
+  (0.2.8314).
 Key Files (C1):
 - `src/melder/nexus/rift/command_system/command_system.py`
+- `src/melder/nexus/rift/command_system/command_catalog.py`
 - `src/melder/nexus/rift/command_system/static_command_system.py`
 - `src/melder/nexus/rift/command_system/capability_command_system.py`
 - `src/melder/nexus/rift/command_system/codegen_command_system.py`
@@ -9513,9 +9614,12 @@ Contract/Interface:
 - `_build_transaction_context(...)`
 - `_build_default_namespace_configuration(...)`
 - `_build_namespace(...)`
+- `_run_sources` (0.2.8315): each validation-accepted execute request's source by transaction id, handed to
+  `CodegenExecutor.execute` to quote a failing room-code line
 Invariants/Guarantees:
 - validation precedes execution
 - namespace is built only after accepted validation
+- an accepted run's source is kept from acceptance until cleanup; a refused run keeps nothing (0.2.8315)
 - with no projection for the requested frame, the safe posture: imports off and `__import__` plus
   `SAFE_DENIED_BUILTIN_NAMES` denied (0.2.8270)
 Concurrency/Threading:
@@ -9524,7 +9628,7 @@ Concurrency/Threading:
   ordering the lock protects is the invariant directly above: validation must
   precede execution, and the namespace must not be built until validation is
   accepted.
-  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:142
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:149 (remapped 2026-11-22 at 0.2.8315 from :142)
 - Since 0.2.8290 the room command lock is no longer held around `execute_codegen_request`; this lock still takes
   one request at a time (Unknowns).
 Key Files (C1):
@@ -9794,6 +9898,10 @@ are new; steps 3-7 were 1-5.)
    cleaned during the call), leaves the scope (post-hooks) and releases the ticket last (0.2.8301, GitHub #274,
    step 3; until then the ticket was taken inside the scope and released before the memory record). A refused
    admission raises before any hook runs; a nested command passes by re-entry.
+6. `run_command(name, arguments)` (0.2.8314, GitHub #339) checks `name` against
+   `_list_supported_command_methods_tuple()`, binds `arguments` against the command's signature
+   (`CommandCatalog.binding_problems`), answers a refusal payload on a problem, and otherwise calls the command,
+   which runs steps 1-5 itself; `run_command` takes no ticket of its own and never catches what the command raises.
 
 ### Flow: Codegen Command -> Engine Delegation -> Memory Emission
 (Steps 1, 2 and 5 rewritten 2026-11-09 for 0.2.8301: the ticket now comes first and goes last.)
@@ -9804,9 +9912,12 @@ are new; steps 3-7 were 1-5.)
 3. The facade requires the attached `CodegenSystem` and delegates into
    `validate_codegen_request(...)` or `execute_codegen_request(...)`. Validation runs under the command lock;
    `execute_codegen` reads the engine under it and runs the request after releasing it, the RiftGate ticket still
-   held (0.2.8290, GitHub #274, W5).
+   held (0.2.8290, GitHub #274, W5). An omitted `frame_name` is first resolved, under the command lock, to the
+   room's default runtime frame (0.2.8314).
 4. `CodegenSystem` builds the transaction context and, on the execute path,
-   validates before building the namespace and compiling/executing code.
+   validates before building the namespace and compiling/executing code. On the execute path an accepted run's
+   source is kept under its transaction id before the namespace is built, the code compiles under the run's file
+   name, and a runtime failure is located at its innermost room-code frame (0.2.8315, GitHub #339).
 5. Still inside the hook scope the command facade emits the full-source codegen room-memory record when room
    memory is enabled - skipped when the command system was cleaned during the call - then the scope exits (post
    hooks) and the RiftGate ticket is released last. (It read: the facade unregisters the RiftGate ticket and then
@@ -10662,6 +10773,11 @@ description of the file; what changed in a file is recorded in the Context / Han
   end_line: 2141
   loc: 2141
   verified_at: 2026-11-09T11:20:47Z
+- path: `src/melder/nexus/rift/command_system/command_catalog.py`
+  start_line: 1
+  end_line: 820
+  loc: 820
+  verified_at: 2026-11-22T16:11:43Z
 - path: `src/melder/nexus/rift/codegen_system/codegen_system.py`
   start_line: 1
   end_line: 591
@@ -12341,6 +12457,8 @@ through it; see `src/melder/aether/aether.py:222` and `:1225-1249`.)
   Internal Reflection-policy validation strategy
 - `src/melder/nexus/rift/command_system/capability_command_system.py` - Internal Capability-room command surface
 - `src/melder/nexus/rift/command_system/codegen_command_system.py` - Internal Codegen-room command surface
+- `src/melder/nexus/rift/command_system/command_catalog.py`
+  Internal Reads a room command's signature and docstring into help, refusals and a tool schema
 - `src/melder/nexus/rift/command_system/command_system.py`
   Internal Room-local shared command infrastructure plus common read/target helpers
 - `src/melder/nexus/rift/command_system/static_command_system.py` - Internal Static-room command surface
@@ -13215,7 +13333,7 @@ Every promoted FACT in this document traces to source. The C3 catalog cites its 
 is the consolidated list of every source file the document cites - the C1 Code Map's core set among them - and the
 tests read for it.
 
-Primary source files (292, all resolved 2026-10-25T02:56:51Z):
+Primary source files (293, all resolved 2026-11-22T16:11:43Z):
 
 - `src/melder/__architecture__.py`
 - `src/melder/__components__.py`
@@ -13469,6 +13587,7 @@ Primary source files (292, all resolved 2026-10-25T02:56:51Z):
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py`
 - `src/melder/nexus/rift/command_system/capability_command_system.py`
 - `src/melder/nexus/rift/command_system/codegen_command_system.py`
+- `src/melder/nexus/rift/command_system/command_catalog.py`
 - `src/melder/nexus/rift/command_system/command_system.py`
 - `src/melder/nexus/rift/command_system/static_command_system.py`
 - `src/melder/nexus/rift/frame_link/frame_link.py`

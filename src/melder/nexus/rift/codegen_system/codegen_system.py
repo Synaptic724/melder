@@ -68,6 +68,12 @@ class CodegenSystem(Cleanable):
           room event system instead of owning a local event queue or cache.
         - Returns validator-owned and executor-owned result types without
           owning room-memory emission itself.
+        - Keeps the source of every execute request validation accepted, by
+          its transaction id (`_run_sources`), from acceptance until cleanup -
+          the room's removal - so a runtime failure inside code an earlier run
+          left on the workstation can quote its line (GitHub #339). Requests
+          validation refused keep nothing. Memory grows with the room's runs
+          until the room is removed (owner-accepted, 2026-11-22).
 
     Registration:
         MELDER KERNEL - guarded. Owned by one `CodegenRiftSpace` and attached to
@@ -113,6 +119,7 @@ class CodegenSystem(Cleanable):
         "_compiler",
         "_executor",
         "_monitor",
+        "_run_sources",
     ]
 
     def __init__(self, *, rift: "Rift", space: "CodegenRiftSpace") -> None:
@@ -150,10 +157,16 @@ class CodegenSystem(Cleanable):
         self._compiler: CodegenCompiler = CodegenCompiler()
         self._executor: CodegenExecutor = CodegenExecutor()
         self._monitor: CodegenMonitor = CodegenMonitor(space=space)
+        # Owned: run id -> source of every execute request validation accepted, written once under `_lock`.
+        self._run_sources: Dict[str, str] = {}
 
     def cleanup(self) -> None:
         """
         Idempotently cleanup codegen-system-owned references.
+
+        Contract:
+            - Clears and deletes the kept run sources, so they are gone once the
+              room is removed (GitHub #339).
 
         Returns:
             None.
@@ -165,7 +178,9 @@ class CodegenSystem(Cleanable):
                 return
             self._cleaned = True
             self._monitor.cleanup()
+            self._run_sources.clear()
 
+            del self._run_sources
             del self._owner_space_id
             del self._rift
             del self._space
@@ -309,6 +324,14 @@ class CodegenSystem(Cleanable):
             context for room-memory emission while the internal engine keeps
             ownership of validation, execution, and event publication.
 
+        Contract:
+            - After validation accepts, and before the namespace is built and
+              the code compiled, records `code` under the transaction id in the
+              kept run sources, so the run's own functions can be quoted when a
+              later run calls them and fails inside them; the executor reads
+              those sources to locate a runtime failure (GitHub #339). A request
+              validation refused records nothing.
+
         Args:
             code:
                 Generated Python source to execute.
@@ -337,10 +360,11 @@ class CodegenSystem(Cleanable):
                 )
                 self._monitor.on_execution_finished(context, execution_result)
                 return context, execution_result
+            self._run_sources[context.transaction_id] = context.code
             namespace = self._build_namespace(context)
             context.set_namespace(namespace)
             compiled_code = self._compiler.compile(context)
-            execution_result = self._executor.execute(compiled_code, context)
+            execution_result = self._executor.execute(compiled_code, context, self._run_sources)
             self._monitor.on_execution_finished(context, execution_result)
             return context, execution_result
 

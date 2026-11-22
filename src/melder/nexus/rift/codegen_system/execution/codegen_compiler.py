@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar, Optional
 from types import CodeType
 
 from melder.utilities.general_base.cleanable import Cleanable
@@ -19,6 +19,13 @@ class CodegenCompiler(Cleanable):
     Purpose:
         Compile generated Python source into one executable code object for the
         executor without absorbing execution or validation responsibilities.
+
+    Contract:
+        - Owns the run file-name form: each run compiles under
+          `<melder-codegen:{transaction_id}>` (`run_filename`), so every code
+          object a run defines - its functions and classes included - carries
+          its run's id in `co_filename`, and `run_id_from_filename` reads the id
+          back for the executor's failure location (GitHub #339).
 
     Registration:
         MELDER KERNEL - guarded. Owned by `CodegenSystem`.
@@ -47,6 +54,8 @@ class CodegenCompiler(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]
+    _RUN_FILENAME_PREFIX: ClassVar[str] = "<melder-codegen:"
+    _RUN_FILENAME_SUFFIX: ClassVar[str] = ">"
 
     def __init__(self) -> None:
         """
@@ -73,12 +82,71 @@ class CodegenCompiler(Cleanable):
             self._cleaned = True
         del self._lock
 
+    @staticmethod
+    def run_filename(transaction_id: str) -> str:
+        """
+        Return the file name a run's code is compiled under.
+
+        Contract:
+            - `<melder-codegen:{transaction_id}>`; `run_id_from_filename` reads
+              `transaction_id` back from it.
+
+        Args:
+            transaction_id:
+                The run's transaction id (its `run_id` in the execute payload).
+
+        Returns:
+            str: The run file name.
+
+        Raises:
+            ValueError:
+                If `transaction_id` is not a non-empty string.
+        """
+        if not isinstance(transaction_id, str) or not transaction_id:
+            raise ValueError("transaction_id cannot be empty.")
+        return "{0}{1}{2}".format(
+            CodegenCompiler._RUN_FILENAME_PREFIX,
+            transaction_id,
+            CodegenCompiler._RUN_FILENAME_SUFFIX,
+        )
+
+    @staticmethod
+    def run_id_from_filename(filename: str) -> Optional[str]:
+        """
+        Return the run id a run file name carries, or None for any other file name.
+
+        Contract:
+            - The inverse of `run_filename`: a code object's `co_filename` of the
+              form `<melder-codegen:{run_id}>` answers `run_id`; a library file,
+              `<string>`, or the form with no id answers None.
+
+        Args:
+            filename:
+                A code object's `co_filename`.
+
+        Returns:
+            Optional[str]: The run id; None when `filename` is not a run file
+            name.
+        """
+        prefix = CodegenCompiler._RUN_FILENAME_PREFIX
+        suffix = CodegenCompiler._RUN_FILENAME_SUFFIX
+        if not filename.startswith(prefix) or not filename.endswith(suffix):
+            return None
+        run_id = filename[len(prefix):len(filename) - len(suffix)]
+        if not run_id:
+            return None
+        return run_id
+
     def compile(
             self,
             transaction_context: CodegenTransactionContext,
     ) -> CodeType:
         """
         Compile one codegen transaction into an executable code object.
+
+        Contract:
+            - The code object is named after its run:
+              `run_filename(transaction_context.transaction_id)`.
 
         Args:
             transaction_context:
@@ -97,6 +165,6 @@ class CodegenCompiler(Cleanable):
                 raise TypeError("transaction_context cannot be None.")
             return compile(
                 transaction_context.code,
-                "<melder-codegen:{0}>".format(transaction_context.transaction_id),
+                self.run_filename(transaction_context.transaction_id),
                 "exec",
             )

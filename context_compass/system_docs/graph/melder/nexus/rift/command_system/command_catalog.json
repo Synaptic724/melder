@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/command_system/command_catalog.py",
+ "source_sha256": "2e4330dcad18c76d331155b3b9414a4e9340e1055faae179eebd920d37dd1779",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.command_system.command_catalog": {
+   "id": "melder.nexus.rift.command_system.command_catalog",
+   "label": "command_catalog",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/command_system/command_catalog.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Kernel reader turning room commands' signatures and docstrings into help, refusals and tool schemas.",
+   "semantics_authored_against": ""
+  },
+  "melder.nexus.rift.command_system.command_catalog.CommandCatalog": {
+   "id": "melder.nexus.rift.command_system.command_catalog.CommandCatalog",
+   "label": "CommandCatalog",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/command_system/command_catalog.py",
+   "lineno": 8,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "argument_entries",
+    "argument_rows",
+    "binding_problems",
+    "describe_command_help",
+    "describe_command_summary",
+    "description",
+    "input_schema",
+    "read_signature",
+    "refuse_invalid_arguments",
+    "refuse_unsupported_command",
+    "require_argument_mapping",
+    "signature_text",
+    "summary",
+    "tool_definition"
+   ],
+   "shape": {
+    "method_count": 26,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "29827f3a5f9ec78fac3ccf9a25d4fc7b99b0687d046b689a9f65cbd1c56917fe",
+   "include": true,
+   "role": "Stateless reader of a room command's signature and docstring for the room command line (GitHub #339).",
+   "responsibilities": [
+    "reads signatures with annotationlib FORWARDREF and their text with STRING, never evaluating an annotation",
+    "answers the summary (first docstring line) and the description (the text before Args:/Returns:/Raises:/Yields:)",
+    "reads the docstring's Args: entries (name:, name: text, name (Type): text) into one text per parameter",
+    "answers describe_command's argument rows: name, type as spelled, required, and default when not required",
+    "computes run_command's bind check: missing parameters without defaults, unknown names unless **kwargs takes them",
+    "builds the one refusal shape: accepted False, command, reason, message, then the supported or argument names",
+    "maps each keyword-passable parameter to a JSON Schema property; required lists the parameters without defaults",
+    "raises TypeError for arguments that are not a mapping with string keys - a caller bug, not a refusal"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "29827f3a5f9ec78fac3ccf9a25d4fc7b99b0687d046b689a9f65cbd1c56917fe"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.command_system.command_catalog.CommandCatalog",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "annotationlib": "annotationlib",
+  "collections": "collections",
+  "inspect": "inspect",
+  "typing": "typing",
+  "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Literal": "typing.Literal",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.command_system.command_catalog",
+  "class": "melder.nexus.rift.command_system.command_catalog.CommandCatalog",
+  "label": "CommandCatalog"
+ }
+}

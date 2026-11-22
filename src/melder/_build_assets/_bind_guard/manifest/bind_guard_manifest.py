@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8313"
-SOURCE_SHA256 = "1d2651695b2112ca8e4b447e108d743d9ad4d2cd06902c89fc0dc9c56352fe9e"
-ENTRY_COUNT = 636
+BUILT_FOR_VERSION = "0.2.8315"
+SOURCE_SHA256 = "8465820ffedd49130dd0b1d1532c890cce7cc62f06de0b3c139ee0aed506e8d3"
+ENTRY_COUNT = 637
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -559,6 +559,7 @@ ENTRIES = (
     ('melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy', 'CodegenReflectionPolicyStrategy'),
     ('melder.nexus.rift.command_system.capability_command_system', 'CapabilityCommandSystem'),
     ('melder.nexus.rift.command_system.codegen_command_system', 'CodegenCommandSystem'),
+    ('melder.nexus.rift.command_system.command_catalog', 'CommandCatalog'),
     ('melder.nexus.rift.command_system.command_system', 'CommandSystem'),
     ('melder.nexus.rift.command_system.static_command_system', 'StaticCommandSystem'),
     ('melder.nexus.rift.frame_link.frame_link', 'FrameLink'),

@@ -14,6 +14,52 @@ Ask `list_supported_command_methods()` for the commands the actual room exposes.
 A method may also require an active subsystem. Availability and authority are
 different: activating research does not add its authoring commands to a capability room.
 
+## Learn and run commands by name
+
+Every room also describes and runs its own commands, read from their signatures and
+docstrings. `describe_commands()` lists each command in
+`list_supported_command_methods()` with its signature and the first line of its
+docstring; `describe_command(name)` gives one command's arguments (`name`, `type`,
+`required`, and `default` when it has one) and its full docstring. Both are in every
+room's command list, at its end.
+
+`run_command(name, arguments)` runs a listed command with keyword arguments and returns
+exactly what the command returns. A call it cannot make comes back as a refusal
+instead of an exception:
+
+```python
+link_help = commands.describe_command("link_frame")
+assert link_help["signature"] == "link_frame(frame_name: str) -> None"
+
+refusal = commands.run_command("link_frame", {})
+assert refusal["accepted"] is False
+assert refusal["reason"] == "command_arguments_invalid"
+assert refusal["missing_arguments"] == ("frame_name",)
+assert commands.run_command("cleanup", {})["reason"] == "command_not_supported"
+```
+
+The refusal's `message` names the command, the problem and how to call it. An
+argument no parameter takes is listed under `unknown_arguments`, and a name outside the
+list is answered with `supported_commands`. Argument values are not checked, whatever
+the command raises reaches the caller unchanged, and `arguments` that is not a mapping
+of names raises `TypeError`. `run_command` adds no authority: it runs only listed
+commands, each through its own checks.
+
+`tool_definitions()` returns one `name`, `description` and `input_schema` per listed
+command. The description is the docstring's text before its `Args:`, `Returns:`,
+`Raises:` or `Yields:` section, and the input schema is a JSON Schema object built from
+the signature, whose `required` names the arguments `run_command` requires:
+
+```python
+tools = commands.tool_definitions()
+link_tool = next(tool for tool in tools if tool["name"] == "link_frame")
+assert link_tool["input_schema"]["required"] == ["frame_name"]
+```
+
+A harness offers these to a model as its tools and passes each tool call to
+`run_command(name, arguments)`. The answer can be a live object, such as a conduit;
+how to show it to the model is the harness's choice.
+
 ## Attach with both sides configured
 
 The target frame must opt into observation before conjure. Nexus policy must allow

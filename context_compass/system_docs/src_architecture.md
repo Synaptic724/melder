@@ -517,6 +517,10 @@ External interfaces are Python APIs:
   - `create_nexus_frame(...)` is strict-create and raises if the frame already
     exists.
   - `get_nexus_frame(...)` is the recovery path for existing managed frames.
+- Every room's command system answers `describe_commands()`, `describe_command(name)`, `run_command(name,
+  arguments)` and `tool_definitions()` (0.2.8314, GitHub #339): the room's commands as a catalog, per-command help, a
+  by-name entry point that refuses a bad call with a payload, and tool definitions with JSON Schema inputs, all read
+  from the commands' signatures and docstrings.
 - `SpellExaminer.create_profile(target, profile="general"|"detailed", ...)`
   for reflective profile generation.
 - `ProtocolCrafter.craft_protocol_code(...)`,
@@ -1589,6 +1593,31 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:CodegenNamespaceBuilder.build`,
   `src/melder/nexus/configuration/rift_configuration.py:RiftConfiguration.with_codegen_output_capture` and
   `src/melder/nexus/acl/frame_acl_compiler.py:FrameACLCompiler._compile_allowed_commands`.
+- A room's command line, and where codegen room code failed (2026-11-22, 0.2.8314-0.2.8315; GitHub #339, on the
+  owner's decisions of that day). Every room's `CommandSystem` serves its commands as a command line read from their
+  live signatures and docstrings through the stateless kernel class `CommandCatalog` (0.2.8314):
+  `describe_commands()` (`command`, `signature` and `summary` per listed command) and `describe_command(name)` (its
+  argument rows and full docstring) end every room's command list; `run_command(name, arguments)` dispatches only a
+  name in that list - each room's override of `_list_supported_command_methods_tuple()`, which
+  `list_supported_command_methods()` returns - answers a refusal payload (`accepted` False, `command`, `reason`,
+  `message`, then `supported_commands`, or `missing_arguments` and `unknown_arguments`) for an unlisted name or
+  arguments that do not bind, returns the command's own value otherwise and never catches what it raises; and
+  `tool_definitions()` gives one `{name, description, input_schema}` per listed command, the JSON Schema built from
+  the signature. `run_command` and `tool_definitions` serve the caller and are not in the list; annotations are read
+  as forward references or source text, never evaluated. `validate_codegen`, `execute_codegen` and
+  `materialize_codegen` take `frame_name` optional, the room's default runtime frame when omitted (0.2.8314). Every
+  execute payload carries `run_id` - the transaction id the room memory record already carries - and a runtime
+  failure in room code adds `runtime_error_line`, `runtime_error_run_id` and `runtime_error_line_text`: the innermost
+  room-code frame of the traceback, which may lie in a function an earlier run left on the workstation, quoted from
+  the sources the room's `CodegenSystem` keeps for each accepted run until the room is removed (0.2.8315);
+  `runtime_error` is unchanged. No reach is added: a dispatched command runs its own gates, so a room allows what it
+  allowed. Nothing persisted, cached or recorded changes shape, so no cache generation or record version moves.
+  Locks: none added; `run_command` takes no lock or gate ticket of its own, and the kept sources are written and
+  read under the engine lock.
+  EVIDENCE: `src/melder/nexus/rift/command_system/command_system.py:CommandSystem.run_command`,
+  `CommandSystem.tool_definitions`, `src/melder/nexus/rift/command_system/command_catalog.py:CommandCatalog`,
+  `src/melder/nexus/rift/codegen_system/codegen_system.py:CodegenSystem.execute_codegen_request` and
+  `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:CodegenExecutor._locate_room_code_failure`.
 - A lender's notch moves its borrowers inside its frozen window (2026-10-25, 0.2.8275; TASK-2026-10-16-order_inflight_borrower_melds_against_notch_fanout,
   the owner's design 2 and his "1": undo on failure). `Conduit.notch_spell` passes the lineage roots of its ward
   links as `linked_root_conduit_ids`; `NotchTransactionStrategy.build_start_plan` adds them to the conduits it seals
@@ -2761,8 +2790,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   - `src/melder/nexus/rift/rift.py:79-125` (the class Threading), `:1436-1462` (`_entered_door`)
   - `src/melder/nexus/nexus.py:306-473` (`cleanup`, `_drain_rift_gates_before_cleanup`), `:1358-1530`
     (`remove_rift`, `_drain_rift_gate_for_removal`)
-  - `src/melder/nexus/rift/command_system/command_system.py:1209-1343` (`_entered_command_action`,
-    `_begin_command_action`, `_finish_command_action`)
+  - `src/melder/nexus/rift/command_system/command_system.py:1437-1571` (`_entered_command_action`,
+    `_begin_command_action`, `_finish_command_action`; remapped 2026-11-22 at 0.2.8315 from 1209-1343)
   - `src/melder/nexus/rift/frame_viewer/frame_viewer.py:6669-6716` (`_entered_view_action`)
   - `src/melder/nexus/rift/rift_space/workstation.py:763-793` (`_entered_door`)
   - `src/melder/nexus/rift/rift_space/rift_space.py:774-888` (`_entered_door`, `_entered_action_hook_scope`)
@@ -2824,8 +2853,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   - `src/melder/nexus/rift/rift_space/workstation.py:78-98` (the class Threading), `:763-793` (`_entered_door`)
   - `src/melder/nexus/rift/frame_viewer/frame_viewer.py:73-93` (the class Threading), `:6669-6716`
     (`_entered_view_action`)
-  - `src/melder/nexus/rift/command_system/command_system.py:1209-1343`
-  - `src/melder/nexus/rift/command_system/codegen_command_system.py:602-965` (the three codegen commands)
+  - `src/melder/nexus/rift/command_system/command_system.py:1437-1571` (remapped 2026-11-22 at 0.2.8315 from
+    1209-1343)
+  - `src/melder/nexus/rift/command_system/codegen_command_system.py:602-1031` (the three codegen commands; remapped
+    2026-11-22 at 0.2.8315 from 602-965)
   - `tests/component/melder/aether/test_rift_component_gate_drains_before_teardown.py` (13 tests, 23 cases)
   - `tests/unit/melder/aether/test_rift_gate_thread_tickets.py` (5 tests)
   - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
@@ -2877,7 +2908,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
     (`_apply_projection_sets`)
   - `src/melder/nexus/nexus.py:1358-1465` (`remove_rift`), `:306-391` (`Nexus.cleanup`), `:3744-3802`
     (`_reserve_target_frame`, `_release_target_frame`)
-  - `src/melder/nexus/rift/command_system/command_system.py:1153-1169` (`link_frame`)
+  - `src/melder/nexus/rift/command_system/command_system.py:1178-1194` (`link_frame`; remapped 2026-11-22 at
+    0.2.8315 from 1153-1169)
   - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
     (`test_rift_removal_and_an_agent_mid_call_target_running_a_command_both_finish`,
     `test_rift_removal_and_a_weak_binding_collected_under_the_workstation_lock_both_finish`,
@@ -2911,16 +2943,19 @@ each entry in `src_components.md`; this list is the set that crosses components.
   scripts still run one at a time; `materialize_codegen` executes the new module under the command lock, and
   capability `meld` runs `Conduit.meld`, which constructs spells, under it.
   EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read workstation.py 74-85, 493-512, 529-659 and 661-710,
-  command_system.py 47-58, 454-493 and 1029-1146, and codegen_command_system.py 671-748 and 750-944):
+  command_system.py 47-58, 454-493 and 1029-1146, and codegen_command_system.py 671-748 and 750-944; the
+  command-system and codegen files remapped again 2026-11-22 at 0.2.8315, when command_system.py read 47-63,
+  459-498 and 1034-1151, codegen_command_system.py 678-762 and 764-965, codegen_system.py 298-345 and
+  codegen_executor.py 79-127):
   - `src/melder/nexus/rift/rift_space/workstation.py:78-98` (the class Threading), `:566-593` (`get_target`),
     `:619-761` (`cleanup_target`, `call_target`), `:795-844` (`_bind`)
-  - `src/melder/nexus/rift/command_system/command_system.py:47-63` (the class Threading), `:459-498`
-    (`_get_target_method`), `:1034-1151` (`get_target_attribute`, `get_target_method`, `execute_target_method`)
-  - `src/melder/nexus/rift/command_system/codegen_command_system.py:678-762` (`execute_codegen`), `:764-965`
+  - `src/melder/nexus/rift/command_system/command_system.py:57-73` (the class Threading), `:492-531`
+    (`_get_target_method`), `:1059-1176` (`get_target_attribute`, `get_target_method`, `execute_target_method`)
+  - `src/melder/nexus/rift/command_system/codegen_command_system.py:684-820` (`execute_codegen`), `:822-1031`
     (`materialize_codegen`)
   - `src/melder/nexus/rift/command_system/capability_command_system.py:1026-1089` (`meld`)
-  - `src/melder/nexus/rift/codegen_system/codegen_system.py:298-345` (`execute_codegen_request`)
-  - `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:79-127` (`execute`)
+  - `src/melder/nexus/rift/codegen_system/codegen_system.py:313-369` (`execute_codegen_request`)
+  - `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:82-152` (`execute`)
   - `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
     (`test_call_target_runs_its_target_without_blocking_another_agents_target_read`,
     `test_execute_target_method_runs_its_method_without_blocking_another_agents_command`,
@@ -2968,7 +3003,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   - `src/melder/nexus/nexus.py:1358-1465` (`remove_rift`; it read 1264-1312)
   - `src/melder/nexus/nexus.py:3744-3802` (`_reserve_target_frame`, `_release_target_frame`; it read 3477-3535)
   - `src/melder/nexus/nexus.py:3839-3859` (`_decrement_ref_count`; it read 3572-3592)
-  - `src/melder/nexus/rift/command_system/command_system.py:1153-1169` (`link_frame`; it read 1121-1137)
+  - `src/melder/nexus/rift/command_system/command_system.py:1178-1194` (`link_frame`; it read 1121-1137, and
+    1153-1169 before 0.2.8315)
   - `src/melder/utilities/general_base/cleanable.py:38-52` (the lock policy)
   - `tests/component/melder/aether/test_rift_component_concurrent_attach_and_refresh.py`
     (`test_two_attaches_of_one_frame_keep_one_contract_and_one_budget_count`,

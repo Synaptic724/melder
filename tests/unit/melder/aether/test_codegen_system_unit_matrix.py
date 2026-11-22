@@ -127,7 +127,12 @@ def test_unit_codegen_system_try_get_codegen_projection_matrix(
         ("result = 2 + 2", True, 4),
         ("import json\nresult = 1", True, 1),
         ("result = getattr(command, 'x')", False, None),
-        ("result = codegen.execute_codegen('result = 1')", True, {"accepted": True, "frame_name": "ops", "result": 1}),
+        # The nested payload names its own run (GitHub #339): room code pops `run_id`, which raises if it is absent.
+        (
+            "result = codegen.execute_codegen('result = 1')\nresult.pop('run_id')",
+            True,
+            {"accepted": True, "frame_name": "ops", "result": 1},
+        ),
         ("value = 7", True, None),
         ("result = [1, 2, 3]", True, [1, 2, 3]),
         ("raise ValueError('boom')", False, None),

@@ -20,9 +20,15 @@ class CodegenExecutionResult(Cleanable):
           optional validation issues, optional runtime error, optional
           `result` payload, and the text room code printed (`output`, "" when
           nothing was captured; GitHub #337, task 2).
-        - Serializes to the public payload `execute_codegen` returns: `accepted`
-          and `frame_name` always; `reason`, `validation_issues`,
-          `runtime_error`, `result` and `output` only when present.
+        - Carries, on a runtime failure in room code, where it failed: the
+          innermost room-code frame's line, the id of the run whose code holds
+          it and, when the room kept that run's source, the line's text
+          (GitHub #339).
+        - Serializes to the public payload `execute_codegen` returns: `accepted`,
+          `frame_name` and `run_id` (the transaction id) always; `reason`,
+          `validation_issues`, `runtime_error`, `runtime_error_line`,
+          `runtime_error_run_id`, `runtime_error_line_text`, `result` and
+          `output` only when present.
 
     Registration:
         MELDER KERNEL - guarded. Produced by `CodegenExecutor`.
@@ -58,6 +64,9 @@ class CodegenExecutionResult(Cleanable):
         "_result",
         "_transaction_id",
         "_output",
+        "_runtime_error_line",
+        "_runtime_error_run_id",
+        "_runtime_error_line_text",
     ]
 
     def __init__(
@@ -71,6 +80,9 @@ class CodegenExecutionResult(Cleanable):
             result: Optional[object] = None,
             transaction_id: Optional[str] = None,
             output: str = "",
+            runtime_error_line: Optional[int] = None,
+            runtime_error_run_id: Optional[str] = None,
+            runtime_error_line_text: Optional[str] = None,
     ) -> None:
         """
         Initialize one execution result.
@@ -90,10 +102,16 @@ class CodegenExecutionResult(Cleanable):
             result:
                 Optional final `result` value from execution.
             transaction_id:
-                Optional internal transaction id.
+                Optional internal transaction id; the payload's `run_id`.
             output:
                 The text room code printed during execution, as the room's output capture kept it; "" when nothing
                 was printed or the room does not capture output.
+            runtime_error_line:
+                On a runtime failure, the line of the innermost room-code frame; None otherwise.
+            runtime_error_run_id:
+                On a runtime failure, the id of the run whose code holds that line; None otherwise.
+            runtime_error_line_text:
+                That line's text, stripped, when the room kept the run's source; None otherwise.
 
         Returns:
             None.
@@ -116,6 +134,9 @@ class CodegenExecutionResult(Cleanable):
         self._result: Optional[object] = result
         self._transaction_id: Optional[str] = transaction_id
         self._output: str = output
+        self._runtime_error_line: Optional[int] = runtime_error_line
+        self._runtime_error_run_id: Optional[str] = runtime_error_run_id
+        self._runtime_error_line_text: Optional[str] = runtime_error_line_text
 
     def cleanup(self) -> None:
         """
@@ -139,6 +160,9 @@ class CodegenExecutionResult(Cleanable):
             del self._result
             del self._transaction_id
             del self._output
+            del self._runtime_error_line
+            del self._runtime_error_run_id
+            del self._runtime_error_line_text
         del self._lock
 
     @classmethod
@@ -205,6 +229,9 @@ class CodegenExecutionResult(Cleanable):
             runtime_error: str,
             transaction_id: Optional[str] = None,
             output: str = "",
+            runtime_error_line: Optional[int] = None,
+            runtime_error_run_id: Optional[str] = None,
+            runtime_error_line_text: Optional[str] = None,
     ) -> "CodegenExecutionResult":
         """
         Build an execution result representing runtime failure.
@@ -218,6 +245,12 @@ class CodegenExecutionResult(Cleanable):
                 Optional internal transaction id.
             output:
                 The text room code printed before it raised; "" when none.
+            runtime_error_line:
+                The line of the innermost room-code frame of the traceback; None when no room-code frame was found.
+            runtime_error_run_id:
+                The id of the run whose code holds that line (GitHub #339); None with no line.
+            runtime_error_line_text:
+                That line's text, stripped, when the room kept the run's source and it has the line; None otherwise.
 
         Returns:
             CodegenExecutionResult: Rejected runtime-failure result.
@@ -229,6 +262,9 @@ class CodegenExecutionResult(Cleanable):
             runtime_error=runtime_error,
             transaction_id=transaction_id,
             output=output,
+            runtime_error_line=runtime_error_line,
+            runtime_error_run_id=runtime_error_run_id,
+            runtime_error_line_text=runtime_error_line_text,
         )
 
     @classmethod
@@ -366,9 +402,11 @@ class CodegenExecutionResult(Cleanable):
         Serialize this result to the current public execution payload shape.
 
         Contract:
-            - `accepted` and `frame_name` always; `reason`, `validation_issues`, `runtime_error` and `result` when
-              present (`result` when the code assigned it a value other than None); `output` when room code printed
-              anything (GitHub #337, task 2).
+            - `accepted`, `frame_name` and `run_id` always - `run_id` is the transaction id, None only for a result
+              built without one (the engine always passes it; GitHub #339); `reason`, `validation_issues`,
+              `runtime_error` and `result` when present (`result` when the code assigned it a value other than None);
+              `runtime_error_line`, `runtime_error_run_id` and `runtime_error_line_text` each when set (GitHub #339);
+              `output` when room code printed anything (GitHub #337, task 2).
 
         Returns:
             Dict[str, object]: Public execution payload.
@@ -378,6 +416,7 @@ class CodegenExecutionResult(Cleanable):
             payload: Dict[str, object] = {
                 "accepted": self._accepted,
                 "frame_name": self._frame_name,
+                "run_id": self._transaction_id,
             }
             if self._reason is not None:
                 payload["reason"] = self._reason
@@ -385,6 +424,12 @@ class CodegenExecutionResult(Cleanable):
                 payload["validation_issues"] = self._validation_issues
             if self._runtime_error is not None:
                 payload["runtime_error"] = self._runtime_error
+            if self._runtime_error_line is not None:
+                payload["runtime_error_line"] = self._runtime_error_line
+            if self._runtime_error_run_id is not None:
+                payload["runtime_error_run_id"] = self._runtime_error_run_id
+            if self._runtime_error_line_text is not None:
+                payload["runtime_error_line_text"] = self._runtime_error_line_text
             if self._result is not None:
                 payload["result"] = self._result
             if self._output:

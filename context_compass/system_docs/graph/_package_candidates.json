@@ -237,9 +237,9 @@
    "id": "src.melder.nexus.rift.command_system",
    "kind": "package",
    "file": "src/melder/nexus/rift/command_system/",
-   "member_count": 4,
+   "member_count": 5,
    "shared_suffix": "system",
-   "cohesion": 1.0
+   "cohesion": 0.8
   },
   {
    "id": "src.melder.nexus.rift.projection",

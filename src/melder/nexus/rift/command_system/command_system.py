@@ -1,6 +1,6 @@
 import threading
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Mapping, Optional, Tuple
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.spell import Spell
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from melder.nexus.rift.rift_space.workstation import Workstation
 
 from melder.aether.aether import Aether
+from melder.nexus.rift.command_system.command_catalog import CommandCatalog
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -39,6 +40,15 @@ class CommandSystem(Cleanable):
         - Leaves room-owned topology mutation and spell activation commands to
           room-specific subclasses instead of pretending every room owns the
           same broad public surface.
+        - Gives every room a command line read from its commands' live
+          signatures and docstrings through `CommandCatalog` (GitHub #339):
+          `describe_commands()` and `describe_command(name)`, which are in
+          every room's command list, at its end; `run_command(name,
+          arguments)`, which dispatches only a name in that list and refuses a
+          bad call with a refusal payload instead of raising; and
+          `tool_definitions()`. The list itself is
+          `_list_supported_command_methods_tuple()`, which each room
+          subclass overrides.
 
     Lifecycle:
         Owned by one `RiftSpace`. Cleanup drops references to the owning room
@@ -109,6 +119,29 @@ class CommandSystem(Cleanable):
     _DENIED_RAW_RUNTIME_OBJECT_ACCESS_METHOD_NAMES: frozenset[str] = frozenset()
     _RAW_RUNTIME_OBJECT_ACCESS_DENIED_MESSAGE_TEMPLATE: str = (
         "Command surface does not allow raw runtime-object access method '{0}'."
+    )
+    # The shared command vocabulary every room built on this base carries, in presentation order.
+    _SHARED_COMMAND_METHOD_NAMES: ClassVar[Tuple[str, ...]] = (
+        "link_frame",
+        "get_nexus_frame",
+        "describe_spells_in_conduit",
+        "get_resolution_state",
+        "get_active_spellspace",
+        "find_spell_id",
+        "find_spell_key",
+        "get_spell_permissions",
+        "snapshot_state",
+        "get_spell_by_source_id",
+        "get_spell_by_index_id",
+        "get_spell_by_spell_id",
+        "get_target_attribute",
+        "get_target_method",
+        "execute_target_method",
+    )
+    # The help commands, appended at the END of every room's command list so the existing order is unchanged.
+    _HELP_COMMAND_METHOD_NAMES: ClassVar[Tuple[str, ...]] = (
+        "describe_commands",
+        "describe_command",
     )
     _aether = Aether()
 
@@ -499,35 +532,27 @@ class CommandSystem(Cleanable):
 
     def _list_supported_command_methods_tuple(self) -> Tuple[str, ...]:
         """
-        Return the shared stable command-method vocabulary without any gate or
-        room-policy filtering.
+        Return this room's command list without any gate or room-policy
+        filtering.
 
         Contract:
-            - Acts as the single source of truth for the base command surface.
+            - Acts as the single source of truth for the room's command list:
+              `list_supported_command_methods()` returns it inside its gate,
+              and `run_command`, `describe_commands`, `describe_command` and
+              `tool_definitions` serve exactly these names.
+            - The base surface is the shared vocabulary
+              (`_SHARED_COMMAND_METHOD_NAMES`) followed by the two help
+              commands (`_HELP_COMMAND_METHOD_NAMES`). Each room subclass
+              overrides this method with its own composition, the help
+              commands always last (GitHub #339).
             - Returns stable presentation order for discovery/reporting.
             - Does not perform gating, memory emission, or room-specific
-              filtering.
+              filtering; reads class constants only, so it takes no lock.
 
         Returns:
-            Tuple[str, ...]: Shared base command-method names in stable order.
+            Tuple[str, ...]: The room's command-method names in stable order.
         """
-        return (
-            "link_frame",
-            "get_nexus_frame",
-            "describe_spells_in_conduit",
-            "get_resolution_state",
-            "get_active_spellspace",
-            "find_spell_id",
-            "find_spell_key",
-            "get_spell_permissions",
-            "snapshot_state",
-            "get_spell_by_source_id",
-            "get_spell_by_index_id",
-            "get_spell_by_spell_id",
-            "get_target_attribute",
-            "get_target_method",
-            "execute_target_method",
-        )
+        return self._SHARED_COMMAND_METHOD_NAMES + self._HELP_COMMAND_METHOD_NAMES
 
 
     def describe_spells_in_conduit(
@@ -1195,6 +1220,11 @@ class CommandSystem(Cleanable):
             command-surface vocabulary instead of guessing from room type or
             trial-and-error errors.
 
+        Contract:
+            - Returns `_list_supported_command_methods_tuple()`, which ends with
+              the help commands `describe_commands` and `describe_command`
+              (GitHub #339). `run_command` dispatches only these names.
+
         Returns:
             Tuple[str, ...]: Supported public command method names in stable
                 presentation order.
@@ -1205,6 +1235,204 @@ class CommandSystem(Cleanable):
                 frame_name=None,
         ):
             return self._list_supported_command_methods_tuple()
+
+    def run_command(
+            self,
+            command_name: str,
+            arguments: Optional[Mapping[str, object]] = None,
+    ) -> object:
+        """
+        Run one command of this room's command list by name with keyword arguments.
+
+        Purpose:
+            Give an agent, or a harness relaying an agent's tool call, one entry
+            point that runs any command the room serves and tells it plainly when
+            the call is wrong, instead of a `getattr(room, name)(**kwargs)` that
+            raises Python's TypeError in the caller and reaches any attribute -
+            `cleanup` or a private method - the room has (GitHub #339).
+
+        Contract:
+            - A name outside `list_supported_command_methods()` is refused:
+              `accepted: False`, `command`, `reason: command_not_supported`,
+              `message` and `supported_commands`. `run_command` and
+              `tool_definitions` are not in the list, so they are refused too.
+            - Arguments that do not bind to the command's signature are refused:
+              `reason: command_arguments_invalid`, with `missing_arguments` (its
+              parameters without defaults that were not given) and
+              `unknown_arguments` (given names no parameter takes; none when the
+              command takes `**kwargs`); the message names the command, the
+              problem and its signature. Nothing runs. Argument values are never
+              type-checked: only the bind is.
+            - A call that binds returns exactly what the command returns -
+              successes are not wrapped - and everything the command raises
+              propagates unchanged: `run_command` never catches it.
+            - Adds no reach: it dispatches only names in the room's own command
+              list, and the command runs its own gates, locks, hooks and memory
+              records exactly as a direct call does. `*args` cannot be passed.
+
+        Args:
+            command_name:
+                Name of a command in this room's command list.
+            arguments:
+                Argument name -> value, passed as keyword arguments; None for a
+                command called without arguments.
+
+        Returns:
+            object: The command's own return value, or the refusal payload
+            (`Dict[str, object]`) described above.
+
+        Raises:
+            TypeError:
+                If `arguments` is neither None nor a mapping, or one of its keys
+                is not a string - a caller bug, not an agent's call to refuse.
+            RuntimeError:
+                If this command system has been cleaned.
+            Exception:
+                Whatever the dispatched command raises, unchanged.
+
+        Threading:
+            Takes no lock and no `RiftGate` ticket of its own: the dispatched
+            command's own admission is the only one, so a by-name call costs the
+            command exactly what a direct call costs it.
+        """
+        self.check_cleaned()
+        given_arguments = CommandCatalog.require_argument_mapping(arguments)
+        supported_commands = self._list_supported_command_methods_tuple()
+        if command_name not in supported_commands:
+            return CommandCatalog.refuse_unsupported_command(command_name, supported_commands)
+        # A dynamic name taken from this room's own command list, never an arbitrary attribute.
+        method = getattr(self, command_name)
+        missing_arguments, unknown_arguments = CommandCatalog.binding_problems(method, given_arguments)
+        if len(missing_arguments) > 0 or len(unknown_arguments) > 0:
+            return CommandCatalog.refuse_invalid_arguments(
+                command_name,
+                method,
+                missing_arguments,
+                unknown_arguments,
+            )
+        return method(**given_arguments)
+
+    def describe_commands(self) -> Tuple[Dict[str, object], ...]:
+        """
+        Return one catalog entry per command this room serves.
+
+        Purpose:
+            Let an agent learn the room's commands in one call: what each is
+            called, how to call it and what it does, read from the commands' live
+            signatures and docstrings so the catalog cannot drift from the code
+            (GitHub #339).
+
+        Contract:
+            - Covers exactly `list_supported_command_methods()`, in its order.
+            - Each entry is `command`, `signature` (the command's name and
+              signature, annotations as the source spells them:
+              `execute_codegen(code: str, *, frame_name: Optional[str] = None) ->
+              Dict[str, object]`) and `summary` (its docstring's first line).
+            - Annotations are read without being evaluated.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission, as `list_supported_command_methods()` does.
+
+        Returns:
+            Tuple[Dict[str, object], ...]: The catalog entries.
+
+        Raises:
+            RuntimeError:
+                If this command system has been cleaned, or the room's gate
+                refuses the command.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="describe_commands",
+                frame_name=None,
+        ):
+            return tuple(
+                # Dynamic names taken from this room's own command list.
+                CommandCatalog.describe_command_summary(command_name, getattr(self, command_name))
+                for command_name in self._list_supported_command_methods_tuple()
+            )
+
+    def describe_command(self, command_name: str) -> Dict[str, object]:
+        """
+        Return one command's help: its signature, its arguments and its docstring.
+
+        Purpose:
+            Tell an agent how to call one command before it calls it (GitHub
+            #339).
+
+        Contract:
+            - For a command in `list_supported_command_methods()`: `accepted:
+              True`, `command`, `signature`, `arguments` - one row per named
+              parameter, in signature order: `name`, `type` (the annotation as
+              the source spells it), `required`, and `default` only when not
+              required; `*args` and `**kwargs` are not rows - and `doc`, the full
+              docstring.
+            - Any other name answers the refusal `run_command` gives it:
+              `accepted: False`, `command`, `reason: command_not_supported`,
+              `message` and `supported_commands`.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission, as `list_supported_command_methods()` does.
+
+        Args:
+            command_name:
+                Name of the command to describe.
+
+        Returns:
+            Dict[str, object]: The command's help, or the refusal payload.
+
+        Raises:
+            RuntimeError:
+                If this command system has been cleaned, or the room's gate
+                refuses the command.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="describe_command",
+                frame_name=None,
+        ):
+            supported_commands = self._list_supported_command_methods_tuple()
+            if command_name not in supported_commands:
+                return CommandCatalog.refuse_unsupported_command(command_name, supported_commands)
+            # A dynamic name taken from this room's own command list.
+            return CommandCatalog.describe_command_help(command_name, getattr(self, command_name))
+
+    def tool_definitions(self) -> Tuple[Dict[str, object], ...]:
+        """
+        Return one tool definition per command this room serves.
+
+        Purpose:
+            Hand a harness the room's commands as tools an agent can call
+            through `run_command`, generated from the commands' signatures and
+            docstrings (GitHub #339).
+
+        Contract:
+            - Covers exactly `list_supported_command_methods()`, in its order;
+              `tool_definitions` itself and `run_command` serve the caller and
+              are not in that list.
+            - Each definition is exactly `{name, description, input_schema}`:
+              `description` is the docstring's text before its first `Args:`,
+              `Returns:`, `Raises:` or `Yields:` line; `input_schema` is a JSON
+              Schema object of the command's keyword-passable parameters, each
+              described by its `Args:` entry, else its annotation text, whose
+              `required` is the parameters without defaults and whose
+              `additionalProperties` is true only for a command taking
+              `**kwargs` (the mapping rules are `CommandCatalog`'s).
+            - Pure reads: no command action, so no gate ticket, hooks or memory
+              record.
+
+        Returns:
+            Tuple[Dict[str, object], ...]: The tool definitions,
+            JSON-serializable.
+
+        Raises:
+            RuntimeError:
+                If this command system has been cleaned.
+        """
+        self.check_cleaned()
+        return tuple(
+            # Dynamic names taken from this room's own command list.
+            CommandCatalog.tool_definition(command_name, getattr(self, command_name))
+            for command_name in self._list_supported_command_methods_tuple()
+        )
 
     @contextmanager
     def _entered_command_action(

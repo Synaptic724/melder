@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `14a3bce9abd0b2621c1ada189724a92b5d882eac8e4f9455a78f33e21adb0a84`
+- source_sha256: `3a236377f9a8d8631fdffb5a4214abd36c1d3eb7e85ff4062d9709d6af6f4ff9`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `ee7ff153bf46bb5f69cfc5b228b7c652f81ba3e2e1833b99732c7171b4462ac4`
+- source_sha256: `42f3c559a30fc70b59adfd80013aa9ffda868757e6b7a8fd5080d3ece66ef3da`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `fd586b1fa5d2a250929b5f617869fd45fc2c372562b002c41e29b5123ec2fcc0`
+- source_sha256: `68e8eca6723f1b70d3ffc5526aac59bd21155c59cd55ac7c57b81d0c69fa6975`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `b99204ec8725c90fe5cab17bf24fce4d0f60b5bc56516a49cc1dae731c168559`
+- source_sha256: `11e54ce18599b9bda2a3bf39fe3dd04e8f14d944897e3b2371c28ce7951401ff`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `d91e41057bd1ef7821a7faf4d70f413420da69698061fa4ead4d1299e6697982`
+- source_sha256: `546f7b0ec38e52ee718b4f0fd5c49736a8749cfad3652cea5eabdedce5da8f01`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `5cb6171183645e9fb98e2d2a014f4fef52ee114736599c80840817a36285cd68`
+- source_sha256: `83bf84fce248fb42361bf479c393596e13e9ee431c0007349e9b54a76c2c4b5d`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `728b6f449048662853f6e291102d166591b13d82a4d3670f6d35785d344357fe`
+- source_sha256: `575ca8ee5a0b03f35432997aaf40d10acdc802fd37961a617d8d4638c10fc6a7`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `24a1e5abf62adfc04bc8366a195cae23a62853bb664a18c19acf6faaabb3e0be`
+- source_sha256: `d08ef7070e921fb48af8598cf878021e40f6bc652c6389ec94d23fa88ff6ca65`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `4e18fc3d5a10d7933b6c66e3001602629658433e2eec559faa0d82c556531155`
+- source_sha256: `2bd8d63b58de8a409675b6d409807ba651fb040d10071755711960d18158a580`
 - nodes: 1
 
 ### Nodes
@@ -23390,7 +23390,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/codegen_system.py
 
-- source_sha256: `4ede07a12f02546dc1f2eec2ccd9bdea2232b3a554ea532c89bd18406509be20`
+- source_sha256: `7468cd147356e5770a93c52d35a4a6fbe9b711d0f528986d61def5250fcc42dc`
 - nodes: 2
 
 ### Nodes
@@ -23415,7 +23415,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - runs a request naming a frame the owning Rift holds no codegen projection for under the safe posture - imports off, no unsafe reflection, dunder access or recursive codegen, and `__import__` plus SAFE_DENIED_BUILTIN_NAMES denied, the tuple read from the preset module rather than copied (0.2.8270)
   - reads `static_only_denied_builtin_names` off the projection's compiled surface into the namespace configuration, empty for the no-projection default, so the codegen import gate reaches every built namespace (D-11, 0.2.8271)
   - returns the room's filtered builtins mapping for an accepted materialize (build_materialize_builtins), the mapping execute_codegen gives room code, so a materialized module reaches what the room reaches (D-20, 0.2.8272)
-- owns_state: `_rift`, `_space`, `_validator`, `_validation_reporter`, `_namespace_builder`, `_compiler`, `_executor`, `_monitor`
+  - keeps each validation-accepted run's source by transaction id in _run_sources until cleanup (GitHub #339)
+  - hands the kept run sources to CodegenExecutor.execute so a runtime failure can quote its room-code line
+- owns_state: `_rift`, `_space`, `_validator`, `_validation_reporter`, `_namespace_builder`, `_compiler`, `_executor`, `_monitor`, `_run_sources`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build_materialize_builtins`, `cleanup`, `codegen_system_id`, `execute_codegen`, `execute_codegen_request`, `owner_space_id`, `report_validation_result`, `validate_codegen`, `validate_codegen_request`
 
@@ -23509,7 +23511,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py
 
-- source_sha256: `64bb623ef9bf75722d1377204c459933a416b81add2df06263adba77cc9c8e78`
+- source_sha256: `85c71a02d01443b0e4f07238889a528f9536a8ebf1ff6577af9124d960be04e0`
 - nodes: 2
 
 ### Nodes
@@ -23529,8 +23531,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - compiles generated Python into an executable code object
   - keeps execution and validation responsibilities out of the compile step
+  - compiles each run under <melder-codegen:{transaction_id}> (run_filename), so its code objects name their run
+  - reads a run id back from a co_filename (run_id_from_filename); None for any other file name (GitHub #339)
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `compile`
+- public methods: `cleanup`, `compile`, `run_filename`, `run_id_from_filename`
 
 ### Edges out
 
@@ -23538,11 +23542,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (2, unconfirmed)
+### Edge candidates (3, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler` creates `RLock`
+- `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler` creates `ValueError`
 - `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler` creates `TypeError`
 
 <!-- END FILE: src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py -->
@@ -23551,7 +23556,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
 
-- source_sha256: `64fef631ccecdc925f27df8509c533007dbc252702fd69a1850fc391df5545e6`
+- source_sha256: `23d9d414d4631631e0971c258c848eb3378b8f0ada66346851e61c4c4e0ce1e0`
 - nodes: 2
 
 ### Nodes
@@ -23572,7 +23577,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stores accepted or rejected execution outcome
   - stores runtime result validation issues and runtime error details
   - carries the text room code printed and adds it to the payload as `output` when it is not empty (GitHub #337, 0.2.8312)
-- owns_state: `_accepted`, `_frame_name`, `_reason`, `_validation_issues`, `_runtime_error`, `_result`, `_transaction_id`, `_output`
+  - reports its transaction id as run_id on every payload (GitHub #339, 0.2.8315)
+  - carries a runtime failure's line, run id and line text, each added to the payload only when set
+- owns_state: `_accepted`, `_frame_name`, `_reason`, `_validation_issues`, `_runtime_error`, `_result`, `_transaction_id`, `_output`, `_runtime_error_line`, `_runtime_error_run_id`, `_runtime_error_line_text`
 - phases: `runtime`, `cleanup`
 - public methods: `accepted`, `cleanup`, `executed`, `frame_name`, `not_implemented`, `output`, `reason`, `result`, `runtime_error`, `runtime_failed`, `to_payload`, `transaction_id` (+2 more)
 
@@ -23595,7 +23602,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_executor.py
 
-- source_sha256: `1acffaf7b3a3efc83be7a72b453a311aaba0ce4776fabba26e21bca881a76c20`
+- source_sha256: `16daf3783f6cfa3e3ea169ea4164525f1e87aaa6e16e90df9abf61fba7b4a160`
 - nodes: 2
 
 ### Nodes
@@ -23609,13 +23616,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenExecutor` (class)
 
 - id: `melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor`
-- defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:16`
+- defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:19`
 - extends: `Cleanable`
 - role: Owner of governed code execution for one codegen request.
 - responsibilities:
   - executes compiled code against the built namespace
   - returns execution-layer result objects for the request
   - puts the namespace's captured output on the execution result after exec returns or raises (GitHub #337, 0.2.8312)
+  - on a runtime failure walks the traceback to its innermost room-code frame for its line and run (GitHub #339)
+  - quotes that line, stripped, from the room's kept run sources when the run's source is kept and has the line
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `execute`
 
@@ -23625,8 +23634,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor` | creates | `melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult` | one_to_many | runtime | authored |
+| `melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor` | uses | `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor` -> `melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult`: CodegenExecutor creates execution results for completed or failed codegen runs.
+- `melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor` -> `melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler`: It reads each traceback entry's run id through CodegenCompiler.run_id_from_filename.
 
 ### Edge candidates (3, unconfirmed)
 
@@ -24762,7 +24773,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/capability_command_system.py
 
-- source_sha256: `6335c971077c93f3f09a699d03772ff0792375e36594ca406360997880a79a7c`
+- source_sha256: `d701444a5dba5b09992cbd1075251d2736367b2208db725308741ca938fa80e1`
 - nodes: 2
 
 ### Nodes
@@ -24781,8 +24792,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Capability-room specialization of the shared command surface.
 - responsibilities:
   - preserves the shared broad runtime command behavior for CapabilityRiftSpace
-  - owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only
+  - owns the twenty-one research_* reads only (7 record, 8 foresight, 6 composition); other verbs are codegen-only
   - forwards optional creation names and uses lesser-aware authorized named lookup
+  - lists the shared names, its capability-owned names, then describe_commands and describe_command (GitHub #339)
+  - documents research_heads' tip as the newest version recorded on its lane, not the active one (GitHub #339)
 - phases: `runtime`
 - public methods: `count_conduits`, `create_cluster`, `create_lesser_conduit`, `delete_cluster`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_initiated_conduit`, `get_initiated_conduits`, `get_lesser_conduit` (+39 more)
 
@@ -24809,7 +24822,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `d1e0c8332fcdba84c5331c4b3c1ea5a8a51590c896b110017eee7da98a8e2955`
+- source_sha256: `cc1a89a89893e4b020c4d0d15f8f2037f21408874166cada52cfec11e88c35d1`
 - nodes: 2
 
 ### Nodes
@@ -24836,6 +24849,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - runs execute_codegen's engine request after releasing the command lock, its RiftGate ticket held; materialize_codegen still runs its module under that lock
   - takes the RiftGate ticket of validate_codegen, execute_codegen and materialize_codegen before their action-hook scope and releases it after the codegen memory record and the post-hooks, skipping the record on a command system cleaned meanwhile
   - states in execute_codegen's docstring how room code returns a value (`result`) and every payload key, `output` included (GitHub #337)
+  - resolves an omitted frame_name on its three codegen commands to the room's default runtime frame (0.2.8314)
+  - lists link_frame, get_nexus_frame, its helpers, codegen and research commands, then the two help commands
+  - documents execute_codegen's run_id, failure-location keys and keeping state on the workstation (0.2.8315)
+  - documents research_heads' tip as the newest version recorded on its lane, not the active one (GitHub #339)
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)
@@ -24866,11 +24883,51 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/nexus/rift/command_system/codegen_command_system.py -->
 
+<!-- BEGIN FILE: src/melder/nexus/rift/command_system/command_catalog.py -->
+
+## src/melder/nexus/rift/command_system/command_catalog.py
+
+- source_sha256: `2e4330dcad18c76d331155b3b9414a4e9340e1055faae179eebd920d37dd1779`
+- nodes: 2
+
+### Nodes
+
+#### `command_catalog` (module)
+
+- id: `melder.nexus.rift.command_system.command_catalog`
+- defined at: `src/melder/nexus/rift/command_system/command_catalog.py:1`
+- role: Kernel reader turning room commands' signatures and docstrings into help, refusals and tool schemas.
+
+#### `CommandCatalog` (class)
+
+- id: `melder.nexus.rift.command_system.command_catalog.CommandCatalog`
+- defined at: `src/melder/nexus/rift/command_system/command_catalog.py:8`
+- role: Stateless reader of a room command's signature and docstring for the room command line (GitHub #339).
+- responsibilities:
+  - reads signatures with annotationlib FORWARDREF and their text with STRING, never evaluating an annotation
+  - answers the summary (first docstring line) and the description (the text before Args:/Returns:/Raises:/Yields:)
+  - reads the docstring's Args: entries (name:, name: text, name (Type): text) into one text per parameter
+  - answers describe_command's argument rows: name, type as spelled, required, and default when not required
+  - computes run_command's bind check: missing parameters without defaults, unknown names unless **kwargs takes them
+  - builds the one refusal shape: accepted False, command, reason, message, then the supported or argument names
+  - maps each keyword-passable parameter to a JSON Schema property; required lists the parameters without defaults
+  - raises TypeError for arguments that are not a mapping with string keys - a caller bug, not a refusal
+- phases: `runtime`
+- public methods: `argument_entries`, `argument_rows`, `binding_problems`, `describe_command_help`, `describe_command_summary`, `description`, `input_schema`, `read_signature`, `refuse_invalid_arguments`, `refuse_unsupported_command`, `require_argument_mapping`, `signature_text` (+2 more)
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.nexus.rift.command_system.command_catalog.CommandCatalog` creates `TypeError`
+
+<!-- END FILE: src/melder/nexus/rift/command_system/command_catalog.py -->
+
 <!-- BEGIN FILE: src/melder/nexus/rift/command_system/command_system.py -->
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `886a4facc2e213d05c2e6de1195e69d7835086cbe056a219d513f6095428044c`
+- source_sha256: `52422c9cbcf60ee790c46c4ecec0e6ebdce738cd9db5e8a1305c89d52aacd246`
 - nodes: 2
 
 ### Nodes
@@ -24884,7 +24941,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CommandSystem` (class)
 
 - id: `melder.nexus.rift.command_system.command_system.CommandSystem`
-- defined at: `src/melder/nexus/rift/command_system/command_system.py:20`
+- defined at: `src/melder/nexus/rift/command_system/command_system.py:21`
 - extends: `Cleanable`
 - role: Room-local mediated command layer.
 - responsibilities:
@@ -24897,9 +24954,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused
   - runs get_target_attribute, get_target_method and execute_target_method with no command lock, so agent code there never runs under it
   - admits every command at the room's RiftGate before its action-hook scope and releases the ticket last, after the memory record and the post-hooks, skipping the memory record on a command system cleaned during the call
+  - keeps the room's command list in _list_supported_command_methods_tuple, which each room subclass overrides
+  - ends every room's command list with describe_commands and describe_command (GitHub #339, 0.2.8314)
+  - run_command dispatches only a listed name and answers a refusal for an unlisted name or unbound arguments
+  - run_command returns the command's own value, never catches what it raises and takes no lock or gate ticket itself
+  - answers tool_definitions: one {name, description, input_schema} per listed command, outside any command action
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id` (+7 more)
+- public methods: `cleanup`, `command_system_id`, `describe_command`, `describe_commands`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_index_id` (+11 more)
 
 ### Edges out
 
@@ -24909,10 +24971,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.nexus.rift.command_system.command_system.CommandSystem` | borrows | `melder.nexus.rift.rift_space.rift_space.RiftSpace` | one_to_one | runtime | authored |
 | `melder.nexus.rift.command_system.command_system.CommandSystem` | borrows | `melder.nexus.rift.rift_space.workstation.Workstation` | one_to_one | runtime | authored |
 | `melder.nexus.rift.command_system.command_system.CommandSystem` | borrows | `melder.nexus.rift.rift_gate.rift_gate.RiftGate` | many_to_one | runtime | authored |
+| `melder.nexus.rift.command_system.command_system.CommandSystem` | uses | `melder.nexus.rift.command_system.command_catalog.CommandCatalog` | many_to_one | runtime | authored |
 
 - `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.rift_space.rift_space.RiftSpace`: CommandSystem is room-local and depends on the owning RiftSpace for room posture and supporting systems.
 - `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.rift_space.workstation.Workstation`: CommandSystem uses the workstation for bindings and result storage but does not own its lifecycle.
 - `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.rift_gate.rift_gate.RiftGate`: Every command takes and releases a ticket on the room's Rift gate (space.rift_gate), which the Rift owns; the command never closes or cleans it.
+- `melder.nexus.rift.command_system.command_system.CommandSystem` -> `melder.nexus.rift.command_system.command_catalog.CommandCatalog`: The four command-line methods read help, refusals and schemas through CommandCatalog's static methods.
 
 ### Edge candidates (5, unconfirmed)
 
@@ -24930,7 +24994,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/static_command_system.py
 
-- source_sha256: `32512bd76e281a0e7fae716c721826a33f27341869cc5c70ed360a015fa86a47`
+- source_sha256: `b6b7e17468242da19c9039e5194b971f88ff5c3479574b6062f96a989db852b5`
 - nodes: 2
 
 ### Nodes
@@ -24953,6 +25017,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - resolves spell owners through Aether's root lookup (owners are roots)
   - treats many, unique_per_spell_space and managed_spell_quantity spells as having no single stored object to hand out - a managed spell's objects are leased from a pool (0.2.8243)
   - answers get_spell_by_spell_id (renamed from get_spell_by_id, 0.2.8253) and get_spell_by_source_id with the live object of only the version named - the records published for that spell_id, or the one record the source id names - each melded by its own spell_id through _meld_live_spell_from_records_locked, the reuse-only loop the index path shares, whose refusals name what was asked (Spell id '<id>', Spell '<source_id>', Spell index '<id>')
+  - lists the shared names, its static-owned helpers, then describe_commands and describe_command (GitHub #339)
 - phases: `runtime`, `cleanup`
 - public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_index_id`, `get_spell_by_source_id`, `get_spell_by_spell_id`, `list_supported_command_methods`, `meld_existing_spell`
 

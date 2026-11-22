@@ -771,19 +771,40 @@ class StaticCommandSystem(CommandSystem):
             "reason": reason,
         }
 
+    def _list_supported_command_methods_tuple(self) -> tuple[str, ...]:
+        """
+        Return the static room's command list without any gate or room-policy
+        filtering.
+
+        Contract:
+            - The shared command names, then the static-owned helper names, then
+              the two help commands `describe_commands` and `describe_command`
+              (GitHub #339), in stable presentation order.
+            - The single source of truth for this room's list:
+              `list_supported_command_methods()` returns it inside its gate and
+              `run_command` dispatches only these names.
+
+        Returns:
+            tuple[str, ...]: The static room's command-method names.
+        """
+        return (
+            self._SHARED_COMMAND_METHOD_NAMES
+            + self._STATIC_COMMAND_METHOD_NAMES
+            + self._HELP_COMMAND_METHOD_NAMES
+        )
+
     def list_supported_command_methods(self) -> tuple[str, ...]:
         """
         Return the public command methods supported by static rooms.
 
         Returns:
             tuple[str, ...]: Shared command names plus static-owned helper
-                names in stable presentation order.
+                names, then the two help commands, in stable presentation
+                order (`_list_supported_command_methods_tuple()`).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="list_supported_command_methods",
                 frame_name=None,
         ):
-            return self._list_supported_command_methods_tuple() + (
-                self._STATIC_COMMAND_METHOD_NAMES
-            )
+            return self._list_supported_command_methods_tuple()

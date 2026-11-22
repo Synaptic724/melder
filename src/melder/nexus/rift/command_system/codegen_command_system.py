@@ -603,7 +603,7 @@ class CodegenCommandSystem(CommandSystem):
             self,
             code: str,
             *,
-            frame_name: str,
+            frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
         """
         Validate generated Python code through the attached codegen system.
@@ -617,26 +617,31 @@ class CodegenCommandSystem(CommandSystem):
             - Delegates validation into the attached `CodegenSystem`.
             - Emits one full-source codegen memory record for the completed
               top-level validation action when room memory is enabled.
-            - Requires non-empty `code` and `frame_name` to preserve the future
-              call contract.
+            - Requires non-empty `code`. `frame_name` is optional (GitHub #339):
+              omitted, it is the room's default runtime frame - its only
+              assigned frame - resolved under the command lock as the room's
+              other commands resolve it; a `frame_name` given empty is still
+              refused.
 
         Args:
             code:
                 Generated Python source to validate later.
             frame_name:
                 Target frame whose codegen ACL/namespace policy will later be
-                applied.
+                applied; the room's default runtime frame when omitted.
 
         Returns:
             Dict[str, object]: Public validation payload.
 
         Raises:
-            ValueError: If `code` or `frame_name` is empty.
+            ValueError: If `code` is empty, `frame_name` is given empty, or
+                `frame_name` is omitted in a room without a default runtime
+                frame ("Rift has no default runtime frame.").
         """
         self.check_cleaned()
         if not isinstance(code, str) or not code:
             raise ValueError("code cannot be empty.")
-        if not isinstance(frame_name, str) or not frame_name:
+        if frame_name is not None and (not isinstance(frame_name, str) or not frame_name):
             raise ValueError("frame_name cannot be empty.")
         # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
         # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
@@ -650,11 +655,12 @@ class CodegenCommandSystem(CommandSystem):
             ):
                 try:
                     with self._lock:
+                        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
                         codegen_system = self._require_codegen_system()
                         transaction_context, validation_result = (
                             codegen_system.validate_codegen_request(
                                 code,
-                                frame_name=frame_name,
+                                frame_name=resolved_frame_name,
                             )
                         )
                         return codegen_system.report_validation_result(validation_result)
@@ -679,7 +685,7 @@ class CodegenCommandSystem(CommandSystem):
             self,
             code: str,
             *,
-            frame_name: str,
+            frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
         """
         Execute generated Python code through the attached codegen system.
@@ -704,47 +710,75 @@ class CodegenCommandSystem(CommandSystem):
               configuration turns `codegen_output_capture` off prints to the
               host's stdout instead. `print(..., file=x)` writes to `x`
               (GitHub #337, task 2).
+            - State between runs: each run starts from a fresh namespace, so a
+              name one run defines is gone when the run ends. Keep what a later
+              run needs on the room's workstation, which room code reaches as
+              `workstation`: `workstation.bind_object('rows', rows)` in one run,
+              `workstation.get('rows')` in a later one. A function bound this way
+              keeps working in later runs (GitHub #339).
+            - Every payload names its run (`run_id`); a runtime failure in room
+              code also names where it failed - the innermost room-code frame of
+              the traceback: a line of this run, a line inside a function an
+              earlier run defined (that run's id), or the room line that called
+              the melder or library code that raised (GitHub #339). The room
+              keeps every accepted run's source until it is removed, so the line
+              can be quoted.
             - Emits one full-source codegen memory record for the completed
               top-level execution action when room memory is enabled.
-            - Requires non-empty `code` and `frame_name` to preserve the future
-              call contract.
+            - Requires non-empty `code`. `frame_name` is optional (GitHub #339):
+              omitted, it is the room's default runtime frame - its only
+              assigned frame - resolved under the command lock as the room's
+              other commands resolve it; a `frame_name` given empty is still
+              refused.
 
         Args:
             code:
                 Generated Python source to execute.
             frame_name:
-                Target frame whose codegen ACL/namespace policy is applied.
+                Target frame whose codegen ACL/namespace policy is applied; the
+                room's default runtime frame when omitted.
 
         Returns:
             Dict[str, object]: The execution payload:
                 - `accepted` (bool): True when the code passed validation and
                   ran without raising.
                 - `frame_name` (str): The target frame.
+                - `run_id` (str, always): This run's id - also on a run
+                  validation refused.
                 - `reason` (str, on refusal): `codegen_execution_validation_failed`
                   or `codegen_execution_runtime_failed`.
                 - `validation_issues` (Tuple[str, ...], when validation refused
                   the code): why, one message per issue; the code did not run.
                 - `runtime_error` (str, when the code raised): `"<Type>: <message>"`.
+                - `runtime_error_line` (int, when the code raised): the line of
+                  the innermost room-code frame.
+                - `runtime_error_run_id` (str, with `runtime_error_line`): the
+                  run whose code holds that line - this run's `run_id`, or an
+                  earlier run's.
+                - `runtime_error_line_text` (str, when the room kept that run's
+                  source): that line, stripped.
                 - `result` (object, when the code assigned `result` a value
                   other than None).
                 - `output` (str, when the code printed anything): the captured
                   text, also on a run that raised.
 
         Raises:
-            ValueError: If `code` or `frame_name` is empty.
+            ValueError: If `code` is empty, `frame_name` is given empty, or
+                `frame_name` is omitted in a room without a default runtime
+                frame ("Rift has no default runtime frame.").
 
         Threading:
-            Reads the attached `CodegenSystem` under the command lock and runs
-            the request - agent code - after releasing it, so other commands in
-            the room do not wait on a running script and a script that runs a
-            command of this room cannot freeze against it (GitHub #274, W5).
-            The engine's own locks are unchanged and still take one request at
-            a time.
+            Reads the attached `CodegenSystem` and resolves the frame under the
+            command lock and runs the request - agent code - after releasing
+            it, so other commands in the room do not wait on a running script
+            and a script that runs a command of this room cannot freeze against
+            it (GitHub #274, W5). The engine's own locks are unchanged and still
+            take one request at a time.
         """
         self.check_cleaned()
         if not isinstance(code, str) or not code:
             raise ValueError("code cannot be empty.")
-        if not isinstance(frame_name, str) or not frame_name:
+        if frame_name is not None and (not isinstance(frame_name, str) or not frame_name):
             raise ValueError("frame_name cannot be empty.")
         # Ticket first, released last (GitHub #274, step 3): admitted before the hook scope, released after the
         # memory record and the post-hooks, so a removal cannot tear the room down under this command's exit.
@@ -758,12 +792,13 @@ class CodegenCommandSystem(CommandSystem):
             ):
                 try:
                     with self._lock:
+                        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
                         codegen_system = self._require_codegen_system()
                     # The script runs outside the command lock (GitHub #274, W5); the RiftGate ticket stays held.
                     transaction_context, execution_result = (
                         codegen_system.execute_codegen_request(
                             code,
-                            frame_name=frame_name,
+                            frame_name=resolved_frame_name,
                         )
                     )
                     return execution_result.to_payload()
@@ -789,7 +824,7 @@ class CodegenCommandSystem(CommandSystem):
             code: str,
             *,
             module_name: str,
-            frame_name: str,
+            frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
         """
         Promote validated codegen source to a live SyntheticModule.
@@ -828,6 +863,10 @@ class CodegenCommandSystem(CommandSystem):
               before the error propagates, so `sys.modules` is as found.
             - Emits one full-source codegen memory record for the completed
               top-level action when room memory is enabled.
+            - `frame_name` is optional (GitHub #339): omitted, it is the room's
+              default runtime frame - its only assigned frame - resolved under
+              the command lock as the room's other commands resolve it; a
+              `frame_name` given empty is still refused.
 
         Args:
             code:
@@ -836,7 +875,8 @@ class CodegenCommandSystem(CommandSystem):
                 Canonical import name for the new module; every dotted
                 segment must be a legal Python identifier.
             frame_name:
-                Target frame whose codegen ACL/validation policy applies.
+                Target frame whose codegen ACL/validation policy applies; the
+                room's default runtime frame when omitted.
 
         Returns:
             Dict[str, object]: `materialized` flag, module identity
@@ -846,15 +886,17 @@ class CodegenCommandSystem(CommandSystem):
             `refusal`.
 
         Raises:
-            ValueError: If `code`, `module_name`, or `frame_name` is empty,
-                or `module_name` is not dotted-identifier legal.
+            ValueError: If `code` or `module_name` is empty, `frame_name` is
+                given empty, `module_name` is not dotted-identifier legal, or
+                `frame_name` is omitted in a room without a default runtime
+                frame ("Rift has no default runtime frame.").
             RuntimeError: If the room's codegen engine is not attached or the
                 command system has been cleaned.
         """
         self.check_cleaned()
         if not isinstance(code, str) or not code:
             raise ValueError("code cannot be empty.")
-        if not isinstance(frame_name, str) or not frame_name:
+        if frame_name is not None and (not isinstance(frame_name, str) or not frame_name):
             raise ValueError("frame_name cannot be empty.")
         if not isinstance(module_name, str) or not module_name:
             raise ValueError("module_name cannot be empty.")
@@ -879,11 +921,12 @@ class CodegenCommandSystem(CommandSystem):
             ):
                 try:
                     with self._lock:
+                        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
                         codegen_system = self._require_codegen_system()
                         transaction_context, validation_result = (
                             codegen_system.validate_codegen_request(
                                 code,
-                                frame_name=frame_name,
+                                frame_name=resolved_frame_name,
                             )
                         )
                         validation_payload = codegen_system.report_validation_result(
@@ -1187,6 +1230,14 @@ class CodegenCommandSystem(CommandSystem):
     def research_heads(self) -> object:
         """
         Return the tip identity of every open research lane.
+
+        Contract:
+            - Each tip is the newest version recorded on its lane - the last one
+              registered there - not the version the spell's SpellIndex has
+              active. After a notch back to an older version, the tip still
+              names the newer one; `research_residency(spell_id)` says which
+              version is active (GitHub #339).
+            - Open lanes only; an open lane with no node yet maps to None.
 
         Returns:
             object: lane name -> tip spell id mapping (detached).
@@ -2138,27 +2189,50 @@ class CodegenCommandSystem(CommandSystem):
             raise RuntimeError("codegen system is not attached.")
         return self._codegen_system
 
+    def _list_supported_command_methods_tuple(self) -> Tuple[str, ...]:
+        """
+        Return the codegen room's command list without any gate or room-policy
+        filtering.
+
+        Contract:
+            - The two shared frame-navigation names (`link_frame`,
+              `get_nexus_frame`), then the selected codegen runtime helpers,
+              then the codegen execution seams and research commands, then the
+              two help commands `describe_commands` and `describe_command`
+              (GitHub #339), in stable presentation order.
+            - The single source of truth for this room's list:
+              `list_supported_command_methods()` returns it inside its gate and
+              `run_command` dispatches only these names.
+
+        Returns:
+            Tuple[str, ...]: The codegen room's command-method names.
+        """
+        return (
+            ("link_frame", "get_nexus_frame")
+            + self._CODEGEN_RUNTIME_HELPER_METHOD_NAMES
+            + self._CODEGEN_COMMAND_METHOD_NAMES
+            + self._HELP_COMMAND_METHOD_NAMES
+        )
+
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """
         Return the public command methods supported by codegen rooms.
 
         Purpose:
             Preserve the explicitly approved shared frame-navigation surface,
-            append the selected codegen runtime helpers, and then append the
-            codegen execution seams.
+            append the selected codegen runtime helpers, then the codegen
+            execution seams, and then the two help commands.
 
         Returns:
             Tuple[str, ...]: Shared frame-navigation names plus selected
-                codegen helper and execution method names.
+                codegen helper and execution method names, then
+                `describe_commands` and `describe_command`
+                (`_list_supported_command_methods_tuple()`).
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="list_supported_command_methods",
                 frame_name=None,
         ):
-            return (
-                ("link_frame", "get_nexus_frame")
-                + self._CODEGEN_RUNTIME_HELPER_METHOD_NAMES
-                + self._CODEGEN_COMMAND_METHOD_NAMES
-            )
+            return self._list_supported_command_methods_tuple()
 

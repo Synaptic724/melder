@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 711b127078bfb5e2bcd7378ef58e630aefc6542863bb2c3db95f33bf4cafd932
-FILE COUNT: 1215
+SOURCE FINGERPRINT: ca735e7875da49136c3715be966bd0d0441b52da8007da209933ed221a2ced15
+FILE COUNT: 1218
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -38002,7 +38002,7 @@ END FILE: tests/component/melder/aether/test_nexus_viewer_general_helper_compone
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py
-CONTENT SHA256: 826e83330f50ed9814c977f704e024900ab1587428af71f6ba5c0ba33881075c
+CONTENT SHA256: a68d478646219f9826283267dcaf056e26f3b06e50e2ba1210dc8a7a5e5556a8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -38733,6 +38733,9 @@ def test_execute_codegen_runs_the_engine_without_blocking_another_agents_command
     )
     assert lister.raised is None
     assert lister.returned == ("pricing_root",)
+    # Every execute payload names its run (GitHub #339); the rest of the payload is pinned exactly.
+    run_id = payload.pop("run_id")
+    assert isinstance(run_id, str) and run_id
     assert payload == {"accepted": True, "frame_name": "default", "result": 1}
 
 
@@ -119349,7 +119352,7 @@ END FILE: tests/integration/melder/aether/test_codegen_materialize_boundary_inte
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_codegen_room_agent_contract_integration.py
-CONTENT SHA256: ebb4dd4301690a4bff3dae44380c0f39196e399191c9b925da79ba3ab89736c0
+CONTENT SHA256: ab9868f4309391faeeb42f4aac610602398e654cf81684079d6a061fcafd3d07
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -119360,10 +119363,16 @@ Purpose:
     side: validation refused valid Python that binds a name through an exception handler, a match pattern or a type
     parameter (task 1), and the room's help never said how a value comes back (task 2). These integration tests pin,
     in a real safe-profile room, that such code validates and executes and what the execution payload carries.
+    Tasks 6 and 7 (GitHub #339) add the room's command line - `run_command`, `describe_commands`, `describe_command`
+    and `tool_definitions`, `frame_name` optional on the three codegen commands - and the run id and failure location
+    every execute payload carries; the tests after the #337 ones pin each of #339's acceptance criteria.
 
 Runs only on 3.14t (melder package root import chain).
 """
-from typing import TYPE_CHECKING, Iterator, Optional, Tuple
+import annotationlib
+import inspect
+import json
+from typing import TYPE_CHECKING, Callable, Dict, Iterator, Optional, Set, Tuple
 
 import pytest
 
@@ -119566,8 +119575,8 @@ def test_a_room_with_capture_off_prints_to_the_host_stdout(
 
 def test_the_payload_has_no_output_key_when_nothing_was_printed() -> None:
     """
-    Contract: code that prints nothing returns exactly `accepted`, `frame_name` and its `result` (GitHub #337,
-    task 2).
+    Contract: code that prints nothing returns exactly `accepted`, `frame_name`, its `run_id` and its `result`
+    (GitHub #337, task 2; `run_id` since GitHub #339).
     """
     conduit, command_system = _safe_room()
     try:
@@ -119575,7 +119584,503 @@ def test_the_payload_has_no_output_key_when_nothing_was_printed() -> None:
     finally:
         conduit.cleanup()
 
+    run_id = execution.pop("run_id")
+    assert isinstance(run_id, str) and run_id
     assert execution == {"accepted": True, "frame_name": "ops", "result": {"answer": 42}}
+
+
+def _command_parameters(method: Callable[..., object]) -> Tuple[inspect.Parameter, ...]:
+    """
+    Read a room command's parameters without evaluating its annotations.
+
+    Args:
+        method: The bound room command.
+
+    Returns:
+        Tuple[inspect.Parameter, ...]: Its parameters, in signature order.
+    """
+    signature = inspect.signature(method, annotation_format=annotationlib.Format.FORWARDREF)
+    return tuple(signature.parameters.values())
+
+
+def _schema_keywords(schema: Dict[str, object]) -> Set[str]:
+    """
+    Collect every keyword one JSON Schema uses, nested schemas included.
+
+    Args:
+        schema: A property schema of a tool definition.
+
+    Returns:
+        Set[str]: The keywords found.
+    """
+    keywords = set(schema)
+    nested = list(schema.get("anyOf", ()))
+    if "items" in schema:
+        nested.append(schema["items"])
+    for nested_schema in nested:
+        keywords |= _schema_keywords(nested_schema)
+    return keywords
+
+
+def test_run_command_refuses_a_call_missing_a_required_argument() -> None:
+    """
+    Contract: `run_command("validate_codegen", {})` answers the refusal shape naming `code` as missing, its message
+    naming the command and its signature, where a by-name call used to raise Python's TypeError (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        refusal = command_system.run_command("validate_codegen", {})
+    finally:
+        conduit.cleanup()
+
+    assert refusal == {
+        "accepted": False,
+        "command": "validate_codegen",
+        "reason": "command_arguments_invalid",
+        "message": (
+            "Command 'validate_codegen' cannot run with these arguments: missing required argument 'code'. "
+            "Call it as validate_codegen(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object]."
+        ),
+        "missing_arguments": ("code",),
+        "unknown_arguments": (),
+    }
+
+
+@pytest.mark.parametrize(
+    ("command_name", "arguments", "expected_missing", "expected_unknown"),
+    [
+        pytest.param("validate_codegen", {"code": "result = 1", "frame": "ops"}, (), ("frame",), id="unknown"),
+        pytest.param("execute_codegen", {"source": "result = 1"}, ("code",), ("source",), id="missing-and-unknown"),
+        pytest.param(
+            "materialize_codegen",
+            {"code": "value = 1"},
+            ("module_name",),
+            (),
+            id="missing-keyword-only",
+        ),
+    ],
+)
+def test_run_command_names_the_unknown_and_missing_arguments(
+        command_name: str,
+        arguments: Dict[str, object],
+        expected_missing: Tuple[str, ...],
+        expected_unknown: Tuple[str, ...],
+) -> None:
+    """
+    Contract: arguments that do not bind are refused naming every missing and every unknown argument, and nothing
+    runs (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        refusal = command_system.run_command(command_name, arguments)
+    finally:
+        conduit.cleanup()
+
+    assert refusal["accepted"] is False
+    assert refusal["command"] == command_name
+    assert refusal["reason"] == "command_arguments_invalid"
+    assert refusal["missing_arguments"] == expected_missing
+    assert refusal["unknown_arguments"] == expected_unknown
+    for name in expected_missing + expected_unknown:
+        assert "'{0}'".format(name) in refusal["message"]
+
+
+@pytest.mark.parametrize(
+    "command_name",
+    [
+        pytest.param("cleanup", id="cleanup"),
+        pytest.param("_require_codegen_system", id="private-method"),
+        pytest.param("attach_codegen_system", id="public-method-outside-the-list"),
+        pytest.param("run_command", id="run_command-itself"),
+        pytest.param("tool_definitions", id="tool_definitions"),
+        pytest.param("list_supported_command_methods", id="list_supported_command_methods"),
+    ],
+)
+def test_run_command_refuses_a_name_outside_the_rooms_command_list(command_name: str) -> None:
+    """
+    Contract: a name outside the room's command list - `cleanup`, a private method, any public method the list does
+    not carry - is refused with the supported commands, and nothing runs: the room is still live (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        supported = command_system.list_supported_command_methods()
+        refusal = command_system.run_command(command_name, {})
+        still_cleaned = command_system.cleaned
+        after = command_system.execute_codegen("result = 1\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert refusal == {
+        "accepted": False,
+        "command": command_name,
+        "reason": "command_not_supported",
+        "message": "Command '{0}' is not in this room's command list. Supported commands: {1}.".format(
+            command_name,
+            ", ".join(supported),
+        ),
+        "supported_commands": supported,
+    }
+    assert still_cleaned is False
+    assert after["accepted"] is True
+
+
+def test_run_command_returns_what_the_direct_call_returns() -> None:
+    """
+    Contract: a call that binds returns the command's own value, unwrapped - the same payload as the direct call,
+    the same live object - and an omitted `frame_name` runs on the room's default frame (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        direct_validation = command_system.validate_codegen("result = 1\n", frame_name="ops")
+        named_validation = command_system.run_command(
+            "validate_codegen",
+            {"code": "result = 1\n", "frame_name": "ops"},
+        )
+        direct_frame = command_system.get_nexus_frame(frame_name="ops")
+        named_frame = command_system.run_command("get_nexus_frame", {"frame_name": "ops"})
+        direct_execution = command_system.execute_codegen("result = {'answer': 42}\n")
+        named_execution = command_system.run_command("execute_codegen", {"code": "result = {'answer': 42}\n"})
+    finally:
+        conduit.cleanup()
+
+    assert named_validation == direct_validation
+    assert named_frame is direct_frame is conduit
+    assert named_execution.pop("run_id") != direct_execution.pop("run_id")
+    assert named_execution == direct_execution == {"accepted": True, "frame_name": "ops", "result": {"answer": 42}}
+
+
+def test_run_command_never_catches_what_the_command_raises() -> None:
+    """
+    Contract: only the bind is checked; what the dispatched command raises - here the empty-code ValueError -
+    propagates unchanged (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        with pytest.raises(ValueError, match="code cannot be empty."):
+            command_system.run_command("execute_codegen", {"code": ""})
+        with pytest.raises(ValueError, match="frame_name cannot be empty."):
+            command_system.run_command("validate_codegen", {"code": "result = 1", "frame_name": ""})
+    finally:
+        conduit.cleanup()
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        pytest.param(["code"], "arguments must be a mapping", id="list"),
+        pytest.param({7: "result = 1"}, "argument names must be strings", id="int-key"),
+    ],
+)
+def test_run_command_raises_type_error_for_arguments_that_are_not_a_name_mapping(
+        arguments: object,
+        message: str,
+) -> None:
+    """
+    Contract: arguments that are not a mapping with string keys are a caller bug and raise TypeError (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        with pytest.raises(TypeError, match=message):
+            command_system.run_command("execute_codegen", arguments)
+    finally:
+        conduit.cleanup()
+
+
+def test_describe_commands_covers_every_supported_command() -> None:
+    """
+    Contract: `describe_commands()` has one entry per supported command, in the list's order - `command`,
+    `signature` and `summary` (the docstring's first line) - and both help commands are in the list (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        supported = command_system.list_supported_command_methods()
+        catalog = command_system.describe_commands()
+        summaries = {
+            name: inspect.getdoc(getattr(command_system, name)).splitlines()[0]
+            for name in supported
+        }
+    finally:
+        conduit.cleanup()
+
+    assert supported[-2:] == ("describe_commands", "describe_command")
+    assert tuple(entry["command"] for entry in catalog) == supported
+    for entry in catalog:
+        assert set(entry) == {"command", "signature", "summary"}
+        assert entry["signature"].startswith(entry["command"] + "(")
+        assert entry["summary"] == summaries[entry["command"]]
+    assert catalog[supported.index("execute_codegen")] == {
+        "command": "execute_codegen",
+        "signature": "execute_codegen(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object]",
+        "summary": "Execute generated Python code through the attached codegen system.",
+    }
+
+
+def test_describe_command_gives_one_commands_arguments_and_docstring() -> None:
+    """
+    Contract: `describe_command("execute_codegen")` answers `accepted: True`, its signature, one row per argument
+    and its full docstring, which names the payload's run and failure-location keys, the `frame_name` default and
+    the workstation for state kept between runs (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        help_payload = command_system.describe_command("execute_codegen")
+        docstring = inspect.getdoc(command_system.execute_codegen)
+    finally:
+        conduit.cleanup()
+
+    assert help_payload == {
+        "accepted": True,
+        "command": "execute_codegen",
+        "signature": "execute_codegen(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object]",
+        "arguments": (
+            {"name": "code", "type": "str", "required": True},
+            {"name": "frame_name", "type": "Optional[str]", "required": False, "default": None},
+        ),
+        "doc": docstring,
+    }
+    for key in ("run_id", "runtime_error_line", "runtime_error_run_id", "runtime_error_line_text"):
+        assert "`{0}`".format(key) in docstring
+    assert "default runtime frame" in docstring
+    assert "workstation.bind_object" in docstring
+    assert "workstation.get" in docstring
+
+
+def test_research_heads_help_says_its_tip_is_the_newest_recorded_version() -> None:
+    """
+    Contract: `research_heads`' help says each tip is the newest version recorded on the lane, not the active one,
+    and points at `research_residency` for which is active (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        docstring = command_system.describe_command("research_heads")["doc"]
+    finally:
+        conduit.cleanup()
+
+    assert "newest version recorded" in docstring
+    assert "not the version" in docstring
+    assert "research_residency" in docstring
+
+
+def test_describe_command_refuses_an_unknown_name() -> None:
+    """
+    Contract: `describe_command` of a name outside the room's command list answers the refusal shape with the
+    supported commands (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        supported = command_system.list_supported_command_methods()
+        refusal = command_system.describe_command("cleanup")
+    finally:
+        conduit.cleanup()
+
+    assert refusal["accepted"] is False
+    assert refusal["command"] == "cleanup"
+    assert refusal["reason"] == "command_not_supported"
+    assert refusal["supported_commands"] == supported
+
+
+def test_tool_definitions_give_one_schema_per_command_matching_its_signature() -> None:
+    """
+    Contract: `tool_definitions()` has one `{name, description, input_schema}` per supported command; each schema is
+    a JSON-serializable object schema whose `required` is exactly the parameters without defaults, whose properties
+    are the keyword-passable parameters, which uses only the keywords the catalog emits, and which allows additional
+    properties only for a command taking `**kwargs` (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        supported = command_system.list_supported_command_methods()
+        definitions = command_system.tool_definitions()
+        parameters_by_name = {
+            name: _command_parameters(getattr(command_system, name))
+            for name in supported
+        }
+    finally:
+        conduit.cleanup()
+
+    assert tuple(definition["name"] for definition in definitions) == supported
+    assert [definition["name"] for definition in json.loads(json.dumps(definitions))] == list(supported)
+    for definition in definitions:
+        parameters = parameters_by_name[definition["name"]]
+        schema = definition["input_schema"]
+        assert set(definition) == {"name", "description", "input_schema"}
+        assert set(schema) == {"type", "properties", "required", "additionalProperties"}
+        assert schema["type"] == "object"
+        assert schema["required"] == [
+            parameter.name
+            for parameter in parameters
+            if parameter.default is inspect.Parameter.empty
+            and parameter.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+        ]
+        assert list(schema["properties"]) == [
+            parameter.name
+            for parameter in parameters
+            if parameter.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+        ]
+        assert schema["additionalProperties"] is any(
+            parameter.kind is inspect.Parameter.VAR_KEYWORD for parameter in parameters
+        )
+        for property_schema in schema["properties"].values():
+            assert _schema_keywords(property_schema) <= {"type", "items", "anyOf", "enum", "description", "default"}
+
+
+def test_frame_name_is_optional_on_the_three_codegen_commands() -> None:
+    """
+    Contract: the codegen commands' tool schemas require `code` (and `module_name`) but not `frame_name`, and an
+    omitted `frame_name` runs on the room's default frame (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        definitions = {definition["name"]: definition for definition in command_system.tool_definitions()}
+        validation = command_system.validate_codegen("result = 1\n")
+        execution = command_system.execute_codegen("result = 1\n")
+        materialization = command_system.materialize_codegen("value = 1\n", module_name="json")
+    finally:
+        conduit.cleanup()
+
+    assert definitions["validate_codegen"]["input_schema"]["required"] == ["code"]
+    assert definitions["execute_codegen"]["input_schema"]["required"] == ["code"]
+    assert definitions["materialize_codegen"]["input_schema"]["required"] == ["code", "module_name"]
+    assert validation["frame_name"] == "ops"
+    assert execution["frame_name"] == "ops"
+    assert materialization["materialized"] is False
+    assert materialization["validation"]["frame_name"] == "ops"
+
+
+@pytest.mark.parametrize(
+    "command_name",
+    [
+        pytest.param("validate_codegen", id="validate"),
+        pytest.param("execute_codegen", id="execute"),
+        pytest.param("materialize_codegen", id="materialize"),
+    ],
+)
+def test_an_omitted_frame_name_in_a_room_without_a_default_frame_raises(command_name: str) -> None:
+    """
+    Contract: a room with no single assigned frame has no default, so an omitted `frame_name` raises the room's
+    existing "Rift has no default runtime frame." ValueError (GitHub #339).
+    """
+    nexus = create_enabled_nexus()
+    configuration = nexus.create_rift_configuration()
+    configuration.with_space_type("codegen")
+    command_system = nexus.create_rift(configuration=configuration, rift_name="alpha").space.command_system
+    arguments: Dict[str, object] = {"code": "value = 1\n"}
+    if command_name == "materialize_codegen":
+        arguments["module_name"] = "json"
+
+    with pytest.raises(ValueError, match="Rift has no default runtime frame."):
+        getattr(command_system, command_name)(**arguments)
+
+
+def test_every_execute_payload_carries_its_run_id() -> None:
+    """
+    Contract: every execute payload - accepted, refused by validation, failed at run time - carries its own run id,
+    and only the runtime failure carries a location (GitHub #339).
+    """
+    location_keys = {"runtime_error_line", "runtime_error_run_id", "runtime_error_line_text"}
+    conduit, command_system = _safe_room()
+    try:
+        accepted = command_system.execute_codegen("result = 1\n", frame_name="ops")
+        refused = command_system.execute_codegen("import os\n", frame_name="ops")
+        failed = command_system.execute_codegen("assert 1 == 2\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    run_ids = {accepted["run_id"], refused["run_id"], failed["run_id"]}
+    assert len(run_ids) == 3
+    assert all(isinstance(run_id, str) and run_id for run_id in run_ids)
+    assert refused["reason"] == "codegen_execution_validation_failed"
+    assert not location_keys & set(accepted)
+    assert not location_keys & set(refused)
+    assert location_keys <= set(failed)
+
+
+def test_a_failing_bare_assert_reports_its_line_text_and_run() -> None:
+    """
+    Contract: a failing bare `assert` reports `runtime_error` as before plus its line number, that line's text and
+    the id of its run (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        execution = command_system.execute_codegen("assert 1 == 2\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert execution["accepted"] is False
+    assert execution["runtime_error"] == "AssertionError: "
+    assert execution["runtime_error_line"] == 1
+    assert execution["runtime_error_run_id"] == execution["run_id"]
+    assert execution["runtime_error_line_text"] == "assert 1 == 2"
+
+
+def test_a_failure_inside_a_method_an_earlier_run_left_reports_that_runs_line() -> None:
+    """
+    Contract: a run that calls a method an earlier run left on the workstation, and fails inside it, reports the
+    earlier run's id, the line of its code and that line's text (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        defined = command_system.execute_codegen(
+            "def check(value):\n"
+            "    assert value == 2, 'value must be 2'\n"
+            "    return value\n"
+            "workstation.bind_object('check', check)\n",
+            frame_name="ops",
+        )
+        failed = command_system.execute_codegen("checked = workstation.get('check')(3)\n", frame_name="ops")
+    finally:
+        conduit.cleanup()
+
+    assert defined["accepted"] is True
+    assert failed["runtime_error"] == "AssertionError: value must be 2"
+    assert failed["runtime_error_run_id"] == defined["run_id"]
+    assert failed["runtime_error_run_id"] != failed["run_id"]
+    assert failed["runtime_error_line"] == 2
+    assert failed["runtime_error_line_text"] == "assert value == 2, 'value must be 2'"
+
+
+def test_a_failure_inside_melder_code_names_the_room_line_that_called_it() -> None:
+    """
+    Contract: a failure raised inside melder code that room code called is located at the room line that made the
+    call (GitHub #339).
+    """
+    conduit, command_system = _safe_room()
+    try:
+        execution = command_system.execute_codegen(
+            "x = 1\nworkstation.get('nothing_bound_here')\n",
+            frame_name="ops",
+        )
+    finally:
+        conduit.cleanup()
+
+    assert execution["runtime_error"] == "ValueError: Binding 'nothing_bound_here' was not found."
+    assert execution["runtime_error_line"] == 2
+    assert execution["runtime_error_run_id"] == execution["run_id"]
+    assert execution["runtime_error_line_text"] == "workstation.get('nothing_bound_here')"
+
+
+def test_the_kept_run_sources_are_gone_after_the_room_is_removed() -> None:
+    """
+    Contract: the room's codegen engine keeps each accepted run's source until the room is removed; removing the
+    Rift cleans the engine and drops them (GitHub #339).
+    """
+    nexus = create_enabled_nexus()
+    configuration = nexus.create_rift_configuration()
+    configuration.with_space_type("codegen")
+    rift = nexus.create_rift(configuration=configuration, rift_name="alpha")
+    conduit = rift.create_nexus_frame(frame_name="ops")
+    try:
+        rift.create_frame_link("ops")
+        codegen_system = rift.space.codegen_system
+        execution = rift.space.command_system.execute_codegen("result = 1\n", frame_name="ops")
+        kept_before_removal = dict(codegen_system._run_sources)
+        nexus.remove_rift(rift.id)
+    finally:
+        conduit.cleanup()
+
+    assert kept_before_removal == {execution["run_id"]: "result = 1\n"}
+    assert codegen_system.cleaned is True
+    with pytest.raises(AttributeError):
+        _ = codegen_system._run_sources
 ================================================================================
 END FILE: tests/integration/melder/aether/test_codegen_room_agent_contract_integration.py
 ================================================================================
@@ -122400,6 +122905,161 @@ def test_relationship_navigation_respects_visible_endpoints_and_sections(
         view.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/aether/test_non_resolvable_graph_replay.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/aether/test_room_command_line_integration.py
+CONTENT SHA256: 1054f926c70d24f239985972bed7d4bd1554b151eb2ab651773a4b0b76bbb8a6
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+The room command line in static and capability rooms (GitHub #339).
+
+Purpose:
+    `describe_commands`, `describe_command`, `run_command` and `tool_definitions` live on the base `CommandSystem`, so
+    every room has them, not only codegen rooms (whose acceptance tests are in
+    `test_codegen_room_agent_contract_integration.py`). These tests open real static and capability rooms through
+    Nexus and pin that each room's command list ends with the two help commands, that the catalog and the tool
+    definitions cover the list, and that `run_command` round-trips one of the room's commands and refuses a name
+    outside its list.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+from typing import TYPE_CHECKING, Iterator, Tuple
+
+import pytest
+
+from tests._codegen_system_support import (
+    create_enabled_nexus,
+    reset_runtime_singletons,
+)
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+    from melder.nexus.rift.rift import Rift
+
+
+@pytest.fixture(autouse=True)
+def isolated_runtime() -> Iterator[None]:
+    """
+    Run each test against fresh runtime singletons.
+
+    Yields:
+        None.
+    """
+    reset_runtime_singletons()
+    yield
+    reset_runtime_singletons()
+
+
+def _room(space_type: str) -> Tuple[Conduit, Rift]:
+    """
+    Open a room of `space_type` on one Nexus-managed frame "ops".
+
+    Args:
+        space_type:
+            "static" or "capability".
+
+    Returns:
+        Tuple[Conduit, Rift]: The frame's root conduit (the caller cleans it) and the Rift owning the room.
+    """
+    nexus = create_enabled_nexus()
+    configuration = nexus.create_rift_configuration()
+    configuration.with_space_type(space_type)
+    rift = nexus.create_rift(configuration=configuration, rift_name="alpha")
+    conduit = rift.create_nexus_frame(frame_name="ops")
+    rift.create_frame_link("ops")
+    return conduit, rift
+
+
+@pytest.mark.parametrize("space_type", ["static", "capability"])
+def test_the_room_command_list_ends_with_the_two_help_commands(space_type: str) -> None:
+    """
+    Contract: the room's command list keeps its order and ends with `describe_commands` and `describe_command`, once
+    each; `run_command` and `tool_definitions` serve the caller and are not in it; `describe_commands()` covers
+    exactly the list, in its order (GitHub #339).
+    """
+    conduit, rift = _room(space_type)
+    try:
+        command_system = rift.space.command_system
+        supported = command_system.list_supported_command_methods()
+        catalog = command_system.describe_commands()
+    finally:
+        conduit.cleanup()
+
+    assert supported[-2:] == ("describe_commands", "describe_command")
+    assert supported.count("describe_commands") == 1
+    assert supported.count("describe_command") == 1
+    assert "run_command" not in supported
+    assert "tool_definitions" not in supported
+    assert supported[:2] == ("link_frame", "get_nexus_frame")
+    assert tuple(entry["command"] for entry in catalog) == supported
+
+
+@pytest.mark.parametrize("space_type", ["static", "capability"])
+def test_run_command_round_trips_a_room_command(space_type: str) -> None:
+    """
+    Contract: `run_command("get_nexus_frame", {"frame_name": "ops"})` returns the very object the direct call returns
+    - the frame's root conduit - and `run_command("describe_command", ...)` the direct call's help (GitHub #339).
+    """
+    conduit, rift = _room(space_type)
+    try:
+        command_system = rift.space.command_system
+        named_frame = command_system.run_command("get_nexus_frame", {"frame_name": "ops"})
+        direct_frame = command_system.get_nexus_frame(frame_name="ops")
+        named_help = command_system.run_command("describe_command", {"command_name": "link_frame"})
+        direct_help = command_system.describe_command("link_frame")
+    finally:
+        conduit.cleanup()
+
+    assert named_frame is direct_frame is conduit
+    assert named_help == direct_help
+    assert named_help["signature"] == "link_frame(frame_name: str) -> None"
+
+
+@pytest.mark.parametrize("space_type", ["static", "capability"])
+def test_run_command_refuses_a_name_outside_the_room_list(space_type: str) -> None:
+    """
+    Contract: `cleanup` is not a room command: `run_command` refuses it with the room's supported commands and the
+    room stays live (GitHub #339).
+    """
+    conduit, rift = _room(space_type)
+    try:
+        command_system = rift.space.command_system
+        supported = command_system.list_supported_command_methods()
+        refusal = command_system.run_command("cleanup", {})
+        still_cleaned = command_system.cleaned
+    finally:
+        conduit.cleanup()
+
+    assert refusal["accepted"] is False
+    assert refusal["reason"] == "command_not_supported"
+    assert refusal["supported_commands"] == supported
+    assert still_cleaned is False
+
+
+@pytest.mark.parametrize("space_type", ["static", "capability"])
+def test_tool_definitions_cover_the_room_list(space_type: str) -> None:
+    """
+    Contract: one tool definition per supported command, in the list's order; `execute_target_method`, the room
+    command taking `**kwargs`, is the one whose schema allows additional properties (GitHub #339).
+    """
+    conduit, rift = _room(space_type)
+    try:
+        command_system = rift.space.command_system
+        supported = command_system.list_supported_command_methods()
+        definitions = command_system.tool_definitions()
+    finally:
+        conduit.cleanup()
+
+    assert tuple(definition["name"] for definition in definitions) == supported
+    open_schemas = [
+        definition["name"]
+        for definition in definitions
+        if definition["input_schema"]["additionalProperties"] is True
+    ]
+    assert open_schemas == ["execute_target_method"]
+================================================================================
+END FILE: tests/integration/melder/aether/test_room_command_line_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_binder.py
@@ -259619,7 +260279,7 @@ END FILE: tests/unit/melder/aether/test_codegen_materialize_verb.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py
-CONTENT SHA256: 8618f2c9d032c5b152ecca6be12190adb36a0665da595dfdaba4461f22b6acf5
+CONTENT SHA256: cc7524e4f7d85b2a8cdfe73d3b2b5767029436d716bcca8c0d5b619123431f8d
 SOURCE ENCODING: utf-8
 ================================================================================
 import builtins
@@ -259949,7 +260609,8 @@ def test_unit_codegen_compiler_and_executor_matrix(
     context.namespace = namespace
 
     compiled_code = CodegenCompiler().compile(context)
-    result = CodegenExecutor().execute(compiled_code, context)
+    # The run's kept source, as `CodegenSystem` passes it for an accepted run (GitHub #339).
+    result = CodegenExecutor().execute(compiled_code, context, {context.transaction_id: code})
 
     assert result.accepted is True
     if expected_result is None:
@@ -260211,7 +260872,7 @@ END FILE: tests/unit/melder/aether/test_codegen_namespace_runtime_unit_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_output_capture_unit.py
-CONTENT SHA256: 62616f1fce63a6c2ea8d91f298e0c75b43e69ecd141ab2e4ce2f5bcbdb03cfa8
+CONTENT SHA256: 003ed2c4b8b50c4f8ba81313cf14ad4ee0d2827c9c1ef70a1024cbceef609f57
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -260403,7 +261064,8 @@ def test_capture_cleanup_is_idempotent_and_ends_its_output() -> None:
 def test_execution_result_payload_carries_output_only_when_text_was_printed() -> None:
     """
     Contract: `executed` and `runtime_failed` carry the printed text as `output`; the payload adds an `output` key
-    only when it is not empty.
+    only when it is not empty. `run_id` is on every payload (GitHub #339) - None for a result built without a
+    transaction id, as these are.
     """
     executed = CodegenExecutionResult.executed(frame_name="ops", result=1, output="hi\n")
     failed = CodegenExecutionResult.runtime_failed(
@@ -260414,7 +261076,13 @@ def test_execution_result_payload_carries_output_only_when_text_was_printed() ->
     silent = CodegenExecutionResult.executed(frame_name="ops", result=1)
 
     assert executed.output == "hi\n"
-    assert executed.to_payload() == {"accepted": True, "frame_name": "ops", "output": "hi\n", "result": 1}
+    assert executed.to_payload() == {
+        "accepted": True,
+        "frame_name": "ops",
+        "run_id": None,
+        "output": "hi\n",
+        "result": 1,
+    }
     assert failed.to_payload()["output"] == "before\n"
     assert silent.output == ""
     assert "output" not in silent.to_payload()
@@ -260451,8 +261119,317 @@ def test_namespace_reports_and_cleans_its_capture() -> None:
 END FILE: tests/unit/melder/aether/test_codegen_output_capture_unit.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/aether/test_codegen_run_location_unit.py
+CONTENT SHA256: ad90802eb53ca13942c6c7d57c35b64092f28829fac94c4ecf82e91e000ea388
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Where room code failed: run file names, the executor's traceback walk, kept run sources and the payload keys
+(GitHub #339).
+
+Purpose:
+    Pin, below the room, the pieces that let an execute payload name its run and the line its code failed on:
+    `CodegenCompiler` owns the run file-name form, `CodegenExecutor` walks a raised error's traceback to the
+    innermost room-code frame, `CodegenSystem` keeps each accepted run's source until it is cleaned, and
+    `CodegenExecutionResult.to_payload` adds `run_id` always and the three location keys when they are set.
+"""
+import json
+from typing import Dict, Optional, Set
+
+import pytest
+
+from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.nexus.rift.codegen_system.codegen_transaction_context import (
+    CodegenTransactionContext,
+)
+from melder.nexus.rift.codegen_system.execution.codegen_compiler import (
+    CodegenCompiler,
+)
+from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
+    CodegenExecutionResult,
+)
+from melder.nexus.rift.codegen_system.execution.codegen_executor import (
+    CodegenExecutor,
+)
+from melder.nexus.rift.codegen_system.namespace.codegen_namespace import (
+    CodegenNamespace,
+)
+from tests._codegen_system_support import (
+    CodegenSpaceDouble,
+    DetachedRiftProjectionOwner,
+    build_namespace_configuration,
+)
+
+
+def _context(code: str) -> CodegenTransactionContext:
+    """
+    Build one transaction context for frame "ops" holding a bare namespace for `code`.
+
+    Args:
+        code: The run's source.
+
+    Returns:
+        CodegenTransactionContext: A context the executor can run (the caller cleans nothing; the objects are
+        short-lived test values).
+    """
+    configuration = build_namespace_configuration(frame_name="ops")
+    return CodegenTransactionContext(
+        frame_name="ops",
+        code=code,
+        namespace_configuration=configuration,
+        namespace=CodegenNamespace(configuration=configuration),
+    )
+
+
+def _run(
+        context: CodegenTransactionContext,
+        run_sources: Dict[str, str],
+) -> Dict[str, object]:
+    """
+    Compile and execute one context the way `CodegenSystem` does, and return the execute payload.
+
+    Args:
+        context: The run to execute.
+        run_sources: The kept sources handed to the executor.
+
+    Returns:
+        Dict[str, object]: The execute payload.
+    """
+    compiled_code = CodegenCompiler().compile(context)
+    return CodegenExecutor().execute(compiled_code, context, run_sources).to_payload()
+
+
+def test_run_filename_round_trips_its_run_id() -> None:
+    """
+    Contract: `run_filename` builds `<melder-codegen:{run_id}>` and `run_id_from_filename` reads the id back.
+    """
+    filename = CodegenCompiler.run_filename("01JRUN")
+
+    assert filename == "<melder-codegen:01JRUN>"
+    assert CodegenCompiler.run_id_from_filename(filename) == "01JRUN"
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        pytest.param("<string>", id="string"),
+        pytest.param("C:/melder/src/melder/nexus/rift/rift_space/workstation.py", id="library-file"),
+        pytest.param("<melder-codegen:01JRUN", id="no-suffix"),
+        pytest.param("melder-codegen:01JRUN>", id="no-prefix"),
+        pytest.param("<melder-codegen:>", id="empty-run-id"),
+    ],
+)
+def test_run_id_from_filename_ignores_every_other_file_name(filename: str) -> None:
+    """
+    Contract: a file name that is not a run file name - another code object's, or the form with no id - has no run id.
+    """
+    assert CodegenCompiler.run_id_from_filename(filename) is None
+
+
+def test_run_filename_refuses_an_empty_run_id() -> None:
+    """
+    Contract: a run file name needs a run id; an empty one raises ValueError.
+    """
+    with pytest.raises(ValueError, match="transaction_id cannot be empty."):
+        CodegenCompiler.run_filename("")
+
+
+def test_compile_names_the_code_object_after_its_run() -> None:
+    """
+    Contract: `compile` names the code object with the run file name of the context's transaction id.
+    """
+    context = _context("result = 1\n")
+
+    compiled_code = CodegenCompiler().compile(context)
+
+    assert compiled_code.co_filename == CodegenCompiler.run_filename(context.transaction_id)
+
+
+def test_executor_locates_a_failing_line_of_its_own_run() -> None:
+    """
+    Contract: a failure in the run's own code names its line, the run and that line's text, stripped; the
+    `runtime_error` text is unchanged.
+    """
+    context = _context("values = [1, 2]\nfor value in values:\n    assert value < 2, 'too big'\n")
+
+    payload = _run(context, {context.transaction_id: context.code})
+
+    assert payload["runtime_error"] == "AssertionError: too big"
+    assert payload["run_id"] == context.transaction_id
+    assert payload["runtime_error_line"] == 3
+    assert payload["runtime_error_run_id"] == context.transaction_id
+    assert payload["runtime_error_line_text"] == "assert value < 2, 'too big'"
+
+
+def test_executor_locates_a_failure_inside_a_function_an_earlier_run_defined() -> None:
+    """
+    Contract: the innermost room-code frame wins - a failure inside a function an earlier run defined names that
+    run and the line of its code, not the calling run.
+    """
+    earlier = _context("def check(value):\n    assert value == 2, 'value must be 2'\n    return value\n")
+    later = _context("checked = check(3)\n")
+    run_sources = {earlier.transaction_id: earlier.code, later.transaction_id: later.code}
+    _run(earlier, run_sources)
+    later.namespace.globals_dict["check"] = earlier.namespace.globals_dict["check"]
+
+    payload = _run(later, run_sources)
+
+    assert payload["run_id"] == later.transaction_id
+    assert payload["runtime_error_run_id"] == earlier.transaction_id
+    assert payload["runtime_error_line"] == 2
+    assert payload["runtime_error_line_text"] == "assert value == 2, 'value must be 2'"
+
+
+def test_executor_locates_a_library_failure_at_the_room_line_that_called_it() -> None:
+    """
+    Contract: a failure inside library code room code called is located at the room line that made the call.
+    """
+    context = _context("text = '{'\nparsed = parse(text)\n")
+    context.namespace.globals_dict["parse"] = json.loads
+
+    payload = _run(context, {context.transaction_id: context.code})
+
+    assert str(payload["runtime_error"]).startswith("JSONDecodeError: ")
+    assert payload["runtime_error_line"] == 2
+    assert payload["runtime_error_run_id"] == context.transaction_id
+    assert payload["runtime_error_line_text"] == "parsed = parse(text)"
+
+
+def test_executor_locates_without_text_when_the_run_source_is_not_kept() -> None:
+    """
+    Contract: a run whose source the room did not keep (another room's run) is located by line and run id only.
+    """
+    context = _context("assert 1 == 2\n")
+
+    payload = _run(context, {})
+
+    assert payload["runtime_error_line"] == 1
+    assert payload["runtime_error_run_id"] == context.transaction_id
+    assert "runtime_error_line_text" not in payload
+
+
+def test_executor_omits_the_text_when_the_kept_source_has_no_such_line() -> None:
+    """
+    Contract: the line's text is quoted only when the kept source has that line.
+    """
+    context = _context("x = 1\nassert x == 2\n")
+
+    payload = _run(context, {context.transaction_id: "x = 1"})
+
+    assert payload["runtime_error_line"] == 2
+    assert "runtime_error_line_text" not in payload
+
+
+def test_executor_adds_no_location_to_a_success() -> None:
+    """
+    Contract: a run that does not raise carries its `run_id` and no location keys.
+    """
+    context = _context("result = 7\n")
+
+    payload = _run(context, {context.transaction_id: context.code})
+
+    assert payload == {"accepted": True, "frame_name": "ops", "run_id": context.transaction_id, "result": 7}
+
+
+@pytest.mark.parametrize(
+    ("line", "run_id", "line_text", "expected_keys"),
+    [
+        pytest.param(4, "01JRUN", "assert x", {"runtime_error_line", "runtime_error_run_id", "runtime_error_line_text"},
+                     id="all"),
+        pytest.param(4, "01JRUN", None, {"runtime_error_line", "runtime_error_run_id"}, id="no-text"),
+        pytest.param(None, None, None, set(), id="none"),
+    ],
+)
+def test_runtime_failure_payload_carries_the_location_keys_that_are_set(
+        line: Optional[int],
+        run_id: Optional[str],
+        line_text: Optional[str],
+        expected_keys: Set[str],
+) -> None:
+    """
+    Contract: `runtime_failed` takes the three location values and the payload adds each one only when it is set,
+    beside `run_id`, which every payload carries.
+    """
+    result = CodegenExecutionResult.runtime_failed(
+        frame_name="ops",
+        runtime_error="AssertionError: ",
+        transaction_id="01JTXN",
+        runtime_error_line=line,
+        runtime_error_run_id=run_id,
+        runtime_error_line_text=line_text,
+    )
+
+    payload = result.to_payload()
+
+    assert payload["run_id"] == "01JTXN"
+    assert {key for key in payload if key.startswith("runtime_error_")} == expected_keys
+    if line is not None:
+        assert payload["runtime_error_line"] == line
+        assert payload["runtime_error_run_id"] == run_id
+    if line_text is not None:
+        assert payload["runtime_error_line_text"] == line_text
+
+
+def test_every_payload_carries_run_id_even_without_a_transaction() -> None:
+    """
+    Contract: `run_id` is on every execute payload - the transaction id, None only for a result built without one.
+    """
+    refused = CodegenExecutionResult.validation_failed(
+        frame_name="ops",
+        validation_issues=("bad",),
+        transaction_id="01JTXN",
+    )
+    unnamed = CodegenExecutionResult.executed(frame_name="ops", result=1)
+
+    assert refused.to_payload()["run_id"] == "01JTXN"
+    assert unnamed.to_payload()["run_id"] is None
+
+
+def test_codegen_system_keeps_the_source_of_each_accepted_run_only() -> None:
+    """
+    Contract: the engine keeps an accepted run's source under its transaction id - also when the run raises - and
+    keeps nothing for a run validation refused.
+    """
+    system = CodegenSystem(rift=DetachedRiftProjectionOwner(), space=CodegenSpaceDouble())
+    try:
+        accepted_context, accepted = system.execute_codegen_request("result = 1\n", frame_name="ops")
+        failed_context, failed = system.execute_codegen_request("assert 1 == 2\n", frame_name="ops")
+        refused_context, refused = system.execute_codegen_request("import os\n", frame_name="ops")
+        kept = dict(system._run_sources)
+    finally:
+        system.cleanup()
+
+    assert accepted.accepted is True
+    assert failed.runtime_error == "AssertionError: "
+    assert refused.reason == "codegen_execution_validation_failed"
+    assert kept == {
+        accepted_context.transaction_id: "result = 1\n",
+        failed_context.transaction_id: "assert 1 == 2\n",
+    }
+    assert refused_context.transaction_id not in kept
+
+
+def test_codegen_system_cleanup_drops_the_kept_sources() -> None:
+    """
+    Contract: cleaning the engine (the room's removal) clears and deletes its kept sources; a second cleanup is a
+    no-op.
+    """
+    system = CodegenSystem(rift=DetachedRiftProjectionOwner(), space=CodegenSpaceDouble())
+    system.execute_codegen_request("result = 1\n", frame_name="ops")
+    kept_sources = system._run_sources
+
+    system.cleanup()
+    system.cleanup()
+
+    assert kept_sources == {}
+    with pytest.raises(AttributeError):
+        _ = system._run_sources
+================================================================================
+END FILE: tests/unit/melder/aether/test_codegen_run_location_unit.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_support_object_unit_matrix.py
-CONTENT SHA256: 307c03752b38149dc307ec309cfc2be5aa2afa0af86097aef3cbf36688ee31ed
+CONTENT SHA256: ddbb87e63f410ce7b53da8cb466f7042bbc854fcc311bc5a5893eda8563d8896
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -260517,21 +261494,33 @@ def test_unit_codegen_validation_result_payload_matrix(
 @pytest.mark.parametrize(
     ("accepted", "reason", "issues", "runtime_error", "result_value", "expected_payload_keys"),
     [
-        (True, None, tuple(), None, 1, {"accepted", "frame_name", "result"}),
-        (True, None, tuple(), None, None, {"accepted", "frame_name"}),
-        (False, "codegen_execution_validation_failed", ("bad",), None, None, {"accepted", "frame_name", "reason", "validation_issues"}),
-        (False, "codegen_execution_runtime_failed", tuple(), "boom", None, {"accepted", "frame_name", "reason", "runtime_error"}),
-        (False, "codegen_execution_runtime_failed", ("bad",), "boom", None, {"accepted", "frame_name", "reason", "validation_issues", "runtime_error"}),
-        (True, "executed", tuple(), None, [1, 2], {"accepted", "frame_name", "reason", "result"}),
-        (False, "runtime_failed", tuple(), "ValueError: boom", None, {"accepted", "frame_name", "reason", "runtime_error"}),
-        (True, None, tuple(), None, {"x": 1}, {"accepted", "frame_name", "result"}),
-        (False, None, tuple(), None, None, {"accepted", "frame_name"}),
-        (False, "failed", tuple(), None, None, {"accepted", "frame_name", "reason"}),
-        (True, None, tuple(), None, "ok", {"accepted", "frame_name", "result"}),
-        (False, "failed", ("x",), None, None, {"accepted", "frame_name", "reason", "validation_issues"}),
-        (False, "failed", tuple(), "boom", None, {"accepted", "frame_name", "reason", "runtime_error"}),
-        (True, "executed", tuple(), None, 0, {"accepted", "frame_name", "reason", "result"}),
-        (True, "executed", tuple(), None, None, {"accepted", "frame_name", "reason"}),
+        (True, None, tuple(), None, 1, {"accepted", "frame_name", "run_id", "result"}),
+        (True, None, tuple(), None, None, {"accepted", "frame_name", "run_id"}),
+        (
+            False, "codegen_execution_validation_failed", ("bad",), None, None,
+            {"accepted", "frame_name", "run_id", "reason", "validation_issues"},
+        ),
+        (
+            False, "codegen_execution_runtime_failed", tuple(), "boom", None,
+            {"accepted", "frame_name", "run_id", "reason", "runtime_error"},
+        ),
+        (
+            False, "codegen_execution_runtime_failed", ("bad",), "boom", None,
+            {"accepted", "frame_name", "run_id", "reason", "validation_issues", "runtime_error"},
+        ),
+        (True, "executed", tuple(), None, [1, 2], {"accepted", "frame_name", "run_id", "reason", "result"}),
+        (
+            False, "runtime_failed", tuple(), "ValueError: boom", None,
+            {"accepted", "frame_name", "run_id", "reason", "runtime_error"},
+        ),
+        (True, None, tuple(), None, {"x": 1}, {"accepted", "frame_name", "run_id", "result"}),
+        (False, None, tuple(), None, None, {"accepted", "frame_name", "run_id"}),
+        (False, "failed", tuple(), None, None, {"accepted", "frame_name", "run_id", "reason"}),
+        (True, None, tuple(), None, "ok", {"accepted", "frame_name", "run_id", "result"}),
+        (False, "failed", ("x",), None, None, {"accepted", "frame_name", "run_id", "reason", "validation_issues"}),
+        (False, "failed", tuple(), "boom", None, {"accepted", "frame_name", "run_id", "reason", "runtime_error"}),
+        (True, "executed", tuple(), None, 0, {"accepted", "frame_name", "run_id", "reason", "result"}),
+        (True, "executed", tuple(), None, None, {"accepted", "frame_name", "run_id", "reason"}),
     ],
 )
 def test_unit_codegen_execution_result_payload_matrix(
@@ -260646,7 +261635,7 @@ END FILE: tests/unit/melder/aether/test_codegen_support_object_unit_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_codegen_system_unit_matrix.py
-CONTENT SHA256: 6e8271e171b82ee7545c2e7443816d0748428da8ab6fab1c6cc7d5a3acf40442
+CONTENT SHA256: edd65d2b89c9747e81bff72340bad7e7f5d7157b5798ca4cbce84f1efcc76ad7
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -260778,7 +261767,12 @@ def test_unit_codegen_system_try_get_codegen_projection_matrix(
         ("result = 2 + 2", True, 4),
         ("import json\nresult = 1", True, 1),
         ("result = getattr(command, 'x')", False, None),
-        ("result = codegen.execute_codegen('result = 1')", True, {"accepted": True, "frame_name": "ops", "result": 1}),
+        # The nested payload names its own run (GitHub #339): room code pops `run_id`, which raises if it is absent.
+        (
+            "result = codegen.execute_codegen('result = 1')\nresult.pop('run_id')",
+            True,
+            {"accepted": True, "frame_name": "ops", "result": 1},
+        ),
         ("value = 7", True, None),
         ("result = [1, 2, 3]", True, [1, 2, 3]),
         ("raise ValueError('boom')", False, None),
@@ -261753,6 +262747,807 @@ def test_unit_codegen_name_resolution_strategy_static_only_import_name(
         )
 ================================================================================
 END FILE: tests/unit/melder/aether/test_codegen_validation_strategy_unit_matrix.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/aether/test_command_catalog_unit.py
+CONTENT SHA256: 767b03a80233c4981643bf32e43297e28fbf3415c4adf8775c0f857066f6a716
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+`CommandCatalog`: a room command's help, refusals and tool schema, read from its signature and docstring (GitHub #339).
+
+Purpose:
+    Pin the catalog's reading rules on small stand-in commands: the signature text as the source spells it (an
+    annotation naming a typing-only import is never evaluated), the docstring's summary, description and `Args:`
+    entries in their three forms, the argument rows, the binding check `run_command` applies, the refusal shape and
+    its messages, and every JSON Schema mapping row of a tool definition.
+"""
+import annotationlib
+import inspect
+import json
+import types
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
+
+import pytest
+
+from melder.nexus.rift.command_system.command_catalog import CommandCatalog
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.command_system.codegen_command_system import CodegenCommandSystem
+
+
+class _Commands:
+    """
+    Stand-in command surface: methods shaped like room commands, with docstrings in the room's style.
+
+    Contract:
+        - Each method exists only to be read by `CommandCatalog`; calling one returns its arguments.
+    """
+
+    def run_code(
+            self,
+            code: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Run one piece of code in a frame.
+
+        Purpose:
+            Stand in for `execute_codegen`.
+
+        Args:
+            code:
+                The source to run.
+                Its second line.
+            frame_name: The frame to run in; the room's
+                default frame when omitted.
+
+        Returns:
+            Dict[str, object]: What the run returned.
+
+        Raises:
+            ValueError: If `code` is empty.
+        """
+        return {"code": code, "frame_name": frame_name}
+
+    def documented(
+            self,
+            plain: str,
+            typed: int,
+            undocumented: float,
+            *,
+            empty_entry: bool = False,
+    ) -> None:
+        """
+        Read the `Args:` entry forms.
+
+        Args:
+            plain: Plain entry text.
+            typed (int): Typed entry text
+                that continues deeper.
+            empty_entry:
+
+        Returns:
+            None.
+        """
+
+    def variadic(
+            self,
+            method_name: str,
+            *args: Any,
+            bind_as_name: Optional[str] = None,
+            **kwargs: Any,
+    ) -> object:
+        """
+        Call a method with extra arguments.
+
+        Args:
+            method_name:
+                Method to call.
+            *args:
+                Positional arguments passed on.
+            bind_as_name:
+                Optional binding name.
+            **kwargs:
+                Keyword arguments passed on.
+
+        Returns:
+            object: The arguments, as given.
+        """
+        return method_name, args, bind_as_name, kwargs
+
+    def positional(self, first: str, /, second: str = "two") -> Tuple[str, str]:
+        """
+        Take one positional-only argument.
+
+        Args:
+            first: The positional-only argument.
+            second: An ordinary argument.
+
+        Returns:
+            Tuple[str, str]: Both arguments.
+        """
+        return first, second
+
+    def positional_with_kwargs(self, first: str, /, **kwargs: Any) -> object:
+        """Take one positional-only argument and any keyword arguments."""
+        return first, kwargs
+
+    def hidden_room(self, room: CodegenCommandSystem) -> CodegenCommandSystem:
+        """
+        Take a room typed only under `TYPE_CHECKING`.
+
+        Returns:
+            CodegenCommandSystem: The room, as given.
+        """
+        return room
+
+
+class _Sections:
+    """
+    Stand-in commands whose docstrings put a different section first, or none.
+    """
+
+    def returns_first(self) -> int:
+        """
+        Answer a number.
+
+        Returns:
+            int: The number.
+
+        Args:
+            none: Not a parameter.
+        """
+        return 1
+
+    def raises_first(self) -> None:
+        """
+        Refuse always.
+
+        Raises:
+            ValueError: Always.
+        """
+        raise ValueError("always")
+
+    def yields_first(self) -> Iterator[int]:
+        """
+        Yield one number.
+
+        Yields:
+            int: The number.
+        """
+        yield 1
+
+    def no_sections(self) -> None:
+        """
+        Do nothing.
+
+        Contract:
+            - Nothing happens.
+        """
+
+
+class _SchemaShapes:
+    """
+    Stand-in command whose keyword-only parameters cover every JSON Schema mapping row.
+    """
+
+    def shapes(
+            self,
+            *,
+            text: str,
+            count: int,
+            ratio: float,
+            flag: bool,
+            nothing: None,
+            optional_with_none: Optional[str] = None,
+            optional_required: Optional[str],
+            optional_with_value: Optional[int] = 5,
+            optional_union_with_none: Optional[Union[int, str]] = None,
+            either: Union[int, str],
+            choice: Literal["a", "b"],
+            int_list: List[int],
+            str_list: list[str],
+            bare_list: list,
+            str_tuple: Tuple[str, ...],
+            pair_tuple: Tuple[int, str],
+            int_set: Set[int],
+            frozen_ints: frozenset[int],
+            str_sequence: Sequence[str],
+            optional_int_list: List[Optional[int]],
+            object_dict: Dict[str, object],
+            int_mapping: Mapping[str, int],
+            bare_dict: dict,
+            anything: object,
+            any_value: Any,
+            catalog: CommandCatalog,
+            room: CodegenCommandSystem,
+            text_default: str = "objects",
+            int_default: int = 50,
+            float_default: float = 0.5,
+            bool_default: bool = False,
+            tuple_default: Tuple[str, ...] = (),
+            object_default: object = object(),
+    ) -> object:
+        """
+        Accept one parameter per schema row.
+
+        Returns:
+            object: Nothing.
+        """
+
+
+def test_signature_text_reads_as_the_source_spells_it() -> None:
+    """
+    Contract: the signature text names the command and spells each annotation as the source does (`Optional[str]`,
+    never the evaluated union's repr), with defaults, `*args`, `**kwargs`, `/` and the return annotation.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.signature_text("run_code", commands.run_code) == (
+        "run_code(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object]"
+    )
+    assert CommandCatalog.signature_text("variadic", commands.variadic) == (
+        "variadic(method_name: str, *args: Any, bind_as_name: Optional[str] = None, **kwargs: Any) -> object"
+    )
+    assert CommandCatalog.signature_text("positional", commands.positional) == (
+        "positional(first: str, /, second: str = 'two') -> Tuple[str, str]"
+    )
+
+
+def test_a_typing_only_annotation_is_read_without_being_evaluated() -> None:
+    """
+    Contract: a command annotated with a name imported only under `TYPE_CHECKING` is read as a forward reference -
+    never evaluated, so no NameError - and its text is the name as written.
+    """
+    commands = _Commands()
+
+    signature = CommandCatalog.read_signature(commands.hidden_room)
+
+    assert isinstance(signature.parameters["room"].annotation, annotationlib.ForwardRef)
+    assert CommandCatalog.signature_text("hidden_room", commands.hidden_room) == (
+        "hidden_room(room: CodegenCommandSystem) -> CodegenCommandSystem"
+    )
+    assert CommandCatalog.input_schema(commands.hidden_room)["properties"]["room"] == {
+        "description": "CodegenCommandSystem",
+    }
+
+
+def test_summary_is_the_first_docstring_line() -> None:
+    """
+    Contract: the summary is the docstring's first line; a command without a docstring has an empty summary.
+    """
+    commands = _Commands()
+    no_docstring: Callable[[int], int] = lambda value: value
+
+    assert CommandCatalog.summary(commands.run_code) == "Run one piece of code in a frame."
+    assert CommandCatalog.summary(commands.positional_with_kwargs) == (
+        "Take one positional-only argument and any keyword arguments."
+    )
+    assert CommandCatalog.summary(no_docstring) == ""
+
+
+def test_description_is_the_text_before_args() -> None:
+    """
+    Contract: the description is the docstring's text before the first `Args:` line, stripped - here the summary and
+    the `Purpose:` section.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.description(commands.run_code) == (
+        "Run one piece of code in a frame.\n\nPurpose:\n    Stand in for `execute_codegen`."
+    )
+
+
+@pytest.mark.parametrize(
+    ("method_name", "expected_description"),
+    [
+        pytest.param("returns_first", "Answer a number.", id="returns"),
+        pytest.param("raises_first", "Refuse always.", id="raises"),
+        pytest.param("yields_first", "Yield one number.", id="yields"),
+        pytest.param("no_sections", "Do nothing.\n\nContract:\n    - Nothing happens.", id="none"),
+    ],
+)
+def test_description_stops_at_the_first_section_of_any_kind(
+        method_name: str,
+        expected_description: str,
+) -> None:
+    """
+    Contract: `Returns:`, `Raises:` and `Yields:` end the description as `Args:` does, whichever comes first; a
+    docstring with none of them is described whole.
+    """
+    method = getattr(_Sections(), method_name)
+
+    assert CommandCatalog.description(method) == expected_description
+
+
+def test_a_command_without_a_docstring_has_no_description_entries_or_doc() -> None:
+    """
+    Contract: a callable with no docstring is described by nothing - empty description, no `Args:` entries - and its
+    parameters fall back to their annotation text, which an unannotated parameter does not have.
+    """
+    no_docstring: Callable[[int], int] = lambda value: value
+
+    assert CommandCatalog.description(no_docstring) == ""
+    assert CommandCatalog.argument_entries(no_docstring) == {}
+    assert CommandCatalog.input_schema(no_docstring) == {
+        "type": "object",
+        "properties": {"value": {}},
+        "required": ["value"],
+        "additionalProperties": False,
+    }
+    assert CommandCatalog.argument_rows(no_docstring) == (
+        {"name": "value", "type": None, "required": True},
+    )
+
+
+def test_args_entries_are_read_in_all_three_forms() -> None:
+    """
+    Contract: an `Args:` entry is `name:` with deeper lines, `name: text` (with any deeper continuation) or
+    `name (Type): text`, joined with single spaces; an entry with no text is no entry.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.argument_entries(commands.run_code) == {
+        "code": "The source to run. Its second line.",
+        "frame_name": "The frame to run in; the room's default frame when omitted.",
+    }
+    assert CommandCatalog.argument_entries(commands.documented) == {
+        "plain": "Plain entry text.",
+        "typed": "Typed entry text that continues deeper.",
+    }
+
+
+def test_args_entries_for_star_parameters_are_keyed_by_their_bare_names() -> None:
+    """
+    Contract: `*args:` and `**kwargs:` entries are read under the parameters' bare names.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.argument_entries(commands.variadic) == {
+        "method_name": "Method to call.",
+        "args": "Positional arguments passed on.",
+        "bind_as_name": "Optional binding name.",
+        "kwargs": "Keyword arguments passed on.",
+    }
+
+
+def test_a_property_is_described_by_its_args_entry_else_its_annotation_text() -> None:
+    """
+    Contract: each property's description is its `Args:` entry; a parameter without one (or with an empty one) is
+    described by its annotation text.
+    """
+    commands = _Commands()
+
+    properties = CommandCatalog.input_schema(commands.documented)["properties"]
+
+    assert properties == {
+        "plain": {"type": "string", "description": "Plain entry text."},
+        "typed": {"type": "integer", "description": "Typed entry text that continues deeper."},
+        "undocumented": {"type": "number", "description": "float"},
+        "empty_entry": {"type": "boolean", "description": "bool", "default": False},
+    }
+
+
+def test_argument_rows_follow_the_signature() -> None:
+    """
+    Contract: one row per named parameter, in signature order - `name`, `type` (the annotation as the source spells
+    it), `required`, and `default` only when not required; `*args` and `**kwargs` are not rows.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.argument_rows(commands.run_code) == (
+        {"name": "code", "type": "str", "required": True},
+        {"name": "frame_name", "type": "Optional[str]", "required": False, "default": None},
+    )
+    assert CommandCatalog.argument_rows(commands.variadic) == (
+        {"name": "method_name", "type": "str", "required": True},
+        {"name": "bind_as_name", "type": "Optional[str]", "required": False, "default": None},
+    )
+    assert CommandCatalog.argument_rows(commands.positional) == (
+        {"name": "first", "type": "str", "required": True},
+        {"name": "second", "type": "str", "required": False, "default": "two"},
+    )
+
+
+@pytest.mark.parametrize(
+    ("arguments", "expected_missing", "expected_unknown"),
+    [
+        pytest.param({"code": "x"}, (), (), id="binds"),
+        pytest.param({"code": "x", "frame_name": None}, (), (), id="binds-with-optional"),
+        pytest.param({}, ("code",), (), id="missing"),
+        pytest.param({"code": "x", "frame": "ops"}, (), ("frame",), id="unknown"),
+        pytest.param({"source": "x"}, ("code",), ("source",), id="missing-and-unknown"),
+        pytest.param({"zeta": 1, "alpha": 2, "code": "x"}, (), ("zeta", "alpha"), id="unknown-in-given-order"),
+    ],
+)
+def test_binding_problems_name_the_missing_and_unknown_arguments(
+        arguments: Dict[str, object],
+        expected_missing: Tuple[str, ...],
+        expected_unknown: Tuple[str, ...],
+) -> None:
+    """
+    Contract: missing arguments are the parameters without defaults that were not given, in signature order;
+    unknown arguments are the given names no parameter takes, in the order given.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.binding_problems(commands.run_code, arguments) == (expected_missing, expected_unknown)
+
+
+def test_binding_with_kwargs_reports_no_unknown_arguments_and_never_args() -> None:
+    """
+    Contract: a command taking `**kwargs` has no unknown arguments; `*args` is never reported missing.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.binding_problems(commands.variadic, {"method_name": "m", "extra": 1}) == ((), ())
+    assert CommandCatalog.binding_problems(commands.variadic, {"extra": 1}) == (("method_name",), ())
+
+
+def test_a_positional_only_parameter_given_by_name_is_unknown_and_missing() -> None:
+    """
+    Contract: an argument given by name for a positional-only parameter is unknown and the parameter is missing -
+    unless the command takes `**kwargs`, which receives the name, so it is only missing.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.binding_problems(commands.positional, {"first": "a"}) == (("first",), ("first",))
+    assert CommandCatalog.binding_problems(commands.positional_with_kwargs, {"first": "a"}) == (("first",), ())
+
+
+def test_require_argument_mapping_accepts_none_and_mappings() -> None:
+    """
+    Contract: None stands for no arguments; any mapping with string keys is accepted as it is.
+    """
+    arguments = {"code": "x"}
+    read_only = types.MappingProxyType({"code": "x"})
+
+    assert CommandCatalog.require_argument_mapping(None) == {}
+    assert CommandCatalog.require_argument_mapping(arguments) is arguments
+    assert CommandCatalog.require_argument_mapping(read_only) is read_only
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        pytest.param(["code"], "arguments must be a mapping of argument names to values, not list.", id="list"),
+        pytest.param("code=x", "arguments must be a mapping of argument names to values, not str.", id="str"),
+        pytest.param({1: "x"}, "argument names must be strings; got 1 (int).", id="int-key"),
+    ],
+)
+def test_require_argument_mapping_raises_type_error_for_a_caller_bug(arguments: object, message: str) -> None:
+    """
+    Contract: arguments that are not a mapping, or a mapping with a key that is not a string, raise TypeError - a
+    caller bug, not an agent's call to refuse.
+    """
+    with pytest.raises(TypeError) as raised:
+        CommandCatalog.require_argument_mapping(arguments)
+
+    assert str(raised.value) == message
+
+
+def test_unsupported_command_refusal_names_the_command_and_the_supported_ones() -> None:
+    """
+    Contract: the `command_not_supported` refusal carries the command as given, a message listing the supported
+    commands, and the supported commands themselves as a tuple.
+    """
+    refusal = CommandCatalog.refuse_unsupported_command("cleanup", ("run_code", "describe_command"))
+
+    assert refusal == {
+        "accepted": False,
+        "command": "cleanup",
+        "reason": "command_not_supported",
+        "message": (
+            "Command 'cleanup' is not in this room's command list. Supported commands: run_code, describe_command."
+        ),
+        "supported_commands": ("run_code", "describe_command"),
+    }
+
+
+@pytest.mark.parametrize(
+    ("missing", "unknown", "problem_text"),
+    [
+        pytest.param(("code",), (), "missing required argument 'code'", id="missing"),
+        pytest.param((), ("frame",), "unknown argument 'frame'", id="unknown"),
+        pytest.param(("code",), ("source",), "missing required argument 'code'; unknown argument 'source'", id="both"),
+        pytest.param(
+            ("code", "frame_name"),
+            ("a", "b"),
+            "missing required arguments 'code', 'frame_name'; unknown arguments 'a', 'b'",
+            id="plural",
+        ),
+    ],
+)
+def test_invalid_arguments_refusal_names_the_command_the_problem_and_the_signature(
+        missing: Tuple[str, ...],
+        unknown: Tuple[str, ...],
+        problem_text: str,
+) -> None:
+    """
+    Contract: the `command_arguments_invalid` refusal's message names the command, what is wrong and the command's
+    signature, and the refusal carries both name tuples.
+    """
+    commands = _Commands()
+
+    refusal = CommandCatalog.refuse_invalid_arguments("run_code", commands.run_code, missing, unknown)
+
+    assert refusal == {
+        "accepted": False,
+        "command": "run_code",
+        "reason": "command_arguments_invalid",
+        "message": (
+            "Command 'run_code' cannot run with these arguments: {0}. Call it as run_code(code: str, *, "
+            "frame_name: Optional[str] = None) -> Dict[str, object].".format(problem_text)
+        ),
+        "missing_arguments": missing,
+        "unknown_arguments": unknown,
+    }
+
+
+def test_command_summary_row_carries_command_signature_and_summary() -> None:
+    """
+    Contract: a `describe_commands` row is exactly `command`, `signature` and `summary`.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.describe_command_summary("run_code", commands.run_code) == {
+        "command": "run_code",
+        "signature": "run_code(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object]",
+        "summary": "Run one piece of code in a frame.",
+    }
+
+
+def test_command_help_carries_arguments_and_the_full_docstring() -> None:
+    """
+    Contract: `describe_command` help is `accepted: True`, `command`, `signature`, the argument rows and the full
+    docstring as `inspect.getdoc` reads it.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.describe_command_help("run_code", commands.run_code) == {
+        "accepted": True,
+        "command": "run_code",
+        "signature": "run_code(code: str, *, frame_name: Optional[str] = None) -> Dict[str, object]",
+        "arguments": (
+            {"name": "code", "type": "str", "required": True},
+            {"name": "frame_name", "type": "Optional[str]", "required": False, "default": None},
+        ),
+        "doc": inspect.getdoc(commands.run_code),
+    }
+
+
+def test_tool_definition_is_name_description_and_input_schema() -> None:
+    """
+    Contract: a tool definition is exactly `name`, `description` (the text before `Args:`) and `input_schema`, an
+    object schema whose `required` lists the parameters without defaults; it is JSON-serializable.
+    """
+    commands = _Commands()
+
+    definition = CommandCatalog.tool_definition("run_code", commands.run_code)
+
+    assert definition == {
+        "name": "run_code",
+        "description": "Run one piece of code in a frame.\n\nPurpose:\n    Stand in for `execute_codegen`.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "description": "The source to run. Its second line."},
+                "frame_name": {
+                    "type": "string",
+                    "description": "The frame to run in; the room's default frame when omitted.",
+                    "default": None,
+                },
+            },
+            "required": ["code"],
+            "additionalProperties": False,
+        },
+    }
+    assert json.loads(json.dumps(definition)) == definition
+
+
+def test_kwargs_allow_additional_properties_and_args_are_omitted() -> None:
+    """
+    Contract: `**kwargs` makes `additionalProperties` true; `*args` and `**kwargs` are never properties or required.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.input_schema(commands.variadic) == {
+        "type": "object",
+        "properties": {
+            "method_name": {"type": "string", "description": "Method to call."},
+            "bind_as_name": {"type": "string", "description": "Optional binding name.", "default": None},
+        },
+        "required": ["method_name"],
+        "additionalProperties": True,
+    }
+
+
+def test_a_positional_only_parameter_is_required_but_never_a_property() -> None:
+    """
+    Contract: `run_command` passes keyword arguments only, so a positional-only parameter is no property; one without
+    a default stays required, so the schema refuses what `run_command` refuses.
+    """
+    commands = _Commands()
+
+    assert CommandCatalog.input_schema(commands.positional) == {
+        "type": "object",
+        "properties": {"second": {"type": "string", "description": "An ordinary argument.", "default": "two"}},
+        "required": ["first"],
+        "additionalProperties": False,
+    }
+
+
+@pytest.mark.parametrize(
+    ("parameter_name", "expected_schema"),
+    [
+        pytest.param("text", {"type": "string", "description": "str"}, id="str"),
+        pytest.param("count", {"type": "integer", "description": "int"}, id="int"),
+        pytest.param("ratio", {"type": "number", "description": "float"}, id="float"),
+        pytest.param("flag", {"type": "boolean", "description": "bool"}, id="bool"),
+        pytest.param("nothing", {"type": "null", "description": "None"}, id="None"),
+        pytest.param(
+            "optional_with_none",
+            {"type": "string", "description": "Optional[str]", "default": None},
+            id="Optional-None-default",
+        ),
+        pytest.param(
+            "optional_required",
+            {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "Optional[str]"},
+            id="Optional-no-default",
+        ),
+        pytest.param(
+            "optional_with_value",
+            {"anyOf": [{"type": "integer"}, {"type": "null"}], "description": "Optional[int]", "default": 5},
+            id="Optional-value-default",
+        ),
+        pytest.param(
+            "optional_union_with_none",
+            {"anyOf": [{"type": "integer"}, {"type": "string"}], "description": "Optional[Union[int, str]]",
+             "default": None},
+            id="Optional-Union-None-default",
+        ),
+        pytest.param(
+            "either",
+            {"anyOf": [{"type": "integer"}, {"type": "string"}], "description": "Union[int, str]"},
+            id="Union",
+        ),
+        pytest.param("choice", {"enum": ["a", "b"], "description": "Literal['a', 'b']"}, id="Literal"),
+        pytest.param(
+            "int_list",
+            {"type": "array", "items": {"type": "integer"}, "description": "List[int]"},
+            id="List",
+        ),
+        pytest.param(
+            "str_list",
+            {"type": "array", "items": {"type": "string"}, "description": "list[str]"},
+            id="list-generic",
+        ),
+        pytest.param("bare_list", {"type": "array", "description": "list"}, id="bare-list"),
+        pytest.param(
+            "str_tuple",
+            {"type": "array", "items": {"type": "string"}, "description": "Tuple[str, ...]"},
+            id="Tuple-variadic",
+        ),
+        pytest.param("pair_tuple", {"type": "array", "description": "Tuple[int, str]"}, id="Tuple-pair"),
+        pytest.param(
+            "int_set",
+            {"type": "array", "items": {"type": "integer"}, "description": "Set[int]"},
+            id="Set",
+        ),
+        pytest.param(
+            "frozen_ints",
+            {"type": "array", "items": {"type": "integer"}, "description": "frozenset[int]"},
+            id="frozenset",
+        ),
+        pytest.param(
+            "str_sequence",
+            {"type": "array", "items": {"type": "string"}, "description": "Sequence[str]"},
+            id="Sequence",
+        ),
+        pytest.param(
+            "optional_int_list",
+            {
+                "type": "array",
+                "items": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+                "description": "List[Optional[int]]",
+            },
+            id="List-of-Optional",
+        ),
+        pytest.param("object_dict", {"type": "object", "description": "Dict[str, object]"}, id="Dict"),
+        pytest.param("int_mapping", {"type": "object", "description": "Mapping[str, int]"}, id="Mapping"),
+        pytest.param("bare_dict", {"type": "object", "description": "dict"}, id="bare-dict"),
+        pytest.param("anything", {"description": "object"}, id="object"),
+        pytest.param("any_value", {"description": "Any"}, id="Any"),
+        pytest.param("catalog", {"description": "CommandCatalog"}, id="class"),
+        pytest.param("room", {"description": "CodegenCommandSystem"}, id="unresolved-forward-reference"),
+        pytest.param(
+            "text_default",
+            {"type": "string", "description": "str", "default": "objects"},
+            id="str-default",
+        ),
+        pytest.param("int_default", {"type": "integer", "description": "int", "default": 50}, id="int-default"),
+        pytest.param(
+            "float_default",
+            {"type": "number", "description": "float", "default": 0.5},
+            id="float-default",
+        ),
+        pytest.param(
+            "bool_default",
+            {"type": "boolean", "description": "bool", "default": False},
+            id="bool-default",
+        ),
+        pytest.param(
+            "tuple_default",
+            {"type": "array", "items": {"type": "string"}, "description": "Tuple[str, ...]"},
+            id="tuple-default-not-recorded",
+        ),
+        pytest.param("object_default", {"description": "object"}, id="object-default-not-recorded"),
+    ],
+)
+def test_each_annotation_maps_to_its_json_schema(parameter_name: str, expected_schema: Dict[str, object]) -> None:
+    """
+    Contract: every JSON Schema mapping row of the patch lane - scalars, None, Optional with and without a None
+    default, Union, Literal, the array and object forms, the empty schema for `object`, `Any`, a class and an
+    unresolved forward reference, and only JSON-representable defaults recorded.
+    """
+    properties = CommandCatalog.input_schema(_SchemaShapes().shapes)["properties"]
+
+    assert properties[parameter_name] == expected_schema
+
+
+def test_required_lists_exactly_the_parameters_without_defaults() -> None:
+    """
+    Contract: `required` names every parameter without a default, in signature order, and nothing else; a command
+    without `**kwargs` refuses additional properties.
+    """
+    schema = CommandCatalog.input_schema(_SchemaShapes().shapes)
+
+    assert schema["required"] == [
+        "text",
+        "count",
+        "ratio",
+        "flag",
+        "nothing",
+        "optional_required",
+        "either",
+        "choice",
+        "int_list",
+        "str_list",
+        "bare_list",
+        "str_tuple",
+        "pair_tuple",
+        "int_set",
+        "frozen_ints",
+        "str_sequence",
+        "optional_int_list",
+        "object_dict",
+        "int_mapping",
+        "bare_dict",
+        "anything",
+        "any_value",
+        "catalog",
+        "room",
+    ]
+    assert schema["additionalProperties"] is False
+    assert schema["type"] == "object"
+================================================================================
+END FILE: tests/unit/melder/aether/test_command_catalog_unit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_command_system_direct.py
@@ -276539,7 +278334,7 @@ END FILE: tests/unit/melder/aether/test_lookup_container_repoint.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus.py
-CONTENT SHA256: 988871e3f6e98cef739326a3f649c4cb2a118b5247827e602bbe5a5f87209864
+CONTENT SHA256: b37fc21dcd34fd658e4775da322d194b0adb72cb66743c7b48455bdcd936ae59
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -278659,6 +280454,8 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "research_group_footprint",
         "research_group_drift",
         "research_group_history",
+        "describe_commands",
+        "describe_command",
     )
 
     assert supported_methods == expected_methods
@@ -278829,6 +280626,9 @@ def test_codegen_execute_codegen_placeholder_rejects_until_exec_exists() -> None
         frame_name="ops",
     )
 
+    # Every execute payload names its run (GitHub #339); the rest of the payload is pinned exactly.
+    run_id = result.pop("run_id")
+    assert isinstance(run_id, str) and run_id
     assert result == {
         "accepted": True,
         "frame_name": "ops",
@@ -281796,6 +283596,37 @@ def test_base_command_system_does_not_expose_capability_only_methods() -> None:
     assert "get_nexus_frame" in supported_methods
     assert "describe_spells_in_conduit" in supported_methods
     assert "execute_target_method" in supported_methods
+
+
+@pytest.mark.parametrize(
+    "space_class",
+    [RiftSpace, StaticRiftSpace, CapabilityRiftSpace, CodegenRiftSpace],
+    ids=["base", "static", "capability", "codegen"],
+)
+def test_every_room_command_list_ends_with_the_two_help_commands(space_class: type) -> None:
+    """
+    Verify every room's command list, the base room's included, ends with `describe_commands` and
+    `describe_command` once each, keeps `run_command` and `tool_definitions` out, and that the room's
+    `describe_commands()` covers exactly that list (GitHub #339).
+
+    Args:
+        space_class:
+            Room class to build over a detached Rift double.
+
+    Returns:
+        None.
+    """
+    space = space_class(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+    catalog = space.command_system.describe_commands()
+
+    assert supported_methods[-2:] == ("describe_commands", "describe_command")
+    assert supported_methods.count("describe_commands") == 1
+    assert supported_methods.count("describe_command") == 1
+    assert "run_command" not in supported_methods
+    assert "tool_definitions" not in supported_methods
+    assert tuple(entry["command"] for entry in catalog) == supported_methods
 
 
 def test_command_system_can_delegate_conduit_introspection_helpers(

@@ -2115,6 +2115,8 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "research_group_footprint",
         "research_group_drift",
         "research_group_history",
+        "describe_commands",
+        "describe_command",
     )
 
     assert supported_methods == expected_methods
@@ -2285,6 +2287,9 @@ def test_codegen_execute_codegen_placeholder_rejects_until_exec_exists() -> None
         frame_name="ops",
     )
 
+    # Every execute payload names its run (GitHub #339); the rest of the payload is pinned exactly.
+    run_id = result.pop("run_id")
+    assert isinstance(run_id, str) and run_id
     assert result == {
         "accepted": True,
         "frame_name": "ops",
@@ -5252,6 +5257,37 @@ def test_base_command_system_does_not_expose_capability_only_methods() -> None:
     assert "get_nexus_frame" in supported_methods
     assert "describe_spells_in_conduit" in supported_methods
     assert "execute_target_method" in supported_methods
+
+
+@pytest.mark.parametrize(
+    "space_class",
+    [RiftSpace, StaticRiftSpace, CapabilityRiftSpace, CodegenRiftSpace],
+    ids=["base", "static", "capability", "codegen"],
+)
+def test_every_room_command_list_ends_with_the_two_help_commands(space_class: type) -> None:
+    """
+    Verify every room's command list, the base room's included, ends with `describe_commands` and
+    `describe_command` once each, keeps `run_command` and `tool_definitions` out, and that the room's
+    `describe_commands()` covers exactly that list (GitHub #339).
+
+    Args:
+        space_class:
+            Room class to build over a detached Rift double.
+
+    Returns:
+        None.
+    """
+    space = space_class(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+    catalog = space.command_system.describe_commands()
+
+    assert supported_methods[-2:] == ("describe_commands", "describe_command")
+    assert supported_methods.count("describe_commands") == 1
+    assert supported_methods.count("describe_command") == 1
+    assert "run_command" not in supported_methods
+    assert "tool_definitions" not in supported_methods
+    assert tuple(entry["command"] for entry in catalog) == supported_methods
 
 
 def test_command_system_can_delegate_conduit_introspection_helpers(

@@ -1307,11 +1307,38 @@ Protects:
   `test_rift_configuration.py` adds the room settings: defaults (capture on, 65,536), the chained setters, a limit
   refused when 0, negative, a bool, a string or a float, a non-bool switch refused, both refused once frozen.
   `test_nexus.py`'s detached Rift double carries a frozen default `RiftConfiguration`, as a live Rift does
+- the room command line's reading rules (GitHub #339, 0.2.8314): `test_command_catalog_unit.py` (24 tests, 69
+  cases) pins `CommandCatalog` on stand-in commands - the signature text as the source spells it, and a typing-only
+  annotation read without being evaluated; the summary; the description, the text before `Args:`, before the first
+  `Returns:`, `Raises:` or `Yields:`, or the whole docstring without one (4 cases); a command with no docstring; the
+  `Args:` entries in their three forms and for `*args` and `**kwargs`; a property described by its entry, else its
+  annotation text; the argument rows; the bind check's missing and unknown names (6 cases), `**kwargs` taking unknown
+  names, `*args` never missing, and a positional-only parameter given by name both unknown and missing; the
+  TypeError for arguments that are not a mapping with string keys (3 cases); both refusals and their messages (1 and
+  4 cases); the summary row, the help and the tool definition's exact keys; and every JSON Schema mapping row (33
+  cases), with `required` and `additionalProperties`
+- where room code failed (GitHub #339, 0.2.8315): `test_codegen_run_location_unit.py` (14 tests, 20 cases) pins the
+  run file name's round trip and its refusal of an empty id, five other file names that carry no run id (5 cases),
+  the compiler naming the code object after its run, the executor locating a failure in its own run, inside a
+  function an earlier run defined and at the room line that called library code, without text when the run's source
+  is not kept or lacks the line, and adding no location to a success; `runtime_failed`'s location keys, each added
+  only when set (3 cases); `run_id` on every payload (None for a result built without a transaction); and
+  `CodegenSystem` keeping the sources of accepted runs only - a run that raised included, a refused one not - with
+  cleanup clearing and deleting them, a second cleanup a no-op
+- every room's command list (GitHub #339): `test_nexus.py`'s
+  `test_every_room_command_list_ends_with_the_two_help_commands` (4 cases: the base, static, capability and codegen
+  rooms) pins the list ending with `describe_commands` and `describe_command` once each, without `run_command` or
+  `tool_definitions`, and `describe_commands()` covering exactly it. The codegen list pin gains the two help
+  commands; the execute payload pins in `test_nexus.py`, `test_codegen_support_object_unit_matrix.py`,
+  `test_codegen_output_capture_unit.py` and `test_codegen_system_unit_matrix.py` gain `run_id`; and
+  `test_codegen_namespace_runtime_unit_matrix.py` hands the executor the run's kept source, as the engine does
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_codegen_validation_strategy_unit_matrix.py` (binding forms, GitHub #337)
 - `tests/unit/melder/aether/test_codegen_output_capture_unit.py` (captured output, GitHub #337, 2026-11-21)
 - `tests/unit/melder/aether/test_rift_configuration.py` (room output settings, GitHub #337)
+- `tests/unit/melder/aether/test_command_catalog_unit.py` (the command line's reading rules, GitHub #339, 2026-11-22)
+- `tests/unit/melder/aether/test_codegen_run_location_unit.py` (where room code failed, GitHub #339, 2026-11-22)
 - `tests/unit/melder/aether/test_conduit_cloud.py` (callback lock boundaries and admission retry, 2026-10-19)
 - `tests/unit/melder/aether/test_root_configuration_value_snapshots.py` (root configuration snapshots, 2026-09-30)
 - `tests/unit/melder/aether/test_configuration_read_accessors.py` (configuration read accessors, 2026-09-29)
@@ -2139,7 +2166,8 @@ Protects:
   R4's residual drives the attach through the untagged `Rift._create_frame_link`, since a removal now waits for
   the public door; and a new test pins the public door: an attach through `create_frame_link` holds off a removal
   started inside it, publishes, refreshes and returns, and only then is the Rift torn down and the frame's budget
-  count given back
+  count given back. Since GitHub #339 (0.2.8315) the `execute_codegen` test takes the payload's `run_id` out - a
+  non-empty string - before pinning the rest of the payload exactly
 - the Rift gate (0.2.8301, GitHub #274, step 3; `test_rift_component_gate_drains_before_teardown.py`, 13 tests, 23
   cases; `_build_world` builds an enabled Nexus whose drains are bounded by the timeout a test installs, and one
   capability Rift attached to a dynamic `default` frame): `Nexus.remove_rift` waits for an agent inside a
@@ -2400,7 +2428,28 @@ Key Files (C1):
   and executes and returns its `result`; a name nothing binds is still refused; `print` comes back under `output` with
   stdout untouched, also beside a runtime error; a room with `with_codegen_output_limit(10)` cuts it with the
   truncation line; a room with capture off prints to stdout and has no `output` key; a silent run's payload is
-  exactly `accepted`, `frame_name` and `result` (7 tests, 10 cases)
+  exactly `accepted`, `frame_name`, its `run_id` (since GitHub #339) and `result` (7 tests, 10 cases). GitHub #339
+  (2026-11-22) adds each of its acceptance criteria in the same room (18 tests, 28 cases; the file holds 25 tests,
+  38 cases): `run_command` refusing a missing argument with the exact payload and message, naming unknown and
+  missing arguments (3 cases), refusing six names outside the list - `cleanup`, a private method, a public method
+  outside it, `run_command`, `tool_definitions`, `list_supported_command_methods` - with the room left live, returning
+  what the direct call returns (the same conduit object; `execute_codegen` on the default frame), never catching
+  what the command raises, and raising TypeError for arguments that are not a name mapping (2 cases);
+  `describe_commands` covering the list with each docstring's first line; `describe_command("execute_codegen")`'s
+  exact help, its docstring naming the run and location keys, the default frame and the workstation;
+  `research_heads`' help naming the newest recorded version and `research_residency`; an unknown name refused; one
+  JSON-serializable tool schema per command whose `required`, properties and `additionalProperties` match its
+  signature, using only the keywords the catalog emits; `frame_name` optional on the three codegen commands, and an
+  omitted one raising "Rift has no default runtime frame." in a room without a default (3 cases); `run_id` on
+  accepted, refused and failed payloads, a location only on the failure; a bare `assert`'s line, text and run; a
+  failure inside a function an earlier run left on the workstation reporting that run's line; a failure inside
+  melder code located at the calling room line; and the kept sources gone after `Nexus.remove_rift`
+- `tests/integration/melder/aether/test_room_command_line_integration.py` (GitHub #339, 2026-11-22): in real static
+  and capability rooms (4 tests, 8 cases), each room's list starts with `link_frame` and `get_nexus_frame` and ends
+  with the two help commands, without `run_command` or `tool_definitions`, and `describe_commands()` covers it;
+  `run_command` round-trips `get_nexus_frame` (the same conduit) and `describe_command`; `cleanup` is refused with
+  the supported commands and the room stays live; and there is one tool definition per listed command,
+  `execute_target_method` alone allowing additional properties
 - `tests/integration/melder/aether/rift/test_rift_spell_id_lookups_return_that_spell_integration.py` (2026-10-17)
 - `tests/integration/melder/aether/test_aether_integration_change_control_transactions.py` (catalogued 2026-11-08)
 
@@ -3064,16 +3113,17 @@ Key Files (C1):
    broken schedule as one.
    EVIDENCE (remapped 2026-11-09 at 0.2.8301; the test ranges read 78-206, 209-393, 396-498, 501-660, 663-852 and
    855-939, and the src ranges workstation.py 529-659, rift_space.py 268-333, rift.py 278-424 and nexus.py
-   1266-1334):
+   1266-1334; the last three test ranges remapped again 2026-11-22, GitHub #339, from 570-729, 732-968 and
+   971-1157):
    - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:83-211 (`_Handshake`,
      `_Agent`)
    - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:214-462
      (`_AgentTool`, `_HandshakeLock`, the gate-close and teardown-count patches)
    - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:465-567 (the
      fixture and `_build_world`)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:570-729 (W5)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:732-968 (W4, W6, C3)
-   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:971-1157 (R4's
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:570-732 (W5)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:735-971 (W4, W6, C3)
+   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:974-1160 (R4's
      residual, the public-door ordering)
    - src/melder/nexus/rift/rift_space/workstation.py:619-761
    - src/melder/nexus/rift/rift_space/rift_space.py:277-342
@@ -3769,9 +3819,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6381
-  loc: 6381
-  verified_at: 2026-11-09T11:20:47Z
+  end_line: 6420
+  loc: 6420
+  verified_at: 2026-11-22T16:11:43Z
 - path: `tests/unit/melder/aether/test_root_configuration_value_snapshots.py`
   start_line: 1
   end_line: 197
@@ -5270,13 +5320,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     attach's reservation given back, a refresh's fresh sets cleaned (0.2.8289; untracked when catalogued).
 - path: `tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py`
   start_line: 1
-  end_line: 1157
-  loc: 1157
-  verified_at: 2026-11-09T11:20:47Z
+  end_line: 1160
+  loc: 1160
+  verified_at: 2026-11-22T16:11:43Z
   note: GitHub #274's W5, W4, W6, C3 and R4's residual with daemon agent threads joined within 5 s: agent code
     runs outside Melder's locks, removals finish beside agents, no budget count left (0.2.8290-0.2.8291;
     untracked when catalogued); remeasured at 0.2.8301 (it read 939) after the removals waited at the Rift gate,
-    the teardown counted 0 threads inside, and the public-door ordering test joined (9 tests).
+    the teardown counted 0 threads inside, and the public-door ordering test joined (9 tests); remeasured
+    2026-11-22 (it read 1157) after the `execute_codegen` test took out the payload's `run_id` (GitHub #339).
 - path: `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py`
   start_line: 1
   end_line: 744

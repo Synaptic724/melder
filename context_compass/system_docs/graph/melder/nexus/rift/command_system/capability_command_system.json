@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/capability_command_system.py",
- "source_sha256": "6335c971077c93f3f09a699d03772ff0792375e36594ca406360997880a79a7c",
+ "source_sha256": "d701444a5dba5b09992cbd1075251d2736367b2208db725308741ca938fa80e1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.capability_command_system": {
@@ -78,21 +78,23 @@
     "sever_link"
    ],
    "shape": {
-    "method_count": 52,
+    "method_count": 53,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d3ee84cb00b9cde909b1ea83eba03e4bd46e813ebcec80de1f7db5146680a613",
+   "span_sha256": "76ea2b083b570bb1fe04ed1c01589dd92dedf24eeac6978a78a0a90f17932411",
    "role": "Capability-room specialization of the shared command surface.",
    "responsibilities": [
     "preserves the shared broad runtime command behavior for CapabilityRiftSpace",
-    "owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only",
-    "forwards optional creation names and uses lesser-aware authorized named lookup"
+    "owns the twenty-one research_* reads only (7 record, 8 foresight, 6 composition); other verbs are codegen-only",
+    "forwards optional creation names and uses lesser-aware authorized named lookup",
+    "lists the shared names, its capability-owned names, then describe_commands and describe_command (GitHub #339)",
+    "documents research_heads' tip as the newest version recorded on its lane, not the active one (GitHub #339)"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "cc75918e7b00aa8b6609b786366e58efb835dff032983257cfb75bea3e35a1b1"
+   "semantics_authored_against": "76ea2b083b570bb1fe04ed1c01589dd92dedf24eeac6978a78a0a90f17932411"
   }
  },
  "edges_out": [

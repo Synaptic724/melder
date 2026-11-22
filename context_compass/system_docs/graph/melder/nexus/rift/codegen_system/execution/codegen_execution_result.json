@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py",
- "source_sha256": "64fef631ccecdc925f27df8509c533007dbc252702fd69a1850fc391df5545e6",
+ "source_sha256": "23d9d414d4631631e0971c258c848eb3378b8f0ada66346851e61c4c4e0ce1e0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.execution.codegen_execution_result": {
@@ -45,12 +45,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d2fa6f234881d44c2020add5c7d0fd2a6e63fc602deef0b2b19bdcb21376ea12",
+   "span_sha256": "2802ca803274112bcc252ec3658bd07967ec789ba833ec3143f277bef62a34d7",
    "role": "Execution-layer result for one codegen request.",
    "responsibilities": [
     "stores accepted or rejected execution outcome",
     "stores runtime result validation issues and runtime error details",
-    "carries the text room code printed and adds it to the payload as `output` when it is not empty (GitHub #337, 0.2.8312)"
+    "carries the text room code printed and adds it to the payload as `output` when it is not empty (GitHub #337, 0.2.8312)",
+    "reports its transaction id as run_id on every payload (GitHub #339, 0.2.8315)",
+    "carries a runtime failure's line, run id and line text, each added to the payload only when set"
    ],
    "owns_state": [
     "_accepted",
@@ -60,13 +62,16 @@
     "_runtime_error",
     "_result",
     "_transaction_id",
-    "_output"
+    "_output",
+    "_runtime_error_line",
+    "_runtime_error_run_id",
+    "_runtime_error_line_text"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "d2fa6f234881d44c2020add5c7d0fd2a6e63fc602deef0b2b19bdcb21376ea12"
+   "semantics_authored_against": "2802ca803274112bcc252ec3658bd07967ec789ba833ec3143f277bef62a34d7"
   }
  },
  "edges_out": [

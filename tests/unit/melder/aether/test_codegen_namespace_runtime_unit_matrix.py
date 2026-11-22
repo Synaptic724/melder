@@ -325,7 +325,8 @@ def test_unit_codegen_compiler_and_executor_matrix(
     context.namespace = namespace
 
     compiled_code = CodegenCompiler().compile(context)
-    result = CodegenExecutor().execute(compiled_code, context)
+    # The run's kept source, as `CodegenSystem` passes it for an accepted run (GitHub #339).
+    result = CodegenExecutor().execute(compiled_code, context, {context.transaction_id: code})
 
     assert result.accepted is True
     if expected_result is None:

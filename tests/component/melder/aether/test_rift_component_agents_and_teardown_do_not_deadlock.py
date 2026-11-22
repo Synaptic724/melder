@@ -726,6 +726,9 @@ def test_execute_codegen_runs_the_engine_without_blocking_another_agents_command
     )
     assert lister.raised is None
     assert lister.returned == ("pricing_root",)
+    # Every execute payload names its run (GitHub #339); the rest of the payload is pinned exactly.
+    run_id = payload.pop("run_id")
+    assert isinstance(run_id, str) and run_id
     assert payload == {"accepted": True, "frame_name": "default", "result": 1}
 
 

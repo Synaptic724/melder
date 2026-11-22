@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/command_system.py",
- "source_sha256": "886a4facc2e213d05c2e6de1195e69d7835086cbe056a219d513f6095428044c",
+ "source_sha256": "52422c9cbcf60ee790c46c4ecec0e6ebdce738cd9db5e8a1305c89d52aacd246",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.command_system": {
@@ -19,7 +19,7 @@
    "label": "CommandSystem",
    "kind": "class",
    "file": "src/melder/nexus/rift/command_system/command_system.py",
-   "lineno": 20,
+   "lineno": 21,
    "bases": [
     "Cleanable"
    ],
@@ -27,6 +27,8 @@
    "public_methods": [
     "cleanup",
     "command_system_id",
+    "describe_command",
+    "describe_commands",
     "describe_spells_in_conduit",
     "execute_target_method",
     "find_spell_id",
@@ -43,14 +45,16 @@
     "link_frame",
     "list_supported_command_methods",
     "owner_space_id",
-    "snapshot_state"
+    "run_command",
+    "snapshot_state",
+    "tool_definitions"
    ],
    "shape": {
-    "method_count": 45,
+    "method_count": 49,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f9690ca0d6e71023dbaf0c1401bc60bc944545c2b3160d826ae180fabb3c4510",
+   "span_sha256": "8109ce552af553993e0da1a88d8c061a57039540ecffcea3e0fdc5ade781d308",
    "role": "Room-local mediated command layer.",
    "responsibilities": [
     "resolves room-scoped records and runtime objects",
@@ -61,7 +65,12 @@
     "resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors",
     "answers get_spell_by_spell_id (renamed from get_spell_by_id, with its command and advertised names, 0.2.8253) and get_spell_by_source_id with exactly the Spell the spell_id or the published record names, from the owner Book's find_spell_by_spell_id (_get_spell_by_record_locked for a source id, after the frame gate and the record's spell-index and owner-conduit ACLs); only get_spell_by_index_id answers the version an index has active, and a parked version, which Nexus does not publish, is refused",
     "runs get_target_attribute, get_target_method and execute_target_method with no command lock, so agent code there never runs under it",
-    "admits every command at the room's RiftGate before its action-hook scope and releases the ticket last, after the memory record and the post-hooks, skipping the memory record on a command system cleaned during the call"
+    "admits every command at the room's RiftGate before its action-hook scope and releases the ticket last, after the memory record and the post-hooks, skipping the memory record on a command system cleaned during the call",
+    "keeps the room's command list in _list_supported_command_methods_tuple, which each room subclass overrides",
+    "ends every room's command list with describe_commands and describe_command (GitHub #339, 0.2.8314)",
+    "run_command dispatches only a listed name and answers a refusal for an unlisted name or unbound arguments",
+    "run_command returns the command's own value, never catches what it raises and takes no lock or gate ticket itself",
+    "answers tool_definitions: one {name, description, input_schema} per listed command, outside any command action"
    ],
    "owns_state": [
     "_id",
@@ -72,7 +81,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f9690ca0d6e71023dbaf0c1401bc60bc944545c2b3160d826ae180fabb3c4510"
+   "semantics_authored_against": "8109ce552af553993e0da1a88d8c061a57039540ecffcea3e0fdc5ade781d308"
   }
  },
  "edges_out": [
@@ -122,11 +131,14 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
   "Dict": "typing.Dict",
   "List": "typing.List",
+  "Mapping": "typing.Mapping",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "Aether": "melder.aether.aether.Aether",
+  "CommandCatalog": "melder.nexus.rift.command_system.command_catalog.CommandCatalog",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
   "Conduit": "melder.aether.conduit.conduit.Conduit",
@@ -170,6 +182,17 @@
    "to": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
    "relation": "borrows",
    "why": "Every command takes and releases a ticket on the room's Rift gate (space.rift_gate), which the Rift owns; the command never closes or cleans it.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+   "to": "melder.nexus.rift.command_system.command_catalog.CommandCatalog",
+   "relation": "uses",
+   "why": "The four command-line methods read help, refusals and schemas through CommandCatalog's static methods.",
    "cardinality": "many_to_one",
    "phase": [
     "runtime"

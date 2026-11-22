@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.8313"
-SOURCE_SHA256 = "1d2651695b2112ca8e4b447e108d743d9ad4d2cd06902c89fc0dc9c56352fe9e"
-MARKED_COUNT = 475
+BUILT_FOR_VERSION = "0.2.8315"
+SOURCE_SHA256 = "8465820ffedd49130dd0b1d1532c890cce7cc62f06de0b3c139ee0aed506e8d3"
+MARKED_COUNT = 476
 EXEMPT_COUNT = 142
 PENDING_COUNT = 19
 
@@ -419,6 +419,7 @@ AGENT_METADATA = {
     ('melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy', 'CodegenReflectionPolicyStrategy'): ('internal', 'access: internal. Reflection-policy validation strategy. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.command_system.capability_command_system', 'CapabilityCommandSystem'): ('internal', 'access: internal. Capability-room command surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.command_system.codegen_command_system', 'CodegenCommandSystem'): ('internal', 'access: internal. Codegen-room command surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.nexus.rift.command_system.command_catalog', 'CommandCatalog'): ('internal', "access: internal. Reads room commands' signatures and docstrings into help, refusals and tool schemas. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.nexus.rift.command_system.command_system', 'CommandSystem'): ('internal', 'access: internal. Room-local shared command infrastructure plus common read/target helpers. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.command_system.static_command_system', 'StaticCommandSystem'): ('internal', 'access: internal. Static-room command surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.rift.frame_link.frame_link', 'FrameLink'): ('internal', 'access: internal. FrameLink runtime object. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),

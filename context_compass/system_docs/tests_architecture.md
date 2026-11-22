@@ -563,11 +563,12 @@ The most important recent integration addition is the dedicated
   one module. Since the Rift gate (0.2.8301) the module's removal tests also patch the removal's gate close and its
   teardown (`_announce_the_removal_closing_the_gate`, `_count_the_threads_inside_at_teardown`) to assert that the
   removal waited for the agent and that the teardown found no thread inside.
-  EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read 1-17, 78-206, 277-393 and 663-852):
+  EVIDENCE (remapped 2026-11-09 at 0.2.8301; they read 1-17, 78-206, 277-393 and 663-852; the last remapped again
+  2026-11-22, GitHub #339, from 732-968):
   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:1-21
   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:83-211
   - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:282-462
-  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:732-968
+  - tests/component/melder/aether/test_rift_component_agents_and_teardown_do_not_deadlock.py:735-971
 - That a call WAITS is proven by one bounded observation window, the only timed check of the Rift gate modules
   (GitHub #274, step 3, 0.2.8301): the gate-drain component module holds an agent inside a Rift call at a named
   point (`_Hold`), starts the removal or the cleanup, and gives it `_Handshake.OBSERVATION_SECONDS` (0.5 s) to
@@ -1136,9 +1137,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6381
-  loc: 6381
-  verified_at: 2026-11-09T11:20:47Z
+  end_line: 6420
+  loc: 6420
+  verified_at: 2026-11-22T16:11:43Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
   end_line: 458

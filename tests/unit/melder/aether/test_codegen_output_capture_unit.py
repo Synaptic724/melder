@@ -187,7 +187,8 @@ def test_capture_cleanup_is_idempotent_and_ends_its_output() -> None:
 def test_execution_result_payload_carries_output_only_when_text_was_printed() -> None:
     """
     Contract: `executed` and `runtime_failed` carry the printed text as `output`; the payload adds an `output` key
-    only when it is not empty.
+    only when it is not empty. `run_id` is on every payload (GitHub #339) - None for a result built without a
+    transaction id, as these are.
     """
     executed = CodegenExecutionResult.executed(frame_name="ops", result=1, output="hi\n")
     failed = CodegenExecutionResult.runtime_failed(
@@ -198,7 +199,13 @@ def test_execution_result_payload_carries_output_only_when_text_was_printed() ->
     silent = CodegenExecutionResult.executed(frame_name="ops", result=1)
 
     assert executed.output == "hi\n"
-    assert executed.to_payload() == {"accepted": True, "frame_name": "ops", "output": "hi\n", "result": 1}
+    assert executed.to_payload() == {
+        "accepted": True,
+        "frame_name": "ops",
+        "run_id": None,
+        "output": "hi\n",
+        "result": 1,
+    }
     assert failed.to_payload()["output"] == "before\n"
     assert silent.output == ""
     assert "output" not in silent.to_payload()

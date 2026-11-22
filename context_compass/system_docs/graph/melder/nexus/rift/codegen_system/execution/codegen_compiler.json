@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py",
- "source_sha256": "64bb623ef9bf75722d1377204c459933a416b81add2df06263adba77cc9c8e78",
+ "source_sha256": "85c71a02d01443b0e4f07238889a528f9536a8ebf1ff6577af9124d960be04e0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.execution.codegen_compiler": {
@@ -26,24 +26,28 @@
    "markers": [],
    "public_methods": [
     "cleanup",
-    "compile"
+    "compile",
+    "run_filename",
+    "run_id_from_filename"
    ],
    "shape": {
-    "method_count": 2,
+    "method_count": 4,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3575ed5df9bc9f950d965905c0b6a9a55a957412a7b22a0535493fb2193b1e3c",
+   "span_sha256": "6642e1b61c6148158d76e365b57c4738b9e39a465f970a716c26025c0e683c8c",
    "role": "Internal compile stage for codegen execution.",
    "responsibilities": [
     "compiles generated Python into an executable code object",
-    "keeps execution and validation responsibilities out of the compile step"
+    "keeps execution and validation responsibilities out of the compile step",
+    "compiles each run under <melder-codegen:{transaction_id}> (run_filename), so its code objects name their run",
+    "reads a run id back from a co_filename (run_id_from_filename); None for any other file name (GitHub #339)"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3575ed5df9bc9f950d965905c0b6a9a55a957412a7b22a0535493fb2193b1e3c"
+   "semantics_authored_against": "6642e1b61c6148158d76e365b57c4738b9e39a465f970a716c26025c0e683c8c"
   }
  },
  "edges_out": [
@@ -63,6 +67,12 @@
   },
   {
    "from": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
    "to_label": "TypeError",
    "relation": "creates",
    "confidence": "candidate"
@@ -72,6 +82,8 @@
  "imports": {
   "threading": "threading",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
   "CodeType": "types.CodeType",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"

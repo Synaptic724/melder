@@ -60,21 +60,33 @@ def test_unit_codegen_validation_result_payload_matrix(
 @pytest.mark.parametrize(
     ("accepted", "reason", "issues", "runtime_error", "result_value", "expected_payload_keys"),
     [
-        (True, None, tuple(), None, 1, {"accepted", "frame_name", "result"}),
-        (True, None, tuple(), None, None, {"accepted", "frame_name"}),
-        (False, "codegen_execution_validation_failed", ("bad",), None, None, {"accepted", "frame_name", "reason", "validation_issues"}),
-        (False, "codegen_execution_runtime_failed", tuple(), "boom", None, {"accepted", "frame_name", "reason", "runtime_error"}),
-        (False, "codegen_execution_runtime_failed", ("bad",), "boom", None, {"accepted", "frame_name", "reason", "validation_issues", "runtime_error"}),
-        (True, "executed", tuple(), None, [1, 2], {"accepted", "frame_name", "reason", "result"}),
-        (False, "runtime_failed", tuple(), "ValueError: boom", None, {"accepted", "frame_name", "reason", "runtime_error"}),
-        (True, None, tuple(), None, {"x": 1}, {"accepted", "frame_name", "result"}),
-        (False, None, tuple(), None, None, {"accepted", "frame_name"}),
-        (False, "failed", tuple(), None, None, {"accepted", "frame_name", "reason"}),
-        (True, None, tuple(), None, "ok", {"accepted", "frame_name", "result"}),
-        (False, "failed", ("x",), None, None, {"accepted", "frame_name", "reason", "validation_issues"}),
-        (False, "failed", tuple(), "boom", None, {"accepted", "frame_name", "reason", "runtime_error"}),
-        (True, "executed", tuple(), None, 0, {"accepted", "frame_name", "reason", "result"}),
-        (True, "executed", tuple(), None, None, {"accepted", "frame_name", "reason"}),
+        (True, None, tuple(), None, 1, {"accepted", "frame_name", "run_id", "result"}),
+        (True, None, tuple(), None, None, {"accepted", "frame_name", "run_id"}),
+        (
+            False, "codegen_execution_validation_failed", ("bad",), None, None,
+            {"accepted", "frame_name", "run_id", "reason", "validation_issues"},
+        ),
+        (
+            False, "codegen_execution_runtime_failed", tuple(), "boom", None,
+            {"accepted", "frame_name", "run_id", "reason", "runtime_error"},
+        ),
+        (
+            False, "codegen_execution_runtime_failed", ("bad",), "boom", None,
+            {"accepted", "frame_name", "run_id", "reason", "validation_issues", "runtime_error"},
+        ),
+        (True, "executed", tuple(), None, [1, 2], {"accepted", "frame_name", "run_id", "reason", "result"}),
+        (
+            False, "runtime_failed", tuple(), "ValueError: boom", None,
+            {"accepted", "frame_name", "run_id", "reason", "runtime_error"},
+        ),
+        (True, None, tuple(), None, {"x": 1}, {"accepted", "frame_name", "run_id", "result"}),
+        (False, None, tuple(), None, None, {"accepted", "frame_name", "run_id"}),
+        (False, "failed", tuple(), None, None, {"accepted", "frame_name", "run_id", "reason"}),
+        (True, None, tuple(), None, "ok", {"accepted", "frame_name", "run_id", "result"}),
+        (False, "failed", ("x",), None, None, {"accepted", "frame_name", "run_id", "reason", "validation_issues"}),
+        (False, "failed", tuple(), "boom", None, {"accepted", "frame_name", "run_id", "reason", "runtime_error"}),
+        (True, "executed", tuple(), None, 0, {"accepted", "frame_name", "run_id", "reason", "result"}),
+        (True, "executed", tuple(), None, None, {"accepted", "frame_name", "run_id", "reason"}),
     ],
 )
 def test_unit_codegen_execution_result_payload_matrix(
